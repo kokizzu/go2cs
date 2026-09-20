@@ -160,6 +160,48 @@ fc_arm 15 "a 3-line mailbox file -> REFUSE the read"
 
 fc_arm 0 "the same clone past the floor -> pass (dry run)" --dry-run
 
+# ⚠ THE DRY RUN MUST NOT CLAIM THE BAR (2026-09-20). Its message said "all admission arms passed"
+# while the structural bar sits BELOW its exit, so one heading drew WOULD REFUSE (13) from
+# --bar-check and rc 0 "all admission arms passed" from --dry-run -- two doors on one tool
+# disagreeing. The bar is deliberately NOT hoisted (its refusal tells you to re-run with
+# --dry-run, so a bar firing there would make its own advice impossible to follow), which is why
+# the arm is on the CLAIM and not on the bar's position. Shape banked from COORD's 282b28b1d
+# finding on i9's driver -- a guard inside `if (-not $DryRun)`, whose green dry run read as
+# clearance for a guard never reached. Reuses the padded clone above, hence its place here.
+printf '## 2026-09-20 — R self-test of the admission bar\n\nbody for the claim arm.\n' > "$FC/entry-ctl.md"
+
+# ⚠ AND THE DOORS MUST BE REACHABLE FROM A COPY INSIDE A REPOSITORY, which is where the published
+# one lives. The exit-14 state guard sat ABOVE both doors until 2026-09-20, so `--bar-check` from
+# the published copy answered 14 about an anchor and a ledger it never touches. This arm wanted 13
+# and got 14 -- the defect found by RUNNING the door, not by reading it.
+git init -q "$FC/inrepo"
+cp "$TOOL" "$FC/inrepo/tool.sh"
+( cd "$FC/inrepo" && env -u R_POST_STATE sh -c './tool.sh "$1" "$2" --bar-check' _ "$FC/entry-ctl.md" "$FC/subj.txt" ) >/dev/null 2>&1
+if [ $? -eq 13 ]; then
+    printf '  OK    %-46s rc=13\n' "--bar-check reachable from a copy in a repo"; pass=$((pass + 1))
+else
+    printf '  FAIL  %-46s\n' "--bar-check blocked from a copy in a repo"; fail=$((fail + 1))
+fi
+# CONTROL: the state guard is STILL LIVE for the path that would actually write state.
+( cd "$FC/inrepo" && env -u R_POST_STATE sh -c './tool.sh "$1" "$2" --dry-run' _ "$FC/entry-ctl.md" "$FC/subj.txt" ) >/dev/null 2>&1
+if [ $? -eq 14 ]; then
+    printf '  OK    %-46s rc=14\n' "control: exit-14 still fires for --dry-run"; pass=$((pass + 1))
+else
+    printf '  FAIL  %-46s\n' "control DEAD: exit-14 no longer fires at all"; fail=$((fail + 1))
+fi
+
+DRYOUT="$(R_MAILBOX_CLONE="$FC/clone" R_POST_STATE="$FC/state" "$TOOL" "$FC/entry-ctl.md" "$FC/subj.txt" --dry-run 2>&1)"
+if printf '%s' "$DRYOUT" | grep -q 'all admission arms passed'; then
+    printf '  FAIL  %-46s\n' "the dry run CLAIMS arms it never evaluated"; fail=$((fail + 1))
+else
+    printf '  OK    %-46s\n' "the dry run does not claim the unrun bar"; pass=$((pass + 1))
+fi
+if printf '%s' "$DRYOUT" | grep -q -- '--bar-check'; then
+    printf '  OK    %-46s\n' "and it names the door that answers"; pass=$((pass + 1))
+else
+    printf '  FAIL  %-46s\n' "it does not point at --bar-check"; fail=$((fail + 1))
+fi
+
 rm -rf "$FC"
 rm -rf "$DIR"
 echo

@@ -31,22 +31,6 @@ BRANCH="claude/mailbox"
 SP="$(dirname "$(readlink -f "$0")")"
 STATE="${R_POST_STATE:-$SP}"
 
-# ⚠ REFUSE rather than relocate, when the default would write state INTO a repository (exit 14).
-# Found by C2 (ad1560d2f0) on its own tool from R's e82b16d6d, and LATENT HERE TOO: the default puts
-# the read anchor and the body-hash ledger in this script's own directory, which is correct while the
-# only copy lives outside a tree and becomes WRONG the moment the file is published inside one --
-# the anchor most of all, since the fleet's read discipline hangs off it.
-# ⚠ AND MY OWN CONTROLS COULD NOT REACH IT: the writes are on the LIVE path and every control runs
-# --dry-run, which exits first. A `git status` clean after a dry run says nothing about this.
-# The remedy is C2's shape and the reason is C2's: silently relocating the default answers THIS
-# instance and not the next, so the script fails CLOSED and names the variable instead.
-if [ -z "${R_POST_STATE:-}" ] && git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "REFUSED(14): this copy sits inside a git work tree and R_POST_STATE is unset, so the read"
-  echo "             anchor and the body-hash ledger would be written into the repository at:"
-  echo "               $SP"
-  echo "             Set R_POST_STATE to a path outside the tree and re-run."
-  exit 14
-fi
 ANCHOR="$STATE/r-anchor.txt"
 LEDGER="$STATE/r-post-bodyhashes.txt"
 DRY=0; [ "${3:-}" = "--dry-run" ] && DRY=1
@@ -72,6 +56,19 @@ if [ "${1:-}" = "--anchor-check" ]; then
   if anchor_may_advance "${2:-}" "${3:-}"; then echo "ANCHOR-CHECK: ADVANCE"; exit 0
   else echo "ANCHOR-CHECK: HOLD -- unread entries stand between the anchor and this post"; exit 20; fi
 fi
+
+# ⚠ REFUSE rather than relocate, when the default would write state INTO a repository (exit 14).
+# Found by C2 (ad1560d2f0) on its own tool from R's e82b16d6d, and LATENT HERE TOO: the default puts
+# the read anchor and the body-hash ledger in this script's own directory, which is correct while the
+# only copy lives outside a tree and becomes WRONG the moment the file is published inside one --
+# the anchor most of all, since the fleet's read discipline hangs off it.
+# ⚠ AND MY OWN CONTROLS COULD NOT REACH IT: the writes are on the LIVE path and every control runs
+# --dry-run, which exits first. A `git status` clean after a dry run says nothing about this.
+# The remedy is C2's shape and the reason is C2's: silently relocating the default answers THIS
+# instance and not the next, so the script fails CLOSED and names the variable instead.
+# ⚠⚠ THE GUARD ITSELF NOW SITS BELOW BOTH DOORS AND ABOVE THE FIRST STATE WRITE -- see it at
+# `$TOKENS`. It sat at the top until 2026-09-20, which made `--bar-check` from the PUBLISHED copy
+# answer REFUSED(14) about an anchor and a ledger it never touches.
 
 # --- step 1: resolve BEFORE any cd (SKILL: relative entry path resolved to nothing after the cd)
 ENTRY="$(readlink -f "${1:?entry file}")"
@@ -99,6 +96,22 @@ if grep -qiE '<(TBD|TODO|PLACEHOLDER|SHA|ID)>|XXXXXXX|TODO-FILL' "$ENTRY"; then
 BODYHASH="$(sha256sum < "$ENTRY" | cut -c1-32)"
 if [ -f "$LEDGER" ] && grep -Fqx "$BODYHASH" "$LEDGER"; then
   echo "REFUSED(6): body hash $BODYHASH already posted (duplicate-post defence)"; exit 6; fi
+
+# ⚠⚠ THE EXIT-14 STATE GUARD SITS HERE: BELOW BOTH DOORS, ABOVE THE FIRST STATE WRITE (the next
+# line). It was at the top of the file until 2026-09-20, which refused `--bar-check` and
+# `--anchor-check` from the PUBLISHED copy -- doors that write NOTHING, refused by a guard about
+# where state would be written, in the one copy publishing the tool was for. Found by an arm that
+# wanted 13 and got 14: by RUNNING the door, not by reading it. ⚠ A fail-closed guard is still
+# wrong when it closes on a path that cannot reach the hazard. ⚠ AND ITS PLACEMENT IS LOAD-BEARING
+# BOTH WAYS -- one line lower and `$TOKENS` writes into the repository before the refusal, so the
+# arm for this carries a CONTROL that `--dry-run` from the same copy still answers 14.
+if [ -z "${R_POST_STATE:-}" ] && git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "REFUSED(14): this copy sits inside a git work tree and R_POST_STATE is unset, so the read"
+  echo "             anchor and the body-hash ledger would be written into the repository at:"
+  echo "               $SP"
+  echo "             Set R_POST_STATE to a path outside the tree and re-run."
+  exit 14
+fi
 
 # --- never-push tokens, DERIVED AT RUNTIME, never hardcoded, never printed
 TOKENS="$STATE/.r-tokens.tmp"; : > "$TOKENS"; chmod 600 "$TOKENS" 2>/dev/null
@@ -203,8 +216,20 @@ if [ "$MAILBOX_LINES" -lt 1000 ]; then
 if grep -Fqx "$HEADING" "$FILE"; then
   echo "REFUSED(5): that exact heading is already in the file at origin"; rm -f "$TOKENS"; exit 5; fi
 
+# ⚠ THIS MESSAGE SAYS WHAT RAN, NOT WHAT EXISTS. It read "all admission arms passed" until
+# 2026-09-20, which was FALSE: the structural bar at :233 is BELOW this exit, so the same heading
+# got `WOULD REFUSE (13)` from --bar-check and `all admission arms passed` rc 0 from --dry-run --
+# two doors on one tool disagreeing, with the dry run overclaiming. MEASURED that way, not read.
+# The shape is COORD's 282b28b1d finding on i9's driver (a tree guard inside `if (-not $DryRun)`,
+# so a green dry run read as clearance for a guard never reached) arriving here through the
+# VERDICT LINE rather than through a skipped guard. ⚠ The bar itself is NOT hoisted, and that is
+# deliberate: its refusal tells you to re-run with --dry-run, so a bar that fired under --dry-run
+# would make its own advice impossible to follow. The limitation is real; only the claim was wrong.
 if [ "$DRY" -eq 1 ]; then
-  echo "DRY-RUN: all admission arms passed; nothing appended, nothing pushed."; rm -f "$TOKENS"; exit 0; fi
+  echo "DRY-RUN: the arms ABOVE this point passed; nothing appended, nothing pushed."
+  echo "         NOT evaluated here: the structural control bar (live-path only, by design) and"
+  echo "         every state write. Use --bar-check for the bar's verdict on this heading."
+  rm -f "$TOKENS"; exit 0; fi
 
 # --- STRUCTURAL BAR (added 2026-09-19 after ce1744f8d): a CONTROL can never take the live path.
 # The defect was not that the census was weak -- it was that a control run without --dry-run reaches
