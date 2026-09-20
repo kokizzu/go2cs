@@ -438,10 +438,65 @@ if len(_floors) != len(_keys):
         f"A nested or non-scalar entry is silently dropped by the scalar pattern -- see the BOARD "
         f"entry 2026-09-13 and DESIGN-peros-roster.md section 7.")
 
+# ---- the relocation arcs, DERIVED from the one data file, never carried here ----------------
+# A hop RE-PATHS rows, and a floor keyed by a 1.23 name reaches nothing at 1.24. `$longTimeouts`
+# names `crypto/internal/mlkem768`, which does not exist at the version tip -- so without this the
+# row's successors run at the sweep's DEFAULT deadline and are killed short, and step 2's intersect
+# drops the pin (reported, but a report is not a floor).
+#
+# ⚠ THE MAP IS READ, NOT COPIED, and it is read from ONE file. C1's table (mailbox 350a301a, ruled
+# at 37c10514a) is 10 rows / 14 arcs / 11 targets -- `crypto/internal/fips140test` receives THREE --
+# so a source→target DICT silently drops arcs: four of the ten SPLIT. One line per arc is the only
+# shape that cannot lose one. i9's wrapper reads this same file by this same contract, so the two
+# derivations cannot disagree about the map.
+#
+# Per e0d5121e2 section 1 EVERY arm of a split INHERITS the floor: a budget copied is an
+# over-estimate, which is the safe direction; a budget split is a guess.
+RELOCATIONS_TSV = HERE / "relocations.tsv"
+if not RELOCATIONS_TSV.exists():
+    die(f"no relocation map at {RELOCATIONS_TSV.name} -- the reserved set's floors are keyed by "
+        f"1.23 names and this file is how they reach their 1.24 successors. It lands with the "
+        f"roster seat; refusing rather than scheduling a hop's successors at the default deadline.")
+# Read with the file's own idiom -- open(..., newline="") -- so the CR check below sees the
+# bytes as they are. Path.read_text() grew a newline= keyword only in 3.13 and would either
+# TypeError here or, worse, translate the newlines out from under the check.
+with open(RELOCATIONS_TSV, encoding="utf-8", newline="") as _fh:
+    _reloc_text = _fh.read()
+if _reloc_text.count("\r"):
+    die(f"{RELOCATIONS_TSV.name} carries {_reloc_text.count(chr(13))} CR byte(s) -- LF only, for the "
+        f"same reason the timings basis is: a CR rides into every name it touches.")
+_reloc_lines = [ln for ln in _reloc_text.split("\n") if ln.strip()]
+if not _reloc_lines or _reloc_lines[0].split("\t") != ["source", "target"]:
+    die(f"{RELOCATIONS_TSV.name} must open with the header 'source\\ttarget' read BY NAME; saw "
+        f"{_reloc_lines[0] if _reloc_lines else '(empty file)'!r}")
+RELOCATIONS = []
+for _ln in _reloc_lines[1:]:
+    _cells = _ln.split("\t")
+    if len(_cells) != 2 or not _cells[0].strip() or not _cells[1].strip():
+        die(f"{RELOCATIONS_TSV.name}: every line is exactly source<TAB>target, one per ARC; saw {_ln!r}")
+    RELOCATIONS.append((_cells[0].strip(), _cells[1].strip()))
+# The thin guard, with its reason beside it exactly as the floors' own has. Ten rows relocate, so a
+# map with fewer than ten ARCS cannot even name each source once -- and a short read here is silent:
+# it would simply inherit fewer floors, which reads identical to a hop that relocated fewer rows.
+if len(RELOCATIONS) < 10:
+    die(f"{RELOCATIONS_TSV.name} yielded {len(RELOCATIONS)} arc(s); ten rows relocate at this hop and "
+        f"four of them SPLIT, so fewer than ten arcs cannot name each source once. Refusing rather "
+        f"than inheriting a partial map -- a short read is indistinguishable from a smaller hop.")
+
 BIG_ROWS = ["go/doc/comment", "go/types"]
-RESERVED_DECLARED = _floors + [b for b in BIG_ROWS if b not in _floors]
+# A successor inherits its source's floor. Order is preserved and duplicates are skipped, so a target
+# reached from two sources (fips140test, from three) is declared once.
+_inherited = []
+for _src, _tgt in RELOCATIONS:
+    if _src in _floors and _tgt not in _floors and _tgt not in _inherited:
+        _inherited.append(_tgt)
+RESERVED_DECLARED = _floors + _inherited + [b for b in BIG_ROWS if b not in _floors and b not in _inherited]
 print(f"\nreserved set derived at generation time: {len(_floors)} floor row(s) "
-      f"({', '.join(_floors)}) + {len(BIG_ROWS)} big row(s)")
+      f"({', '.join(_floors)}) + {len(_inherited)} inherited by successors "
+      f"({', '.join(_inherited) if _inherited else 'none'}) + {len(BIG_ROWS)} big row(s)")
+print(f"  relocation map: {len(RELOCATIONS)} arc(s) over "
+      f"{len({s for s, _ in RELOCATIONS})} source(s) -> {len({t for _, t in RELOCATIONS})} target(s), "
+      f"from {RELOCATIONS_TSV.name}")
 
 # step 2 of the construction, AS WRITTEN: R := reserved set INTERSECT rows. The fallout is reported
 # rather than asserted away -- a pinned row with no cost is not scheduled, and saying so is the whole
