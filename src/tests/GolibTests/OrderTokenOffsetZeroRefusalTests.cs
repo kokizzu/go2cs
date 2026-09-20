@@ -101,6 +101,62 @@ public class OrderTokenOffsetZeroRefusalTests
     }
 
     [TestMethod]
+    public void TheSLOTAccessorTakesTheSameRefusal_AndTheClassificationIsReadableWithoutDereferencing()
+    {
+        // THE OTHER DOOR ON THE SAME FAULT, and it is not a restatement of the first. `Value` and
+        // `ValueSlot` are SEPARATE overrides carrying SEPARATE guards (ж.NativeBox.cs:105 and :117),
+        // and ValueSlot is the one WITHOUT the nil check -- which makes it the door the corpus
+        // actually arrives through: `fixed (void* ptr = &this.ValueSlot)` (ж.cs:579), the four
+        // assignment and read paths (ж.cs:633, :640, :656, :670, :678) and, above all,
+        // `Unsafe.As<T, TDst>(ref ((ж<T>)source).ValueSlot)` (ж.cs:730), which is
+        // PointerExtensions.Reinterpret -- the very route this arm's own carrier argument is about.
+        //
+        // ⚠ THE CLASS ABOVE DRIVES `.Value` THREE TIMES AND `ValueSlot` NOT ONCE (measured
+        // 2026-09-20: 3 occurrences against 0). So the guard on the accessor the reinterpret path
+        // reaches for was held by review alone, and a deletion of it would have left this file
+        // GREEN while restoring exactly the uncatchable write the seat exists to stop. Remove
+        // either guard's throw and precisely one of these two methods reds; that separation is the
+        // whole of this method's claim.
+        ж<WithDelegates> box = new StandardBox<WithDelegates>(new WithDelegates { first = static () => { } });
+        nuint token = (nuint)(uintptr)box;
+
+        ж<long> answered = (ж<long>)(uintptr)token;
+
+        // CLASSIFIED WITHOUT BEING TOUCHED -- read BEFORE either dereference below, because that
+        // ordering IS the property being asserted. The verdict was computed once by the operator
+        // that had the resolved box in hand and rides IN the box (ж.cs:908, `aliasesAnOrderToken:`),
+        // so a caller can ASK whether a number is an order token instead of finding out by trying --
+        // and trying is the fault. This is also that public member's first consumer: a flag nothing
+        // reads is a flag nothing would notice the loss of.
+        NativeBox<long> native = (NativeBox<long>)answered;
+
+        Assert.IsTrue(native.AliasesAnOrderToken,
+            "the operator resolved the number to a LIVE box's order token and recorded that verdict in the box it answered with");
+
+        // The WRITE half, through the slot: reflect's `setField` assigns, and an assignment to a
+        // reference-bearing pointee's field is exactly what routes through a ref-returning slot.
+        PanicException onSlotWrite = Assert.ThrowsException<PanicException>(
+            () => answered.ValueSlot = 7L,
+            "a WRITE through the SLOT must take the refusal too -- it is the accessor with no nil check, not a laxer accessor");
+
+        StringAssert.Contains(onSlotWrite.Message, "no address",
+            "and it must be the SAME refusal, saying what it refused");
+
+        StringAssert.Contains(onSlotWrite.Message, "arm 2a",
+            "and naming the same arm -- one fault with two doors, not two faults");
+
+        // The READ half, which is lethal for the read's own reason: it materializes a T out of the
+        // token's bytes.
+        PanicException onSlotRead = Assert.ThrowsException<PanicException>(
+            () => _ = answered.ValueSlot,
+            "and a READ of the slot is refused for the read half's own reason");
+
+        StringAssert.Contains(onSlotRead.Message, "arm 2a", "the same arm once more");
+
+        GC.KeepAlive(box);
+    }
+
+    [TestMethod]
     public void ARITHMETICOnTheSameTokenStillTakesTheArithmeticRefusal_TheNewArmDoesNotDisplaceArm3()
     {
         // Control 1: offset != 0 on the very same fixture. The resolve MISSES (the number is not the
@@ -152,6 +208,13 @@ public class OrderTokenOffsetZeroRefusalTests
         ж<nuint> derived = (ж<nuint>)(uintptr)address;
 
         Assert.IsTrue(derived.IsNative, "a real address still answers with a native box");
+
+        // AND THE NEGATIVE OF THE NEW ARM, asserted on the FLAG and not only on the read below.
+        // The flag is what would refuse this box, so a refusal drawn too wide shows up HERE first
+        // -- and it shows up as a classification, before any dereference, which is the one form
+        // this control can take that does not depend on the read succeeding.
+        Assert.IsFalse(((NativeBox<nuint>)derived).AliasesAnOrderToken,
+            "a real pinned address is NOT an order token, and the box that carries it must not say it is");
 
         // Read THROUGH it, because the whole claim is that this address is real: the first field of
         // the pinned storage is what a `*nuint` at offset 0 names.
