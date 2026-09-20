@@ -106,6 +106,61 @@ anchor_arm 0  "nothing landed since the anchor -> ADVANCE" "aaaaaaa" "aaaaaaa"
 anchor_arm 20 "entries landed since the anchor -> HOLD"    "aaaaaaa" "bbbbbbb"
 anchor_arm 0  "no prior anchor -> ADVANCE"                 ""        "bbbbbbb"
 
+echo "== FAIL-CLOSED: a check whose SUBJECT is missing must refuse, not pass =="
+# ⚠ i9's near-miss (mailbox f80a0436a §1) stated the rule these arms exist for: A COUNT TAKEN FROM A
+# FAILED COMMAND IS NOT A MEASUREMENT. Their zero-deletions gate read `0` from a diff that had died
+# with `fatal: bad object`, over an index holding one entry, one command from a 14,209-file deletion.
+#
+# The same shape ran quietly here in the other direction: the duplicate-heading check greps the
+# mailbox FILE, so an absent or truncated file finds nothing, reads as "no duplicate" and APPENDS.
+# It failed OPEN, which is the direction that costs something.
+#
+# These arms run against a THROWAWAY LOCAL REMOTE — the other half of COORD's post-tool doctrine
+# (a door, or a throwaway clone; never the live ref) — so the fetch and fast-forward genuinely
+# succeed and the FLOOR is the only thing under test. One axis.
+FC="$(mktemp -d)"
+git init -q --bare "$FC/bare"
+git init -q "$FC/clone"
+(
+    cd "$FC/clone" || exit 1
+    git remote add origin "$FC/bare"
+    git checkout -qb claude/mailbox
+    mkdir -p docs/phase4
+    printf '## a\n\nbody\n' > docs/phase4/MAILBOX.md
+    git add -A && git -c user.email=a@b -c user.name=t commit -qm seed && git push -q origin claude/mailbox
+) >/dev/null 2>&1
+
+mkdir -p "$FC/state"
+printf '## 2026-09-20 — R: an arm for the fail-closed refusals\n\nbody\n' > "$FC/entry.md"
+echo "subject for the arm" > "$FC/subj.txt"
+
+fc_arm() {
+    local want="$1" label="$2" rc
+    R_MAILBOX_CLONE="$FC/clone" R_POST_STATE="$FC/state" "$TOOL" "$FC/entry.md" "$FC/subj.txt" "${3:-}" >/dev/null 2>&1
+    rc=$?
+
+    if [ "$rc" -eq "$want" ]; then
+        printf '  OK    %-46s rc=%s\n' "$label" "$rc"
+        pass=$((pass + 1))
+    else
+        printf '  FAIL  %-46s rc=%s want=%s\n' "$label" "$rc" "$want"
+        fail=$((fail + 1))
+    fi
+}
+
+fc_arm 15 "a 3-line mailbox file -> REFUSE the read"
+
+# CONTROL: the same clone past the floor. Without it, "it refused" could mean the tool refuses
+# everything on a scratch clone, which would make the arm above worth nothing.
+(
+    cd "$FC/clone" || exit 1
+    { printf '## a\n\nbody\n'; i=1; while [ "$i" -le 1100 ]; do echo "filler $i"; i=$((i + 1)); done; } > docs/phase4/MAILBOX.md
+    git add -A && git -c user.email=a@b -c user.name=t commit -qm pad && git push -q origin claude/mailbox
+) >/dev/null 2>&1
+
+fc_arm 0 "the same clone past the floor -> pass (dry run)" --dry-run
+
+rm -rf "$FC"
 rm -rf "$DIR"
 echo
 echo "arms: $pass passed, $fail failed"

@@ -168,12 +168,31 @@ census "$ENTRY"; CRC=$?
 # --- step 2: the clone
 cd "$CLONE" || { echo "REFUSED: cannot cd to mailbox clone"; rm -f "$TOKENS"; exit 2; }
 [ -z "$(git status --porcelain)" ] || { echo "REFUSED(7): mailbox checkout is dirty before append"; git status --porcelain; rm -f "$TOKENS"; exit 7; }
-git fetch origin "$BRANCH" >/dev/null 2>&1
-git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1
+# ⚠⚠ THE FETCH AND THE MERGE ARE GATED ON THEIR OWN EXIT STATUS, and the file the next two checks
+# READ is asserted real before either verdict is believed. i9's near-miss (mailbox f80a0436a §1) is
+# the reason and it was one command from a 14,209-file deletion: a fetch failed with
+# `invalid index-pack output`, the read-tree after it left an index holding ONE entry, `write-tree`
+# happily serialised that into a well-formed tree, and the zero-deletions gate read `0` from a diff
+# that had itself died with `fatal: bad object`. **A count taken from a failed command is not a
+# measurement.** What caught it was the fatal lines sitting on screen beside the zero, not the gate.
+#
+# Here the same shape runs the other way and is quieter: both commands below had their output
+# discarded and their status unchecked, so a failed fetch or a refused fast-forward left a STALE
+# working tree — and the duplicate-heading check that follows reads that tree. A miss there does not
+# refuse; it APPENDS A DUPLICATE. The check fails OPEN, which is the direction that costs something.
+if ! git fetch origin "$BRANCH" >/dev/null 2>&1; then
+  echo "REFUSED(15): fetch of origin/$BRANCH failed -- every check below reads a stale tree"; rm -f "$TOKENS"; exit 15; fi
+if ! git merge --ff-only "origin/$BRANCH" >/dev/null 2>&1; then
+  echo "REFUSED(15): fast-forward to origin/$BRANCH failed -- the checkout is not at the tip"; rm -f "$TOKENS"; exit 15; fi
 PRE_TIP="$(git rev-parse HEAD)"
 PREV_ANCHOR="$(cat "$ANCHOR" 2>/dev/null || true)"
 if [ -n "$PREV_ANCHOR" ] && ! git merge-base --is-ancestor "$PREV_ANCHOR" HEAD; then
   echo "REFUSED(8): HISTORY REWRITTEN -- anchor $PREV_ANCHOR is NOT an ancestor of tip $PRE_TIP"; rm -f "$TOKENS"; exit 8; fi
+# The SUBJECT of the duplicate check, asserted before its verdict is read: an absent or truncated
+# mailbox file makes `grep -Fqx` find nothing, which reads as "no duplicate" and appends.
+MAILBOX_LINES="$(wc -l < "$FILE" 2>/dev/null || echo 0)"
+if [ "$MAILBOX_LINES" -lt 1000 ]; then
+  echo "REFUSED(15): $FILE holds $MAILBOX_LINES lines -- the duplicate check would read nothing and pass"; rm -f "$TOKENS"; exit 15; fi
 if grep -Fqx "$HEADING" "$FILE"; then
   echo "REFUSED(5): that exact heading is already in the file at origin"; rm -f "$TOKENS"; exit 5; fi
 
