@@ -63,7 +63,39 @@ param(
     # before). -1 means "use the plan's". It is NOT a way to skip the discipline: 0 is accepted and
     # LOGGED AS A DEPARTURE on every slice boundary, so a run without gaps cannot be quietly mistaken
     # for a run with them.
-    [int] $CooldownSecondsOverride = -1
+    [int] $CooldownSecondsOverride = -1,
+
+    # ---------------------------------------------------------------------------------------------
+    # ⚠⚠ THE MODE. `sweep` is what this script has always done and stays the DEFAULT, so every
+    # existing invocation is unchanged; `rebank` is the H10 re-bank act.
+    #
+    # THEY ARE NOT INTERCHANGEABLE AND THE RUNBOOK SAYS SO. H10 forbids the sweep wrapper for a
+    # re-bank in its own words -- it is "the steady-state gate, enforcing the exact banked count and a
+    # drift-clean corpus -- both of which this step invalidates BY DESIGN" -- and the sweep "selects
+    # among BANKED rows", so it cannot reach the relocation successors or the unbanked candidates at
+    # all. A driver that dispatched the sweep for a re-bank would run, report, and re-bank nothing.
+    #
+    # ONE SCRIPT, TWO MODES, NOT TWO SCRIPTS (COORD's ruling): the plan reader, the digest gate, the
+    # mandatory-parameter refusals, the slice packing and the cooldown are the SAME in both, and they
+    # are the half of this file that took the measurements to get right.
+    [ValidateSet('sweep', 'rebank')][string] $Mode = 'sweep',
+
+    # ⚠ THE WRAPPER IS TAKEN BY BLOB, NOT BY PATH-IN-A-TREE (the brief's B.8): the caller
+    # materialises `src/run-h10-recon.ps1` from a named ref into scratch and passes it here, and this
+    # script states its sha256 so the ACK can carry it. The wrapper is NOT on master -- it lives on
+    # its own lane ref -- so a driver that looked for it beside itself would find nothing.
+    [string] $RebankWrapper,
+
+    # The wrapper's own mandatory inputs, passed straight through. They are NOT defaulted here: a
+    # guessed tree or a guessed GOROOT is the silent-wrong-thing failure this file exists to refuse.
+    [string] $Tree,
+    [string] $GoRoot,
+    [string] $Scratch,
+    [string] $ExpectTip,
+
+    # ⚠ THE RESUME LEDGER, append-only and idempotent (ruling (10)). A worker that dies mid-shard
+    # re-runs this script; rows already recorded for THIS tree state are skipped rather than re-banked.
+    [string] $Ledger
 )
 
 Set-StrictMode -Version Latest
@@ -81,8 +113,71 @@ if (-not $SweepScript) {
 }
 
 if (-not (Test-Path -LiteralPath $Plan)) { Deny "no plan at '$Plan'" }
-if (-not (Test-Path -LiteralPath $SweepScript)) {
-    Deny "no sweep script at '$SweepScript' -- pass -SweepScript, or run this from a tree that has one"
+
+# ⚠⚠ THE EXECUTOR IS RESOLVED WHERE IT IS USED, NOT AT THE TOP. Measured 2026-09-20: a
+# `-DryRun` on a box with no tree checked out REFUSED for want of a sweep script it never invokes --
+# the loop `continue`s before the call. The arm whose whole purpose is to validate the plan reading,
+# the digest and the packing WITHOUT executing anything could not run at all. The refusal was not
+# wrong, it was in the wrong place.
+# In `rebank` the sweep script is not used at ALL, so requiring it there would be the same mistake
+# with a second cause.
+if (-not $DryRun -and $Mode -eq 'sweep') {
+    if (-not (Test-Path -LiteralPath $SweepScript)) {
+        Deny "no sweep script at '$SweepScript' -- pass -SweepScript, or run this from a tree that has one"
+    }
+}
+
+# ---------------------------------------------------------------- the rebank mode's own inputs
+# Each of these refuses BY NAME. A mode that half-configures itself and then fails inside a row is
+# the failure this whole file is written against.
+if ($Mode -eq 'rebank') {
+    if (-not $RebankWrapper) { Deny "-Mode rebank needs -RebankWrapper: the recon wrapper materialised BY BLOB from its lane ref (the brief's B.8). It is not on master and this script does not look for it beside itself." }
+    if (-not (Test-Path -LiteralPath $RebankWrapper)) { Deny "no rebank wrapper at '$RebankWrapper'" }
+    foreach ($pair in @(@('-Tree', $Tree), @('-GoRoot', $GoRoot), @('-Scratch', $Scratch), @('-ExpectTip', $ExpectTip))) {
+        if (-not $pair[1]) { Deny "-Mode rebank needs $($pair[0]) -- it is passed straight through to the wrapper, and a guessed one is the silent-wrong-tree failure this driver refuses" }
+    }
+
+    # ⚠⚠ THE TREE GUARD IS THE INVERSE OF THE RECON WRAPPER'S, AND THAT IS THE POINT.
+    # A recon tree is DETACHED and thrown away. The driver's tree is a LINKED worktree ON A BRANCH
+    # (the brief's B.4 / OQ4) because its artifacts are BANKED and committed from it. The wrapper
+    # refuses a branch by default and takes -AllowBranch from here; this end asserts the same fact
+    # from the other side, so neither script is trusting the other to have checked.
+    # ⚠⚠ GIT'S STDERR IS A TERMINATING ERROR UNDER `Stop`, so these run through a helper that
+    # captures the exit code instead of dying on the message. MEASURED on the first cut of this
+    # guard: `-Tree x` produced `fatal: cannot change to 'x'` and a NativeCommandError, rc 1, with NO
+    # refusal line -- the guard threw four lines before the Deny that would have named the cause.
+    # The recon wrapper states the rule and carries the same helper: a guard that DIES is not a guard
+    # that REFUSED, and the difference is invisible to anything reading only the exit code.
+    function GitQuiet([string[]] $gitArgs) {
+        $prev = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            # ⚠ Out-String, NOT a [string] cast: an empty pipeline casts to something whose .Trim()
+            # throws InvokeMethodOnNull, which is how the first cut of this helper DIED on a bad tree
+            # instead of refusing. This is the recon wrapper's GitTry body verbatim.
+            $o = & git @gitArgs 2>$null
+            $code = $LASTEXITCODE
+            return [pscustomobject]@{ Code = $code; Out = (($o | Out-String).Trim()) }
+        } finally { $ErrorActionPreference = $prev }
+    }
+
+    if (-not $DryRun) {
+        $gd  = GitQuiet @('-C', $Tree, 'rev-parse', '--git-dir')
+        $gcd = GitQuiet @('-C', $Tree, 'rev-parse', '--git-common-dir')
+        if ($gd.Code -ne 0 -or $gcd.Code -ne 0 -or -not $gd.Out -or -not $gcd.Out) {
+            Deny "'$Tree' is not a git work tree"
+        }
+        if ($gd.Out -eq $gcd.Out) {
+            Deny "'$Tree' is a MAIN checkout (--git-dir == --git-common-dir), not a linked worktree -- floor 11 is one worktree per shard"
+        }
+        # ⚠ THE SUCCESS CASE HERE IS git SUCCEEDING: a detached HEAD makes `symbolic-ref -q` exit
+        # non-zero with no output, which is the RECON leg's shape and the driver's refusal.
+        $sym = GitQuiet @('-C', $Tree, 'symbolic-ref', '-q', 'HEAD')
+        if ($sym.Code -ne 0 -or -not $sym.Out) {
+            Deny "'$Tree' HEAD is DETACHED -- the driver BANKS, so its tree is on a branch (brief B.4). A detached tree is the RECON leg's shape."
+        }
+        Write-Host "  tree            : $Tree on $($sym.Out) (linked worktree, banking)"
+    }
 }
 if ($FleetSize -lt 1) { Deny "-FleetSize must be 1 or more (got $FleetSize)" }
 if ($OnlySlice -lt 0) { Deny "-OnlySlice must be 0 (all slices) or a slice number (got $OnlySlice)" }
@@ -239,9 +334,69 @@ Write-Host ("  $plannedCount row(s) over $($sliceNumbers.Count) slice(s) [$($sli
             "$plannedCost i9-s of measured cost, $gapCount cooldown gap(s) = " +
             "$([math]::Round(($plannedCost + $gapCount * $cooldownSeconds) / 60.0, 1)) min including gaps")
 
+# ---------------------------------------------------------------- the rebank preamble
+# Everything here is computed ONCE per run, not per row: the wrapper's identity for the ACK, the
+# tree state the ledger keys on, and the ledger's own already-done set.
+$rebankSha = ''
+$corpusCommit = ''
+$converterStamp = ''
+$ledgerDone = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+
+if ($Mode -eq 'rebank' -and -not $DryRun) {
+    # ⚠ THE WRAPPER'S sha256 IS STATED, because the brief's B.8 says the ACK carries it and because
+    # "the wrapper" is not a stable name -- it is whatever blob the caller materialised.
+    $rebankSha = (Get-FileHash -LiteralPath $RebankWrapper -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-Host "  wrapper         : $RebankWrapper"
+    Write-Host "  wrapper sha256  : $rebankSha"
+
+    $hc = GitQuiet @('-C', $Tree, 'rev-parse', 'HEAD')
+    if ($hc.Code -ne 0 -or -not $hc.Out) { Deny "could not read HEAD in '$Tree'" }
+    $corpusCommit = $hc.Out
+    if ($corpusCommit -ne $ExpectTip) {
+        Deny "'$Tree' is at $corpusCommit, not the -ExpectTip $ExpectTip -- a shard's rows are comparable only across one tree"
+    }
+
+    # ⚠⚠ THE CONVERTER IS PART OF THE LEDGER KEY, and its MTIME is the honest predicate.
+    # A row banked by one converter is not the same act as the same row banked by another, so a
+    # resume that skipped rows across a rebuild would be claiming work it did not do. mtime means
+    # "was this written" for a build output, which is the question here.
+    $conv = $null
+    foreach ($c in @((Join-Path $Tree 'src/go2cs/go2cs.exe'), (Join-Path $Tree 'src/go2cs/go2cs'))) {
+        if (Test-Path -LiteralPath $c) { $conv = Get-Item -LiteralPath $c; break }
+    }
+    if (-not $conv) { Deny "no converter binary under '$Tree/src/go2cs' -- build it at this tree before dispatching" }
+    $converterStamp = "$($conv.LastWriteTimeUtc.ToString('o'))/$($conv.Length)"
+    Write-Host "  converter       : $($conv.FullName) ($($conv.Length) bytes, $($conv.LastWriteTimeUtc.ToString('o')))"
+
+    # ⚠ THE LEDGER IS APPEND-ONLY AND IDEMPOTENT (ruling (10)). A worker that dies mid-shard
+    # re-runs this script; a row already recorded UNDER THIS EXACT TREE STATE is skipped rather than
+    # re-banked. The key carries the corpus commit AND the converter stamp precisely so a resume
+    # after a rebuild or a tip move re-runs everything instead of silently trusting a stale row.
+    if ($Ledger) {
+        if (Test-Path -LiteralPath $Ledger) {
+            foreach ($line in [System.IO.File]::ReadAllLines($Ledger)) {
+                if (-not $line -or $line.StartsWith('#')) { continue }
+                $f = $line -split "`t"
+                if ($f.Count -ge 4) { $null = $ledgerDone.Add(($f[1] + '|' + $f[2] + '|' + $f[3])) }
+            }
+            Write-Host "  ledger          : $Ledger ($($ledgerDone.Count) row(s) already recorded for some tree state)"
+        } else {
+            [System.IO.File]::WriteAllText($Ledger, "# h10 rebank ledger -- APPEND ONLY. utc`trow`tcorpus_commit`tconverter_stamp`tword`tbanked`n")
+            Write-Host "  ledger          : $Ledger (created)"
+        }
+    }
+}
+
 # ---------------------------------------------------------------- run
 $timings = New-Object System.Collections.Generic.List[string]
-$timings.Add("w`tworker`tslice`tseq`tpackage`tcost_i9_s`treserved`twall_s`texit")
+# ⚠ TWO HEADERS, BY MODE, and each is read BY NAME downstream rather than by position.
+# The rebank header is the recon leg's eleven columns (the floor) plus the four the dispatcher knows
+# and the two the ruling adds -- `banked` and `manifest_pins`.
+if ($Mode -eq 'rebank') {
+    $timings.Add("w`tworker`tslice`tseq`trow`tword`tverdicts`tsweep_s`tfirst_in_list`trc`tdiverged`tplatform`ttree`twall_s`tpost_s`tbanked`tmanifest_pins`tcost_i9_s`treserved")
+} else {
+    $timings.Add("w`tworker`tslice`tseq`tpackage`tcost_i9_s`treserved`twall_s`texit")
+}
 $failures = New-Object System.Collections.Generic.List[string]
 $rowsRun = 0
 $sliceOrdinal = 0
@@ -261,24 +416,116 @@ foreach ($sliceNumber in $sliceNumbers) {
         Write-Host ("  -> {0,-40} {1,6} i9-s{2}" -f $row.Package, $row.Cost, $marker)
 
         if ($DryRun) {
-            $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`t$($row.Cost)`t$(if ($row.Reserved) { 1 } else { 0 })`t`tDRYRUN")
+            # ⚠ THE DRY ROW MUST CARRY THE SAME COLUMN COUNT AS ITS HEADER. A short row under a
+            # wide header is read BY NAME downstream and silently yields empty fields, which is the
+            # empty-column class this fleet has banked twice.
+            if ($Mode -eq 'rebank') {
+                $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`tDRYRUN`t`t`t`t`t`t`t`t`t`t`t`t$($row.Cost)`t$(if ($row.Reserved) { 1 } else { 0 })")
+            } else {
+                $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`t$($row.Cost)`t$(if ($row.Reserved) { 1 } else { 0 })`t`tDRYRUN")
+            }
             continue
         }
 
-        $started = Get-Date
-        # -Filter <pkg> -Exact is the sweep's own documented per-package campaign interface: exact path
-        # match, because substring 'io' sweeps bufio and io/fs alongside io and a per-row driver would
-        # re-sweep large rows repeatedly.
-        & $SweepScript -Filter $row.Package -Exact -SkipBuild:($rowsRun -gt 0)
-        # CAPTURED IMMEDIATELY, before anything touches $? or a pipe. Floor 7, and the reason
-        # safe-push.sh exists.
-        $rowExit = $LASTEXITCODE
-        $wall = [int] ((Get-Date) - $started).TotalSeconds
-        $rowsRun++
-
         $reservedFlag = 0
         if ($row.Reserved) { $reservedFlag = 1 }
-        $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`t$($row.Cost)`t$reservedFlag`t$wall`t$rowExit")
+        $safe = ($row.Package -replace '[\\/]', '__')
+
+        if ($Mode -eq 'rebank') {
+            # ⚠⚠ THE LEDGER SKIP IS KEYED ON THE TREE STATE, NOT ON THE ROW NAME.
+            # "This row is done" is only true of the corpus commit and the converter that did it, so
+            # a resume after a rebuild or a tip move re-runs rather than trusting a stale record.
+            $ledgerKey = "$($row.Package)|$corpusCommit|$converterStamp"
+            if ($Ledger -and $ledgerDone.Contains($ledgerKey)) {
+                Write-Host "     already recorded for this tree state -- SKIPPED (resume)" -ForegroundColor DarkGray
+                $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`tRESUMED`t`t`t`t`t`t`t`t`t`t`t`t$($row.Cost)`t$reservedFlag")
+                continue
+            }
+
+            $rowList = Join-Path $Scratch "rebank-$safe.namelist"
+            $rowOut  = Join-Path $Scratch "rebank-$safe.tsv"
+            # LF, and one row: the wrapper reads a name list, and this driver's unit of dispatch is
+            # a package (a row is INDIVISIBLE, as this file's own header says).
+            [System.IO.File]::WriteAllText($rowList, $row.Package + "`n")
+
+            $started = Get-Date
+            # ⚠ ONE IMPLEMENTATION OF THE PIPELINE, INVOKED -- not a copy. The wrapper carries the
+            # go2cs invocation, the word classifier, the ordinal readers, the staleness gate and the
+            # evidence capture; a second spelling of those 507 lines here would drift from it.
+            # -AllowBranch: the driver's tree is a BANKING tree and the wrapper refuses a branch by
+            # default. Both ends assert that fact rather than trusting the other to have checked.
+            & $RebankWrapper -NameList $rowList -Tree $Tree -GoRoot $GoRoot -Out $rowOut `
+                             -ExpectTip $ExpectTip -Scratch $Scratch -AllowBranch
+            # CAPTURED IMMEDIATELY, before anything touches $? or a pipe. Floor 7.
+            $rowExit = $LASTEXITCODE
+            $wall = [int] ((Get-Date) - $started).TotalSeconds
+            $rowsRun++
+
+            # ⚠ THE WRAPPER'S OWN ROW IS READ BY NAME, NEVER BY POSITION -- the ruled rule for this
+            # TSV, and the reason the eleven columns are a floor rather than a layout.
+            $w = @{}
+            if (Test-Path -LiteralPath $rowOut) {
+                $wl = @([System.IO.File]::ReadAllLines($rowOut) | Where-Object { $_ })
+                if ($wl.Count -ge 2) {
+                    $wh = $wl[0] -split "`t"
+                    $wv = $wl[1] -split "`t"
+                    for ($k = 0; $k -lt $wh.Count; $k++) {
+                        if ($k -lt $wv.Count) { $w[$wh[$k]] = $wv[$k] } else { $w[$wh[$k]] = '' }
+                    }
+                }
+            }
+            # ⚠ A MISSING EMISSION IS ITS OWN WORD, not a blank row. The wrapper writes LF-only and
+            # refuses on CR; if nothing arrived, the driver says so rather than banking empty fields.
+            $word = 'NOEMIT'
+            if ($w.ContainsKey('word') -and $w['word']) { $word = $w['word'] }
+
+            # ⚠ `banked` IS DERIVED FROM THE WORD AND SAYS ONLY WHAT THIS DRIVER CAN KNOW.
+            # PASS and DIVERGED are the two words a row reaches by producing a comparison, which is
+            # the act that writes the five artifacts. Every other word means no artifacts to bank.
+            # `debt` is NOT derived here: a row whose artifacts exist but whose format gate refuses is
+            # a classification made at BANKING, by the gate, not by the dispatcher -- and deriving it
+            # from a word this script never checks would be a guess wearing a column.
+            $banked = 'no'
+            if ($word -eq 'PASS' -or $word -eq 'DIVERGED') { $banked = 'yes' }
+
+            # ⚠ THE PIN COUNT IS READ FROM THE MANIFEST THE ROW JUST RE-SIGNED, not from the word.
+            # An absent manifest is 0 and an unreadable one is `n/a` -- never 0, because "no pins" and
+            # "could not tell" are different facts and a 0 for the second is the empty-counter class.
+            $pins = '0'
+            $manifest = Join-Path $Tree "src/core/$($row.Package)/go2cs_test_disclosures.json"
+            if (Test-Path -LiteralPath $manifest) {
+                try {
+                    $mj = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+                    if ($mj.PSObject.Properties.Name -contains 'disclosures') { $pins = [string] @($mj.disclosures).Count }
+                    else { $pins = 'n/a' }
+                } catch { $pins = 'n/a' }
+            }
+
+            $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`t$word`t$($w['verdicts'])`t$($w['sweep_s'])`t$($w['first_in_list'])`t$($w['rc'])`t$($w['diverged'])`t$($w['platform'])`t$($w['tree'])`t$wall`t$($w['post_s'])`t$banked`t$pins`t$($row.Cost)`t$reservedFlag")
+
+            if ($Ledger) {
+                # APPEND ONLY. The ledger is a record of what was done, so it is never rewritten and
+                # never pruned by this script.
+                $stamp = (Get-Date).ToUniversalTime().ToString('o')
+                [System.IO.File]::AppendAllText($Ledger, "$stamp`t$($row.Package)`t$corpusCommit`t$converterStamp`t$word`t$banked`n")
+            }
+            Write-Host ("     {0}  verdicts={1}  banked={2}  pins={3}  {4}s  rc={5}" -f `
+                $word, $(if ($w['verdicts']) { $w['verdicts'] } else { '-' }), $banked, $pins, $wall, $rowExit)
+        }
+        else {
+            $started = Get-Date
+            # -Filter <pkg> -Exact is the sweep's own documented per-package campaign interface: exact path
+            # match, because substring 'io' sweeps bufio and io/fs alongside io and a per-row driver would
+            # re-sweep large rows repeatedly.
+            & $SweepScript -Filter $row.Package -Exact -SkipBuild:($rowsRun -gt 0)
+            # CAPTURED IMMEDIATELY, before anything touches $? or a pipe. Floor 7, and the reason
+            # safe-push.sh exists.
+            $rowExit = $LASTEXITCODE
+            $wall = [int] ((Get-Date) - $started).TotalSeconds
+            $rowsRun++
+
+            $timings.Add("$($row.W)`t$($row.Worker)`t$($row.Slice)`t$($row.Seq)`t$($row.Package)`t$($row.Cost)`t$reservedFlag`t$wall`t$rowExit")
+        }
 
         if ($rowExit -ne 0) {
             $failures.Add("$($row.Package) (slice $($row.Slice), exit $rowExit)")
