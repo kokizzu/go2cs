@@ -5283,15 +5283,24 @@ func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
 		t.Error("a scratch output root must still be refused")
 	}
 
-	// The documented census override is unchanged AND still wins over the new mode: it is checked
-	// first, so every behavior -test-allow-handown had before this change it still has, including
-	// the destructive one whose measurement produced the guard.
+	// RE-RULED 2026-09-20: the flag at the counterpart's OWN directory takes the HOST path. What this
+	// arm pinned before — the flag checked first, so production converted straight over a hand-own —
+	// is retired, and it is retired because it was measured that day on the H10 recon leg: a runner
+	// passed the flag for `testing` with the output path set to src/core/testing and the pipeline
+	// wrote 19 auto files over the 10 marker-bearing ones, CS0111 duplicates that failed every later
+	// row in that tree to build.
+	//
+	// The SCRATCH-root census the flag's -help text documents is NOT what changed and is not pinned
+	// here: it is the flag arm in TestConvertTestsRefusesHandOwnedAndToolchainPackages, whose output
+	// path holds no counterpart at all, so handOwnHostTestTarget's csproj clause cannot open there
+	// and the flag still yields the full production conversion. That arm and NEGATIVE 4 above are the
+	// two readings that would catch this reorder if it reached the scratch shape.
 	kind, err = requireConvertibleTestTarget(pkgDir, handOwn, Options{goRoot: goRoot, testAllowHandOwn: true})
 	if err != nil {
-		t.Fatalf("-test-allow-handown must still permit the deliberate census run, got %v", err)
+		t.Fatalf("-test-allow-handown at a hand-owned counterpart's own directory must be admitted, got %v", err)
 	}
-	if kind != testTargetConvertible {
-		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
+	if kind != testTargetHandOwnHost {
+		t.Errorf("kind under -test-allow-handown at the counterpart's own directory = %v, want testTargetHandOwnHost (the host path wins; production is never emitted over a hand-own)", kind)
 	}
 }
 

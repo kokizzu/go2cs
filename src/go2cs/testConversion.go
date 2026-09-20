@@ -149,16 +149,29 @@ func requireConvertibleTestTarget(inputPath, outputPath string, options Options)
 		return testTargetConvertible, nil
 	}
 
-	// The sanctioned census, unchanged: -test-allow-handown means "show me what the conversion
-	// WOULD produce", and it produces it — production sources and all — wherever it is pointed.
-	// It is checked BEFORE the host mode deliberately, so every behavior this flag had on
-	// 2026-09-03 it still has, including the destructive one the train-18 control measures.
-	if options.testAllowHandOwn {
-		return testTargetConvertible, nil
-	}
-
+	// ORDER, and it is the whole point: the hand-own HOST path is consulted FIRST, and
+	// -test-allow-handown only after it. Measured 2026-09-20 on the H10 recon leg — a runner passed
+	// the flag for `testing` with the output path set to the hand-owned counterpart's OWN directory
+	// (src/core/testing), the flag short-circuited the host path, and the pipeline wrote 19 auto
+	// files over the 10 marker-bearing ones, producing CS0111 duplicates that failed every later row
+	// in that tree to build.
+	//
+	// The flag's CENSUS meaning on a scratch root is unchanged BY CONSTRUCTION rather than by care:
+	// handOwnHostTestTarget's first clause wants a *.csproj at the output path and a scratch root has
+	// none, so the host path cannot open there and the flag still yields the full production
+	// conversion the 2026-09-03 census measured — which is the only place the flag's own -help text
+	// ever told the caller to point it. What this order retires is exactly the case that text warns
+	// against: when the output path IS the counterpart's directory, the host path wins, the run
+	// converts TESTS ONLY, and no production file is emitted over a hand-own.
 	if handOwnHostTestTarget(inputPath, outputPath) {
 		return testTargetHandOwnHost, nil
+	}
+
+	// The sanctioned census: -test-allow-handown means "show me what the conversion WOULD produce",
+	// and it produces it — production sources and all — wherever it is pointed, now that "wherever"
+	// can no longer be a hand-owned counterpart's own directory.
+	if options.testAllowHandOwn {
+		return testTargetConvertible, nil
 	}
 
 	reason := fmt.Sprintf("%q is deliberately kept out of the conversion queue", importPath)
