@@ -14,6 +14,16 @@ set -u
 # from, which is exactly how it runs today: the working copy lives in the scratchpad and this
 # readable twin lives in the tree.
 SP="${C2_SCRATCH:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
+# ⚠ THE STATE DIR MUST NOT BE INSIDE A REPOSITORY WORK TREE. This tool writes the mailbox
+# CLONE, the shared-census materialisation and the READ ANCHOR into SP -- and since the ruling
+# at 7bf197e27 a published copy of this file lives inside the repo, so the dirname default
+# would put all three into the tree if anyone ran that copy from its repo path. R found this on
+# its own tool first (mailbox e82b16d6d) and it was latent here identically. Refuse rather than
+# write: a composition that cannot find its state correctly REFUSES.
+if git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "REFUSED: state dir '$SP' is inside a git work tree -- set C2_SCRATCH to the lane scratchpad" >&2
+  exit 2
+fi
 CLONE="$SP/mbox"
 # REPO is the clone the SHARED census is materialised FROM (origin/master at call time, never
 # a working tree). Derived from the current working tree; falls back to the mailbox clone,
