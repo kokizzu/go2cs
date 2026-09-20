@@ -115,7 +115,15 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
     # against master's blob before executing it (`d321609fa`) and refuses a truncated, an arm-less
     # and a lying census alike. This tool materialises from `origin/master`, so the same predicate is
     # available to it cheaply. Floors are what was ruled here (COORD `11afb1094`, C2's numbers at
-    # `f4b736452f`); the byte predicate is reported, not taken unilaterally.
+    # `f4b736452f`).
+    #
+    # ⚠ THE BYTE PREDICATE IS NOW TAKEN -- COORD `7c3612fb5`, amending `ebd466e89` on C1's red at
+    # `d7f8f842a`. It is added BELOW rather than replacing these floors: a floor refuses earlier and
+    # says WHICH file was short and by how much, which is the more useful message in the common case;
+    # the hash refuses the cases no floor can see. The red that moved the ruling: the patterns file
+    # truncated to 150 of 167 lines passes `-s`, passes its 100-line floor, leaves the census RUNNING
+    # and reporting CLEAN on TEN of twenty-one arms -- and the self-test figure is UNCHANGED at 116,
+    # because that figure is pass+fail (79+37) and the 37 failures were read by nothing.
     #   census 1000 of 1415   patterns 100 of 166 (the tightest, 1.66x)   hashes 10 of 34
     case "$f" in
         coord-identifier-census.sh)    _floor=1000 ;;
@@ -136,6 +144,15 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
     [ -s "$CENSUS_DIR/$f.tmp" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised EMPTY"; exit 2; }
     _n="$(wc -l < "$CENSUS_DIR/$f.tmp")"
     [ "$_n" -ge "$_floor" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised at only $_n line(s), floor $_floor -- a short file is a QUIETER census, not a failed one"; exit 2; }
+    # ⚠ THE CONTENT HASH, against the blob this file was materialised FROM. `git show` can succeed
+    # and still write something that is not the blob -- a partial read, a mangled path on a shell that
+    # rewrites arguments, a cache another process touched between the write and here. Comparing the
+    # id is exact, costs one plumbing call, and needs no knowledge of what the file should contain.
+    # BEFORE the mv, so a mismatched file never enters the cache and the previous good copy stands.
+    _want="$(git -C "$CENSUS_CLONE" rev-parse "origin/master:.claude/coord-scripts/$f" 2>/dev/null)"
+    [ -n "$_want" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: cannot read origin/master's blob id for $f"; exit 2; }
+    _got="$(git hash-object "$CENSUS_DIR/$f.tmp" 2>/dev/null)"
+    [ "$_want" = "$_got" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f does NOT match origin/master -- blob $_want, materialised $_got"; exit 2; }
     mv -f "$CENSUS_DIR/$f.tmp" "$CENSUS_DIR/$f"
 done
 # A truncated blob is the failure this assert exists for: a short census still RUNS and still exits
@@ -191,7 +208,21 @@ if [ "$IDC_USED" -lt "$IDC_BEST" ]; then
     echo "POST REFUSED: the certifying battery attempts $IDC_USED arm(s) from '$IDC_DIR', but this box produces $IDC_BEST from '$IDC_BEST_DIR' -- a weaker battery must never certify a post"
     exit 3
 fi
-echo "census battery: $IDC_USED arm(s) attempted, from '$IDC_DIR' (strongest of the directories this tool has)"
+# ⚠ THE SELF-TEST'S FAIL COUNT REFUSES, not only its attempted count -- COORD `7c3612fb5`, the second
+# half of the amended rule. `idc_arms` sums pass+fail ON PURPOSE (a pass-only count prefers the
+# WEAKER directory where an arm fails in one and is skipped in another), and that sum is exactly what
+# cannot notice a broken census: the red at `d7f8f842a` read `pass=79 fail=37` -- the SAME 116 the
+# healthy pair gives. A non-zero fail is the materialised tool saying it is broken, in its own words,
+# and until now nothing downstream consumed it. Read from the SAME directory that will certify.
+idc_fails() {  # the selftest's FAIL count for a directory, or -1 when it cannot be read there
+    [ -d "$1" ] || { echo -1; return; }
+    ( cd "$1" 2>/dev/null && "$CENSUS" selftest 2>/dev/null ) \
+        | sed -n 's/^SELF-TEST: pass=[0-9][0-9]* fail=\([0-9][0-9]*\).*/\1/p' | tail -1 \
+        | awk 'NF==1 { print $1; seen=1 } END { if (!seen) print -1 }'
+}
+IDC_FAILS="$(idc_fails "$IDC_DIR")"
+[ "$IDC_FAILS" = "0" ] || { echo "POST REFUSED: the certifying census self-test reports fail=$IDC_FAILS from '$IDC_DIR' (expected 0) -- a tool that says it is broken does not certify a post"; exit 3; }
+echo "census battery: $IDC_USED arm(s) attempted, fail=0, from '$IDC_DIR' (strongest of the directories this tool has)"
 # Every census arm goes through this, so all three answer with the SAME battery, by construction.
 census() { ( cd "$IDC_DIR" && "$CENSUS" "$@" ); }
 
