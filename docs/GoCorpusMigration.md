@@ -2602,6 +2602,163 @@ from either count.
      caught by the shape and not the rc). The seeded-root arm in -tests form: C2 5ceedaf88 §7(a),
      `sync` rc 1 bare / rc 0 seeded. The five-artifact bill: C1 436b48795 §6. -->
 
+#### Amendment 2026-09-20 (C1) — the RE-BANK, in stage: the driver, the shard, the per-row act, and how a row BANKS
+
+**This is the step's fourth act and the first three have landed.** The order this section already fixes
+— RECON LEG → ROSTER SEAT → PLAN → DRIVER — is complete through the plan, so what follows is the
+procedure for the act that re-banks a row, written in stage rather than recorded after it.
+
+⚠ **THE LANDED DISPATCH SCRIPT CANNOT PERFORM THIS STEP, and that is a measurement rather than a
+caution.** `src/run-h10-dispatch.ps1` dispatches the **sweep** per row. H10 forbids the sweep for a
+re-bank in this section's own words — it is the steady-state gate, enforcing the exact banked count and
+a drift-clean corpus, **both of which a re-bank invalidates by design** — and the sweep selects among
+BANKED rows, so it cannot reach the 23 candidates or the nine relocation successors **at all**. What is
+sound in that script is its plan reader, its digest gate, its mandatory-parameter refusals, its slice
+packing and its cooldown; what is wrong is only its per-row body.
+
+**THE DRIVER IS A MODE ON THE LANDED SCRIPT, NOT A SECOND SCRIPT.** `-Mode rebank` keeps the reader,
+the gate, the refusals, the packing and the cooldown, and replaces the per-row body with the recon
+wrapper's pipeline block; `-Mode sweep` keeps today's behaviour for the steady-state passes this
+section already assigns it. A second script would fork the plan reader and the digest gate, which are
+the two pieces no lane should hold twice.
+
+**THE PER-ROW ACT** is the recon wrapper's invocation, unchanged:
+
+```
+go2cs -tests -test-action all -test-config Release -test-timeout <floor> \
+      -go2cspath <tree>/src  <goroot>/src/<row>  <tree>/src/core/<row>
+```
+
+- ⚠ **The output directory is the SECOND positional** (floor 3), and it is the worktree whose
+  `src/core` **is the seed** — a hand-own-carrying row converts rc 1 bare and rc 0 seeded, measured in
+  `-tests` form.
+- **`-test-timeout` is DERIVED from the sweep's own long-timeout table, never copied** — a copied list
+  has drifted twice — with a relocated row's floor **fanned out to its successors**, and a derivation
+  reading fewer than five entries must refuse. Floors are floors: raise for a slower box, never lower.
+- **No `-tags`** (the corpus axis arrives by doing nothing, and a no-tags population describes a build
+  the hop will never perform); **no `-test-filter`** (a filtered run publishes no artifacts); **no
+  `-test-allow-handown`** — it short-circuits the host check and is what destroyed the `testing` row.
+- **Capture the exit code on the very next line**, before any pipe or command substitution (floor 7).
+  Keep `2>&1` — the classifier reads stderr to separate CONVERT from BUILD — lower the error preference
+  around that call alone, restore it in a `finally`, and reset the code per row.
+
+**THE WORDS are the fixed vocabulary, filled and never placeholdered**: `PASS` banks; `DIVERGED` mints
+or re-signs disclosures, then banks or routes; `CONVERT` and `BUILD` bank nothing and owe a sizing;
+`TIMEOUT` re-dispatches at a raised budget; `NOVERDICT` is recorded by cause. ⚠ **A long wall is not a
+TIMEOUT** — only the results-file tail says a deadline fired (floor 14) — and ⚠ **NOVERDICT banks no
+count**: it reads `NOMATCH`, never 0, with the cause written beside the row.
+
+**HOW A ROW BANKS.** Each worker cuts **one lane ref per shard** off the version tip, carrying that
+shard's artifacts **only** — never `docs/validation/index.md`, never the roster header. The coordinator
+merges the refs as **incremental trains, one leg at a time**, re-asserting the checksum after each, so
+that a red row names its own shard. ⚠ **The roster's figures are DERIVED and never hand-set**:
+`src/check-roster-format.ps1` recomputes the header from the table — validated count against row count,
+verdicts against the Tests column, disclosed against the Disclosed column, the percentage following
+from those — so a worker edits rows and the coordinator takes the header from the guard.
+
+⚠ **`docs/validation/index.md` IS ONE SHARED FILE EVERY ROW REWRITES, so no lane ref may carry it.**
+Measured on a one-row dry run: re-banking a single row's proof page **removed 25 lines from the shared
+index**. It is regenerated **once, centrally, after the last leg**, and its row count is asserted
+against the roster.
+
+**THE RESUME LEDGER is part of the driver, not a habit.** Append-only and idempotent, keyed on the
+corpus commit, the converter commit and the converter binary's mtime, so a worker resuming mid-shard
+re-enters at the first unrecorded row rather than at the first row. ⚠ **A row that is in the plan and
+in no shard's ledger is this campaign's one unrecoverable failure mode — it is a gate, not a hope**, and
+the closing arithmetic that catches it is `dispatched + unscheduled == the population` and
+`banked + candidates + named debt == the population`.
+
+**THE TSV** keeps the leg's eleven columns as its floor, read **by name and never by position**, LF
+only, with `sweep_s` an integer or the row is unscheduled. The driver adds `W`, `worker`, `slice` and
+`seq` — which the landed dispatcher already emits — plus `banked` ∈ {yes, no, debt} and `manifest_pins`.
+⚠ `sweep_s` is the **converter's** wall, closed before any artifact is read, and `post_s` is the
+wrapper's own seconds; the wrapper's cost lands on neither.
+
+**THE SHARD SIZE IS W=4 where the Windows side of the second laptop preflights green, and W=3 is the
+fallback.** W=3 drops that worker, moves its rows onto the three remaining, adds a third slice and a
+second cooldown gap per worker, and costs about a quarter-hour of makespan. ⚠ **The makespan figures
+are LOWER BOUNDS and the plan file says so by carrying no makespan line at all** — the numbers live in
+the generator's stdout, and a reader who finds them in the plan is reading something else.
+
+⚠ **THE RESERVED SET IS DERIVED, PINNED TO THE FASTEST WORKER, AND NOT SILENTLY ABSORBED.** It comes
+from the sweep's own long-timeout table rather than a typed list, and where a declared-reserved row has
+no cost it is **unpinnable and stays named** instead of being dropped.
+
+**THE REHEARSAL IS ONE SHARD, ON A WINDOWS BOX, AT THE VERSION TIP AFTER THE APPLY BATCH**, and a
+dry run of that same shard precedes it because the script has never executed. The shard is chosen so the
+riskiest artifact lands **first**: a relocated principal target at seq 1, and a row with committed pins
+to exercise the re-sign path. ⚠ **No shard of any size carries all three required classes**, so the
+missing one is **grafted by name** — which is also the five-pin mint site and the single
+highest-risk act of the campaign.
+
+⚠⚠ **AND THE GRAFTED ROW IS IN THE PLAN, NOT OFF IT — read the plan before grafting.** The mint-site
+row is assigned at **both** sizes: at W=4 to the fastest worker's slice 1 and at W=3 to the
+coordinator's slice 1, each under its own sequence number. So grafting it onto a rehearsal shard that
+belongs to a different worker does not add an unassigned row — **it hands one worker a row the plan
+gives to another**, and the duplicate is real. The rehearsal must either take the row from the worker
+the plan assigns it to, or record the graft as a **REASSIGNMENT** against that plan row; what it must
+not do is call the row off-plan, because then nothing reconciles it. ⚠ **The train's
+every-row-exactly-once checksum is the gate that catches this**, and it can only catch it once two
+shard refs exist — which is later and dearer than one look at the plan file now.
+
+⚠⚠ **AND THE RESOLUTION IS THAT THE REHEARSAL DOES NOT BANK THE GRAFTED ROW AT ALL.** It runs there
+as **EVIDENCE ONLY** — its TSV line, its minted disclosure file and its artifacts captured to the
+rehearsal's scratch and posted as a **prediction** — and is never committed from the rehearsal. The
+worker the plan assigns it to banks it in the campaign at its own sequence number, and **the minted
+file there must EQUAL the rehearsal's by content**: the mint is deterministic, so a difference is a
+finding rather than a discrepancy to reconcile. The row is therefore **reassigned for the rehearsal,
+non-banking** — which is the wording to use, because it names both halves.
+
+⚠ **The driver grows NO "banked elsewhere" skip.** The plan stays the single source of who banks
+what, and the every-row-exactly-once arithmetic keeps its meaning precisely because nothing in the
+driver is allowed to except a row from it. **The rehearsal's own native rows DO bank if it is green**
+— they are that worker's shard and its campaign run starts at the next slice — and **a red rehearsal
+banks nothing at all.**
+
+⚠ **A HOLDER IS A PROPERTY OF `W`, so every claim about one names its `W`.** The same row sits under
+different workers at different fleet sizes, and a sentence that names a holder without naming the size
+is not checkable — which is how the off-plan reading survived its first two readers.
+
+**THE ACCEPTANCE PREDICATE IS FIVE DECIDABLE CLAUSES** — the shard's TSV complete with every word
+filled; the four artifacts present per row and **written by that row**; the format gate at 0 with its
+relocation orphans either cleared or **named as hop debt**; the roster header re-deriving; and the mint
+site's manifest carrying its pins, each with a class and a signature, every deferred entry carrying its
+want, its reading and its plan. ⚠ **Assert an artifact's freshness by LAST WRITE TIME, never by
+creation time** — NTFS tunnels creation time back through a delete-and-recreate and will call a freshly
+rewritten record stale. ⚠ **And a gate never made to fail proves nothing** (floor 13): remove one pin
+from the rehearsal's manifest, confirm the format gate names that row, restore, verify byte-identical.
+
+⚠ **A REFUSAL THAT NAMES A HOP DEBT IS A PASS; A FABRICATED PROOF RECORD IS NOT.** The relocation
+targets link their **source's** existing proof record — no proof file is moved, renamed or created — so
+the file count exceeds the row count by design. Where the format gate refuses a row on that basis the
+refusal is the gate being right, and the driver retires the row rather than inventing a record to turn
+the gate green.
+
+**A RED REHEARSAL RETURNS TO ITS CAUSE AND NOTHING FROM IT BANKS**: a driver defect re-cuts the driver
+and re-rehearses **on the same shard**, because the shard is the control and a second one measures a
+different thing; a converter, generator or runtime defect goes to that seat's lane and the campaign does
+not launch; a plan defect re-emits the plan and restarts the rehearsal from its first row.
+
+<!-- Provenance. The draft this amendment is folded from: claude/coord-h10-driver-brief-draft
+3d8e522b57, docs/phase4/DRAFT-h10-driver-brief.md, 311 lines, sections A-G, drafted on the coordinator
+box by sub-agent from this section's H10, the landed plan and the recon wrapper, every item tagged
+RUNBOOK-SOURCED, RULED or PROPOSED. The ten open questions it raised were ruled at mailbox 0cb09c3 and
+are folded here in that form: (1) per-shard lane refs off the version tip carrying artifacts only,
+merged as incremental trains, roster figures derived by the format tool; (2) the shared index excluded
+from every lane ref and regenerated once centrally with its row count asserted; (3) -Mode rebank on the
+landed script with no second script, cut by the wrapper's author; (4) the worktree linked and on a
+branch, with the linked-worktree guard, census, tracked-count assert and floor 11 kept; (5) W=4 with
+W=3 the fallback; (6) the rehearsal shard = the coordinator's W=4 slice 1 plus the mint-site row
+grafted by name; (7) the acceptance predicate as written plus the deliberate-regression control, an
+orphan refusal naming a hop debt being a PASS; (8) the TSV gains W, worker, slice, seq, banked and
+manifest_pins; (9) -SkipBuild after row 1 kept, a worker resuming mid-shard rebuilding on its first
+row; (10) the idempotent append-only resume ledger folded into the driver seat. The central finding
+that the landed script dispatches the sweep is the draft's, verified here against this section's own
+never-the-sweep-wrapper sentence and against the recon wrapper's header. The one-row index measurement
+and the seeded-root arm are cited from the readings already recorded in this section rather than
+re-derived. A read and a docs act: this lane has no .NET and no PowerShell, so no figure here was
+produced by running the driver, the format gate or the sweep. -->
+
 ### H11 — Publication and compatibility guards **GATE**
 
 - The published version is the pinned Go release plus the build counter, already set at H2.
