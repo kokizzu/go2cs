@@ -123,9 +123,10 @@ public static partial class testing_package
     /// The result of one <see cref="Benchmark"/> run — the subset of Go's testing.BenchmarkResult a
     /// converted Test function needs when it drives an in-process benchmark (unicode's TestCalibrate
     /// reads NsPerOp()). N is the final iteration count Benchmark settled on. Go's companion field is
-    /// T time.Duration; the shim stays time-package-free (see the file's Sprint remark on why no
-    /// second stdlib tree is dragged in), so the elapsed wall-clock time is held here as Nanoseconds,
-    /// the int64 nanosecond form of that Duration.
+    /// T time.Duration; this field holds the int64 nanosecond form of that Duration because
+    /// NsPerOp() is all its one consumer reads — NOT because the host cannot name time, which it
+    /// does at <see cref="Deadline"/> and at <see cref="Elapsed"/> below (one tree, and
+    /// testing.csproj references core\time like any other consumer).
     /// </summary>
     public struct BenchmarkResult
     {
@@ -405,6 +406,34 @@ public static partial class testing_package
     [GoRecv] public static void StartTimer(this ref B b) { }
 
     [GoRecv] public static void StopTimer(this ref B b) { }
+
+    /// <summary>
+    /// Go 1.24's <c>B.Elapsed</c> — the benchmark timer's accumulated duration plus the running
+    /// segment when the timer is on (Go 1.24.13 benchmark.go:
+    /// <c>d := b.duration; if b.timerOn { d += highPrecisionTimeSince(b.start) }; return d</c>).
+    /// </summary>
+    /// <remarks>
+    /// Zero — and zero is the FAITHFUL value of that expression here, not a placeholder. This B
+    /// carries no timer state for it to read: <see cref="B"/> holds only <c>N</c> and the Loop
+    /// cursor, and the three timer members above are no-ops, so Go's <c>b.duration</c> is always 0
+    /// and <c>b.timerOn</c> is always false. Both sides evaluate to 0.
+    /// <para>
+    /// <see cref="Benchmark"/> does not supply one either, which is why <c>N</c>'s standing
+    /// exception does not extend to this member: Benchmark's <c>Stopwatch</c> is a local in the
+    /// driver's own frame and never reaches the <c>ж&lt;B&gt;</c> box the closure receives.
+    /// unicode's TestCalibrate — the only converted caller that drives a benchmark closure in
+    /// process — reads its timing from the returned <see cref="BenchmarkResult"/>, never from Elapsed.
+    /// </para>
+    /// <para>
+    /// The return type is <c>time.Duration</c> rather than a primitive BECAUSE of the corpus site:
+    /// runtime_test.go spells <c>float64(b.Elapsed().Nanoseconds()) / float64(b.N)</c>, and a
+    /// <c>long</c> has no <c>Nanoseconds()</c> — the converted call would not compile. That site's
+    /// result then feeds four <see cref="ReportMetric"/> calls, themselves no-ops above, so the
+    /// value is never observed. This host already references core\time (see <see cref="Deadline"/>),
+    /// so naming <c>time_package</c> here adds no project reference.
+    /// </para>
+    /// </remarks>
+    [GoRecv] public static time_package.Duration Elapsed(this ref B b) => default;
 
     // Parallel benchmarks (see struct PB above): RunParallel does not invoke the body — nothing
     // runs, so nothing is scheduled across goroutines — and PB.Next reports "no more work" so the
