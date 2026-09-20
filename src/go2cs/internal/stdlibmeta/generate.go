@@ -105,18 +105,18 @@ func Generate(convertedRoot string) ([]byte, int, error) {
 
 	for _, line := range header {
 		builder.WriteString(line)
-		builder.WriteString("\r\n")
+		builder.WriteString("\n")
 	}
 
 	for _, name := range names {
-		builder.WriteString("\r\n")
+		builder.WriteString("\n")
 		builder.WriteString(SectionPrefix)
 		builder.WriteString(name)
-		builder.WriteString("\r\n")
+		builder.WriteString("\n")
 
 		for _, line := range sections[name] {
 			builder.WriteString(line)
-			builder.WriteString("\r\n")
+			builder.WriteString("\n")
 		}
 	}
 

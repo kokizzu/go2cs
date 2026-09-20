@@ -57,9 +57,17 @@ func TestStdLibMetadataInSync(t *testing.T) {
 		t.Fatalf("reading committed asset: %v", err)
 	}
 
-	// Line-ending-insensitive: the asset is written CRLF, but a checkout's autocrlf setting is
-	// not something a drift check should have an opinion about (mirrors the golden-comparison
-	// policy for the behavioral .cs.target files).
+	// Line-ending-insensitive. The asset is written LF — the four builder sites in
+	// internal/stdlibmeta/generate.go each append "\n" — and .gitattributes pins
+	// src/go2cs/stdlib-metadata.txt to eol=lf, so a fresh checkout materializes LF too.
+	// The normalization is kept anyway, and not because the two sides disagree today: a tree
+	// materialized BEFORE that pin still holds the old CRLF bytes on disk, and a drift check
+	// should have no opinion about a checkout's line endings either way (the same policy the
+	// behavioral .cs.target goldens are compared under).
+	//
+	// This comment used to assert the asset was written CRLF. That was true of the generator
+	// before the regeneration seat and false after it, and it survived the seat because the
+	// seat changed the generator and not this file.
 	if normalizeLineEndings(string(generated)) != normalizeLineEndings(string(committed)) {
 		t.Fatalf("stdlib-metadata.txt is STALE: regenerating from %s (%d packages) produced different content.\n"+
 			"Run `go generate .` from src/go2cs and commit the result.", convertedStdLibRoot, count)

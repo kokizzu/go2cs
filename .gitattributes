@@ -95,6 +95,26 @@ docs/ValidatedTestPackages.md text eol=lf
 docs/phase4/DATA-sweep-row-walltimes.md text eol=lf
 docs/phase4/DATA-h10-shardmap-projection-go124.md text eol=lf
 
+# ---------------------------------------------------------------------------
+# LF pin for the converter's embedded stdlib metadata asset
+# ---------------------------------------------------------------------------
+# Same reasoning as the three pins above, for the asset genstdlibmeta writes and
+# TestStdLibMetadataInSync guards. The generator used to emit CRLF while the blob
+# is LF, so a regeneration's RAW diff read 5,573 changed lines where the real
+# content delta was 339 -- every other line differing on endings alone. The
+# generator now writes LF (internal/stdlibmeta/generate.go), and this pin is what
+# keeps the checkout form from depending on a per-machine core.autocrlf.
+#
+# The guard itself is ending-insensitive (it compares through
+# normalizeLineEndings), so this pin is not what makes it pass -- it is what keeps
+# a future reader's `git diff` legible.
+#
+# Blobs are already LF, so this rewrites nothing: `git add --renormalize` stages
+# nothing beyond the files this commit edits.
+#
+# ORDER: above the -text blocks, for the reason the pins above state.
+src/go2cs/stdlib-metadata.txt text eol=lf
+
 # go2cs behavioral TargetComparison tests compare transpiled C# to .cs.target
 # golden files BYTE-FOR-BYTE (TargetComparisonTests.FileMatch). The converter
 # preserves the Go source's LF inside multi-line string literals, so these files

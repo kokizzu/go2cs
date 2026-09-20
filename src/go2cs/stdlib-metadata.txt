@@ -146,19 +146,23 @@
 
 ##crypto.aes
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
 // </ExportedTypeAliases>
 [assembly: GoImplement<KeySizeError, error>]
-[assembly: GoImplement<aesCipher, go.crypto.cipher_package.Block>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.Block, go.crypto.cipher_package.Block>(Pointer = true)]
 
 ##crypto.cipher
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<aesCtrWrapper, Stream>]
 [assembly: GoImplement<cbcDecrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<cbcEncrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<cfb, Stream>(Pointer = true)]
 [assembly: GoImplement<ctr, Stream>(Pointer = true)]
-[assembly: GoImplement<gcm, AEAD>(Pointer = true)]
+[assembly: GoImplement<gcmFallback, AEAD>(Pointer = true)]
+[assembly: GoImplement<gcmWithRandomNonce, AEAD>]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes.gcm_package.GCM, AEAD>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.CBCDecrypter, BlockMode>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.CBCEncrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<ofb, Stream>(Pointer = true)]
 
 ##crypto.des
@@ -178,24 +182,15 @@
 [assembly: GoTypeAlias("Curve", "ΔCurve")]
 [assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<nistCurve<P256PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P384PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P521PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<nistCurve, ΔCurve>(Pointer = true)]
 [assembly: GoImplement<x25519Curve, ΔCurve>(Pointer = true)]
 
 ##crypto.ecdsa
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<PublicKey, go.crypto.elliptic_package.Curve>(Promoted = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P224Point, nistPoint<go.crypto.@internal.nistec_package.P224Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.cipher_package.StreamReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<zr, io_package.Reader>]
+[assembly: GoImplement<go.math.rand.rand_package.ChaCha8, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 
 ##crypto.ed25519
 // <ExportedTypeAliases>
@@ -205,10 +200,10 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<CurveParams, Curve>(Pointer = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P224Point, nistPoint<go.crypto.@internal.nistec_package.P224Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
 [assembly: GoImplement<nistCurve<P224PointжnistPoint>, Curve>(Pointer = true)]
 [assembly: GoImplement<nistCurve<P224PointжnistPoint>, unmarshaler>(Pointer = true)]
 [assembly: GoImplement<nistCurve<P384PointжnistPoint>, Curve>(Pointer = true)]
@@ -218,19 +213,20 @@
 [assembly: GoImplement<p256Curve, Curve>(Pointer = true)]
 [assembly: GoImplement<p256Curve, unmarshaler>(Pointer = true)]
 
+##crypto.fips140
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.hkdf
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
+
 ##crypto.hmac
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
-[assembly: GoImplement<hmac, hash_package.Hash>(Pointer = true)]
-
-##crypto.internal.alias
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
-##crypto.internal.bigmod
-// <ExportedTypeAliases>
-[assembly: GoTypeAlias("Nat", "ΔNat")]
-// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.hmac_package.HMAC, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 
 ##crypto.internal.boring
 // <ExportedTypeAliases>
@@ -252,32 +248,191 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<go.math.rand_package.Rand, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
 
-##crypto.internal.edwards25519
+##crypto.internal.entropy
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-##crypto.internal.edwards25519.field
+##crypto.internal.fips140
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.aes
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
+// </ExportedTypeAliases>
+[assembly: GoImplement<KeySizeError, error>]
+
+##crypto.internal.fips140.aes.gcm
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.alias
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.bigmod
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("Nat", "ΔNat")]
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.check
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.hmac_package.HMAC, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140.check.checktest
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.drbg
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.ecdh
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, Point<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, Point<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, Point<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, Point<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
+
+##crypto.internal.fips140.ecdsa
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
+// </ExportedTypeAliases>
+[assembly: GoImplement<blockAlignedPersonalizationString, personalizationString>]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, Point<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, Point<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, Point<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, Point<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha512_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+[assembly: GoImplement<plainPersonalizationString, personalizationString>]
+
+##crypto.internal.fips140.ed25519
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.edwards25519
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.edwards25519.field
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.hkdf
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140.hmac
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140.mlkem
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.nistec
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.nistec.fiat
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.pbkdf2
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140.rsa
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.sha256
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.sha3
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.sha512
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.ssh
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.subtle
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140.tls12
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140.tls13
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("ExporterMasterSecret", "ΔExporterMasterSecret")]
+[assembly: GoTypeAlias("HandshakeSecret", "ΔHandshakeSecret")]
+[assembly: GoTypeAlias("MasterSecret", "ΔMasterSecret")]
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140deps
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140deps.byteorder
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140deps.cpu
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140deps.godebug
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.fips140hash
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<go.crypto.@internal.fips140.sha3_package.Digest, hash_package.Hash>(Pointer = true)]
+
+##crypto.internal.fips140only
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
 ##crypto.internal.hpke
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 
-##crypto.internal.mlkem768
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
-##crypto.internal.nistec
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
-##crypto.internal.nistec.fiat
+##crypto.internal.impl
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
 ##crypto.internal.randutil
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.sysrand
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.internal.sysrand.internal.seccomp
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
@@ -288,10 +443,21 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<digest, hash_package.Hash>(Pointer = true)]
 
+##crypto.mlkem
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##crypto.pbkdf2
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
+
 ##crypto.rand
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
-[assembly: GoImplement<rngReader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.boring_package.randReader, io_package.Reader>]
+[assembly: GoImplement<reader, go.crypto.@internal.fips140.drbg_package.DefaultReader>(Promoted = true)]
+[assembly: GoImplement<reader, io_package.Reader>(Pointer = true)]
 
 ##crypto.rc4
 // <ExportedTypeAliases>
@@ -301,6 +467,7 @@
 ##crypto.rsa
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 
 ##crypto.sha1
 // <ExportedTypeAliases>
@@ -311,17 +478,18 @@
 
 ##crypto.sha256
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
-[assembly: GoTypeAlias("Size", "const:ΔSize")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<digest, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, hash_package.Hash>(Pointer = true)]
+
+##crypto.sha3
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<SHA3, hash_package.Hash>(Pointer = true)]
 
 ##crypto.sha512
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
-[assembly: GoTypeAlias("Size", "const:ΔSize")]
 // </ExportedTypeAliases>
-[assembly: GoImplement<digest, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha512_package.Digest, hash_package.Hash>(Pointer = true)]
 
 ##crypto.subtle
 // <ExportedTypeAliases>
@@ -351,7 +519,10 @@
 [assembly: GoImplement<encryptedExtensionsMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<endOfEarlyDataMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<finishedMsg, handshakeMessage>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes.gcm_package.GCMForTLS12, go.crypto.cipher_package.AEAD>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes.gcm_package.GCMForTLS13, go.crypto.cipher_package.AEAD>(Pointer = true)]
 [assembly: GoImplement<go.crypto.rsa_package.PSSOptions, crypto_package.SignerOpts>(Pointer = true)]
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 [assembly: GoImplement<hash_package.Hash, transcriptHash>]
 [assembly: GoImplement<helloRequestMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<keyUpdateMsg, handshakeMessage>(Pointer = true)]
@@ -370,6 +541,10 @@
 [assembly: GoImplement<serverKeyExchangeMsg, handshakeMessage>(Pointer = true)]
 [assembly: GoImplement<xorNonceAEAD, aead>(Pointer = true)]
 [assembly: GoImplement<ΔfinishedHash, transcriptHash>(Pointer = true)]
+
+##crypto.tls.internal.fips140tls
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
 
 ##crypto.x509
 // <ExportedTypeAliases>
@@ -912,12 +1087,6 @@
 ##go.internal.gcimporter
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
-[assembly: GoImplement<anyType, go.go.types_package.ΔType>]
-[assembly: GoImplement<bufio_package.Reader, io_package.ByteReader>(Pointer = true)]
-[assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<bytes_package.Reader, io_package.ByteReader>(Pointer = true)]
-[assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<intReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadCloser>(Pointer = true)]
 
 ##go.internal.srcimporter
@@ -925,10 +1094,6 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<Importer, go.go.types_package.Importer>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.ReadCloser>(Pointer = true)]
-
-##go.internal.typeparams
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
 
 ##go.parser
 // <ExportedTypeAliases>
@@ -969,7 +1134,6 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<Alias, cleaner>(Pointer = true)]
 [assembly: GoImplement<Alias, ΔType>(Pointer = true)]
-[assembly: GoImplement<Alias, ΔgenericType>(Pointer = true)]
 [assembly: GoImplement<ArgumentError, error>(Pointer = true)]
 [assembly: GoImplement<Basic, ΔType>(Pointer = true)]
 [assembly: GoImplement<Builtin, go.go.types_package.Object>(Pointer = true)]
@@ -998,10 +1162,8 @@
 [assembly: GoImplement<Var, go.go.types_package.Object>(Pointer = true)]
 [assembly: GoImplement<Var, positioner>(Pointer = true)]
 [assembly: GoImplement<atPos, positioner>]
-[assembly: GoImplement<byUniqueMethodName, sort_package.Interface>]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<gcSizes, Sizes>(Pointer = true)]
-[assembly: GoImplement<go.go.@internal.typeparams_package.IndexExpr, positioner>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.AssignStmt, positioner>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.BasicLit, positioner>(Pointer = true)]
 [assembly: GoImplement<go.go.ast_package.BranchStmt, positioner>(Pointer = true)]
@@ -1035,7 +1197,7 @@
 [assembly: GoImplement<go.go.types_package.Object, positioner>]
 [assembly: GoImplement<go.go.types_package.Tuple, ΔType>(Pointer = true)]
 [assembly: GoImplement<importDecl, decl>]
-[assembly: GoImplement<inSourceOrder, sort_package.Interface>]
+[assembly: GoImplement<indexedExpr, positioner>(Pointer = true)]
 [assembly: GoImplement<lazyObject, go.go.types_package.Object>(Pointer = true)]
 [assembly: GoImplement<nodeQueue, go.container.heap_package.Interface>(Pointer = true)]
 [assembly: GoImplement<operand, positioner>(Pointer = true)]
@@ -1222,7 +1384,6 @@
 [assembly: GoTypeAlias("FuncType", "ΔFuncType")]
 [assembly: GoTypeAlias("InterfaceType", "ΔInterfaceType")]
 [assembly: GoTypeAlias("Kind", "ΔKind")]
-[assembly: GoTypeAlias("MapType", "ΔMapType")]
 [assembly: GoTypeAlias("Name", "ΔName")]
 [assembly: GoTypeAlias("String", "const:ΔString")]
 [assembly: GoTypeAlias("StructType", "ΔStructType")]
@@ -1257,10 +1418,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<errUnmarshalChaCha8, error>(Pointer = true)]
-
-##internal.concurrent
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
 
 ##internal.coverage
 // <ExportedTypeAliases>
@@ -1344,6 +1501,11 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
+
+##internal.exportdata
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+[assembly: GoImplement<bufio_package.Reader, io_package.Reader>(Pointer = true)]
 
 ##internal.filepathlite
 // <ExportedTypeAliases>
@@ -1430,6 +1592,7 @@
 ##internal.pkgbits
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Code", "ΔCode")]
+[assembly: GoTypeAlias("Version", "ΔVersion")]
 // </ExportedTypeAliases>
 [assembly: GoImplement<CodeObj, ΔCode>(Pointer = true)]
 [assembly: GoImplement<CodeObj, ΔCode>]
@@ -1492,6 +1655,19 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
+##internal.runtime.maps
+// <ExportedTypeAliases>
+[assembly: GoTypeAlias("Map", "ΔMap")]
+// </ExportedTypeAliases>
+
+##internal.runtime.math
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##internal.runtime.sys
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
 ##internal.saferio
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
@@ -1501,6 +1677,14 @@
 // </ExportedTypeAliases>
 
 ##internal.stringslite
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##internal.sync
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##internal.synctest
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
@@ -1515,6 +1699,7 @@
 ##internal.syscall.windows
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoImplement<NTStatus, error>]
 
 ##internal.syscall.windows.registry
 // <ExportedTypeAliases>
@@ -1525,6 +1710,10 @@
 // </ExportedTypeAliases>
 
 ##internal.sysinfo
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+##internal.syslist
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
@@ -1632,10 +1821,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-##internal.weak
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
 ##internal.xcoff
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Section", "ΔSection")]
@@ -1718,6 +1903,7 @@
 [assembly: GoImplement<TextHandler, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<defaultHandler, ΔHandler>(Pointer = true)]
+[assembly: GoImplement<discardHandler, ΔHandler>]
 [assembly: GoImplement<handlerWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔLevel, Leveler>(Pointer = true)]
@@ -1865,7 +2051,6 @@
 [assembly: GoImplement<UnknownNetworkError, ΔError>(Pointer = true)]
 [assembly: GoImplement<UnknownNetworkError, ΔError>]
 [assembly: GoImplement<addrPortUDPAddr, ΔAddr>]
-[assembly: GoImplement<byRFC6724, sort_package.Interface>(Pointer = true)]
 [assembly: GoImplement<canceledError, error>]
 [assembly: GoImplement<dialParallel_dialResult, Conn>(Promoted = true)]
 [assembly: GoImplement<dialParallel_dialResult, error>(Promoted = true)]
@@ -1952,6 +2137,7 @@
 [assembly: GoImplement<http2UnknownFrame, http2Frame>(Pointer = true)]
 [assembly: GoImplement<http2WindowUpdateFrame, http2Frame>(Pointer = true)]
 [assembly: GoImplement<http2bufferedWriter, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<http2bufferedWriterTimeoutWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<http2chunkWriter, io_package.Writer>]
 [assembly: GoImplement<http2clientConnPool, http2ClientConnPool>(Pointer = true)]
 [assembly: GoImplement<http2clientConnPool, http2clientConnPoolIdleCloser>(Pointer = true)]
@@ -1987,9 +2173,11 @@
 [assembly: GoImplement<http2stickyErrWriter, io_package.Writer>]
 [assembly: GoImplement<http2timeTimer, http2timerᴛ1>]
 [assembly: GoImplement<http2transportResponseBody, io_package.ReadCloser>]
+[assembly: GoImplement<http2unencryptedTransport, RoundTripper>(Pointer = true)]
 [assembly: GoImplement<http2write100ContinueHeadersFrame, http2writeFramer>]
 [assembly: GoImplement<http2writeData, http2writeFramer>(Pointer = true)]
 [assembly: GoImplement<http2writeGoAway, http2writeFramer>(Pointer = true)]
+[assembly: GoImplement<http2writePing, http2writeFramer>(Pointer = true)]
 [assembly: GoImplement<http2writePingAck, http2writeFramer>]
 [assembly: GoImplement<http2writePushPromise, http2writeFramer>(Pointer = true)]
 [assembly: GoImplement<http2writeResHeaders, http2writeFramer>(Pointer = true)]
@@ -2043,6 +2231,9 @@
 [assembly: GoImplement<timeoutWriter, ResponseWriter>(Pointer = true)]
 [assembly: GoImplement<tlsHandshakeTimeoutError, error>]
 [assembly: GoImplement<transportReadFromServerError, error>]
+[assembly: GoImplement<unencryptedHTTP2Request, ΔHandler>]
+[assembly: GoImplement<unencryptedNetConnInTLSConn, net_package.Conn>(Promoted = true)]
+[assembly: GoImplement<unencryptedNetConnInTLSConn, net_package.Conn>]
 [assembly: GoImplement<unsupportedTEError, error>(Pointer = true)]
 [assembly: GoImplement<writerOnly, io_package.Writer>(Promoted = true)]
 [assembly: GoImplement<writerOnly, io_package.Writer>]
@@ -2222,11 +2413,13 @@
 [assembly: GoImplement<SyscallError, error>(Pointer = true)]
 [assembly: GoImplement<dirEntry, go.io.fs_package.DirEntry>]
 [assembly: GoImplement<dirFS, go.io.fs_package.FS>]
+[assembly: GoImplement<errSymlink, error>]
 [assembly: GoImplement<fileStat, go.io.fs_package.FileInfo>(Pointer = true)]
 [assembly: GoImplement<fileWithoutReadFrom, io_package.Writer>]
 [assembly: GoImplement<fileWithoutWriteTo, io_package.Reader>]
 [assembly: GoImplement<go.io.fs_package.File, io_package.Reader>]
 [assembly: GoImplement<rawConn, syscall_package.RawConn>(Pointer = true)]
+[assembly: GoImplement<rootFS, go.io.fs_package.FS>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, ΔSignal>]
 
 ##os.exec
@@ -2331,15 +2524,7 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 
-##runtime.internal.math
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
 ##runtime.internal.startlinetest
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-
-##runtime.internal.sys
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
@@ -2579,11 +2764,6 @@
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-##vendor.golang.org.x.crypto.hkdf
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-[assembly: GoImplement<hkdf, io_package.Reader>(Pointer = true)]
-
 ##vendor.golang.org.x.crypto.internal.alias
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
@@ -2591,13 +2771,6 @@
 ##vendor.golang.org.x.crypto.internal.poly1305
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
-
-##vendor.golang.org.x.crypto.sha3
-// <ExportedTypeAliases>
-// </ExportedTypeAliases>
-[assembly: GoImplement<cshakeState, ShakeHash>(Pointer = true)]
-[assembly: GoImplement<state, ShakeHash>(Pointer = true)]
-[assembly: GoImplement<state, hash_package.Hash>(Pointer = true)]
 
 ##vendor.golang.org.x.net.dns.dnsmessage
 // <ExportedTypeAliases>
@@ -2696,3 +2869,7 @@
 // </ExportedTypeAliases>
 [assembly: GoImplement<normReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<normWriter, io_package.WriteCloser>(Pointer = true)]
+
+##weak
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
