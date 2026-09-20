@@ -2320,6 +2320,7 @@ because a reader starting at H10 gets no pointer to them:
 | all four overrides (the Go pair per H1.1; `DOTNET_ROOT` + PATH where the machine SDK lags the TFM) | H10 above |
 | the per-package pipeline, **never** `run-validated-sweep.ps1` | H10 above |
 | the pin asserted from `go version` **OUTPUT**, never a file, with `GOTOOLCHAIN=local` | H1 — and the target SDK's own `go` answers the MACHINE pin without it |
+| the `go` **on PATH** — the one the CONVERTER SPAWNS — itself resolves under the pinned GOROOT | i9's defect one: a shell asserting its own `go version` says nothing about what the converter's child process resolves, so the two can disagree silently and the row converts against the wrong toolchain reporting success |
 | the output root is the worktree at the tip, whose `src/core` **is** the seed | H5's seeded-root rule; measured in `-tests` form at the 1.24 hop — a hand-own-carrying row converts rc 1 in a bare root and rc 0 seeded |
 | ≥ 25 GB free before a battery | H4a |
 | one conversion per output root, never two concurrent; one dispatch per worktree | H5 |
@@ -2514,6 +2515,15 @@ repetition count and where the reading is recorded, and do it before the map lea
   The sweep **throws** when `version.props` disagrees with GOROOT's `VERSION` file — so a worker on
   the old toolchain gets a loud refusal rather than a wrong answer, but it should be caught in the
   shard's acknowledgement rather than at row 1.
+- **A two-sided worker preflights BOTH arms, and a bounded search that finds nothing is not an
+  answer.** A box that runs rows on two sides (a native side and a WSL/linux side) is two workers
+  sharing a name: each has its own PATH, its own GOROOT and its own clone, and a green preflight on
+  one says nothing about the other. Measured 2026-09-20 at the 1.24.13 hop: a box whose native arm
+  passed first run had **no pinned GOROOT at all on its linux arm** — it carried the previous
+  corpus pin and the ambient toolchain — so every linux-only row routed there would have run
+  against the wrong toolchain or not at all. Provision side-by-side under the arm's own home rather
+  than replacing the ambient `go`, which would make the pin assertion vacuous by removing its
+  dissenting control.
 - **The whole-solution build has been run once**, so the per-package builds go incremental.
 - **The converter binary was rebuilt after the toolchain move** (§1.2) — and after any embedded-asset
   edit.

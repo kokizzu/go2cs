@@ -563,8 +563,13 @@ own build stamp, not the root it resolves, so the pin is stated rather than assu
   `func Test(t *testing.T)` — `internal/diff` declares one and is a banked row, so the stricter
   `^func Test[A-Z]` form would contradict the table above.
 - **215** — of those, the packages that exist in the corpus as a converted package (a production
-  `.csproj` under `src/core`). The four that do not are GOROOT directories with **zero** non-test
-  `.go` files, so no production package is converted and there is nothing for a host to reference:
+  `.csproj` under `src/core`). The four that do not are GOROOT directories with **zero SELECTED**
+  non-test `.go` files under the corpus's own tags, so no production package is converted and there
+  is nothing for a host to reference. The qualifier is load-bearing and not pedantry: three of the
+  four carry no non-test `.go` file at all, while `net/internal/cgotest` carries `resstate.go`
+  under `//go:build !netgo && cgo && darwin`, which the corpus's configuration deselects — and it
+  is the SELECTED set, not the directory listing, that the converter's own test-only predicate
+  reads (`productionClassEmitted`, keyed on the loader's `GoFiles`):
   `embed/internal/embedtest`, `internal/coverage/test`, `net/internal/cgotest`,
   `runtime/internal/wasitest`. Only `embedtest` carries a ruling today (board, 2026-08-11).
 - **202** banked · **13** remaining, as of 2026-09-02. The thirteen, by disposition:
