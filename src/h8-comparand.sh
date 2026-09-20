@@ -301,14 +301,33 @@ do_pkgdelta(){
 # real package (`internal/syscall/windows`, which carries its own .csproj). A name filter deletes that
 # package from two of the three views.
 MANIFEST_STAMP='# h8-comparand manifest v1 key=flat-artifact-path'
+# ⚠ SECOND GAP, closed 2026-09-20 (G, measured on the real census root): a census TARGET ROOT is
+# seeded from an L3 corpus AND emitted into, so it holds BOTH `archive/tar/package_info.cs` (flat, from
+# the seed) and `archive/tar/<goos>/package_info.cs` (the layout folder). Stripping maps the second onto
+# the first and the duplicate-key guard REFUSES, rc 5 — loudly and correctly, but the sanctioned builder
+# could not then consume the artifact the gate is about.
+#
+# What disambiguates them is the EMITTED-SET restriction the census itself uses: platformCensus.go
+# stamps every SEEDED file with the sentinel mtime 2000-01-01T00:00:00Z, so a file whose mtime has moved
+# was written BY this run. --emitted-only applies that filter, which is what G's own hand-built manifest
+# did and the only reason it produced no collisions; it reproduces the manifest's `emittedCs` exactly.
+SEED_SENTINEL_EPOCH=946684800   # 2000-01-01T00:00:00Z, platformCensus.go's censusSeedSentinel
 do_manifest(){
-  [ $# -eq 1 ] || die "usage: $PROG manifest <census-target-root>"
+  local EMITTED_ONLY=0
+  [ "${1:-}" = "--emitted-only" ] && { EMITTED_ONLY=1; shift; }
+  [ $# -eq 1 ] || die "usage: $PROG manifest [--emitted-only] <census-target-root>"
   local ROOT="$1"
   [ -d "$ROOT" ] || die "no such census root '$ROOT'"
   cd "$ROOT" || die "cannot enter '$ROOT'"
   local n=0 T; T=$(mktemp)
+  local skipped_seed=0
   while IFS= read -r f; do
     local rel=${f#./} out="" d base parent
+    if [ "$EMITTED_ONLY" -eq 1 ]; then
+      # a file still carrying the seed sentinel was NOT written by this run
+      local mt; mt=$(stat -c %Y "$rel" 2>/dev/null || echo 0)
+      if [ "$mt" -eq "$SEED_SENTINEL_EPOCH" ]; then skipped_seed=$((skipped_seed+1)); continue; fi
+    fi
     d=$(dirname "$rel"); base=$(basename "$rel")
     # strip EVERY layout-folder segment from the directory chain, innermost out
     local parts="" seg
@@ -328,12 +347,18 @@ do_manifest(){
     printf '%s  %s\n' "$(sha256sum "$rel" | cut -d' ' -f1)" "$out" >> "$T"
     n=$((n+1))
   done < <(find . -type f -name '*.cs' -not -name '*.cs.auto' | LC_ALL=C sort)
-  [ "$n" -gt 0 ] || { rm -f "$T"; die "manifest walked ZERO .cs files -- an empty manifest is not a census"; }
+  [ "$n" -gt 0 ] || { rm -f "$T"; die "manifest kept ZERO .cs files${EMITTED_ONLY:+ (--emitted-only: $skipped_seed still carried the seed sentinel)} -- an empty manifest is not a census"; }
   # stripping must not merge two distinct artifacts onto one key
   local dup; dup=$(cut -d' ' -f3- "$T" | LC_ALL=C sort | uniq -d | head -5)
   if [ -n "$dup" ]; then
     echo "REFUSED: stripping produced DUPLICATE keys -- two artifacts merged onto one name:" >&2
-    printf '%s\n' "$dup" | sed 's/^/  /' >&2; rm -f "$T"; exit 5
+    printf '%s\n' "$dup" | sed 's/^/  /' >&2
+    if [ "$EMITTED_ONLY" -eq 0 ]; then
+      echo "         A census TARGET ROOT holds the SEED's flat copy and this run's per-GOOS copy of the" >&2
+      echo "         same artifact, and stripping merges them. Re-run with --emitted-only, which keeps" >&2
+      echo "         only files this run actually wrote (mtime moved off the census seed sentinel)." >&2
+    fi
+    rm -f "$T"; exit 5
   fi
   printf '%s\n' "$MANIFEST_STAMP"
   LC_ALL=C sort -k2,2 "$T"
@@ -508,6 +533,37 @@ do_selftest(){
   mkdir -p "$C2R/dup/pkg/windows" "$C2R/dup/pkg/linux"; : > "$C2R/dup/pkg/pkg.csproj"
   echo a > "$C2R/dup/pkg/windows/same.cs"; echo b > "$C2R/dup/pkg/linux/same.cs"
   st "stripping that MERGES two artifacts is REFUSED" 5 "$0" manifest "$C2R/dup"
+
+  echo "G. --emitted-only -- G's REAL census-root shape, built as an arm"
+  # a census TARGET root: seeded flat copies (stamped with the census sentinel) PLUS this run's
+  # per-GOOS emission of the same artifact names. Exactly what refused at rc 5 on the real artifact.
+  local CR="$T/censusroot"
+  mkdir -p "$CR/archive/tar/windows" "$CR/crypto/x509/windows"
+  : > "$CR/archive/tar/archive.tar.csproj"; : > "$CR/crypto/x509/crypto.x509.csproj"
+  echo seeded > "$CR/archive/tar/package_info.cs"          # seed, flat
+  echo seeded > "$CR/archive/tar/stat_unix.cs"             # seed, flat
+  echo seeded > "$CR/crypto/x509/package_info.cs"          # seed, flat
+  echo emitted > "$CR/archive/tar/windows/package_info.cs" # this run
+  echo emitted > "$CR/crypto/x509/windows/package_info.cs" # this run
+  touch -d @946684800 "$CR/archive/tar/package_info.cs" "$CR/archive/tar/stat_unix.cs" "$CR/crypto/x509/package_info.cs"
+  st "a real census-root shape REFUSES without the flag"  5 "$0" manifest "$CR"
+  # the refusal must NAME the remedy, not just fail
+  if "$0" manifest "$CR" 2>&1 | grep -q -- '--emitted-only'; then
+    st_pass=$((st_pass+1)); printf '  PASS  %-58s\n' "the refusal names --emitted-only as the remedy"
+  else st_fail=$((st_fail+1)); printf '  FAIL  %-58s\n' "refusal does not name the remedy"; fi
+  st "  and WITH --emitted-only it succeeds"             0 "$0" manifest --emitted-only "$CR"
+  local em; em=$("$0" manifest --emitted-only "$CR" | grep -v '^# ')
+  # only the two emitted artifacts survive, both keyed flat
+  if [ "$(printf '%s\n' "$em" | wc -l)" -eq 2 ] \
+     && printf '%s\n' "$em" | grep -q 'archive/tar/package_info.cs' \
+     && printf '%s\n' "$em" | grep -q 'crypto/x509/package_info.cs' \
+     && ! printf '%s\n' "$em" | grep -q 'stat_unix.cs'; then
+    st_pass=$((st_pass+1)); printf '  PASS  %-58s\n' "--emitted-only keeps this run's 2, drops the 3 seeded"
+  else st_fail=$((st_fail+1)); printf '  FAIL  %-58s\n' "--emitted-only kept the wrong set:"; printf '%s\n' "$em" | sed 's/^/        /'; fi
+  # and a root where EVERYTHING is seeded must refuse, not return an empty manifest
+  local CR2="$T/allseed"; mkdir -p "$CR2/pkg"; : > "$CR2/pkg/pkg.csproj"
+  echo seeded > "$CR2/pkg/a.cs"; touch -d @946684800 "$CR2/pkg/a.cs"
+  st "a root with nothing emitted REFUSES (never empty)"  2 "$0" manifest --emitted-only "$CR2"
   rm -rf "$T"
   echo
   echo "SELF-TEST: pass=$st_pass fail=$st_fail"
@@ -527,7 +583,7 @@ case "${1:-}" in
      echo "       $PROG compare <out-win> <out-lin> <out-dar> -- <in-win> <in-lin> <in-dar>"
      echo "       $PROG identity <manifest-A> <manifest-B>"
      echo "       $PROG view <corpus-root> <host-goos>"
-     echo "       $PROG manifest <census-target-root>   (builds classify's input, flat-keyed and stamped)"
+     echo "       $PROG manifest [--emitted-only] <census-target-root>   (classify's input, flat-keyed + stamped)"
      echo "       $PROG pkgdelta <goroot-outgoing> <goroot-incoming>"
      echo "       $PROG selftest"; exit 2 ;;
 esac

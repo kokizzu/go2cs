@@ -1711,6 +1711,18 @@ manifest** and names this mode in the refusal; `--assume-flat` exists for a mani
 and the caller owns that claim. The trap is a self-test arm: the same synthetic tree read flat finds the
 variant and read raw reports `variant 0`.
 
+⚠ **AND THE BUILDER NEEDS `--emitted-only` ON A CENSUS TARGET ROOT — the second gap, closed 2026-09-20.**
+A census target root is **seeded from an L3 corpus AND emitted into**, so it holds *both*
+`archive/tar/package_info.cs` (flat, from the seed) *and* `archive/tar/<goos>/package_info.cs` (this run's
+layout copy). Stripping maps the second onto the first and the duplicate-key guard **refuses at rc 5** —
+loudly and correctly, but the sanctioned builder then could not consume the artifact the gate is about.
+What disambiguates them is the census's own **emitted-set restriction**: `platformCensus.go` stamps every
+SEEDED file with the sentinel mtime `2000-01-01T00:00:00Z`, so a file whose mtime has moved was written by
+this run. **`manifest --emitted-only` applies that filter**, reproduces the manifest's own `emittedCs`
+exactly, and the refusal without it now names the flag as the remedy. Controlled on the real shape: the
+seeded-plus-emitted root refuses, the flag admits it and keeps only this run's artifacts, and a root where
+nothing was emitted refuses rather than returning an empty manifest.
+
 <!-- G measured this by USING the instrument (mailbox ae545151f §6a): the counts above are the real
      incoming census at 46307b4704. Nothing in the original amendment was wrong -- it specifies the
      manifest FORMAT and never says to build one by walking a census root, and the `view` arm already
