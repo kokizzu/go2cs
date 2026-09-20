@@ -1763,6 +1763,50 @@ The three exclusive artifacts are one per target and all in `crypto/internal/sys
 | P4 | the `identical` / `variant` split of the 150 added artifacts is **not** predictable from `.go` selection — it is content-dependent, and is a **reading**, not a prediction | — stated so a later number is not read as having been foreseen |
 | P5 | the per-target class counts move **symmetrically**: any per-target asymmetry beyond P2's one-artifact-per-target is **not** from package membership and is a finding | an asymmetry the package delta does not explain |
 
+##### ⚠ (c2) P1–P5 MEASURED — and the lesson is about the DERIVATION, not the numbers (2026-09-20)
+
+Scored against the produced outgoing manifest (G `cb1fa651a`, ruled `63b51e754`). **None is a gate item;
+all are readings.**
+
+| | as worded | measured | verdict |
+|:--|:--|:--|:--|
+| P1 | `Δ partial` = 0 | **+6** (7 in, 1 out) | REFUTED |
+| P2 | `Δ exclusive` = +3, sysrand's per-target `rand_*` | the three **arrived exactly**; `Δ` = **+6** (15 in, 9 out) | SPLIT: artifacts met, count refuted |
+| P3 | +97 source, +40 `package_info` | **+117**, **+37** | REFUTED, both |
+| P4 | the identical/variant split is a READING | +155 / +4 | HONOURED |
+| P5 | per-target symmetry | +164 / +165 / +166 | **RULED not a defect** — the tolerance was written too tight |
+
+⚠ **THE DERIVATION THEY REST ON WAS EXACTLY RIGHT, AND THAT IS THE POINT.** `pkgdelta`'s net **+40
+packages per target** is met on all three, on a different instrument and host, with zero residual. Every
+miss is the **extrapolation from package membership to file-level classes**, and the blind spot is now
+measured: **+20 source artifacts and +6 partial** come from **Go's own per-file build-tag selection
+changing inside packages that exist on all three targets and were never in the added or removed sets**
+(1.24's `os.Root` work — `os/root_unix.cs`, `os/root_nonwindows.cs` — landing in packages already
+everywhere). A package-delta derivation is structurally blind to it.
+
+**THE RULE: a class-count prediction is derived from the FILE-LEVEL tag selection, or it is stated as a
+package-level BOUND and not as a class count.** A clean measurement of the wrong population is the most
+persuasive kind of wrong.
+
+⚠ **Two further shapes worth carrying, because each looked like corroboration:**
+
+- **A RELOCATION nets zero.** P2's three artifacts arrived exactly as named *and contribute nothing*,
+  because the same three left `crypto/rand` — a package that **survives** the hop and so sits in neither
+  the added nor the removed set. A derivation that examines added packages' files and removed packages'
+  files cannot see a file moving **out of a surviving package**. Naming the right artifact is not
+  predicting its effect.
+- **Two numbers agreeing is evidence only if they are the same quantity.** P3's `+40` was cited as an
+  "internal consistency check" because it equalled the net package count. There is one `package_info.cs`
+  per **EMITTING** package (303 → 340 = **+37**), while +40 is the **QUEUED** delta; three net-new queued
+  packages emit no `.cs`. The consistency check *was* the defect.
+
+**The measured statement on REHEARSAL's "a migration moves the platform axis in BOTH directions"**, on the
+one-axis comparison: **true at `exclusive`** (15 in, 9 out), **false at `variant`** (4 in, **0** out) and
+**false at `partial`** (7 in, 1 out). The H8 text takes that as measured rather than as predicted. The
+prior mixed reading (38 → 51, "13 arrived") decomposes cleanly once the axis is isolated: **38 → 47 is
+converter drift (+9), 47 → 51 is the release (+4)**, and the release's four are 1.24's `os.Root` and
+spinbit-mutex work.
+
 ##### (d) Two instrument findings that change how the census is invoked
 
 ⚠ **`GO111MODULE=off` silently cancels a `GOTOOLCHAIN` redirect.** Measured 2026-09-19 on a linux box:
@@ -1774,6 +1818,13 @@ silent-redirect hazard reached through the *other* half of the pin: drive each r
 `GOROOT` and its own `bin/go`**, and assert the release from `go version` **OUTPUT** before listing
 anything. `pkgdelta` does both, and additionally refuses when the two roots run the same release —
 a vacuous delta being the failure this guards.
+
+⚠ **THE BUILD TAGS ARE THE THIRD AXIS, measured the hard way twice in one hour (2026-09-20).** The
+corpus is defined as Go under `-tags purego,math_big_pure_go` (the `-stdlib` default), so a census run
+**without** them answers a different question and looks correct doing it: C1's H10 census ran untagged and
+read two rows as DIFF where the census was wrong twice and the converter right twice, and a COORD ruling
+(`TestP256PrecomputedTable` off-platform) was **withdrawn** over the same axis because the answer flips
+under the corpus's own tags. **State the tag set beside every count.**
 
 ⚠ **`CGO_ENABLED` is a real axis on the package count, and it moves exactly one target.** Measured at
 both releases: linux reads 305 / 345 at `CGO_ENABLED=1` and 304 / 344 at `CGO_ENABLED=0`, the one
