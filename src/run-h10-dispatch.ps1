@@ -161,23 +161,35 @@ if ($Mode -eq 'rebank') {
         } finally { $ErrorActionPreference = $prev }
     }
 
-    if (-not $DryRun) {
-        $gd  = GitQuiet @('-C', $Tree, 'rev-parse', '--git-dir')
-        $gcd = GitQuiet @('-C', $Tree, 'rev-parse', '--git-common-dir')
-        if ($gd.Code -ne 0 -or $gcd.Code -ne 0 -or -not $gd.Out -or -not $gcd.Out) {
-            Deny "'$Tree' is not a git work tree"
-        }
-        if ($gd.Out -eq $gcd.Out) {
-            Deny "'$Tree' is a MAIN checkout (--git-dir == --git-common-dir), not a linked worktree -- floor 11 is one worktree per shard"
-        }
-        # ⚠ THE SUCCESS CASE HERE IS git SUCCEEDING: a detached HEAD makes `symbolic-ref -q` exit
-        # non-zero with no output, which is the RECON leg's shape and the driver's refusal.
-        $sym = GitQuiet @('-C', $Tree, 'symbolic-ref', '-q', 'HEAD')
-        if ($sym.Code -ne 0 -or -not $sym.Out) {
-            Deny "'$Tree' HEAD is DETACHED -- the driver BANKS, so its tree is on a branch (brief B.4). A detached tree is the RECON leg's shape."
-        }
-        Write-Host "  tree            : $Tree on $($sym.Out) (linked worktree, banking)"
+    # ⚠⚠ THE TREE GUARD RUNS IN A DRY RUN TOO, AND THE FIRST CUT OF THIS SEAT GOT IT BACKWARDS.
+    # MEASURED on the i7's Core-edition arm: with this block behind `-not $DryRun`,
+    # `-Mode rebank -DryRun -Tree <a MAIN checkout>` returned rc 0, printed "28 rows would run" and
+    # wrote a timings file -- so a green dry run read as evidence about a banking tree nobody had
+    # checked. C2's design read found the same thing from the other side: an arm that exits above
+    # the line under test says nothing about it.
+    #
+    # THE DISTINCTION IS BETWEEN AN EXECUTOR AND A PRECONDITION, and this seat now makes it in both
+    # directions. The SWEEP SCRIPT is an executor a dry run never invokes, so requiring it there
+    # refused an arm that executes nothing -- that check is rightly behind `-DryRun`. The TREE is
+    # the thing the dry run REPORTS ABOUT: it says these rows would run HERE. A dry run that cannot
+    # name a real banking tree is not cheaper, it is unfounded.
+    # The guard executes nothing itself -- three `git rev-parse`/`symbolic-ref` reads -- and runs
+    # before any plan row, so it costs a dry run only the honesty of naming a real tree.
+    $gd  = GitQuiet @('-C', $Tree, 'rev-parse', '--git-dir')
+    $gcd = GitQuiet @('-C', $Tree, 'rev-parse', '--git-common-dir')
+    if ($gd.Code -ne 0 -or $gcd.Code -ne 0 -or -not $gd.Out -or -not $gcd.Out) {
+        Deny "'$Tree' is not a git work tree"
     }
+    if ($gd.Out -eq $gcd.Out) {
+        Deny "'$Tree' is a MAIN checkout (--git-dir == --git-common-dir), not a linked worktree -- floor 11 is one worktree per shard"
+    }
+    # ⚠ THE SUCCESS CASE HERE IS git SUCCEEDING: a detached HEAD makes `symbolic-ref -q` exit
+    # non-zero with no output, which is the RECON leg's shape and the driver's refusal.
+    $sym = GitQuiet @('-C', $Tree, 'symbolic-ref', '-q', 'HEAD')
+    if ($sym.Code -ne 0 -or -not $sym.Out) {
+        Deny "'$Tree' HEAD is DETACHED -- the driver BANKS, so its tree is on a branch (brief B.4). A detached tree is the RECON leg's shape."
+    }
+    Write-Host "  tree            : $Tree on $($sym.Out) (linked worktree, banking)"
 }
 if ($FleetSize -lt 1) { Deny "-FleetSize must be 1 or more (got $FleetSize)" }
 if ($OnlySlice -lt 0) { Deny "-OnlySlice must be 0 (all slices) or a slice number (got $OnlySlice)" }
@@ -365,6 +377,11 @@ if ($Mode -eq 'rebank' -and -not $DryRun) {
         if (Test-Path -LiteralPath $c) { $conv = Get-Item -LiteralPath $c; break }
     }
     if (-not $conv) { Deny "no converter binary under '$Tree/src/go2cs' -- build it at this tree before dispatching" }
+    # ⚠ AND ITS FAILURE DIRECTION IS THE SAFE ONE, which the sentence above does not say (C2).
+    # This is mtime AND size, not content: a rebuild, a touch or a checkout changes mtime, so the
+    # row RE-RUNS when it need not. A wrong SKIP needs two different converters agreeing on both
+    # mtime-to-the-tick and byte length -- reachable by a timestamp-preserving copy (`cp -p`, a
+    # restore from archive), never by a build.
     $converterStamp = "$($conv.LastWriteTimeUtc.ToString('o'))/$($conv.Length)"
     Write-Host "  converter       : $($conv.FullName) ($($conv.Length) bytes, $($conv.LastWriteTimeUtc.ToString('o')))"
 
@@ -435,6 +452,11 @@ foreach ($sliceNumber in $sliceNumbers) {
             # ⚠⚠ THE LEDGER SKIP IS KEYED ON THE TREE STATE, NOT ON THE ROW NAME.
             # "This row is done" is only true of the corpus commit and the converter that did it, so
             # a resume after a rebuild or a tip move re-runs rather than trusting a stale record.
+            # ⚠ THIS LINE IS UNREACHABLE IN A DRY RUN BY ORDERING, NOT BY A GUARD (C2's read).
+            # The preamble that fills $corpusCommit and $converterStamp is itself behind
+            # `-not $DryRun`, so in a dry run they are EMPTY and this key would be "Package||" --
+            # harmless only because the dry-run branch `continue`s above here. An edit that moved
+            # the dry-run emission below this line would collide every dry-run row on one key.
             $ledgerKey = "$($row.Package)|$corpusCommit|$converterStamp"
             if ($Ledger -and $ledgerDone.Contains($ledgerKey)) {
                 Write-Host "     already recorded for this tree state -- SKIPPED (resume)" -ForegroundColor DarkGray
