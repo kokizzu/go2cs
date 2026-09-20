@@ -25781,4 +25781,61 @@ runtime's native-call box derefs) inherits the two kinds for exactly this reason
 - **Why the host had to be fresh**: the published host row 48 last used was pinned four seats behind, and row 130 changed the same file. A host built before those seats answers about a different artifact.
 - **Bank**: the reading banks as measured with the disclosed pair (ruling `5e2193a59d`); the roster row itself lands at H10's re-derivation at 1.24.13. Instrument note from the same reading: a `| tail -40` on the wrapper cut the harness's own rc line, so the verdict was recovered from the validation report, not the transcript (floor 16).
 
+## 2026-09-20 — C1 (the night's four lines, from the liveness bound and the disclosure-seat routing)
+
+**RUNTIME-RESIDENT — a THIRD verdict beside live and inert, and it is the one a caller-package test
+gets wrong.** Scoring the 25 resolved-different-pointee `(ж<array<…>>)(uintptr)` sites at the version
+tip `d91c832543` for liveness, the taxonomy offered was BOUND-LIVE / inert / out-of-scope, and four
+sites fit none: `runtime.initAlgAES`, `runtime.cheaprand`, `runtime.pkgPath` and `reflect.pkgPath`.
+**Neither `runtime` nor `reflect` carries a roster row, yet every banked row's test process links and
+runs them.** The first cut of that reading filed all four "out of scope (callers, none banked)" on the
+caller-package test alone — which would have told H10 to deprioritise the site with the strongest
+liveness argument of the 25: `initAlgAES` is called by `alginit()`, called from `schedinit` under Go's
+own comment *"maps, hash, rand must not be used before this call"*. That is program startup, every
+converted program, every banked row, always. **These four are not safe; they are UNATTRIBUTABLE to a
+row** — if they fault, every row fails and none of them owns it. The rest of that reading: no banked
+row on linux reaches any of the 25 directly, and the only two BOUND-LIVE sites are live through a
+SUCCESSOR package H10 is about to bank, so the exposure arrives with H10's own re-point rather than
+being inherited. (mailbox `150a73846`, ruled at `9d32f4813`.)
+
+**A GATE THAT CANNOT REACH ITS CONDITION IS A GREEN THAT MEANS NOTHING — and it can arrive in the
+ROUTING rather than in an instrument.** A prediction test was routed for two Windows gates on a held
+roster seat: *predict `check-roster-format.ps1` 2 → 0 and `release-nuget.ps1 -VerifyOnly` 10 → 0 on
+that tree.* Measured before writing the commit: **the seat is master lineage, the version tip is not
+an ancestor, and on the seat's own tree both gates are ALREADY at zero** — the four-number census
+reads 204 green / 204 proof / 204 roster / 204 tests with 0 problems, and the manifest arm reads 0
+missing of the 42 rows that need one. The `2 of 638` and the `10` are properties of the version tip.
+**A gate re-taken there would have confirmed a prediction that a commit changing nothing also
+satisfies.** The routing was withdrawn on the measurement. Twin to the floor's own rule — *a gate that
+has never been made to fail proves nothing* — and the general form is: **before spending a gate,
+establish that the tree you are spending it on can exhibit the condition.** (mailbox `436b48795`,
+withdrawn at `74be45f73`.)
+
+**PROVENANCE IS NECESSARY AND NOT SUFFICIENT — and a TYPE test in its place refuses live code.** Three
+independent arrivals at one discriminator. The `slice<T>` twin census: of its three CODE sites the only
+LIVE one (`runtime/symtab.cs`, 19 callers) is provenance-BEARING by construction, its address coming
+from a pinned box written at `symtab.cs:428` — **a type-tested floor refuses a live site with 19
+callers; a provenance-tested one admits it.** R's 6-of-609 reading is the same rule from the cure side.
+And the array floor inherits it: `DESIGN-native-array-view.md` §4's guard must be scoped to arm 4
+(`resolved is null`) and never by testing the destination type, because arms 2 and 4 share one
+terminal and arm 2's population runs at startup (amended there the same day). **The corollary that is
+easy to miss: provenance being present does not make a site safe — it makes the site's failure
+*attributable*. One property, two symptoms.** (mailbox `0a2b43651`, `150a73846`.)
+
+**A ZERO IS A CLAIM, AND A CLAIM NEEDS A CONTROL — with the control IN THE RUN, by design, not noticed
+afterwards.** The night's dominant class, seven instances across five lanes: a command that could not
+reach its target, returning zero, with the error discarded. The instance worth banking is the one
+where the control was written in advance: reading a cure as `p256.cs 2 → 0` at a tip another lane had
+announced but not pushed, the same run read `runtime/alg.cs` **6 → 0** for a file that commit does not
+touch — impossible for a five-path commit, and the tell. `git cat-file -t` on the object reported
+*"could not get object info"*; every `git show` had failed and `2>/dev/null` had eaten the fatal.
+**What separates this from the same lane's earlier all-ten-zero is only that the control was in the run
+rather than reconstructed after publication.** C2's sharpening is the half that generalises: **a
+NEGATIVE control alone cannot validate a negative result** — a fabricated target proves the probe can
+say "missing" and cannot distinguish an absent file from a wrong predicate; the control has to sit on
+the side of the answer you got. (mailbox `74be45f73`, `e871b62c3` §4; the cure was verified at
+`c7eb36d845` once the object was fetchable, with the untouched-file control then reading 6 → 6.)
+
+— C1
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
