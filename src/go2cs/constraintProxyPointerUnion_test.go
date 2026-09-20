@@ -86,6 +86,29 @@ type embedPoint[P any] interface {
 	*P1 | *P2
 }
 
+// ptrKeySet is runtime's mapBenchmarkKeyType: a METHODLESS union mixing value terms with ONE
+// pointer term. The value terms instantiate fine; the pointer term instantiates at the abstract
+// box class, which a parameterless-constructor constraint cannot admit (CS0310 x22, runtime row).
+type ptrKeySet interface {
+	int32 | int64 | string | V1 | *int32
+}
+
+// ptrElemSet is runtime's mapBenchmarkElemType: a union whose FIRST TERM is the named set above,
+// so its pointer is one level further in. This is the half a term-only pointer test cannot see.
+type ptrElemSet interface {
+	ptrKeySet | []int32
+}
+
+// valueKeySet is the same methodless shape with NO pointer anywhere -- the composite-union arm's
+// own case, which must keep its new() clause.
+type valueKeySet interface {
+	int32 | int64 | string | V1
+}
+
+type ptrKeyCurve[K ptrKeySet] struct{ k K }
+type ptrElemCurve[E ptrElemSet] struct{ e E }
+type valueKeyCurve[K valueKeySet] struct{ k K }
+
 type unionCurve[P unionPoint[P]] struct{ newPoint func() P }
 type methCurve[P methPoint[P]] struct{ newPoint func() P }
 type tildeCurve[P tildePoint[P]] struct{ newPoint func() P }
@@ -188,6 +211,20 @@ func TestPointerUnionDeclarationAgreesWithProxy(t *testing.T) {
 		"methCurve":  "where P : methPoint<P>",
 		// Still refused: the composite-union arm keeps its breadcrumb and `new()`.
 		"valueCurve": "where P : /* valuePoint[P] */ new()",
+
+		// ⚠ A METHODLESS union with a POINTER term emits NO constraint at all. `new()` would be
+		// CS0310 against the abstract `ж<T>` the pointer term instantiates at, and the breadcrumb
+		// cannot ride alone (`where K : /* … */` is a clause with no constraint). This is the
+		// `comparable` arm's answer, reached for that arm's own reason.
+		"ptrKeyCurve": "",
+
+		// ⚠ …and through a union TERM that is itself a named set. A term-only pointer test answers
+		// FALSE here and left 14 of the runtime row's 28 sites standing.
+		"ptrElemCurve": "",
+
+		// THE CONTROL for both: the same methodless shape with no pointer anywhere KEEPS `new()`.
+		// Without it the two arms above pass for a change that drops the clause everywhere.
+		"valueKeyCurve": "where K : /* valueKeySet */ new()",
 	} {
 		_, constraints := visitor.getGenericDefinition(pointerUnionNamed(t, scope, curve))
 		got := strings.TrimSpace(constraints)
