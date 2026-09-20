@@ -2622,6 +2622,21 @@ wrapper's pipeline block; `-Mode sweep` keeps today's behaviour for the steady-s
 section already assigns it. A second script would fork the plan reader and the digest gate, which are
 the two pieces no lane should hold twice.
 
+⚠⚠ **THE DRIVER'S TREE IS A LINKED WORKTREE *ON A BRANCH*, WHICH IS THE OPPOSITE OF THE RECON
+LEG'S AND IS EASY TO READ BACKWARDS FROM THIS SECTION.** The recon leg's tree is **detached and
+thrown away** — the paragraphs above say so, and its wrapper REFUSES a tree whose HEAD is on a
+branch, precisely so nothing can be committed from it by habit. **The re-bank's tree is the
+opposite by ruling**: its artifacts are BANKED and committed from it, so it is linked *and on a
+branch*. The linked-worktree guard, the census, the tracked-count assert and the one-worktree-per-cut
+floor are all kept; it is only the detached requirement that inverts.
+
+⚠ **So the driver must say so explicitly, and the refusal must stay the default.** The wrapper the
+driver invokes per row carries an opt-in switch for exactly this case, defaulting to the refusal, and
+a run that uses it **reports it in the leg's own output** rather than passing silently — a caller
+that turns a guard off leaves a trace a reader of the log can see. **A reader checking that switch
+against this section should find both halves here**: the recon leg's detached tree above, and this
+paragraph.
+
 **THE PER-ROW ACT** is the recon wrapper's invocation, unchanged:
 
 ```
