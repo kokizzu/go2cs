@@ -81,7 +81,14 @@ PH=$(grep -nE '(^|[[:space:](/])<[A-Za-z0-9 ._/-]{2,}>' "$ENTRY" | grep -vE '</?
 
 # ---- A3: a claude/* ref named in the entry must already exist at origin ----
 BADREF=0
-for R in $(grep -oE 'claude/[A-Za-z0-9._/-]+' "$ENTRY" | sed 's/[.,)]*$//' | sort -u); do
+# ⚠ A ref token, never a PATH that merely contains one. `.claude/coord-scripts/lanes/c2-post.sh`
+# has `claude` as its second component, and the bare pattern matched it, refused the post and told
+# the author to push a file. Surfaced 2026-09-20 by the very post announcing this tool's own move
+# INTO that directory. So `claude/` must not be preceded by a path or name character: a leading
+# separator or dot means it is part of a path, and one char is stripped back off the match because
+# ERE has no lookbehind.
+for R in $(grep -oE '(^|[^A-Za-z0-9._/-])claude/[A-Za-z0-9._/-]+' "$ENTRY" \
+             | sed -E 's#^.?claude/#claude/#; s/[.,)]*$//' | sort -u); do
   git -C "$CLONE" ls-remote --exit-code --heads origin "refs/heads/$R" >/dev/null 2>&1 \
     || { echo "REFUSED A3: '$R' is not at origin -- push it first, or spell it without the claude/ prefix"; BADREF=1; }
 done
