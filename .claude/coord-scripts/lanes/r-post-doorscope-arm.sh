@@ -15,6 +15,9 @@
 # Usage: r-post-doorscope-arm.sh <tool> [repo-that-must-not-move]
 set -u
 TOOL="$(readlink -f "${1:?usage: r-post-doorscope-arm.sh <tool> [repo]}")"
+# C1 b68ed837d: the THIRD vacuity shape -- the subject never invoked at all. A relative tool
+# path plus a cd read as a clean PASS in C1 arm. Refuse an unrunnable subject before any verdict.
+[ -r "$TOOL" ] || { echo "REFUSED(2): the tool under test is not readable: $TOOL"; exit 2; }
 MAIN="${2:-/c/Projects/go2cs}"
 ROOT="${3:-/c/go2cs-tmp/r-doorscope-arm}"
 fails=0
@@ -53,7 +56,13 @@ OUT="$(R_POST_STATE="$ROOT/state" bash "$TOOL" "$ROOT/entry.md" "$ROOT/subj.txt"
 R_AFTER="$(fp "$MAIN")"; S_AFTER="$(st "$MAIN")"
 
 # ⚠ THE SUBJECT MUST HAVE EXECUTED. Without this the next two assertions are vacuous.
-if echo "$OUT" | grep -q 'all admission arms passed'; then
+# ⚠⚠ KEYED ON THE rc, NOT ON THE WORDING. This read `grep -q 'all admission arms passed'` until
+# 2026-09-20, and changing that very sentence in the tool -- it overclaimed, since the control bar
+# sits below the dry-run exit -- turned this arm RED on a run that had reached step 3 perfectly
+# well. An arm keyed on a verdict's WORDING is coupled to the wording. rc 0 is structural here:
+# the dry-run exit is the tool's ONLY zero-exit path and it sits below the fetch and the
+# fast-forward. `DRY-RUN:` is kept as a marker beside it, never as the claim.
+if [ "$RC" -eq 0 ] && echo "$OUT" | grep -q 'DRY-RUN:'; then
   ok "the run REACHED step 3 -- past the fetch and the fast-forward"
 else
   no "the run exited ABOVE the git steps (rc=$RC) -- the verdicts below measure nothing"

@@ -14,12 +14,18 @@
 #   the structural control bar (an admission control's pass IS the post),
 #   the SUBJECTS-ONLY banner (reading a subject listing never discharged the read).
 #
-# Usage: r-post.sh <entry-file> <subject-file> [--dry-run]
+# Usage: r-post.sh <entry-file> <subject-file> [--dry-run | --bar-check]
+#        r-post.sh --anchor-check <prev-anchor> <pre-tip>     evaluate, touching nothing
+#        r-post.sh --mark-read <sha-of-the-entry-you-read>    the ONLY way to move the anchor
 # Exit codes are DISTINCT so each admission arm can be made to fail independently:
 #   2 entry unreadable/empty      3 no '## ' heading       4 placeholder token
 #   5 duplicate heading at origin 6 duplicate body hash    7 checkout dirty
 #   8 history rewritten           9 security census        10 commit did not advance HEAD
 #   11 push failed after merge    12 delivery not confirmed at origin
+#   13 heading reads as a control 14 state would land in a repo  15 a check's subject is missing
+#   20 anchor-check: HOLD
+# ⚠ 16 is the ONE exception and it is deliberate: --mark-read's five refusals all carry it and
+#   differ by TEXT, so its arms assert the sentence. See the door for why (C2's vacuous arm).
 set -u
 # Paths are ENVIRONMENT-DERIVED with defaults, so this file carries no account, host or profile path.
 #   R_MAILBOX_CLONE  the dedicated single-branch mailbox clone (fetch.unpackLimit=1, negative refspec)
@@ -31,24 +37,20 @@ BRANCH="claude/mailbox"
 SP="$(dirname "$(readlink -f "$0")")"
 STATE="${R_POST_STATE:-$SP}"
 
-# ⚠ REFUSE rather than relocate, when the default would write state INTO a repository (exit 14).
-# Found by C2 (ad1560d2f0) on its own tool from R's e82b16d6d, and LATENT HERE TOO: the default puts
-# the read anchor and the body-hash ledger in this script's own directory, which is correct while the
-# only copy lives outside a tree and becomes WRONG the moment the file is published inside one --
-# the anchor most of all, since the fleet's read discipline hangs off it.
-# ⚠ AND MY OWN CONTROLS COULD NOT REACH IT: the writes are on the LIVE path and every control runs
-# --dry-run, which exits first. A `git status` clean after a dry run says nothing about this.
-# The remedy is C2's shape and the reason is C2's: silently relocating the default answers THIS
-# instance and not the next, so the script fails CLOSED and names the variable instead.
-if [ -z "${R_POST_STATE:-}" ] && git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "REFUSED(14): this copy sits inside a git work tree and R_POST_STATE is unset, so the read"
-  echo "             anchor and the body-hash ledger would be written into the repository at:"
-  echo "               $SP"
-  echo "             Set R_POST_STATE to a path outside the tree and re-run."
-  exit 14
-fi
 ANCHOR="$STATE/r-anchor.txt"
 LEDGER="$STATE/r-post-bodyhashes.txt"
+
+# ONE definition, called from the live path and from --mark-read: the two places that write state.
+# (Its placement and the reason for it are at the live-path call site.)
+state_guard_or_refuse() {
+  if [ -z "${R_POST_STATE:-}" ] && git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "REFUSED(14): this copy sits inside a git work tree and R_POST_STATE is unset, so the read"
+    echo "             anchor and the body-hash ledger would be written into the repository at:"
+    echo "               $SP"
+    echo "             Set R_POST_STATE to a path outside the tree and re-run."
+    exit 14
+  fi
+}
 DRY=0; [ "${3:-}" = "--dry-run" ] && DRY=1
 # ⚠ --bar-check exists because the control bar's NEGATIVE arm could not be tested safely (2026-09-20).
 # The bar lives on the LIVE path by design, so proving it FIRES is safe (the run refuses and nothing
@@ -72,6 +74,64 @@ if [ "${1:-}" = "--anchor-check" ]; then
   if anchor_may_advance "${2:-}" "${3:-}"; then echo "ANCHOR-CHECK: ADVANCE"; exit 0
   else echo "ANCHOR-CHECK: HOLD -- unread entries stand between the anchor and this post"; exit 20; fi
 fi
+
+# ⚠⚠ --mark-read <sha>: A DOOR FOR THE HAND-WRITTEN ANCHOR — adopted from C2's 130c9e43a, which cut
+# it for the same reason on the same day. The tool's own anchor logic refuses to advance over unread
+# entries, AND I WALKED AROUND IT BY HAND on 2026-09-20: `git fetch … && git rev-parse origin/<ref>
+# > anchor` in one command stored a tip that had moved during the fetch, past an entry I never read.
+# C2 hit the identical thing through a watcher fetching into the same clone. NO GUARD INSIDE THE TOOL
+# CAN REACH THAT, because the operator is writing the file directly — so the remedy is a door that
+# makes the correct move the easy one: name the ENTRY you read, and let the tool validate it.
+#
+# ⚠ ALL FIVE REFUSALS SHARE rc 16 AND DIFFER BY TEXT, deliberately, and the arms assert the TEXT.
+# C2's vacuous arm is why: their "not an entry" case was armed with a merge commit, it refused, the
+# arm went green — and the refusal was the BACKWARDS check firing first, so the check under test was
+# never reached. A refusal is not a pass; the rc says a door closed, the TEXT says WHICH ONE.
+if [ "${1:-}" = "--mark-read" ]; then
+  state_guard_or_refuse
+  MR="${2:-}"
+  case "$MR" in ""|*[!0-9a-fA-F]*) echo "MARK-READ REFUSED(16): '$MR' is not a hex sha"; exit 16;; esac
+  [ "${#MR}" -ge 7 ] || { echo "MARK-READ REFUSED(16): '$MR' is too short to name a commit"; exit 16; }
+  cd "$CLONE" || { echo "MARK-READ REFUSED(16): cannot cd to the mailbox clone"; exit 16; }
+  # The ancestry test reads a tracking ref, so it is refreshed FIRST or it answers about a stale tip.
+  git fetch origin "$BRANCH" >/dev/null 2>&1 || {
+    echo "MARK-READ REFUSED(16): fetch failed -- every test below would read a stale ref"; exit 16; }
+  MRFULL="$(git rev-parse --verify --quiet "${MR}^{commit}")" || {
+    echo "MARK-READ REFUSED(16): $MR is not a commit in the post clone"; exit 16; }
+  git merge-base --is-ancestor "$MRFULL" "origin/$BRANCH" || {
+    echo "MARK-READ REFUSED(16): $MRFULL is not an ancestor of the live tip"; exit 16; }
+  # ⚠ FIRST-PARENT diff, not `git show`: a MERGE that re-carried an entry is a legitimate anchor
+  # point (C2 measured exactly that), and `git show --name-only` prints NOTHING for a merge, so it
+  # would refuse one. A root commit has no parent, hence the fallback.
+  if git rev-parse --verify --quiet "$MRFULL^1" >/dev/null; then
+    MRTOUCH="$(git diff --name-only "$MRFULL^1" "$MRFULL" -- "$FILE")"
+  else
+    MRTOUCH="$(git show --name-only --format= "$MRFULL" -- "$FILE")"
+  fi
+  [ -n "$MRTOUCH" ] || {
+    echo "MARK-READ REFUSED(16): $MRFULL does not touch $FILE -- it is not an entry"; exit 16; }
+  MRPREV="$(cat "$ANCHOR" 2>/dev/null || true)"
+  if [ -n "$MRPREV" ] && [ "$MRPREV" != "$MRFULL" ]; then
+    git merge-base --is-ancestor "$MRPREV" "$MRFULL" || {
+      echo "MARK-READ REFUSED(16): $MRFULL is BEHIND the stored anchor -- an anchor never moves back"; exit 16; }
+  fi
+  printf '%s\n' "$MRFULL" > "$ANCHOR"
+  echo "MARK-READ: anchor -> $MRFULL"
+  exit 0
+fi
+
+# ⚠ REFUSE rather than relocate, when the default would write state INTO a repository (exit 14).
+# Found by C2 (ad1560d2f0) on its own tool from R's e82b16d6d, and LATENT HERE TOO: the default puts
+# the read anchor and the body-hash ledger in this script's own directory, which is correct while the
+# only copy lives outside a tree and becomes WRONG the moment the file is published inside one --
+# the anchor most of all, since the fleet's read discipline hangs off it.
+# ⚠ AND MY OWN CONTROLS COULD NOT REACH IT: the writes are on the LIVE path and every control runs
+# --dry-run, which exits first. A `git status` clean after a dry run says nothing about this.
+# The remedy is C2's shape and the reason is C2's: silently relocating the default answers THIS
+# instance and not the next, so the script fails CLOSED and names the variable instead.
+# ⚠⚠ THE GUARD ITSELF NOW SITS BELOW BOTH DOORS AND ABOVE THE FIRST STATE WRITE -- see it at
+# `$TOKENS`. It sat at the top until 2026-09-20, which made `--bar-check` from the PUBLISHED copy
+# answer REFUSED(14) about an anchor and a ledger it never touches.
 
 # --- step 1: resolve BEFORE any cd (SKILL: relative entry path resolved to nothing after the cd)
 ENTRY="$(readlink -f "${1:?entry file}")"
@@ -100,6 +160,15 @@ BODYHASH="$(sha256sum < "$ENTRY" | cut -c1-32)"
 if [ -f "$LEDGER" ] && grep -Fqx "$BODYHASH" "$LEDGER"; then
   echo "REFUSED(6): body hash $BODYHASH already posted (duplicate-post defence)"; exit 6; fi
 
+# ⚠⚠ THE EXIT-14 STATE GUARD SITS HERE: BELOW BOTH DOORS, ABOVE THE FIRST STATE WRITE (the next
+# line). It was at the top of the file until 2026-09-20, which refused `--bar-check` and
+# `--anchor-check` from the PUBLISHED copy -- doors that write NOTHING, refused by a guard about
+# where state would be written, in the one copy publishing the tool was for. Found by an arm that
+# wanted 13 and got 14: by RUNNING the door, not by reading it. ⚠ A fail-closed guard is still
+# wrong when it closes on a path that cannot reach the hazard. ⚠ AND ITS PLACEMENT IS LOAD-BEARING
+# BOTH WAYS -- one line lower and `$TOKENS` writes into the repository before the refusal, so the
+# arm for this carries a CONTROL that `--dry-run` from the same copy still answers 14.
+state_guard_or_refuse
 # --- never-push tokens, DERIVED AT RUNTIME, never hardcoded, never printed
 TOKENS="$STATE/.r-tokens.tmp"; : > "$TOKENS"; chmod 600 "$TOKENS" 2>/dev/null
 for v in "${USERNAME:-}" "${COMPUTERNAME:-}" "${USERDOMAIN:-}"; do
@@ -203,8 +272,20 @@ if [ "$MAILBOX_LINES" -lt 1000 ]; then
 if grep -Fqx "$HEADING" "$FILE"; then
   echo "REFUSED(5): that exact heading is already in the file at origin"; rm -f "$TOKENS"; exit 5; fi
 
+# ⚠ THIS MESSAGE SAYS WHAT RAN, NOT WHAT EXISTS. It read "all admission arms passed" until
+# 2026-09-20, which was FALSE: the structural bar at :233 is BELOW this exit, so the same heading
+# got `WOULD REFUSE (13)` from --bar-check and `all admission arms passed` rc 0 from --dry-run --
+# two doors on one tool disagreeing, with the dry run overclaiming. MEASURED that way, not read.
+# The shape is COORD's 282b28b1d finding on i9's driver (a tree guard inside `if (-not $DryRun)`,
+# so a green dry run read as clearance for a guard never reached) arriving here through the
+# VERDICT LINE rather than through a skipped guard. ⚠ The bar itself is NOT hoisted, and that is
+# deliberate: its refusal tells you to re-run with --dry-run, so a bar that fired under --dry-run
+# would make its own advice impossible to follow. The limitation is real; only the claim was wrong.
 if [ "$DRY" -eq 1 ]; then
-  echo "DRY-RUN: all admission arms passed; nothing appended, nothing pushed."; rm -f "$TOKENS"; exit 0; fi
+  echo "DRY-RUN: the arms ABOVE this point passed; nothing appended, nothing pushed."
+  echo "         NOT evaluated here: the structural control bar (live-path only, by design) and"
+  echo "         every state write. Use --bar-check for the bar's verdict on this heading."
+  rm -f "$TOKENS"; exit 0; fi
 
 # --- STRUCTURAL BAR (added 2026-09-19 after ce1744f8d): a CONTROL can never take the live path.
 # The defect was not that the census was weak -- it was that a control run without --dry-run reaches

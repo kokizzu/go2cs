@@ -12,6 +12,9 @@
 #        sed 's|low="$STATE/.r-census-scan.tmp"|low="$f.lc.tmp"|' r-post.sh > /tmp/oldtmp.sh
 set -u
 TOOL="$(readlink -f "${1:?usage: r-post-scantemp-arm.sh <tool>}")"
+# C1 b68ed837d: the THIRD vacuity shape -- the subject never invoked at all. A relative tool
+# path plus a cd read as a clean PASS in C1 arm. Refuse an unrunnable subject before any verdict.
+[ -r "$TOOL" ] || { echo "REFUSED(2): the tool under test is not readable: $TOOL"; exit 2; }
 ROOT="${2:-/c/go2cs-tmp/r-scantemp-arm}"
 fails=0
 ok(){ echo "  PASS  $1"; }
