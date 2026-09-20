@@ -277,6 +277,13 @@ def parse_timings_tsv(path):
         name, word = cells[ix["row"]].strip(), cells[ix["word"]].strip()
         secs_cell, verdict_cell = cells[ix["sweep_s"]].strip(), cells[ix["verdicts"]].strip()
 
+        # ⚠ WHERE THE FILTER LIVES, so the person who meets this refusal is not left inferring it.
+        # This does NOT skip the row -- it refuses the whole file, deliberately: a basis with holes
+        # schedules a plan over work it never measured. The per-lane recon TSVs are READINGS and carry
+        # `UNMEASURED` for TIMEOUT and NOVERDICT rows; the BANKED basis excludes those rows at the
+        # CONCATENATION (the roster seat, ruled 96763d677), which is the only place that filter exists.
+        # The one exception is the hand-stopped set below, banked with `sweep_s := wall_s` so the drop
+        # at the next block can fire -- its number parses and is never scheduled on.
         if not re.fullmatch(r"\d+", secs_cell):
             die(f"{path.name}:{lineno} sweep_s is {secs_cell!r}, not an integer -- a row with no measured "
                 f"cost is UNSCHEDULED, never nominal: {line!r}")
