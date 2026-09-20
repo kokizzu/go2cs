@@ -68,7 +68,14 @@ HEADING="$(grep -m1 '^## ' "$ENTRY" || true)"
 [ -n "$HEADING" ] || { echo "REFUSED(3): entry has no '## ' heading line"; exit 3; }
 # The bar's predicate, evaluated and reported WITHOUT proceeding. Same expression as the live bar
 # below -- one definition, consulted twice, so the check cannot drift from the thing it checks.
-barmatch() { printf '%s' "$1" | tr 'A-Z' 'a-z' | grep -qE '\[ctl\]|census control|admission control|scratch test|self-test|plant|probe'; }
+# ⚠ `probe` is WORD-BOUNDED (with its inflections named) because the bare substring refused a real
+# post on `probe_package` -- a FIXTURE'S PACKAGE NAME, quoted inside a compiler error in the heading.
+# `_` is a word character, so `\bprobe(s|d)?\b` frees `probe_package` while still refusing `probe`,
+# `probes` and `probed`. ⚠ The sentence DESCRIBING that false positive reproduced it, which is how a
+# substring guard on prose behaves: three refusals in one post, one of them real.
+# `plant` stays a substring deliberately -- `planted`/`planting` are the words a control heading
+# actually uses, and no ordinary word carries it (transplant/supplant are not heading words here).
+barmatch() { printf '%s' "$1" | tr 'A-Z' 'a-z' | grep -qE '\[ctl\]|census control|admission control|scratch test|self-test|plant|\bprobe(s|d)?\b'; }
 if [ "$BARCHECK" -eq 1 ]; then
   if barmatch "$HEADING"; then echo "BAR-CHECK: WOULD REFUSE (13) -- heading reads as a control"; exit 13
   else echo "BAR-CHECK: would pass the control bar (0) -- nothing touched"; exit 0; fi
@@ -111,15 +118,33 @@ census() { # $1 = file to scan; 0 clean, 1 hits, 2 the INSTRUMENT is unsound (ne
 }
 # SELF-TEST: safety floor 13 -- a gate that has never been made to fail proves nothing.
 # The census must be PROVEN able to fire on this box before any clean verdict from it is believed.
+#
+# ⚠ EVERY TOKEN, NOT THE FIRST. This planted only `grep -m1 . "$TOKENS"` until 2026-09-20, which made
+# the assertion INVARIANT under a degraded token set: with one of the four environment variables unset
+# in the environment the tool inherits, the surviving first token is planted, fires, and the line
+# printed is WORD-FOR-WORD the healthy one. The count was printed (`tokens=N`) and nothing asserted
+# it, so a census 25% blind announced itself as sound. Found by applying C1's `d7f8f842a` -- a
+# self-test figure invariant under a 90% truncation of its input -- to this tool rather than reading
+# it as someone else's finding; the shape transferred, the two ruled lines did not (this tool
+# materialises nothing, and its failure already REFUSES).
+#
+# The assertion now scales with the instrument: N tokens planted, N fires required, and the COUNT is
+# printed beside the verdict so a degraded set is visible in the output rather than derivable from it.
 selftest() {
-  local plant="$STATE/.r-census-plant.tmp" firsttok rc
-  firsttok="$(grep -m1 . "$TOKENS")"
-  [ -n "$firsttok" ] || { echo "  SELF-TEST FAILED: no token to plant"; return 1; }
-  printf '## plant\n\nleading text %s trailing text\n' "$firsttok" > "$plant"
-  census "$plant" >/dev/null 2>&1; rc=$?
-  rm -f "$plant" "$plant.lc.tmp"
-  [ "$rc" -eq 1 ] || { echo "  SELF-TEST FAILED: a planted token did NOT make the census fire (rc=$rc)"; return 1; }
-  echo "  self-test: planted token DETECTED -- the census can fire on this box"
+  local plant="$STATE/.r-census-plant.tmp" tok rc planted=0
+  [ -s "$TOKENS" ] || { echo "  SELF-TEST FAILED: no token to plant"; return 1; }
+
+  while IFS= read -r tok; do
+    [ -n "$tok" ] || continue
+    printf '## plant\n\nleading text %s trailing text\n' "$tok" > "$plant"
+    census "$plant" >/dev/null 2>&1; rc=$?
+    rm -f "$plant" "$plant.lc.tmp"
+    [ "$rc" -eq 1 ] || { echo "  SELF-TEST FAILED: a planted token did NOT make the census fire (rc=$rc)"; return 1; }
+    planted=$((planted + 1))
+  done < "$TOKENS"
+
+  [ "$planted" -eq "$(grep -c . "$TOKENS")" ] || { echo "  SELF-TEST FAILED: planted $planted of $(grep -c . "$TOKENS") tokens"; return 1; }
+  echo "  self-test: $planted of $planted planted tokens DETECTED -- the census can fire on this box"
 }
 echo "== SECURITY CENSUS (own step, before any mutation) =="
 selftest || { echo "REFUSED(9): census self-test failed -- refusing to trust any clean verdict"; rm -f "$TOKENS"; exit 9; }
