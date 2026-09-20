@@ -4,6 +4,7 @@
 # the identifier arms are NOT reimplemented here. This tool CALLS the fleet's one census
 # (.claude/coord-scripts/coord-identifier-census.sh) -- entry+subject as GATES, tree as a READING.
 # Usage: c2-post.sh --entry <file> --subject <text> [--last-read <sha>] [--dry-run]
+#        c2-post.sh --anchor-check <prev> <pretip>      the anchor DECISION, touching nothing
 set -u
 # Lane paths, ENVIRONMENT-DERIVED (COORD 7bf197e27). Nothing absolute is baked into a shipped
 # instrument: a literal absolute path in one is on the pushed surface, comments included
@@ -130,7 +131,7 @@ IDC_AT=$(idc_refresh) || { echo "REFUSED: cannot resolve the fleet census from o
 IDC="$IDCDIR/coord-identifier-census.sh"
 MBOX="docs/phase4/MAILBOX.md"
 ANCHOR_FILE="$SP/c2-anchor.txt"
-DRY=0; ENTRY=""; SUBJECT=""; CLAIMED=""
+DRY=0; ENTRY=""; SUBJECT=""; CLAIMED=""; ANCHORCHECK=0; ACPREV=""; ACTIP=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -138,9 +139,59 @@ while [ $# -gt 0 ]; do
     --subject) SUBJECT="$2"; shift 2;;
     --last-read) CLAIMED="$2"; shift 2;;
     --dry-run) DRY=1; shift;;
+    # ⚠ VALIDATE BEFORE THE SHIFT. `shift 3` with fewer than three arguments left FAILS under
+    # `set -u` without exiting, leaving $1 as --anchor-check and spinning this while loop
+    # forever. Measured: both malformed forms hung until a 10 s timeout killed them. A door
+    # whose misuse hangs is worse than one that refuses, because a hang has no exit code to
+    # read and an arm that times out looks like a slow box.
+    --anchor-check)
+      ANCHORCHECK=1; ACPREV="${2:-}"; ACTIP="${3:-}"
+      [ -n "$ACTIP" ] || { echo "REFUSED: --anchor-check needs <prev> <pretip>"; exit 2; }
+      shift 3;;
     *) echo "REFUSED: unknown argument '$1'"; exit 2;;
   esac
 done
+
+# ⚠⚠ THE ANCHOR DECISION, ONE DEFINITION, CONSULTED BY BOTH PATHS.
+# 2026-09-20: this tool advanced the read anchor to the tip it POSTED AT, unconditionally, so a
+# POST swept entries that had landed since the last READ. C2 reported the defect; R (48e3ab76e),
+# i9 (638516f72) and C1 (43cb7f049) each cut a fix from that report and this lane ran on habit
+# instead -- the last of four, which is the reason the guard is mechanical now. The rule the write
+# has to obey: THE ANCHOR MAY ONLY MOVE OVER TEXT THIS LANE HAS READ.
+#   empty absorbed range  -> advance to OUR OWN delivered post, so the UNREAD gauge still reaches 0
+#   non-empty             -> HOLD, print the count, and print the command that marks them read
+# R's door shape is taken rather than reinvented (mailbox c4120c552): the decision is a FUNCTION,
+# the live path consults it, and --anchor-check consults THE SAME function and exits touching
+# nothing -- so the arm that proves the refusal cannot be a second implementation of it. The
+# banner below already said "READ EVERY LINE" while the write disagreed with it; a banner that
+# contradicts the write is not a guard, and the write won every time.
+anchor_unread_count() {
+  _acP="$1"; _acT="$2"; _acOwn="${3:-__none__}"
+  # No stored anchor is not an unread entry: there is nothing it could have swept past.
+  [ -n "$_acP" ] || { printf '0\n'; return 0; }
+  # grep -vc prints 0 and exits 1 on an empty stream; the COUNT is what is wanted, not the status.
+  git -C "$CLONE" log --format='%H' "$_acP..$_acT" -- "$MBOX" 2>/dev/null | grep -vc "^$_acOwn$"
+}
+
+# rc 0 = the anchor MAY advance.  rc 20 = it must HOLD.  Nothing else reads these two rc values.
+anchor_may_advance() {
+  [ "$(anchor_unread_count "$1" "$2" "${3:-__none__}")" -eq 0 ] || return 20
+}
+
+# ⚠ THE DOOR. Evaluates the decision and EXITS: no entry file, no census, no push, no write to the
+# anchor file. This is what an arm drives, so the negative arm never has to be exercised by making
+# a real post -- i9's 03603d635 is the cost of a control that reaches the end of a happy path.
+if [ "$ANCHORCHECK" -eq 1 ]; then
+  [ -n "$ACTIP" ] || { echo "REFUSED: --anchor-check needs <prev> <pretip>"; exit 2; }
+  [ -d "$CLONE/.git" ] || { echo "REFUSED: --anchor-check needs the post clone at $CLONE"; exit 2; }
+  _n=$(anchor_unread_count "$ACPREV" "$ACTIP")
+  if anchor_may_advance "$ACPREV" "$ACTIP"; then
+    echo "WOULD ADVANCE: 0 unread entr(ies) in ${ACPREV:-<no anchor>}..$ACTIP"
+    exit 0
+  fi
+  echo "WOULD HOLD: $_n unread entr(ies) in $ACPREV..$ACTIP -- the anchor may only move over text you have READ"
+  exit 20
+fi
 
 # resolve the entry path BEFORE any cd (C1 f9f41e8d8 s7)
 [ -n "$ENTRY" ] || { echo "REFUSED: --entry required"; exit 2; }
@@ -332,5 +383,14 @@ echo
 echo "========== ABSORBED SINCE STORED ANCHOR $STORED -- READ EVERY LINE =========="
 git log --format='%H%n    %s' --reverse "$STORED..$REMOTE" -- "$MBOX" | grep -v "^$OURSHA$"
 echo "========== END ABSORBED RANGE =========="
-printf '%s\n' "$REMOTE" > "$ANCHOR_FILE"
-echo "stored anchor advanced to $REMOTE"
+
+# ⚠ THE WRITE NOW OBEYS THE BANNER ABOVE IT. Same function the door consults, our own post excluded
+# so a clean post still zeroes the gauge.
+if anchor_may_advance "$STORED" "$REMOTE" "$OURSHA"; then
+  printf '%s\n' "$OURSHA" > "$ANCHOR_FILE"
+  echo "stored anchor advanced to $OURSHA (our own post; 0 unread absorbed)"
+else
+  echo "⚠ ANCHOR NOT ADVANCED -- it stays at $STORED. $ABSORBED entr(ies) above are UNREAD."
+  echo "   Read each one WHOLE, then mark them read with:"
+  echo "     printf '%s\\n' $REMOTE > $ANCHOR_FILE"
+fi
