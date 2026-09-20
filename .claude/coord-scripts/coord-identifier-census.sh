@@ -544,6 +544,12 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
             # map, in the guard's own order, and on the HOST SEGMENT -- per OCCURRENCE, never per
             # line, so a placeholder host never clears a real host beside it.
             if (tok == "") { EXC[arm "\t" "no-host"]++; ok = 0 }
+            # A JSON unicode escape of a converter glyph satisfies this arm's host-token class, and
+            # the corpus escapes constantly. Inside a JSON string a literal backslash is DOUBLED, so a
+            # real UNC prefix carries FOUR and an escape carries TWO -- measured on one committed line
+            # carrying both. Consulted FIRST because it is the most mechanical of the three, so the
+            # reason a hit is admitted reads as what it is (COORD 3a680658f (4), C1's A/B 48b7d578).
+            else if (admitted("unc_escape", tok)) { EXC[arm "\t" "escape-sequence"]++; ok = 0 }
             else if (admitted("profile_placeholder", tok)) { EXC[arm "\t" "placeholder-segment"]++; ok = 0 }
             else if (admitted("nickname_host", tok)) { EXC[arm "\t" "nickname-host"]++; ok = 0 }
         } else if (arm ~ /^host_/) {
@@ -1175,6 +1181,25 @@ idc_mode_selftest() {
     # identical in both modes -- unlike a context rule, which strict refuses on purpose.
     printf 'upstream doc comment: %s%sserver%sshare%spath\n' "$bs" "$bs" "$bs" "$bs" > "$d/p22"; idc_st_case "DELTA admits the same placeholder host" "" "$d/p22" 0
     idc_st_exc "  and by the PLACEHOLDER ADMIT in delta as well" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+
+    # THE UNICODE-ESCAPE ADMIT (COORD 3a680658f (4), C1's A/B 48b7d578). ⚠ NOTHING HERE SPELLS THE
+    # SHAPE: every backslash comes from $bs and the escape body is a separate argument, so this file
+    # -- which is itself tracked and censused -- carries no literal network path. BOTH DIRECTIONS,
+    # and the REFUSE sibling is the one that matters: the admit is bounded to the HEX form, so a
+    # token of the same length whose body is NOT hex must still fire.
+    printf 'stack: at go.fmt_package.printArg(%s%su0436%s%su0060 p)\n' "$bs" "$bs" "$bs" "$bs" > "$d/p23"; idc_st_case "STRICT admits a unicode-escape host" "" "$d/p23" 1
+    idc_st_exc "  and the ESCAPE ADMIT is what admitted it"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
+    printf 'and the slash flavour %s%su0436%sshare%sx\n' "$sl" "$sl" "$sl" "$sl" > "$d/p24"; idc_st_case "STRICT admits it on the slash arm too (ruled scope: unc_*)" "" "$d/p24" 1
+    idc_st_exc "  and the ESCAPE ADMIT is what admitted it"      "unc_slash|escape-sequence" "$IDC_TMP/st.status"
+    # ⚠ THE BOUND. Same leading letter, same length, body NOT hex -> still a hit. Without this case
+    # the admit could widen to "any host starting with that letter" and every other case stays green.
+    printf 'copied from %s%suzzzz%sshare%sx\n' "$bs" "$bs" "$bs" "$bs" > "$d/p25"; idc_st_case "a non-hex body of the same shape STILL REFUSES" "unc_backslash" "$d/p25" 1
+    # PER OCCURRENCE, never per line: an escape and a real host on ONE line still refuses.
+    printf 'from %s%su0436%sshare and %s%s%s%sshare\n' "$bs" "$bs" "$bs" "$bs" "$bs" "box7" "$bs" > "$d/p26"; idc_st_case "mixed line: escape host + real host" "unc_backslash" "$d/p26" 1
+    idc_st_exc "  and the escape on that SAME LINE was admitted" "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
+    # DELTA too: read on the decision token, so identical in both modes.
+    printf 'stack: at go.fmt_package.printArg(%s%su13d1%s%su0060 p)\n' "$bs" "$bs" "$bs" "$bs" > "$d/p27"; idc_st_case "DELTA admits a unicode-escape host as well" "" "$d/p27" 0
+    idc_st_exc "  and by the ESCAPE ADMIT in delta as well"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
 
     # PASS 2 -- a token split across a line break, with an INDENTED continuation.
     printf 'owner column reads zorb\n    ulax here\n'                      > "$d/p13"; idc_st_case "token split across a line break (PASS 2)" "TOKENFILE" "$d/p13" 1
