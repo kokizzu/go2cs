@@ -786,6 +786,25 @@ func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetTyp
 
 					simpleTarget := targetTypeName
 
+					// A FOREIGN GENERIC struct's adapter is NOT a generic class. The generator emits
+					// one NON-generic adapter per CLOSED instantiation there, because such a pair's
+					// interface is non-generic and its members are typed at the CLOSED arguments —
+					// an adapter open over `<K, V>` could not implement it at all (CS1503 on every
+					// member; see ImplementGenerator's foreign branch, and Go's own rule that
+					// exactly one instantiation can satisfy such an interface). So the closed
+					// argument list must NOT trail the reference the way adapterTypeRef trails a
+					// LOCAL generic's (`nistCurveжCurve<ж<P224Point>>`, which names a genuinely
+					// generic class): dropping it composes `sync_HashTrieMapжmapInterface`, which is
+					// the class the generator emits for internal/sync's HashTrieMap[any, any]
+					// against sync's mapInterface (Go 1.24.13, sync/map_reference_test.go:32 — the
+					// corpus's first foreign-and-generic pair, reached from three cast sites).
+					// Dropped BEFORE the qualifier scan below, the order splitAdapterStructReference
+					// already documents: a '<' left in place swallows the rest of the scan as soon
+					// as an argument is itself a dotted type.
+					if idx := strings.Index(simpleTarget, "<"); idx >= 0 {
+						simpleTarget = simpleTarget[:idx]
+					}
+
 					if idx := strings.LastIndex(simpleTarget, "."); idx >= 0 {
 						simpleTarget = simpleTarget[idx+1:]
 					}
