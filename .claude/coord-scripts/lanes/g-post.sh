@@ -135,8 +135,35 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
   [ -s "$IDC_DIR/$f.act" ] || { echo "FLEET CENSUS FILE UNREADABLE AT THE ACT ($f, rc $idc_rc): $(head -1 "$IDC_DIR/$f.err" 2>/dev/null) -- NOT POSTED"; rm -f "$IDC_DIR/$f.act" "$IDC_DIR/$f.err"; exit 3; }
   rm -f "$IDC_DIR/$f.err"
   mv "$IDC_DIR/$f.act" "$IDC_DIR/$f"
+  # GATE 1/2 (COORD 7c3612fb5) -- CONTENT HASH vs THE REF'S BLOB. `-s` above only proves non-empty,
+  # and C1 measured what that leaves open: a patterns file truncated to 150 of 167 lines still RUNS,
+  # reports CLEAN, and declares TEN of twenty-one arms. git's own blob id is the exact comparison.
+  idc_local=$(git hash-object "$IDC_DIR/$f" 2>/dev/null)
+  idc_ref=$(MSYS2_ARG_CONV_EXCL="$idc_arg" git -C "$IDC_REPO" rev-parse "$idc_arg" 2>/dev/null)
+  if [ -z "$idc_local" ] || [ -z "$idc_ref" ] || [ "$idc_local" != "$idc_ref" ]; then
+    echo "MATERIALISED BLOB MISMATCH ($f): local ${idc_local:-<unresolved>} vs ref ${idc_ref:-<unresolved>} -- NOT POSTED"
+    exit 3
+  fi
 done
 chmod +x "$IDC"
+# GATE 2/2 (COORD 7c3612fb5) -- THE SELF-TEST'S **FAIL** COUNT REFUSES.
+# The headline figure is ATTEMPTED arms and does NOT move when the set is degraded (C1 measured it
+# UNCHANGED at 116 over a gutted file: pass 79 + fail 37, the 37 discarded). MEASURED HERE: a gutted
+# set does not report fail=37 at all -- the census exits rc 2 and prints NO fail= line -- so the
+# ABSENT-VERDICT branch is the one that actually catches it, and a naive test on an empty string
+# passes. Both branches are in; the empty one is load-bearing. Not redundant with the hash above:
+# the hash asserts the TRANSFER, and a clone whose own origin/master is degraded transfers it
+# faithfully and MATCHES.
+idc_st=$("$IDC" selftest 2>&1); idc_st_rc=$?
+idc_fail=$(printf '%s\n' "$idc_st" | grep -oE 'fail=[0-9]+' | head -1 | cut -d= -f2)
+if [ -z "$idc_fail" ]; then
+  echo "CENSUS SELF-TEST PRINTED NO FAIL COUNT (rc $idc_st_rc) -- NOT POSTED (a self-test with no verdict has not passed)"
+  exit 3
+elif [ "$idc_fail" != "0" ]; then
+  echo "CENSUS SELF-TEST FAILED: fail=$idc_fail (rc $idc_st_rc) -- NOT POSTED"
+  exit 3
+fi
+echo "CENSUS SELF-TEST: fail=$idc_fail, all three blobs match the ref"
 echo "CENSUS AT THE ACT: origin/master ${IDC_SHA:0:12} (re-materialised, not a local copy)"
 # ARM 7 -- the OWNER'S NAME AS A BARE TOKEN. Arms 1-6 all key on an ACCOUNT or on a PATH SHAPE, and
 # the owner's personal name is neither: it appears as an addressee, in prose, with no path around it,
@@ -353,7 +380,18 @@ TREEBASE=$(git rev-parse origin/claude/mailbox)
 # already certified that text. The reading still runs on every post and its ADDED count is still
 # printed loudly -- what changed is that a non-zero exit no longer stops the post unless GPOST_TREE_GATE
 # is set, which is the opt-in.
-"$IDC" tree docs/phase4/MAILBOX.md "$TREEBASE"; idc_tree_rc=$?
+# DROPPED FROM THE CYCLE (COORD 0cb09c354). Measured on this box: mailbox median inter-arrival 96 s
+# vs a 177 s cycle, of which THIS CALL was 101,318 ms -- 57%, against 4.3 s for the real gate. A post
+# lands only if the channel holds still for one whole cycle, so the reading was pricing this lane out
+# of the channel at ~5% per attempt. It is a READING (the block below says so itself), so dropping it
+# removes no refusal. Opt in with GPOST_TREE_READ=1. After: 79 s, below the median.
+if [ -n "${GPOST_TREE_READ:-}" ]; then
+  GPOST_TREE_SKIPPED=
+  "$IDC" tree docs/phase4/MAILBOX.md "$TREEBASE"; idc_tree_rc=$?
+else
+  GPOST_TREE_SKIPPED=1
+  idc_tree_rc=0
+fi
 if [ "$idc_tree_rc" != "0" ]; then
   echo "TREE READING: non-zero (rc $idc_tree_rc) on docs/phase4/MAILBOX.md post-append at tip ${TIPBLOB:0:12}, $TREELINES lines"
   if [ -n "${GPOST_TREE_GATE:-}" ]; then
@@ -362,7 +400,11 @@ if [ "$idc_tree_rc" != "0" ]; then
   fi
   echo "  tree is a READING per d4f169153: entry and subject are clean, so the post proceeds"
 else
-  echo "TREE PASS: docs/phase4/MAILBOX.md post-append at the fetched tip ${TIPBLOB:0:12}, $TREELINES lines, 0 ADDED hits"
+  if [ -n "${GPOST_TREE_SKIPPED:-}" ]; then
+    echo "TREE READING NOT TAKEN (dropped from the cycle per COORD 0cb09c354: a reading, not the gate). GPOST_TREE_READ=1 takes it. Entry + subject STRICT gated this post."
+  else
+    echo "TREE PASS: docs/phase4/MAILBOX.md post-append at the fetched tip ${TIPBLOB:0:12}, $TREELINES lines, 0 ADDED hits"
+  fi
 fi
 # $TREECAND is KEPT: the appended file is byte-compared against it below, so the bytes that were
 # censused are provably the bytes that get committed.
@@ -413,8 +455,8 @@ NSTAGED=$(git diff --cached --name-only | wc -l | tr -d ' ')
 [ "$NSTAGED" = 1 ] || { echo "STAGED $NSTAGED FILES, WANT 1 -- NOT POSTED"; git reset --hard origin/claude/mailbox --quiet; exit 11; }
 git -c commit.gpgsign=false commit -q -m "$SUBJ" || { echo "COMMIT FAILED"; exit 6; }
 LOCAL=$(git rev-parse HEAD)
-git push origin claude/mailbox > /tmp/g-post-push.log 2>&1; RC=$?
-tail -1 /tmp/g-post-push.log
+git push origin claude/mailbox > /tmp/g-post-push.$$.log 2>&1; RC=$?
+tail -1 /tmp/g-post-push.$$.log
 REMOTE=$(git ls-remote origin refs/heads/claude/mailbox | cut -f1)
 echo "push rc=$RC local=$LOCAL remote=$REMOTE"
 if [ "$LOCAL" = "$REMOTE" ]; then
