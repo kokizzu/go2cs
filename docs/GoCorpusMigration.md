@@ -2238,9 +2238,15 @@ question someone had to answer under time pressure. Written here so the next hop
   RECON LEG  ->  ROSTER SEAT  ->  PLAN  ->  DRIVER
 ```
 
-The recon leg is the first full pass of the roster at the version tip, per package, never the sweep
-wrapper; it banks the per-row TSV the map reads. Then the roster seat lands. Then the plan is emitted
-from that TSV and the driver runs the campaign's repeated passes.
+The recon leg is the first full pass of **the POPULATION** at the version tip — every row of it, per
+package, never the sweep wrapper — and it banks the per-row TSV the map reads. Then the roster seat
+lands. Then the plan is emitted from that TSV and the driver runs the campaign's repeated passes.
+
+⚠ **The population is not the roster.** The roster is the BANKED set; a relocated row's successor and
+every not-yet-banked row are outside it, and **this leg is the authority on membership**. The two
+words are not interchangeable in this block — the sentence below about the map generator says "the
+roster file" and is CORRECT, because that is the file the generator enumerates from. The difference
+between the two sets is the whole reason the sweep cannot run this leg.
 
 **The recon leg invokes THE PIPELINE per package** — `go2cs -tests -test-action all
 <goroot>/src/<row> <tree>/src/core/<row>` in the worktree at the version tip, whose `src/core` is the
