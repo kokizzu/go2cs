@@ -27,9 +27,28 @@ if git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 CLONE="$SP/mbox"
 # REPO is the clone the SHARED census is materialised FROM (origin/master at call time, never
-# a working tree). Derived from the current working tree; falls back to the mailbox clone,
-# which has the same origin and so resolves origin/master identically.
-REPO="${C2_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$CLONE")}"
+# a working tree). ⚠⚠ IT IS THIS LANE'S OWN CLONE, NEVER THE CALLER'S CWD.
+#
+# 2026-09-20, MEASURED BY DECOY rather than read: this line used to be
+#     REPO="${C2_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$CLONE")}"
+# so the directory the operator happened to STAND IN became the fetch target, and idc_refresh
+# below force-fetches `+master:refs/remotes/origin/master` into it. A throwaway repo, entered and
+# then used only for `--dry-run`, went from 1 ref to 24 with origin/master created. Nothing was
+# corrupted in practice — this lane always invokes after `cd "$SP"`, where --show-toplevel fails —
+# but THAT IS CALLER DISCIPLINE, WHICH IS WHAT A DOOR EXISTS TO REPLACE.
+#
+# ⚠ The hole survived the test everyone applied first. `$REPO` IS a variable WITH an override, so
+# "is every shared path parameterised?" reads clean; the danger was in the DEFAULT, computed at
+# runtime from the caller. R's fe5f4089c found the same shape one step over (a temp derived from an
+# argument) and C1's 66c860cb9 found this exact one. COORD's doctrine at 7a959706f: a door is a
+# property of a PATH, the list is enumerated from the script rather than from memory, and the
+# question for each write is WHO CHOSE THIS DIRECTORY — a fetch that moves a tracking ref in a repo
+# the operator reads is the same hole through a different door.
+#
+# The clone resolves origin/master identically (same origin) and idc_refresh's FORCED refspec is
+# what makes that true — the unforced form wrote nothing in a single-branch clone, which is why
+# this fallback was once dead and is now the only default.
+REPO="${C2_REPO:-$CLONE}"
 # ⚠ THE CENSUS IS RESOLVED FROM origin/master AT CALL TIME, NEVER FROM THE WORKING TREE.
 # 2026-09-20: COORD landed a per-arm ADMIT for Go release literals on master 43ee2ac8b3, and this tool
 # had been calling the copy in its own checkout -- a seat branch based on an older master -- so it was
@@ -131,7 +150,7 @@ IDC_AT=$(idc_refresh) || { echo "REFUSED: cannot resolve the fleet census from o
 IDC="$IDCDIR/coord-identifier-census.sh"
 MBOX="docs/phase4/MAILBOX.md"
 ANCHOR_FILE="$SP/c2-anchor.txt"
-DRY=0; ENTRY=""; SUBJECT=""; CLAIMED=""; ANCHORCHECK=0; ACPREV=""; ACTIP=""
+DRY=0; ENTRY=""; SUBJECT=""; CLAIMED=""; ANCHORCHECK=0; ACPREV=""; ACTIP=""; MARKREAD=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -148,6 +167,10 @@ while [ $# -gt 0 ]; do
       ANCHORCHECK=1; ACPREV="${2:-}"; ACTIP="${3:-}"
       [ -n "$ACTIP" ] || { echo "REFUSED: --anchor-check needs <prev> <pretip>"; exit 2; }
       shift 3;;
+    --mark-read)
+      MARKREAD="${2:-}"
+      [ -n "$MARKREAD" ] || { echo "REFUSED: --mark-read needs the sha of the ENTRY you read"; exit 2; }
+      shift 2;;
     *) echo "REFUSED: unknown argument '$1'"; exit 2;;
   esac
 done
@@ -191,6 +214,42 @@ if [ "$ANCHORCHECK" -eq 1 ]; then
   fi
   echo "WOULD HOLD: $_n unread entr(ies) in $ACPREV..$ACTIP -- the anchor may only move over text you have READ"
   exit 20
+fi
+
+# ⚠⚠ --mark-read: THE ANCHOR IS SET FROM AN ENTRY THAT WAS READ, NEVER FROM A TRACKING REF.
+# RULED for this lane at COORD 1f3e5fa16, from the defect this lane reported at 4f29a8742 §5.
+#
+# The tool already refuses to advance the anchor over unread entries — and that guard was walked
+# straight around, because the OPERATOR writes the file by hand between posts:
+#     git rev-parse origin/claude/mailbox > c2-anchor.txt
+# The watcher fetches into THE SAME CLONE this logic reads, so the tracking ref moves between the
+# read that justifies the value and the write that uses it. Measured: the value came back ONE ENTRY
+# FURTHER ON than the last entry actually opened, and the anchor advanced over an entry never seen.
+# A guard in the tool does not cover the operator writing the file directly.
+#
+# So the hand-written form gets a door of its own. The operator names THE ENTRY THEY READ, not a
+# tip, and this validates it: a real commit, an ENTRY (it touches the mailbox file), an ancestor of
+# the live tip, and never BEHIND the anchor it replaces. It writes nothing on any refusal.
+if [ -n "$MARKREAD" ]; then
+  case "$MARKREAD" in
+    [0-9a-f]*) ;;
+    *) echo "REFUSED --mark-read: '$MARKREAD' is not a hex sha"; exit 2;;
+  esac
+  [ -d "$CLONE/.git" ] || { echo "REFUSED --mark-read: no post clone at $CLONE"; exit 2; }
+  git -C "$CLONE" fetch --quiet origin claude/mailbox 2>/dev/null
+  _mr=$(git -C "$CLONE" rev-parse --verify -q "$MARKREAD^{commit}" 2>/dev/null)     || { echo "REFUSED --mark-read: '$MARKREAD' is not a commit in $CLONE"; exit 2; }
+  _tip=$(git -C "$CLONE" rev-parse origin/claude/mailbox)
+  git -C "$CLONE" merge-base --is-ancestor "$_mr" "$_tip" 2>/dev/null     || { echo "REFUSED --mark-read: $_mr is not an ancestor of the live tip $_tip"; exit 2; }
+  # ⚠ AN ENTRY, not merely a commit on the ref: a merge or an unrelated commit is not something
+  # this lane can have READ as an entry. Checked by whether it touches the mailbox file at all.
+  [ -n "$(git -C "$CLONE" log --format='%H' -1 "$_mr" -- "$MBOX")" ]     || { echo "REFUSED --mark-read: $_mr does not touch $MBOX -- it is not an entry"; exit 2; }
+  _cur=$(tr -d '[:space:]' < "$ANCHOR_FILE" 2>/dev/null)
+  if [ -n "$_cur" ] && ! git -C "$CLONE" merge-base --is-ancestor "$_cur" "$_mr" 2>/dev/null; then
+    echo "REFUSED --mark-read: $_mr is BEHIND the stored anchor $_cur -- an anchor never moves back"; exit 2
+  fi
+  printf '%s\n' "$_mr" > "$ANCHOR_FILE"
+  echo "anchor set to the ENTRY read: $_mr"
+  exit 0
 fi
 
 # resolve the entry path BEFORE any cd (C1 f9f41e8d8 s7)
