@@ -1583,6 +1583,302 @@ reproduces the single-target build byte-for-byte.
      and -comments: .claude/rules/converter.md:96-102 and :115-118 at a02ac3df3; example line a02ac3df3:src/go2cs/main.go:302. No
      platform-manifest file tracked at a02ac3df3. -->
 
+#### Amendment 2026-09-19 (C2) — the comparand's provenance, the byte-identity arm, and the predicted deltas
+
+The amendment above stops at *"neither its comparand nor the default-flavour byte-identity arm has a
+procedure at this hop"*. This closes both. The instrument is [`src/h8-comparand.sh`](../src/h8-comparand.sh)
+(`selftest`: 20 arms, every one **made to fail and restored**); it is a reader of manifests and package
+sets, converts nothing, and writes into no corpus.
+
+##### (a) The 1.23.12 outgoing manifest is **PRODUCED**, not recovered
+
+Four candidates were measured before one was chosen. Three are refused, and two of them are refused
+for reasons that would not have shown up as an error:
+
+| candidate | verdict |
+|:--|:--|
+| a committed 1.23.12 platform manifest | **does not exist** — no `platform-manifest` file is tracked on any ref, and none ever has been |
+| the preserved **half-A** staging roots (`c883a2dc7` §3) | ⚠ **WRONG RELEASE.** Half A's own recipe pins `GOROOT` to the go1.24.13 SDK and notes `version.props` already reads 1.24.13 — half A is the **incoming** side. Scored against G's 1.24.13 manifest it compares the release with itself: **an arm that cannot fail**, reporting a perfect zero delta |
+| the preserved **half-B** staging roots (`a5534b5de` §2) | right release (go1.23.12, three targets) but **wrong artifact kind**: half B ran `-platform-stage`, the emission, not `-platform-census`, and its manifests cover **seeded** staging roots — see the seed tell below |
+| the **H0** baseline | **does not contain one.** H0 captures the `.cs.auto` baseline, the package census, the roster snapshot and the disclosure manifests; the platform manifest is not among them |
+
+⚠ **A seeded-root manifest is not a census.** A seeded staging root's path set is *(seed ∪ emitted)*
+and all three targets share one seed, so such a manifest carries **no emitted-vs-seeded
+discriminator** — which is precisely why the converter's own census answers that question with a
+sentinel MTIME instead of content. Classify three seeded-root manifests and the `partial` and
+`exclusive` counts come from the **seed's** path set rather than from any emission, while looking
+exactly like class counts. The two preserved halves show the shape directly: half B's roots hold
+3990 / 3995 / 3993 `.cs` against a 3896-file seed, and half A's hold 3898 on all three — the
+difference is how far each seed already sits from the release being emitted, not a platform axis.
+
+**The tell, and it is cheap:** in a true per-target emission census a `*_windows.*` artifact **cannot**
+be emitted by the linux or darwin target. `h8-comparand.sh classify` refuses a triple in which a
+platform-suffixed artifact appears in a foreign target's manifest, rather than returning a number
+that reads like a census. `--seeded-content-only` accepts such a triple for the one question it *can*
+answer — which shared paths differ in content across targets — and labels its own output as not
+emission classes.
+
+**Therefore the outgoing manifest is produced by running the same instrument under the outgoing pin**,
+one axis from the 1.24.13 census (`GOROOT` + `version.props`), same binary, same flags, same seed,
+into a directory never reused:
+
+```bash
+'<stage>/bin/go2cs.exe' -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 \
+  -platform-census '<stage>/census-1.23.12' -go2cspath '<tree-1.23.12>/src' \
+  > "<stage>/logs/census-1.23.12-$(date +%Y%m%d-%H%M%S).log" 2>&1
+```
+
+⚠ `version.props` must be the **outgoing** release's, verbatim: with the incoming 1.24.13 pin the
+converter **refuses, exit 1, by design** (measured, `a5534b5de` §2). That refusal is the arm proving
+the outgoing leg really ran against the outgoing tree, so it is a feature of this step, not an
+obstacle to route around.
+
+Half B is **not** discarded — it is the corroborator. Its three per-target manifests answer the
+content axis under `classify --seeded-content-only`, and a variant count from the produced census
+that disagrees with half B's content partition over the shared path set is a finding in one of the
+two, named before either is believed.
+
+##### (b) The default-flavour byte-identity arm
+
+The gate's wording is *"the default-flavor build reproduces the single-target build byte-for-byte"*.
+The two emissions, spelled:
+
+- **E1, the single-target build** — `-stdlib -comments -platforms <host>/amd64` into a root seeded
+  identically to E2's stage. Layout L3 is honoured by a single-target run (`platformLayout.go`, rule 1:
+  an existing `<goos>/<name>.cs` is where this target's `<name>.cs` belongs), so E1 reproduces the
+  layout rather than laying a flat duplicate beside it — which is why **no path normalisation is
+  needed** and why introducing one would be the arm's most likely silent failure.
+- **E2, the default flavour of the three-target corpus** — the same merged L3 corpus H5 produces,
+  restricted to the view a build for `<host>` actually compiles: each package's **flat** files plus
+  that package's `<host>/` folder, and nothing from a foreign GOOS folder.
+
+**Compared by:** a per-file `sha256` manifest of each view — `"<sha256>␠␠<relpath>"`, `LC_ALL=C`
+sorted — and the **tree hash** is `sha256` of that manifest file. The arm PASSES iff both sides are
+non-empty, the path sets are equal, no shared path differs in content, and the two tree hashes are
+equal. `h8-comparand.sh view <root> <host>` builds the manifest; `identity <A> <B>` scores the arm.
+
+⚠ **A GOOS-named directory is not automatically a layout folder, and this one is live in the corpus.**
+`internal/syscall/windows` is a *package* whose directory is named `windows`; measured at master
+`7105c8468` there are 35 directories named `windows`, of which **34 are layout folders and one is
+that package**. A filter excluding any path component in {windows, linux, darwin} drops the whole
+package from the linux and darwin views — and because it drops it from **both** sides, the arm then
+agrees about files it never looked at. The discriminator is structural: a directory is a layout
+folder iff its name is a GOOS name, it holds **no** `.csproj` of its own, and its **parent** holds
+one. Measured on the real corpus, the linux view keeps that package's 9 files and leaks 0 foreign
+layout files.
+
+**The controls that prove the arm can fail** — all five are in `selftest`, and the arm is not scored
+until they have been run on the box that will score it:
+
+1. an **empty** side refuses rather than reporting agreement (a baseline that silently reads empty
+   otherwise reports total disagreement, or total agreement, with equal confidence);
+2. a **one-byte content change** inside the host's own folder goes red, naming the path;
+3. a **path-only change** (one file renamed) goes red — this is the control that proves the view is
+   not eating differences;
+4. a change in a **foreign** GOOS folder leaves the host view unmoved — the view's whole purpose;
+5. a **reordered** manifest still passes, so ordering is never read as a difference.
+
+After any planted perturbation the restore is verified **byte-identical by tree hash**, not by
+`git status`.
+
+##### ⚠ (a2) THE KEY `classify` TAKES IS THE FLAT ARTIFACT PATH — added 2026-09-19 after G measured the trap
+
+A census staging root is **seeded from an L3 corpus**, so a platform-varying artifact sits under a
+per-GOOS layout folder — `os/windows/file.cs` in the windows root, `os/linux/file.cs` in the linux one.
+Build the manifest the obvious way (walk the root, `sha256sum`, keep the relative path) and those are
+two different names, so **every platform-varying artifact scores `exclusive` and `variant` collapses to
+exactly zero**:
+
+```
+  raw relative path    identical 1631 · variant  0 · partial  0 · exclusive 718 · union 2349
+  flat artifact path   identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+  the converter's own  identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+```
+
+⚠ **The raw row sums to its own union, passes the partition check and clears the seed tell, and is
+wrong.** It is the L3 **tree** partition (`1631 + 718` = the manifest's `l3UnionTreeTotal`, with 718 its
+`l3PerGoosFiles`) — a true answer to a different question. The only unaided tell is a reader noticing
+`variant 0`. `platformCensus.go` keys an artifact by its **flat package-relative path**: its own
+`variantFiles` read `os/file.cs`, never `os/windows/file.cs`.
+
+So the key is not left to the caller. **`h8-comparand.sh manifest <census-target-root>` builds
+`classify`'s input**, stripping layout folders with the **structural** discriminator — never the
+directory names, because each target holds 100 GOOS-named directories of which 99 are layout folders and
+**one is a real package** (`internal/syscall/windows`, which carries its own `.csproj`), and a name
+filter deletes that package from two of the three views. It asserts **zero duplicate keys** (stripping
+must merge no two artifacts), and it **stamps** what it writes. **`classify` REFUSES an unstamped
+manifest** and names this mode in the refusal; `--assume-flat` exists for a manifest produced elsewhere,
+and the caller owns that claim. The trap is a self-test arm: the same synthetic tree read flat finds the
+variant and read raw reports `variant 0`.
+
+⚠ **AND THE BUILDER NEEDS `--emitted-only` ON A CENSUS TARGET ROOT — the second gap, closed 2026-09-20.**
+A census target root is **seeded from an L3 corpus AND emitted into**, so it holds *both*
+`archive/tar/package_info.cs` (flat, from the seed) *and* `archive/tar/<goos>/package_info.cs` (this run's
+layout copy). Stripping maps the second onto the first and the duplicate-key guard **refuses at rc 5** —
+loudly and correctly, but the sanctioned builder then could not consume the artifact the gate is about.
+What disambiguates them is the census's own **emitted-set restriction**: `platformCensus.go` stamps every
+SEEDED file with the sentinel mtime `2000-01-01T00:00:00Z`, so a file whose mtime has moved was written by
+this run. **`manifest --emitted-only` applies that filter**, reproduces the manifest's own `emittedCs`
+exactly, and the refusal without it now names the flag as the remedy. Controlled on the real shape: the
+seeded-plus-emitted root refuses, the flag admits it and keeps only this run's artifacts, and a root where
+nothing was emitted refuses rather than returning an empty manifest.
+
+<!-- G measured this by USING the instrument (mailbox ae545151f §6a): the counts above are the real
+     incoming census at 46307b4704. Nothing in the original amendment was wrong -- it specifies the
+     manifest FORMAT and never says to build one by walking a census root, and the `view` arm already
+     carried the structural discriminator -- but the build step for classify's input was unspecified and
+     the natural reading of it failed silently. Closed by making the format self-identifying rather than
+     by documenting a convention: a convention a reader must remember is not a gate. -->
+
+##### (c) Predicted class-count deltas, from the 1.24 package census
+
+Derived at run time by `h8-comparand.sh pkgdelta <goroot-1.23.12> <goroot-1.24.13>` (2.7 s), which
+**independently reproduces** `docs/phase4/CENSUS-go124-package-delta.md` on a different host and OS:
+306 / 304 / 305 → 346 / 344 / 345, net **+40 on every target**, **54 added and 14 removed**, both sets
+**identical across all three targets**, and the removed set exactly the 14 rows of
+`docs/phase4/h5-removals.txt`.
+
+Because the added and removed **package** sets are identical on all three targets, package membership
+contributes **zero** to `partial` and `exclusive`. All class movement from the delta is file-level:
+
+```
+  ADDED    54 packages   153 distinct .go artifacts   150 on all three targets
+                                                        0 on exactly two   -> partial  +0
+                                                        3 on exactly one   -> exclusive +3
+  REMOVED  14 packages    53 distinct .go artifacts    53 on all three targets
+                                                        0 on exactly two   -> partial  -0
+                                                        0 on exactly one   -> exclusive -0
+```
+
+The three exclusive artifacts are one per target and all in `crypto/internal/sysrand`:
+`rand_windows.go`, `rand_getrandom.go` (linux), `rand_arc4random.go` (darwin).
+
+**The predictions, as worded, to be scored against the produced 1.23.12 → 1.24.13 comparison:**
+
+| # | prediction | falsifier |
+|:--|:--|:--|
+| P1 | `Δ partial` **= 0** | any non-zero partial delta |
+| P2 | `Δ exclusive` **= +3**, and the three are `crypto/internal/sysrand`'s per-target `rand_*` artifacts | a different count, or a different package supplying them |
+| P3 | `Δ (identical + variant)` **= +97** source artifacts (+150 − 53), **+40** `package_info` artifacts (+54 − 14 — which is the net package count, and is the internal consistency check), before any test-side artifacts | a source-artifact delta that is not +97 |
+| P4 | the `identical` / `variant` split of the 150 added artifacts is **not** predictable from `.go` selection — it is content-dependent, and is a **reading**, not a prediction | — stated so a later number is not read as having been foreseen |
+| P5 | the per-target class counts move **symmetrically**: any per-target asymmetry beyond P2's one-artifact-per-target is **not** from package membership and is a finding | an asymmetry the package delta does not explain |
+
+##### ⚠ (c2) P1–P5 MEASURED — and the lesson is about the DERIVATION, not the numbers (2026-09-20)
+
+Scored against the produced outgoing manifest (G `cb1fa651a`, ruled `63b51e754`). **None is a gate item;
+all are readings.**
+
+| | as worded | measured | verdict |
+|:--|:--|:--|:--|
+| P1 | `Δ partial` = 0 | **+6** (7 in, 1 out) | REFUTED |
+| P2 | `Δ exclusive` = +3, sysrand's per-target `rand_*` | the three **arrived exactly**; `Δ` = **+6** (15 in, 9 out) | SPLIT: artifacts met, count refuted |
+| P3 | +97 source, +40 `package_info` | **+117**, **+37** | REFUTED, both |
+| P4 | the identical/variant split is a READING | +155 / +4 | HONOURED |
+| P5 | per-target symmetry | +164 / +165 / +166 | **RULED not a defect** — the tolerance was written too tight |
+
+⚠ **THE DERIVATION THEY REST ON WAS EXACTLY RIGHT, AND THAT IS THE POINT.** `pkgdelta`'s net **+40
+packages per target** is met on all three, on a different instrument and host, with zero residual. Every
+miss is the **extrapolation from package membership to file-level classes**, and the blind spot is now
+measured: **+20 source artifacts and +6 partial** come from **Go's own per-file build-tag selection
+changing inside packages that exist on all three targets and were never in the added or removed sets**
+(1.24's `os.Root` work — `os/root_unix.cs`, `os/root_nonwindows.cs` — landing in packages already
+everywhere). A package-delta derivation is structurally blind to it.
+
+**THE RULE: a class-count prediction is derived from the FILE-LEVEL tag selection, or it is stated as a
+package-level BOUND and not as a class count.** A clean measurement of the wrong population is the most
+persuasive kind of wrong.
+
+⚠ **Two further shapes worth carrying, because each looked like corroboration:**
+
+- **A RELOCATION nets zero.** P2's three artifacts arrived exactly as named *and contribute nothing*,
+  because the same three left `crypto/rand` — a package that **survives** the hop and so sits in neither
+  the added nor the removed set. A derivation that examines added packages' files and removed packages'
+  files cannot see a file moving **out of a surviving package**. Naming the right artifact is not
+  predicting its effect.
+- **Two numbers agreeing is evidence only if they are the same quantity.** P3's `+40` was cited as an
+  "internal consistency check" because it equalled the net package count. There is one `package_info.cs`
+  per **EMITTING** package (303 → 340 = **+37**), while +40 is the **QUEUED** delta; three net-new queued
+  packages emit no `.cs`. The consistency check *was* the defect.
+
+**The measured statement on REHEARSAL's "a migration moves the platform axis in BOTH directions"**, on the
+one-axis comparison: **true at `exclusive`** (15 in, 9 out), **false at `variant`** (4 in, **0** out) and
+**false at `partial`** (7 in, 1 out). The H8 text takes that as measured rather than as predicted. The
+prior mixed reading (38 → 51, "13 arrived") decomposes cleanly once the axis is isolated: **38 → 47 is
+converter drift (+9), 47 → 51 is the release (+4)**, and the release's four are 1.24's `os.Root` and
+spinbit-mutex work.
+
+##### (d) Four instrument findings that change how the census is invoked
+
+⚠ **`GO111MODULE=off` silently cancels a `GOTOOLCHAIN` redirect.** Measured 2026-09-19 on a linux box:
+`GOTOOLCHAIN=go1.23.12 go version` prints `go1.23.12`, and `GOTOOLCHAIN=go1.23.12 GO111MODULE=off go version`
+prints the **ambient** toolchain **at exit 0**. The package-census instrument is specified *with*
+`GO111MODULE=off` — precisely the cancelling combination — so a census driven by `GOTOOLCHAIN` alone
+measures whichever toolchain the box happens to carry and looks perfect doing it. This is H1's
+silent-redirect hazard reached through the *other* half of the pin: drive each release by **its own
+`GOROOT` and its own `bin/go`**, and assert the release from `go version` **OUTPUT** before listing
+anything. `pkgdelta` does both, and additionally refuses when the two roots run the same release —
+a vacuous delta being the failure this guards.
+
+⚠ **THE BUILD TAGS ARE THE THIRD AXIS, measured the hard way twice in one hour (2026-09-20).** The
+corpus is defined as Go under `-tags purego,math_big_pure_go` (the `-stdlib` default), so a census run
+**without** them answers a different question and looks correct doing it: C1's H10 census ran untagged and
+read two rows as DIFF where the census was wrong twice and the converter right twice, and a COORD ruling
+(`TestP256PrecomputedTable` off-platform) was **withdrawn** over the same axis because the answer flips
+under the corpus's own tags. **State the tag set beside every count.**
+
+⚠ **`CGO_ENABLED` is a real axis on the package count, and it moves exactly one target.** Measured at
+both releases: linux reads 305 / 345 at `CGO_ENABLED=1` and 304 / 344 at `CGO_ENABLED=0`, the one
+package being `runtime/cgo`; windows and darwin do not move. A census taken on a linux host
+targeting linux natively therefore disagrees with one taken on a Windows host by one package on one
+target, with neither being wrong. **`CGO_ENABLED=0` is the pin** — it is what reproduces the recorded
+census, and it matches the recipe every preserved artifact was cut under.
+
+⚠ **THE TOOLCHAIN'S LOCATION IS THE FOURTH AXIS, and until `19175c31ad` it moved the emitted
+corpus with nothing in any log saying so.** `conversionDriver.go` loaded `"./..."` — the input
+package AND its whole subtree — for any input under GOPATH. A `GOTOOLCHAIN`-installed toolchain
+lives at `$GOPATH/pkg/mod/golang.org/toolchain@<version>`, so on such a box GOROOT is itself under
+GOPATH, every stdlib package is also a GOPATH input, and every one of them converted its subtree.
+That pulled in `runtime/cgo` — buildable when named, absent from `go list std` at
+`CGO_ENABLED=0`, never queued and so never skipped — emitting nine `.cs` under `runtime`'s own
+conversion, out of dependency order, with the package named nowhere in the run. A side-by-side SDK
+install is not under GOPATH, so the branch never fired there and **the same binary, base, flags and
+pin emitted a different corpus on the two boxes**. Measured both ways: C2 with the condition true and
+the one-axis effect (9 `.cs` -> 0, 13 skip messages -> 7, the queued-package list byte-identical,
+`diff -rq` over `src/core` one line), G with the condition false and the effect absent.
+
+**The seat `19175c31ad` removes the dependency** — a GOROOT input is excluded from the subtree load
+outright — so this axis no longer moves a `-stdlib` emission. It is recorded here anyway, because a
+census taken with an OLDER converter still carries it, and because the general shape survives the fix:
+a GOPATH tree genuinely wanting a subtree load still gets one silently, and nothing in an emission
+states which roots it ran under. **State the toolchain's location beside the pin, the tag set and
+`CGO_ENABLED`, for any count taken before that seat.**
+
+<!-- C2, 2026-09-20, in-stage. Ruled a converter defect at COORD 3d0c7cd5d on C2's 1257a20bad; G's
+     cross-box confirmation at 4f4e3f9f7 (identical queue sha256 across two hosts and two separately
+     built binaries, and GOROOT NOT under GOPATH on G-LAPTOP); seat accepted at 887e92d6b. The
+     heading said "Two" while carrying three; corrected to four here rather than left to drift.
+     ⚠ The author of this section violated its own CGO_ENABLED pin within the hour: the first
+     arm-b re-take omitted the export, ran at the box default of 1, and read 343 packages with
+     runtime/cgo LEGITIMATELY queued at [332/343] -- a two-axis run reported as one. Caught only
+     because the script carried a WRITTEN PREDICTION (0 and 0) that the run falsified; nothing else
+     in the run looked wrong. The pin is now an asserted export with a comment in the runner rather
+     than a sentence in a document, which is the difference between a rule and a guard. -->
+
+<!-- C2, 2026-09-19, in-stage per the doc-authority ladder (the runbook leads on procedure).
+     Refused candidates: half A = c883a2dc7 s3 (GOROOT = the go1.24.13 SDK; "NO substitution needed for half A"),
+     half B = a5534b5de s2 (GOROOT = the go1.23.12 SDK; version.props from the outgoing release verbatim; 16m05s,
+     windows 3990 / linux 3995 / darwin 3993 .cs against a 3896-file seed). "No platform-manifest tracked" re-verified
+     at 7105c8468 by `git ls-files` and by an --all --diff-filter=A search: zero on both.
+     Classes and their ORDER are platformManifest.go:166-203 (3 emitters -> identical|variant, 2 -> partial,
+     1 -> exclusive); the L3 path shape and the layout-honouring single-target reconvert are platformLayout.go:9-46.
+     Package-vs-layout trap measured at 7105c8468: 35 dirs named windows, 34 layout + internal/syscall/windows
+     (own .csproj); the linux view keeps its 9 files, leaks 0.
+     pkgdelta reproduces CENSUS-go124-package-delta.md s1 on linux/amd64 where the record was cut on windows/amd64;
+     the one discrepancy (linux +1 at both releases) is the CGO_ENABLED axis in (d), not a disagreement.
+     Script self-test 20/20 at the cut, each arm red-proved then restored. -->
+
+
+
 
 ### H9 — Behavioral golden rebank **GATE**
 
