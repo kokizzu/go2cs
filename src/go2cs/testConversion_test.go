@@ -695,9 +695,21 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		t.Error("-tests on testing must be refused through a forward-slash GOROOT spelling too")
 	}
 
-	// The override is what keeps the measurement that produced this guard repeatable.
-	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
-		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", err)
+	// The override is what keeps the measurement that produced this guard repeatable — and this arm
+	// pins the OUTCOME, not merely the absence of an error. noCounterpart is a BARE root: it holds no
+	// csproj, so handOwnHostTestTarget cannot open there and the flag must still yield the full
+	// PRODUCTION conversion the 2026-09-03 census measured.
+	//
+	// Reading only `err` left that unpinned, and the gap was measured 2026-09-20 on the reorder's own
+	// follow-up: with the flag path returning testTargetHandOwnHost instead of testTargetConvertible,
+	// every arm in this file stayed green. A one-token edit could have turned the documented
+	// production census into a tests-only run and no test in the tree would have said so.
+	censusKind, censusErr := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true})
+	if censusErr != nil {
+		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", censusErr)
+	}
+	if censusKind != testTargetConvertible {
+		t.Errorf("kind under -test-allow-handown on a BARE root = %v, want testTargetConvertible (production converts too — that is what the census IS)", censusKind)
 	}
 
 	// Ordinary packages — including every testing SUBpackage — must be untouched by the guard. A
@@ -5276,22 +5288,48 @@ func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
 		t.Error("a marker MENTIONED in a comment must not open the hand-owned-host mode")
 	}
 
-	// NEGATIVE 4 — a SCRATCH root: marker-bearing sources cannot be there because nothing is there.
-	// This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since the
-	// guard was written, and it is the arm that would fail if the csproj clause were dropped.
-	if _, err := requireConvertibleTestTarget(pkgDir, t.TempDir(), options); err == nil {
+	// NEGATIVE 4 — a BARE scratch root: marker-bearing sources cannot be there because nothing is
+	// there. This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since
+	// the guard was written, and it is the arm that would fail if the csproj clause were dropped.
+	//
+	// The KIND is asserted alongside the error for the same reason the flag arm in
+	// TestConvertTestsRefusesHandOwnedAndToolchainPackages now asserts its own: the refusal path
+	// returns the ordinary kind, and an arm that reads only `err` cannot tell which kind came back
+	// with it. Between the two, the bare-root OUTCOME is pinned in both directions — refused without
+	// the flag, converted-as-production with it.
+	scratchKind, scratchErr := requireConvertibleTestTarget(pkgDir, t.TempDir(), options)
+	if scratchErr == nil {
 		t.Error("a scratch output root must still be refused")
 	}
+	if scratchKind != testTargetConvertible {
+		t.Errorf("kind on the bare-root refusal = %v, want testTargetConvertible (the refusal returns the ordinary kind, never the host one)", scratchKind)
+	}
 
-	// The documented census override is unchanged AND still wins over the new mode: it is checked
-	// first, so every behavior -test-allow-handown had before this change it still has, including
-	// the destructive one whose measurement produced the guard.
+	// RE-RULED 2026-09-20: the flag at the counterpart's OWN directory takes the HOST path. What this
+	// arm pinned before — the flag checked first, so production converted straight over a hand-own —
+	// is retired, and it is retired because it was measured that day on the H10 recon leg: a runner
+	// passed the flag for `testing` with the output path set to src/core/testing and the pipeline
+	// wrote 19 auto files over the 10 marker-bearing ones, CS0111 duplicates that failed every later
+	// row in that tree to build.
+	//
+	// The BARE-root census the flag's -help text documents is NOT what changed and is not pinned
+	// here: it is the flag arm in TestConvertTestsRefusesHandOwnedAndToolchainPackages, whose output
+	// path holds no counterpart at all, so handOwnHostTestTarget's csproj clause cannot open there
+	// and the flag still yields the full production conversion.
+	//
+	// That arm and NEGATIVE 4 above are the two readings that catch a regression on the bare-root
+	// shape — but only since both were made to assert the KIND (2026-09-20). Until then each read
+	// only its error, and a flag path returning testTargetHandOwnHost passed all three arms; the
+	// claim that they covered the shape was made here before it was true, and this is the amendment.
+	// A root is not "scratch" by being temporary, either: a root SEEDED from src/core carries the
+	// csproj and the markers, so the host path opens there too. The predicate reads the two paths'
+	// contents, and that is the whole design — see requireConvertibleTestTarget's own comment.
 	kind, err = requireConvertibleTestTarget(pkgDir, handOwn, Options{goRoot: goRoot, testAllowHandOwn: true})
 	if err != nil {
-		t.Fatalf("-test-allow-handown must still permit the deliberate census run, got %v", err)
+		t.Fatalf("-test-allow-handown at a hand-owned counterpart's own directory must be admitted, got %v", err)
 	}
-	if kind != testTargetConvertible {
-		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
+	if kind != testTargetHandOwnHost {
+		t.Errorf("kind under -test-allow-handown at the counterpart's own directory = %v, want testTargetHandOwnHost (the host path wins; production is never emitted over a hand-own)", kind)
 	}
 }
 

@@ -149,16 +149,45 @@ func requireConvertibleTestTarget(inputPath, outputPath string, options Options)
 		return testTargetConvertible, nil
 	}
 
-	// The sanctioned census, unchanged: -test-allow-handown means "show me what the conversion
-	// WOULD produce", and it produces it — production sources and all — wherever it is pointed.
-	// It is checked BEFORE the host mode deliberately, so every behavior this flag had on
-	// 2026-09-03 it still has, including the destructive one the train-18 control measures.
-	if options.testAllowHandOwn {
-		return testTargetConvertible, nil
-	}
-
+	// ORDER, and it is the whole point: the hand-own HOST path is consulted FIRST, and
+	// -test-allow-handown only after it. Measured 2026-09-20 on the H10 recon leg — a runner passed
+	// the flag for `testing` with the output path set to the hand-owned counterpart's OWN directory
+	// (src/core/testing), the flag short-circuited the host path, and the pipeline wrote 19 auto
+	// files over the 10 marker-bearing ones, producing CS0111 duplicates that failed every later row
+	// in that tree to build.
+	//
+	// The flag's CENSUS meaning is unchanged on a BARE output root, and unchanged BY CONSTRUCTION
+	// rather than by care: handOwnHostTestTarget's first clause wants a *.csproj at the output path,
+	// a bare root has none, so the host path cannot open there and the flag still yields the full
+	// production conversion the 2026-09-03 census measured.
+	//
+	// THAT PREMISE IS CONDITIONAL ON THE ROOT'S CONTENTS, which is the predicate's design rather than
+	// a caveat on it — handOwnHostTestTarget reads the two paths and nothing else, so what is AT the
+	// output path is the only thing that can distinguish a census root from a hand-own. In
+	// particular a temp root is NOT bare merely by being temporary: CLAUDE.md's safety floor requires
+	// a temp root to be SEEDED FROM src/core before any -stdlib reconvert, and a seeded root carries
+	// the counterpart's csproj AND its marker-bearing .cs, so all three evidence clauses hold and the
+	// host path opens there too. The three shapes:
+	//
+	//   bare root                        production census, exactly as 2026-09-03 measured it
+	//   root SEEDED from src/core        host path — TESTS ONLY, no production emission
+	//   the counterpart's own directory  host path — TESTS ONLY, no production emission
+	//
+	// The last row is the case this order retires. The middle row is why the retirement is wider than
+	// the last row alone: both are output paths that ALREADY HOLD a hand-own, and neither is a place
+	// a production emission may land.
+	//
+	// So the sentence to carry away is not "a scratch root is safe" but "a root that holds no
+	// hand-own gets the census, and a root that holds one gets the tests-only host path".
 	if handOwnHostTestTarget(inputPath, outputPath) {
 		return testTargetHandOwnHost, nil
+	}
+
+	// The sanctioned census: -test-allow-handown means "show me what the conversion WOULD produce",
+	// and it produces it — production sources and all — wherever it is pointed, now that "wherever"
+	// is restricted to an output root that does not already hold a hand-own.
+	if options.testAllowHandOwn {
+		return testTargetConvertible, nil
 	}
 
 	reason := fmt.Sprintf("%q is deliberately kept out of the conversion queue", importPath)
