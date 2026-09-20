@@ -2282,14 +2282,47 @@ the banked TSV must still carry that row; duplicates take the larger and say so;
 computed and printed for provenance, not asserted.
 
 **Two of those columns are decided by the leg's own shape and are worth stating here rather than
-leaving to the cut.** `sweep_s` is the wrapper's clock around the **one** pipeline invocation — the
+leaving to the cut.** `sweep_s` is the **CONVERTER's** cost around the **one** pipeline invocation — the
 recon leg makes **one attempt per row**, so the re-run inflation that afflicts a re-taking clock cannot
-arise by construction, and a row whose oracle is unstable is a READING rather than a retry. `word` is
+arise by construction, and a row whose oracle is unstable is a READING rather than a retry.
+⚠ **`sweep_s` is NOT the wrapper's total wall, and the difference is not small** (ruled 2026-09-20,
+after a row was measured whose converter exited in ~66 s and whose wrapper then held one core for ten
+minutes post-processing a 4.77 MB comparison document). The wrapper's own time lands on `wall_s`, which
+is **not** the banked figure. Where a row banks `sweep_s := wall_s` — the hand-stopped row is the case —
+the banked number is still the **converter's** wall: row start in the log to the converter's exit, read
+from the ARTIFACTS' mtimes, and a completion post states **both** numbers so the basis can take the
+first and a reader can see the second. `word` is
 the leg's **outcome class**, a fixed vocabulary — `PASS` (0 diverged) · `DIVERGED` · `CONVERT` (rc ≠ 0
 at convert) · `BUILD` · `TIMEOUT` · `NOVERDICT` (the summary line absent) — and it is **filled, never
 placeholdered**: the map generator discards the value, but the column is the basis's only record of
 **which verdict a cost was measured under**, and a cost measured under `CONVERT` is not the same
 evidence as one measured under `PASS`.
+
+**IS THE LEG ALIVE? A CENSUS BY PROCESS NAME CANNOT ANSWER THAT**, and this is the one question a
+watcher asks most often. A converter census (`Get-Process go2cs`, scoped by executable path) answers
+*"is a CONVERTER running"* — and that answer is legitimately **0**, for minutes at a time, with no
+child process at all, while the wrapper post-processes a completed row. **A wrapper computing for ten
+minutes is indistinguishable from a hung one to a name-based census.**
+
+```
+  the reading that DOES answer it -- sample the WRAPPER's own PID, twice, a stated wall apart:
+      CPU delta over the interval    accumulating  -> computing     flat -> not
+      working set                    flat is normal; growth is its own question
+      child processes                none is normal AFTER the converter exits
+  measured once, 15 s apart:  +15.2 s CPU over 15 s wall, 117 MB flat, no child but a console host
+                              -- one core saturated, on a row whose converter had exited 10 min before
+```
+
+⚠ **And a row that spends its floor's worth of wall inside the wrapper is NOT a TIMEOUT.** The
+per-package deadline floor applies to the converter's test run; what says whether a deadline actually
+fired is the **results-file tail**, which states a deadline kill outright (floor 14). Reading a long
+wall as a timeout, with no tail read, invents a verdict the run never reported.
+
+⚠ **The liveness census is a READING and must not share a command shape with a kill.** Floor 5
+forbids `Get-Process <name> | Stop-Process` because it matches across the whole machine and has taken
+a sibling worktree's suite down; a liveness check that is one pipe away from that is an accident
+waiting for a tired operator. Scope by executable path for both, and keep the reading and the kill in
+separate commands.
 
 **THE POPULATION IS KEYED ON THE CORPUS AXIS — the build tags the pipeline actually converts
 under.** An eligibility census taken on a bare platform axis and the corpus's own axis are not
@@ -2326,6 +2359,58 @@ because a reader starting at H10 gets no pointer to them:
 | one conversion per output root, never two concurrent; one dispatch per worktree | H5 |
 | `CGO_ENABLED` pinned to the corpus state, exported rather than assumed | the corpus emission state |
 | an entirely hand-owned package converts only under `-test-allow-handown` | the converter's own refusal, by name |
+| the leg tree carries **no ignored build residue** before row 1, censused with `git status --ignored=matching` and never `--porcelain` alone, with a control | G measured **516** ignored entries under `src/core` surviving a `git clean -fd`, behind a `status --porcelain` reading **0** — porcelain cannot see an ignored path, so a tree that READS clean is not a tree that IS clean |
+| any **preflight build** — a dry run, a red arm, a rehearsal row — runs in a tree that is **NOT the leg's** | i9 measured `go/types` (443 files) and `net` (672) carrying pre-run build output in a tree where neither had ever been converted: a `dotnet publish` builds a dependency **CLOSURE**, so the at-risk set is everything the arms' closures touched and not the rows that ran |
+
+**THE TREE DISCARD, which is a MEASUREMENT before it is a removal.** The leg's worktree is thrown away
+at the end, and until the 1.24 hop the runbook said nothing about what has to be read off it first.
+Two lanes found the same class independently on the same night, from opposite ends.
+
+```
+  BEFORE row 1   census the tree:  git status --ignored=matching  (never --porcelain alone)
+                 with a CONTROL:   the same predicate on a never-built tree must answer 0
+                 record the number. A non-zero BEFORE is not a stop -- it is a reading the
+                 completion post carries, and it decides whether the arm below is owed.
+  AT THE DISCARD re-census, and assert the TRACKED count ACROSS the removal:
+                 git ls-files | wc -l   before  ==  after
+                 A removal that takes a tracked file is the failure this assert exists for, and
+                 it is the same hazard as floor 8's `git status --porcelain | grep '^ D'`, which
+                 still runs: one guards what a glob DELETED, this one guards what a clean REMOVED.
+```
+
+⚠ **Why `--porcelain` alone is the wrong instrument here, stated as the measurement and not as
+advice.** `git clean -fd` does not remove ignored paths and `status --porcelain` does not report
+them, so the two agree on **0** over a tree holding hundreds of files of prior build output. G's
+number was **516**. A leg relaunched into such a tree is not a relaunch into a clean tree, and
+nothing in the reading says so.
+
+⚠ **And the at-risk set is the dependency CLOSURE, not the rows that ran** — which is the half that
+surprises. i9's own census corrected i9's first hypothesis: `go/types` and `net` carried pre-run
+`bin`/`obj` although neither had ever been converted in that tree, because a `dotnet publish` for one
+row's arms builds much of `src/core`. So "only rows 1–4 ran, so only rows 1–4 are exposed" is false
+by construction, and a preflight build belongs in a different tree for exactly that reason.
+
+**When the BEFORE census is non-zero, the leg owes a two-row arm before its TSV is pushed** (ruled at
+the 1.24 hop): after the list completes and **before** the tree is discarded, cut a SECOND throwaway
+worktree detached at the same tip, build the converter in it, and re-run two rows there — **the
+heaviest-residue PASS row and one first-in-tree row** — comparing **word, verdict count and the
+diverged set** against the leg's. A match on both retires the exposure and the TSV pushes with the
+arm's reading in the completion post; **any difference is a finding and the list re-runs on the clean
+tree.**
+
+⚠ **The argument that residue is benign is an ARGUMENT, and the runbook records it as one so a reader
+can refuse it.** It runs: the converter binary is byte-identical and was never rebuilt; the tree tip
+never moved; and the converter rewrites every `.cs`, so MSBuild sees this run's timestamps and an
+incremental build cannot skip on stale inputs. Each of those three is checkable and together they are
+persuasive — but they are a chain of reasoning over three facts, not a reading, and the two-row arm
+costs one tree and about three minutes of rows. **Spend it rather than let the basis carry an argument
+where a measurement was available.**
+
+**Reclaim children-first, with the PARENT test taken AT THE ACT** (floor 12): a tree whose
+`--git-common-dir` equals its `--git-dir` and whose `git worktree list` has more than one row is a
+PARENT and is never removed — removing it takes every child with it. The test is taken at the moment
+of removal and not from a note made earlier, because a sibling lane can have attached a child in
+between.
 
 **THE PER-ROW STEPS** are H10's five above, and two of them are where a hop's roster edits actually
 happen: the **verdict count re-derives** (the denominator moves), the **manifest is RE-SIGNED, never
