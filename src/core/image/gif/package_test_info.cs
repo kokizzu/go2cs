@@ -26,6 +26,7 @@ using go;
 using static global::go.image.gif_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b66696c656e616d6520737472696e673b20746f6c6572616e636520696e7436347d", "testCaseᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -52,9 +53,9 @@ using static global::go.image.gif_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("image/gif/fuzz_test.go", "fuzz_test.cs", "ABggooKWgoKUgoKUgoKUloKCgpSClIKClKKCgoKUgoKUgoKC")]
-[assembly: go.GoPositionMap("image/gif/reader_test.go", "reader_test.cs", "ACZIkoKCgIKkgIKkAAwGiLQAEziCgoLKgoKCgpSolqiWlIKUgoSCgqiClAAGEoLcgoKCgoKUgoKmgoKClIKClISCgpSCgoLKgpSCgoIAGyyCgoKClILolIKUgoKogoKCloKClKaCqIKWloKCgoSE1oKCloKWloKCgoSWgoKUuIKWggAHEpaWgoKChIQADAaCABxEspKCgpSCgoKUgoKUgpSCAAkMgoKCgpSCgpSC/LKCgsqCgpSCgIKkgoKCgoCCpIKAggAKCKKCgpSCgpSCgoKCuIKCgpSCgpSCgg==")]
-[assembly: go.GoPositionMap("image/gif/writer_test.go", "writer_test.cs", "AB0qooKClJKC1qKCgpSS1oKCgpSqooKqopKCgoKCgoKCgoKmABEggoKCgoKUgoKCgpSCgoKUgoKmgoKCyoKCgpSCgoKClIKClIKUgryigoKUgoKmgoKCpoKCgqYAChCClMqCgoKUgoKm7oKClIKCgpTKloKAgqSCgoKUgoKWgpSClICSpoKUgpSClIKUgpaCgoKUkoKUgoKUgsqAooCigOSCgoKWuICCpsqClICC+IKAgsiCyoIACBKCgoKmgtyi7oK4goCCgqSCgoKUgILcgoK4goKCgoKEgoCCgqSCgoKUgIKCppKUuoCCpICC2gAJFIKmuIKCgqaC3IKSAA8mAA4ggoCCpIKClIKUgoCC2qKSgoKCgoKoAAsagoKCAAkMgoKCgILKgoSCgoKAgqSAgqSClIK4poIAChaCgoKAgoKkgIIAChSCpoKCgqiCgoKClIKClIKCqAAJFIKCgoKUgoKWAAkUgoK4ooKCgpaCgoKCuKKCgoKCggAHEoKCgoLoooKClIKChIKCgoK4ooKClMqChIKCgoI=")]
+[assembly: go.GoPositionMap("image/gif/fuzz_test.go", "fuzz_test.cs", "ABggooKWgoKUgoKUgoKUloKCgpSClIKClKKCgoKUgoKUgoKC", "36-64:1")]
+[assembly: go.GoPositionMap("image/gif/reader_test.go", "reader_test.cs", "ACZIkoKCgIKkgIKkAAwGiLQAEziCgoLKgoKCgpSolqiWlIKUgoSCgqiClAAGEoLcgoKCgoKUgoKmgoKClIKClISCgpSCgoLKgpSCgoIAGyyCgoKClILolIKUgoKogoKCloKClKaCqIKWloKCgoSE1oKCloKWloKCgoSWgoKUuIKWggAHEpaWgoKChIQADAaCABxEspKCgpSCgoKUgoKUgpSCAAkMgoKCgpSCgpSC/LKCgsqCgpSCgIKkgoKCgoCCpIKAggAKCKKCgpSCgpSCgoKCuIKCgpSCgpSCgg==", "357-377:1")]
+[assembly: go.GoPositionMap("image/gif/writer_test.go", "writer_test.cs", "ABcqooKClJKC1qKCgpSS1oKCgpSqooKqopKCgoKCgoKCgoKmABEggoKCgoKUgoKCgpSCgoKUgoKmgoKCyoKCgpSCgoKClIKClIKUgryigoKUgoKmgoKCpoKCgqYAChCClMqCgoKUgoKm7oKClIKCgpTKloKAgqSCgoKUgoKWgpSClICSpoKUgpSClIKUgpaCgoKUkoKUgoKUgsqAooCigOSCgoKWuICCpsqClICC+IKAgsiCyoIACBKCgoKmgtyi7oK4goCCgqSCgoKUgILcgoK4goKCgoKEgoCCgqSCgoKUgIKCppKUuoCCpICC2gAJFIKmuIKCgqaC3IKSAA8mAA4ggoCCpIKClIKUgoCC2qKSgoKCgoKoAAsagoKCAAkMgoKCgILKgoSCgoKAgqSAgqSClIK4poIAChaCgoKAgoKkgIIAChSCpoKCgqiCgoKClIKClIKCqAAJFIKCgoKUgoKWAAkUgoK4ooKCgpaCgoKCuKKCgoKCggAHEoKCgoLoooKClIKChIKCgoK4ooKClMqChIKCgoI=", "398-402:1")]
 // </GoSourcePositionMaps>
 
 namespace go.image;
@@ -70,4 +71,37 @@ public static partial class gif_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸlzw() => builtin.initPackage(typeof(compress.lzw_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() => builtin.initPackage(typeof(go.image.color.palette_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸdraw() => builtin.initPackage(typeof(go.image.draw_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸpng() => builtin.initPackage(typeof(go.image.png_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() => builtin.initPackage(typeof(go.runtime.debug_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.image.gif_package));
+    }
 }

@@ -77,7 +77,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
                 break;
             }
             case 2: {
-                io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
+                io.WriteString(c, g.@in[..(int)(len(g.@in) / 2)]);
                 c.Sum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
                 sum = c.Sum(default!);
@@ -87,7 +87,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
                 if (boring.Enabled) {
                     continue;
                 }
-                io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
+                io.WriteString(c, g.@in[..(int)(len(g.@in) / 2)]);
                 c._<ж<global::go.crypto.sha1_package.digest>>().ConstantTimeSum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
                 sum = c._<ж<global::go.crypto.sha1_package.digest>>().ConstantTimeSum(default!);
@@ -115,8 +115,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("could not marshal: %v"u8, err);
             continue;
         }
+        (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+        if (err != default!) {
+            Ꮡt.Errorf("could not marshal: %v"u8, err);
+            continue;
+        }
+        stateAppend = stateAppend[4..];
         if (((sstring)state) != g.halfState) {
             Ꮡt.Errorf("sha1(%q) state = %+q, want %+q"u8, g.@in, state, g.halfState);
+            continue;
+        }
+        if (((sstring)stateAppend) != g.halfState) {
+            Ꮡt.Errorf("sha1(%q) stateAppend = %+q, want %+q"u8, g.@in, stateAppend, g.halfState);
             continue;
         }
         {
@@ -239,13 +249,8 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
-
 public static void TestAllocations(ж<testing.T> Ꮡt) {
-    if (boring.Enabled) {
-        Ꮡt.Skip(boringCryptoDoesnTˢ);
-    }
+    cryptotest.SkipTestAllocations(Ꮡt);
     var @in = slice<byte>("hello, world!"u8);
     ref var @out = ref heap<slice<byte>>(out var Ꮡout);
     @out = new slice<byte>(0, ΔSize);

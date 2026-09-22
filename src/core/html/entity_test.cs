@@ -10,14 +10,11 @@ using unicode;
 
 partial class html_internal_test_package {
 
-[GoInit] internal static void init() {
-    UnescapeString(""u8); // force load of entity maps
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object mapsNotLoadedˢ = (@string)"maps not loaded"u8;
 
 public static void TestEntityLength(ж<testing.T> Ꮡt) {
+    var (entity, entity2) = entityMaps();
     if (len(entity) == 0 || len(entity2) == 0) {
         Ꮡt.Fatal(mapsNotLoadedˢ);
     }

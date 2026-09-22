@@ -14,14 +14,6 @@ partial class reflectlite_internal_test_package {
 
 // go2cs generated this placeholder — func TField is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Inherit permission bits from v, but clear flagEmbedRO.
-// Using an unexported field forces flagRO.
-// Either flagIndir is set and v.ptr points at struct,
-// or flagIndir is not set and v.ptr is the actual struct data.
-// In the former case, we want v.ptr + offset.
-// In the latter case, we must have field.offset = 0,
-// so v.ptr + field.offset is still the correct address.
-
 // Field returns the i'th struct field.
 public static global::go.@internal.reflectlite_package.ΔType StructFieldType(ж<abiꓸStructType> Ꮡt, nint i) {
     ref var t = ref Ꮡt.DerefOrNull();

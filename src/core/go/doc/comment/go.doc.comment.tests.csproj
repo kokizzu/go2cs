@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -83,72 +111,72 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="html.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="markdown.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="old_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="parse.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="parse_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="print.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="std.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="std_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/README.md" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/blank.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code5.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/code6.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/crash1.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink5.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink6.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doclink7.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/escape.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/head.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/head2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/head3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/hello.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link5.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link6.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/link7.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linklist.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linklist2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linklist3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linklist4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list10.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list5.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list6.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list7.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list8.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/list9.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/para.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/quote.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text2.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text3.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text4.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text5.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text6.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text7.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text8.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/text9.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/words.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="text.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="wrap_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="html.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="markdown.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="old_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parse.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parse_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="print.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="std.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="std_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/README.md" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/blank.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code5.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/code6.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/crash1.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink5.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink6.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doclink7.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/escape.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/head.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/head2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/head3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/hello.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link5.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link6.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/link7.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linklist.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linklist2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linklist3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linklist4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list10.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list5.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list6.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list7.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list8.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/list9.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/para.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/quote.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text2.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text3.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text4.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text5.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text6.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text7.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text8.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/text9.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/words.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="text.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="wrap_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

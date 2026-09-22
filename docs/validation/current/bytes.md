@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `bytes` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**82 matched · 6 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**83 matched · 6 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -58,6 +60,7 @@ comparison — it is the evidence behind the `bytes` row in
 | `TestLastIndex` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestLastIndexAny` | pass | pass |
 | `TestLastIndexByte` | pass | pass |
+| `TestLines` | pass | pass |
 | `TestMap` | pass | pass |
 | `TestMixedReadsAndWrites` | pass | pass |
 | `TestNewBuffer` | pass | pass |
@@ -166,6 +169,7 @@ the capability it needs.
 - BenchmarkIndexPeriodic (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkIndexRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkIndexRuneASCII (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkIndexRuneUnicode (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkLastIndexAnyASCII (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkLastIndexAnyUTF8 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkLastIndexHard1 (benchmark): benchmark execution is deferred to Phase 4D

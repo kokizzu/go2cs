@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using reflect = reflect_package;
+using maps = maps_package;
 using strings = strings_package;
 using testing = testing_package;
 using static go.mime_package;
@@ -18,7 +18,7 @@ public static void TestConsumeToken(ж<testing.T> Ꮡt) {
         new @string[]{""u8, ""u8, ""u8}.array(),
         new @string[]{" foo"u8, ""u8, " foo"u8}.array()
     }.array();
-    foreach (var (_, vᴛ1) in tests) {
+    foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
         var test = vᴛ1.Clone();
 
         var (token, rest) = consumeToken(test[0]);
@@ -48,7 +48,7 @@ public static void TestConsumeValue(ж<testing.T> Ꮡt) {
         new @string[]{@"""C:\dev\go\robots.txt"""u8, @"C:\dev\go\robots.txt"u8, ""u8}.array(),
         new @string[]{@"""C:\新建文件夹\中文第二次测试.mp4"""u8, @"C:\新建文件夹\中文第二次测试.mp4"u8, ""u8}.array()
     }.array();
-    foreach (var (_, vᴛ1) in tests) {
+    foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
         var test = vᴛ1.Clone();
 
         var (value, rest) = consumeValue(test[0]);
@@ -79,7 +79,7 @@ public static void TestConsumeMediaParam(ж<testing.T> Ꮡt) {
         new @string[]{@";  blah=""value"";name=""foo"" "u8, "blah"u8, "value"u8, @";name=""foo"" "u8}.array(),
         new @string[]{@";name=""foo"" "u8, "name"u8, "foo"u8, @" "u8}.array()
     }.array();
-    foreach (var (_, vᴛ1) in tests) {
+    foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
         var test = vᴛ1.Clone();
 
         var (param, value, rest) = consumeMediaParam(test[0]);
@@ -477,7 +477,7 @@ message/external-body; access-type=URL;
         if (len(@params) == 0 && len(test.p) == 0) {
             continue;
         }
-        if (!reflect.DeepEqual(@params, test.p)) {
+        if (!maps.Equal<map<@string, @string>, map<@string, @string>, @string, @string>(@params, test.p)) {
             Ꮡt.Errorf("for input %#q, wrong params.\n"u8 + "expected: %#v\n"u8 + "     got: %#v"u8,
                 test.@in, test.p, @params);
         }

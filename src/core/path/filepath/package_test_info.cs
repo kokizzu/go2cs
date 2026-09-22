@@ -30,6 +30,8 @@ using go;
 using static global::go.path.filepath_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b7061746820737472696e673b206465737420737472696e673b2062726f6b656e4c696e6b20626f6f6c7d", "globSymlinkTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7061747465726e20737472696e673b20726573756c7420737472696e677d", "globTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -47,9 +49,9 @@ using static global::go.path.filepath_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("path/filepath/match_test.go", "match_test.cs", "AFioAYKClKaCgoKCgpSUgpSCggAPHIKCgoKCgpSCgoKUgqaCgoKClILKuIKCuIKCgoCC2qYADBaChIKCgoKCgpSAgqSCgpSUlIKClIIACRSCgoKUgqaCgoKClIKCgpSmgoKCgpSCgoKmgoKUpqKCloKClIKWyqaCgoKmgoKCqAAMHKKCgIK2goKAgraCgoKCgILKgoKUgoKUgoKCpqKCgpSCgpSCggAKCoKClIKCgoKUgg==")]
-[assembly: go.GoPositionMap("path/filepath/path_test.go", "path_test.cs", "AHv6AYKCgoKUlJSCgIKkgIK4gpSCgpaykJKCAEWKAYKCgpSClIKAggAyXoKClKSCgrakgoKCgpSCAA0cgoKAgqSAggAmUIKCgpSCgIIAHjyCgoKClIKAggBIlgGCgpSUgoKAggARIoKCgIIAI0qigoK4goKCgoKClJTKgIC0goKClL7SgoKCpoKCgpSUqqKCgpSAgqaCgIKCAAgKgoKClIKClICCpIKAgqS8ooSCgpamgoqmggAJBqKCgqaEgoKUgIKkhIKSgpiCgpSClIKE2oKUgpSCqIKogpSCgoKClIKmgqiClIKCgoKClIKmgpaC6IKCgpSAggANCIKEgIKkgoSCgoKUgpSUkpSCgoKCgpSCqKKSgpSikoIACwiChICCpICCpoKCgoKChIKCgpaIlJaSlIKCgoCCpIKoopKClKKSggAJCKKEgoKCgIKkgoKClIKSgpSUgpKCgpSClAABEIIAEgiChIKCgIKkhIKAgqaCgIKmgoCCAA0cACFMkpKCgoKUgoKUgpaCgoKUAB9AgoKUgqaUgoCCACRIgoKUgqaUlIKAggAoUIKCgpSCpoKmloKAggAuYKKmgoKCgpSCuKKCgpSCgoKogoKWgoKClIIACQiChIiigoKogoKCgpSUgrqChIKClJaWgoKogoKUzOiihISCgpaCgpSEgoIAEAiChISCgoKUgoKClIKCgpSCgoKUgoKCqIKClIKEAAYSgoKClILMkpaCzICCpISCgpSCgpSClAAhOsKCgoKUgoKUhIKCgsyCgoKCooKUgpSWgoKWooKCgoKWgoKClIKClIKUggAHEPKEgoKUgoKUhIKCloKClIKClIKUggA/fIKCgoKUlIKCgoKUlIKUggA3cIKClIKAgtqCgpSCgpSCgoKClIKClIIACgiSgpSCgoKCgoKClpSCpIKUpJSClIK4ooSCgpSEgoKWgoKWgoKClIKClIKUgpSCgoLogoLWgoSCgoKWggAHEoKCgsyShISEgoKWgIKkgIKkgIK4goKCgpaWgoKClsS0tOyyhIKClIKEgoCCpICCpICCpoKAgqSAgqaCgoCCpJQACwiigoKAgraCgIKkgoKCgpSCgoKUlJSClIKC6IKCgoSmgpSCgpSCgpSC+oKCgoKClIKC")]
-[assembly: go.GoPositionMap("path/filepath/path_windows_test.go", "path_windows_test.cs", "AB4sgoKCloLohpqSgoKUgISCpIKAgoKkgIKCpJKAgoLKhIKClILcgpSCpIKmkoL8goSEgpSClJaCgoKCgpSUgqiEhIS6uqqigt6CgoKClIKCgpSCgqaCgoKClIKCpoKCgoKUgoIADS4AFAaUgpSCgriCgpSUgpTWgoKClLiSlIKClJSCpv7CgpSCgpaCgpSCgpSCgoKUgoKmgoKUABYGooKChIKWgpaCkpSClqgAECqCgoKUgoKkqIQAG0qCgIKmgoKUgoKCqIKCloSEgoKChIKCgoSmgoKEpoKUgoKk+uaCAAkGgoKClIKCgpS4goKmgoIACQaigoKCgoKmuLqCAAkWgoKUgpSUAA0MpoKUhIKCloKCgoSCgoKUgoKUgrjGgpSEgoKCgpaChIKClIL4goKCloSCgoKUhIKCgpaCgpSCgoKUppSCqISCgoKWhIKCgpaCgpaClJSCAAgIggAMIoKCggAJCoIACBiCgg==")]
+[assembly: go.GoPositionMap("path/filepath/match_test.go", "match_test.cs", "AFemAYKClKaCgoKCgpSUgpSCggAPHIKCgoKCgpSCgoKUgqaCgoKClILKuIKCuIKCgoCC2qYADBaChIKCgoKCgpSAgqSCgpSUlIKClIIACRSCgoKUgqaCgoKClIKCgpSmgoKCgpSCgoKmgoKUpoKCloKClIKWyqaCgoKmgoKCqAAMHKKCgIK2goKAgraCgoKCgILKgqKCgpSCgpSCgvqCgpSCgoKClII=")]
+[assembly: go.GoPositionMap("path/filepath/path_test.go", "path_test.cs", "AHv6AYKCgoKUlJSCgIKkgIK4gpSCgpaykJKCAEWKAYKCgpSClIKAggAyXoKClKSCgrakgoKCgpSCAA0cgoKAgqSAggAmUIKCgpSCgIIAHjyCgoKClIKAggBIlgGCgpSUgoKAggARIoKCgIIAI0qigoK4goKCgoKClJTKgIC0goKClL7SgoKCpoKCgpSUqqKEgoKWpoKKpoL2goSCkoKYgoKUgpSChNqClIKUgqiCqIKUgoKCgpSCpoKogpSCgoKCgpSCpoKWgriCgoKUgIIADQiChICCpIKEgoKClIKUlJKUgoKCgoKUgqiikoKUopKCAAsIgoSAgqSAgqaCgoKCgoSCgoKWiJSWkpSCgoKAgqSCqKKSgpSikoIACQiihIKCgoCCpIKCgpSCkoKUlIKSgoKUgpQAARCCABIIgoSCgoCCpISCgIKmgoCCpoKAggANHAAhTJKSgoKClIKClIKWgoKClAAfQIKClIKmlIKAggAkSIKClIKmlJSCgIIAKFCCgoKUgqaCppaCgIIALmCipoKCgoKUgriCgoKCgpSC+IKEiKKCgqiCgoKClJSCuoKEgoKUlpaCgqiCgpTM6KKChIKCloKClISCggAQCIKEhIKCgpSCgoKUgoKClIKCgpSCgoKogoKUgoQABhKCgoKUgsyyloLMgIKkhIKClIKClIKUACA6ooKEgoKCzIKCgoKigpSClJaCgpaigoKCgpaCgoKUgoKUgpSCAAQQ0oKEgoKWgoKUgoKUgpSCADx8goKCgpSUgoKCgpSUgpSCADdwgoKUgoCC2oKClIKClIKCgoKUgoKUggAKCJKClIKCgoKCgoKWlIKkgpSklIKUgriCgoSCgpaCgoKUgoKUgpSClIKCgriCgtaChIKCgpaCAAcSgoKCzJKEhISCgpaAgqSAgqSAgriCgoKClpaCgoKWxLS07JKChIKAgqSAgqSAgqaCgIKkgIKmgoKAgqSUAAgIooKCgIK2goCCpIKCgoKUgoKClJSUgpSCguiCgoSmgpSCgpSCgpSC+oKCgoKClIKC", "153-153:1;555-566:1;569-569:1;572-577:1;585-589:1;614-618:1;615-617:1.1;632-634:1;646-705:2;728-736:1;737-737:2;738-738:3;740-750:4;752-756:5;753-753:5.1;757-761:6;758-758:6.1;782-794:1;796-796:2;797-797:3;799-808:4;810-814:5;811-811:5.1;815-819:6;816-816:6.1;833-835:1;837-842:2;844-848:3;940-962:1;942-949:1.1;1647-1663:1;1682-1692:1;1834-1846:1")]
+[assembly: go.GoPositionMap("path/filepath/path_windows_test.go", "path_windows_test.cs", "AB4sgoKCloLohpqSgoKUgISCpIKAgoKkgIKCpJKAgoLKhIKClILcgpSCpIKmkoL8goSEgpSClJaCgoKCgpSUgqiEhIS6uqqigt6CgoKClIKCgpSCgqaCgoKClIKCpoKCgoKUgoIADS4AFAaUgpSCgriCgpSUgpTWgoKClLiSlIKClJSCpv7CgpSCgpaCgpSCgpSCgoKUgoKmgoKUABYGgoKChIKWgpaCkpSClqgAECqCgoKUgoKkqIQAG0qCgIKmgoKUhIKCloSEgoKChIKCgoSmgoKEpoKUgoKkyuaCAAkGgoKClIKCgpS4goKmgoIACQaigoKCgoKmuLqCAAkWgoKUgpSUAA0MpoKUhIKCloKCgoSCgoKUgoKUgrjGgpSEgoKCgpaChIKClIL4goKCloSCgoKUhIKCgpaCgpSCgoKUppSCqISCgoKWhIKCgpaCgpaClJSCAAgIggAMIoKCggAJCoIACBiCgg==", "287-296:1;305-326:1;466-472:1;487-501:1")]
 // </GoSourcePositionMaps>
 
 namespace go.path;
@@ -64,6 +66,12 @@ public static partial class filepath_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestAbsWindows_type {}
+    internal partial struct TestIssue13582_tests {}
+    internal partial struct TestIssue52476_tests {}
+    internal partial struct TestToNorm_tests {}
+    internal partial struct TestToNorm_testsDir {}
+    internal partial struct TestWalkSymlinkRoot_type {}
     internal partial struct globSymlinkTestsᴛ1 {}
     internal partial struct globTest {}
     internal partial struct globTestsᴛ1 {}
@@ -79,12 +87,38 @@ public static partial class filepath_test_package
     public partial struct RelTests {}
     public partial struct SplitListTest {}
     public partial struct SplitTest {}
-    public partial struct TestAbsWindows_type {}
-    public partial struct TestIssue13582_tests {}
-    public partial struct TestIssue52476_tests {}
-    public partial struct TestToNorm_tests {}
-    public partial struct TestToNorm_testsDir {}
-    public partial struct TestWalkSymlinkRoot_type {}
     public partial struct VolumeNameTest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() => builtin.initPackage(typeof(go.runtime.debug_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.path.filepath_package));
+    }
 }

@@ -28,8 +28,8 @@ using static go.maps_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("maps/iter_test.go", "iter_test.cs", "ABgYgoKCgpSCgoKClJSCyoKCgoKCgpaCgpSCgsqCgoKCgoKWgoKUgoLKgriCgoK6uO6WgriC7oKC")]
-[assembly: go.GoPositionMap("maps/maps_test.go", "maps_test.cs", "AB8ggoKUgpSClIKUgIK4goK6kqiSgqiS1oKClIKUgpSClICCuIKCpoKWgriCgoKUgoK4goKCgviCgoKClIKCgpaqgoKCgpSCgoLcooKClIKCuIKCgpSClIKClIKCyoKCgoKUgoKUgoIACAqEiISUgoKChM7SAAQS4tqWgoKClrKClII=")]
+[assembly: go.GoPositionMap("maps/iter_test.go", "iter_test.cs", "AAwYgoKCgpSCgoKClJSCyoKCgoKCgpaCgpSCgsqCgoKCgoKWgoKUgoLKgriCgoK6uO6WgriC7oKC", "77-83:1")]
+[assembly: go.GoPositionMap("maps/maps_test.go", "maps_test.cs", "ABMggoKUgpSClIKUgIK4goK6kqiSgqiS1oKClIKUgpSClICCuIKCpoKWgriCgoKUgoK4goKCgviCgoKClIKCgpaqgoKCgpSCgoLcooKClIKCuIKCgpSClIKClIKCyoKCgoKUgoKUgoIACAqEiISUgoKChM7SAAQS4tqWgoKClrKClII=", "47-47:1;126-126:1;130-130:2")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -45,4 +45,17 @@ public static partial class maps_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

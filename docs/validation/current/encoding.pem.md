@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/pem` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**8 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**18 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/pem).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -19,10 +21,20 @@ comparison — it is the evidence behind the `encoding/pem` row in
 | `TestBadEncode` | pass | pass |
 | `TestCVE202224675` | pass | pass |
 | `TestDecode` | pass | pass |
+| `TestDecodeStrangeCases` | pass | pass |
+| `TestDecodeStrangeCases/invalid_section_(not_base64)` | pass | pass |
+| `TestDecodeStrangeCases/leading_garbage` | pass | pass |
+| `TestDecodeStrangeCases/leading_garbage_on_block` | pass | pass |
+| `TestDecodeStrangeCases/leading_malformed_BEGIN` | pass | pass |
+| `TestDecodeStrangeCases/leading_partial_block` | pass | pass |
+| `TestDecodeStrangeCases/multiple_BEGIN` | pass | pass |
+| `TestDecodeStrangeCases/multiple_END` | pass | pass |
 | `TestEncode` | pass | pass |
 | `TestFuzz` | pass | pass |
 | `TestGetLine` | pass | pass |
+| `TestJustEnd` | pass | pass |
 | `TestLineBreaker` | pass | pass |
+| `TestMissingEndTrailer` | pass | pass |
 
 ## Excluded declarations
 
@@ -36,3 +48,4 @@ the capability it needs.
 - BenchmarkEncode (benchmark): benchmark execution is deferred to Phase 4D
 - ExampleDecode (example): example execution is deferred to Phase 4D
 - ExampleEncode (example): example execution is deferred to Phase 4D
+- FuzzDecode (fuzz): fuzz execution is deferred to Phase 4D

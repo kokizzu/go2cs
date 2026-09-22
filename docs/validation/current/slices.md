@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `slices` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-28 · converter `177e9eb4e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**119 matched · 3 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**120 matched · 3 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -103,6 +105,7 @@ comparison — it is the evidence behind the `slices` row in
 | `TestInsertGrowthRate` | pass | pass |
 | `TestInsertOverlap` | pass | pass |
 | `TestInsertPanics` | pass | pass |
+| `TestIssue68488` | pass | pass |
 | `TestMinMax` | pass | pass |
 | `TestMinMax/[0_2_-9]` | pass | pass |
 | `TestMinMax/[1_2]` | pass | pass |
@@ -170,11 +173,15 @@ the capability it needs.
 - BenchmarkIndex_Large (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkReplace (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSortFuncStruct (benchmark): benchmark execution is deferred to Phase 4D
+- ExampleAll (example): example execution is deferred to Phase 4D
+- ExampleAppendSeq (example): example execution is deferred to Phase 4D
+- ExampleBackward (example): example execution is deferred to Phase 4D
 - ExampleBinarySearch (example): example execution is deferred to Phase 4D
 - ExampleBinarySearchFunc (example): example execution is deferred to Phase 4D
 - ExampleChunk (example): example execution is deferred to Phase 4D
 - ExampleClip (example): example execution is deferred to Phase 4D
 - ExampleClone (example): example execution is deferred to Phase 4D
+- ExampleCollect (example): example execution is deferred to Phase 4D
 - ExampleCompact (example): example execution is deferred to Phase 4D
 - ExampleCompactFunc (example): example execution is deferred to Phase 4D
 - ExampleCompare (example): example execution is deferred to Phase 4D
@@ -203,3 +210,7 @@ the capability it needs.
 - ExampleSortFunc_caseInsensitive (example): example execution is deferred to Phase 4D
 - ExampleSortFunc_multiField (example): example execution is deferred to Phase 4D
 - ExampleSortStableFunc (example): example execution is deferred to Phase 4D
+- ExampleSorted (example): example execution is deferred to Phase 4D
+- ExampleSortedFunc (example): example execution is deferred to Phase 4D
+- ExampleSortedStableFunc (example): example execution is deferred to Phase 4D
+- ExampleValues (example): example execution is deferred to Phase 4D

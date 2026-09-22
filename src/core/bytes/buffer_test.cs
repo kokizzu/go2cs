@@ -19,54 +19,6 @@ using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 public static UntypedInt N => 10000; // make this bigger for a larger (and slower) test
 
 internal static @string testString; // test data for write tests
@@ -302,7 +254,7 @@ internal static readonly @string testLargeStringReads3ˢ = "TestLargeStringReads
 public static void TestLargeStringReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillString(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testString[0..(int)(len(testString) / i)]);
+        @string s = fillString(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testString[..(int)(len(testString) / i)]);
         empty(Ꮡt, testLargeReads2ˢ, Ꮡbuf, s, new slice<byte>(len(testString)));
     }
     check(Ꮡt, testLargeStringReads3ˢ, Ꮡbuf, ""u8);
@@ -314,7 +266,7 @@ internal static readonly @string testLargeByteReads3ˢ = "TestLargeByteReads (3)
 public static void TestLargeByteReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        @string s = fillBytes(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testBytes[..(int)(len(testBytes) / i)]);
         empty(Ꮡt, testLargeReads2ˢ, Ꮡbuf, s, new slice<byte>(len(testString)));
     }
     check(Ꮡt, testLargeByteReads3ˢ, Ꮡbuf, ""u8);
@@ -373,7 +325,7 @@ internal static readonly @string testReadFrom2ˢ = "TestReadFrom (2)"u8;
 public static void TestReadFrom(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, testReadFrom1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        @string s = fillBytes(Ꮡt, testReadFrom1ˢ, Ꮡbuf, ""u8, 5, testBytes[..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
         b.ReadFrom(new bytes_test_package.bytes_BufferжReader(Ꮡbuf));
         empty(Ꮡt, testReadFrom2ˢ, Ꮡb, s, new slice<byte>(len(testString)));
@@ -464,7 +416,7 @@ internal static readonly @string testWriteTo2ˢ = "TestWriteTo (2)"u8;
 public static void TestWriteTo(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, testWriteTo1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        @string s = fillBytes(Ꮡt, testWriteTo1ˢ, Ꮡbuf, ""u8, 5, testBytes[..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
         buf.WriteTo(new bytes_test_package.bytes_BufferжWriter(Ꮡb));
         empty(Ꮡt, testWriteTo2ˢ, Ꮡb, s, new slice<byte>(len(testString)));

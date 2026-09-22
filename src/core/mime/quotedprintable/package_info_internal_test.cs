@@ -28,7 +28,7 @@ using static go.mime.quotedprintable_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("mime/quotedprintable/reader_test.go", "reader_test.cs", "ABoqggArYIKCgoCCpJSCxoCC1oLugoKClIIAFBCCgoKCqIKCgoKUkoKUgoKCgoKUgoKClIKUlKaClIKUgpSCgoKCgpSCsoKCgoKmuKKCgqa0gIKCpta2lIKClIKCiIKcgg==")]
+[assembly: go.GoPositionMap("mime/quotedprintable/reader_test.go", "reader_test.cs", "ABoqggArYIKCgoCCpJSCxoCC1oLugoKClIIAGhCCgoKCqIKCgoKUkoKUgoKCgoKUgoKClIKUlKaClIKUgpSCgoKCgpSCsoKCgoKmuKKCgqa0gIKCpta2lIKClIKCiIKcgg==", "122-195:1;163-174:1.1;175-180:1.2")]
 [assembly: go.GoPositionMap("mime/quotedprintable/writer_test.go", "writer_test.cs", "AA0cgqaC5qIAQowBgoKEgoKCgqiAgoKkgIKCpIKCyoKCgoCCpICCpoKCgpSCggAGHqKCgoI=")]
 // </GoSourcePositionMaps>
 
@@ -45,4 +45,25 @@ public static partial class quotedprintable_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

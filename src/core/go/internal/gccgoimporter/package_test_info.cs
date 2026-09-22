@@ -33,6 +33,7 @@ using go;
 using static global::go.go.@internal.gccgoimporter_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696420737472696e673b2074797020737472696e673b2077616e7420737472696e673b20756e6465726c79696e6720737472696e673b206d6574686f647320737472696e677d", "typeParserTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -53,7 +54,7 @@ using static global::go.go.@internal.gccgoimporter_internal_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: global::go.GoPositionMap("go/internal/gccgoimporter/gccgoinstallation_test.go", "gccgoinstallation_test.cs", "AJoBrAK0goKWgoKClKiCgoKCqIKCgroAChA=")]
-[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/importer_test.go", "importer_test.cs", "AB4wooKCgpaCgoKCloKCloKCgrqCgpSCgoKoggAmToKCgoSy/rKCgpSAgqTmlIKCloKCgpSCgpSCgpSCgpSEgoKEgoKEspSCloKAgqSChIKCgoKWhIKCgoKWhICCpICC")]
+[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/importer_test.go", "importer_test.cs", "AB4wooKCgpaCgoKCloKCloKCgrqCgpSCgoKoggAmToKCgoSy/rKCgpSAgqTmlIKCloKCgpSCgpSCgpSCgpSEgoKEgoKEspSCloKAgqSChIKCgoKWhIKClIKCgoKWhICCpICC")]
 [assembly: global::go.GoPositionMap("go/internal/gccgoimporter/parser_test.go", "parser_test.cs", "ACpGgoKCgoKCgoKEgqiAgqaCgpaCgoKogoKCgpSCgg==")]
 // </GoSourcePositionMaps>
 
@@ -70,4 +71,31 @@ public static partial class gccgoimporter_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(global::go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(global::go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸscanner() => builtin.initPackage(typeof(text.scanner_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.go.@internal.gccgoimporter_package));
+    }
 }

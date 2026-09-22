@@ -6,9 +6,10 @@ namespace go;
 using bytes = bytes_package;
 using fmt = fmt_package;
 using Δio = io_package;
+using iter = iter_package;
 using Δmath = math_package;
 using rand = go.math.rand_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using static strings_package;
 using testing = testing_package;
@@ -22,16 +23,35 @@ using strings = strings_package;
 
 partial class strings_test_package {
 
-internal static bool eq(slice<@string> a, slice<@string> b) {
-    if (len(a) != len(b)) {
-        return false;
+internal static slice<@string> collect(ж<testing.T> Ꮡt, iter.Seq<@string> seq) {
+    var @out = slices.Collect(seq);
+    var out1 = slices.Collect(seq);
+    if (!slices.Equal<slice<@string>, @string>(@out, out1)) {
+        Ꮡt.Fatalf("inconsistent seq:\n%s\n%s"u8, @out, out1);
     }
-    for (nint i = 0; i < len(a); i++) {
-        if (a[i] != b[i]) {
-            return false;
+    return @out;
+}
+
+[GoType] partial struct LinesTest {
+    internal @string a;
+    internal slice<@string> b;
+}
+
+internal static slice<LinesTest> linesTests = new LinesTest[]{
+    new(a: "abc\nabc\n"u8, b: new @string[]{"abc\n"u8, "abc\n"u8}.slice()),
+    new(a: "abc\r\nabc"u8, b: new @string[]{"abc\r\n"u8, "abc"u8}.slice()),
+    new(a: "abc\r\n"u8, b: new @string[]{"abc\r\n"u8}.slice()),
+    new(a: "\nabc"u8, b: new @string[]{"\n"u8, "abc"u8}.slice()),
+    new(a: "\nabc\n\n"u8, b: new @string[]{"\n"u8, "abc\n"u8, "\n"u8}.slice())
+}.slice();
+
+public static void TestLines(ж<testing.T> Ꮡt) {
+    foreach (var (_, s) in linesTests) {
+        var result = slices.Collect(Lines(s.a));
+        if (!slices.Equal<slice<@string>, @string>(result, s.b)) {
+            Ꮡt.Errorf(@"slices.Collect(Lines(%q)) = %q; want %q"u8, s.a, result, s.b);
         }
     }
-    return true;
 }
 
 internal static @string abcd = "abcd"u8;
@@ -51,6 +71,9 @@ internal static @string dots = "1....2....3....4"u8;
 // cases with one byte strings - test special case in Index()
 // test special cases in Index() for short strings
 // test fallback to Rabin-Karp.
+// test fallback to IndexRune
+// invalid UTF-8 byte sequence (must be longer than bytealg.MaxBruteForce to
+// test that we don't use IndexRune)
 internal static slice<IndexTest> indexTests = new IndexTest[]{
     new(""u8, ""u8, 0),
     new(""u8, "a"u8, -1),
@@ -140,7 +163,9 @@ internal static slice<IndexTest> indexTests = new IndexTest[]{
     new("xx012345678901234567890123456789012345678901234567890123456789012"u8, "0123456789012345678901234567890123456xxx"u8, -1),
     new("xx0123456789012345678901234567890123456789012345678901234567890120123456789012345678901234567890123456xxx"u8, "0123456789012345678901234567890123456xxx"u8, 65),
     new("oxoxoxoxoxoxoxoxoxoxoxoy"u8, "oy"u8, 22),
-    new("oxoxoxoxoxoxoxoxoxoxoxox"u8, "oy"u8, -1)
+    new("oxoxoxoxoxoxoxoxoxoxoxox"u8, "oy"u8, -1),
+    new("oxoxoxoxoxoxoxoxoxoxox☺"u8, "☺"u8, 22),
+    new(((@string)(new byte[]{0x78, 0x78, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x78, 0x78, 0x78, 0xed, 0x9f, 0xc0})), ((@string)(new byte[]{0xed, 0x9f, 0xc0})), 105)
 }.slice();
 
 internal static slice<IndexTest> lastIndexTests = new IndexTest[]{
@@ -309,10 +334,7 @@ public static void TestIndexRandom(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testˢ = "test世界"u8;
-
-[GoType("dyn")] partial struct TestIndexRune_tests {
+[GoType("dyn")] internal partial struct TestIndexRune_tests {
     internal @string @in;
     internal rune rune;
     internal nint want;
@@ -341,7 +363,41 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
         new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), -1, -1),
         new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), 0xD800, -1), // Surrogate pair
 
-        new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), utf8.MaxRune + 1, -1)
+        new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), utf8.MaxRune + 1, -1), // 2 bytes
+
+        new("ӆ"u8, (rune)'ӆ', 0),
+        new("a"u8, (rune)'ӆ', -1),
+        new("  ӆ"u8, (rune)'ӆ', 2),
+        new("  a"u8, (rune)'ӆ', -1),
+        new(Repeat("ц"u8, 64) + "ӆ"u8, (rune)'ӆ', 128), // test cutover
+
+        new(Repeat("Ꙁ"u8, 64) + "Ꚁ"u8, (rune)'䚀', -1), // 'Ꚁ' and '䚀' share the same last two bytes
+ // 3 bytes
+
+        new("Ꚁ"u8, (rune)'Ꚁ', 0),
+        new("a"u8, (rune)'Ꚁ', -1),
+        new("  Ꚁ"u8, (rune)'Ꚁ', 2),
+        new("  a"u8, (rune)'Ꚁ', -1),
+        new(Repeat("Ꙁ"u8, 64) + "Ꚁ"u8, (rune)'Ꚁ', 192), // test cutover
+
+        new(Repeat("𡋀"u8, 64) + "𡌀"u8, (rune)0x23300, -1), // '𡌀' and '𣌀' share the same last two bytes
+ // 4 bytes
+
+        new("𡌀"u8, (rune)0x21300, 0),
+        new("a"u8, (rune)0x21300, -1),
+        new("  𡌀"u8, (rune)0x21300, 2),
+        new("  a"u8, (rune)0x21300, -1),
+        new(Repeat("𡋀"u8, 64) + "𡌀"u8, (rune)0x21300, 256), // test cutover
+
+        new(Repeat("𡋀"u8, 64), (rune)0x21300, -1), // Test the cutover to bytealg.IndexString when it is triggered in
+ // the middle of rune that contains consecutive runs of equal bytes.
+
+        new("aaaaaKKKK\U000bc104"u8, (rune)0xBC104, 17), // cutover: (n + 16) / 8
+
+        new("aaaaaKKKK鄄"u8, (rune)'鄄', 17),
+        new("aaKKKKKa\U000bc104"u8, (rune)0xBC104, 18), // cutover: 4 + n>>4
+
+        new("aaKKKKKa鄄"u8, (rune)'鄄', 18)
     }.slice();
     foreach (var (_, tt) in tests) {
         {
@@ -350,7 +406,8 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
             }
         }
     }
-    @string haystack = testˢ;
+    // Make sure we trigger the cutover and string(rune) conversion.
+    @string haystack = "test"u8 + Repeat("𡋀"u8, 32) + "𡌀"u8;
     var allocs = testing.AllocsPerRun(1000, () => {
         {
             nint i = IndexRune(haystack, (rune)'s'); if (i != 2) {
@@ -358,8 +415,8 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
             }
         }
         {
-            nint i = IndexRune(haystack, (rune)'世'); if (i != 4) {
-                Ꮡt.Fatalf("'世' at %d; want 4"u8, i);
+            nint i = IndexRune(haystack, (rune)0x21300); if (i != 132) {
+                Ꮡt.Fatalf("'𡌀' at %d; want 4"u8, i);
             }
         }
     });
@@ -483,9 +540,15 @@ internal static slice<SplitTest> splittests = new SplitTest[]{
 public static void TestSplit(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in splittests) {
         var a = SplitN(tt.s, tt.sep, tt.n);
-        if (!eq(a, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(a, tt.a)) {
             Ꮡt.Errorf("Split(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, a, tt.a);
             continue;
+        }
+        if (tt.n < 0) {
+            var a2 = slices.Collect(SplitSeq(tt.s, tt.sep));
+            if (!slices.Equal<slice<@string>, @string>(a2, tt.a)) {
+                Ꮡt.Errorf(@"collect(SplitSeq(%q, %q)) = %v; want %v"u8, tt.s, tt.sep, a2, tt.a);
+            }
         }
         if (tt.n == 0) {
             continue;
@@ -496,7 +559,7 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
         }
         if (tt.n < 0) {
             var b = Split(tt.s, tt.sep);
-            if (!reflect.DeepEqual(a, b)) {
+            if (!slices.Equal<slice<@string>, @string>(a, b)) {
                 Ꮡt.Errorf("Split disagrees with SplitN(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, b, a);
             }
         }
@@ -522,9 +585,15 @@ internal static slice<SplitTest> splitaftertests = new SplitTest[]{
 public static void TestSplitAfter(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in splitaftertests) {
         var a = SplitAfterN(tt.s, tt.sep, tt.n);
-        if (!eq(a, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(a, tt.a)) {
             Ꮡt.Errorf(@"Split(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, a, tt.a);
             continue;
+        }
+        if (tt.n < 0) {
+            var a2 = slices.Collect(SplitAfterSeq(tt.s, tt.sep));
+            if (!slices.Equal<slice<@string>, @string>(a2, tt.a)) {
+                Ꮡt.Errorf(@"collect(SplitAfterSeq(%q, %q)) = %v; want %v"u8, tt.s, tt.sep, a2, tt.a);
+            }
         }
         @string s = Join(a, ""u8);
         if (s != tt.s) {
@@ -532,7 +601,7 @@ public static void TestSplitAfter(ж<testing.T> Ꮡt) {
         }
         if (tt.n < 0) {
             var b = SplitAfter(tt.s, tt.sep);
-            if (!reflect.DeepEqual(a, b)) {
+            if (!slices.Equal<slice<@string>, @string>(a, b)) {
                 Ꮡt.Errorf("SplitAfter disagrees with SplitAfterN(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, b, a);
             }
         }
@@ -565,9 +634,13 @@ internal static slice<FieldsTest> fieldstests = new FieldsTest[]{
 public static void TestFields(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in fieldstests) {
         var a = Fields(tt.s);
-        if (!eq(a, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(a, tt.a)) {
             Ꮡt.Errorf("Fields(%q) = %v; want %v"u8, tt.s, a, tt.a);
             continue;
+        }
+        var a2 = collect(Ꮡt, FieldsSeq(tt.s));
+        if (!slices.Equal<slice<@string>, @string>(a2, tt.a)) {
+            Ꮡt.Errorf(@"collect(FieldsSeq(%q)) = %v; want %v"u8, tt.s, a2, tt.a);
         }
     }
 }
@@ -582,7 +655,7 @@ public static slice<FieldsTest> FieldsFuncTests = new FieldsTest[]{
 public static void TestFieldsFunc(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in fieldstests) {
         var a = FieldsFunc(tt.s, Δunicode.IsSpace);
-        if (!eq(a, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(a, tt.a)) {
             Ꮡt.Errorf("FieldsFunc(%q, unicode.IsSpace) = %v; want %v"u8, tt.s, a, tt.a);
             continue;
         }
@@ -590,8 +663,12 @@ public static void TestFieldsFunc(ж<testing.T> Ꮡt) {
     var pred = (rune c) => c == (rune)'X';
     foreach (var (_, tt) in FieldsFuncTests) {
         var a = FieldsFunc(tt.s, pred);
-        if (!eq(a, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(a, tt.a)) {
             Ꮡt.Errorf("FieldsFunc(%q) = %v, want %v"u8, tt.s, a, tt.a);
+        }
+        var a2 = collect(Ꮡt, FieldsFuncSeq(tt.s, pred));
+        if (!slices.Equal<slice<@string>, @string>(a2, tt.a)) {
+            Ꮡt.Errorf(@"collect(FieldsFuncSeq(%q)) = %v; want %v"u8, tt.s, a2, tt.a);
         }
     }
 }
@@ -1017,7 +1094,7 @@ public static void BenchmarkTrim(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkToValidUTF8_tests {
+[GoType("dyn")] internal partial struct BenchmarkToValidUTF8_tests {
     internal @string name;
     internal @string input;
 }
@@ -1116,7 +1193,7 @@ internal static slice<trimFuncTestsᴛ1> trimFuncTests = new trimFuncTestsᴛ1[]
         ""u8)
 }.slice();
 
-[GoType("dyn")] partial struct TestTrimFunc_trimmers {
+[GoType("dyn")] internal partial struct TestTrimFunc_trimmers {
     internal @string name;
     internal Func<@string, Func<rune, bool>, @string> trim;
     internal @string @out;
@@ -1330,7 +1407,7 @@ internal static error /*err*/ repeat(@string s, nint count) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bitˢ = "64-bit"u8;
 
-[GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
+[GoType("dyn")] internal partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
     internal @string errStr;
@@ -2386,7 +2463,7 @@ public static void BenchmarkJoin(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkTrimSpace_tests {
+[GoType("dyn")] internal partial struct BenchmarkTrimSpace_tests {
     internal @string name, input;
 }
 

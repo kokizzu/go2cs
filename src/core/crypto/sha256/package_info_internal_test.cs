@@ -28,7 +28,7 @@ using static go.crypto.sha256_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/sha256/sha256_test.go", "sha256_test.cs", "AF++AYKCgoKClIKCgpSCgpSCgpSmgoKCgpSCgoKUgoKUgoKUAAoKggADErKSgoKEhIKCgpaCgpaAgoKmgoSAgv6CgoSCgpaAgsiCgoCCpIKAgsiCgoCCAAgKkoKUgoKCgoKCACJKwoKAgrjkgoSCgIKCpoKCgpaC+oKClIKSgqKCgpSCAAgSpoKCgoLmgoKUggAMDoKCkoKCgoKCpoKCgoKmgoKCgsqCpoKmgg==")]
+[assembly: go.GoPositionMap("crypto/sha256/sha256_test.go", "sha256_test.cs", "AF+6AYKmgoKCgpSCgoKUgoKUgoKUpoKCgpSCgoKUgoKUgoKUyoIACAaCAAMSspKCgoSEgoKCloKCgpSEgoKWgoKWgIKCpoKEgIL+goKEgoKWgILIgoKAgqSCgILIgoKAggAjSsKCgIK45IKEgoCCgqaCgoKWgsqCgoCCgoSCgoKClIKCgoKWgpQACRKmgoKCgoLmgoKCpoKCAA0QgoKSgoKCgoKmgoKCgqaCgoKCyoKmgqaC", "157-199:1;269-273:1;300-319:1;341-345:1;342-344:1.1;346-350:2;347-349:2.1;358-366:1;367-373:2;374-380:3")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -44,4 +44,19 @@ public static partial class sha256_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

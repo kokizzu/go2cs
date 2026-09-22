@@ -21,12 +21,6 @@ using static go.image.gif_package;
 
 partial class gif_internal_test_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() {
-    builtin.initPackage(typeof(go.image.png_package));
-}
-
 internal static (image.Image, error) readImg(@string filename) {
     GoFrame ᒐ = default;
     try {
@@ -606,7 +600,7 @@ public static void TestColorTablesMatch(ж<testing.T> Ꮡt) {
     }
     // Make a copy of the palette, substituting trIdx's slot with transparent,
     // just like decoder.decode.
-    var local = append(((Δcolor.Palette)default!), global.ꓸꓸꓸ);
+    var local = appendꓸꓸꓸ(((Δcolor.Palette)default!), global);
     local[trIdx] = new colorꓸRGBA(nil);
     const nint testLen = /* 3 * 256 */ 768;
     const nint padded = 7;

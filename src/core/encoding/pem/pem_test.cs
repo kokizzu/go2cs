@@ -35,7 +35,7 @@ internal static slice<GetLineTest> getLineTests = new GetLineTest[]{
 
 public static void TestGetLine(ж<testing.T> Ꮡt) {
     foreach (var (i, test) in getLineTests) {
-        var (x, y) = getLine(slice<byte>(test.@in));
+        var (x, y, _) = getLine(slice<byte>(test.@in));
         if (((sstring)x) != test.out1 || ((sstring)y) != test.out2) {
             Ꮡt.Errorf("#%d got:%+v,%+v want:%s,%s"u8, i, x, y, test.out1, test.out2);
         }
@@ -65,7 +65,7 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("#4 should be empty but got:%#v"u8, result.OrTypedNil());
     }
     (result, remainder) = Decode(remainder);
-    if (result == nil || (~result).Type != "HEADERS"u8 || len((~result).Headers) != 1) {
+    if (result == nil || (~result).Type != "VALID HEADERS"u8 || len((~result).Headers) != 1) {
         Ꮡt.Errorf("#5 expected single header block but got :%v"u8, result.OrTypedNil());
     }
     if (len(remainder) != 0) {
@@ -175,7 +175,7 @@ public static void TestCVE202224675(ж<testing.T> Ꮡt) {
     // Prior to CVE-2022-24675, this input would cause a stack overflow.
     var input = slice<byte>(strings.Repeat(beginˢ, 10000000));
     var (result, rest) = Decode(input);
-    if (result != nil || !reflect.DeepEqual(rest, input)) {
+    if (result != nil || !bytes.Equal(rest, input)) {
         Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, input, rest);
     }
 }
@@ -302,7 +302,7 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
     ))) {
         return;
     }
-    quick.Check(testRoundtrip, nil);
+    quick.Check((testRoundtrip).OrTypedNilFunc(), nil);
 }
 
 public static void BenchmarkEncode(ж<testing.B> Ꮡb) {
@@ -398,15 +398,15 @@ ZWAaUoVtWIQ52aKS0p19G99hhb+IVANC4akkdHV4SP8i7MVNZhfUmg==
 
 # This shouldn't be recognised because of the missing newline after the
 headers.
------BEGIN HEADERS-----
+-----BEGIN INVALID HEADERS-----
 Header: 1
------END HEADERS-----
+-----END INVALID HEADERS-----
 
 # This should be valid, however.
------BEGIN HEADERS-----
+-----BEGIN VALID HEADERS-----
 Header: 1
 
------END HEADERS-----
+-----END VALID HEADERS-----
 """u8);
 
 internal static ж<global::go.encoding.pem_package.Block> certificate = Ꮡ(new Block(Type: "CERTIFICATE"u8,
@@ -663,6 +663,137 @@ public static void TestBadEncode(ж<testing.T> Ꮡt) {
 
 internal static @string testingKey(@string s) {
     return strings.ReplaceAll(s, "TESTING KEY"u8, "PRIVATE KEY"u8);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string testBlockˢ = "TEST BLOCK"u8;
+internal static readonly object expectedValidBlockˢ = (@string)"expected valid block"u8;
+
+[GoType("dyn")] internal partial struct TestDecodeStrangeCases_type {
+    internal @string name;
+    internal @string pem;
+}
+
+public static void TestDecodeStrangeCases(ж<testing.T> Ꮡt) {
+    @string sentinelType = testBlockˢ;
+    var sentinelBytes = slice<byte>("hello"u8);
+    foreach (var (_, vᴛ1) in new TestDecodeStrangeCases_type[]{
+        new(
+            name: "invalid section (not base64)"u8,
+            pem: """
+-----BEGIN COMMENT-----
+foo foo foo
+-----END COMMENT-----
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "leading garbage on block"u8,
+            pem: """
+foo foo foo-----BEGIN CERTIFICATE-----
+MCowBQYDK2VwAyEApVjJeLW5MoP6uR3+OeITokM+rBDng6dgl1vvhcy+wws=
+-----END PUBLIC KEY-----
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "leading garbage"u8,
+            pem: """
+foo foo foo
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "leading partial block"u8,
+            pem: """
+foo foo foo
+-----END COMMENT-----
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "multiple BEGIN"u8,
+            pem: """
+-----BEGIN TEST BLOCK-----
+-----BEGIN TEST BLOCK-----
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "multiple END"u8,
+            pem: """
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+-----END TEST BLOCK-----
+-----END TEST BLOCK-----
+"""u8
+        ),
+        new(
+            name: "leading malformed BEGIN"u8,
+            pem: """
+-----BEGIN PUBLIC KEY
+aGVsbG8=
+-----END PUBLIC KEY-----
+-----BEGIN TEST BLOCK-----
+aGVsbG8=
+-----END TEST BLOCK-----
+"""u8
+        )
+    }.slice()) {
+        ref var tc = ref heap(new TestDecodeStrangeCases_type(), out var Ꮡtc);
+        tc = vᴛ1;
+
+        var sentinelBytesʗ1 = sentinelBytes;
+        var tcʗ1 = tc;
+        Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
+            var (block, _) = Decode(slice<byte>(tcʗ1.pem));
+            if (block == nil) {
+                tΔ1.Fatal(expectedValidBlockˢ);
+            }
+            if ((~block).Type != sentinelType) {
+                tΔ1.Fatalf("unexpected block returned, got type %q, want type %q"u8, (~block).Type, sentinelType);
+            }
+            if (!bytes.Equal((~block).Bytes, sentinelBytesʗ1)) {
+                tΔ1.Fatalf("unexpected block content, got %x, want %x"u8, (~block).Bytes, sentinelBytesʗ1);
+            }
+        });
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string endPublicKeyˢ = """
+
+-----END PUBLIC KEY-----
+"""u8;
+internal static readonly object unexpectedBlockˢ = (@string)"unexpected block"u8;
+
+public static void TestJustEnd(ж<testing.T> Ꮡt) {
+    @string pemData = endPublicKeyˢ;
+    var (block, _) = Decode(slice<byte>(pemData));
+    if (block != nil) {
+        Ꮡt.Fatal(unexpectedBlockˢ);
+    }
+}
+
+public static void FuzzDecode(ж<testing.F> Ꮡf) {
+    Ꮡf.Fuzz((ж<testing.T> t, slice<byte> data) => {
+        Decode(data);
+    });
+}
+
+public static void TestMissingEndTrailer(ж<testing.T> Ꮡt) {
+    Decode(new byte[]{0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x42, 0x45, 0x47, 0x49, 0x4e, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0xa, 0x2d, 0x2d, 0x2d, 0x2d, 0x2d, 0x45, 0x4e, 0x44, 0x20}.slice());
 }
 
 } // end pem_internal_test_package

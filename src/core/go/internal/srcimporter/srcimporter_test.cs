@@ -31,7 +31,7 @@ public static void TestMain(ж<testing.M> Ꮡm) {
 
 internal static time.Duration maxTime => /* 2 * time.Second */ 2000000000;
 
-internal static ж<global::go.go.@internal.srcimporter_package.Importer> importer = New(Ꮡ(build.Default), token.NewFileSet(), new map<@string, ж<types.Package>>());
+internal static ж<global::go.go.@internal.srcimporter_package.Importer> importer = New(build.ᏑDefault, token.NewFileSet(), new map<@string, ж<types.Package>>());
 
 internal static void doImport(ж<testing.T> Ꮡt, @string path, @string srcDir) {
     ref var t = ref Ꮡt.DerefOrNull();
@@ -95,13 +95,10 @@ internal static (nint, bool) walkDir(ж<testing.T> Ꮡt, @string path, time.Time
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object noSourceCodeAvailableˢ = (@string)"no source code available"u8;
 internal static readonly object skippingInShortModeˢ = (@string)"skipping in -short mode"u8;
 
 public static void TestImportStdLib(ж<testing.T> Ꮡt) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(noSourceCodeAvailableˢ);
-    }
+    testenv.MustHaveSource(new srcimporter_internal_test_package.testing_TжTB(Ꮡt));
     if (testing.Short() && testenv.Builder() == ""u8) {
         Ꮡt.Skip(skippingInShortModeˢ);
     }
@@ -130,9 +127,7 @@ internal static slice<importedObjectTestsᴛ1> importedObjectTests = new importe
 internal static readonly object invalidTestDataFormatˢ = (@string)"invalid test data format"u8;
 
 public static void TestImportedTypes(ж<testing.T> Ꮡt) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(noSourceCodeAvailableˢ);
-    }
+    testenv.MustHaveSource(new srcimporter_internal_test_package.testing_TжTB(Ꮡt));
     foreach (var (_, test) in importedObjectTests) {
         nint i = strings.LastIndex(test.name, "."u8);
         if (i < 0) {
@@ -200,13 +195,11 @@ internal static readonly @string mathˢ = "math"u8;
 internal static readonly @string reimportˢ = "reimport"u8;
 
 public static void TestReimport(ж<testing.T> Ꮡt) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(noSourceCodeAvailableˢ);
-    }
+    testenv.MustHaveSource(new srcimporter_internal_test_package.testing_TжTB(Ꮡt));
     // Reimporting a partially imported (incomplete) package is not supported (see issue #19337).
     // Make sure we recognize the situation and report an error.
     var mathPkg = types.NewPackage(mathˢ, mathˢ); // incomplete package
-    var importer = New(Ꮡ(build.Default), token.NewFileSet(), new map<@string, ж<types.Package>>{[mathPkg.Path()] = mathPkg});
+    var importer = New(build.ᏑDefault, token.NewFileSet(), new map<@string, ж<types.Package>>{[mathPkg.Path()] = mathPkg});
     var (_, err) = importer.ImportFrom(mathˢ, "."u8, 0);
     if (err == default! || !strings.HasPrefix(err.Error(), reimportˢ)) {
         Ꮡt.Errorf("got %v; want reimport error"u8, err);
@@ -219,9 +212,7 @@ internal static readonly @string missingFunctionBodyˢ = "missing function body"
 internal static readonly object gotNoPackageDespiteNoˢ = (@string)"got no package despite no hard errors"u8;
 
 public static void TestIssue20855(ж<testing.T> Ꮡt) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(noSourceCodeAvailableˢ);
-    }
+    testenv.MustHaveSource(new srcimporter_internal_test_package.testing_TжTB(Ꮡt));
     var (pkg, err) = importer.ImportFrom(goInternalSrcimporterˢ, "."u8, 0);
     if (err == default! || !strings.Contains(err.Error(), missingFunctionBodyˢ)) {
         Ꮡt.Fatalf("got unexpected or no error: %v"u8, err);
@@ -232,9 +223,7 @@ public static void TestIssue20855(ж<testing.T> Ꮡt) {
 }
 
 internal static void testImportPath(ж<testing.T> Ꮡt, @string pkgPath) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(noSourceCodeAvailableˢ);
-    }
+    testenv.MustHaveSource(new srcimporter_internal_test_package.testing_TжTB(Ꮡt));
     @string pkgName = path.Base(pkgPath);
     var (pkg, err) = importer.Import(pkgPath);
     if (err != default!) {

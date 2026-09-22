@@ -631,7 +631,7 @@ public static void BenchmarkNewEncoding(ж<testing.B> Ꮡb) {
     b.SetBytes((int64)len(new Encoding(nil).decodeMap));
     for (nint i = 0; i < b.N; i++) {
         var e = NewEncoding(encodeStd);
-        foreach (var (_, v) in (~e).decodeMap) {
+        foreach (var (_, v) in (~e).decodeMap.ΔRangeSnapshot()) {
             _ = v;
         }
     }

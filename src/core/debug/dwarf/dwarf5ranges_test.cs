@@ -33,12 +33,12 @@ public static void TestDwarf5Ranges(ж<testing.T> Ꮡt) {
         vers: 5,
         is64: true
     ));
-    (var ret, err) = d.dwarf5Ranges(u, nil, 0x5fbd, 0xc, new array<uint64>[]{}.slice());
+    (var ret, err) = d.dwarf5Ranges(u, nil, 0x5fbd, 0xc, GoReflect.WithElemDims(new array<uint64>[]{}.slice(), 2));
     if (err != default!) {
         Ꮡt.Fatalf("could not read rnglist: %v"u8, err);
     }
     Ꮡt.Logf("%#v"u8, ret);
-    var tgt = new array<uint64>[]{new uint64[]{0x0000000000006712, 0x000000000000679f}.array(), new uint64[]{0x00000000000067af}.array(2), new uint64[]{0x00000000000067b3}.array(2)}.slice();
+    var tgt = GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0000000000006712, 0x000000000000679f}.array(), new uint64[]{0x00000000000067af}.array(2), new uint64[]{0x00000000000067b3}.array(2)}.slice(), 2);
     if (reflect.DeepEqual(ret, tgt)) {
         Ꮡt.Errorf("expected %#v got %#x"u8, tgt, ret);
     }

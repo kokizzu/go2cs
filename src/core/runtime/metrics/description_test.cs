@@ -12,16 +12,16 @@ using comment = global::go.go.doc.comment_package;
 using format = global::go.go.format_package;
 using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
-using diff = global::go.@internal.diff_package;
+using diff = @internal.diff_package;
 using os = os_package;
 using regexp = regexp_package;
 using metrics = global::go.runtime.metrics_package;
-using sort = sort_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+using @internal;
 using fs = io.fs_package;
-using global::go.@internal;
 using global::go.go;
 using global::go.go.doc;
 using global::go.runtime;
@@ -52,7 +52,7 @@ public static void TestNames(ж<testing.T> Ꮡt) {
         }
     }
     var names = runtime_readMetricNames();
-    sort.Strings(names);
+    slices.Sort<slice<@string>, @string>(names);
     var samples = new slice<metrics.Sample>(len(names));
     foreach (var (i, name) in names) {
         samples[i].Name = name;

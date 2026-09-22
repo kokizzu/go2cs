@@ -7,7 +7,6 @@ using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using os = os_package;
 using static go.path.filepath_package;
-using reflect = reflect_package;
 using runtime = runtime_package;
 using slices = slices_package;
 using strings = strings_package;
@@ -270,113 +269,95 @@ public static void TestGlobSymlink(ж<testing.T> Ꮡt) {
 }
 
 public static void TestWindowsGlob(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        if (runtime.GOOS != "windows"u8) {
-            Ꮡt.Skipf("skipping windows specific test"u8);
-        }
-        @string tmpDir = tempDirCanonical(Ꮡt);
-        if (len(tmpDir) < 3) {
-            Ꮡt.Fatalf("tmpDir path %q is too short"u8, tmpDir);
-        }
-        if (tmpDir[1] != (rune)':') {
-            Ꮡt.Fatalf("tmpDir path %q must have drive letter in it"u8, tmpDir);
-        }
-        var dirs = new @string[]{
-            "a"u8,
-            "b"u8,
-            "dir/d/bin"u8
-        }.slice();
-        var files = new @string[]{
-            "dir/d/bin/git.exe"u8
-        }.slice();
-        foreach (var (_, dir) in dirs) {
-            var errΔ1 = os.MkdirAll(Join(tmpDir, dir), 511);
-            if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-        }
-        foreach (var (_, @file) in files) {
-            var errΔ2 = os.WriteFile(Join(tmpDir, @file), default!, 438);
-            if (errΔ2 != default!) {
-                Ꮡt.Fatal(errΔ2);
-            }
-        }
-        var tests = new globTest[]{
-            new("a"u8, new @string[]{"a"u8}.slice()),
-            new("b"u8, new @string[]{"b"u8}.slice()),
-            new("c"u8, new @string[]{}.slice()),
-            new("*"u8, new @string[]{"a"u8, "b"u8, "dir"u8}.slice()),
-            new("d*"u8, new @string[]{"dir"u8}.slice()),
-            new("*i*"u8, new @string[]{"dir"u8}.slice()),
-            new("*r"u8, new @string[]{"dir"u8}.slice()),
-            new("?ir"u8, new @string[]{"dir"u8}.slice()),
-            new("?r"u8, new @string[]{}.slice()),
-            new("d*/*/bin/git.exe"u8, new @string[]{"dir/d/bin/git.exe"u8}.slice())
-        }.slice();
-        // test absolute paths
-        foreach (var (_, vᴛ1) in tests) {
-            var test = vᴛ1;
-
-            @string p = default!;
-            {
-                var errΔ3 = test.globAbs(tmpDir, tmpDir); if (errΔ3 != default!) {
-                    Ꮡt.Error(errΔ3);
-                }
-            }
-            // test C:\*Documents and Settings\...
-            p = tmpDir;
-            p = strings.Replace(p, @":\"u8, @":\*"u8, 1);
-            {
-                var errΔ4 = test.globAbs(tmpDir, p); if (errΔ4 != default!) {
-                    Ꮡt.Error(errΔ4);
-                }
-            }
-            // test C:\Documents and Settings*\...
-            p = tmpDir;
-            p = strings.Replace(p, @":\"u8, @":"u8, 1);
-            p = strings.Replace(p, @"\"u8, @"*\"u8, 1);
-            p = strings.Replace(p, @":"u8, @":\"u8, 1);
-            {
-                var errΔ5 = test.globAbs(tmpDir, p); if (errΔ5 != default!) {
-                    Ꮡt.Error(errΔ5);
-                }
-            }
-        }
-        // test relative paths
-        var (wd, err) = os.Getwd();
+    if (runtime.GOOS != "windows"u8) {
+        Ꮡt.Skipf("skipping windows specific test"u8);
+    }
+    @string tmpDir = tempDirCanonical(Ꮡt);
+    if (len(tmpDir) < 3) {
+        Ꮡt.Fatalf("tmpDir path %q is too short"u8, tmpDir);
+    }
+    if (tmpDir[1] != (rune)':') {
+        Ꮡt.Fatalf("tmpDir path %q must have drive letter in it"u8, tmpDir);
+    }
+    var dirs = new @string[]{
+        "a"u8,
+        "b"u8,
+        "dir/d/bin"u8
+    }.slice();
+    var files = new @string[]{
+        "dir/d/bin/git.exe"u8
+    }.slice();
+    foreach (var (_, dir) in dirs) {
+        var err = os.MkdirAll(Join(tmpDir, dir), 511);
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        err = os.Chdir(tmpDir);
+    }
+    foreach (var (_, @file) in files) {
+        var err = os.WriteFile(Join(tmpDir, @file), default!, 438);
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        defer(() => {
-            var errΔ6 = os.Chdir(wd);
-            if (errΔ6 != default!) {
-                Ꮡt.Fatal(errΔ6);
-            }
-        }, ref ᒐ);
-        foreach (var (_, vᴛ2) in tests) {
-            var test = vᴛ2;
+    }
+    var tests = new globTest[]{
+        new("a"u8, new @string[]{"a"u8}.slice()),
+        new("b"u8, new @string[]{"b"u8}.slice()),
+        new("c"u8, new @string[]{}.slice()),
+        new("*"u8, new @string[]{"a"u8, "b"u8, "dir"u8}.slice()),
+        new("d*"u8, new @string[]{"dir"u8}.slice()),
+        new("*i*"u8, new @string[]{"dir"u8}.slice()),
+        new("*r"u8, new @string[]{"dir"u8}.slice()),
+        new("?ir"u8, new @string[]{"dir"u8}.slice()),
+        new("?r"u8, new @string[]{}.slice()),
+        new("d*/*/bin/git.exe"u8, new @string[]{"dir/d/bin/git.exe"u8}.slice())
+    }.slice();
+    // test absolute paths
+    foreach (var (_, vᴛ1) in tests) {
+        var test = vᴛ1;
 
-            var errΔ7 = test.globRel(""u8);
-            if (errΔ7 != default!) {
-                Ꮡt.Error(errΔ7);
+        @string p = default!;
+        {
+            var err = test.globAbs(tmpDir, tmpDir); if (err != default!) {
+                Ꮡt.Error(err);
             }
-            errΔ7 = test.globRel(@".\"u8);
-            if (errΔ7 != default!) {
-                Ꮡt.Error(errΔ7);
+        }
+        // test C:\*Documents and Settings\...
+        p = tmpDir;
+        p = strings.Replace(p, @":\"u8, @":\*"u8, 1);
+        {
+            var err = test.globAbs(tmpDir, p); if (err != default!) {
+                Ꮡt.Error(err);
             }
-            errΔ7 = test.globRel(tmpDir[..2]); // C:
-            if (errΔ7 != default!) {
-                Ꮡt.Error(errΔ7);
+        }
+        // test C:\Documents and Settings*\...
+        p = tmpDir;
+        p = strings.Replace(p, @":\"u8, @":"u8, 1);
+        p = strings.Replace(p, @"\"u8, @"*\"u8, 1);
+        p = strings.Replace(p, @":"u8, @":\"u8, 1);
+        {
+            var err = test.globAbs(tmpDir, p); if (err != default!) {
+                Ꮡt.Error(err);
             }
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    // test relative paths
+    Ꮡt.Chdir(tmpDir);
+    foreach (var (_, vᴛ2) in tests) {
+        var test = vᴛ2;
+
+        var err = test.globRel(""u8);
+        if (err != default!) {
+            Ꮡt.Error(err);
+        }
+        err = test.globRel(@".\"u8);
+        if (err != default!) {
+            Ꮡt.Error(err);
+        }
+        err = test.globRel(tmpDir[..2]); // C:
+        if (err != default!) {
+            Ꮡt.Error(err);
+        }
+    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -392,7 +373,7 @@ public static void TestNonWindowsGlobEscape(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("Glob error for %q: %s"u8, pattern, err);
     }
-    if (!reflect.DeepEqual(matches, want)) {
+    if (!slices.Equal<slice<@string>, @string>(matches, want)) {
         Ꮡt.Fatalf("Glob(%#q) = %v want %v"u8, pattern, matches, want);
     }
 }

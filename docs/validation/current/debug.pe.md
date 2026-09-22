@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `debug/pe` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `d3f2b10e9`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**10 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**10 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/debug/pe`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/pe).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 

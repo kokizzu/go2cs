@@ -317,7 +317,7 @@ public static void TestIssue20044(ж<testing.T> Ꮡt) {
             nint n = default!;
             (n, err) = decoder.Read(dbuf);
             if (n > 0) {
-                res = append(res, dbuf[..(int)(n)].ꓸꓸꓸ);
+                res = appendꓸꓸꓸ(res, dbuf[..(int)(n)]);
             }
         }
         testEqual(Ꮡt, decodingOfQQWantQˢ, ((@string)input), ((@string)res), tc.res);
@@ -947,7 +947,7 @@ public static void TestDecodeSmallBuffer(ж<testing.T> Ꮡt) {
                 while (ᐧ) {
                     var buf = new slice<byte>(bufferSize);
                     var (n, err) = decoder.Read(buf);
-                    allRead = append(allRead, buf[0..(int)(n)].ꓸꓸꓸ);
+                    allRead = appendꓸꓸꓸ(allRead, buf[0..(int)(n)]);
                     if (AreEqual(err, io.EOF)) {
                         break;
                     }

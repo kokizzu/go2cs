@@ -4,9 +4,11 @@
 namespace go;
 
 using bytes = bytes_package;
+using asan = @internal.asan_package;
 using static strings_package;
 using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
+using @internal;
 using go.unicode;
 using static go.strings_internal_test_package;
 using strings = strings_package;
@@ -128,6 +130,10 @@ public static void TestBuilderGrow(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
         foreach (var (_, growLen) in new nint[]{0, 100, 1000, 10000, 100000}.slice()) {
+            if (asan.Enabled) {
+                Ꮡt.Logf("skipping allocs check for growLen %d: extra allocs with -asan; see #70079"u8, growLen);
+                continue;
+            }
             var p = bytes.Repeat(new byte[]{(rune)'a'}.slice(), growLen);
             var pʗ1 = p;
             var allocs = testing.AllocsPerRun(100, () => {
@@ -168,7 +174,7 @@ public static void TestBuilderGrow(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestBuilderWrite2_type {
+[GoType("dyn")] internal partial struct TestBuilderWrite2_type {
     internal @string name;
     internal Func<ж<strings.Builder>, (nint, error)> fn;
     internal nint n;
@@ -245,11 +251,15 @@ public static void TestBuilderWriteByte(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly @string abcdeˢ = "abcde"u8;
 
 public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     // Issue 23382; verify that copyCheck doesn't force the
     // Builder to escape and be heap allocated.
     var n = testing.AllocsPerRun(10000, () => {
@@ -263,7 +273,7 @@ public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBuilderCopyPanic_tests {
+[GoType("dyn")] internal partial struct TestBuilderCopyPanic_tests {
     internal @string name;
     internal Action fn;
     internal bool wantPanic;
@@ -477,6 +487,9 @@ public static void BenchmarkBuildString_ByteBuffer(ж<testing.B> Ꮡb) {
 }
 
 public static void TestBuilderGrowSizeclasses(ж<testing.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     @string s = Repeat("a"u8, 19);
     var allocs = testing.AllocsPerRun(100, () => {
         ref var b = ref heap(new strings.Builder(), out var Ꮡb);

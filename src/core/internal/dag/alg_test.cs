@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using static go.@internal.dag_package;
@@ -32,7 +32,7 @@ public static void TestTopo(ж<testing.T> Ꮡt) {
     //
     // "a" is a leaf.
     var wantNodes = strings.Fields(dCBAˢ);
-    if (!reflect.DeepEqual(wantNodes, got)) {
+    if (!slices.Equal<slice<@string>, @string>(wantNodes, got)) {
         Ꮡt.Fatalf("want topo sort %v, got %v"u8, wantNodes, got);
     }
 }

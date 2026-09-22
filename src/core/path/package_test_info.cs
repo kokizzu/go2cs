@@ -31,7 +31,7 @@ using static global::go.path_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("path/match_test.go", "match_test.cs", "AEuaAYKCgoI=")]
-[assembly: go.GoPositionMap("path/path_test.go", "path_test.cs", "ADyGAYKCgIKkgIIACQqCgpSCgpaykJKCABAigoKAggAbOoKCgIIAESKCgoCCABQogoKAggAVKoKCgIIAFSqCgoCC")]
+[assembly: go.GoPositionMap("path/path_test.go", "path_test.cs", "ADyGAYKCgIKkgIIACQqCgpSCgpaykJKCABAigoKAggAbOoKCgIIAESKCgoCCABQogoKAggAVKoKCgIIAFSqCgoCC", "88-88:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -53,4 +53,23 @@ public static partial class path_test_package
     public partial struct PathTest {}
     public partial struct SplitTest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.path_package));
+    }
 }

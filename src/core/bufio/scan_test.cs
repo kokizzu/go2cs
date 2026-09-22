@@ -194,7 +194,7 @@ public static void TestScanLongLines(ж<Δtesting.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
     nint lineNum = 0;
     nint j = 0;
-    for (nint i = 0; i < 2 * smallMaxTokenSize; i++) {
+    for (nint i = 0; i < (nint)(2 * smallMaxTokenSize); i++) {
         genLine(tmp, lineNum, j, true);
         if (j < smallMaxTokenSize){
             j++;
@@ -234,7 +234,7 @@ public static void TestScanLineTooLong(ж<Δtesting.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
     nint lineNum = 0;
     nint j = 0;
-    for (nint i = 0; i < 2 * smallMaxTokenSize; i++) {
+    for (nint i = 0; i < (nint)(2 * smallMaxTokenSize); i++) {
         genLine(tmp, lineNum, j, true);
         j++;
         buf.Write(tmp.Bytes());

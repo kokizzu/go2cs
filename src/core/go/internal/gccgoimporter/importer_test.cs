@@ -107,7 +107,7 @@ public static void TestGoxImporter(ж<testing.T> Ꮡt) {
     testenv.MustHaveExec(new gccgoimporter_internal_test_package.testing_TжTB(Ꮡt));
     var initmap = new map<ж<types.Package>, global::go.go.@internal.gccgoimporter_package.InitData>();
     var imp = GetImporter(new @string[]{"testdata"u8}.slice(), initmap);
-    foreach (var (_, vᴛ1) in importerTests) {
+    foreach (var (_, vᴛ1) in importerTests.ΔRangeSnapshot()) {
         ref var test = ref heap(new importerTest(), out var Ꮡtest);
         test = vᴛ1;
 
@@ -169,7 +169,7 @@ public static void TestObjImporter(ж<testing.T> Ꮡt) {
     @string artmpdir = Ꮡt.TempDir();
     var arinitmap = new map<ж<types.Package>, global::go.go.@internal.gccgoimporter_package.InitData>();
     var arimp = GetImporter(new @string[]{artmpdir}.slice(), arinitmap);
-    foreach (var (_, vᴛ1) in importerTests) {
+    foreach (var (_, vᴛ1) in importerTests.ΔRangeSnapshot()) {
         ref var test = ref heap(new importerTest(), out var Ꮡtest);
         test = vᴛ1;
 
@@ -193,11 +193,15 @@ public static void TestObjImporter(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("gccgo %s failed: %s"u8, gofile, errΔ2);
         }
         runImporterTest(Ꮡt, imp, initmap, Ꮡtest);
-        cmd = testenv.Command(new gccgoimporter_internal_test_package.testing_TжTB(Ꮡt), "ar"u8, "cr"u8, afile, ofile);
+        @string ar = os.Getenv("AR"u8);
+        if (ar == ""u8) {
+            ar = "ar"u8;
+        }
+        cmd = testenv.Command(new gccgoimporter_internal_test_package.testing_TжTB(Ꮡt), ar, "cr"u8, afile, ofile);
         (@out, errΔ2) = cmd.CombinedOutput();
         if (errΔ2 != default!) {
             Ꮡt.Logf("%s"u8, @out);
-            Ꮡt.Fatalf("ar cr %s %s failed: %s"u8, afile, ofile, errΔ2);
+            Ꮡt.Fatalf("%s cr %s %s failed: %s"u8, ar, afile, ofile, errΔ2);
         }
         runImporterTest(Ꮡt, arimp, arinitmap, Ꮡtest);
         {

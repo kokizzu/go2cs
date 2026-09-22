@@ -15,18 +15,6 @@ using time = time_package;
 
 partial class benchmarks_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string textˢ = "text"u8;
 internal static readonly @string asyncˢ = "async"u8;
@@ -61,7 +49,7 @@ public static void TestHandlers(ж<testing.T> Ꮡt) {
             }
         }
         var got = (~h).ringBuffer[0].ΔClone();
-        if (!got.Time.Equal(rʗ2.Time) || !slices.EqualFunc<slice<slog.Attr>, slice<slog.Attr>, slog.Attr, slog.Attr>(attrSlice(got), attrSlice(rʗ2), (Func<slog.Attr, slog.Attr, bool>)(slog.Equal))) {
+        if (!got.Time.Equal(rʗ2.Time) || !slices.EqualFunc<slice<slog.Attr>, slice<slog.Attr>, slog.Attr, slog.Attr>(attrSlice(got), attrSlice(rʗ2), ((Func<slog.Attr, slog.Attr, bool>)(slog.Equal)))) {
             tΔ2.Errorf("got %+v, want %+v"u8, got, rʗ2);
         }
     });
