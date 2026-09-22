@@ -41,6 +41,39 @@ public class GoImplementAttribute<TStruct, TInterface> : Attribute
     public bool Pointer { get; set; }
 
     /// <summary>
+    /// Gets or sets flag indicating this record was emitted for the PRODUCTION half of a
+    /// recompile-model test assembly — the pass separation.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Under the recompile test model the production <c>.cs</c> files are compile items of the TEST
+    /// assembly, so the generator reads the UNION of both halves' records. But the production text
+    /// was rendered in the production pass, against the production record set alone, and cannot be
+    /// re-rendered — so a test-half record that lands in a production record's adapter-name
+    /// collision group must not be allowed to rename the production member. <c>crypto/sha3</c> is
+    /// the corpus instance: production records <c>&lt;SHA3, hash.Hash&gt;</c>, the external test
+    /// half adds <c>&lt;SHA3, fips140.Hash&gt;</c>, both compose <c>SHA3жHash</c>, and the ordinary
+    /// collision rule prefixes BOTH — leaving <c>sha3.cs</c>'s four already-written
+    /// <c>SHA3жHash</c> sites naming a class that is never emitted.
+    /// </para>
+    /// <para>
+    /// The converter stamps this facet onto the production records as it seeds them into the test
+    /// metadata file; records the test pass merges in carry no facet. Collisions are still computed
+    /// over the union — the facet decides NAMING, never grouping. In a colliding group with exactly
+    /// ONE faceted member, that member keeps the unprefixed name and only the unfaceted members take
+    /// the interface prefix. Two or more faceted members are a collision the production pass already
+    /// resolved, so the ordinary rule applies to the whole group and reproduces exactly the names the
+    /// production text spells. No faceted member is the ordinary rule unchanged — which is every
+    /// production compilation and both reference test models.
+    /// </para>
+    /// <para>
+    /// Keep in sync with the converter's <c>adapterNameCollisions.go</c>, which resolves the matching
+    /// cast-site references from these same records.
+    /// </para>
+    /// </remarks>
+    public bool Production { get; set; }
+
+    /// <summary>
     /// Gets or sets flag indicating this records a SELF-REFERENTIAL constraint proxy: the Go
     /// element type <c>TStruct</c> (a pointer type <c>*P</c>) satisfies a generic method-set
     /// constraint interface <c>TInterface</c> (<c>nistPoint[Point]</c>) only structurally, so it

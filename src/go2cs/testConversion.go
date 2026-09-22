@@ -1117,7 +1117,13 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			return result, fmt.Errorf("read production package metadata (convert the package itself before its tests): %w", err)
 		}
 
-		if err := os.WriteFile(testInfoPath, productionInfo, 0644); err != nil {
+		// THE PASS SEPARATION IS STAMPED HERE, and this copy is the only place it can be. Every
+		// record in this file was rendered in the PRODUCTION pass and is already compiled text in
+		// the production .cs files that become this test assembly's compile items; the records the
+		// variants merge in below are rendered fresh. The facet is what lets go2cs-gen — which
+		// reads the union and cannot see the seam — keep the production names it must not rename.
+		// See adapterNameCollisions.go for the rule; byte-neutral wherever no pointer record exists.
+		if err := os.WriteFile(testInfoPath, facetProductionPointerRecords(productionInfo), 0644); err != nil {
 			return result, fmt.Errorf("seed test package metadata: %w", err)
 		}
 

@@ -505,7 +505,25 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 					continue
 				}
 				if inner, ok := strings.CutPrefix(implementation, PointerPrefix+"<"); ok {
-					lines.Add(fmt.Sprintf("[assembly: GoImplement<%s, %s>(Pointer = true)]", qualifyLocalTypeRef(strings.TrimSuffix(inner, ">")), qualifyLocalTypeRef(interfaceName)))
+					record := fmt.Sprintf("[assembly: GoImplement<%s, %s>(Pointer = true)]", qualifyLocalTypeRef(strings.TrimSuffix(inner, ">")), qualifyLocalTypeRef(interfaceName))
+
+					// A recompile-model seed carries the production half's records ALREADY FACETED
+					// (facetProductionPointerRecords), and a test variant re-derives a pair the
+					// production half also recorded whenever both halves cast the same struct to
+					// the same interface. The HashSet dedupes identical TEXT, and these two differ
+					// by the facet alone — so without this the file would carry two records for one
+					// pair, go2cs-gen would compose the adapter twice (CS0102 + CS0111 + CS8646,
+					// the os dirEntry shape one cause over), and the duplicate would additionally
+					// make adapterProductionNameKeepers count two faceted members and fall to rule
+					// 3, un-separating the very pass this facet exists to separate.
+					//
+					// The FACETED record wins, and that direction is the rule rather than a
+					// preference: it names what the production .cs already spells.
+					if lines.Contains(pointerRecordFacetedForm(record)) {
+						continue
+					}
+
+					lines.Add(record)
 					continue
 				}
 

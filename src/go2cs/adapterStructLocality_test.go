@@ -132,7 +132,7 @@ func TestAdapterGroupKeyCollidesAcrossTheTwoSpellings(t *testing.T) {
 		}
 
 		// And the resolved name therefore carries the interface prefix the generator emits.
-		if got := adapterResolvedName("sha3.SHA3", "go.crypto.internal.fips140_package.Hash", colliding); got != "sha3.SHA3"+PointerPrefix+"fips140_Hash" {
+		if got := adapterResolvedName("sha3.SHA3", "go.crypto.internal.fips140_package.Hash", colliding, false); got != "sha3.SHA3"+PointerPrefix+"fips140_Hash" {
 			t.Errorf("resolved %q, want the prefixed %q", got, "sha3.SHA3"+PointerPrefix+"fips140_Hash")
 		}
 	})

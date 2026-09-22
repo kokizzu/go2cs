@@ -1487,7 +1487,7 @@ func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	// The anchored member composes from the RECORD's spelling — the generator's foreign
 	// `<pkg>_<Simple>` form — never from the cast site's, whose bare spelling would compose a
 	// class name go2cs-gen does not generate (the encoding/csv `ParseErrorжerror` defect).
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "io_PipeWriter"+PointerPrefix+"Writer" {
 		t.Fatalf("anchored member = %q, want the generator's io_PipeWriter%sWriter", got, PointerPrefix)
 	}
 	if _, ok := emittedAdapterPair(pairs, "Δio.LimitedReader", "io_package.Reader"); ok {
@@ -1499,7 +1499,7 @@ func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	if !ok {
 		t.Fatal("a bare cast spelling of a recorded pair must match on the simple name")
 	}
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "io_PipeWriter"+PointerPrefix+"Writer" {
 		t.Fatalf("bare-spelling anchored member = %q, want io_PipeWriter%sWriter", got, PointerPrefix)
 	}
 }
@@ -1534,7 +1534,7 @@ func TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch(t *testing.T
 	}
 	// The generator's AdapterStructKey sees container == packageClassName for this record and
 	// composes the bare name — the converter's member composition must agree.
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "Buffer"+PointerPrefix+"Reader" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "Buffer"+PointerPrefix+"Reader" {
 		t.Fatalf("anchored member = %q, want the generator's bare Buffer%sReader", got, PointerPrefix)
 	}
 	// A QUALIFIED cast of the foreign same-simple-name record still resolves to it.
