@@ -54,6 +54,31 @@ ROSTER_ROW = re.compile(r"^\| \[`([^`]+)`\]")
 INDEX_ROW = re.compile(r"^\| `([^`]+)`")
 TABLE_HEAD = "| Package | Proof | Converted package |"
 
+# A row's OWN proof link, which is not always page_name(its package).  An H10 "banked by
+# inheritance" row links the RETIRED SOURCE's page "unmoved and unrenamed", so the page's name is
+# the source's import path and not the row's.  Deriving the wanted set from package NAMES alone
+# therefore called every such anchor an orphan -- the tool and the doctrine disagreeing, with the
+# doctrine right.  A row may carry MORE than one (fips140test links two), so every match counts.
+ROSTER_PROOF = re.compile(r"\[proof\]\((?:validation/)?current/([^)/]+\.md)\)")
+# ⚠ The first cut of this pattern required `current/` immediately, and the roster spells its
+# links RELATIVE TO docs/ -- `validation/current/<name>.md`. It therefore matched NOTHING on
+# the real roster while every fixture arm passed, because the fixture wrote the spelling the
+# pattern expected. A hermetic fixture encodes its author's model and cannot falsify it; the
+# real-root run found this in one pass, which is why the arms below now write the REAL
+# spelling and why this tool is scored against the tree before it is believed. The `[^)/]+`
+# also keeps the placeholder `[proof](…)` some rows carry from matching.
+
+# A row of the roster's own "## Excluded packages" table: package, verdict count, bar class.
+#
+# THE DURABLE SOURCE IS THE ROSTER, deliberately, and it is the roster alone.  An exclusion is also
+# written up in a docs/phase4 DATA record (the bar reads that produced it), but a phase4 record is a
+# point-in-time document that doctrine says is "amended with dated blocks, never rewritten, NEVER
+# EXECUTED FROM" -- so a tool that read one would be executing from a record, and an exclusion that
+# exists only there is not yet a roster fact.  The consequence is intended: a package refused at the
+# bar keeps orphaning its page until its exclusion row lands in the roster, and that refusal is the
+# guard being right rather than a gap here.
+EXCLUSION_ROW = re.compile(r"^\| `([^`]+)` \| \d+ \| (E[1-4]) \|")
+
 
 def die(msg):
     raise SystemExit(f"regen-validation-index: REFUSED -- {msg}")
@@ -89,6 +114,30 @@ def read_roster(path):
         if m:
             rows.append(m.group(1))
     return rows
+
+
+def read_roster_proof_links(path):
+    """Page names some ROSTER ROW's own [proof] link resolves to.
+
+    Scanned from the table's LINKS rather than from its package names, which is the whole point:
+    the anchor rule makes the link the authority on which page a row is backed by.  Only lines that
+    are roster rows are scanned, so a [proof] spelling in the surrounding prose contributes nothing.
+    """
+    names = set()
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        if ROSTER_ROW.match(line):
+            names.update(ROSTER_PROOF.findall(line))
+    return names
+
+
+def read_roster_exclusions(path):
+    """Page names of packages the roster's own exclusion table names WITH a bar class."""
+    names = {}
+    for line in path.read_text(encoding="utf-8").split("\n"):
+        m = EXCLUSION_ROW.match(line)
+        if m:
+            names[page_name(m.group(1))] = m.group(2)
+    return names
 
 
 def read_index_rows(text):
@@ -147,11 +196,28 @@ def run(roster_path, valdir, write=False):
             + ", ".join(missing[:8]) + (" ..." if len(missing) > 8 else ""))
 
     wanted = {page_name(p) for p in packages}
-    orphans = sorted(pages - wanted)
+    linked = read_roster_proof_links(roster_path)
+    excluded = read_roster_exclusions(roster_path)
+
+    # Three ways a page is BACKED, and they are not the same question:
+    #   by name      -- a roster row whose package derives this page's name;
+    #   by link      -- a roster row whose own [proof] link resolves to it (the anchor rule);
+    #   by exclusion -- the roster's exclusion table names its package with a bar class.
+    admitted = wanted | linked | set(excluded)
+    orphans = sorted(pages - admitted)
     if orphans:
-        die(f"{len(orphans)} proof page(s) under {current} have NO roster row: "
-            + ", ".join(orphans[:8]) + (" ..." if len(orphans) > 8 else "")
-            + " -- a row count alone would not see these")
+        by_link = sorted((pages & linked) - wanted)
+        by_bar = sorted((pages & set(excluded)) - wanted)
+        die(f"{len(orphans)} proof page(s) under {current} are backed by NOTHING -- no roster row "
+            f"derives them, no row's [proof] link resolves to them, and the roster's exclusion "
+            f"table does not name them:\n"
+            + "".join(f"     unbacked          : {o}\n" for o in orphans)
+            + f"   admitted alongside them: {len(by_link)} by a row's [proof] link (the anchor "
+            f"rule), {len(by_bar)} by a roster exclusion class"
+            + (("\n" + "".join(f"     by link           : {o}\n" for o in by_link)) if by_link else "")
+            + (("" if not by_bar else "".join(
+                f"     by exclusion {excluded[o]} : {o}\n" for o in by_bar)))
+            + "   -- a row count alone would not see any of this")
 
     committed_text = index_path.read_text(encoding="utf-8")
     committed = read_index_rows(committed_text)
@@ -159,6 +225,9 @@ def run(roster_path, valdir, write=False):
 
     print(f"roster        : {shown(roster_path)}  {len(packages)} row(s)")
     print(f"proof pages   : {shown(current)}  {len(pages)} page(s)")
+    print(f"              : {len(pages & wanted)} by name, "
+          f"{len((pages & linked) - wanted)} by a row's [proof] link, "
+          f"{len((pages & set(excluded)) - wanted)} by a roster exclusion class")
     print(f"committed rows: {len(committed)}")
 
     cset, rset = set(committed), set(packages)
@@ -206,15 +275,24 @@ def selftest():
             nfail += 1
             print(f"  FAIL  {label}")
 
-    def fixture(pkgs, pages=None, index_pkgs=None):
+    def fixture(pkgs, pages=None, index_pkgs=None, links=None, exclusions=None):
+        """links: {pkg: [page name, ...]} appended to that row as [proof] links.
+        exclusions: [(pkg, "E1".."E4"), ...] written as the roster's exclusion table."""
         d = Path(tempfile.mkdtemp(dir=root))
         val = d / "validation"
         (val / "current").mkdir(parents=True)
         roster = d / "roster.md"
-        roster.write_text(
-            "# fixture\n\n" + "".join(
-                f"| [`{p}`](https://example.invalid/{p}) | 1 | | text |\n" for p in pkgs),
-            encoding="utf-8")
+        links = links or {}
+        rows = ""
+        for p in pkgs:
+            tail = "".join(f" · [proof](validation/current/{n})" for n in links.get(p, []))
+            rows += f"| [`{p}`](https://example.invalid/{p}) | 1 | | text{tail} |\n"
+        body = "# fixture\n\n" + rows
+        if exclusions:
+            body += "\n## Excluded packages\n\n"
+            for pkg, cls in exclusions:
+                body += f"| `{pkg}` | 0 | {cls} | reason | [ruling][exclusion-ruling] |\n"
+        roster.write_text(body, encoding="utf-8")
         for p in (pkgs if pages is None else pages):
             (val / "current" / page_name(p)).write_text("proof\n", encoding="utf-8")
         body = ["# Validation proofs", "", "prose", "", TABLE_HEAD, "|:--|:--|:--|"]
@@ -244,13 +322,56 @@ def selftest():
         except SystemExit as e:
             check("a MISSING proof page refuses", "NO proof page" in str(e))
 
-        # RED: a proof page with no roster row -- the reverse a count hides
+        # RED: a proof page with no roster row -- the reverse a count hides.
+        # ⚠ This arm FAILED when the refusal wording moved from "NO roster row" to "backed by
+        # NOTHING" for the anchor rule, which is the arm doing its job: the message is part of the
+        # contract, and a refusal that no longer says what it used to is a change a reader must see.
         r, v = fixture(["a"], pages=["a", "b/c"])
         try:
             run(r, v)
             check("an ORPHAN proof page refuses", False)
         except SystemExit as e:
-            check("an ORPHAN proof page refuses", "NO roster row" in str(e))
+            check("an ORPHAN proof page refuses", "backed by NOTHING" in str(e))
+
+        # ---- the anchor rule (this seat) -------------------------------------------------------
+        # GREEN: an orphan a row's OWN [proof] link resolves to is ADMITTED. This is the H10 "banked
+        # by inheritance" shape: the row is `t`, the page is the retired SOURCE's, unmoved.
+        r, v = fixture(["a", "t"], pages=["a", "t", "src.pkg"],
+                       links={"t": ["src.pkg.md"]})
+        try:
+            run(r, v)
+            check("an orphan a row's [proof] link resolves to is ADMITTED (the anchor rule)", True)
+        except SystemExit as e:
+            check(f"an orphan a row's [proof] link resolves to is ADMITTED ({e})", False)
+
+        # GREEN: an orphan whose package the roster's EXCLUSION table names with a bar class.
+        r, v = fixture(["a"], pages=["a", "gated.pkg"],
+                       exclusions=[("gated/pkg", "E1")])
+        try:
+            run(r, v)
+            check("an orphan named in the roster's exclusion table is ADMITTED", True)
+        except SystemExit as e:
+            check(f"an orphan named in the roster's exclusion table is ADMITTED ({e})", False)
+
+        # RED: a PLAIN orphan -- no row derives it, no link resolves to it, no exclusion names it.
+        # The made-to-fail control for both admissions above: same shape, neither backing present.
+        r, v = fixture(["a"], pages=["a", "src.pkg"])
+        try:
+            run(r, v)
+            check("a PLAIN orphan still refuses", False)
+        except SystemExit as e:
+            check("a PLAIN orphan still refuses",
+                  "backed by NOTHING" in str(e) and "src.pkg.md" in str(e))
+
+        # RED: a row with no page of its own still REFUSES even when it LINKS one -- rule (c), the
+        # fips140test shape. An anchor backs a PAGE; it does not excuse a row from having one.
+        r, v = fixture(["a", "t"], pages=["a", "src.pkg"], links={"t": ["src.pkg.md"]})
+        try:
+            run(r, v)
+            check("a row with NO page of its own refuses even when it links an anchor", False)
+        except SystemExit as e:
+            check("a row with NO page of its own refuses even when it links an anchor",
+                  "NO proof page" in str(e) and "t" in str(e))
 
         # RED: a roster that parses to nothing
         r, v = fixture(["a"])
