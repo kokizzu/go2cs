@@ -132,13 +132,22 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **204 / 215 testable packages validated — 94.9%**
+> ### Phase 4 progress: **203 / 215 testable packages validated — 94.4%**
 >
 > **28,459 matching test verdicts · 167 disclosed** *(updated 2026-09-04 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 6 excluded = 209): 204 / 209 — 97.6%.** Both numbers are
+> **The package count moved 204 → 203 on 2026-09-22, by the H10 relocation and nothing else.** Ten
+> banked rows have no package at their banked path at go1.24.13 and retired; nine of their successors
+> banked by inheritance, carrying those rows' own 1.23.12 anchors. The verdict and disclosure sums
+> above are unchanged, which is what an inheritance bank means, and the Linux line below moved with
+> the retired rows' own annotations. The per-row arithmetic is in
+> [The H10 relocation map](#the-h10-relocation-map); every figure in this block is recomputed from
+> the table by [`src/check-roster-format.ps1`](../src/check-roster-format.ps1), which fails when the
+> two disagree.
+>
+> **Against the implementable set (215 − 6 excluded = 209): 203 / 209 — 97.1%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > six, each with its class, mechanism and evidence, are in
@@ -154,7 +163,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > `net/http/pprof`, converted and testable and in no accounting at all, is named in the remainder
 > below.
 >
-> **Linux: 198 of 202 applicable rows validated at their Linux counts** — 23,199 matching verdicts · 174 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 188 of 201 applicable rows validated at their Linux counts** — 20,878 matching verdicts · 168 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -234,15 +243,14 @@ leveling re-sweep re-annotated the rows it moved.
 | [`crypto/ed25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ed25519) | 8 | 1 | Ed25519 over the converted `crypto/internal/edwards25519` — sign/verify round-trips in the plain, pre-hashed (Ed25519ph) and context (Ed25519ctx) modes with wrong-message/wrong-key rejection, `crypto.Signer` through the interface surface, the RFC 8032 golden vectors (`sign.input.gz`), the project's extended edge-case vector set (non-canonical A/R encodings, small-order components, mixed-order points), key equality, and signature-malleability rejection — the package whose `crypto.Signer(private)` cast named the local-value→foreign-interface record gap; alloc-profile disclosure. · linux: 8 + 1 · · [proof](validation/current/crypto.ed25519.md) |
 | [`crypto/elliptic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/elliptic) | 82 | | The NIST curves over the generic `CurveParams` `big.Int` path as well as the optimized field implementations — point addition/doubling/scalar-multiplication agreement between the two, on-curve and off-curve predicates, the point-at-infinity contract, `Marshal`/`Unmarshal` compressed and uncompressed round-trips, and the base-point multiplication vectors. · linux: 82 · [proof](validation/current/crypto.elliptic.md) |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. · linux: 172 · [proof](validation/current/crypto.hmac.md) |
-| [`crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) | 1 | | The buffer-overlap predicate every cipher mode's in-place guard is built on, over the full offset matrix. · linux: 1 · [proof](validation/current/crypto.internal.alias.md) |
-| [`crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) | 14 | | Constant-time modular arithmetic on big naturals — Montgomery domain round-trips, `Exp`, modular add/sub identities, limb expansion and `SetBytes` bounds, all on the `purego` word-at-a-time path. · linux: 14 · [proof](validation/current/crypto.internal.bigmod.md) |
 | [`crypto/internal/boring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring) | 3 |  | The not-BoringCrypto build's own contract — `Enabled` false, and the `Unreachable`/`UnreachableExceptTests` guards that a BoringCrypto-only path must never execute staying quiet under it. · linux: 3 · [proof](validation/current/crypto.internal.boring.md) |
 | [`crypto/internal/boring/bcache`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring/bcache) | 1 |  | The GC-cleared BoringCrypto shadow cache, whose single test is four suites in one: a 10,000-entry `Put`/`Get` sweep with a random 20% overwritten in place, the `Clear` contract, the REGISTERED cache emptying across a `runtime.GC()`, and a 100-goroutine barrier that fills `cacheSize` entries per goroutine and then reads every one back. It is the measured consumer of the package's one hand-own, and the reason that hand-own could not be a literal conversion: Go's `Register` gives the runtime the ADDRESS of the cache's `ptable` word and `clearpools` nils it with `atomicstorep`, but that word is an `atomic.Pointer[cacheTable[K,V]]` whose managed slot holds a `ж<T>` REFERENCE — storage containing references is not pinnable, so the `uintptr` would name nothing recoverable, and pinning it to force the issue would defeat the one thing the package exists to do, which is let the collector reclaim what it caches. A registration is therefore a clear DELEGATE — the currency `clearpools`' other two arms already use — and the delegate is the package's own `Clear`, which Go's doc comment names as precisely what the collector performs here; `golib.BoringCaches` drives it from a resurrecting finalizable sentinel filtered to gen2 per the Go-cycle-is-a-gen2-collection identity, and `runtime.GC()` clears the registry directly before returning, exactly as it already invokes `poolcleanup` directly. · [proof](validation/current/crypto.internal.boring.bcache.md) |
-| [`crypto/internal/edwards25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519) | 54 | 1 | The edwards25519 group law behind Ed25519 and X25519 — generator/identity arithmetic against Dalek-derived vectors, `ScalarBaseMult`/`ScalarMult`/`VarTimeDoubleScalarBaseMult` cross-checked against each other and against `crypto/elliptic`-independent references, scalar field arithmetic with `SetUniformBytes`' 64-byte wide reduction, aliasing-safety sweeps over every receiver/argument overlap, and the lookup-table selectors. The one disclosure is the nistec shape at small scale: `TestAllocations` wants zero over a point addition plus encode round-trips, where Go stack-allocates every temporary and the managed model's 98 golib boxes per run are structural. · linux: 54 + 1 · [proof](validation/current/crypto.internal.edwards25519.md) |
-| [`crypto/internal/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519/field) | 16 |  | The Ed25519 base field mod 2²⁵⁵−19 — the 51-bit limb representation's carry propagation and 64×64→128 multiply, `Multiply`/`Square`/`Invert`/`SqrtRatio`, constant-time `Select`/`Swap`, canonical `SetBytes`/`Bytes` round-trips at the edge cases, and `TestBytesBigEquivalence`, which cross-checks the whole encoding against `math/big` over randomized inputs — the row the `array<T>` unshaped-instance class held. `TestAliasing` additionally drives every method with its receiver aliasing an argument. · linux: 16 · [proof](validation/current/crypto.internal.edwards25519.field.md) |
+| [`crypto/internal/fips140/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/fips140/bigmod) | 14 |  |  ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `crypto/internal/bigmod`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/crypto.internal.bigmod.md) |
+| [`crypto/internal/fips140/edwards25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/fips140/edwards25519) | 54 | 1 | The edwards25519 group law behind Ed25519 and X25519 — generator/identity arithmetic against Dalek-derived vectors, `ScalarBaseMult`/`ScalarMult`/`VarTimeDoubleScalarBaseMult` cross-checked against each other and against `crypto/elliptic`-independent references, scalar field arithmetic with `SetUniformBytes`' 64-byte wide reduction, aliasing-safety sweeps over every receiver/argument overlap, and the lookup-table selectors. The one disclosure is the nistec shape at small scale: `TestAllocations` wants zero over a point addition plus encode round-trips, where Go stack-allocates every temporary and the managed model's 98 golib boxes per run are structural. ⚠ **RELOCATED AT go1.24.13 (2026-09-20, H10 pre-stage — see *The H10 relocation map* below):** the package is `crypto/internal/fips140/edwards25519` at 1.24.13. Of its 33 declarations, **32 re-validate there** and **1** — `TestAllocations` — moves to `crypto/internal/fips140test` **renamed `TestEdwards25519Allocations`**. Nothing retires. ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `crypto/internal/edwards25519`, which retires with the hop. PRINCIPAL by verdict majority: 54 of 55 verdicts (only `TestAllocations` leaves, renamed into `crypto/internal/fips140test`). The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/crypto.internal.edwards25519.md) |
+| [`crypto/internal/fips140/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/fips140/edwards25519/field) | 16 |  | The Ed25519 base field mod 2²⁵⁵−19 — the 51-bit limb representation's carry propagation and 64×64→128 multiply, `Multiply`/`Square`/`Invert`/`SqrtRatio`, constant-time `Select`/`Swap`, canonical `SetBytes`/`Bytes` round-trips at the edge cases, and `TestBytesBigEquivalence`, which cross-checks the whole encoding against `math/big` over randomized inputs — the row the `array<T>` unshaped-instance class held. `TestAliasing` additionally drives every method with its receiver aliasing an argument. ⚠ **RELOCATED AT go1.24.13 (2026-09-20, H10 pre-stage):** the package is `crypto/internal/fips140/edwards25519/field` at 1.24.13; **all 21 declarations re-validate there**, nothing retires. ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `crypto/internal/edwards25519/field`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/crypto.internal.edwards25519.field.md) |
+| [`crypto/internal/fips140/mlkem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/fips140/mlkem) | 12 |  | ML-KEM-768 (Kyber) end to end — the mod-3329 field arithmetic checked EXHAUSTIVELY (`TestFieldReduce` walks all 2q² inputs; add/sub/mul walk every ordered pair below q), compress/decompress at every bit width against a `math/big` rational reference, the ζ and γ constant tables re-derived by modular exponentiation, key-generation/encapsulate/decapsulate round trips, and the encapsulation-key/ciphertext length-validation matrix. `TestPQCrystalsAccumulated` drives 10,000 reference-implementation vectors through the full KEM and checks the accumulated SHAKE-128 digest — 417 s of this row's runtime, and the reason it exists: it is the operational guard for the hand-owned `sha3` array-reinterpret fix, which the vendored package's own sources cannot provide. ⚠ **RELOCATED AND SPLIT AT go1.24.13 (2026-09-20, H10 pre-stage):** the package name is gone; its 16 declarations split **9 → `crypto/internal/fips140/mlkem`** (the field and compression internals) and **6 → `crypto/mlkem`** (the four benchmarks, `TestBadLengths`, `TestRoundTrip`), with **`TestPQCrystalsAccumulated` RETIRING** — declared nowhere at 1.24.13. ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `crypto/internal/mlkem768`, which retires with the hop. PRINCIPAL by verdict majority: 9 of 12 verdicts (`TestBadLengths` and `TestRoundTrip` go to `crypto/mlkem`; `TestPQCrystalsAccumulated` retires, declared by neither). The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/crypto.internal.mlkem768.md) |
+| [`crypto/internal/fips140test`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/fips140test) | 2196 | 5 |  — The NIST P-curve group law at purego fidelity — the `ScalarMult` ladder across P224/P256/P384/P521 at every boundary scalar (0 and ±k around the group order, powers of two, every small scalar), `TestEquivalents`' addition-chain identities, and the compressed/uncompressed point round-trips. The five disclosures are ONE shape: `TestAllocations`' want-zero `AllocsPerRun` over whole scalar multiplications — 8,484–17,090 golib boxes per run where Go's escape analysis stack-allocates every point and fiat field-element temporary (measured at the B2 kind-split emission) — the four curve subtests plus their aggregate parent. The asm-flavor-only tests (`p256_asm_table`, `ordinv`) are named flavor exclusions: the corpus reproduces `-tags purego`, and the manifest now declares what the native flavor alone runs. ⚠ **RELOCATED AND SPLIT AT go1.24.13 (2026-09-20, H10 pre-stage):** its 5 declarations split **2 → `crypto/internal/fips140/nistec`** (`BenchmarkScalarBaseMult`, `BenchmarkScalarMult`) and **3 → `crypto/internal/fips140test`** (`TestEquivalents`, `TestScalarMult`, and `TestAllocations` **renamed `TestNISTECAllocations`**). Nothing retires. ⚠ `TestP256PrecomputedTable` is **NOT lost**: its file was renamed `p256_asm_table_test.go` → `p256_table_test.go` and its build guard inverted to `(!amd64 && …) \|\| purego`, which the corpus's own `purego` tag SATISFIES — it is selected at 1.24.13 and the converter emits it. What the corpus excludes is the assembly variant, which it is defined never to have. ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `crypto/internal/alias` · `crypto/internal/nistec`, which retires with the hop. PRINCIPAL by verdict majority: `crypto/internal/alias` whole (its sole successor), and `crypto/internal/nistec` at **2,200 of 2,200** verdicts — `fips140/nistec` declares NONE of `nistec`'s three families at 1.24.13 and this package declares all three. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/crypto.internal.alias.md) · [proof](validation/current/crypto.internal.nistec.md) |
 | [`crypto/internal/hpke`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/hpke) | 19 |  | Hybrid public-key encryption against the RFC 9180 vector set — DHKEM(X25519, HKDF-SHA256) base-mode setup over both AEADs, the exporter secret, and `Seal`/`Open` at every sequence number in the vectors including the 255→256 nonce-width boundary; the P-256/P-521 suites reach Go's own `SupportedKEMs` guard and skip identically on both sides. The whole vector set is `encoding/json`-decoded into a slice of a converter-**lifted anonymous struct** — the shape that held this package until the lift's element Kind reached `Unmarshal`. · linux: 19 · [proof](validation/current/crypto.internal.hpke.md) |
-| [`crypto/internal/mlkem768`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/mlkem768) | 12 |  | ML-KEM-768 (Kyber) end to end — the mod-3329 field arithmetic checked EXHAUSTIVELY (`TestFieldReduce` walks all 2q² inputs; add/sub/mul walk every ordered pair below q), compress/decompress at every bit width against a `math/big` rational reference, the ζ and γ constant tables re-derived by modular exponentiation, key-generation/encapsulate/decapsulate round trips, and the encapsulation-key/ciphertext length-validation matrix. `TestPQCrystalsAccumulated` drives 10,000 reference-implementation vectors through the full KEM and checks the accumulated SHAKE-128 digest — 417 s of this row's runtime, and the reason it exists: it is the operational guard for the hand-owned `sha3` array-reinterpret fix, which the vendored package's own sources cannot provide. · linux: 12 · [proof](validation/current/crypto.internal.mlkem768.md) |
-| [`crypto/internal/nistec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/nistec) | 2195 | 5 | The NIST P-curve group law at purego fidelity — the `ScalarMult` ladder across P224/P256/P384/P521 at every boundary scalar (0 and ±k around the group order, powers of two, every small scalar), `TestEquivalents`' addition-chain identities, and the compressed/uncompressed point round-trips. The five disclosures are ONE shape: `TestAllocations`' want-zero `AllocsPerRun` over whole scalar multiplications — 8,484–17,090 golib boxes per run where Go's escape analysis stack-allocates every point and fiat field-element temporary (measured at the B2 kind-split emission) — the four curve subtests plus their aggregate parent. The asm-flavor-only tests (`p256_asm_table`, `ordinv`) are named flavor exclusions: the corpus reproduces `-tags purego`, and the manifest now declares what the native flavor alone runs. · linux: 2195 + 5 · [proof](validation/current/crypto.internal.nistec.md) |
 | [`crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/md5) | 11 | 1 | MD5 — the golden digest matrix, binary marshal/unmarshal of a half-written state, large-input block handling, and `cryptotest.TestHash`'s stateful-write matrix; alloc-profile disclosure. · linux: 11 + 1 · [proof](validation/current/crypto.md5.md) |
 | [`crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) | 298 |  | Cryptographically secure random integers over the real `math/big` arithmetic — `Int`'s rejection-sampled bit-mask loop across the whole modulus matrix, `Prime` generation and its degenerate bit-length errors, the `Read`/`Reader` surface, and the empty-max panic contract. · linux: 302 · [proof](validation/current/crypto.rand.md) |
 | [`crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) | 2 | | RC4 keystream golden vectors across every key length, and the in-place `XORKeyStream` block matrix. · linux: 2 · [proof](validation/current/crypto.rc4.md) |
@@ -312,7 +320,6 @@ leveling re-sweep re-annotated the rows it moved.
 | [`internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi) | 1 | 1 | Runtime ABI helpers (`FuncPC`). · linux: 1 + 1 · · [proof](validation/current/internal.abi.md) |
 | [`internal/buildcfg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/buildcfg) | 3 | | Toolchain build configuration — `GOARM64`/`GOAMD64` feature-level parsing and the `gogoarch` build-tag set. · linux: 3 · [proof](validation/current/internal.buildcfg.md) |
 | [`internal/chacha8rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/chacha8rand) | 4 | | The ChaCha8 generator behind `math/rand/v2` and the runtime's per-`m` source — `TestOutput` walks the package's own vector through `Next`/`Refill`, `TestMarshal` marshals and unmarshals the state before every single draw, `TestReseed` proves reseeding moves it, and `TestBlockGeneric` compares the two block implementations word for word. That last row is the array-SHAPE reinterpret: Go's `block_generic` computes IN PLACE through `(*[16][4]uint32)(unsafe.Pointer(buf))`, a rank change no managed nested-array view can reconstruct, so it and `setup` are hand-owned over a `MemoryMarshal.Cast` alias of the same storage — kept independent of the assembly-replacing `block`, down to reusing the package's own auto-converted `qr`, so the test still compares two implementations rather than one against itself. · linux: 4 · [proof](validation/current/internal.chacha8rand.md) |
-| [`internal/concurrent`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/concurrent) | 20 | | The concurrent hash map behind `unique` and `net/netip` — `Load`/`LoadOrStore`/`CompareAndDelete`/`All` over a 128-key set, the delete-all and delete-one orderings, weakly-consistent iteration with mutation running underneath it, and two genuine stress rows per parent that each launch `GOMAXPROCS` goroutines (12 on the sweep host) looping the full lifecycle over shared and unshared keys. The two parents run the SAME nine subtests: `TestHashTrieMapBadHash` first replaces the map's hash function with one returning 0 for every key, so half this row is the entire contract re-proven under total collision. That whitebox write is what the row turned on. The production code is a hand-owned `ConcurrentDictionary` replacement of Go's lock-free trie — the runtime descriptor `Hasher` the original seeds from means "hash the bytes AT this address", which the managed bridge cannot honor — and it now carries a real `keyHash` seam: installing a hook rebuilds the store behind an `IEqualityComparer<K>` whose `GetHashCode` IS the hook's answer, leaving equality untouched exactly as Go's test does, so the collision the test forces is the collision the map gets. The suite's dead `dumpMap`/`dumpNode` debug printers — called by no `Test`, but naming the trie's node types in a signature, which put the whole compilation behind one declaration-phase `CS0426` — are satisfied by a declaration-only companion whose single door throws. · linux: 20 · [proof](validation/current/internal.concurrent.md) |
 | [`internal/coverage/cfile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cfile) | 15 | 1 | The coverage runtime's file side — `ProcessCoverTestDir` reading meta and counter files, the emit APIs driven through a real subprocess harness (`TestCoverageApis` builds and runs a covered binary per sub-case, including the emit-to-directory, emit-to-writer and failing-writer paths), `TestApisOnNocoverBinary`, and the `GOCOVERDIR` handling. The disclosed row is `TestIssue59563TruncatedCoverPkgAll`, which shells out to the real toolchain twice — `go test -coverpkg=all` then `go tool cover -func` — and looks for a row prefixed `internal/coverage/cfile/testdata/issue59563/repro.go`. Both subprocesses SUCCEED and the coverage is CORRECT (`large` at 100.0%, which is what issue 59563 is about); measured A/B, the control and the sandbox emit an identical 10280 rows differing by one prefix, because outside the reported GOROOT the toolchain reads the staged `src/go.mod` as an ordinary module named `std` and qualifies every path. Same root as `go/build`'s disclosed row, manifesting differently. · linux: 15 + 1 · [proof](validation/current/internal.coverage.cfile.md) |
 | [`internal/coverage/cformat`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cformat) | 2 | | Coverage report formatting — per-function and per-package percentage rollups, and the empty-package edge. · linux: 2 · [proof](validation/current/internal.coverage.cformat.md) |
 | [`internal/coverage/cmerge`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cmerge) | 2 | | Coverage counter merging — the saturating-add merge policy and the conflicting-metadata clash path. · linux: 2 · [proof](validation/current/internal.coverage.cmerge.md) |
@@ -333,8 +340,11 @@ leveling re-sweep re-annotated the rows it moved.
 | [`internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) | 1 |  | The pprof protobuf codec's packed varint encoding — round-tripped through the white-box test's own `message` implementation, which is what proved a Go package split across two assemblies still binds its unexported interface methods. · linux: 1 · [proof](validation/current/internal.profile.md) |
 | [`internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) | 30 | | The reflection mini-bridge end to end — field walks in Go declaration order, the canonical nil func, Go's unexported-method and assignability rules one layer down, and channel DIRECTION at every position it is read: through `new(<-chan int)`, off a struct field's zero, and out of the zero value `Zero(typ)` fabricates. Its three `chan-direction` disclosures retired 2026-08-20 with the class. · linux: 30 · [proof](validation/current/internal.reflectlite.md) |
 | [`internal/runtime/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/runtime/atomic) | 15 | | The runtime's own atomic substrate — contended And/Or ladders across widths (eight goroutines clearing one word bit-by-bit at 8/32/64 bits), Xadduintptr's four-million-op parallel totals, CAS-release ordering, and `TestStorepNoWB`, the store-through-a-bare-`unsafe.Pointer` probe whose lost write the I5 ruling recorded at 14/15: the mint now RETAINS its source box (`FromBox`) and the store lands in the very slot the pointer names. `TestUnaligned64` skips identically on both sides (64-bit host). · linux: 15 · [proof](validation/current/internal.runtime.atomic.md) |
+| [`internal/runtime/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/runtime/math) | 1 |  | The allocator's overflow-checked `MulUintptr` across its boundary table — the `uintptr`-typed constant shift whose width decides whether the fast path guards at 2³² or at 1. ⚠ **RELOCATED AT go1.24.13 (2026-09-20, H10 pre-stage):** the package is **`internal/runtime/math`** at 1.24.13; **both declarations re-validate there**, nothing retires. (`math` shares the base name and is NOT the successor — it takes 0 of this row's declarations.) ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `runtime/internal/math`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/runtime.internal.math.md) |
+| [`internal/runtime/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/runtime/sys) | 4 |  | The runtime's own bit intrinsics — `Bswap32`/`Bswap64` and `TrailingZeros32`/`TrailingZeros64` across their full input matrices. ⚠ **RELOCATED AT go1.24.13 (2026-09-20, H10 pre-stage):** the package is **`internal/runtime/sys`** at 1.24.13; **all 4 declarations re-validate there**, nothing retires. (`cmd/internal/sys` shares the base name and is NOT the successor — it takes 0 of this row's declarations.) ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `runtime/internal/sys`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/runtime.internal.sys.md) |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) | 17 | | Allocation-capped I/O helpers. · linux: 17 · [proof](validation/current/internal.saferio.md) |
 | [`internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) | 5 | | Duplicate-call suppression — and, in `TestDoAndForgetUnsharedRace`, **1000 goroutines that must all park inside one `Do` before it returns**. That row was the cooperative scheduler's whole bill: under the old ThreadPool executor a parked goroutine held shared capacity, so the test climbed a doubling ladder for 28.7 minutes; on a dedicated thread per goroutine it converges at iteration 8 in **1.2 s**. · linux: 5 · [proof](validation/current/internal.singleflight.md) |
+| [`internal/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sync) | 20 |  |  ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `internal/concurrent`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/internal.concurrent.md) |
 | [`internal/syscall/windows`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows) | 2 |  | The Windows syscall shims the rest of the corpus is built on, proven at the two points their own suite reaches. `TestRunAtLowIntegrity` builds a **low-integrity primary token** — `OpenProcessToken`, `DuplicateTokenEx`, then `SetTokenInformation` writing a `TOKEN_MANDATORY_LABEL` whose SID is `S-1-16-4096` — launches a helper subprocess under it through `os/exec`'s `SysProcAttr.Token`, and requires the CHILD to report its own integrity SID back: the pass is non-vacuous because the re-exec'd process reads its ACTUAL token, so a token that never dropped fails the compare. It is also the row that named the non-blittable-struct-by-address class through a POINTER field rather than an array field — `SID_AND_ATTRIBUTES.Sid` converts to a managed `ж<syscall.SID>` where Windows wants a raw native SID address — hand-owned against a blittable `NativeTokenMandatoryLabel` mirror carrying `StringToSid`'s opaque native handle as a plain `nuint`. `TestSupportUnixSocket` cross-checks `SupportUnixSocket()` against a real `WSASocket(AF_UNIX, SOCK_STREAM, …)` attempt under `WSA_FLAG_NO_HANDLE_INHERIT`, matching on `WSAEAFNOSUPPORT`/`WSAEINVAL`. · linux: n/a · [proof](validation/current/internal.syscall.windows.md) |
 | [`internal/syscall/windows/registry`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows/registry) | 6 |  | Registry key/value CRUD against the real Windows registry — create/open/delete keys, round-tripping all value types (SZ/EXPAND_SZ/BINARY/DWORD/QWORD/MULTI_SZ), environment-variable expansion, and the localized MUI string path through `RegLoadMUIStringW` against the live time-zone key. Two non-blittable-struct-by-address wrappers reached first here: `GetDynamicTimeZoneInformation`'s DYNAMIC_TIME_ZONE_INFORMATION mirror and `SetDWordValue`/`SetQWordValue`'s explicit byte-buffer construction, both hand-owned against the established remedies. · linux: n/a · [proof](validation/current/internal.syscall.windows.registry.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · linux: 1 · [proof](validation/current/internal.sysinfo.md) |
@@ -342,7 +352,6 @@ leveling re-sweep re-annotated the rows it moved.
 | [`internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) | 92 |  | The execution-trace reader end to end — real trace corpora parsed through the v2 reader (`TestReaderGolden`'s 21 golden streams open by relative path, the fixture family the single-file bundler fix was proven on), the old-trace (1.11–1.21) format converter over its stress corpora — the suite whose swap corruption rooted the parallel-deref-assignment converter fix — summary/MUD statistics, and `TestTraceCPUProfile`'s live `go run` of a profiled testprog, the first consumer of link-staged fixtures (the sandbox compiles real GOROOT sources through a symlink, closing the internal-import class). Three converter/harness arcs met their measure in this one row: sibling-testdata staging, link-staging, and the parallel-assignment family's third arm. · linux: 95 · [proof](validation/current/internal.trace.md) |
 | [`internal/trace/internal/oldtrace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace/internal/oldtrace) | 3 |  | The pre-1.22 execution-trace parser on its own suite — all 12 canned corpora (1.11–1.21 stress, http, fmt and user-task-region streams) parsed and classified good vs deliberately time-unordered with STW reason strings checked, eight historically parser-crashing corrupted inputs required to error rather than crash, and the bucketed `Events` container's whole lifecycle: append across bucket boundaries, iterate, pop until every bucket drops. This parser is where the star-deref-of-call parallel swap lives (`*l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i)`) — the shape the parallel-deref-assignment fix closed after the parent `internal/trace` suite rooted it; this row is the package's own suite validating clean behind it. · linux: 3 · [proof](validation/current/internal.trace.internal.oldtrace.md) |
 | [`internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) | 155 |  | Every `go/types` error code, checked two ways against the real type checker: each code's documented Example snippet must actually produce that code, and the codes themselves must stay dense, uniquely named and correctly styled. Its `walkCodes` type-checks `codes.go` through `go/types.Check` on the way in, so this is also the first package to exercise the converted checker over real source. · linux: 155 · · [proof](validation/current/internal.types.errors.md) |
-| [`internal/weak`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/weak) | 4 | | Go's weak pointers — `Make`/`Strong` round-trips across `runtime.GC()`, the canonical-handle equality contract over a ten-element set (a second weak pointer made from a `Strong()` result must compare equal to the first, while distinct referents must not), the finalizer ordering that requires the handle to read nil *before* the finalizer runs, and the issue-69210 regression stress, which races `GOMAXPROCS-1` goroutines through weak-to-strong conversions for a full second while another goroutine holds the collector in its mark phase. The production code is hand-owned, and by a wide margin: Go's original is two `//go:linkname` declarations into `mheap_` span metadata, one of which re-derives an object pointer from a raw address — a question the CLR does not answer at all — so the managed-native rewrite keeps the observable contract on a `WeakReference` over the `ж<T>` box plus a `ConditionalWeakTable` that makes the handle canonical per referent. The row carries `execution: release-tc0` because its assertions are the `codegen-liveness` shape from the inside: a test stops using a local and then requires the collector to have already reclaimed it. Under the default tier-0 configuration the CLR reports a frame's slots live for the frame's whole lifetime, so the referent is never collected — measured directly on this row, 2026-08-30: `TestPointer` fails outright (*expected weak pointer to be nil*), and `TestPointerFinalizer` does not fail at all, it **blocks to the package deadline** on a finalizer that can never run, burning the full 600 s while the suite's other three verdicts land in under 1.1 s. `TestPointerEquality` passes either way, which is the class being precise rather than broad: that test nils its own slice, so the slot is overwritten instead of merely unused. Under the annotated configuration all four pass, in 27 s warm. · execution: release-tc0 · linux: 4 · [proof](validation/current/internal.weak.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · linux: 3 · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 536 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. Two of the 536, `TestLarge` and `TestAlloc`, gate themselves on a `zstd` binary being on `PATH` and skip identically on both sides where it is absent; a host that HAS one runs them, and `TestAlloc` asserts an exact zero allocations, so expect it to need an `alloc-profile` disclosure there. · linux: 536 · [proof](validation/current/internal.zstd.md) |
 | [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 60 | 1 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · linux: 60 + 1 · [proof](validation/current/io.md) |
@@ -391,8 +400,6 @@ leveling re-sweep re-annotated the rows it moved.
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · linux: 45 · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · linux: 12 · [proof](validation/current/regexp.syntax.md) |
 | [`runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug) | 4 | 5 | The runtime's own debugging surface — `ReadGCStats`' packed pause history (`n` pauses, `n` end times, `lastGC`, `numGC`, `totalPause`, most-recent-first) cross-checked against `ReadMemStats` in nine assertions that hold because both read one shared recorder, the `SetGCPercent`/`SetMaxThreads` get-set knobs including the overflow path, and `SetCrashOutput`, which re-executes the test binary, panics inside `TestMain`, and reads Go's crash report back from BOTH the child's stderr and the crash file. That last one is the row that made every converted program print `panic: <value>`, a blank line, `goroutine N [running]:` and a Go-spelled traceback where a .NET exception dump used to go. host-limit + runtime-capability + codegen-liveness disclosures. · linux: 4 + 5 · [proof](validation/current/runtime.debug.md) |
-| [`runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) | 1 |  | The allocator's overflow-checked `MulUintptr` across its boundary table — the `uintptr`-typed constant shift whose width decides whether the fast path guards at 2³² or at 1. · linux: 1 · [proof](validation/current/runtime.internal.math.md) |
-| [`runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) | 4 |  | The runtime's own bit intrinsics — `Bswap32`/`Bswap64` and `TrailingZeros32`/`TrailingZeros64` across their full input matrices. · linux: 4 · [proof](validation/current/runtime.internal.sys.md) |
 | [`runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) | 2 |  | The runtime metrics table end to end — `All()`'s sorted-name/regexp contract against `doc.go`, and a full `metrics.Read` round trip computing a kind for every published metric through the first linkname push into a `_test` package, the managed `metricsLock`, and every stat-aggregate compute closure. · linux: 2 · [proof](validation/current/runtime.metrics.md) |
 | [`slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices) | 119 | 3 | The generic slice algorithms over `S ~[]E` end to end — sort/stable-sort with cmp variants, binary search, Insert/Delete/Replace/Compact/Reverse/Rotate at every boundary, the iterator surface (`All`/`Values`/`Backward`/`Collect`/`Sorted*`), and `TestConcat_too_large`'s overflow matrix, whose `make([]struct{}, math.MaxInt)` fakes flow through Concat's Grow chain allocation-free — the slice-shaped-spread arc's own target, the row this arc was priced to unlock (`append(s, t...)` travels as the slice it is; the Span int32 ceiling left the call boundary). The three disclosures are the pre-ruled classes: `TestConcat`/`TestGrow` assert allocation counts the managed regime cannot denominate in Go mallocs (alloc-count-semantics), and `TestInsert`'s rotation budget meets the model's structural heap boxes (alloc-profile, 242 golib objects against a want-below-25). · linux: 119 + 3 · [proof](validation/current/slices.md) |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. · linux: 63 · [proof](validation/current/sort.md) |
@@ -414,6 +421,227 @@ leveling re-sweep re-annotated the rows it moved.
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. · linux: 28 · [proof](validation/current/unicode.md) |
 | [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) | 8 | 1 | Encode/decode round-trips via `reflect.DeepEqual`. · linux: 8 + 1 · [proof](validation/current/unicode.utf16.md) |
 | [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) | 14 | | UTF-8 encode/decode — the first suite to pass (2026-07-17). · linux: 14 · [proof](validation/current/unicode.utf8.md) |
+| [`weak`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/weak) | 4 |  |  ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `internal/weak`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. · [proof](validation/current/internal.weak.md) |
+
+## The H10 relocation map
+
+<!-- Drafted by C1 2026-09-20 from the H10 pre-staging census (mailbox 7a5d2af28), the successor map
+     (49ddc38cd) and the conversion-only pre-stage of the twelve successors (506ab57d9). Ruled at
+     9635f2c73. Instrument: one shared go/build predicate over both GOROOTs, controls beside it, the
+     pre-staging census reproduced byte-for-byte after the predicate was factored out. -->
+
+Ten banked rows have **no package at their banked path** at go1.24.13. None of them is a loss: the
+`crypto/internal` family moved under `crypto/internal/fips140/…`, `runtime/internal/{sys,math}` became
+`internal/runtime/…`, `internal/weak` became the public `weak`, and `internal/concurrent`'s map went to
+`internal/sync`. Each row above carries its dated note; this section holds the arithmetic and the
+targets. **Retirement is by an empty successor, never by an absent path** — two declarations retire in
+the whole set.
+
+<!-- THE RETIRING PAIR, RE-MEASURED AGAINST THE CORPUS (C1, 2026-09-20, COORD 446401184). The census
+     above took them against the pinned GOROOT under the corpus's own tags; i9's gates read the
+     CONVERTED corpus, so the number H10's row act uses is re-taken where the gate looks. Two-sided,
+     because "absent" alone cannot tell a RETIRED declaration from one that never existed:
+
+       declaration                  master (pre-hop)   version tip d91c832543   verdict
+       TestNewModFromBigZero              2 files              0 files          RETIRED
+       TestPQCrystalsAccumulated          2 files              0 files          RETIRED
+       TestRoundTrip (control)           14 files             12 files          survives
+       NoSuchTestNameXYZ123 (control)     0 files              0 files          —
+
+     The surviving control moves 14 -> 12 rather than holding, which is what proves the predicate can
+     read both states at both trees. The object was asserted with `git cat-file -t` before either
+     reading: an earlier run of this shape returned all-zero from a pathspec against an unfetched
+     object whose fatal a redirect had eaten, and that is the night's recurring class.
+     So the corpus agrees with the GOROOT and `2` stands. -->
+
+> **⚠ WHY H11 IS DECLARED AFTER H10, BY CONSTRUCTION** (COORD `446401184`, 2026-09-20). H11's release
+> pre-flight censuses the roster: every row wants a green badge and a banked test project at the new
+> base. **These ten rows have neither until the act below runs**, and re-pathing a row alone does not
+> help — a row pointed at an unbanked successor has no badge either. So the two Windows-box gates
+> H11's declaration waits on (`check-roster-format.ps1`, `release-nuget.ps1 -VerifyOnly`) cannot read
+> green before H10, and **the ladder's existing order is not a convention here but a dependency**.
+>
+> Measured at the version tip `d91c832543`, where those gates read: `check-roster-format.ps1` exits 1
+> on 2 of 638 — `crypto/internal/nistec` and `crypto/internal/edwards25519`, whose
+> `go2cs_test_disclosures.json` the relocation orphaned — and the release pre-flight reads exactly
+> these ten as *"no green badge, no test project"* (i9 `a9749f5e3`). Both are **hop debt of this
+> rung**, pre-existing and attributed by identical problem sets across three trees; neither is caused
+> by the H11 seat or the subtree seat, and neither blocks anything before H10.
+>
+> **Each row's H10 act is therefore one act, not two:** re-point the path, move the disclosure file
+> with its package (the pins survive — zero re-signs measured, so a MOVE and never a re-sign), run the
+> successor through the real pipeline on the banking platform, and re-bank. The gates are re-taken
+> after those rows, never before.
+
+### ⚠ The configuration every count below is measured under
+
+**`GOOS=windows GOARCH=amd64`, build tags `purego,math_big_pure_go`, `CgoEnabled=false`.** This is not
+a detail: the converted corpus is *defined* as Go built with those tags — a managed runtime can never
+execute the hand-written `.s` the default amd64 build binds hot crypto and `math/big` paths to, so the
+converter applies them to `-stdlib` and `-tests` alike (`defaultStdLibBuildTags`). **The same census
+answers a different question without them**, and a bare number cannot say which it answered: C1's first
+pre-staging census omitted them and mis-read two packages before the converter's own manifest named the
+cause. Every H10 count states its configuration.
+
+⚠ **These are DECLARATION counts, not verdicts.** The `Tests` column in the table above counts verdicts
+(subtests included) — `crypto/internal/nistec` banks 2195 verdicts from 5 declarations. The two are not
+comparable, and the banked columns are untouched by this section: they remain the **1.23.12 anchor**.
+
+### Where each row's declarations go
+
+| banked row | decls at 1.23.12 | successor(s) at 1.24.13, by declaration count | retires |
+|:--|--:|:--|--:|
+| `crypto/internal/edwards25519` | 33 | `crypto/internal/fips140/edwards25519` 32 · `crypto/internal/fips140test` 1 *(renamed)* | 0 |
+| `crypto/internal/edwards25519/field` | 21 | `crypto/internal/fips140/edwards25519/field` 21 | 0 |
+| `crypto/internal/bigmod` | 21 | `crypto/internal/fips140/bigmod` 20 | **1** |
+| `crypto/internal/mlkem768` | 16 | `crypto/internal/fips140/mlkem` 9 · `crypto/mlkem` 6 | **1** |
+| `crypto/internal/nistec` | 5 | `crypto/internal/fips140/nistec` 2 · `crypto/internal/fips140test` 3 | 0 |
+| `crypto/internal/alias` | 1 | `crypto/internal/fips140test` 1 | 0 |
+| `internal/concurrent` | 7 | `internal/sync` 7 | 0 |
+| `internal/weak` | 4 | `weak` 4 | 0 |
+| `runtime/internal/sys` | 4 | `internal/runtime/sys` 4 | 0 |
+| `runtime/internal/math` | 2 | `internal/runtime/math` 2 | 0 |
+| **TOTAL** | **114** | **112 placed** | **2** |
+
+### ⚠ Which successor carries the row's banked anchor — the PRINCIPAL, derived by VERDICT majority
+
+**Ruled 2026-09-20 (COORD `3f70a096e` §2):** each source's 1.23.12 anchor appears **exactly once** in
+the table above, on its **principal** target, so a plain column sum stays correct and no consumer
+needs a shared-anchor rule. The principal is the target receiving the **majority of the source's
+banked VERDICTS** — derived by mapping the source's own proof record's test names through the
+declaration map above and summing verdicts per target. **Verdicts, not declarations, and the
+difference is not academic:** `crypto/internal/nistec` banks 2,195 verdicts from 5 declarations, so a
+declaration-share rule routes them by a 3-of-5 majority to a package that carries none of them.
+
+| source | verdicts | principal target | share | secondary → CANDIDATE |
+|:--|--:|:--|:--|:--|
+| `crypto/internal/alias` | 1 | `crypto/internal/fips140test` | 1 of 1 (sole successor) | — |
+| `crypto/internal/bigmod` | 14 | `crypto/internal/fips140/bigmod` | sole successor | — |
+| `crypto/internal/edwards25519` | 55 | `crypto/internal/fips140/edwards25519` | **54 of 55** | `crypto/internal/fips140test` (1) |
+| `crypto/internal/edwards25519/field` | 16 | `crypto/internal/fips140/edwards25519/field` | sole successor | — |
+| `crypto/internal/mlkem768` | 12 | `crypto/internal/fips140/mlkem` | **9 of 12** | `crypto/mlkem` (2) |
+| `crypto/internal/nistec` | 2200 | `crypto/internal/fips140test` | **2,200 of 2,200** | `crypto/internal/fips140/nistec` (0) |
+| `internal/concurrent` | 20 | `internal/sync` | sole successor | — |
+| `internal/weak` | 4 | `weak` | sole successor | — |
+| `runtime/internal/math` | 1 | `internal/runtime/math` | sole successor | — |
+| `runtime/internal/sys` | 4 | `internal/runtime/sys` | sole successor | — |
+
+⚠ **`crypto/internal/nistec` routes 100% of its verdicts AWAY from the package that inherited its
+name**, and that is a measurement, not a judgement: at 1.24.13 `crypto/internal/fips140/nistec`
+declares `TestP256PrecomputedTable`, `TestP256SelectAffinePageBoundary` and
+`TestP256SelectPageBoundary` — **none of `nistec`'s three banked families** — while
+`crypto/internal/fips140test` declares all three (`TestScalarMult` 2,190, `TestEquivalents` 5, and
+`TestAllocations` 5 as `TestNISTECAllocations`). The name is the misleading part; the tests are where
+they are.
+
+⚠ **`crypto/internal/fips140test` is the principal for TWO sources** (`alias` and `nistec`), so its
+row carries both anchors summed — 1 + 2,195 validated and 0 + 5 disclosed. That is the rule working
+as intended: each SOURCE's anchor appears once, and a column sum over the table is unchanged.
+
+⚠ **An independent control fell out of the derivation**: `TestPQCrystalsAccumulated` maps to
+**neither** of `mlkem768`'s targets, which is the retirement the table above already records from a
+separate grep of the whole 1.24.13 tree. Two derivations, one answer.
+
+**The two secondary targets are CANDIDATES, not banked** — `crypto/internal/fips140/nistec` and
+`crypto/mlkem`. A row with no run under its own name and no inherited anchor is not honestly banked;
+both are costed on the recon basis and both bank on a terminal pass like any other candidate.
+
+**Row-set arithmetic:** −10 banked sources, +9 banked principals (nine, not eleven, because
+`fips140test` is principal twice and two targets are nobody's principal) → **204 → 203 banked**, and
+the two non-principals stay in the candidate bucket → **32 → 23 candidates**. The corpus axis is
+`203 + 23 = 226`, the figure ruled at `3f70a096e`, and it is 226 for every possible value of the
+principal count — the axis does not depend on how this derivation came out.
+
+### ⚠ The two disclosure files: retired with the row, re-pinned at the re-bank
+
+**Ruled 2026-09-20 (COORD `3f70a096e` §1), after the move was measured to be impossible:** there is no
+tree on which `git mv` is the act — at master the eleven target directories do not exist, and at the
+version tip both source directories are already **deleted** by the reconvert (46 disclosure files at
+master, 44 at the tip, and none re-placed under any target). A literal move would also have landed
+five pins on declarations that do not exist at 1.24.13.
+
+| source | pins | disposition |
+|:--|--:|:--|
+| `crypto/internal/edwards25519` | 1 | `TestAllocations` → re-pinned as **`TestEdwards25519Allocations`** |
+| `crypto/internal/nistec` | 4 | `TestAllocations/P{224,256,384,521}` → re-pinned as **`TestNISTECAllocations/P*`** |
+
+**Both files stay untouched on master** — master *is* the 1.23.12 anchor. The disclosures retire with
+their rows and are **re-pinned at the `crypto/internal/fips140test` re-bank under the renamed
+declarations, five pins expected**, in a merged `fips140test/go2cs_test_disclosures.json` written on
+the version branch by the driver **from the measured reading**, never carried forward blind. `class`
+and `signature` are expected to survive verbatim (`alloc-profile`, `expected zero allocations, got `),
+which is the zero-re-signs measurement holding for the right reason: the signature never moved, only
+the declaration's name did.
+
+**No proof file is moved, renamed or created.** Every target row links its SOURCE's existing
+`docs/validation/current` record, because that record *is* the anchor it inherits. ⚠ That leaves 204
+proof files for 203 banked rows; if `check-roster-format.ps1` refuses a row on that basis, the
+refusal is the gate being right and the driver retires it at the re-bank — this seat does not
+fabricate a record to turn a gate green.
+
+**Two renames the name-level map required, both verified by body:** `edwards25519.TestAllocations` →
+`fips140test.TestEdwards25519Allocations` and `nistec.TestAllocations` →
+`fips140test.TestNISTECAllocations`. Each keeps its subtest body (`AllocsPerRun`, the same curve
+points) and differs only in the skip helper — `testenv.SkipIfOptimizationOff` became
+`cryptotest.SkipTestAllocations` — so they are renames *with* a body change, which a byte-identity test
+correctly refuses to pair. Neither `fips140/edwards25519` nor `fips140/nistec` declares any
+`*Allocations` at 1.24.13, which is the independent confirmation.
+
+**How an ambiguous name was resolved, stated because it is a judgement:** generic names
+(`TestAliasing`, `TestExp`, `TestEqual`, `TestRoundTrip`, `TestAllocations`) are declared in many
+unrelated packages, so a name alone does not attribute. The rule used: **among the packages declaring
+the name, the row's own lineage successor wins**; where no candidate is the lineage successor, the name
+is resolved by body and named as a rename above. Attribution by name frequency alone cannot resolve a
+**one-declaration row**, which is why `crypto/internal/alias` is decided by lineage instead — its
+successor package exists and carries no test file at all.
+
+### The two retirements
+
+| name | banked row | evidence |
+|:--|:--|:--|
+| `TestNewModFromBigZero` | `crypto/internal/bigmod` | declared nowhere in the 1.24.13 tree |
+| `TestPQCrystalsAccumulated` | `crypto/internal/mlkem768` | declared nowhere in the 1.24.13 tree |
+
+Both confirmed by an independent grep of the whole tree, not by the census predicate alone.
+
+### The twelve new-row candidates, and H10's denominators
+
+Every successor above is a package the roster does not bank. All twelve were run through a
+**conversion-only pre-stage** at converter revision `0f97dcc8db`: `go2cs -tests` per package, sequential,
+one never-reused output root each, no `-test-action`. **All twelve exit 0, emit zero unresolved deferred
+markers, and their emitted test count equals their source declaration count exactly — 150 of 150.**
+Nothing was compiled or run; this lane has no .NET.
+
+| candidate row | decls (1.24.13) | emitted | executable now | Phase-4D deferred |
+|:--|--:|--:|--:|--:|
+| `crypto/internal/fips140/edwards25519` | 32 | 32 | 28 | 4 |
+| `crypto/internal/fips140/bigmod` | 27 | 27 | 20 | 7 |
+| `crypto/internal/fips140test` | 25 | 25 | 24 | 1 |
+| `crypto/internal/fips140/edwards25519/field` | 21 | 21 | 16 | 5 |
+| `crypto/internal/fips140/mlkem` | 10 | 10 | 10 | 0 |
+| `crypto/mlkem` | 9 | 9 | 4 | 5 |
+| `internal/sync` | 9 | 9 | 4 | 5 |
+| `weak` | 6 | 6 | 6 | 0 |
+| `internal/runtime/sys` | 4 | 4 | 4 | 0 |
+| `crypto/internal/fips140/nistec` | 3 | 3 | 1 | 2 |
+| `crypto/internal/fips140/nistec/fiat` | 2 | 2 | **0** | 2 |
+| `internal/runtime/math` | 2 | 2 | 1 | 1 |
+| **TOTAL** | **150** | **150** | **118** | **32** |
+
+⚠ **`crypto/internal/fips140/nistec/fiat` enters H10 with an executable denominator of ZERO** — both its
+declarations are benchmarks, deferred to Phase 4D — so it converts cleanly and would run nothing. It is
+recorded as a row with a 0 denominator and **never as a green**.
+
+The 32 deferred declarations are benchmarks and one example, and they need these capabilities, which is
+Phase-4D sizing rather than an H10 blocker: `B.N` 25, `B.ResetTimer` 22, `B.ReportAllocs` 9, `B.Run` 6,
+`B.RunParallel` 5, `PB.Next` 5, `B.Fatal` 4. Two test sources are excluded as the **assembly flavour**
+the purego corpus is defined not to have (`nistec/p256_asm_test.go`, `fips140test/nistec_ordinv_test.go`);
+neither is a converter defect.
+
+**No verdict in this document moves on account of this section.** It records where each row's work goes
+at H10 and what the campaign's new denominators are; the rows re-validate from scratch at H10 per the
+runbook, and nothing here is banked.
+
 
 ## Excluded packages
 
@@ -563,8 +791,13 @@ own build stamp, not the root it resolves, so the pin is stated rather than assu
   `func Test(t *testing.T)` — `internal/diff` declares one and is a banked row, so the stricter
   `^func Test[A-Z]` form would contradict the table above.
 - **215** — of those, the packages that exist in the corpus as a converted package (a production
-  `.csproj` under `src/core`). The four that do not are GOROOT directories with **zero** non-test
-  `.go` files, so no production package is converted and there is nothing for a host to reference:
+  `.csproj` under `src/core`). The four that do not are GOROOT directories with **zero SELECTED**
+  non-test `.go` files under the corpus's own tags, so no production package is converted and there
+  is nothing for a host to reference. The qualifier is load-bearing and not pedantry: three of the
+  four carry no non-test `.go` file at all, while `net/internal/cgotest` carries `resstate.go`
+  under `//go:build !netgo && cgo && darwin`, which the corpus's configuration deselects — and it
+  is the SELECTED set, not the directory listing, that the converter's own test-only predicate
+  reads (`productionClassEmitted`, keyed on the loader's `GoFiles`):
   `embed/internal/embedtest`, `internal/coverage/test`, `net/internal/cgotest`,
   `runtime/internal/wasitest`. Only `embedtest` carries a ruling today (board, 2026-08-11).
 - **202** banked · **13** remaining, as of 2026-09-02. The thirteen, by disposition:

@@ -1,0 +1,3 @@
+row	word	verdicts	sweep_s	first_in_list	rc	diverged	platform	tree	wall_s	post_s
+crypto/internal/fips140/nistec	PASS	44	132	1	0	0	windows/amd64	f83ba29ffb660b9fd3b69f0fefd4b801b6b8682c	132	0
+crypto/internal/fips140test	DIVERGED	2267	130	0	1	52	windows/amd64	f83ba29ffb660b9fd3b69f0fefd4b801b6b8682c	130	1

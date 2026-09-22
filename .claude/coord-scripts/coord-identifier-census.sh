@@ -57,8 +57,10 @@
 #
 #   same classes  the profile/home arm is that file's fleetProfileRe, split into its two
 #                 alternatives; the backslash share arm is its fleetNetworkRe; the placeholder admit
-#                 set is its fleetIsPlaceholder plus fleetPlaceholderSegments; the UNC host admit
-#                 set is its fleetNicknameHostSegments, exactly those four and no more.
+#                 set is its fleetIsPlaceholder plus fleetPlaceholderSegments, consulted by the
+#                 profile, home AND unc arms exactly as fleetConsiderSegment consults it for every
+#                 kind; the UNC host admit set is its fleetNicknameHostSegments, exactly those four
+#                 and no more.
 #   same names    coord-identifier-hashes.txt is generated from its fleetDeniedTokens. Neither file
 #                 carries plaintext.
 #   same tokens   candidates are maximal [a-z0-9._-] runs PLUS each dot/hyphen/underscore component,
@@ -145,7 +147,11 @@
 # the cost of the strict reading falls on the writer, as one rewrite of their own post. The version,
 # branch, assembly and documentation-constant context rules apply ONLY in tree mode, where their job
 # is to CLASSIFY the pre-existing hits of a long shared surface -- an unclassified total is a number,
-# never a finding. Every other arm is identical in both modes.
+# never a finding. THE ONE EXCLUSION STRICT MODE TAKES is the release_literal ADMIT SET (rule 5): it
+# is read on the QUAD'S OWN CHARACTERS and on nothing around it, so unlike a context rule it cannot
+# be arranged by the sentence a lane writes -- which is exactly why a context rule is refused here
+# and a shape admit is not. What it costs is stated on that arm's own line in the definition.
+# Every other arm is identical in both modes.
 #
 # `entry`/`subject` ask "does what I am about to write carry one?". `tree` asks "does what I am
 # about to write ADD one to a surface that already holds some?". Two questions; a clean reading from
@@ -531,7 +537,20 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
             if (admitted("profile_placeholder", tok)) { EXC[arm "\t" "placeholder-segment"]++; ok = 0 }
         } else if (arm ~ /^unc_/) {
             tok = uncHost(mt)
+            # THE PLACEHOLDER ADMIT REACHES THE unc_ ARMS TOO (COORD d30c9d36a, ruling (a)). The Go
+            # guard's fleetConsiderSegment applies fleetIsPlaceholder to EVERY kind, network-path
+            # included; the header above already claimed that set for every arm, which was true of
+            # the PATTERN and, until this line, false of the DECISION. Consulted BEFORE the nickname
+            # map, in the guard's own order, and on the HOST SEGMENT -- per OCCURRENCE, never per
+            # line, so a placeholder host never clears a real host beside it.
             if (tok == "") { EXC[arm "\t" "no-host"]++; ok = 0 }
+            # A JSON unicode escape of a converter glyph satisfies this arm's host-token class, and
+            # the corpus escapes constantly. Inside a JSON string a literal backslash is DOUBLED, so a
+            # real UNC prefix carries FOUR and an escape carries TWO -- measured on one committed line
+            # carrying both. Consulted FIRST because it is the most mechanical of the three, so the
+            # reason a hit is admitted reads as what it is (COORD 3a680658f (4), C1's A/B 48b7d578).
+            else if (admitted("unc_escape", tok)) { EXC[arm "\t" "escape-sequence"]++; ok = 0 }
+            else if (admitted("profile_placeholder", tok)) { EXC[arm "\t" "placeholder-segment"]++; ok = 0 }
             else if (admitted("nickname_host", tok)) { EXC[arm "\t" "nickname-host"]++; ok = 0 }
         } else if (arm ~ /^host_/) {
             tok = hostVal(mt)
@@ -549,7 +568,8 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
 }
 
 # ---- the IPv4 arm --------------------------------------------------------------------------------
-# STRICT (entry/subject): no exclusion of any kind. DELTA (tree): rules 1-4.
+# STRICT (entry/subject): no CONTEXT exclusion of any kind; the release_literal ADMIT SET (rule 5),
+# read on the quad's own shape, is the one exclusion it takes. DELTA (tree): rules 1-4, then rule 5.
 # ipv4ParseAt walks a four-octet quad BY HAND from position p and sets IPV4E to the position of its
 # last digit. It returns 0 unless all four octets are there, 0-255, unpadded, and not followed by a
 # fifth digit -- the same acceptance the ipv4 ERE has, derived without the ERE.
@@ -653,14 +673,42 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
             run = substr(lo, rs, rr - rs + 1); sub(/\.$/, "", run)
             if (run != lq) { EXC["ipv4\ttoken-run"]++; continue }
 
-            # RULE 3 -- declared documentation constants.
-            if (lq ~ ("^(" RE["ipv4_doc"] ")$")) { EXC["ipv4\tdoc-constant"]++; OCC["ipv4_doc"]++; continue }
-
             # RULE 4 -- version context by ADJACENCY, never by a window. Three words only: the quad's
             # own whitespace-delimited word, the one immediately before, the one immediately after.
             own = wordOwn(lo, s, e); before = wordBefore(lo, s); after = wordAfter(lo, e)
             if (own ~ RE["ipv4_vercontext"] || before ~ RE["ipv4_vercontext"] || after ~ RE["ipv4_vercontext"]) { EXC["ipv4\tversion-context"]++; continue }
         }
+
+        # RULE 3 -- the three DECLARED DOCUMENTATION CONSTANTS (loopback, unspecified, broadcast).
+        # MOVED OUT of the STRICT==0 block 2026-09-20 (COORD fc4edcd8c) and consulted in BOTH modes,
+        # for rule 5's reason and by rule 5's own test: it is read ANCHORED WHOLE on the quad's own
+        # characters and on nothing around it, so it is a SHAPE and not a context. Rules 1, 2 and 4
+        # read a prefix, a token run and neighbouring words and every one of them can be ARRANGED by
+        # the sentence a lane writes; no sentence can arrange for a quad to BE one of these three.
+        #
+        # ⚠ WHY IT HAD TO MOVE, and it is not tidiness. STRICT's rationale is that the cost of the
+        # strict reading "falls on the writer, as one rewrite of their own post" -- true of a post
+        # BODY and FALSE of an EVIDENCE RECORD, which the lane did not author and cannot rewrite
+        # without corrupting the field the re-classification reads. A results tail whose quads are
+        # all loopback refused every one of them at `entry`: measured 12 of 12 before this change.
+        #
+        # ⚠ ORDER, and its cost measured rather than argued: rule 3 now runs AFTER rules 1, 2 and 4
+        # in delta instead of between 2 and 4, so an occurrence those rules dispose of first keeps
+        # THEIR reason. Measured on the shared surface across the move, the delta tally is unchanged
+        # (release-literal 48, token-run 2, version-context 9, doc-constant 2, prefix-ex 18), so
+        # nothing was re-attributed here -- which is the property rule 5's comment below asks for.
+        if (lq ~ ("^(" RE["ipv4_doc"] ")$")) { EXC["ipv4\tdoc-constant"]++; OCC["ipv4_doc"]++; continue }
+
+        # RULE 5 -- the Go RELEASE LITERAL, and the ONE exclusion the STRICT reading takes. It is a
+        # per-arm ADMIT SET read on the DECISION TOKEN -- the quad itself, anchored whole, per
+        # OCCURRENCE -- and on nothing around it. That is what separates it from rules 1-4: a
+        # context rule can be arranged by the sentence a lane writes, and a SHAPE cannot, so this
+        # one is safe in the mode where the others are refused. It is consulted LAST in delta mode
+        # on purpose: every occurrence rules 1-4 already dispose of keeps ITS OWN reason in the
+        # EXCLUSIONS block, so adding a rule cannot silently re-attribute what the others were
+        # measured on. Per ARM: no other arm consults this set, and none of them gains an admit.
+        if (admitted("release_literal", lq)) { EXC["ipv4\trelease-literal"]++; continue }
+
         record("ipv4", pass, lineno, quad, text)
     }
 }
@@ -696,6 +744,46 @@ function scanTokens(lineno, text, lo, pass, joinAt,   i, L, s, e, c, run, nc, k)
             }
         } else i++
     }
+}
+# ⚠⚠ THE ALPHANUMERIC REDUCTION IS NOT `gsub`, AND THAT IS A MEASUREMENT ABOUT THE ENGINE RATHER
+# THAN A STYLE CHOICE. `gsub(/[^a-z0-9]/, "", s)` is QUADRATIC IN length(s) under gawk 5.0.0 --
+# roughly half the characters of any real line match, so the match count is O(L) and each one
+# rebuilds the buffer. Timed directly, one string, nothing else in the program:
+#
+#     50,000 chars   3,615 ms        200,000 chars  61,446 ms
+#    100,000 chars  13,856 ms        (2x the length, 4.4x the time)
+#
+# That is the whole of the hang this tool showed on JSON. MEASURED 2026-09-22 on the i7, on
+# single-LINE fixtures, `entry` mode end to end, against a ~2.7 s fixed overhead:
+#
+#       5 KB  2.8 s      87 KB   9.4 s      362 KB  104.0 s
+#      20 KB  2.9 s     177 KB  26.1 s      3.06 MB never returned (~2 h by extrapolation)
+#
+# ⚠ AND IT IS LINE LENGTH, NOT BYTES, NOT JSON. One-axis A/B on the SAME 177 KB: one line 27.8 s,
+# folded to 1,769 lines 7.5 s. JSON is merely where a 3 MB single line occurs -- the pipeline's own
+# `go2cs_test_results.json` is one line of 2.9 MB, which is how the leg met this. A 46 KB manifest
+# with a longest line of 1,896 characters reads in 4.8 s, so ordinary committed JSON was never slow.
+# Bisected by disabling one stage at a time on the 177 KB line: whole program 27.4 s, without the
+# arm loop 27.8 s, without the ipv4 scan 28.4 s, WITHOUT THE TOKEN PASS 0.2 s; and inside that pass,
+# with the reduction kept and its scan dropped 24.9 s, with the reduction dropped and its scan kept
+# 0.5 s. One stage, named by subtraction.
+#
+# `split` on the COMPLEMENT class does the same work in ONE scan, and the pieces are then joined
+# PAIRWISE -- `out = out piece` over O(L) pieces is the same quadratic by another route, while a
+# balanced merge copies O(L log n). The two spellings are EXACTLY equivalent, and the reason is that
+# the class is a SINGLE CHARACTER: `split(s, P, /[^a-z0-9]+/)` yields precisely the maximal
+# alphanumeric runs, so concatenating them is the string with every non-alphanumeric removed.
+# Controlled on a gnarly literal (separators, quotes, digits, a backslash) against the gsub it
+# replaces -- identical output -- and on the three edges: empty, all-separator, all-alphanumeric.
+function alnumOnly(s,   n, i, P, m, j) {
+    n = split(s, P, /[^a-z0-9]+/)
+    while (n > 1) {
+        m = 0
+        for (i = 1; i <= n; i += 2) { m++; P[m] = (i + 1 <= n) ? P[i] P[i + 1] : P[i] }
+        for (j = m + 1; j <= n; j++) delete P[j]
+        n = m
+    }
+    return (n == 1) ? P[1] : ""
 }
 # PASS 3 -- token arms only, over an alphanumerics-only reduction. Tokens of 4+ characters only: the
 # reduction has no boundaries left, so a 3-character detector here would fire on ordinary prose.
@@ -742,7 +830,7 @@ function scanAll(lineno, text, pass, joinAt,   a, arm, lo, blanked, red) {
         blanked = lo
         if ("public_url" in RE) blanked = blankSpans(blanked, RE["public_url"])
         scanTokens(lineno, text, blanked, pass, joinAt)
-        red = blanked; gsub(/[^a-z0-9]/, "", red)
+        red = alnumOnly(blanked)
         scanTokensReduced(lineno, red, lineno, text)
     }
 }
@@ -793,7 +881,7 @@ BEGIN {
             if (nT > 0) {
                 jred = tolower(joined)
                 if ("public_url" in RE) jred = blankSpans(jred, RE["public_url"])
-                gsub(/[^a-z0-9]/, "", jred)
+                jred = alnumOnly(jred)
                 scanTokensReduced(NR, jred, NR, joined)
             }
         }
@@ -1133,17 +1221,103 @@ idc_mode_selftest() {
     printf 'C:%sUsers%s<user>%sa and C:%sUsers%s%s%sb\n' "$bs" "$bs" "$bs" "$bs" "$bs" "sylvandeep" "$bs" > "$d/p12"; idc_st_case "placeholder segment does not clear the line" "profile_root" "$d/p12" 1
     idc_st_exc "  and the placeholder on that SAME LINE was admitted" "profile_root|placeholder-segment" "$IDC_TMP/st.status"
 
+    # THE PLACEHOLDER ADMIT ON THE unc_ ARMS -- BOTH DIRECTIONS, IN THE GATE'S OWN MODE (STRICT).
+    # An admit-only battery reads GREEN on an arm that admits every host, so every case that must
+    # PASS here has p04/p05 above as its REFUSE sibling: those hosts are in NEITHER admit set and
+    # still fire. Each pass also asserts that the PLACEHOLDER ADMIT is what admitted it, so the
+    # case cannot go green because the arm stopped matching.
+    printf 'upstream doc comment: %s%sserver%sshare%spath\n' "$bs" "$bs" "$bs" "$bs" > "$d/p19"; idc_st_case "STRICT admits a placeholder host in a UNC" "" "$d/p19" 1
+    idc_st_exc "  and the PLACEHOLDER ADMIT is what admitted it" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+    printf 'and the slash flavour: %s%sserver%sshare%spath\n' "$sl" "$sl" "$sl" "$sl" > "$d/p20"; idc_st_case "STRICT admits a placeholder host in a slash share" "" "$d/p20" 1
+    idc_st_exc "  and the PLACEHOLDER ADMIT is what admitted it" "unc_slash|placeholder-segment" "$IDC_TMP/st.status"
+    # PER OCCURRENCE, NEVER PER LINE -- the property p11 proves for the nickname admit, proved again
+    # for this one: a placeholder host and a real host on ONE line still refuses.
+    printf 'from %s%sserver%sshare and %s%s%s%sshare\n' "$bs" "$bs" "$bs" "$bs" "$bs" "box7" "$bs" > "$d/p21"; idc_st_case "mixed line: placeholder host + real host" "unc_backslash" "$d/p21" 1
+    idc_st_exc "  and the placeholder on that SAME LINE was admitted" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+    # AND IN DELTA MODE TOO: this admit is read on the DECISION TOKEN, not on the sentence, so it is
+    # identical in both modes -- unlike a context rule, which strict refuses on purpose.
+    printf 'upstream doc comment: %s%sserver%sshare%spath\n' "$bs" "$bs" "$bs" "$bs" > "$d/p22"; idc_st_case "DELTA admits the same placeholder host" "" "$d/p22" 0
+    idc_st_exc "  and by the PLACEHOLDER ADMIT in delta as well" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+
+    # THE UNICODE-ESCAPE ADMIT (COORD 3a680658f (4), C1's A/B 48b7d578). ⚠ NOTHING HERE SPELLS THE
+    # SHAPE: every backslash comes from $bs and the escape body is a separate argument, so this file
+    # -- which is itself tracked and censused -- carries no literal network path. BOTH DIRECTIONS,
+    # and the REFUSE sibling is the one that matters: the admit is bounded to the HEX form, so a
+    # token of the same length whose body is NOT hex must still fire.
+    printf 'stack: at go.fmt_package.printArg(%s%su0436%s%su0060 p)\n' "$bs" "$bs" "$bs" "$bs" > "$d/p23"; idc_st_case "STRICT admits a unicode-escape host" "" "$d/p23" 1
+    idc_st_exc "  and the ESCAPE ADMIT is what admitted it"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
+    printf 'and the slash flavour %s%su0436%sshare%sx\n' "$sl" "$sl" "$sl" "$sl" > "$d/p24"; idc_st_case "STRICT admits it on the slash arm too (ruled scope: unc_*)" "" "$d/p24" 1
+    idc_st_exc "  and the ESCAPE ADMIT is what admitted it"      "unc_slash|escape-sequence" "$IDC_TMP/st.status"
+    # ⚠ THE BOUND. Same leading letter, same length, body NOT hex -> still a hit. Without this case
+    # the admit could widen to "any host starting with that letter" and every other case stays green.
+    printf 'copied from %s%suzzzz%sshare%sx\n' "$bs" "$bs" "$bs" "$bs" > "$d/p25"; idc_st_case "a non-hex body of the same shape STILL REFUSES" "unc_backslash" "$d/p25" 1
+    # PER OCCURRENCE, never per line: an escape and a real host on ONE line still refuses.
+    printf 'from %s%su0436%sshare and %s%s%s%sshare\n' "$bs" "$bs" "$bs" "$bs" "$bs" "box7" "$bs" > "$d/p26"; idc_st_case "mixed line: escape host + real host" "unc_backslash" "$d/p26" 1
+    idc_st_exc "  and the escape on that SAME LINE was admitted" "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
+    # DELTA too: read on the decision token, so identical in both modes.
+    printf 'stack: at go.fmt_package.printArg(%s%su13d1%s%su0060 p)\n' "$bs" "$bs" "$bs" "$bs" > "$d/p27"; idc_st_case "DELTA admits a unicode-escape host as well" "" "$d/p27" 0
+    idc_st_exc "  and by the ESCAPE ADMIT in delta as well"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
+
     # PASS 2 -- a token split across a line break, with an INDENTED continuation.
     printf 'owner column reads zorb\n    ulax here\n'                      > "$d/p13"; idc_st_case "token split across a line break (PASS 2)" "TOKENFILE" "$d/p13" 1
     # Go-guard tokenising: a token as a dot/hyphen/underscore COMPONENT of a larger run.
     printf 'row names x_%s_y and more\n' "quennelbee"                      > "$d/p14"; idc_st_case "token as an underscore component (PASS 1)" "TOKENFILE" "$d/p14" 1
     # PASS 3 -- a token broken by separators INSIDE a component, which tokenising cannot see.
     printf 'row names ab%s-%s2 here\n' "zorbul" "ax"                       > "$d/p15"; idc_st_case "token broken inside a component (PASS 3)"  "TOKENFILE" "$d/p15" 1
+    # PASS 3 AT THE END OF THE LINE, and this case exists because its absence was MEASURED. The
+    # reduction the pass reads is `alnumOnly`, and a reduction that loses the line's TAIL -- the
+    # likeliest way to get a piecewise reducer wrong -- is INVISIBLE to the case above, whose token
+    # sits mid-line with `2 here` after it: regressing the reducer to drop its last character read
+    # 116/0 and green. Neutering it entirely DOES red that case (115/1), so the stage was covered and
+    # its BOUNDARY was not. One case, at the boundary, and the same plant otherwise.
+    printf 'row names ab%s-%s\n' "zorbul" "ax"                             > "$d/p15b"; idc_st_case "token broken, at END of line (PASS 3)"     "TOKENFILE" "$d/p15b" 1
     # A path ENDING in the token -- the shape a both-sides separator rule misses.
     printf 'built at C:%sUsers%s%s\n' "$bs" "$bs" "zorbulax"               > "$d/p16"; idc_st_case "path ENDING in a denied token" "profile_root TOKENFILE" "$d/p16" 1
-    # STRICT: the IPv4 arm takes NO context exclusion in entry/subject mode.
-    printf 'the toolchain is go%d.%d.%d.%d here\n' 1 24 13 3               > "$d/p17"; idc_st_case "STRICT refuses a version quad"            "ipv4" "$d/p17" 1
-    printf 'the loopback %d.%d.%d.%d appears\n' 127 0 0 1                  > "$d/p18"; idc_st_case "STRICT refuses a doc constant"            "ipv4" "$d/p18" 1
+    # STRICT: the IPv4 arm takes NO CONTEXT exclusion in entry/subject mode. The quad planted here
+    # is version-SHAPED but OFF the release shape (a first component of 2), because the release
+    # shape itself is admitted in strict by rule 5 from this change forward -- left as it was, this
+    # plant would have gone on reading green while proving the opposite of what its name says. The
+    # release shape's own both-directions battery is A2 below; this case keeps its own question.
+    printf 'the toolchain is go%d.%d.%d.%d here\n' 2 24 13 3               > "$d/p17"; idc_st_case "STRICT refuses a version quad off the release shape" "ipv4" "$d/p17" 1
+    # ⚠ RE-RULED 2026-09-20 (COORD fc4edcd8c). Rule 3 moved OUT of the STRICT-only block, so a
+    # DECLARED documentation constant is now admitted in strict exactly as rule 5's release literal
+    # is. What this arm pinned before -- the strict reading refusing one -- is retired ON PURPOSE,
+    # and it is retired because the strict rationale ("the cost falls on the writer, as one rewrite
+    # of their own post") is false of an EVIDENCE RECORD the lane did not author. The REFUSE
+    # direction is not weakened and is not carried by this case: p02, p17 and q04-q07 below are
+    # quads rule 3 does NOT name, and every one of them still fires in STRICT.
+    printf 'the loopback %d.%d.%d.%d appears\n' 127 0 0 1                  > "$d/p18"; idc_st_case "STRICT admits a declared doc constant"               ""     "$d/p18" 1
+    idc_st_exc "  and the DOC-CONSTANT ADMIT is what admitted it" "ipv4|doc-constant" "$IDC_TMP/st.status"
+    # The other two declared constants, in the GATE'S OWN MODE. An admit proven on one member of a
+    # three-member set is an admit proven on one member.
+    printf 'the unspecified %d.%d.%d.%d and the broadcast %d.%d.%d.%d appear\n' 0 0 0 0 255 255 255 255 > "$d/p18b"; idc_st_case "STRICT admits the other two declared constants" "" "$d/p18b" 1
+    idc_st_exc "  and BOTH were admitted AS DOC CONSTANTS"        "ipv4|doc-constant" "$IDC_TMP/st.status"
+    # ⚠ THE BOUND, in the gate's own mode: a quad ONE COMPONENT off a declared constant is not one.
+    printf 'the address %d.%d.%d.%d answered\n' 127 0 0 2                 > "$d/p18c"; idc_st_case "STRICT still refuses a quad one component off" "ipv4" "$d/p18c" 1
+
+    echo
+    echo "  A2. THE RELEASE-LITERAL ADMIT -- BOTH DIRECTIONS, IN THE GATE'S OWN MODE (STRICT)"
+    echo "      (an admit-only battery reads GREEN on an arm that admits every quad, so each case"
+    echo "       that must PASS has a sibling one digit off the shape that must still REFUSE, and"
+    echo "       every pass asserts the RELEASE-LITERAL exclusion actually fired)"
+    printf 'the hop landed go%d.%d.%d.%d on every lane\n' 1 24 13 3        > "$d/q01"; idc_st_case "STRICT admits a Go release literal"         "" "$d/q01" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    printf 'the package nuget-%d.%d.%d.%d is on the feed\n' 1 23 12 1      > "$d/q02"; idc_st_case "STRICT admits a package-prefixed release literal" "" "$d/q02" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    printf 'see docs%svalidation%s%d.%d.%d.%d%s for the roster\n' "$sl" "$sl" 1 24 13 0 "$sl" > "$d/q03"; idc_st_case "STRICT admits a release literal inside a path" "" "$d/q03" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    # THE REFUSE DIRECTION. The admit is bounded to ONE shape, so a private-LAN quad and a quad a
+    # single component off the shape must both still be hits -- in STRICT mode, where nothing in the
+    # sentence around them can help either way.
+    printf 'the box answered on %d.%d.%d.%d last night\n' 10 0 0 1         > "$d/q04"; idc_st_case "a 10/8 quad is not the release shape"       "ipv4" "$d/q04" 1
+    printf 'the box answered on %d.%d.%d.%d last night\n' 192 168 1 20     > "$d/q05"; idc_st_case "a private-range quad is not the release shape" "ipv4" "$d/q05" 1
+    printf 'the build stamped %d.%d.%d.%d into the assembly\n' 1 3 4 5     > "$d/q06"; idc_st_case "second component off the shape still refuses" "ipv4" "$d/q06" 1
+    printf 'the build stamped %d.%d.%d.%d into the assembly\n' 2 24 13 3   > "$d/q07"; idc_st_case "first component off the shape still refuses"  "ipv4" "$d/q07" 1
+    # AND IN DELTA MODE TOO, by the release admit and not by rules 1-4: this quad carries no prefix,
+    # its token run IS the quad, it is no doc constant, and neither neighbouring word is a context
+    # word -- so under rules 1-4 alone it was a hit, and the reason printed is the discriminator.
+    printf 'the page %d.%d.%d.%d is linked from the roster\n' 1 24 13 3    > "$d/q08"; idc_st_case "the admit is consulted in DELTA mode as well" "" "$d/q08" 0
+    idc_st_exc "  and by the RELEASE ADMIT, not by rules 1-4"     "ipv4|release-literal" "$IDC_TMP/st.status"
 
     echo
     echo "  B. KNOWN NEGATIVES -- in DELTA mode, each MUST fire the arm set declared beside it"
@@ -1160,7 +1334,10 @@ idc_mode_selftest() {
     # ADJACENCY, not a window: the nearest context word here is THREE words back, so this quad is no
     # longer excused. It was excluded by the 56-character window the first draft read, and that is
     # exactly the laundering surface C2's A/B found. The refusal is the intended cost.
-    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 1 24 13 3 > "$d/n05"; idc_st_case "version word THREE words back no longer excuses" "ipv4" "$d/n05" 0
+    # The quad is OFF the release shape (first component 2) so that rule 5 cannot dispose of it:
+    # with the release shape here, this case would still have read green -- for the wrong reason --
+    # and the adjacency control it exists to be would have been dead without ever going red.
+    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 2 24 13 3 > "$d/n05"; idc_st_case "version word THREE words back no longer excuses" "ipv4" "$d/n05" 0
     printf 'the loopback %d.%d.%d.%d is a documentation constant\n' 127 0 0 1 > "$d/n06"; idc_st_case "loopback constant" "" "$d/n06" 0
     idc_st_exc "  and it was excluded AS A DOC CONSTANT"          "ipv4|doc-constant" "$IDC_TMP/st.status"
     printf 'the unspecified %d.%d.%d.%d and broadcast %d.%d.%d.%d addresses\n' 0 0 0 0 255 255 255 255 > "$d/n07"; idc_st_case "unspecified and broadcast constants" "" "$d/n07" 0

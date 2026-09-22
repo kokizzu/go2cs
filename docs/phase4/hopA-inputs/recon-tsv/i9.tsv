@@ -1,0 +1,17 @@
+row	word	verdicts	sweep_s	first_in_list	rc	diverged	platform	tree	wall_s
+archive/zip	PASS	100	44	1	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	44
+crypto/dsa	PASS	4	51	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	51
+crypto/internal/fips140/mlkem	PASS	10	13	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	13
+crypto/mlkem	BUILD	NOMATCH	13	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	13
+crypto/tls	NOVERDICT	NOMATCH	UNMEASURED	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	531
+go/doc/comment	PASS	10059	23	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	23
+go/parser	PASS	176	139	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	139
+go/types	PASS	574	128	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	128
+hash/maphash	BUILD	NOMATCH	23	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	23
+index/suffixarray	PASS	12	96	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	96
+internal/syscall/windows	PASS	3	15	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	15
+internal/syscall/windows/registry	PASS	6	15	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	15
+net	NOVERDICT	NOMATCH	UNMEASURED	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	3792
+net/http	NOVERDICT	NOMATCH	UNMEASURED	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	227
+sync/atomic	PASS	108	92	0	0	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	92
+time	CONVERT	NOMATCH	2	0	1	n/a	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	2

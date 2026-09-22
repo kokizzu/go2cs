@@ -305,6 +305,108 @@ Recommended message shape: name the conversion, the element type and the fact th
 no managed element storage — enough that the reader reaches this document rather than the panic
 site.
 
+#### Amendment 2026-09-20 (C1) — ⚠ THE BOUND ON THIS FLOOR: place it at the shared terminal and it panics every converted program at startup
+
+**The second bullet above — *"it cannot regress a working path: by §1.5 no live path reaches these
+sites"* — is true of the fork's OWN population and false of the line the fork ends on.** Both are
+measured; the distinction is the whole of this amendment.
+
+`ж.cs`'s `uintptr → ж<T>` operator has four arms and **arms 2 and 4 share one terminal**, the single
+`return new NativeBox<T>(...)`:
+
+```
+  arm 1   resolved is ж<T>                    aliased return          safe
+  arm 2   resolved is a LIVE box, pointee != T  falls past the refusal (offset 0 is not arithmetic)
+                                              -> the SHARED TERMINAL   "Counted here; not yet changed"
+  arm 3   IsTokenArithmetic                    throws by name
+  arm 4   resolved is null                     -> the SHARED TERMINAL   <- the raw-metal fork §4 is about
+```
+
+§1.5's liveness audit is an audit of **arm 4's** population. A guard written to §4's own wording —
+*"where the native-backed `ж<array<T>>` materialises"* — lands on the terminal and therefore fires on
+**arm 2 as well**, whose population is different and is **not** latent:
+
+```
+  the 25 resolved-different-pointee (arm 2) array sites, at the version tip d91c832543
+    BOUND-LIVE (package init)  2   crypto/internal/fips140/nistec  (retired by the P-256 decode)
+    RUNTIME-RESIDENT           4   runtime.initAlgAES · runtime.cheaprand · runtime.pkgPath ·
+                                   reflect.pkgPath
+    flavor-gated · linkname-edge · inert   19
+```
+
+⚠ **`initAlgAES` is called by `alginit()`, called from `schedinit` under Go's own comment "maps, hash,
+rand must not be used before this call".** That is **program startup, every converted program, every
+banked row, always** — and the site is arm 2 by construction, not by inference: `Ꮡaeskeysched` is a
+`ж<array<byte>>` and the conversion's destination is `ж<array<uint64>>`, so `resolved is ж<T>` cannot
+hold. `cheaprand` (18 callers across `sema`, `proc`, `mbitmap`, `iface`) and both `pkgPath` sites
+(interface conversion) are the same shape.
+
+**So the floor must be scoped, and the scope is PROVENANCE, not the destination TYPE:**
+
+- **Scope it to arm 4** (`resolved is null`) — the classification is already in hand at that point and
+  costs nothing, per the 2026-09-08 note that `resolved` must not be re-queried.
+- **Never scope it by testing the destination type.** The `slice<T>` twin census reached the same
+  discriminator independently and from the other side: of its three CODE sites the only LIVE one
+  (`runtime/symtab.cs`, 19 callers) is provenance-BEARING — a type-tested floor refuses it, a
+  provenance-tested one admits it. R's 6-of-609 reading is the third arrival at the same rule.
+
+**Neither §3 nor §4's recommendation changes**; what changes is where the guard may be placed. A floor
+at the shared terminal is not "strictly safer under every reading" — it is a startup panic.
+
+<!-- Derivation, 2026-09-20 (C1), COORD 453af64e3 / 74be45f73. Arms read at `src/core/golib/ж.cs`
+     (master 4d25779a1a): the four-arm operator with arm 2's own comment "Counted here; not yet
+     changed" and the single `new NativeBox<T>` terminal. Site classification at the version tip
+     d91c832543: `runtime/alg.cs:541` inside `initAlgAES`, whose callers are `alg.cs:526,530` in
+     `alginit()`, called from `proc.cs:848`. `Ꮡaeskeysched` declared `ж<array<byte>>` at
+     `alg.cs:535` (master numbering; the file shifts between trees, so both are cited). Liveness
+     instrument: the census's own predicates called rather than copied, with the census output
+     byte-compared before and after the hoist; caller counts carry a second raw derivation whose
+     delta reconciles to the declaration plus one comment. The §4 floor is NOT implemented at
+     master — measured: no guard at the terminal, and `array.cs:201-204` still describes the
+     raw-metal fork as "unchanged here". -->
+
+##### Note 2026-09-20 (C2's read `ebd9553dc`) — the step the amendment above ASSERTS, the citation it gets wrong, and a widening
+
+Three additions from an independent derivation of the same bound. **None changes the conclusion**; the
+first two make it rest on a mechanism rather than on a type comparison, and the third strengthens the
+remedy.
+
+**1. `RegisterPinned` is what makes the site arm 2.** The amendment argues `initAlgAES` is arm 2 from
+the types — the box is `ж<array<byte>>`, the destination `ж<array<uint64>>`, so `resolved is ж<T>`
+cannot hold. **True only if `resolved` is non-null at all**, which is a property of the FORWARD
+conversion, not of the declaration:
+
+```
+  FromPinnedBox(Ꮡaeskeysched)   ->  the ж -> uintptr operator: value is IArray and not ISlice
+                                ->  dataAddr = pinnedArrayData(arr)
+                                ->  ManagedPointerTokens.RegisterPinned(dataAddr, value)   <-- HERE
+  the reverse conversion        ->  Resolve(dataAddr) answers the LIVE ж<array<byte>> box
+                                ->  not ж<array<uint64>>  ->  arm 1 fails  ->  ARM 2
+```
+
+**Without that registration `Resolve` answers null and the same site is ARM 4** — the population §1.5
+audits — and the bound would collapse. The registration is what makes the type mismatch decisive.
+
+**2. ⚠ The `proc.cs` citation above cannot be opened at the path it names.** Under layout L3 that file
+is three per-GOOS copies. The call is at **`src/core/runtime/{linux,windows,darwin}/proc.cs:848`, in
+all three**, each carrying Go's own comment — so the claim is *stronger* than the citation stated
+(startup on every target, not one), and a reader following the single path gets "does not exist".
+
+**3. A WIDENING: §4's phrase does not designate a line.** *"Where the native-backed `ж<array<T>>`
+materialises"* resolves to **eleven** `new NativeBox` construction sites in `src/core` (seven further
+hits are pure comment), of which `ж.cs`'s operator terminal is one. An implementer following the
+phrase could land on any of them. **That makes the remedy stronger, not weaker: scope by PROVENANCE —
+arm 4, the classification already in hand — and never by LOCATION, which is under-determined here.**
+
+<!-- C2's read of 6e082a09c5 at mailbox ebd9553dc: the four arms and the shared terminal derived from
+     ж.cs before reading C1's description, so a second derivation rather than a check; the forward
+     trace through unsafe.cs FromPinnedBox into the ж -> uintptr operator's RegisterPinned call; the
+     eleven-vs-seven split measured over src/core with a positive control (the terminal read by eye)
+     and a negative control (a fabricated type name, 0). Every line number in the amendment above was
+     confirmed correct AT THE TREE IT NAMES, including the deliberate two-tree numbering; proc.cs was
+     the one path that resolves nowhere, and is corrected here rather than by rewriting the block
+     above, which is append-only. Ruled additive by COORD at 791bd267d. -->
+
 ---
 
 ## 5. Rejected alternatives, on the record

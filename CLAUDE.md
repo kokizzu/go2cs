@@ -45,7 +45,7 @@ still the *minimal* solution, just the one that generalizes.
 | **Standard library** | `src/core/<pkg>` | C# (converted) | The Go stdlib, auto-converted by `go2cs -stdlib`. Hand-owned: `unsafe`, `testing`. |
 | **Behavioral tests** | `src/tests/Behavioral/` | Go + C# | Per-feature Go↔C# equivalence. Counts drift within days — **measure, don't quote**. |
 | **Performance tests** | `src/tests/Performance/` | Go + C# | Go vs transpiled C# (JIT and Native AOT). |
-| **Examples** | `src/Examples/` | Go + C# | Hand-converted Tour-of-Go / go101 samples. |
+| **Examples** | `src/archived/Examples/` | Go + C# | Hand-converted Tour-of-Go / go101 samples. **Archived** — kept for reference, not built. |
 
 **Two solutions, one tree**: `src/go2cs.slnx` is the converter-dev workspace; `src/go2cs-stdlib.slnx`
 is every `core/` package. They overlap deliberately. ⚠ **Nothing routinely builds `go2cs.slnx` end to

@@ -87,6 +87,7 @@ if hasattr(sys.stdout, "reconfigure"):
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "DATA-sweep-row-walltimes.md"
 ROSTER = HERE.parent.parent / "ValidatedTestPackages.md"
+POPULATION = HERE / "recon-lists" / "population.txt"
 SWEEP = HERE.parent.parent.parent / "src" / "run-validated-sweep.ps1"
 
 # The block this map is parameterized by, as a (OS, corpus SHA, machine) key rather than "the first
@@ -267,6 +268,7 @@ def parse_timings_tsv(path):
 
     ix = {c: header.index(c) for c in need}
     seen, dropped, dups = {}, [], []
+    word_of = {}   # name -> the word of the reading whose cost was KEPT (the dup rule below)
 
     for lineno, line in enumerate(lines[1:], start=2):
         cells = line.split("\t")
@@ -274,9 +276,31 @@ def parse_timings_tsv(path):
         if len(cells) <= max(ix.values()):
             die(f"{path.name}:{lineno} has {len(cells)} cell(s), too few for the named columns: {line!r}")
 
+        # ⚠ `word` IS A CONTRACT CHECK, AND ITS VALUE IS DELIBERATELY NOT A FILTER.
+        # Required in the header (see `need` above) so a file that is not a recon TSV cannot be read
+        # as one -- but the basis models the roster AS IT IS AT THE LEG'S TIP, so a row is costed at
+        # what the leg measured whatever its word: a BUILD or CONVERT row at its ABORT cost, which is
+        # what a repeat run of that row would cost today. The plan is a schedule of the NEXT
+        # MEASUREMENT, not a forecast of a fixed converter; when a routed converter seat lands, the
+        # driver re-measures the rows whose word changes, the basis is amended and the plan is
+        # regenerated, which is what this script is for. (COORD e607296d5, ruling the question raised
+        # from R's first real TSV at ff7a229f. That file AS PUSHED prints 14 rows / 676 s / 14.8%
+        # here; 8 of those rows -- 208 s -- were ONE contamination COORD ruled re-run (6209554e),
+        # leaving the six GENUINE abort-costed rows at 468 s, 10.3%. Both numbers are correct about
+        # different files, which is exactly why this line prints what it measured and not a recalled
+        # figure.)
+        # The abort-costed rows are NAMED in the output below rather than filtered here -- an
+        # under-book that is stated is a bound; one that is silent is a surprise.
         name, word = cells[ix["row"]].strip(), cells[ix["word"]].strip()
         secs_cell, verdict_cell = cells[ix["sweep_s"]].strip(), cells[ix["verdicts"]].strip()
 
+        # ⚠ WHERE THE FILTER LIVES, so the person who meets this refusal is not left inferring it.
+        # This does NOT skip the row -- it refuses the whole file, deliberately: a basis with holes
+        # schedules a plan over work it never measured. The per-lane recon TSVs are READINGS and carry
+        # `UNMEASURED` for TIMEOUT and NOVERDICT rows; the BANKED basis excludes those rows at the
+        # CONCATENATION (the roster seat, ruled 96763d677), which is the only place that filter exists.
+        # The one exception is the hand-stopped set below, banked with `sweep_s := wall_s` so the drop
+        # at the next block can fire -- its number parses and is never scheduled on.
         if not re.fullmatch(r"\d+", secs_cell):
             die(f"{path.name}:{lineno} sweep_s is {secs_cell!r}, not an integer -- a row with no measured "
                 f"cost is UNSCHEDULED, never nominal: {line!r}")
@@ -298,9 +322,11 @@ def parse_timings_tsv(path):
             dups.append((name, seen[name][1], secs))
             if secs > seen[name][1]:
                 seen[name] = (count, secs)
+                word_of[name] = word
             continue
 
         seen[name] = (count, secs)
+        word_of[name] = word
 
     # ⚠ THE DROP MUST STILL HAVE FIRED. A drop list that quietly matches nothing is the tolerance-become-
     # dead-code shape: the day the banked TSV renames or removes that row, this script would schedule on
@@ -328,6 +354,18 @@ def parse_timings_tsv(path):
     print(f"mean row:         {total/len(rows):.1f} s")
     q = lambda f: times[min(len(times)-1, int(f*len(times)))]
     print(f"p75: {q(0.75)} s   p90: {q(0.90)} s   p95: {q(0.95)} s")
+    # ⚠ THE UNDER-BOOK, NAMED. CONVERT and BUILD are the two words whose row stopped BEFORE its
+    # test run, so their `sweep_s` is the cost of a failed attempt rather than of the row's work.
+    # Ruled costed (COORD e607296d5) because the basis models the roster as it is -- so the duty here
+    # is to SAY SO, in the plan's own output, where a reader of the makespan meets it. TIMEOUT and
+    # NOVERDICT cannot appear: they carry UNMEASURED and never reach this far. DIVERGED is NOT an
+    # abort -- that row RAN. Printed UNCONDITIONALLY: a zero here is a reading, and a line that
+    # vanishes when the count is zero cannot be told from a line nobody wrote.
+    _abort = sorted((n, t) for n, _, t in rows if word_of.get(n) in ("CONVERT", "BUILD"))
+    _asum  = sum(t for _, t in _abort)
+    print(f"ABORT-COSTED (CONVERT/BUILD: stopped before the test run, costed at the failed attempt): "
+          f"{len(_abort)} row(s), {_asum} s, {100 * _asum / total:.1f}% of the basis"
+          + (": " + ", ".join(f"{n} ({t} s)" for n, t in _abort) if _abort else ""))
     print(f"DROPPED as hand-stopped, NOT scheduled and NO cost claimed: "
           + ", ".join(f"{n} ({t} s, a lower bound)" for n, t in sorted(dropped)))
 
@@ -374,16 +412,87 @@ if roster_dups:
 
 costed = {n for n, _, _ in rows}
 UNSCHEDULED = sorted(n for n in roster_names if n not in costed)
-orphans = sorted(n for n in costed if n not in roster_names)
 
-print(f"\npopulation:       {len(roster_names)} banked roster row(s)")
-print(f"  costed          {len(costed)}  ({100*len(costed)/len(roster_names):.1f}%)")
+# ------------------------------------------------------------------- the THIRD BUCKET: CANDIDATES
+# RULED at COORD 465038cae, on C2's classification of the fifteen at 17c114b6e. The leg's row list
+# is the roster PLUS CANDIDATES *by design*: the population on the corpus axis is the banked rows
+# plus the relocation targets, the hop's successors and the unbanked packages, and the recon leg is
+# the authority on membership. So a costed row that is not a banked roster row is NOT an orphan and
+# NOT an error -- it is a CANDIDATE. It is SCHEDULED like any other row (the driver measures it),
+# and it becomes a roster ADDITION at the roster seat's re-derivation, on a terminal pass.
+#
+# Measured at this hop over the two real lanes against master's roster (C2 17c114b6e): fifteen --
+# six relocation TARGETS that absorb at the roster seat, six NEW AT 1.24 by a measured absence at
+# the 1.23.12 pin, and three that existed at BOTH pins and were simply never banked.
+CANDIDATES = sorted(n for n in costed if n not in roster_names)
+_cost_of = {n: t for n, _, t in rows}
+_axis = len(roster_names) + len(CANDIDATES)
+
+print(f"\npopulation:       {len(roster_names)} banked + {len(CANDIDATES)} candidate(s) = {_axis} "
+      f"row(s) on the corpus axis")
+print(f"  costed          {len(costed)}  ({100*len(costed)/_axis:.1f}%)")
 print(f"  UNSCHEDULED     {len(UNSCHEDULED)}  -- no measured t_r, NO COST CLAIMED for any of them")
-if orphans:
-    print(f"  !! costed rows not on the roster (retired/renamed): {len(orphans)}: {', '.join(orphans)}")
-if len(costed) + len(UNSCHEDULED) != len(roster_names):
+print(f"  CANDIDATES      {len(CANDIDATES)}  -- costed and scheduled, not yet banked; a roster "
+      f"ADDITION only on a terminal pass" + (":" if CANDIDATES else ""))
+for _n in CANDIDATES:
+    print(f"      {_n} ({_cost_of.get(_n, 0)} s)")
+
+# THIS IS AN INVARIANT, NOT A GUARD, AND IT SAYS SO RATHER THAN BEING SHIPPED AS ONE.
+# CANDIDATES is derived as `costed - roster_names`, so `costed + UNSCHEDULED` and
+# `banked + CANDIDATES` have the same cardinality BY CONSTRUCTION and this cannot fail. It is kept
+# because the ruling states the identity and a reader should be able to watch it hold; it is
+# LABELLED for the reason C1 gave at e1cbebff9 after building exactly this shape by accident -- a
+# check that cannot fire prints reassurance, which is worse than no check at all.
+#
+# Making it LIVE needs a DECLARED candidate set, so that a costed row which is neither banked nor
+# declared can exist and refuse. That is a ruling and not this commit's to invent. What the OLD
+# refusal was really detecting -- that the roster has not absorbed the hop's relocations -- is not
+# detected here any more, and that loss is stated in the announce rather than left to be found.
+if len(costed) + len(UNSCHEDULED) != len(roster_names) + len(CANDIDATES):
     die(f"population arithmetic does not close: {len(costed)} costed + {len(UNSCHEDULED)} "
-        f"unscheduled != {len(roster_names)} roster rows")
+        f"unscheduled != {len(roster_names)} banked + {len(CANDIDATES)} candidate(s)")
+
+# ------------------------------------------------------- the DECLARED CANDIDATE SET, and the LIVE
+# refusal the invariant above cannot supply. RULED at COORD 1fbc20190.
+#
+# The leg's POPULATION file is the corpus-axis universe the recon leg was run over -- an INDEPENDENT
+# list, so membership is NOT implied by being costed, which is exactly what the invariant above
+# lacks. A costed row that is neither banked nor in the population CAN exist, and it is a
+# transcription error: the per-worker lists are hand-typed, and this fleet counted three transcribed
+# numbers wrong in one night. It REFUSES, by name.
+#
+# ⚠ TWO FILES, TWO CONVENTIONS, ONE CHECK READING BOTH (C1 a9836fec1e, re-measured here):
+# population.txt carries 27 '#' COMMENT lines among its 228 data rows -- 255 lines in all -- while
+# relocations.tsv carries NONE by design, since its reader treats every post-header line as an arc.
+# A consumer that counts LINES here is wrong by 27.
+#
+# ⚠ ABSENT IS A REFUSAL, not a skip. The file lands with the roster seat and is not on master yet
+# (C1 a9836fec1e), so a ninth that landed first would read nothing -- and a declared-candidate check
+# whose declared set is absent has not measured anything. The instrument cannot know, so it does not
+# pass.
+if not POPULATION.exists():
+    die(f"no declared candidate set at {POPULATION.name} -- it is the corpus-axis universe the leg "
+        f"was run over, and it is what makes the candidate bucket a reading rather than a "
+        f"restatement of the costed set. It lands with the roster seat; refusing rather than "
+        f"admitting every costed row as a candidate by construction.")
+with open(POPULATION, encoding="utf-8", newline="") as _fh:
+    _pop_text = _fh.read()
+if _pop_text.count("\r"):
+    die(f"{POPULATION.name} carries {_pop_text.count(chr(13))} CR byte(s) -- LF only, for the same "
+        f"reason the basis and the relocation map are: a CR rides into every name it touches.")
+POPULATION_ROWS = [_l.strip() for _l in _pop_text.split("\n")
+                   if _l.strip() and not _l.lstrip().startswith("#")]
+_pop_dups = sorted({_n for _n in POPULATION_ROWS if POPULATION_ROWS.count(_n) > 1})
+if _pop_dups:
+    die(f"{POPULATION.name} repeats {len(_pop_dups)} row name(s): {', '.join(_pop_dups)} -- the "
+        f"population is a SET and a repeat double-books whatever reads it.")
+_undeclared = sorted(n for n in costed if n not in roster_names and n not in POPULATION_ROWS)
+if _undeclared:
+    die(f"{len(_undeclared)} costed row(s) are NEITHER banked NOR in {POPULATION.name}: "
+        f"{', '.join(_undeclared)}. A costed row outside the declared population is a row no lane "
+        f"was asked to run -- a hand-typed list's transcription error, not a candidate.")
+print(f"  declared        {len(POPULATION_ROWS)} population row(s) read from {POPULATION.name}; "
+      f"every candidate is declared")
 
 # ---------------------------------------------------------------- the reserved set
 # TWO ideas, and only one of them is this script's to decide:
@@ -438,10 +547,118 @@ if len(_floors) != len(_keys):
         f"A nested or non-scalar entry is silently dropped by the scalar pattern -- see the BOARD "
         f"entry 2026-09-13 and DESIGN-peros-roster.md section 7.")
 
+# ---- the relocation arcs, DERIVED from the one data file, never carried here ----------------
+# A hop RE-PATHS rows, and a floor keyed by a 1.23 name reaches nothing at 1.24. `$longTimeouts`
+# names `crypto/internal/mlkem768`, which does not exist at the version tip -- so without this the
+# row's successors run at the sweep's DEFAULT deadline and are killed short, and step 2's intersect
+# drops the pin (reported, but a report is not a floor).
+#
+# ⚠ THE MAP IS READ, NOT COPIED, and it is read from ONE file. Measured from the landed
+# relocations.tsv (C1 957c71d0e): 13 arcs / 10 sources / 11 targets -- `crypto/internal/fips140test`
+# receives THREE -- so a source→target DICT silently drops arcs: THREE of the ten sources SPLIT
+# (crypto/internal/edwards25519, crypto/internal/mlkem768, crypto/internal/nistec, two arcs each).
+# One line per arc is the only shape that cannot lose one.
+#
+# ⚠ CORRECTED 2026-09-20: this comment said 14 arcs and the refusal below said FOUR split, both
+# carried from C1's first count (mailbox 350a301a) which C1 measured and WITHDREW at 033a07d9. The
+# guard's THRESHOLD was never wrong -- ten sources, so fewer than ten arcs cannot name each once --
+# but the reason a reader is handed at the moment it fires described a shape that is not the right
+# one. C1 found it by gating its landing through this reader. A number stated where it is never
+# computed is the one that drifts: this same script prints the live 13/10/11 one line later. i9's wrapper reads this same file by this same contract, so the two
+# derivations cannot disagree about the map.
+#
+# Per e0d5121e2 section 1 EVERY arm of a split INHERITS the floor: a budget copied is an
+# over-estimate, which is the safe direction; a budget split is a guess.
+RELOCATIONS_TSV = HERE / "relocations.tsv"
+if not RELOCATIONS_TSV.exists():
+    die(f"no relocation map at {RELOCATIONS_TSV.name} -- the reserved set's floors are keyed by "
+        f"1.23 names and this file is how they reach their 1.24 successors. It lands with the "
+        f"roster seat; refusing rather than scheduling a hop's successors at the default deadline.")
+# Read with the file's own idiom -- open(..., newline="") -- so the CR check below sees the
+# bytes as they are. Path.read_text() grew a newline= keyword only in 3.13 and would either
+# TypeError here or, worse, translate the newlines out from under the check.
+with open(RELOCATIONS_TSV, encoding="utf-8", newline="") as _fh:
+    _reloc_text = _fh.read()
+if _reloc_text.count("\r"):
+    die(f"{RELOCATIONS_TSV.name} carries {_reloc_text.count(chr(13))} CR byte(s) -- LF only, for the "
+        f"same reason the timings basis is: a CR rides into every name it touches.")
+_reloc_lines = [ln for ln in _reloc_text.split("\n") if ln.strip()]
+if not _reloc_lines or _reloc_lines[0].split("\t") != ["source", "target"]:
+    die(f"{RELOCATIONS_TSV.name} must open with the header 'source\\ttarget' read BY NAME; saw "
+        f"{_reloc_lines[0] if _reloc_lines else '(empty file)'!r}")
+RELOCATIONS = []
+for _ln in _reloc_lines[1:]:
+    _cells = _ln.split("\t")
+    if len(_cells) != 2 or not _cells[0].strip() or not _cells[1].strip():
+        die(f"{RELOCATIONS_TSV.name}: every line is exactly source<TAB>target, one per ARC; saw {_ln!r}")
+    RELOCATIONS.append((_cells[0].strip(), _cells[1].strip()))
+# The thin guard, with its reason beside it exactly as the floors' own has. Ten rows relocate, so a
+# map with fewer than ten ARCS cannot even name each source once -- and a short read here is silent:
+# it would simply inherit fewer floors, which reads identical to a hop that relocated fewer rows.
+if len(RELOCATIONS) < 10:
+    die(f"{RELOCATIONS_TSV.name} yielded {len(RELOCATIONS)} arc(s); ten rows relocate at this hop and "
+        f"three of them SPLIT, so fewer than ten arcs cannot name each source once. Refusing rather "
+        f"than inheriting a partial map -- a short read is indistinguishable from a smaller hop.")
+
+# ------------------------------------------------- the ROSTER-ABSORPTION REPORT (the NINTH)
+# RULED at COORD 1fbc20190, shaped by C1's arithmetic at a7d04a9660 and efecc4d298: REPORT ONLY,
+# never a refusal -- refusing here would block the very acceptance the eighth was cut to produce.
+#
+# WHAT IT WATCHES: a relocation SOURCE still present as a BANKED roster row while its TARGET is
+# already costed. That is "the roster has not absorbed the hop", which the OLD population refusal
+# was detecting by accident and which nothing has detected since it was correctly replaced.
+#
+# ⚠ THE MAP IS MANY-TO-MANY, so the unit goes ON THE LINE rather than being left to a reader: 13
+# arcs over 10 distinct sources and 11 distinct targets; three sources SPLIT into two targets each,
+# and `crypto/internal/fips140test` is reached from THREE. A line per ARC therefore prints one
+# target three times, which reads like a bug unless the line says what it is counting.
+#
+# ⚠⚠ ITS QUIET CONDITION IS THE SEAT'S FULL EDIT, NOT HALF OF IT. The roster seat's contract (COORD
+# efecc4d298) is that it RETIRES every relocation source as a banked row AND adds every target. A
+# seat that added the targets and left the sources banked would keep this firing forever on a state
+# that is correct -- so the red for "goes quiet" simulates both halves, never the additions alone.
+#
+# Printed UNCONDITIONALLY: a zero here is a reading, and a line that vanishes when the count is zero
+# cannot be told from a line nobody wrote.
+_unabsorbed = [(s, t) for s, t in RELOCATIONS if s in roster_names and t in costed]
+if _unabsorbed:
+    _u_src = sorted({s for s, _ in _unabsorbed})
+    _u_tgt = sorted({t for _, t in _unabsorbed})
+    print(f"\n!! ROSTER HAS NOT ABSORBED THE HOP: {len(_unabsorbed)} arc(s) over {len(_u_tgt)} "
+          f"target(s) from {len(_u_src)} source(s) -- a relocation SOURCE is still a banked roster "
+          f"row while its TARGET is costed. A REPORT, never a refusal. It goes quiet when the "
+          f"roster seat RETIRES the sources and ADDS the targets, not on the additions alone.")
+    for _s, _t in sorted(_unabsorbed):
+        print(f"      {_s}  ->  {_t}")
+else:
+    print(f"\nroster absorption: no relocation source is still banked while its target is costed "
+          f"({len(RELOCATIONS)} arc(s) checked, {len({s for s, _ in RELOCATIONS})} source(s))")
+
 BIG_ROWS = ["go/doc/comment", "go/types"]
-RESERVED_DECLARED = _floors + [b for b in BIG_ROWS if b not in _floors]
+# A successor inherits its source's floor. Order is preserved and duplicates are skipped, so a target
+# reached from two sources (fips140test, from three) is declared once.
+_inherited = []
+for _src, _tgt in RELOCATIONS:
+    if _src in _floors and _tgt not in _floors and _tgt not in _inherited:
+        _inherited.append(_tgt)
+# ⚠ THIS SET IS KEYED TO THE BASIS, NOT TO THE ROWS A WORKER CAN RUN, and the two differ by
+# exactly the relocated predecessors. A floor row that relocated is KEPT here -- the basis is taken
+# at the old release and carries its cost under the old name, which is the cost the successors
+# inherit above -- while the leg's run-lists carry the SUCCESSORS instead, because the predecessor
+# does not exist at the hop tip and cannot be converted.
+#
+# At this hop that is 15 declared here against 14 reserved rows on the leg's i9 list, differing by
+# `crypto/internal/mlkem768` and nothing else (measured both directions against
+# claude/c1-h10-recon-lists 89c1ebc2cc: 1 name here that is not there, 0 there that are not here).
+# RECONCILING THE TWO BY ADDING A ROW IS THE ERROR THIS PARAGRAPH EXISTS TO PREVENT -- the added
+# row is a package the hop deleted, and it fails at CONVERT for a reason that looks like a defect.
+RESERVED_DECLARED = _floors + _inherited + [b for b in BIG_ROWS if b not in _floors and b not in _inherited]
 print(f"\nreserved set derived at generation time: {len(_floors)} floor row(s) "
-      f"({', '.join(_floors)}) + {len(BIG_ROWS)} big row(s)")
+      f"({', '.join(_floors)}) + {len(_inherited)} inherited by successors "
+      f"({', '.join(_inherited) if _inherited else 'none'}) + {len(BIG_ROWS)} big row(s)")
+print(f"  relocation map: {len(RELOCATIONS)} arc(s) over "
+      f"{len({s for s, _ in RELOCATIONS})} source(s) -> {len({t for _, t in RELOCATIONS})} target(s), "
+      f"from {RELOCATIONS_TSV.name}")
 
 # step 2 of the construction, AS WRITTEN: R := reserved set INTERSECT rows. The fallout is reported
 # rather than asserted away -- a pinned row with no cost is not scheduled, and saying so is the whole
@@ -449,9 +666,24 @@ print(f"\nreserved set derived at generation time: {len(_floors)} floor row(s) "
 byname = {n: (v, t) for n, v, t in rows}
 RESERVED = [r for r in RESERVED_DECLARED if r in byname]
 reserved_unscheduled = [r for r in RESERVED_DECLARED if r not in byname]
-if reserved_unscheduled:
-    print(f"  !! {len(reserved_unscheduled)} declared reserved row(s) have NO measured cost and are "
-          f"UNSCHEDULED, not pinned: {', '.join(reserved_unscheduled)}")
+# ⚠ TWO CAUSES REACH THIS LIST, and one sentence for both names the wrong one for half of them.
+# A declared reserved row is absent from the basis either because it WAS NOT MEASURED, or because
+# ITS NAME DID NOT EXIST TO MEASURE: the basis is taken at the OLD release, so a successor this hop
+# inherits a floor FOR is necessarily absent from it -- not a gap in the measurement, a name that
+# post-dates it. The two want opposite reactions. The first is a hole the recon leg fills; the
+# second is already right, because the floor rides on the predecessor row, which IS costed and IS
+# pinned. Printed apart so the reader reacts to the cause they actually have.
+_reloc_targets = {t for _, t in RELOCATIONS}
+_unnamed = [r for r in reserved_unscheduled if r in _reloc_targets]
+_uncosted = [r for r in reserved_unscheduled if r not in _reloc_targets]
+if _unnamed:
+    print(f"  !! {len(_unnamed)} declared reserved row(s) DID NOT EXIST at the release this basis "
+          f"was measured on -- each inherited its floor from a predecessor that IS costed and IS "
+          f"pinned, so the pin is carried under the old name (see {RELOCATIONS_TSV.name}): "
+          f"{', '.join(_unnamed)}")
+if _uncosted:
+    print(f"  !! {len(_uncosted)} declared reserved row(s) have NO measured cost and are "
+          f"UNSCHEDULED, not pinned: {', '.join(_uncosted)}")
     print(f"    (the reserved leg's total below therefore EXCLUDES them -- it is a lower bound on "
           f"the pin, not the pin)")
 
@@ -575,9 +807,12 @@ for n in UNSCHEDULED:
         line = "    "
     line += it + ", "
 print(line.rstrip(", "))
-if reserved_unscheduled:
+# The MARKS above are drawn from UNSCHEDULED -- rows the roster carries with no cost -- so a
+# successor whose name post-dates the basis is not in that list and never receives one. Counting
+# the whole set here printed a legend of 4 beside 2 marks. `_uncosted` is the marked population.
+if _uncosted:
     print(f"  ! = a DECLARED RESERVED row that cannot be pinned for want of a cost "
-          f"({len(reserved_unscheduled)} of them)")
+          f"({len(_uncosted)} of them)")
 
 # ---------------------------------------------------------------- sensitivity
 print(f"\n{'='*100}\nSENSITIVITY (W={max(FLEETS)}): makespan vs. speed-factor perturbations")
@@ -609,7 +844,9 @@ for label, f in scenarios.items():
 
 print("\nlower bounds:")
 print(f"  i9 reserved-set floor (serial on i9): {reserved_total} s = {fmt_hm(reserved_total)}"
-      + (f"  !! EXCLUDES {len(reserved_unscheduled)} uncosted pin(s)" if reserved_unscheduled else ""))
+      # Only the uncosted set is EXCLUDED from this total. An inherited successor is not
+      # subtracted from it: its predecessor's cost is IN it, under the old name.
+      + (f"  !! EXCLUDES {len(_uncosted)} uncosted pin(s)" if _uncosted else ""))
 for W in sorted(FLEETS):
     cap = sum(MACHINES[m] for m in FLEETS[W])
     ideal = total / cap

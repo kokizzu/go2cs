@@ -1415,6 +1415,40 @@ go1.24.13 … || exit 3`, run from a no-module directory.
      db6d9462f §3 and §3.1. The purge guard: accuracy verifier (a mis-substituted SRC deletes every build dir under it). -->
 
 
+#### Amendment 2026-09-16 — the per-flavour gate as executed at the 1.23 → 1.24 hop: arm 4 is inert where every project builds; the build root's spelling; arms gate on their command's rc
+
+- **Arm 4 is inert on this corpus.** Every csproj under `src/core` builds regardless of `-p:GoTargetOS`, so
+  `$LOG.unbuilt` is EMPTY on every flavour and "every unbuilt project is platform-exclusive to another flavour"
+  is MET over zero items — vacuous, never evidence. Measured at the 1.24.13 hop's compile-parity tree on all
+  three flavours: unbuilt 0, ASM 343 of 343 (windows read on two boxes, linux and darwin on one). The arms that
+  carry a per-flavour reading are: exit 0; CS occurrences 0; MSB/NETSDK occurrences 0; unique sites 0; and
+  ASM = projects. Platform exclusivity is a property of the EMISSION's per-GOOS file sets, read at H8's census,
+  not of projects.
+- **Minus golib.** `golib` is absent from every `go list std` set and must nonetheless be BUILT; any arm keyed on
+  "absent from `go list std`" passes it as legitimately unbuilt. Where arm 4's derivation is still used (e.g. to
+  size an expected unbuilt set), subtract golib first — and expect the arithmetic NOT to predict unbuiltness on a
+  corpus where every project builds: the linux prediction of 338 missed against a measured 343 for exactly this
+  reason.
+- **Spell `<build root>` as a drive-letter path (`C:/…`), never `/c/…`.** The script exports `MSYS_NO_PATHCONV=1`
+  for dotnet's `-p:` arguments, so a POSIX spelling reaches native `dotnet` and `git` UNCONVERTED: `dotnet build`
+  fails on a non-existent project path, and `git -C` dies with "cannot change to … No such file or directory".
+  One launch was lost this way, and three added git arms printed PASS from `wc`/`grep` over a failed command.
+- **Every arm gates on its command's own rc**, never on the shape of its output; the HEAD arm asserts a sha-shaped
+  value, not merely non-empty. An arm that cannot distinguish "clean" from "the command died" is not an arm — and
+  a guard's DESCRIPTION is not the guard: state the mechanism actually implemented, and run it on real input
+  before quoting it.
+- **ASM units.** The script's ASM counts own assemblies over core csproj excluding `*.tests.csproj` (343 at this
+  hop = the census's core population). A "distinct produced assemblies" count from the build log reads one higher
+  (344: the solution's one non-core member). Name both units; never reconcile a difference of one by feel.
+<!-- Executed readings, 1.23 → 1.24 hop, 2026-09-16: all three flavours built with the 2026-09-13 script above from a
+     per-run copy, SDK 10.0.400, at the tree 46307b4704. i9's linux reading 4df14c406: arm 4 inert (unbuilt 0, so the
+     platform-exclusive arm is MET over zero items), and the three added git arms blind — they scored `wc`/`grep` over a
+     command that had already failed. i9's darwin reading f464d9e58: every predicted arm met, and the "every arm gates on
+     its command's rc" comment owned as unimplemented at the time it was written, then implemented. i9's linux prediction
+     2c6aa2259: the golib arm, 338 predicted against 343 measured. The i7's windows second read at COORD fe23ab855 is the
+     second of the two windows boxes. COORD's rung-7 close: a065b1bd9. -->
+
+
 ### H7a — The master fold **GATE**
 
 **The ladder has no rung that folds master into the release branch, and the run rungs need one.** A hop
@@ -1444,12 +1478,43 @@ announced refs.
 | the range by path class | the master-only commits classified (docs and instruments / converter guards / converter production / corpus / repo config), merges counted separately because a merge carries its children's paths, and **no residue** — a commit matching no class is named, not dropped |
 | what the branch LACKS | every hand-own and every emission-or-CLI change in the range, **named**, not counted. These are the fold's reason; the docs and guards are why the commit count is large and are not why the fold exists |
 | the carry-forward set | marked files present on master and absent at the tip, each classified **relocated / gone / gap** — a relocation is verified by its counterpart's PATH, never by basename |
-| the conflict set | `merge-tree --write-tree` at those two SHAs, by path, with the predicted tree SHA stamped |
-| the prediction | what the merged tree must equal, and the falsifiers |
+| the conflict set | `merge-tree --write-tree` at those two SHAs **with the ARGUMENT ORDER named**, by path, with the fingerprint stamped — the stamp differs by order while the conflicting paths do not, so the act is scored in the order the prediction stamped in |
+| the prediction | what the merged tree must equal **and in which sense** (see *Scored on*), and the falsifiers |
 
 **Scored on:**
 
-- the merged tree **byte-identical** to the stamped dry-run tree;
+- **the dry-run stamp, scored as what it is.** `merge-tree --write-tree` fingerprints the **inputs and
+  the merge machinery**, not the commit:
+  - a **conflict-free** fold — the merged tree is **byte-identical** to the stamp;
+  - a **conflicted** fold — the stamp **cannot be equalled**: it carries markers for every conflicted
+    path, and the landed tree differs from it by exactly the resolved paths. Score instead that the
+    resolved paths are **exactly** the predicted set and that each resolution matches its ruled class;
+    if a stampable figure is wanted, predict the **post-resolution** tree before the commit and score
+    against that. ⚠ Scoring a conflicted fold against the dry-run SHA asks for a tree the act cannot
+    produce, and a reader who takes it literally reads a **correct** fold as a miss;
+
+<!-- AMENDED 2026-09-16 (COORD dff545e848, from the instance). This bullet read "the merged tree
+     byte-identical to the stamped dry-run tree" with no conflict-free/conflicted split, and the sizing
+     row above named no argument order. Both were found by lanes EXECUTING the rung, not by reading it.
+       (1) THE OBJECT. At the go1.23.12 -> go1.24.13 fold the stamp was 393651af2d and the landed tree
+           37dbd311bd -- differing by exactly the nine resolved paths, which is what an UNRESOLVED
+           merge-tree fingerprint must do. i9 had to state that in advance (141464d05d) so a correct act
+           would not read as a miss, and said so again at the landing (2834187aa): "the tree is NOT the
+           stamped 393651af2d, exactly as the prediction said it could not be".
+           CORRECTED 2026-09-16 (C2 22e01bf17; COORD): the two SHAs above first cited the HELD first take -- its tree
+           dc02500f2e and its entry 550a276a8 ("COMMITTED LOCALLY AND GATED RED") -- an object no pushed ref reaches.
+           The landed fold is fc275f1ac3 (entry 2834187aa) with tree 37dbd311bd, and the nine-path property was
+           re-measured true of THAT tree (C2 1cfa9ee2a, 22e01bf17). The rule stood; only the SHAs were the superseded take's.
+       (2) THE ORDER. C2 measured the stamp order-dependent (81543d8cd): version tip first and master
+           second yields 393651af2d; master first yields d7958bb4da -- AT THE SAME NINE PATHS, compared
+           by diff and not by eye. Two lanes following this rung literally could stamp different SHAs
+           from identical inputs and read it as a disagreement about the fold. That failure mode is a
+           FALSE MISS on a correct act, which stops a good fold -- worse than a missing check. The act
+           was taken ours-first for this reason, with the orientation measured before the merge.
+     Both are the same class as the emitted-file bullet corrected above and as H6's outgoing-pin defect
+     before it: an UNDERSPECIFIED COMPARISON -- the step states an equals sign and does not fully
+     specify both sides. No SHA was rewritten by either: the fold was never pushed. -->
+
 - the conflict set exactly the predicted paths — **no path resolved that was not predicted**;
 - ⚠ **silent subtraction, per symbol and in BOTH directions.** A fold crosses every seat the hop has
   landed. Each landed marker is asserted **by name at its count**; a clean merge rc says "no conflict",
@@ -1466,8 +1531,28 @@ announced refs.
   artifacts; a hand merge of an artifact is a hand-written artifact;
 - **projitems** — the **union**, and the row count asserted afterwards with no duplicates;
 - **a modify/delete where the delete is the hop's own package retirement** — the **delete stands**;
-- **a code conflict whose two sides are a displacement and the body it displaces** — master's side, and
-  the displacement's registration lands **with** it.
+- **a code conflict whose two sides are a displacement and the body it displaces** — **if the file is
+  HAND-OWNED**, master's side, and the displacement's registration lands **with** it. **If the file is
+  EMITTED, it is RE-MINTED from the merged converter**, exactly as the regenerable metadata above is:
+  the merged tree carries the displacement's registration, so the re-mint emits the file *without* the
+  displaced body and *with* the hop's own calling convention. ⚠ **An emitted file is never resolved by
+  SIDE** — taking master's side reinstates master's **pre-hop emission of the whole file**, including
+  every call written against a signature the hop re-signed.
+
+<!-- AMENDED 2026-09-16 (COORD 1bc5eb919c, from the instance). At the go1.23.12 -> go1.24.13 fold this
+     bullet read "master's side" with no hand-owned/emitted split, and the fold gated RED on it:
+     src/core/runtime/mgc.cs is EMITTED and was in the conflict set, so master's side reinstated
+     master's pre-hop emission -- four `lockInit(ref work.…, lockRank…)` calls at mgc.cs(177-180)
+     against a signature the hop had re-signed to the box form `ж<mutex>`, giving CS1615 x4 in
+     runtime.csproj. The branch carried 113 box-form call sites and ZERO ref-form; master carried 110
+     ref-form, of which only these four entered, because only mgc.cs was conflicted (control: chan.cs,
+     not taken from master, reads ref-form 0 / box-form 1 -- so the four are a property of the
+     RESOLUTION, not of the merge). lockrank_off.cs was NOT conflicted, so the branch's DECLARATION
+     auto-merged in correctly, which is why the mismatch surfaced as a call-site error rather than a
+     redeclaration. The classes were also NOT DISJOINT: mgc.cs satisfied this bullet AND the
+     regenerable-artifact bullet, and the list stated no precedence -- the split above supplies it.
+     Measured and held unpushed by i9 (550a276a8); the rule is COORD's own, corrected by COORD at
+     1bc5eb919c; R carried it into this text. No SHA was rewritten: the fold was never pushed. -->
 
 **⚠ The closing check is the cheapest proof the fold did what it is for:** re-run H6's retired-hand-own
 step. After the fold the merge-base *is* master's tip, so that step reads clean **by construction** — and
@@ -1516,6 +1601,302 @@ reproduces the single-target build byte-for-byte.
      export *goRootCmd"), cut 7c1d8832f (main.go:133-145, :443-447); the wording is C2's accepted rules line (830fa8d26). Census semantics
      and -comments: .claude/rules/converter.md:96-102 and :115-118 at a02ac3df3; example line a02ac3df3:src/go2cs/main.go:302. No
      platform-manifest file tracked at a02ac3df3. -->
+
+#### Amendment 2026-09-19 (C2) — the comparand's provenance, the byte-identity arm, and the predicted deltas
+
+The amendment above stops at *"neither its comparand nor the default-flavour byte-identity arm has a
+procedure at this hop"*. This closes both. The instrument is [`src/h8-comparand.sh`](../src/h8-comparand.sh)
+(`selftest`: 20 arms, every one **made to fail and restored**); it is a reader of manifests and package
+sets, converts nothing, and writes into no corpus.
+
+##### (a) The 1.23.12 outgoing manifest is **PRODUCED**, not recovered
+
+Four candidates were measured before one was chosen. Three are refused, and two of them are refused
+for reasons that would not have shown up as an error:
+
+| candidate | verdict |
+|:--|:--|
+| a committed 1.23.12 platform manifest | **does not exist** — no `platform-manifest` file is tracked on any ref, and none ever has been |
+| the preserved **half-A** staging roots (`c883a2dc7` §3) | ⚠ **WRONG RELEASE.** Half A's own recipe pins `GOROOT` to the go1.24.13 SDK and notes `version.props` already reads 1.24.13 — half A is the **incoming** side. Scored against G's 1.24.13 manifest it compares the release with itself: **an arm that cannot fail**, reporting a perfect zero delta |
+| the preserved **half-B** staging roots (`a5534b5de` §2) | right release (go1.23.12, three targets) but **wrong artifact kind**: half B ran `-platform-stage`, the emission, not `-platform-census`, and its manifests cover **seeded** staging roots — see the seed tell below |
+| the **H0** baseline | **does not contain one.** H0 captures the `.cs.auto` baseline, the package census, the roster snapshot and the disclosure manifests; the platform manifest is not among them |
+
+⚠ **A seeded-root manifest is not a census.** A seeded staging root's path set is *(seed ∪ emitted)*
+and all three targets share one seed, so such a manifest carries **no emitted-vs-seeded
+discriminator** — which is precisely why the converter's own census answers that question with a
+sentinel MTIME instead of content. Classify three seeded-root manifests and the `partial` and
+`exclusive` counts come from the **seed's** path set rather than from any emission, while looking
+exactly like class counts. The two preserved halves show the shape directly: half B's roots hold
+3990 / 3995 / 3993 `.cs` against a 3896-file seed, and half A's hold 3898 on all three — the
+difference is how far each seed already sits from the release being emitted, not a platform axis.
+
+**The tell, and it is cheap:** in a true per-target emission census a `*_windows.*` artifact **cannot**
+be emitted by the linux or darwin target. `h8-comparand.sh classify` refuses a triple in which a
+platform-suffixed artifact appears in a foreign target's manifest, rather than returning a number
+that reads like a census. `--seeded-content-only` accepts such a triple for the one question it *can*
+answer — which shared paths differ in content across targets — and labels its own output as not
+emission classes.
+
+**Therefore the outgoing manifest is produced by running the same instrument under the outgoing pin**,
+one axis from the 1.24.13 census (`GOROOT` + `version.props`), same binary, same flags, same seed,
+into a directory never reused:
+
+```bash
+'<stage>/bin/go2cs.exe' -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 \
+  -platform-census '<stage>/census-1.23.12' -go2cspath '<tree-1.23.12>/src' \
+  > "<stage>/logs/census-1.23.12-$(date +%Y%m%d-%H%M%S).log" 2>&1
+```
+
+⚠ `version.props` must be the **outgoing** release's, verbatim: with the incoming 1.24.13 pin the
+converter **refuses, exit 1, by design** (measured, `a5534b5de` §2). That refusal is the arm proving
+the outgoing leg really ran against the outgoing tree, so it is a feature of this step, not an
+obstacle to route around.
+
+Half B is **not** discarded — it is the corroborator. Its three per-target manifests answer the
+content axis under `classify --seeded-content-only`, and a variant count from the produced census
+that disagrees with half B's content partition over the shared path set is a finding in one of the
+two, named before either is believed.
+
+##### (b) The default-flavour byte-identity arm
+
+The gate's wording is *"the default-flavor build reproduces the single-target build byte-for-byte"*.
+The two emissions, spelled:
+
+- **E1, the single-target build** — `-stdlib -comments -platforms <host>/amd64` into a root seeded
+  identically to E2's stage. Layout L3 is honoured by a single-target run (`platformLayout.go`, rule 1:
+  an existing `<goos>/<name>.cs` is where this target's `<name>.cs` belongs), so E1 reproduces the
+  layout rather than laying a flat duplicate beside it — which is why **no path normalisation is
+  needed** and why introducing one would be the arm's most likely silent failure.
+- **E2, the default flavour of the three-target corpus** — the same merged L3 corpus H5 produces,
+  restricted to the view a build for `<host>` actually compiles: each package's **flat** files plus
+  that package's `<host>/` folder, and nothing from a foreign GOOS folder.
+
+**Compared by:** a per-file `sha256` manifest of each view — `"<sha256>␠␠<relpath>"`, `LC_ALL=C`
+sorted — and the **tree hash** is `sha256` of that manifest file. The arm PASSES iff both sides are
+non-empty, the path sets are equal, no shared path differs in content, and the two tree hashes are
+equal. `h8-comparand.sh view <root> <host>` builds the manifest; `identity <A> <B>` scores the arm.
+
+⚠ **A GOOS-named directory is not automatically a layout folder, and this one is live in the corpus.**
+`internal/syscall/windows` is a *package* whose directory is named `windows`; measured at master
+`7105c8468` there are 35 directories named `windows`, of which **34 are layout folders and one is
+that package**. A filter excluding any path component in {windows, linux, darwin} drops the whole
+package from the linux and darwin views — and because it drops it from **both** sides, the arm then
+agrees about files it never looked at. The discriminator is structural: a directory is a layout
+folder iff its name is a GOOS name, it holds **no** `.csproj` of its own, and its **parent** holds
+one. Measured on the real corpus, the linux view keeps that package's 9 files and leaks 0 foreign
+layout files.
+
+**The controls that prove the arm can fail** — all five are in `selftest`, and the arm is not scored
+until they have been run on the box that will score it:
+
+1. an **empty** side refuses rather than reporting agreement (a baseline that silently reads empty
+   otherwise reports total disagreement, or total agreement, with equal confidence);
+2. a **one-byte content change** inside the host's own folder goes red, naming the path;
+3. a **path-only change** (one file renamed) goes red — this is the control that proves the view is
+   not eating differences;
+4. a change in a **foreign** GOOS folder leaves the host view unmoved — the view's whole purpose;
+5. a **reordered** manifest still passes, so ordering is never read as a difference.
+
+After any planted perturbation the restore is verified **byte-identical by tree hash**, not by
+`git status`.
+
+##### ⚠ (a2) THE KEY `classify` TAKES IS THE FLAT ARTIFACT PATH — added 2026-09-19 after G measured the trap
+
+A census staging root is **seeded from an L3 corpus**, so a platform-varying artifact sits under a
+per-GOOS layout folder — `os/windows/file.cs` in the windows root, `os/linux/file.cs` in the linux one.
+Build the manifest the obvious way (walk the root, `sha256sum`, keep the relative path) and those are
+two different names, so **every platform-varying artifact scores `exclusive` and `variant` collapses to
+exactly zero**:
+
+```
+  raw relative path    identical 1631 · variant  0 · partial  0 · exclusive 718 · union 2349
+  flat artifact path   identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+  the converter's own  identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+```
+
+⚠ **The raw row sums to its own union, passes the partition check and clears the seed tell, and is
+wrong.** It is the L3 **tree** partition (`1631 + 718` = the manifest's `l3UnionTreeTotal`, with 718 its
+`l3PerGoosFiles`) — a true answer to a different question. The only unaided tell is a reader noticing
+`variant 0`. `platformCensus.go` keys an artifact by its **flat package-relative path**: its own
+`variantFiles` read `os/file.cs`, never `os/windows/file.cs`.
+
+So the key is not left to the caller. **`h8-comparand.sh manifest <census-target-root>` builds
+`classify`'s input**, stripping layout folders with the **structural** discriminator — never the
+directory names, because each target holds 100 GOOS-named directories of which 99 are layout folders and
+**one is a real package** (`internal/syscall/windows`, which carries its own `.csproj`), and a name
+filter deletes that package from two of the three views. It asserts **zero duplicate keys** (stripping
+must merge no two artifacts), and it **stamps** what it writes. **`classify` REFUSES an unstamped
+manifest** and names this mode in the refusal; `--assume-flat` exists for a manifest produced elsewhere,
+and the caller owns that claim. The trap is a self-test arm: the same synthetic tree read flat finds the
+variant and read raw reports `variant 0`.
+
+⚠ **AND THE BUILDER NEEDS `--emitted-only` ON A CENSUS TARGET ROOT — the second gap, closed 2026-09-20.**
+A census target root is **seeded from an L3 corpus AND emitted into**, so it holds *both*
+`archive/tar/package_info.cs` (flat, from the seed) *and* `archive/tar/<goos>/package_info.cs` (this run's
+layout copy). Stripping maps the second onto the first and the duplicate-key guard **refuses at rc 5** —
+loudly and correctly, but the sanctioned builder then could not consume the artifact the gate is about.
+What disambiguates them is the census's own **emitted-set restriction**: `platformCensus.go` stamps every
+SEEDED file with the sentinel mtime `2000-01-01T00:00:00Z`, so a file whose mtime has moved was written by
+this run. **`manifest --emitted-only` applies that filter**, reproduces the manifest's own `emittedCs`
+exactly, and the refusal without it now names the flag as the remedy. Controlled on the real shape: the
+seeded-plus-emitted root refuses, the flag admits it and keeps only this run's artifacts, and a root where
+nothing was emitted refuses rather than returning an empty manifest.
+
+<!-- G measured this by USING the instrument (mailbox ae545151f §6a): the counts above are the real
+     incoming census at 46307b4704. Nothing in the original amendment was wrong -- it specifies the
+     manifest FORMAT and never says to build one by walking a census root, and the `view` arm already
+     carried the structural discriminator -- but the build step for classify's input was unspecified and
+     the natural reading of it failed silently. Closed by making the format self-identifying rather than
+     by documenting a convention: a convention a reader must remember is not a gate. -->
+
+##### (c) Predicted class-count deltas, from the 1.24 package census
+
+Derived at run time by `h8-comparand.sh pkgdelta <goroot-1.23.12> <goroot-1.24.13>` (2.7 s), which
+**independently reproduces** `docs/phase4/CENSUS-go124-package-delta.md` on a different host and OS:
+306 / 304 / 305 → 346 / 344 / 345, net **+40 on every target**, **54 added and 14 removed**, both sets
+**identical across all three targets**, and the removed set exactly the 14 rows of
+`docs/phase4/h5-removals.txt`.
+
+Because the added and removed **package** sets are identical on all three targets, package membership
+contributes **zero** to `partial` and `exclusive`. All class movement from the delta is file-level:
+
+```
+  ADDED    54 packages   153 distinct .go artifacts   150 on all three targets
+                                                        0 on exactly two   -> partial  +0
+                                                        3 on exactly one   -> exclusive +3
+  REMOVED  14 packages    53 distinct .go artifacts    53 on all three targets
+                                                        0 on exactly two   -> partial  -0
+                                                        0 on exactly one   -> exclusive -0
+```
+
+The three exclusive artifacts are one per target and all in `crypto/internal/sysrand`:
+`rand_windows.go`, `rand_getrandom.go` (linux), `rand_arc4random.go` (darwin).
+
+**The predictions, as worded, to be scored against the produced 1.23.12 → 1.24.13 comparison:**
+
+| # | prediction | falsifier |
+|:--|:--|:--|
+| P1 | `Δ partial` **= 0** | any non-zero partial delta |
+| P2 | `Δ exclusive` **= +3**, and the three are `crypto/internal/sysrand`'s per-target `rand_*` artifacts | a different count, or a different package supplying them |
+| P3 | `Δ (identical + variant)` **= +97** source artifacts (+150 − 53), **+40** `package_info` artifacts (+54 − 14 — which is the net package count, and is the internal consistency check), before any test-side artifacts | a source-artifact delta that is not +97 |
+| P4 | the `identical` / `variant` split of the 150 added artifacts is **not** predictable from `.go` selection — it is content-dependent, and is a **reading**, not a prediction | — stated so a later number is not read as having been foreseen |
+| P5 | the per-target class counts move **symmetrically**: any per-target asymmetry beyond P2's one-artifact-per-target is **not** from package membership and is a finding | an asymmetry the package delta does not explain |
+
+##### ⚠ (c2) P1–P5 MEASURED — and the lesson is about the DERIVATION, not the numbers (2026-09-20)
+
+Scored against the produced outgoing manifest (G `cb1fa651a`, ruled `63b51e754`). **None is a gate item;
+all are readings.**
+
+| | as worded | measured | verdict |
+|:--|:--|:--|:--|
+| P1 | `Δ partial` = 0 | **+6** (7 in, 1 out) | REFUTED |
+| P2 | `Δ exclusive` = +3, sysrand's per-target `rand_*` | the three **arrived exactly**; `Δ` = **+6** (15 in, 9 out) | SPLIT: artifacts met, count refuted |
+| P3 | +97 source, +40 `package_info` | **+117**, **+37** | REFUTED, both |
+| P4 | the identical/variant split is a READING | +155 / +4 | HONOURED |
+| P5 | per-target symmetry | +164 / +165 / +166 | **RULED not a defect** — the tolerance was written too tight |
+
+⚠ **THE DERIVATION THEY REST ON WAS EXACTLY RIGHT, AND THAT IS THE POINT.** `pkgdelta`'s net **+40
+packages per target** is met on all three, on a different instrument and host, with zero residual. Every
+miss is the **extrapolation from package membership to file-level classes**, and the blind spot is now
+measured: **+20 source artifacts and +6 partial** come from **Go's own per-file build-tag selection
+changing inside packages that exist on all three targets and were never in the added or removed sets**
+(1.24's `os.Root` work — `os/root_unix.cs`, `os/root_nonwindows.cs` — landing in packages already
+everywhere). A package-delta derivation is structurally blind to it.
+
+**THE RULE: a class-count prediction is derived from the FILE-LEVEL tag selection, or it is stated as a
+package-level BOUND and not as a class count.** A clean measurement of the wrong population is the most
+persuasive kind of wrong.
+
+⚠ **Two further shapes worth carrying, because each looked like corroboration:**
+
+- **A RELOCATION nets zero.** P2's three artifacts arrived exactly as named *and contribute nothing*,
+  because the same three left `crypto/rand` — a package that **survives** the hop and so sits in neither
+  the added nor the removed set. A derivation that examines added packages' files and removed packages'
+  files cannot see a file moving **out of a surviving package**. Naming the right artifact is not
+  predicting its effect.
+- **Two numbers agreeing is evidence only if they are the same quantity.** P3's `+40` was cited as an
+  "internal consistency check" because it equalled the net package count. There is one `package_info.cs`
+  per **EMITTING** package (303 → 340 = **+37**), while +40 is the **QUEUED** delta; three net-new queued
+  packages emit no `.cs`. The consistency check *was* the defect.
+
+**The measured statement on REHEARSAL's "a migration moves the platform axis in BOTH directions"**, on the
+one-axis comparison: **true at `exclusive`** (15 in, 9 out), **false at `variant`** (4 in, **0** out) and
+**false at `partial`** (7 in, 1 out). The H8 text takes that as measured rather than as predicted. The
+prior mixed reading (38 → 51, "13 arrived") decomposes cleanly once the axis is isolated: **38 → 47 is
+converter drift (+9), 47 → 51 is the release (+4)**, and the release's four are 1.24's `os.Root` and
+spinbit-mutex work.
+
+##### (d) Four instrument findings that change how the census is invoked
+
+⚠ **`GO111MODULE=off` silently cancels a `GOTOOLCHAIN` redirect.** Measured 2026-09-19 on a linux box:
+`GOTOOLCHAIN=go1.23.12 go version` prints `go1.23.12`, and `GOTOOLCHAIN=go1.23.12 GO111MODULE=off go version`
+prints the **ambient** toolchain **at exit 0**. The package-census instrument is specified *with*
+`GO111MODULE=off` — precisely the cancelling combination — so a census driven by `GOTOOLCHAIN` alone
+measures whichever toolchain the box happens to carry and looks perfect doing it. This is H1's
+silent-redirect hazard reached through the *other* half of the pin: drive each release by **its own
+`GOROOT` and its own `bin/go`**, and assert the release from `go version` **OUTPUT** before listing
+anything. `pkgdelta` does both, and additionally refuses when the two roots run the same release —
+a vacuous delta being the failure this guards.
+
+⚠ **THE BUILD TAGS ARE THE THIRD AXIS, measured the hard way twice in one hour (2026-09-20).** The
+corpus is defined as Go under `-tags purego,math_big_pure_go` (the `-stdlib` default), so a census run
+**without** them answers a different question and looks correct doing it: C1's H10 census ran untagged and
+read two rows as DIFF where the census was wrong twice and the converter right twice, and a COORD ruling
+(`TestP256PrecomputedTable` off-platform) was **withdrawn** over the same axis because the answer flips
+under the corpus's own tags. **State the tag set beside every count.**
+
+⚠ **`CGO_ENABLED` is a real axis on the package count, and it moves exactly one target.** Measured at
+both releases: linux reads 305 / 345 at `CGO_ENABLED=1` and 304 / 344 at `CGO_ENABLED=0`, the one
+package being `runtime/cgo`; windows and darwin do not move. A census taken on a linux host
+targeting linux natively therefore disagrees with one taken on a Windows host by one package on one
+target, with neither being wrong. **`CGO_ENABLED=0` is the pin** — it is what reproduces the recorded
+census, and it matches the recipe every preserved artifact was cut under.
+
+⚠ **THE TOOLCHAIN'S LOCATION IS THE FOURTH AXIS, and until `19175c31ad` it moved the emitted
+corpus with nothing in any log saying so.** `conversionDriver.go` loaded `"./..."` — the input
+package AND its whole subtree — for any input under GOPATH. A `GOTOOLCHAIN`-installed toolchain
+lives at `$GOPATH/pkg/mod/golang.org/toolchain@<version>`, so on such a box GOROOT is itself under
+GOPATH, every stdlib package is also a GOPATH input, and every one of them converted its subtree.
+That pulled in `runtime/cgo` — buildable when named, absent from `go list std` at
+`CGO_ENABLED=0`, never queued and so never skipped — emitting nine `.cs` under `runtime`'s own
+conversion, out of dependency order, with the package named nowhere in the run. A side-by-side SDK
+install is not under GOPATH, so the branch never fired there and **the same binary, base, flags and
+pin emitted a different corpus on the two boxes**. Measured both ways: C2 with the condition true and
+the one-axis effect (9 `.cs` -> 0, 13 skip messages -> 7, the queued-package list byte-identical,
+`diff -rq` over `src/core` one line), G with the condition false and the effect absent.
+
+**The seat `19175c31ad` removes the dependency** — a GOROOT input is excluded from the subtree load
+outright — so this axis no longer moves a `-stdlib` emission. It is recorded here anyway, because a
+census taken with an OLDER converter still carries it, and because the general shape survives the fix:
+a GOPATH tree genuinely wanting a subtree load still gets one silently, and nothing in an emission
+states which roots it ran under. **State the toolchain's location beside the pin, the tag set and
+`CGO_ENABLED`, for any count taken before that seat.**
+
+<!-- C2, 2026-09-20, in-stage. Ruled a converter defect at COORD 3d0c7cd5d on C2's 1257a20bad; G's
+     cross-box confirmation at 4f4e3f9f7 (identical queue sha256 across two hosts and two separately
+     built binaries, and GOROOT NOT under GOPATH on G-LAPTOP); seat accepted at 887e92d6b. The
+     heading said "Two" while carrying three; corrected to four here rather than left to drift.
+     ⚠ The author of this section violated its own CGO_ENABLED pin within the hour: the first
+     arm-b re-take omitted the export, ran at the box default of 1, and read 343 packages with
+     runtime/cgo LEGITIMATELY queued at [332/343] -- a two-axis run reported as one. Caught only
+     because the script carried a WRITTEN PREDICTION (0 and 0) that the run falsified; nothing else
+     in the run looked wrong. The pin is now an asserted export with a comment in the runner rather
+     than a sentence in a document, which is the difference between a rule and a guard. -->
+
+<!-- C2, 2026-09-19, in-stage per the doc-authority ladder (the runbook leads on procedure).
+     Refused candidates: half A = c883a2dc7 s3 (GOROOT = the go1.24.13 SDK; "NO substitution needed for half A"),
+     half B = a5534b5de s2 (GOROOT = the go1.23.12 SDK; version.props from the outgoing release verbatim; 16m05s,
+     windows 3990 / linux 3995 / darwin 3993 .cs against a 3896-file seed). "No platform-manifest tracked" re-verified
+     at 7105c8468 by `git ls-files` and by an --all --diff-filter=A search: zero on both.
+     Classes and their ORDER are platformManifest.go:166-203 (3 emitters -> identical|variant, 2 -> partial,
+     1 -> exclusive); the L3 path shape and the layout-honouring single-target reconvert are platformLayout.go:9-46.
+     Package-vs-layout trap measured at 7105c8468: 35 dirs named windows, 34 layout + internal/syscall/windows
+     (own .csproj); the linux view keeps its 9 files, leaks 0.
+     pkgdelta reproduces CENSUS-go124-package-delta.md s1 on linux/amd64 where the record was cut on windows/amd64;
+     the one discrepancy (linux +1 at both releases) is the CGO_ENABLED axis in (d), not a disagreement.
+     Script self-test 20/20 at the cut, each arm red-proved then restored. -->
+
+
 
 
 ### H9 — Behavioral golden rebank **GATE**
@@ -1569,6 +1950,241 @@ the run and must **never** be read as a corpus regression.
      (a02ac3df3:src/tests/Behavioral/BehavioralRunner/Program.cs:183-231; default case prints "Unknown argument" and returns 2). The
      runbook's own line 651 conflates the two paths. The eight by name, each present and none skipped: i9 7ede39d67 §1 (the alias-union
      acceptance, recorded by COORD 204c3ab59). -->
+
+#### Correction 2026-09-19 (C2), PLATFORM-QUALIFIED 2026-09-20 — a LINUX re-derivation, and what it can and cannot settle
+
+> ⚠ **READ THIS BOX FIRST — added 2026-09-20 after i9's CNR measured the banking platform.**
+> Everything below §"Mechanism 1" was measured on **linux**. The goldens are banked on **windows**, and
+> on that platform **the amendment's original eight goldens / 35 line-pairs is EXACTLY RIGHT** — it was
+> not stale at all. The two readings differ by precisely two projects, and both differences are the
+> per-GOOS alias mechanism this correction itself names:
+>
+> | | linux (this correction) | **windows, the BANKING platform** (i9 `dc9eb368c`) |
+> |:--|:--|:--|
+> | `SyscallKeystonePulls` | alias RETAINED → out of the set | **drops `Δruntime` → IN the set**, 2 pairs |
+> | `SetegidBroadcastSeam` | drops `Δruntime` → in the set, 4 pairs | `//go:build linux` — **CNR SKIPS it platform-exclusive**, it cannot be banked here at all |
+> | mechanism 1 | 8 goldens / **37** pairs | 8 goldens / **35** pairs |
+>
+> **THE RULE THIS COST, stated so the next lane does not pay it again: a cross-platform arm can
+> discover a MECHANISM, but it cannot enumerate the BANKED SET.** The rebank happens on one platform;
+> membership is therefore a platform-qualified claim, and a reading taken elsewhere must say so in its
+> own conclusion — not merely list its blind spots and then conclude platform-free. This correction
+> listed its seven blind projects and then did exactly that, which is the same defect it flags two
+> sections below for `SockaddrRoundTrip`. **The mechanism findings stand on both platforms; the
+> membership and the pair count are linux's.**
+>
+> What survives unqualified: **mechanism 2 is real and was found only by the whole-corpus comparison** —
+> i9's windows CNR confirms `GenericTypeInference`, `GenericUntypedIntArg` and `ReceiverCapturedInClosure`
+> and adds a fourth file (`ReceiverCapturedInClosure/package_info.cs`, the same RED 11 seat, missed here
+> because this sweep compared `main.cs` only — a `GoPositionMap` base64 shifting because the hoist moved
+> line positions) and a fourth project, `SystemCertVerify`, under **RED 9** — one of the seven this arm
+> declared it could not see. The process gap below is unchanged and is what all four have in common.
+>
+> ##### THE BANKED SET ON THE BANKING PLATFORM — the TWELVE (i9 `dc9eb368c`, ruled `ab9e7209a`)
+>
+> ```
+>   MECH 1, alias, 8 goldens / 35 pairs
+>     RuntimeCallerFrames 15 · SetFinalizerBridge 6 · FuncLiteralCallerNames 3 · GoroutineWaitState 3
+>     FuncForPCName 2 · GoexitDefers 2 · IterPullRendezvous 2 · SyscallKeystonePulls 2
+>   MECH 2, seats that banked no golden, 4 files over 4 projects
+>     GenericTypeInference (RED 12, 4 pairs) · GenericUntypedIntArg (RED 12, 1 pair)
+>     ReceiverCapturedInClosure main.cs +4/-1 AND package_info.cs (RED 11, one seat, two files)
+>     SystemCertVerify (RED 9)
+>   NOT banked here: SetegidBroadcastSeam -- `//go:build linux`, CNR SKIPS it platform-exclusive.
+>                    Real on linux, out of scope for a windows rebank, and NOT deleted: a
+>                    linux-hosted rebank would need it.
+> ```
+>
+> ⚠ **`SystemCertVerify` is RED 9, and the attribution is a predicate with a FIRING control** — not a
+> name match. The hunk is an alias ARRIVAL (`using io` → `using Δio`), which is neither mechanism 1's
+> package nor its direction, so i9 attributed it: exactly one landed seat in the window touches
+> `importAliasOperations.go` (`f643b67d4`, *a package reached only through a TYPE takes the CS0576
+> alias rename*), `SystemCertVerify` has **0** `io.` call sites — RED 9's own predicate, reached only
+> through a type — and 20 goldens already carry `Δio` as the established corpus form. **The control
+> that makes the predicate discriminate:** `AdapterNameInterfaceCollision` carries `Δio` *and* has 3
+> `io.` call sites, i.e. it got its alias the ordinary way, so "carries `Δio`" alone would not have
+> separated them.
+
+The amendment above names eight goldens, 35 changed line-pairs and one mechanism. That prediction was
+made at `a02ac3df3` for the **H2→H5 window**, and the version branch has since taken every RED seat and
+the q9x applies. **Re-derived and MEASURED at version tip `06b1636cae`** — the converter built at that
+tip and all **735** behavioral goldens transpiled and compared, not estimated: **716 SAME, 14 CHANGED,
+5 NOT MEASURED**. The eight are **stale, not mistaken**.
+
+##### Mechanism 1 — the `Δruntime` alias drop: eight goldens, **37** line-pairs
+
+```
+  RuntimeCallerFrames  15    FuncLiteralCallerNames  3    FuncForPCName       2
+  SetFinalizerBridge    6    GoroutineWaitState      3    GoexitDefers        2
+  SetegidBroadcastSeam  4    IterPullRendezvous      2
+```
+
+`added == removed` on every one, and **zero diff lines not containing `runtime`** on all eight —
+the single mechanism, measured rather than asserted.
+
+- ⚠ **`SyscallKeystonePulls` is not in the set ON LINUX.** Its golden carries `Δruntime` and so does the
+  linux emission at 1.24.13 — it imports `os/user` and `os/exec` alongside `runtime`, and the collision
+  that forces the alias survives there, so it contributes **0**. ⚠ **ON WINDOWS IT DOES DROP THE ALIAS
+  AND IS IN THE BANKED SET** (i9 `dc9eb368c`, 2 pairs): the collision does not survive there. This was
+  worded as "the sharpest falsifier of this whole prediction" and it fired — correctly, and on the
+  platform that banks.
+- ⚠ **`SetegidBroadcastSeam` is in it ON LINUX**, at 4 pairs, pure alias — but it carries
+  `//go:build linux`, so **the windows CNR SKIPS it as platform-exclusive and it can never be banked
+  there.** It is a real ninth for the mechanism and NOT a member of the banked set; it entered this
+  prediction only because a linux arm could see it. The inverse of this correction's own blind-spot
+  list: a project the BANKING platform cannot measure.
+- **The 35 reconciles exactly**: the seven surviving originals total 33, and 35 − 33 = 2 is precisely
+  what `SyscallKeystonePulls` would have contributed at the two-pair shape (one `using` line, one use
+  site) that three of its siblings show. The stale number counted a project that does not move.
+
+##### Mechanism 2 — converter seats that changed emission and banked no golden: three
+
+| golden | shape | seat |
+|:--|:--|:--|
+| `GenericTypeInference.cs` | `Scale(p, (int32)(2))` vs `Scale(p, 2)` — 4 pairs, 1:1 | **RED 12** `457cba3b60` (`convCallExpr.go`) |
+| `GenericUntypedIntArg.cs` | same arm — 1 pair, 1:1 | **RED 12**, same seat |
+| `ReceiverCapturedInClosure/main.cs` | the hoist — **+4 / −1** | **RED 11** `410976f049` (`convSelectorExpr.go`) |
+
+##### The `added == removed` rule, restated PER MECHANISM
+
+The rule was written when there was one mechanism. It now reads: a **mechanism-1** golden must satisfy
+`added == removed` **and** carry no non-alias line; a **mechanism-2** golden must match the emission
+shape its seat is known to produce — RED 12's typed constant is 1:1, **RED 11's hoist adds lines by
+construction**. `ReceiverCapturedInClosure` at +4/−1 is accepted as RED 11's shape **on a quote of the
+hunk, never on the count**. *"A finding, never a rebank"* is satisfied by the finding being
+**classified and named before the copy**; a hunk that cannot be attributed to a landed seat stays a
+finding and stops the rebank.
+
+##### ⚠ The blind spot, named as a set — the re-derivation ran on LINUX
+
+```
+  NOT MEASURED (emits nothing on linux)  FindFirstFileData · PointerOutParameter · SystemCertVerify
+                                         WindowsNewCallback · WsaProtocolInfo
+  MEASURED BUT PLATFORM-DIVERGENT        SockaddrRoundTrip · WsaSendtoRoundTrip
+```
+
+The last two are the platform showing itself — `syscall.Sockaddr` vs `syscallꓸSockaddr`,
+`SockaddrInet4жSockaddr` vs `SockaddrInet4жΔSockaddr` — because the `syscall` package's own content
+differs per GOOS, so the collision set the renamer sees differs. **They are not findings.** The
+Windows CNR reads all seven; each that comes up CHANGED is classified by mechanism from its hunk
+before it joins the `--only` list, and one fitting neither mechanism is a finding.
+
+**A cross-platform arm is admissible only if it is SHOWN to be**, and the control is the rebank's own
+history: the **seven goldens re-baselined inside this window** (`CollidingPackageNames`, `CrossPkgUser`,
+`DefinedOverNamedComposite`, `DefinedTypeOverForeignStruct`, `DefinedTypeOverPkgType`,
+`LiftedLocalTypes`, `NamedArrayWrapper`) reproduce **byte-identically**, 7 of 7 — they were re-baselined
+by the very seats in this window, so a platform that moved their emission would show here. It does not.
+⚠ That control also caught the run's own defect before it became a result: the first pass passed
+`-comments`, and **behavioral goldens were captured without them**, which read as 144 changed lines on a
+project that had to be clean. A cross-platform arm without a same-window control is an opinion.
+
+**A hand-owned golden is not a rebank candidate.** A whole-corpus sweep that compares a fresh emission
+against `[module: GoManualConversion]` files reports drift the converter cannot produce: the converter
+does not write them (it emits the `.cs.auto` sibling). `ManualConversionSiblingState/state.cs` read
++0/−9 for exactly that reason and is predicted **SAME** on CNR.
+
+##### ⚠ The process gap this exposed, which outlives the hop
+
+Mechanism 2 exists **only because two converter seats changed emission and banked no behavioral golden
+in the same commit.** Measured over this window: **109** commits touch `src/go2cs` since `a02ac3df3`,
+**32** of them touch emission source, and **4** re-baselined a behavioral golden in the same commit
+(one more did it in a companion commit). The rest were the stdlib hand-own registry, the `-tests`
+pipeline, or plumbing — but RED 11 and RED 12 were neither, and their drift sat unbanked until a
+whole-corpus comparison found it.
+
+**The rule, going forward: a converter seat that changes emission re-baselines the goldens it moves in
+the same commit, or NAMES in its message why it moves none.** A seat gated on the stdlib compile front
+has not been gated on the behavioral corpus, and the gap is invisible until H9 — which is the one step
+that re-baselines wholesale, i.e. the step most likely to bank it silently.
+
+<!-- C2, 2026-09-19, in-stage; ruled by COORD at mailbox 39395d257 on C2's measured prediction 56ec9931a.
+     Method: go2cs built at 06b1636cae (go1.24.13 linux/amd64, -trimpath -buildvcs=false); every project
+     transpiled into its own output root with the output directory as the SECOND POSITIONAL, sequentially,
+     never concurrent; compared against EVERY .cs.target the project carries, not just main.cs — 193 of the
+     735 are per-source-file targets and a main.cs-only sweep cannot see a ninth hiding in one.
+     Both sides asserted non-empty before any verdict, so a project that emits nothing on this platform
+     reports NOT MEASURED and never SAME.
+     Line-pair counts are diff hunks on the emitted .cs vs its .cs.target at that tip.
+     The git derivation agrees with the measurement on WHERE: the mechanism-2 goldens fall in exactly the
+     convCallExpr.go / convSelectorExpr.go seats that banked nothing.
+     The stale prediction and its provenance: a02ac3df3:docs/phase4/REHEARSAL-h9-golden-rebank.md:15-36. -->
+
+
+#### Closure 2026-09-20 — H9 CLOSED: the suite reads the base two, APPEARED empty, the 26 opt-out skips reconciled
+
+**H9 is CLOSED.** Closure tree: version-branch commit `c7eb36d845` — R's P-256 table decode applied on
+`d91c832543` — reading `go version` `go1.24.13 windows/amd64`, measured through the behavioral runner's
+four phases, no MSTest host.
+
+**The criterion, restated for this rung.** The gate line above reads "green across all four phases";
+master's behavioral base is not zero, so green is scored against that base and the suite's own rc is
+FAIL by construction. Closure required, and got, all four:
+
+- Output's failing set equals master's behavioral base **two BY NAME** — `FuncLiteralCallerNames` and
+  `GoroutineWaitState` — with **APPEARED empty**.
+- Transpile, Compile and Target each at **zero failures**.
+- **Zero timeouts in every phase.** A budget overrun reports `NOT MEASURED` and fails the run; none
+  occurred.
+- The **twelve** goldens re-baselined at the rebank pass the **byte-compare** — Target passed for
+  every project.
+
+**The reading.** 698 projects in the directory = **696 behavioral + 2 tooling** (the runner itself and
+the MSTest harness project, excluded from enumeration); 6 platform-exclusive `[linux]` projects are
+skipped BY NAME by the runner, so **690 ran**.
+
+```
+  Transpile  690 pass / 0 fail        Target  690 pass / 0 fail
+  Compile    690 pass / 0 fail        Output  662 pass / 2 fail / 26 skip / 0 timeout
+  1,298.8 s.  Suite rc = FAIL, on the base two — which is the expected reading.
+```
+
+**The 26 Output skips are a DECLARED OPT-OUT CLASS, named here so the count is derivable**: projects
+whose package-info file does not carry `[GoTestMatchingConsoleOutput]`. Output comparison is **opt-in**,
+and the runner's only OTHER skip site requires a Compile failure — Compile passed 690/690, so that site
+cannot have fired. Reconciled three ways: `28 non-declarers − 2 tooling = 26`;
+`696 − 6 platform-exclusive = 690`; `662 + 2 + 26 = 690`. ⚠ **A skip is not a pass.** This run says
+nothing about those 26 programs' agreement with Go.
+
+⚠ **`SystemCertVerify` — the RED 9 regression the decode cures — is NOT read from this suite.** This
+runner yields no verdict on a host crash: it aborts with no results artifact, so a crashing project
+leaves no row to read. The arm of record is therefore the **direct executable** — exit 0, 17 lines
+identical to Go, measured on i9 at the same tree — and within this suite it is the **Compile** phase
+that covers it.
+
+##### Two runbook lessons from the run
+
+1. **The runner's own disk preflight (25 GB floor) refused at 1.4 GB free, and is never overridden.**
+   `-IgnoreDiskPreflight` exists; using it yields a `NOT MEASURED` suite that reads like a failing one.
+   Build output was reclaimed FIRST, after proving no `bin/` or `obj/` path is tracked.
+2. **Capture the suite's rc on its own line.** A wrapper that ends in `tail` reports `tail`'s exit
+   status — which is 0, and means nothing at all beside a summary reading FAIL.
+
+**H10 opens on this closure**, and H11 is declared after H10, as already ruled.
+
+<!-- H9 CLOSURE, 2026-09-20, in-stage. Measured on i9 at version-branch commit c7eb36d845 (R's P-256
+     table decode applied on d91c832543); go version go1.24.13 windows/amd64; the behavioral runner's
+     four phases, no MSTest host.
+     Suite: Transpile 690/0, Compile 690/0, Target 690/0, Output 662 pass / 2 fail / 26 skip / 0
+     timeout, 1,298.8 s; rc FAIL on the base two (FuncLiteralCallerNames, GoroutineWaitState), with
+     APPEARED empty.
+     Enumeration: 698 in the directory = 696 behavioral + 2 tooling (the runner itself and the MSTest
+     harness project, both excluded from enumeration); 6 platform-exclusive [linux] projects skipped by
+     name by the runner, so 690 ran.
+     The 26 Output skips: a package-info file without [GoTestMatchingConsoleOutput]. Comparison is
+     opt-in, and the runner's only other skip site requires a Compile failure, which cannot have fired
+     at 690/690. Three-way reconciliation as stated in the text; a skip is not a pass and the run
+     carries no claim about those 26.
+     The twelve re-baselined goldens are the banked set of the correction above (i9 dc9eb368c, ruled
+     ab9e7209a); Target passing for every project IS their byte-compare.
+     SystemCertVerify: no suite verdict is obtainable on a host crash, since the runner aborts with no
+     results artifact; the arm of record is the direct executable, exit 0 and 17 lines identical to Go,
+     on i9 at the same tree. Compile is what covers it inside this suite.
+     Lesson 1's floor is the runner's own 25 GB disk preflight, which refused at 1.4 GB free; no
+     -IgnoreDiskPreflight was passed, and build output was reclaimed only after proving that no bin/ or
+     obj/ path is tracked. Lesson 2 is the capture-the-exit-code-before-any-pipe rule of CLAUDE.md's
+     safety floor, met here on a suite whose summary read FAIL beside a wrapper rc of 0. -->
+
+
 
 
 ### H10 — Roster, proof-page and disclosure re-derivation ⟲ **GATE**
@@ -1628,6 +2244,586 @@ adds testable packages faster than validation adds rows.
 **One arithmetic cross-check, free and worth running here:** the count of banked test project files
 must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
 a migration ends with the two unequal the badge census miscounts — loudly, by design.
+
+#### Amendment 2026-09-20 (C1) — the LAUNCH, in stage: the order, the dispatch mechanism, the host rule, and the checklist a reader starting here needs
+
+The step above is a per-package procedure and a gate. **It does not say how a campaign of them is
+ordered, enumerated, dispatched or hosted**, and at the 1.23 → 1.24 hop every one of those was a
+question someone had to answer under time pressure. Written here so the next hop's reader does not.
+
+**THE ORDER, and the two wrong orders are MEASURED refusals rather than cautions.**
+
+```
+  RECON LEG  ->  ROSTER SEAT  ->  PLAN  ->  DRIVER
+```
+
+The recon leg is the first full pass of **the POPULATION** at the version tip — every row of it, per
+package, never the sweep wrapper — and it banks the per-row TSV the map reads. Then the roster seat
+lands. Then the plan is emitted from that TSV and the driver runs the campaign's repeated passes.
+
+⚠ **The population is not the roster.** The roster is the BANKED set; a relocated row's successor and
+every not-yet-banked row are outside it, and **this leg is the authority on membership**. The two
+words are not interchangeable in this block — the sentence below about the map generator says "the
+roster file" and is CORRECT, because that is the file the generator enumerates from. The difference
+between the two sets is the whole reason the sweep cannot run this leg.
+
+#### The 1.24.13 hop's recon leg, as it actually ran — the readings, cited rather than re-derived
+
+**Complete on three lists, 228 rows, one attempt each.** Recorded here because the next hop's leg is
+planned from these numbers and they are otherwise spread across a mailbox.
+
+```
+  R   105 rows    85 PASS ·  7 BUILD · 13 NOVERDICT      i9   16 rows   10 PASS · 3 NOVERDICT ·
+  G   107 rows   100 PASS ·  4 DIVERGED · 3 BUILD                       2 BUILD · 1 CONVERT
+                 ZERO NOVERDICT and ZERO non-integer sweep_s
+```
+
+**The sixteen verdict-less rows re-classify from their committed evidence records**, not from the
+lane's `diverged` column — the fifth wrapper blob rewrote every real `0` to `n/a`, so that column is
+uninformative for the lanes that ran on it. Outcome: **2 PASS recovered** (`math/rand`,
+`mime/multipart` — both `matched` with an empty diverged set; the cause was PowerShell 5.1's
+case-insensitive JSON reader **throwing** on `Int31n` beside `int31n`), **11 DIVERGED**, **2
+NOVERDICT by cause** (the two junction-staged host rows), and **1 for want of evidence** (`testing`,
+which carries the hand-own exclusion as its cause and is never scheduled).
+
+⚠ **Two predicate rules the re-classification had to learn, both worth carrying forward:**
+
+```
+  a `disclosed` entry is a SENTENCE, not a name -- the name is its LEADING TOKEN, so a membership
+     test against the whole string matches nothing and subtracts nothing
+  `verdicts` is a SET difference, |go \ names(disclosed)|, never a count difference -- the count
+     form assumes disclosed is a SUBSET of go, and the `host-fatal` class names tests that never
+     produced a Go verdict at all (runtime/pprof: 6 of 6 absent from its own `go` map)
+```
+
+**The banked basis is the three lanes' INTERSECTION, read by column NAME.** G relaunched on a later
+wrapper blob and carries an eleventh column the other two lanes do not, so a header-equality check
+would refuse the very union the basis exists to be, and a union-and-pad would mint a column that
+looks measured and is not. 228 rows in, **213 kept**, 15 excluded as `UNMEASURED` by name, the
+hand-stopped row banked at `sweep_s := wall_s` so the generator's drop-must-have-fired assertion can
+fire on it. The generator then reads **212 rows parsed, 9,517 s over 212 integer rows**.
+
+**The roster seat that follows it, as landed:** the ten relocation sources retire and **nine**
+principal targets bank — nine and not eleven, because one target is the principal for two sources and
+two targets are nobody's principal and stay candidates. Each source's 1.23.12 anchor appears exactly
+once, on the target taking the majority of its banked **verdicts** (never its declarations: one row
+banks 2,195 verdicts from 5 declarations, so a declaration share routes them to a package carrying
+none of them). **204 → 203 banked, 32 → 23 candidates, and the corpus axis is 226** — a figure
+independent of how the derivation comes out.
+
+⚠ **A relocated row's disclosure file does not MOVE.** Measured at this hop: there is no tree on which
+the move is possible — at master the target directories do not exist, and at the version tip the
+source directories are already deleted by the reconvert. **The disclosures retire with the row and are
+re-pinned at the successor's re-bank under whatever the declaration is called there**, from a measured
+reading, never carried forward blind; `class` and `signature` survive verbatim because the signature
+never moved, only the declaration's name did. **No proof file is moved, renamed or created** — a proof
+record is the record of a run, and an inherited anchor's record is the SOURCE's.
+
+
+**The recon leg invokes THE PIPELINE per package** — `go2cs -tests -test-action all
+<goroot>/src/<row> <tree>/src/core/<row>` in the worktree at the version tip, whose `src/core` is the
+seed — **and not the sweep script**, which is what H10's own line above decides: the sweep is the
+steady-state gate and this step invalidates its preconditions by design. One process per worker list
+with rows sequential, so the shared build cost falls on the first row: **emit that fact as a column**
+so the plan's re-derivation can see which cost carries a build. The driver stays what it is — the
+sweep's per-row dispatcher for the campaign's steady-state passes, after rows re-bank, on the costed
+plan.
+
+- **Plan before seat** dispatches the relocated rows at their OLD paths, which do not exist at the
+  new tip — a per-row failure, late.
+- **Seat before recon** makes the map generator **REFUSE**: its population is the roster file, so
+  re-pointing rows whose cost is keyed by the old name orphans them, and its own arithmetic
+  (`costed + unscheduled == roster rows`) stops closing. Measured at the 1.24 hop:
+  `162 costed + 48 unscheduled != 204 roster rows`, naming the six orphans.
+
+**THE DISPATCH MECHANISM.** The campaign is not a loop over the roster. The map generator
+(`docs/phase4/hopA-inputs/shardmap.py`) reads the roster for its POPULATION and a banked per-row TSV
+for its COSTS, and emits a machine-readable plan; the driver (`src/run-h10-dispatch.ps1`) runs one
+worker's rows from that plan, slice by slice, with the ruled cooldown between slices. Both refuse
+rather than guess: the driver's `-Plan`, `-Worker` and `-FleetSize` are mandatory with no defaults
+(the same worker holds different row sets at different fleet sizes), and a plan whose digest does not
+reproduce dispatches nothing. **The recon leg predates the plan and therefore runs from hand-listed
+per-worker name lists through the per-package pipeline** — the driver's first use is the costed pass.
+
+⚠ **`testing` IS NOT A `-tests` ROW AND IS EXCLUDED FROM EVERY LIST**, until the converter seat that
+refuses it lands. It is a wholly hand-owned package, and the pipeline converts production **in place
+with no restore between rows**, so the row converts Go's `testing.go` straight over the hand-owned
+host every later row must then compile against. Measured at the 1.24 hop: the row left **14 tracked
+files modified and 19 new auto files** beside the 10 marked ones in `src/core/testing`, with CS0111
+duplicates — and the **eight** rows from it to the end of that list carry **one contamination event,
+not eight readings**. The tell is `unicode`, `unicode/utf8` and `unique` failing to BUILD; rows before
+it are unaffected, so the ordering decides how much a list loses. A list that includes it does not
+fail loudly — it produces readings, which is why this is a list-construction rule and not a gate.
+
+**THE TSV the plan is emitted from**, as the generator reads it — `--timings <path>`, no default and
+no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
+refuses; a required header read **by name, never by position**, carrying `row`, `word`, `verdicts`,
+`sweep_s`, extras ignored; `sweep_s` must be an integer, because **a row with no measured cost is
+UNSCHEDULED and never nominal**; a hand-stopped row is dropped by name **and the drop must fire**, so
+the banked TSV must still carry that row; duplicates take the larger and say so; the file's digest is
+computed and printed for provenance, not asserted.
+
+**Two of those columns are decided by the leg's own shape and are worth stating here rather than
+leaving to the cut.** `sweep_s` is the **CONVERTER's** cost around the **one** pipeline invocation — the
+recon leg makes **one attempt per row**, so the re-run inflation that afflicts a re-taking clock cannot
+arise by construction, and a row whose oracle is unstable is a READING rather than a retry.
+⚠ **`sweep_s` is NOT the wrapper's total wall** — it is the clock taken the moment the converter
+call returns, **before any post-processing** — and **the wrapper's own cost lands on NEITHER banked
+column**:
+
+```
+  sweep_s   the converter's own wall; the clock closes before the comparison document is opened
+  wall_s    the SAME number, differing in exactly one circumstance -- it supplies an integer where
+            `sweep_s` reads UNMEASURED, which is the hand-stopped row it was added for
+  post_s    the wrapper's own seconds, from that clock's close to the row's line being written:
+            a TRAILING column ruled 2026-09-20, carried by the wrapper's SEVENTH commit and NOT by
+            the three recon TSVs of the 1.24 leg, which the fifth blob emitted
+```
+
+**A row whose wrapper time dwarfs its conversion changes how a list is SCHEDULED while changing no
+banked cost.** That is why the third column exists instead of being folded into either of the first
+two — a cost measured nowhere is this fleet's recurring shape. Where a row banks
+`sweep_s := wall_s`, the banked number is the **converter's** wall either way; G's mtime derivation
+(row start in the log to the converter's exit, read from the ARTIFACTS) is the **check** on it, and a
+completion post states both so a difference becomes a finding about the clock rather than a silent
+disagreement.
+
+⚠ **The rule this paragraph's own correction earns, and it applies to every docs seat: a runbook
+sentence about a script is read at the SCRIPT'S BLOB before it is written.** A ruling is authority
+about what is DECIDED; it is **not** a measurement of what the code DOES. The two join silently when a
+ruling's wording is copied into a procedure, which is exactly how the superseded sentence recorded
+below got here.
+
+<!-- Dated correction, 2026-09-20 (C1). This paragraph previously read: "The wrapper's own time lands
+     on `wall_s`, which is not the banked figure." That was WRONG. It was written the same day, from
+     the wording of a ruling (COORD aaf87dd4b) rather than from the script, and it survived one
+     landing. i9 read the running blob (c27c0065) and COORD took the correction (787bbf64); C1
+     verified the citations independently at the blob before amending here, and the two readings
+     agree, so no third was taken.
+
+     Measured in `src/run-h10-recon.ps1` at 8de864a9a9 -- the blob all three recon lists of the
+     1.23->1.24 leg actually ran:
+
+         :418   $started = Get-Date
+         :422       $output = & $converter -tests -test-action all ...
+         :428   $elapsed = [int] ((Get-Date) - $started).TotalSeconds     <- the clock STOPS here
+         :460               $jj = Get-Content -LiteralPath $cmpSrc -Raw | ConvertFrom-Json
+                                                                          <- post-processing STARTS
+         :462/:464          foreach ($p in $jj.go.PSObject.Properties) ...
+         :545   $wallS  = $elapsed
+         :546   $sweepS = $elapsed
+         :551   $sweepS = 'UNMEASURED'
+         :557   $sweepS = 'UNMEASURED'
+
+     428 < 460, so $elapsed closes before the comparison document is even opened: BOTH columns are
+     that one number and NEITHER carries the post-processing. The occasion was a row whose converter
+     exited in ~66 s while its wrapper then held one core for ten minutes over a 4.77 MB comparison
+     document (G, add323f4) -- a real cost, which is why post_s was ruled, and which was never in
+     either banked column. The wrapper's own header sentence carried the same error and rides the
+     seventh commit. -->
+
+`word` is
+the leg's **outcome class**, a fixed vocabulary — `PASS` (0 diverged) · `DIVERGED` · `CONVERT` (rc ≠ 0
+at convert) · `BUILD` · `TIMEOUT` · `NOVERDICT` (the summary line absent) — and it is **filled, never
+placeholdered**: the map generator discards the value, but the column is the basis's only record of
+**which verdict a cost was measured under**, and a cost measured under `CONVERT` is not the same
+evidence as one measured under `PASS`.
+
+**IS THE LEG ALIVE? A CENSUS BY PROCESS NAME CANNOT ANSWER THAT**, and this is the one question a
+watcher asks most often. A converter census (`Get-Process go2cs`, scoped by executable path) answers
+*"is a CONVERTER running"* — and that answer is legitimately **0**, for minutes at a time, with no
+child process at all, while the wrapper post-processes a completed row. **A wrapper computing for ten
+minutes is indistinguishable from a hung one to a name-based census.**
+
+```
+  the reading that DOES answer it -- sample the WRAPPER's own PID, twice, a stated wall apart:
+      CPU delta over the interval    accumulating  -> computing     flat -> not
+      working set                    flat is normal; growth is its own question
+      child processes                none is normal AFTER the converter exits
+  measured once, 15 s apart:  +15.2 s CPU over 15 s wall, 117 MB flat, no child but a console host
+                              -- one core saturated, on a row whose converter had exited 10 min before
+```
+
+⚠ **And a row that spends its floor's worth of wall inside the wrapper is NOT a TIMEOUT.** The
+per-package deadline floor applies to the converter's test run; what says whether a deadline actually
+fired is the **results-file tail**, which states a deadline kill outright (floor 14). Reading a long
+wall as a timeout, with no tail read, invents a verdict the run never reported.
+
+⚠ **The liveness census is a READING and must not share a command shape with a kill.** Floor 5
+forbids `Get-Process <name> | Stop-Process` because it matches across the whole machine and has taken
+a sibling worktree's suite down; a liveness check that is one pipe away from that is an accident
+waiting for a tired operator. Scope by executable path for both, and keep the reading and the kill in
+separate commands.
+
+**THE POPULATION IS KEYED ON THE CORPUS AXIS — the build tags the pipeline actually converts
+under.** An eligibility census taken on a bare platform axis and the corpus's own axis are not
+different-but-equal accountings: `resolveBuildTags` applies the stdlib build tags to **every** `-tests`
+run unless `-tags` is passed explicitly, because a `-tests` run reconverts the package's PRODUCTION
+sources into the test assembly and must select the files the committed corpus was built from. **So a
+population keyed on a no-tags axis describes a build the hop will never perform.** At the 1.24 hop this
+moved exactly one row — a package whose only surviving test declaration is selected BY the purego tag
+and excluded without it — and the general rule it leaves is: **the recon leg is the authority on
+membership.** A row that yields zero verdicts under the corpus axis is not a row and is reported by
+name; a package outside the enumerated population that the tags select is found the same way.
+
+**THE HOST RULE.** The roster's platform marker records **the platform of the run that banked the
+row**, not a requirement on the runner: a row re-banked on windows carries `windows:` at the new
+release. A row whose windows reading diverges from its previous platform's bank is re-read on a linux
+host at the same tip before it is classified — diverged on both is hop debt, windows-only is a
+parity-campaign item disclosed as such with the row's bank being its linux reading, and matched is
+banked. **Hop completion is same-platform by construction.** Two row classes are decided by the
+package and not by scheduling: a package with no Go files under a platform's build constraints
+**cannot be converted there at all** (the converter refuses by name), and its marker reads `n/a`.
+
+**THE PRECONDITIONS, which H10 above states only in part.** The step names the four overrides and the
+never-the-sweep-wrapper rule; the rest are inherited from earlier stages and are restated here
+because a reader starting at H10 gets no pointer to them:
+
+| precondition | where it is ruled |
+|:--|:--|
+| all four overrides (the Go pair per H1.1; `DOTNET_ROOT` + PATH where the machine SDK lags the TFM) | H10 above |
+| the per-package pipeline, **never** `run-validated-sweep.ps1` | H10 above |
+| the pin asserted from `go version` **OUTPUT**, never a file, with `GOTOOLCHAIN=local` | H1 — and the target SDK's own `go` answers the MACHINE pin without it |
+| the `go` **on PATH** — the one the CONVERTER SPAWNS — itself resolves under the pinned GOROOT, which means **the pinned `bin` is FIRST on PATH**: `GOROOT` does NOT pin the child | i9's defect one: a shell asserting its own `go version` says nothing about what the converter's child process resolves, so the two can disagree silently and the row converts against the wrong toolchain reporting success. ⚠ **A GREEN TOOLCHAIN BANNER IS NOT EVIDENCE ABOUT THE CHILD** — R measured both halves on one box at the 1.24.13 hop: the converter logged `VERSION go1.24.13, read in-process` while the `go` it shelled out to came from PATH and refused with `requires go >= 1.24 (running go 1.23.x; GOTOOLCHAIN=local)`, and separately an ambient `GOROOT` overrode a binary invoked by ABSOLUTE PATH until `GOROOT` was exported. A row's toolchain is pinned in TWO places and the banner reports only the first; the recon wrapper's assertion of the PATH-resolved `go version` is the one that covers the second |
+| the output root is the worktree at the tip, whose `src/core` **is** the seed | H5's seeded-root rule; measured in `-tests` form at the 1.24 hop — a hand-own-carrying row converts rc 1 in a bare root and rc 0 seeded |
+| ≥ 25 GB free before a battery | H4a |
+| one conversion per output root, never two concurrent; one dispatch per worktree | H5 |
+| `CGO_ENABLED` pinned to the corpus state, exported rather than assumed | the corpus emission state |
+| an entirely hand-owned package converts only under `-test-allow-handown` | the converter's own refusal, by name |
+| the leg tree carries **no ignored build residue** before row 1, censused with `git status --ignored=matching` and never `--porcelain` alone, with a control | G measured **516** ignored entries under `src/core` surviving a `git clean -fd`, behind a `status --porcelain` reading **0** — porcelain cannot see an ignored path, so a tree that READS clean is not a tree that IS clean |
+| a launcher that WAITS for a sibling battery to clear excludes a `dotnet.exe` whose **command line hosts `pwsh.dll`** | 2026-09-21, the rehearsal: a launcher keyed on `dotnet.exe` alone waited **40 min** on TWO such processes with no battery running at all. A `pwsh` installed as a **dotnet tool** runs as `dotnet.exe … pwsh.dll`, so the harness's own tool shells — including the one the launcher was started from — are indistinguishable from a build by image name, and the predicate waits on itself. Measured again on the i7 the following day: both `dotnet.exe` processes on the box hosted `pwsh.dll` and neither was a battery. Read the COMMAND LINE, which is also floor 5's rule one step on: a census by image name is wrong for the same reason a kill by image name is |
+| any **preflight build** — a dry run, a red arm, a rehearsal row — runs in a tree that is **NOT the leg's** | i9 measured `go/types` (443 files) and `net` (672) carrying pre-run build output in a tree where neither had ever been converted: a `dotnet publish` builds a dependency **CLOSURE**, so the at-risk set is everything the arms' closures touched and not the rows that ran |
+
+**THE TREE DISCARD, which is a MEASUREMENT before it is a removal.** The leg's worktree is thrown away
+at the end, and until the 1.24 hop the runbook said nothing about what has to be read off it first.
+Two lanes found the same class independently on the same night, from opposite ends.
+
+```
+  BEFORE row 1   census the tree:  git status --ignored=matching  (never --porcelain alone)
+                 with a CONTROL:   the same predicate on a never-built tree must answer 0
+                 record the number. A non-zero BEFORE is not a stop -- it is a reading the
+                 completion post carries, and it decides whether the arm below is owed.
+  AT THE DISCARD re-census, and assert the TRACKED count ACROSS the removal:
+                 git ls-files | wc -l   before  ==  after
+                 A removal that takes a tracked file is the failure this assert exists for, and
+                 it is the same hazard as floor 8's `git status --porcelain | grep '^ D'`, which
+                 still runs: one guards what a glob DELETED, this one guards what a clean REMOVED.
+```
+
+⚠ **THE INVERSE OF A LEG IS SCOPED TO THE TREE, NOT TO `src/core` — and the example in the rule above
+is what made that easy to miss.** `Generated/` under `src/core` is where the bulk of the untracked
+output is, so a cleanup written from that example stops at `src/core` and leaves the rest. **The leg
+also writes outside it.** Measured at the 1.24.13 hop by G, cleaning for a 107-row list with the
+tracked count asserted at **14,485 either side**:
+
+```
+  comparison/results records (every row re-ran, so all were residue)   82 across 41 packages
+  ignored leg output under src/core                                 1,052
+  untracked-not-ignored under src/core                                 65
+  LEG FILES OUTSIDE src/core                                            5   docs/validation/current/*.md
+```
+
+⚠ **And it is not one lane's quirk**: i9 found the same class independently in **two** of its own
+throwaway trees — 4 `docs/validation` paths in one and 2 in another, written by converter runs for
+unrelated arms — and noticed only once G had named it. **Two lanes, two machines, the same
+out-of-scope writes.** So the removal-by-name list is built from a census of the WHOLE TREE, and
+`docs/validation/current/` is named here as the known second location rather than left to be
+rediscovered a third time.
+
+
+⚠ **Why `--porcelain` alone is the wrong instrument here, stated as the measurement and not as
+advice.** `git clean -fd` does not remove ignored paths and `status --porcelain` does not report
+them, so the two agree on **0** over a tree holding hundreds of files of prior build output. G's
+number was **516**. A leg relaunched into such a tree is not a relaunch into a clean tree, and
+nothing in the reading says so.
+
+⚠ **AND IN WINDOWS POWERSHELL THE CENSUS NEEDS ITS ENCODING SET, OR IT MEASURES A SMALLER TREE IN
+SILENCE.** PS 5.1 decodes a native command's stdout with the **console codepage**, so `git`'s UTF-8
+path bytes for the corpus's `Δ`, `ж`, `Ꮡ` and `ˢ` names mangle on the way in and those paths read as
+**missing** — a smaller population, censused clean, with nothing in the output saying a byte was lost.
+Set `[Console]::OutputEncoding` to UTF-8 around **every** `git` call in Windows PowerShell, not only
+this one. The residue answer this was found on stands at **ZERO over 96,792 files with 0
+unresolvable**; it is the instrument that was wrong, not the tree, and an unset codepage is the shape
+that would have made a dirty tree read clean.
+
+⚠ **And the at-risk set is the dependency CLOSURE, not the rows that ran** — which is the half that
+surprises. i9's own census corrected i9's first hypothesis: `go/types` and `net` carried pre-run
+`bin`/`obj` although neither had ever been converted in that tree, because a `dotnet publish` for one
+row's arms builds much of `src/core`. So "only rows 1–4 ran, so only rows 1–4 are exposed" is false
+by construction, and a preflight build belongs in a different tree for exactly that reason.
+
+**When the BEFORE census is non-zero, the leg owes a two-row arm before its TSV is pushed** (ruled at
+the 1.24 hop): after the list completes and **before** the tree is discarded, cut a SECOND throwaway
+worktree detached at the same tip, build the converter in it, and re-run two rows there — **the
+heaviest-residue PASS row and one first-in-tree row** — comparing **word, verdict count and the
+diverged set** against the leg's. A match on both retires the exposure and the TSV pushes with the
+arm's reading in the completion post; **any difference is a finding and the list re-runs on the clean
+tree.**
+
+⚠ **TWO QUESTIONS ABOUT A RECORD'S TIMESTAMP, AND THEY TAKE TWO DIFFERENT PREDICATES.** Ruled at the
+1.24 hop after a wrapper gate and the evidence spec were found reading opposite ones:
+
+```
+  "did THIS ROW write it"   the GATE          LastWriteTime, against the ROW's own start
+  "was this COPIED in"      the evidence (a)  CreationTime, read on the tree's ORIGINALS
+```
+
+An **overwrite leaves `CreationTime` at the original** — NTFS tunnels it back through
+delete-and-recreate — so `CreationTime` calls a **freshly rewritten record STALE** and is the wrong
+predicate for the gate; `LastWriteTime` is correct whether the converter overwrites or recreates, and
+a refusal prints both timestamps and the row's. ⚠ **The run-window read belongs on the ORIGINALS, or
+on a copy made with timestamps preserved**: per-row evidence copied with `Copy-Item` gets a **new**
+`CreationTime`, so a run-window read over the copies reports the moment each lane ran its evidence
+commit rather than when the record was written — three lanes, three wrong answers, all internally
+consistent.
+
+⚠ **The argument that residue is benign is an ARGUMENT, and the runbook records it as one so a reader
+can refuse it.** It runs: the converter binary is byte-identical and was never rebuilt; the tree tip
+never moved; and the converter rewrites every `.cs`, so MSBuild sees this run's timestamps and an
+incremental build cannot skip on stale inputs. Each of those three is checkable and together they are
+persuasive — but they are a chain of reasoning over three facts, not a reading, and the two-row arm
+costs one tree and about three minutes of rows. **Spend it rather than let the basis carry an argument
+where a measurement was available.**
+
+**Reclaim children-first, with the PARENT test taken AT THE ACT** (floor 12): a tree whose
+`--git-common-dir` equals its `--git-dir` and whose `git worktree list` has more than one row is a
+PARENT and is never removed — removing it takes every child with it. The test is taken at the moment
+of removal and not from a note made earlier, because a sibling lane can have attached a child in
+between.
+
+**THE PER-ROW STEPS** are H10's five above, and two of them are where a hop's roster edits actually
+happen: the **verdict count re-derives** (the denominator moves), the **manifest is RE-SIGNED, never
+edited** — and since 2026-09-05 a re-derived manifest emits `deferred`/`structural`, so a hop retires
+every legacy label — the **proof page regenerates and the badge recomposes from it**, and the
+**per-package deadline floors are re-checked**. A cleared relocated row needs five artifacts and
+**four of them are `-tests` output**: the roster row is the docs edit, while the green badge, the
+proof page, the `.tests.csproj` and the disclosure manifest are all produced by the re-bank. That is
+why a relocated row cannot be cleared by a docs commit ahead of its run.
+
+⚠ **And two different units meet in this step, so name which one a number is.** A package whose only
+test declarations are benchmarks emits a **complete test project** — `.tests.csproj`, host, manifest,
+package info — with **zero converted test source in it**; the declarations go to the manifest as
+deferred. A gate asking *"does the `.tests.csproj` exist"* scores that row present. So **"declarations
+recorded" and "C# test source produced" are different quantities**, a row can be non-zero in the first
+and zero in the second, and a 0-denominator ruling has to travel with the row rather than be inferred
+from either count.
+
+<!-- Derivation, 2026-09-20 (C1). Order and the two refusals: COORD 1e2d12a64 §1, on C1's brief
+     d0c83ed9 (the seat-before-recon refusal measured in-process against shardmap.py with an
+     unmodified copy reproducing the in-tree run byte-identically as the control) and C2's pre-flight
+     5ceedaf88. Dispatch mechanism: DESIGN-h10-dispatch-driver.md and the rulings e0d5121e2 §7 /
+     4327ab7e1 §2; the mandatory-parameter and digest refusals are read from run-h10-dispatch.ps1's
+     own header and parameter block. TSV: shardmap.py parse_timings_tsv, read at master 4d25779a1a.
+     Host rule: COORD 1e2d12a64 §3. The n/a class: C2 5ceedaf88 measured the converter's refusal on
+     the two windows-only rows; C1 re-measured the platform class of all 227 skeleton rows with
+     `go list -e` per GOOS at the pinned 1.24.13 GOROOT under the corpus tags -- 225 both, 2
+     windows-only, 0 linux-only, with a fabricated package as the control (the first run read 0 of
+     227 on linux because one unresolvable package aborts the listing without -e: an all-zero shape,
+     caught by the shape and not the rc). The seeded-root arm in -tests form: C2 5ceedaf88 §7(a),
+     `sync` rc 1 bare / rc 0 seeded. The five-artifact bill: C1 436b48795 §6. -->
+
+#### Amendment 2026-09-20 (C1) — the RE-BANK, in stage: the driver, the shard, the per-row act, and how a row BANKS
+
+**This is the step's fourth act and the first three have landed.** The order this section already fixes
+— RECON LEG → ROSTER SEAT → PLAN → DRIVER — is complete through the plan, so what follows is the
+procedure for the act that re-banks a row, written in stage rather than recorded after it.
+
+⚠ **THE LANDED DISPATCH SCRIPT CANNOT PERFORM THIS STEP, and that is a measurement rather than a
+caution.** `src/run-h10-dispatch.ps1` dispatches the **sweep** per row. H10 forbids the sweep for a
+re-bank in this section's own words — it is the steady-state gate, enforcing the exact banked count and
+a drift-clean corpus, **both of which a re-bank invalidates by design** — and the sweep selects among
+BANKED rows, so it cannot reach the 23 candidates or the nine relocation successors **at all**. What is
+sound in that script is its plan reader, its digest gate, its mandatory-parameter refusals, its slice
+packing and its cooldown; what is wrong is only its per-row body.
+
+**THE DRIVER IS A MODE ON THE LANDED SCRIPT, NOT A SECOND SCRIPT.** `-Mode rebank` keeps the reader,
+the gate, the refusals, the packing and the cooldown, and replaces the per-row body with the recon
+wrapper's pipeline block; `-Mode sweep` keeps today's behaviour for the steady-state passes this
+section already assigns it. A second script would fork the plan reader and the digest gate, which are
+the two pieces no lane should hold twice.
+
+⚠⚠ **THE DRIVER'S TREE IS A LINKED WORKTREE *ON A BRANCH*, WHICH IS THE OPPOSITE OF THE RECON
+LEG'S AND IS EASY TO READ BACKWARDS FROM THIS SECTION.** The recon leg's tree is **detached and
+thrown away** — the paragraphs above say so, and its wrapper REFUSES a tree whose HEAD is on a
+branch, precisely so nothing can be committed from it by habit. **The re-bank's tree is the
+opposite by ruling**: its artifacts are BANKED and committed from it, so it is linked *and on a
+branch*. The linked-worktree guard, the census, the tracked-count assert and the one-worktree-per-cut
+floor are all kept; it is only the detached requirement that inverts.
+
+⚠ **So the driver must say so explicitly, and the refusal must stay the default.** The wrapper the
+driver invokes per row carries an opt-in switch for exactly this case, defaulting to the refusal, and
+a run that uses it **reports it in the leg's own output** rather than passing silently — a caller
+that turns a guard off leaves a trace a reader of the log can see. **A reader checking that switch
+against this section should find both halves here**: the recon leg's detached tree above, and this
+paragraph.
+
+**THE PER-ROW ACT** is the recon wrapper's invocation, unchanged:
+
+```
+go2cs -tests -test-action all -test-config Release -test-timeout <floor> \
+      -go2cspath <tree>/src  <goroot>/src/<row>  <tree>/src/core/<row>
+```
+
+- ⚠ **The output directory is the SECOND positional** (floor 3), and it is the worktree whose
+  `src/core` **is the seed** — a hand-own-carrying row converts rc 1 bare and rc 0 seeded, measured in
+  `-tests` form.
+- **`-test-timeout` is DERIVED from the sweep's own long-timeout table, never copied** — a copied list
+  has drifted twice — with a relocated row's floor **fanned out to its successors**, and a derivation
+  reading fewer than five entries must refuse. Floors are floors: raise for a slower box, never lower.
+- **No `-tags`** (the corpus axis arrives by doing nothing, and a no-tags population describes a build
+  the hop will never perform); **no `-test-filter`** (a filtered run publishes no artifacts); **no
+  `-test-allow-handown`** — it short-circuits the host check and is what destroyed the `testing` row.
+- **Capture the exit code on the very next line**, before any pipe or command substitution (floor 7).
+  Keep `2>&1` — the classifier reads stderr to separate CONVERT from BUILD — lower the error preference
+  around that call alone, restore it in a `finally`, and reset the code per row.
+
+**THE WORDS are the fixed vocabulary, filled and never placeholdered**: `PASS` banks; `DIVERGED` mints
+or re-signs disclosures, then banks or routes; `CONVERT` and `BUILD` bank nothing and owe a sizing;
+`TIMEOUT` re-dispatches at a raised budget; `NOVERDICT` is recorded by cause. ⚠ **A long wall is not a
+TIMEOUT** — only the results-file tail says a deadline fired (floor 14) — and ⚠ **NOVERDICT banks no
+count**: it reads `NOMATCH`, never 0, with the cause written beside the row.
+
+**HOW A ROW BANKS.** Each worker cuts **one lane ref per shard** off the version tip, carrying that
+shard's artifacts **only** — never `docs/validation/index.md`, never the roster header. The coordinator
+merges the refs as **incremental trains, one leg at a time**, re-asserting the checksum after each, so
+that a red row names its own shard. ⚠ **The roster's figures are DERIVED and never hand-set**:
+`src/check-roster-format.ps1` recomputes the header from the table — validated count against row count,
+verdicts against the Tests column, disclosed against the Disclosed column, the percentage following
+from those — so a worker edits rows and the coordinator takes the header from the guard.
+
+⚠ **`docs/validation/index.md` IS ONE SHARED FILE EVERY ROW REWRITES, so no lane ref may carry it.**
+Measured on a one-row dry run: re-banking a single row's proof page **removed 25 lines from the shared
+index**. It is regenerated **once, centrally, after the last leg**, and its row count is asserted
+against the roster.
+
+**THE RESUME LEDGER is part of the driver, not a habit.** Append-only and idempotent, keyed on the
+corpus commit, the converter commit and the converter binary's mtime, so a worker resuming mid-shard
+re-enters at the first unrecorded row rather than at the first row. ⚠ **A row that is in the plan and
+in no shard's ledger is this campaign's one unrecoverable failure mode — it is a gate, not a hope**, and
+the closing arithmetic that catches it is `dispatched + unscheduled == the population` and
+`banked + candidates + named debt == the population`.
+
+**THE TSV** keeps the leg's eleven columns as its floor, read **by name and never by position**, LF
+only, with `sweep_s` an integer or the row is unscheduled. The driver adds `W`, `worker`, `slice` and
+`seq` — which the landed dispatcher already emits — plus `banked` ∈ {yes, no, debt} and `manifest_pins`.
+⚠ `sweep_s` is the **converter's** wall, closed before any artifact is read, and `post_s` is the
+wrapper's own seconds; the wrapper's cost lands on neither.
+
+**THE SHARD SIZE IS W=4 where the Windows side of the second laptop preflights green, and W=3 is the
+fallback.** W=3 drops that worker, moves its rows onto the three remaining, adds a third slice and a
+second cooldown gap per worker, and costs about a quarter-hour of makespan. ⚠ **The makespan figures
+are LOWER BOUNDS and the plan file says so by carrying no makespan line at all** — the numbers live in
+the generator's stdout, and a reader who finds them in the plan is reading something else.
+
+⚠ **THE RESERVED SET IS DERIVED, PINNED TO THE FASTEST WORKER, AND NOT SILENTLY ABSORBED.** It comes
+from the sweep's own long-timeout table rather than a typed list, and where a declared-reserved row has
+no cost it is **unpinnable and stays named** instead of being dropped.
+
+**THE REHEARSAL IS ONE SHARD, ON A WINDOWS BOX, AT THE VERSION TIP AFTER THE APPLY BATCH**, and a
+dry run of that same shard precedes it because the script has never executed. The shard is chosen so the
+riskiest artifact lands **first**: a relocated principal target at seq 1, and a row with committed pins
+to exercise the re-sign path. ⚠ **No shard of any size carries all three required classes**, so the
+missing one is **grafted by name** — which is also the five-pin mint site and the single
+highest-risk act of the campaign.
+
+⚠⚠ **AND THE GRAFTED ROW IS IN THE PLAN, NOT OFF IT — read the plan before grafting.** The mint-site
+row is assigned at **both** sizes: at W=4 to the fastest worker's slice 1 and at W=3 to the
+coordinator's slice 1, each under its own sequence number. So grafting it onto a rehearsal shard that
+belongs to a different worker does not add an unassigned row — **it hands one worker a row the plan
+gives to another**, and the duplicate is real. The rehearsal must either take the row from the worker
+the plan assigns it to, or record the graft as a **REASSIGNMENT** against that plan row; what it must
+not do is call the row off-plan, because then nothing reconciles it. ⚠ **The train's
+every-row-exactly-once checksum is the gate that catches this**, and it can only catch it once two
+shard refs exist — which is later and dearer than one look at the plan file now.
+
+⚠⚠ **AND THE RESOLUTION IS THAT THE REHEARSAL DOES NOT BANK THE GRAFTED ROW AT ALL.** It runs there
+as **EVIDENCE ONLY** — its TSV line, its minted disclosure file and its artifacts captured to the
+rehearsal's scratch and posted as a **prediction** — and is never committed from the rehearsal. The
+worker the plan assigns it to banks it in the campaign at its own sequence number, and **the minted
+file there must EQUAL the rehearsal's by content**: the mint is deterministic, so a difference is a
+finding rather than a discrepancy to reconcile. The row is therefore **reassigned for the rehearsal,
+non-banking** — which is the wording to use, because it names both halves.
+
+⚠ **The driver grows NO "banked elsewhere" skip.** The plan stays the single source of who banks
+what, and the every-row-exactly-once arithmetic keeps its meaning precisely because nothing in the
+driver is allowed to except a row from it. **The rehearsal's own native rows DO bank if it is green**
+— they are that worker's shard and its campaign run starts at the next slice — and **a red rehearsal
+banks nothing at all.**
+
+⚠ **A HOLDER IS A PROPERTY OF `W`, so every claim about one names its `W`.** The same row sits under
+different workers at different fleet sizes, and a sentence that names a holder without naming the size
+is not checkable — which is how the off-plan reading survived its first two readers.
+
+**THE ACCEPTANCE PREDICATE IS FIVE DECIDABLE CLAUSES** — the shard's TSV complete with every word
+filled; the four artifacts present per row and **written by that row**; the format gate at 0 with its
+relocation orphans either cleared or **named as hop debt**; the roster header re-deriving; and the mint
+site's manifest carrying its pins, each with a class and a signature, every deferred entry carrying its
+want, its reading and its plan. ⚠ **Assert an artifact's freshness by LAST WRITE TIME, never by
+creation time** — NTFS tunnels creation time back through a delete-and-recreate and will call a freshly
+rewritten record stale. ⚠ **And a gate never made to fail proves nothing** (floor 13): remove one pin
+from the rehearsal's manifest, confirm the format gate names that row, restore, verify byte-identical.
+
+**Amended 2026-09-21 (COORD, from the rehearsal):** three of those clauses are read differently than
+the sentence above them implies, and each was measured rather than reasoned.
+
+1. **The freshness clause reads FRESH *or* TRACKED-AND-UNMODIFIED, never freshness alone.** The badge
+   writer is idempotent by construction — `writeReadmeFile` writes only `if needToWriteFile(...)`, the
+   same skip the layout reconciler's comment rests on (`platformEmit.go`: *"emitted" means "the bytes
+   changed"*) — so a row whose counts did not move rewrites nothing and its README keeps a
+   `LastWriteTime` older than the row's start. On the rehearsal shard **5 of 7 READMEs** were in
+   exactly that state. A predicate reading only the timestamp calls them stale and a correct shard
+   reds; a predicate reading only trackedness cannot see a record a run failed to rewrite. Both
+   halves, disjoined, are what the clause means. (Last-write-time over creation time is unchanged, and
+   for the NTFS reason already stated.)
+2. **`go2cs_test_disclosures.json` is HAND-OWNED and is never minted by a run**, so "mint site"
+   language about it is wrong wherever it appears. `src/core/.gitignore` states the rule at the file
+   it protects — the manifest is *"deliberately NOT listed here … authored and committed like source,
+   never regenerated"*, unlike the three per-run `go2cs_test_*.json` artifacts beside it that ARE
+   ignored. A DIVERGED row's pins are **AUTHORED from that row's divergence evidence**, by a human
+   reading the comparison, and the thing that BINDS them to the roster is the format gate's
+   **pin-count check** (`check-roster-format.ps1` §2b): a row's largest per-platform `Disclosed` claim
+   may not exceed what its manifest can account for. Until 2026-09-22 that check asked only whether
+   the FILE existed — deleting one of `database/sql`'s two pins left it silent — so before that date
+   the acceptance predicate's manifest clause was weaker than it reads.
+3. **A shard's banking path list is the row's OWN directory MINUS its sub-package directories, plus
+   that row's proof page — and never `docs/validation/index.md`**, which the paragraph above already
+   excludes for its own reason. The subtraction is not tidiness: converting `crypto` mirrors GOROOT
+   testdata **recursively** into sibling packages' `testdata/` directories — on the rehearsal,
+   **28 files** under `crypto/x509/testdata` (including the nist-pkits set) and **8** under
+   `crypto/tls/testdata`, every one byte-identical to its GOROOT source. That is RESIDUE of the
+   parent's conversion, not `crypto`'s artifacts and not evidence about `x509` or `tls`, and a shard
+   that banks its row's directory wholesale carries another row's testdata into the train.
+
+⚠ **A REFUSAL THAT NAMES A HOP DEBT IS A PASS; A FABRICATED PROOF RECORD IS NOT.** The relocation
+targets link their **source's** existing proof record — no proof file is moved, renamed or created — so
+the file count exceeds the row count by design. Where the format gate refuses a row on that basis the
+refusal is the gate being right, and the driver retires the row rather than inventing a record to turn
+the gate green.
+
+**A RED REHEARSAL RETURNS TO ITS CAUSE AND NOTHING FROM IT BANKS**: a driver defect re-cuts the driver
+and re-rehearses **on the same shard**, because the shard is the control and a second one measures a
+different thing; a converter, generator or runtime defect goes to that seat's lane and the campaign does
+not launch; a plan defect re-emits the plan and restarts the rehearsal from its first row.
+
+<!-- Provenance. The draft this amendment is folded from: claude/coord-h10-driver-brief-draft
+3d8e522b57, docs/phase4/DRAFT-h10-driver-brief.md, 311 lines, sections A-G, drafted on the coordinator
+box by sub-agent from this section's H10, the landed plan and the recon wrapper, every item tagged
+RUNBOOK-SOURCED, RULED or PROPOSED. The ten open questions it raised were ruled at mailbox 0cb09c3 and
+are folded here in that form: (1) per-shard lane refs off the version tip carrying artifacts only,
+merged as incremental trains, roster figures derived by the format tool; (2) the shared index excluded
+from every lane ref and regenerated once centrally with its row count asserted; (3) -Mode rebank on the
+landed script with no second script, cut by the wrapper's author; (4) the worktree linked and on a
+branch, with the linked-worktree guard, census, tracked-count assert and floor 11 kept; (5) W=4 with
+W=3 the fallback; (6) the rehearsal shard = the coordinator's W=4 slice 1 plus the mint-site row
+grafted by name; (7) the acceptance predicate as written plus the deliberate-regression control, an
+orphan refusal naming a hop debt being a PASS; (8) the TSV gains W, worker, slice, seq, banked and
+manifest_pins; (9) -SkipBuild after row 1 kept, a worker resuming mid-shard rebuilding on its first
+row; (10) the idempotent append-only resume ledger folded into the driver seat. The central finding
+that the landed script dispatches the sweep is the draft's, verified here against this section's own
+never-the-sweep-wrapper sentence and against the recon wrapper's header. The one-row index measurement
+and the seeded-root arm are cited from the readings already recorded in this section rather than
+re-derived. A read and a docs act: this lane has no .NET and no PowerShell, so no figure here was
+produced by running the driver, the format gate or the sweep. -->
 
 ### H11 — Publication and compatibility guards **GATE**
 
@@ -1816,6 +3012,15 @@ repetition count and where the reading is recorded, and do it before the map lea
   The sweep **throws** when `version.props` disagrees with GOROOT's `VERSION` file — so a worker on
   the old toolchain gets a loud refusal rather than a wrong answer, but it should be caught in the
   shard's acknowledgement rather than at row 1.
+- **A two-sided worker preflights BOTH arms, and a bounded search that finds nothing is not an
+  answer.** A box that runs rows on two sides (a native side and a WSL/linux side) is two workers
+  sharing a name: each has its own PATH, its own GOROOT and its own clone, and a green preflight on
+  one says nothing about the other. Measured 2026-09-20 at the 1.24.13 hop: a box whose native arm
+  passed first run had **no pinned GOROOT at all on its linux arm** — it carried the previous
+  corpus pin and the ambient toolchain — so every linux-only row routed there would have run
+  against the wrong toolchain or not at all. Provision side-by-side under the arm's own home rather
+  than replacing the ambient `go`, which would make the pin assertion vacuous by removing its
+  dissenting control.
 - **The whole-solution build has been run once**, so the per-package builds go incremental.
 - **The converter binary was rebuilt after the toolchain move** (§1.2) — and after any embedded-asset
   edit.
