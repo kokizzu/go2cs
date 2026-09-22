@@ -38,8 +38,6 @@ using static go.crypto.@internal.fips140.check_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.crypto.@internal.fips140.hmac_package.HMAC, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -53,7 +51,6 @@ using static go.crypto.@internal.fips140.check_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/fips140/check/check.go", "check.cs", "ADxsgoKWgIKmgpaCAAoahIKCgoKClISCzIKChIKW")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.fips140;
