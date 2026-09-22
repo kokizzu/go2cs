@@ -55,6 +55,10 @@ using FatalReport = go.golib.FatalReport;
 using Random = System.Random;
 using BinaryPrimitives = System.Buffers.Binary.BinaryPrimitives;
 
+// The push block's parameter types, spelled as the emitted runtime.cs spells them (:6-7).
+using abi = go.@internal.abi_package;
+using @unsafe = go.unsafe_package;
+
 // Hand-owned (no *_impl.go exists, so a reconvert never regenerates it); marked so the marker-based
 // readers see it as well as the suffix-based ones.
 [module: go.GoManualConversion]
@@ -71,4 +75,24 @@ partial class maps_package
         Random.Shared.NextBytes(bytes);
         return BinaryPrimitives.ReadUInt64LittleEndian(bytes);
     }
+
+    // The REST of the push block -- runtime/malloc.go:1729/:1798 (maps_newobject, maps_newarray) and
+    // runtime/mbarrier.go:234/:384 (maps_typedmemmove, maps_typedmemclr) -- allocate, copy and clear
+    // RAW Go-layout memory: the swiss table's groups, addressed by the descriptor's GroupSize, SlotSize
+    // and ElemOff offsets. The managed model has no such memory (golib's map<K,V> is a dictionary, and
+    // abi's MapType projection reports those offsets as an honest ZERO), so there is no body that would
+    // not fabricate one. Each REFUSES BY NAME -- the FuncPCABI0 precedent (internal/abi/funcpc_impl.cs):
+    // a Go panic the test host reports as a failure carrying this text, never a NotImplementedException
+    // that reads as a missing implementation. The text is written to serve as the row's disclosure
+    // signature (runtime-capability, COORD ruling 2026-09-22).
+    private static System.Exception refuseRawGroupMemory(string name) =>
+        panic($"runtime-capability: {name} over raw Go-layout group memory has no managed answer (golib map is a dictionary)");
+
+    internal static partial @unsafe.Pointer newarray(ж<abi.Type> typ, nint n) => throw refuseRawGroupMemory("newarray");
+
+    internal static partial @unsafe.Pointer newobject(ж<abi.Type> typ) => throw refuseRawGroupMemory("newobject");
+
+    internal static partial void typedmemmove(ж<abi.Type> typ, @unsafe.Pointer dst, @unsafe.Pointer src) => throw refuseRawGroupMemory("typedmemmove");
+
+    internal static partial void typedmemclr(ж<abi.Type> typ, @unsafe.Pointer ptr) => throw refuseRawGroupMemory("typedmemclr");
 }

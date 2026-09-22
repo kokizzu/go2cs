@@ -2,6 +2,90 @@
   "schemaVersion": 1,
   "disclosures": [
     {
+      "name": "TestMapDelete",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestMapDeleteClear",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestMapIndirect",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestMapPut",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestMapSplit",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestMapZeroSizeSlot",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableClear",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableIteration",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableIterationDelete",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableIterationGrowDelete",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableIterationGrowDuplicate/grow",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableIterationGrowDuplicate/split",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTableKeyUpdate",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
+      "name": "TestTablePutDelete",
+      "class": "runtime-capability",
+      "signature": "over raw Go-layout group memory has no managed answer (golib map is a dictionary)",
+      "reason": "runtime-capability: the test builds a real swiss table through NewMap and drives it, and the table lives in RAW Go-layout group memory -- allocated, copied and cleared by the push block runtime supplies to this package (runtime/malloc.go maps_newobject and maps_newarray, runtime/mbarrier.go maps_typedmemmove and maps_typedmemclr), addressed by the descriptor GroupSize, SlotSize and ElemOff offsets. The managed model has no such memory: golib map<K,V> is a dictionary with no swiss table behind it, and abi MapType projection reports those offsets as an honest zero. Each of the four refuses BY NAME in this package runtime_impl.cs, the internal/abi FuncPCABI0 shape, so the row fails with the text below rather than as a missing implementation. No managed implementation can meet this assertion without a managed group store, which is a design, not a seat (not taken). internal/runtime/maps IS the raw-memory swiss table; the tests that remain live are its managed surface. Coordinator ruling, 2026-09-22."
+    },
+    {
       "name": "TestTableGroupCount/makemap/n=-1/escape",
       "class": "runtime-capability",
       "signature": "dereference of a managed pointer with no address",
