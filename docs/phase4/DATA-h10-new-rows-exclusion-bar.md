@@ -115,3 +115,48 @@ the guard being right, not something for this seat to clear.
 **The three fips140 rows are still HELD** — `claude/r-h10-rebank-s2b` had not landed when this commit
 was cut (`git ls-remote` empty), so `crypto/internal/fips140/{aes,ecdsa,nistec}` are not in it and
 their proof pages still do not exist on any ref.
+
+---
+
+# AMENDMENT 2026-09-22 (third) — the three held rows MINTED; 213 → 216
+
+`claude/r-h10-rebank-s2b` **`a7cbca2637`** landed (one commit on `c6fdbe73c3`, 19 files), so the three
+rows held since the previous amendment are in.
+
+**Verified before minting, which is the check that caught the previous round.** Each proof page
+asserted present at that ref by `git cat-file -e`: `crypto.internal.fips140.aes.md` (1,093 B),
+`…ecdsa.md` (1,360 B), `…nistec.md` (3,959 B).
+
+**Counts cross-checked two independent ways, and they agree.** The proof pages state **5 · 10 · 44
+matched, 0 disclosed**; my own reading from the 1.24.13 source, taken before R's re-run existed, was 5
+(5 test functions, zero `t.Run`), 10 (2 functions with 8 `t.Run` sites) and 44
+(`TestP256PrecomputedTable` looping `i < 43` with a `t.Run` each, plus the parent). Two derivations,
+one number each.
+
+**Disclosed 0 verified rather than assumed:** none of the three carries a
+`go2cs_test_disclosures.json` at `a7cbca2637`. This is the check that made `unique` a 1 rather than a
+0 in the first batch, so it was run per package rather than taken from the brief.
+
+| row | Tests | Disclosed |
+|:--|--:|--:|
+| `crypto/internal/fips140/aes` | 5 | — |
+| `crypto/internal/fips140/ecdsa` | 10 | — |
+| `crypto/internal/fips140/nistec` | 44 | — |
+
+**`nistec`'s sentence carries the thing a reader would otherwise get wrong**: its 44 are its OWN
+surface at 1.24.13 and not an inheritance. The relocation routes `crypto/internal/nistec`'s 2,200
+verdicts to `crypto/internal/fips140test` as principal and this package **0** of them, and the two
+declarations it does receive are **benchmarks**, which produce no test verdicts — so the row carries
+no anchor. Its `p256_asm_test.go` page-boundary pair is a named flavour exclusion, its
+`(amd64 || arm64 || ppc64le || s390x) && !purego && linux` guard not selecting under the corpus's own
+`purego` tag, which is the shape the `fips140test` row already states for this family.
+
+**Roster arithmetic: 213 → 216.** 216 rows, no duplicates, all three in correct alphabetical position;
+the one out-of-order pair (`encoding/xml` before `encoding/pem`) is still the pre-existing one at the
+base and is still untouched. No `· linux: N` marker on the three, for the same reason as the other ten
+— none is measured. No header edit.
+
+**Orphan simulation re-run with the three pages added:** train-HEAD pages plus s2b's three (229 pages)
+against this roster (216 rows, 10 exclusions) reads **0 orphans** — 215 by name, 10 by link, 4 by
+exclusion — with `crypto/internal/fips140test` still the one page-less row. Still a simulation, not
+the merged tree, for the reason the previous amendment states.
