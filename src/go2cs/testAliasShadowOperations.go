@@ -37,6 +37,10 @@ type siblingTestSignals struct {
 	// siblingTestAddressedGlobalNames).
 	addressedGlobalNames []string
 
+	// publicizedTypeNames are the UNEXPORTED type names the test half reaches through one of its
+	// own EXPORTED members (see siblingTestPublicizedTypeNames).
+	publicizedTypeNames []string
+
 	// hasInternalTests reports whether any build-selected in-package `_test.go` file exists.
 	hasInternalTests bool
 }
@@ -68,6 +72,7 @@ func collectSiblingTestSignals(packageDir, packageName string, options Options) 
 
 	names := HashSet[string]{}
 	addressed := HashSet[string]{}
+	publicized := HashSet[string]{}
 	hasInternal := false
 
 	for _, entry := range entries {
@@ -95,17 +100,179 @@ func collectSiblingTestSignals(packageDir, packageName string, options Options) 
 		}
 
 		collectSiblingAddressedNames(file, addressed)
+		collectSiblingPublicizedTypeNames(file, publicized)
 	}
 
 	signals := siblingTestSignals{
 		funcMethodNames:      names.Keys(),
 		addressedGlobalNames: addressed.Keys(),
+		publicizedTypeNames:  publicized.Keys(),
 		hasInternalTests:     hasInternal,
 	}
 
 	sort.Strings(signals.funcMethodNames)
 	sort.Strings(signals.addressedGlobalNames)
+	sort.Strings(signals.publicizedTypeNames)
 	return signals
+}
+
+// collectSiblingPublicizedTypeNames records the UNEXPORTED type names an in-package `_test.go`
+// file reaches through one of its OWN exported members. The predicates mirror collectPublicizedTypes
+// exactly, one for one, because this is the SAME rule over a second input set rather than a second
+// rule: an exported struct field, an exported var or typed const, an exported function or method of
+// an exported type, and an exported named func type. Only the NAME is taken here; whether it denotes
+// a production type at all is decided against the real package scope by the consumer, which is the
+// step that keeps a test-only type from ever being publicized.
+//
+// Resolution is safe by Go's own rule: an in-package `_test.go` file IS the package, so it cannot
+// redeclare a name the production files already declare — an identifier here that matches a
+// production package-scope name therefore denotes exactly that object, with no shadowing to
+// disambiguate. A qualified `pkg.T` is skipped: another package's type is never this package's to
+// publicize.
+func collectSiblingPublicizedTypeNames(file *ast.File, names HashSet[string]) {
+	for _, decl := range file.Decls {
+		switch decl := decl.(type) {
+		case *ast.GenDecl:
+			for _, spec := range decl.Specs {
+				switch spec := spec.(type) {
+				case *ast.TypeSpec:
+					switch underlying := spec.Type.(type) {
+					case *ast.StructType:
+						// An EXPORTED field forces its type to be at least as accessible
+						// (CS0052) — and, as in the production pass, the declaring struct's own
+						// exportedness is not the gate, the field's is.
+						if underlying.Fields == nil {
+							continue
+						}
+
+						for _, field := range underlying.Fields.List {
+							for _, fieldName := range field.Names {
+								if !fieldName.IsExported() {
+									continue
+								}
+
+								addSiblingUnexportedTypeNames(field.Type, names)
+								break
+							}
+						}
+					case *ast.FuncType:
+						// An EXPORTED named func type emits a public delegate whose signature
+						// types must match it (CS0059).
+						if spec.Name.IsExported() {
+							addSiblingSignatureTypeNames(underlying, names)
+						}
+					}
+				case *ast.ValueSpec:
+					// An EXPORTED package-level var or typed const emits a public static field
+					// (CS0052).
+					for _, valueName := range spec.Names {
+						if !valueName.IsExported() {
+							continue
+						}
+
+						addSiblingUnexportedTypeNames(spec.Type, names)
+						break
+					}
+				}
+			}
+		case *ast.FuncDecl:
+			// An EXPORTED function, or an EXPORTED method of an EXPORTED type, emits a public
+			// member whose parameter and result types must be at least as accessible
+			// (CS0050/CS0051). A method on an UNEXPORTED receiver emits non-public and exposes
+			// nothing, which is the same gate the production pass applies.
+			if decl.Name == nil || !decl.Name.IsExported() {
+				continue
+			}
+
+			if decl.Recv != nil && !siblingReceiverIsExported(decl.Recv) {
+				continue
+			}
+
+			addSiblingSignatureTypeNames(decl.Type, names)
+		}
+	}
+}
+
+// siblingReceiverIsExported reports whether a method's receiver names an EXPORTED type, peeling the
+// pointer and any generic type parameters.
+func siblingReceiverIsExported(recv *ast.FieldList) bool {
+	if recv == nil || len(recv.List) == 0 {
+		return false
+	}
+
+	expr := recv.List[0].Type
+
+	for {
+		switch peeled := expr.(type) {
+		case *ast.StarExpr:
+			expr = peeled.X
+		case *ast.IndexExpr:
+			expr = peeled.X
+		case *ast.IndexListExpr:
+			expr = peeled.X
+		case *ast.Ident:
+			return peeled.IsExported()
+		default:
+			return false
+		}
+	}
+}
+
+// addSiblingSignatureTypeNames walks a signature's parameters and results, which is the
+// CS0050/CS0051 domain.
+func addSiblingSignatureTypeNames(sig *ast.FuncType, names HashSet[string]) {
+	if sig == nil {
+		return
+	}
+
+	if sig.Params != nil {
+		for _, param := range sig.Params.List {
+			addSiblingUnexportedTypeNames(param.Type, names)
+		}
+	}
+
+	if sig.Results != nil {
+		for _, result := range sig.Results.List {
+			addSiblingUnexportedTypeNames(result.Type, names)
+		}
+	}
+}
+
+// addSiblingUnexportedTypeNames peels a type expression to the unexported identifiers it names.
+// The peeling mirrors collectUnexportedNamedTypes: pointer, slice/array, map, channel, ellipsis and
+// through a func type's own signature, so a `[]func(hidden)` field reaches `hidden` exactly as the
+// production walk does.
+func addSiblingUnexportedTypeNames(expr ast.Expr, names HashSet[string]) {
+	switch expr := expr.(type) {
+	case *ast.Ident:
+		if !expr.IsExported() {
+			names.Add(expr.Name)
+		}
+	case *ast.StarExpr:
+		addSiblingUnexportedTypeNames(expr.X, names)
+	case *ast.ArrayType:
+		addSiblingUnexportedTypeNames(expr.Elt, names)
+	case *ast.MapType:
+		addSiblingUnexportedTypeNames(expr.Key, names)
+		addSiblingUnexportedTypeNames(expr.Value, names)
+	case *ast.ChanType:
+		addSiblingUnexportedTypeNames(expr.Value, names)
+	case *ast.Ellipsis:
+		addSiblingUnexportedTypeNames(expr.Elt, names)
+	case *ast.ParenExpr:
+		addSiblingUnexportedTypeNames(expr.X, names)
+	case *ast.FuncType:
+		addSiblingSignatureTypeNames(expr, names)
+	case *ast.IndexExpr:
+		addSiblingUnexportedTypeNames(expr.X, names)
+		addSiblingUnexportedTypeNames(expr.Index, names)
+	case *ast.IndexListExpr:
+		addSiblingUnexportedTypeNames(expr.X, names)
+
+		for _, index := range expr.Indices {
+			addSiblingUnexportedTypeNames(index, names)
+		}
+	}
 }
 
 // collectSiblingAddressedNames records every identifier an in-package test file takes the address of

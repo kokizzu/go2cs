@@ -241,6 +241,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		siblingSignals := collectSiblingTestSignals(pkg.Dir, pkg.Name, options)
 		siblingTestFuncMethodNames = siblingSignals.funcMethodNames
 		siblingTestAddressedGlobalNames = siblingSignals.addressedGlobalNames
+		siblingTestPublicizedTypeNames = siblingSignals.publicizedTypeNames
 		hasSiblingInternalTestFiles = siblingSignals.hasInternalTests
 		options.testFriendAssembly = hasSiblingInternalTestFiles
 

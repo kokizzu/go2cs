@@ -330,6 +330,26 @@ var hasSiblingInternalTestFiles bool
 // exactly as siblingTestFuncMethodNames pins reference spelling.
 var siblingTestAddressedGlobalNames []string
 
+// siblingTestPublicizedTypeNames holds the UNEXPORTED type names the build-selected IN-PACKAGE
+// `_test.go` half reaches through one of its own EXPORTED members. In Go the in-package test file
+// IS the package, so a production type consumed by an exported member of that file must be at least
+// as accessible as the consumer — but the production package go/packages loads excludes `_test.go`,
+// so collectPublicizedTypes never sees both halves of the decision in one scope and the type is
+// emitted with no access modifier: encoding/json declares `type isZeroer interface{ IsZero() bool }`
+// in encode.go and four EXPORTED fields of that type in encode_test.go's `Optionals`, which is
+// CS0052 x4 once the recompile model puts both in one compilation. Folded into
+// packagePublicizedTypes by collectPublicizedTypes, which resolves each NAME against the real
+// production scope and keeps only an unexported package-level TYPE — so a name declared solely by
+// the test half resolves to nothing and is dropped, and the existing fixpoint cascade then carries
+// the seed through exported method signatures unchanged. EXTERNAL `<pkg>_test` files are excluded
+// at the scan (collectSiblingTestSignals matches the package clause): their declarations emit into a
+// different C# class and can only reach this package through its exported surface, so they impose
+// no accessibility requirement on it. Populated for every production package immediately before its
+// analysis, in ordinary and -tests conversion alike, so production ACCESSIBILITY is mode-stable —
+// exactly as siblingTestFuncMethodNames pins reference spelling and siblingTestAddressedGlobalNames
+// pins storage shape.
+var siblingTestPublicizedTypeNames []string
+
 // packageTestAliasShadows is the subset of packageFuncMethodNames contributed ONLY by the
 // same-package test half. It does not affect qualification itself; statement emission uses it to
 // explain an otherwise surprising fully-qualified production reference when the reader is not

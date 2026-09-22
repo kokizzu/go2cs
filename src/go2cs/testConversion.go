@@ -654,6 +654,13 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// for the production pass, which cannot.
 	siblingTestAddressedGlobalNames = nil
 
+	// And likewise for the publicization seed: the in-package variant's own scope holds the
+	// production declaration AND the test file's exported consumer together, so its
+	// collectPublicizedTypes reaches the type through the ordinary rule. Leaving the seed set would
+	// also carry it into the EXTERNAL variant, whose declarations impose no accessibility
+	// requirement on this package at all.
+	siblingTestPublicizedTypeNames = nil
+
 	inputPath, err := filepath.Abs(inputPath)
 	if err != nil {
 		return err
