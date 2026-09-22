@@ -115,6 +115,11 @@
 # -------------------------------------------------------------------------------------------------
 # MODES
 #   entry <file>              whole-entry census. Refuses on ANY hit. STRICT.
+#   converted <file>...       STRICT census over a tracked CONVERTED GO TEST SOURCE, in which the
+#                             arms the definition marks [CONVERTED-CONTEXT] -- the LITERAL-shaped
+#                             ones -- are REPORTED with their counts and cannot refuse, while every
+#                             other arm refuses exactly as in entry. REFUSES TO RUN (rc 2) on a path
+#                             that is not one. See CONVERTED SOURCES below.
 #   subject <string>          the same census over one string (a commit subject). STRICT.
 #   tree <file> <baseline>    DELTA census over a tree-wide surface: hits in <file> at the worktree
 #                             (or at HEAD if it is not on disk) MINUS hits in `git show
@@ -157,6 +162,39 @@
 # about to write ADD one to a surface that already holds some?". Two questions; a clean reading from
 # one does not certify the other.
 #
+# -------------------------------------------------------------------------------------------------
+# CONVERTED SOURCES -- WHY THE LITERAL ARMS COME OFF, AND ONLY THERE (2026-09-22)
+#
+# A converted Go test source carries GO'S OWN TEST DATA, converted verbatim. STRICT's whole rationale
+# is that "the cost of the strict reading falls on the writer, as one rewrite of their own post" --
+# and that is FALSE of a file the lane did not author, exactly as it was false of the evidence record
+# that moved the documentation-constant admit into strict. MEASURED on two lanes' H10 re-bank shards
+# on the day this mode was added: 13 refusals on one and 25 on the other, over staged `*_test.cs`
+# under src/core, and every value was found verbatim in the same package's own `*_test.go` under the
+# pinned GOROOT -- a dnsName «ipv4» in a certificate test, policy-test names, a base64 position map
+# whose characters satisfy the quad arm, a loopback-name-and-port literal satisfying host_ctx. The lanes ran repoguard
+# by hand and explained the count in prose on every shard. The tool says it instead.
+#
+# WHAT MOVES: only the arms the DEFINITION marks [CONVERTED-CONTEXT]. Nothing is listed in this
+# script -- an arm is declared once, in the patterns file, with every other property of it. A run
+# whose downgrade set reads EMPTY is an instrument failure (rc 2), not a run that happens to equal
+# entry.
+#
+# WHAT DOES NOT MOVE: profile_root, home_unix, the unc_ arms and the run-time token arms refuse in
+# converted mode exactly as in entry. A REAL identifier reaching a converted file is not Go's data --
+# it is an absolute source path baked into an emission, or an account name in a captured line -- and
+# that is precisely the class the repository's own guard keeps its denied-token pass running for over
+# the very fixtures whose STRUCTURAL pass it skips (fleetIsUpstreamFixture). A unc_ hit here is
+# therefore either the JSON/C#/Go escape the unc_escape admit already recognises IN BOTH MODES, or it
+# refuses and the lane reads it against the guard. STATED RESIDUAL: an escaped literal whose host
+# token is not that recognised escape shape still refuses in this mode.
+#
+# THE GATE OF RECORD for the TRACKED TREE is repoguard's TestNoFleetIdentifiersInTrackedFiles, which
+# already admits this class by file. This mode is the PRE-POST reading of the same file, and it is
+# STRICTER than that guard by construction: the guard skips the whole structural pass for a
+# `*_test.cs`; this keeps every structural arm but the marked ones. `entry` remains the gate for
+# messages, docs and scripts, and a file that is not a converted source is refused INTO it.
+#
 # EXIT CODES
 #   0  clean
 #   1  refused -- one or more hits (for `tree`, one or more ADDED hits)
@@ -197,6 +235,7 @@ IDC_SELF="$IDC_DIR/$(basename -- "$0")"
 IDC_PATTERNS="${IDC_PATTERNS:-$IDC_DIR/coord-identifier-patterns.txt}"
 IDC_HASHES="${IDC_HASHES:-$IDC_DIR/coord-identifier-hashes.txt}"
 IDC_UNMASK=0
+IDC_CONVERTED=0               # set by `converted` mode and by nothing else.
 IDC_SHORT="${IDC_SHORT:-0}"   # self-test forcing hook only; see ipv4Extent. Never set in normal use.
 IDC_TMP=""
 
@@ -214,7 +253,7 @@ chmod 700 -- "$IDC_TMP" 2>/dev/null
 
 idc_misuse() {
     echo "REFUSED(2): $1"
-    echo "usage: $IDC_PROG [--unmask] entry <file> | subject <string> | tree <file> <baseline-sha> | selftest"
+    echo "usage: $IDC_PROG [--unmask] entry <file> | converted <file>... | subject <string> | tree <file> <baseline-sha> | selftest"
     exit 2
 }
 
@@ -428,6 +467,25 @@ function hostVal(mt,   i, j, v) {
     v = substr(mt, i + 1); sub(/^[ \t]+/, "", v)
     return v
 }
+# CONVERTED MODE -- the one place, other than STRICT/DELTA, where the consumer mode moves an arm.
+# An arm whose NOTE carries [CONVERTED-CONTEXT] in the DEFINITION is read as `context` here: its
+# occurrences are counted and REPORTED and it cannot refuse. The set is read from the patterns file
+# and is NOT a list in this script -- an arm is declared once, where every other property of it is
+# declared. Everything else keeps its mode, so the profile, home, share and run-time token arms refuse
+# in converted mode exactly as they do in entry.
+#
+# ⚠ THE RUN-TIME TOKEN ARMS CANNOT BE DOWNGRADED AT ALL, and that is structural rather than a rule
+# written down anywhere: their literals are @RUNTIME@, scanAll skips them in the arm loop, and
+# checkTok calls record() directly without passing through here. MEASURED while red-firsting this
+# change -- marking TOKENFILE [CONVERTED-CONTEXT] in the definition left its case GREEN, where the
+# same marking on profile_root reds its case immediately. The property is the one that matters (a
+# denied name can never be admitted by a mode), but it is not something the marker enforces, so a
+# future arm that DOES route through here and must never be downgradable needs its own control.
+function armRefuses(arm) {
+    if (MD[arm] != "refuse") return 0
+    if (CONVERTED == 1 && DOWNARM[arm] == 1) return 0
+    return 1
+}
 # Anchored-whole membership in a CONTEXT arm used as an admit set. Per OCCURRENCE, on the decision
 # token -- never on the line.
 function admitted(setName, tok) {
@@ -563,7 +621,10 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
         } else {
             tok = mt
         }
-        if (ok) record(arm, pass, lineno, tok, text)
+        # The admit sets have already had their say; what is left is what entry mode WOULD refuse.
+        # In converted mode a downgraded arm records that number instead of a hit, so the reader sees
+        # exactly what was admitted and by which arm.
+        if (ok) { if (armRefuses(arm)) record(arm, pass, lineno, tok, text); else DOWN[arm]++ }
     }
 }
 
@@ -709,7 +770,7 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
         # measured on. Per ARM: no other arm consults this set, and none of them gains an admit.
         if (admitted("release_literal", lq)) { EXC["ipv4\trelease-literal"]++; continue }
 
-        record("ipv4", pass, lineno, quad, text)
+        if (armRefuses("ipv4")) record("ipv4", pass, lineno, quad, text); else DOWN["ipv4"]++
     }
 }
 
@@ -850,6 +911,10 @@ BEGIN {
         if (n < 3) continue
         nA++; ARM[nA] = F[1]; RE[F[1]] = F[2]; MD[F[1]] = F[3]; OCC[F[1]] = 0; HITS[F[1]] = 0
         CONSULTED[F[1]] = ((n >= 4) && (F[4] ~ /^\[CONSULTED-ONLY\]/)) ? 1 : 0
+        # The CONVERTED-mode downgrade set, read from the DEFINITION rather than listed here. Not
+        # anchored to the start of the note, because an arm may already carry another marker there.
+        DOWNARM[F[1]] = ((n >= 4) && (F[4] ~ /\[CONVERTED-CONTEXT\]/)) ? 1 : 0
+        DOWN[F[1]] = 0
     }
     close(PATFILE)
     if (nA < 1) { print "awk: patterns file yielded 0 arms" > "/dev/stderr"; exit 9 }
@@ -890,15 +955,34 @@ BEGIN {
 }
 
 END {
-    printf "  DECLARED SET (arms=%d, strict=%d -- every arm prints, so a zero is still looking):\n", nA, STRICT > REPORT
+    printf "  DECLARED SET (arms=%d, strict=%d, converted=%d -- every arm prints, so a zero is still looking):\n", nA, STRICT, CONVERTED > REPORT
+    nDown = 0
     for (a = 1; a <= nA; a++) {
         arm = ARM[a]
         if (CONSULTED[arm] == 1)
             printf "    %-7s %-20s occ=(consulted by another arm)\n", MD[arm], arm > REPORT
+        else if (MD[arm] == "refuse" && !armRefuses(arm)) {
+            # A DOWNGRADED arm prints its own mode word, so the declared set never reads as though a
+            # refusing arm found nothing when what happened is that it was not allowed to refuse.
+            nDown++
+            printf "    %-7s %-20s occ=%-6d down=%d\n", "down", arm, OCC[arm], DOWN[arm] > REPORT
+        }
         else if (MD[arm] == "refuse")
             printf "    %-7s %-20s occ=%-6d hits=%d\n", MD[arm], arm, OCC[arm], HITS[arm] > REPORT
         else
             printf "    %-7s %-20s occ=%-6d hits=-\n", MD[arm], arm, OCC[arm] > REPORT
+    }
+    if (CONVERTED == 1) {
+        print "  DOWNGRADED IN CONVERTED MODE (Go's own test literals -- reported, never refusing):" > REPORT
+        nAny = 0
+        for (a = 1; a <= nA; a++) {
+            arm = ARM[a]
+            if (MD[arm] == "refuse" && !armRefuses(arm)) {
+                printf "    %s occ=%d would-have-refused=%d\n", arm, OCC[arm], DOWN[arm] > REPORT
+                nAny++
+            }
+        }
+        if (nAny == 0) print "    (none)" > REPORT
     }
     ne = 0
     for (k in EXC) ne++
@@ -915,6 +999,11 @@ END {
     }
     print "arms=" nA > STATUS
     print "hits=" nH > STATUS
+    # The size of the downgrade set AS READ FROM THE DEFINITION. The shell refuses converted mode on
+    # a zero: a mode whose whole content is a marker the definition no longer carries would otherwise
+    # read exactly like entry and call itself converted.
+    print "downarms=" nDown > STATUS
+    for (a = 1; a <= nA; a++) if (DOWN[ARM[a]] > 0) print "down=" ARM[a] "|" DOWN[ARM[a]] > STATUS
     # Machine-readable, so a consumer (and the self-test) asserts on ARMS rather than on printed
     # prose. Arm names and counts only -- never a value.
     for (a = 1; a <= nA; a++) if (HITS[ARM[a]] > 0) print "hitarm=" ARM[a] > STATUS
@@ -942,7 +1031,7 @@ idc_run_awk() {
     # $1 input, $2 keys, $3 report, $4 status, $5 strict
     awk -v PATFILE="$IDC_PATTERNS" -v TOKFILE="$IDC_TOKFILE" -v REPORT="$3" \
         -v KEYS="$2" -v STATUS="$4" -v STRICT="$5" -v UNMASK="$IDC_UNMASK" \
-        -v SHORT="${IDC_SHORT:-0}" \
+        -v SHORT="${IDC_SHORT:-0}" -v CONVERTED="$IDC_CONVERTED" \
         -f "$IDC_AWK" -- "$1"
 }
 
@@ -967,13 +1056,23 @@ idc_census() {
         exit 2
     fi
 
-    IDC_ARMS=""; IDC_HITS=""
+    IDC_ARMS=""; IDC_HITS=""; IDC_DOWNARMS=""
     while IFS='=' read -r k v; do
         case "$k" in
             arms) IDC_ARMS="$v" ;;
             hits) IDC_HITS="$v" ;;
+            downarms) IDC_DOWNARMS="$v" ;;
         esac
     done < "$status"
+
+    # A converted-mode run whose downgrade set is EMPTY has read a definition that no longer declares
+    # one. It would behave exactly like entry while printing "MODE converted" over it, which is the
+    # false-green shape this instrument exists to refuse -- so it is an instrument failure, not a run.
+    if [ "$IDC_CONVERTED" = "1" ]; then
+        case "${IDC_DOWNARMS:-0}" in
+            ''|0) echo "REFUSED(2): converted mode read 0 arms marked [CONVERTED-CONTEXT] in $(basename -- "$IDC_PATTERNS") -- the mode and its definition disagree, so it does not pass"; exit 2 ;;
+        esac
+    fi
 
     if [ -z "$IDC_ARMS" ] || [ -z "$IDC_HITS" ]; then
         echo "REFUSED(2): the census produced no arm/hit count for '$label' -- an empty reading is not a clean one"
@@ -987,6 +1086,12 @@ idc_census() {
     fi
 
     echo "IDENTIFIER CENSUS -- $label"
+    if [ "$IDC_CONVERTED" = "1" ]; then
+        echo "  MODE converted -- a tracked CONVERTED GO TEST SOURCE. The $IDC_DOWNARMS literal-shaped arm(s)"
+        echo "    marked [CONVERTED-CONTEXT] are REPORTED with their counts and cannot refuse; every other arm"
+        echo "    refuses exactly as in entry. THE GATE OF RECORD for the tracked tree is repoguard's"
+        echo "    TestNoFleetIdentifiersInTrackedFiles (go test ./internal/repoguard/ under src/go2cs)."
+    fi
     echo "  patterns: $(basename -- "$IDC_PATTERNS")   $IDC_HASHSUMMARY"
     echo "  token file: $IDC_TOKFILE_PRESENT   run-time arms: $IDC_TOKSUMMARY"
     if [ -n "${IDC_INERT:-}" ]; then printf '%b' "$IDC_INERT"; fi
@@ -1004,6 +1109,70 @@ idc_mode_entry() {
     case "$IDC_HITS" in
         ''|0) echo "CLEAN: no identifier arm fired."; return 0 ;;
         *)    echo "REFUSED(1): $IDC_HITS hit(s). The arms, passes and line numbers are above; the values are not."; return 1 ;;
+    esac
+}
+
+# -------------------------------------------------------------------------------------------------
+# CONVERTED MODE -- ELIGIBILITY IS PART OF THE GATE, NOT A CONVENIENCE.
+#
+# The downgrade is justified by ONE property of the input: the literals are Go's own test data, which
+# the lane did not author and cannot rewrite. A mode that took that property on the caller's word
+# would be a general "please do not refuse" switch, and the first hand-written file passed through it
+# would carry a real identifier past a gate that printed CLEAN. So the file must BE one, by its path,
+# and anything else is refused with rc 2 and sent to `entry`.
+#
+# The set is the `-tests` pipeline's own artifacts under src/core/, plus the proof pages. It is
+# deliberately NARROWER than the Go guard's fleetIsUpstreamFixture (which admits any /testdata/ and
+# any .test): this instrument runs before a push, and a narrow door is re-widened by a ruling.
+#
+# THE REFUSAL PRINTS A BASENAME AND NEVER THE PATH. A caller can pass an absolute path, and an
+# absolute path on this fleet is exactly a «profile-path» -- a refusal that echoed its argument would
+# spell into the terminal, and into whatever log the caller keeps, the class this tool exists to keep
+# out of them.
+idc_converted_eligible() {
+    local p="" n=""
+    p="$(printf '%s' "$1" | tr '\\' '/')"
+    case "$p" in
+        docs/validation/current/*.md|*/docs/validation/current/*.md) return 0 ;;
+    esac
+    case "$p" in
+        src/core/*|*/src/core/*) : ;;
+        *) return 2 ;;
+    esac
+    n="${p##*/}"
+    case "$n" in
+        *_test.cs)                     return 0 ;;
+        package_test_info.cs)          return 0 ;;
+        package_info_internal_test.cs) return 0 ;;
+        go2cs_test_host.cs)            return 0 ;;
+        *.tests.csproj)                return 0 ;;
+    esac
+    return 3
+}
+
+idc_mode_converted() {
+    [ "$#" -ge 1 ] || idc_misuse "converted takes one or more converted-test-source files"
+    local f="" bad=0 total=0 rc=0
+    for f in "$@"; do
+        idc_converted_eligible "$f"; rc=$?
+        case "$rc" in
+            2) echo "REFUSED(2): '$(basename -- "$f")' is not under src/core/ -- converted mode reads only tracked converted test sources; census it with \`entry\`."; bad=1 ;;
+            3) echo "REFUSED(2): '$(basename -- "$f")' is not a converted test artifact (*_test.cs, package_test_info.cs, go2cs_test_host.cs, *.tests.csproj, or docs/validation/current/*.md) -- census it with \`entry\`."; bad=1 ;;
+        esac
+    done
+    # Every path is judged before any is censused: a mode that refused halfway would leave the caller
+    # reading a clean verdict for the files that happened to sort first.
+    [ "$bad" -eq 0 ] || exit 2
+
+    IDC_CONVERTED=1
+    idc_build_tokens
+    for f in "$@"; do
+        idc_census "$f" "converted $(basename -- "$f")" "$IDC_TMP/keys.converted" 1
+        total=$((total + ${IDC_HITS:-0}))
+    done
+    case "$total" in
+        0) echo "CLEAN: no refusing arm fired. The downgraded arms' counts are above and are NOT a refusal."; return 0 ;;
+        *) echo "REFUSED(1): $total hit(s) from arms that refuse in converted mode too. The arms, passes and line numbers are above; the values are not."; return 1 ;;
     esac
 }
 
@@ -1167,6 +1336,16 @@ idc_st_assert_absent() {
         ''|0) printf '  PASS  %-48s occurrences=0\n' "$name"; IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
         *)    printf '  FAIL  %-48s occurrences=%s -- the output SPELLED it\n' "$name" "$c"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
     esac
+}
+idc_st_rc() {
+    # $1 name, $2 expected rc, $3 actual rc. An exit code is the only thing a caller wires `|| exit`
+    # to, so a mode's verdict is asserted on IT and never on the prose above it.
+    local name="$1" want="$2" got="$3"
+    if [ "$got" = "$want" ]; then
+        printf '  PASS  %-48s exit=%s\n' "$name" "$got"; IDC_ST_PASS=$((IDC_ST_PASS + 1))
+    else
+        printf '  FAIL  %-48s exit=%s (expected %s)\n' "$name" "$got" "$want"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1))
+    fi
 }
 idc_st_assert_present() {
     local name="$1" needle="$2" f="$3" c=""
@@ -1428,6 +1607,68 @@ idc_mode_selftest() {
     idc_st_assert_present "container literal masked at its own length"      "<*REDACTED-13*>" "$out"
 
     echo
+    echo "  C3. CONVERTED MODE -- THE SAME FILE BOTH WAYS, AND THE DOOR IT REFUSES TO OPEN"
+    echo "      (the pair IS the test: one downgrade can only be read against the reading that"
+    echo "       refuses, and every case that must PASS has a sibling here that must still REFUSE)"
+    local cdir="$d/src/core/x"
+    mkdir -p -- "$cdir"
+    # A converted test source, as the -tests pipeline emits one: Go's own test literals, carried
+    # across verbatim. A quad OFF the release shape and off every declared constant, so nothing but
+    # the downgrade can dispose of it, and the loopback-name-and-port literal that matched host_ctx on the live shard.
+    {
+        printf '// converted from the package own x_test.go -- Go test data, not this lane\n'
+        printf '    @string dnsName = "%d.%d.%d.%d";\n' 1 2 3 4
+        printf '    @string addr = "localhost:%d";\n' 0
+    } > "$cdir/x_test.cs"
+
+    out="$d/c3a.out"; "$IDC_SELF" converted "$cdir/x_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "converted mode is CLEAN on a converted test source" 0 "$rc"
+    idc_st_assert_present "  and it says which mode it read in"            "MODE converted" "$out"
+    # THE ADMIT DIRECTION, named: the case must not be able to go green because an arm stopped
+    # matching. The arm MATCHED, and the downgrade is what kept it from refusing.
+    idc_st_assert_present "  and the quad arm MATCHED and was downgraded"  "ipv4 occ=1 would-have-refused=1" "$out"
+    idc_st_assert_present "  and the host arm MATCHED and was downgraded"  "host_ctx occ=1 would-have-refused=1" "$out"
+    # THE SIBLING. The same bytes, the gate for messages and docs, and it must still refuse both.
+    out="$d/c3a2.out"; "$IDC_SELF" entry "$cdir/x_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "  and ENTRY on the SAME FILE still REFUSES"        1 "$rc"
+    idc_st_assert_present "  with both literal arms counted as hits"       "hits=2" "$out"
+
+    # THE IDENTIFIER ARMS DO NOT MOVE. A profile path in a converted source is not Go's test data.
+    cp -- "$cdir/x_test.cs" "$cdir/y_test.cs"
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "sylvandeep" "$bs" >> "$cdir/y_test.cs"
+    out="$d/c3b.out"; "$IDC_SELF" converted "$cdir/y_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "converted mode REFUSES a profile path all the same"  1 "$rc"
+    idc_st_assert_present "  and names the arm that refused"                "profile_root" "$out"
+    idc_st_assert_absent  "  without spelling the plant segment"            "sylvandeep" "$out"
+    idc_st_assert_present "  while the literal arms are still downgraded"   "ipv4 occ=1 would-have-refused=1" "$out"
+
+    # AND NEITHER DOES A DENIED TOKEN -- the class the tracked-tree guard keeps running over exactly
+    # these files, and the one an emission can actually carry into one.
+    printf 'owner column reads %s here\n' "zorbulax" > "$cdir/z_test.cs"
+    out="$d/c3c.out"
+    IDC_TEST_TOKENS="zorbulax quennelbee zorbulaxqueen" "$IDC_SELF" converted "$cdir/z_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "converted mode REFUSES a denied token all the same"  1 "$rc"
+    idc_st_assert_present "  and names the arm that refused"                "TOKENFILE" "$out"
+
+    # THE DOOR. The downgrade is justified by ONE property of the INPUT, so a caller cannot assert
+    # that property -- the path must carry it. A production .cs beside the tests is the near miss.
+    printf 'a converted production source, not a test artifact\n' > "$cdir/x.cs"
+    out="$d/c3d.out"; "$IDC_SELF" converted "$cdir/x.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "converted mode REFUSES TO RUN on a production .cs"  2 "$rc"
+    idc_st_assert_present "  and the refusal points at the mode that reads it" "census it with" "$out"
+    c="$(awk 'END { print NR }' "$out")"
+    if [ "$c" = "1" ]; then
+        printf '  PASS  %-48s lines=1\n' "  in ONE line"; IDC_ST_PASS=$((IDC_ST_PASS + 1))
+    else
+        printf '  FAIL  %-48s lines=%s (expected 1)\n' "  in ONE line" "$c"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1))
+    fi
+    # And the other half of the door: the right NAME in the wrong TREE.
+    printf 'a test-shaped name outside the corpus\n' > "$d/x_test.cs"
+    out="$d/c3e.out"; "$IDC_SELF" converted "$d/x_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "converted mode REFUSES a path outside src/core"     2 "$rc"
+    idc_st_assert_present "  naming that reason"                            "not under src/core/" "$out"
+
+    echo
     echo "  D0. THE RUN-TIME ARMS ARE BOUNDED BY THE DENIED SET -- three bars, one control each"
     unset IDC_TEST_TOKENS
     for probe in "root:under 5 characters" "ubuntu:stop-listed generic account name" "buildbox7:not in the denied set"; do
@@ -1537,7 +1778,8 @@ done
 if [ "$#" -lt 1 ]; then idc_misuse "no mode given"; fi
 IDC_MODE="$1"; shift
 case "$IDC_MODE" in
-    entry)    idc_mode_entry "$@";    exit $? ;;
+    entry)     idc_mode_entry "$@";     exit $? ;;
+    converted) idc_mode_converted "$@"; exit $? ;;
     subject)  idc_mode_subject "$@";  exit $? ;;
     tree)     idc_mode_tree "$@";     exit $? ;;
     selftest) idc_mode_selftest "$@"; exit $? ;;
