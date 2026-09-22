@@ -137,6 +137,12 @@
     <ProjectReference Include="..\..\core\golib\golib.csproj" />
     <ProjectReference Include="..\..\core\sync\atomic\sync.atomic.csproj" />
 
+    <!-- InternalSyncMutexContentionTests: a CONTENDED internal/sync.Mutex, the path its five runtime
+         hooks (canSpin, doSpin, nanotime, SemacquireMutex, Semrelease) sit on. It is already reachable
+         transitively (fmt -> sync -> internal/sync); the explicit reference names the project the
+         arm calls into, so the arm does not depend on sync continuing to reference it. -->
+    <ProjectReference Include="..\..\core\internal\sync\internal.sync.csproj" />
+
     <!-- The Linux spawn-seam gates (LinuxSpawnSeamTests) drive syscall.StartProcess/Wait4 —
          the converted surface over the posix_spawn hand-own, per the exec-wall design's §5.1
          and OQ-2 measured gates. The gate FILE compiles only under the linux corpus flavor
