@@ -2386,12 +2386,27 @@ public static partial class builtin
 
         // The CANONICAL NIL FUNC (GoReflect.CanonicalNilFunc — a nil func packed into interface
         // space) asserts to exactly its own delegate type, yielding Go's nil func: success with
-        // the null delegate. Every other target type is Go's failed assertion. Placed BELOW the
-        // `case T` arm so an assert to `any`/object keeps the carrier in interface space.
+        // the null delegate. Placed BELOW the `case T` arm so an assert to `any`/object keeps the
+        // carrier in interface space.
+        //
+        // An INTERFACE target is answered by the carried type's method set: Go's (type=Fn, value=nil)
+        // satisfies every interface a NAMED func type's methods do, and a method that never reads its
+        // receiver runs on it — fmt's `p.arg.(Stringer)` on a nil `Fn` with `String() string` prints
+        // "String(fn)" (fmt's TestSprintf). An unnamed func type has no methods and still misses.
+        // Every other target type is Go's failed assertion.
         if (target is NilFuncValue nilFunc)
         {
+            if (nilFunc.Type == typeOfT)
+            {
+                value = default!;
+                return true;
+            }
+
+            if (AssertFacts<T>.IsInterface && TryAdaptNilFunc<T>(nilFunc.Type, out value))
+                return true;
+
             value = default!;
-            return nilFunc.Type == typeOfT;
+            return false;
         }
 
         // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
@@ -2546,6 +2561,32 @@ public static partial class builtin
                     return true;
                 }
             }
+        }
+
+        value = default!;
+        return false;
+    }
+
+    // Resolves a typed nil func (NilFuncValue) against INTERFACE T by the delegate type it carries --
+    // with the value null, the type is all that is left to resolve by -- through the two tiers a
+    // non-nil func value takes above: the nominal adapter registered for the pair, then the
+    // structural shell over the type's Go method set. Both wrap the NULL delegate, which is Go's
+    // receiver for the call. Not projected into Itab<T>: that cache resolves a live subject by its own
+    // type, and each tier already memoizes its per-pair decision.
+    private static bool TryAdaptNilFunc<T>(Type delegateType, out T value)
+    {
+        if (AdapterRegistry.TryGetAdapterFactory(delegateType, typeof(T), out Func<object, object>? nominal) &&
+            nominal(null!) is T nominalValue)
+        {
+            value = nominalValue;
+            return true;
+        }
+
+        if (Cache<T>.Implements(delegateType) &&
+            AdapterBinder.TryCreate(null, delegateType, typeof(T), out object? shell) && shell is T shellValue)
+        {
+            value = shellValue;
+            return true;
         }
 
         value = default!;
