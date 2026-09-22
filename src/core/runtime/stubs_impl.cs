@@ -192,9 +192,26 @@ partial class runtime_package
     //                   managed answer at THIS layer: the managed runtime has no g to park and no
     //                   run queue to hand it to. The public entry points that reach it are
     //                   reimplemented one level up instead (managed_impl.cs).
-    //   getcallerpc / getcallersp / getclosureptr / getfp — read the caller's machine registers;
+    //   getcallerpc / getcallersp / getclosureptr — read the caller's machine registers;
     //                   the managed equivalent (a StackTrace walk) answers a different question
     //                   and would make Go's PC arithmetic silently wrong.
+    //   (getfp left this list on 2026-09-22 -- see its body below: 0 is not a walk, it is Go's
+    //   own documented answer.)
+
+    // getfp — Go's contract, verbatim from stubs_amd64.go: "getfp returns the frame pointer register
+    // of its caller or 0 if not implemented", and 0 is exactly what Go itself returns on 386 and wasm
+    // (stubs_386.go, os_wasm.go). Every consumer treats 0 as "no frame pointer" rather than a value:
+    // getcallerfp skips its two dereferences, fpTracebackPartialExpand / fpTracebackPCs stop at a nil
+    // fp, and entersyscall's `syscallbp` range check is false for 0. A NON-zero answer would be the lie:
+    // the managed host has no Go frame-pointer chain, and getcallerfp dereferences whatever this returns
+    // twice. Left throwing, it killed the runtime row's test host on the first entersyscall
+    // (TestPreemptionAfterSyscall's goroutines, 10,571 of 10,891 results in).
+    internal static partial uintptr getfp() => 0;
+
+    // TEST SEAMS (pinner_impl.cs's pattern; GolibTests is not in the InternalsVisibleTo grant).
+    public static uintptr GoGetfp() => getfp();
+
+    public static uintptr GoGetcallerfp() => getcallerfp();
 
     // ---- Q61: the park hook — gopark's accounting half over golib's Park scope (2026-09-05) ----
     //
