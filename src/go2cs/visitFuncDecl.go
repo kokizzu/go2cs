@@ -680,7 +680,37 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 
 		bodyStart := v.outputBuilder.Len()
-		v.visitBlockStmt(funcDecl.Body, blockContext)
+
+		// A COMPILER INTRINSIC emits a no-op instead of its written body — see compilerIntrinsic.go
+		// for the shape, the three narrowings and why a no-op is the FAITHFUL emulation rather than a
+		// stub. Intercepted here, at the one place a function body is emitted, so the rule cannot be
+		// reached by one caller and missed by another.
+		if v.isCompilerIntrinsicBody(funcDecl.Body) {
+			// The opening brace follows visitBlockStmt's OWN rule rather than a second spelling of
+			// it: a constrained generic (`where T : …`) puts the brace on its own line, everything
+			// else keeps it on the signature. escapeForHash is `[T comparable]`, so the first cut —
+			// which wrote a bare "{" — emitted `escapeForHash<T>(T v){` where every neighbouring
+			// function emits `) {`.
+			if blockContext.format.useNewLine {
+				v.writeOutputLn("")
+				v.writeOutputLn("%s{", v.indent(v.indentLevel))
+			} else {
+				v.writeOutputLn(" {")
+			}
+
+			v.indentLevel++
+			v.writeOutputLn("// Go COMPILER INTRINSIC: the gc compiler replaces every call, so the written `panic(\"%s\")` body is unreachable by construction and has no CLR counterpart.", compilerIntrinsicMarker)
+
+			if results := signature.Results(); results != nil && results.Len() > 0 {
+				v.writeOutputLn("return %s;", v.intrinsicResultExpression(results))
+			}
+
+			v.indentLevel--
+			v.writeOutput("}")
+		} else {
+			v.visitBlockStmt(funcDecl.Body, blockContext)
+		}
+
 		v.assertNoPendingKeepAlive("func " + funcDecl.Name.Name)
 		bodyText = v.outputBuilder.String()[bodyStart:]
 
