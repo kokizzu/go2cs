@@ -100,6 +100,17 @@ partial class runtime_package
     // Thread.SpinWait is the CLR's spelling of exactly that.
     internal static partial void procyield(uint32 cycles) => Thread.SpinWait((int)cycles);
 
+    // testSPWrite exists only for runtime's own TestSPWrite (#62326): on amd64 it is an assembly frame
+    // with a 16 KB locals area that writes SP, so Go's stack-growth prologue has to be traced back from
+    // a function that clobbers SP. The managed host has no Go stack growth and no such prologue, and Go's
+    // own body for every other architecture (test_stubs.go, `//go:build !amd64`) is exactly this empty
+    // one -- the test then only calls it on a fresh goroutine and returns. Go's portable body, not a
+    // stand-in; left as the PartialStubGenerator stub it threw on that goroutine and ended the runtime
+    // row's test host (COORD ruling 2026-09-22).
+    internal static partial void testSPWrite() { }
+
+    public static void GoTestSPWrite() => testSPWrite();
+
     // ---- getg: the calling goroutine's g and its m, minted once per thread ----
 
     // A goroutine is a dedicated thread for its whole life (golib's executor), so the thread IS the
