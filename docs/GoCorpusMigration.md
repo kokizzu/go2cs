@@ -2311,6 +2311,32 @@ banks 2,195 verdicts from 5 declarations, so a declaration share routes them to 
 none of them). **204 → 203 banked, 32 → 23 candidates, and the corpus axis is 226** — a figure
 independent of how the derivation comes out.
 
+⚠ **AMENDED 2026-09-22 (H10 closing arithmetic, coordinator ruling). "The corpus axis is 226" is
+FALSE as a statement about the population, and the way it is false is the lesson: 226 is the
+*generator's own axis*, and a generator's axis cannot measure the generator.** `shardmap.py` builds
+its axis as *banked-at-seat + costed* — both read from its own inputs — so it closes by construction
+and can be wrong by any amount. A package that is neither banked nor carries a measured cost is not
+subtracted from that number; it is **invisible to it**, and no reading the map prints can say so.
+The enumerated population at `go1.24.13` on the corpus axis (windows/amd64, `-tags
+purego,math_big_pure_go`) is **230**, derived twice independently and equal both ways, and the four
+members 226 cannot see are `internal/unsafeheader`, `net/http/pprof`, `runtime/pprof` and
+`runtime/trace`. Two of those are exclusion-ledger rows and are correctly not dispatched. The other
+two — **`net/http/pprof` and `runtime/pprof`** — are ordinary population members, in no shard's plan
+and in no unscheduled bucket, and **on the pass-1 map they never run at 1.24.13 at all.**
+
+**The closing identities, as MEASURED at this hop:**
+
+- `212 dispatched + 18 unscheduled = 230`
+- `216 banked + 8 candidates + 6 exclusion rows = 230`
+
+**The procedure this amends, for every hop after this one: a population is an ENUMERATION checked by
+two INDEPENDENT routes, never a count a generator derives from its own inputs.** The enumeration is
+a committed file (`docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt`); the roster guard
+asserts the header's `N` and every banked and excluded row's membership against it, and `shardmap.py`
+now refuses when `dispatched + unscheduled` does not close on it, naming every member on each side.
+The exclusion ledger takes the same rule the population does: an exclusion is subtractable only from
+a set that contains it, which is what struck four E1 rows from the roster's table on the same date.
+
 ⚠ **A relocated row's disclosure file does not MOVE.** Measured at this hop: there is no tree on which
 the move is possible — at master the target directories do not exist, and at the version tip the
 source directories are already deleted by the reconvert. **The disclosures retire with the row and are

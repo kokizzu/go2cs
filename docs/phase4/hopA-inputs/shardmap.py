@@ -88,6 +88,10 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "DATA-sweep-row-walltimes.md"
 ROSTER = HERE.parent.parent / "ValidatedTestPackages.md"
 POPULATION = HERE / "recon-lists" / "population.txt"
+# The POPULATION OF RECORD at go1.24.13 -- the enumerated N the roster's header measures against.
+# NOT the same file as POPULATION above, which is the recon leg's own 228-row shard input and stays
+# a record of the leg it drove. See the closing check at the foot of this file.
+POPULATION_OF_RECORD = HERE / "recon-lists" / "population-go1.24.13.txt"
 SWEEP = HERE.parent.parent.parent / "src" / "run-validated-sweep.ps1"
 
 # The block this map is parameterized by, as a (OS, corpus SHA, machine) key rather than "the first
@@ -955,6 +959,121 @@ def emit_plan(path):
     print(f"  {len(body)} dispatch row(s) over W={sorted(FLEETS)}, digest {digest[:16]}...")
     print(f"  slice cap {C_TARGET} s ({C_TARGET/60:.0f} min), cooldown {COOLDOWN_SECONDS} s "
           f"({COOLDOWN_SECONDS/60:.0f} min), {len(UNSCHEDULED)} row(s) UNSCHEDULED and absent")
+
+
+# ================================================================ THE CLOSING CHECK (2026-09-22)
+# RULED at COORD (ledger 54439d0b29). WHAT THIS EXISTS TO CATCH, stated before the code, because the
+# whole point is a class no earlier check in this file could see:
+#
+# Every population reading above is DERIVED FROM THIS SCRIPT'S OWN INPUTS -- `roster_names` from the
+# roster and `CANDIDATES` from the costed basis -- so the axis it prints ("226 row(s) on the corpus
+# axis") is BANKED-AT-SEAT plus COSTED and nothing else. A package that is neither banked nor costed
+# is not absent from that number; it is INVISIBLE TO IT. The axis is self-consistent and closes by
+# construction (the invariant at the head of this file says so in as many words), and it can be
+# wrong by any amount.
+#
+# MEASURED, 2026-09-22, on the H10 pass-1 inputs (`--timings recon-basis.tsv`): the axis reads 226
+# while the ENUMERATED population at go1.24.13 is 230. The four it cannot see are
+# internal/unsafeheader, net/http/pprof, runtime/pprof and runtime/trace. Two of them are exclusion-
+# ledger rows and are correctly not dispatched. The other two -- net/http/pprof and runtime/pprof --
+# are ordinary members of the declared population, in no shard's plan and in no unscheduled bucket,
+# and on that plan they NEVER RUN AT 1.24.13. Nothing printed above says so.
+#
+# So the check is against an EXTERNAL enumeration, never against this script's own axis: a member
+# reaches a lane only by being dispatched or by being named unscheduled, and anything else is named
+# here. The classification is what keeps it from being a nuisance -- an excluded package SHOULD be
+# in neither bucket, and it is reported rather than refused.
+#
+# RED-FIRST, three controls, run before this text was written (each restored byte-identically,
+# sha256 compared):
+#   (a) delete net/http/pprof from the population of record -> the refusal names runtime/pprof ALONE
+#       (1 row, not 2), so the arm is keyed on membership and not on a constant.
+#   (b) append a name that is in no bucket and in no ledger -> it joins the refusal by name.
+#   (c) append a name to the population that is ALSO an exclusion-ledger row -> it is REPORTED in the
+#       excluded class and the refusal count does not move, which is the arm that proves the
+#       classification is load-bearing rather than decorative.
+#   (d) delete a DISPATCHED name (archive/tar) from the population -> the OTHER direction fires:
+#       OFF-AXIS reads 1 and names it, and the refusal is the off-axis one rather than the
+#       unreached one. That arm is empty at this tree, so without this control it would be a die
+#       nobody has ever seen run. The count line is printed unconditionally (`0` when empty) for the
+#       same reason -- a branch nobody has taken prints reassurance.
+if not POPULATION_OF_RECORD.exists():
+    die(f"no population of record at {POPULATION_OF_RECORD.name} -- the closing arithmetic is "
+        f"checked against an ENUMERATION, and an absent enumeration has measured nothing. "
+        f"Refusing rather than falling back on this script's own axis, which is the exact "
+        f"self-consistency this check exists to break.")
+with open(POPULATION_OF_RECORD, encoding="utf-8", newline="") as _fh:
+    _por_text = _fh.read()
+if _por_text.count("\r"):
+    die(f"{POPULATION_OF_RECORD.name} carries {_por_text.count(chr(13))} CR byte(s) -- LF only, for "
+        f"the same reason every other input here is.")
+POPULATION_OF_RECORD_ROWS = [_l.strip() for _l in _por_text.split("\n")
+                             if _l.strip() and not _l.lstrip().startswith("#")]
+_por_dups = sorted({_n for _n in POPULATION_OF_RECORD_ROWS
+                    if POPULATION_OF_RECORD_ROWS.count(_n) > 1})
+if _por_dups:
+    die(f"{POPULATION_OF_RECORD.name} repeats {len(_por_dups)} row name(s): "
+        f"{', '.join(_por_dups)} -- the population is a SET.")
+if not POPULATION_OF_RECORD_ROWS:
+    die(f"{POPULATION_OF_RECORD.name} parsed to ZERO rows -- a comment-only file reads as a closed "
+        f"arithmetic against an empty universe, which is the vacuous green this check is for.")
+POPULATION_OF_RECORD_SET = set(POPULATION_OF_RECORD_ROWS)
+
+# The exclusion ledger, read from the roster this script already holds in memory. Keyed on the CLASS
+# cell (E1..E4), which no other table in that document carries, so the pattern cannot drift onto the
+# roster table or the relocation map the way an unscoped column-count check once did.
+_ledger_names = re.findall(r"^\| `([^`]+)` \|[^|]*\| (E[1-4]) \|", roster_text, re.M)
+if not _ledger_names:
+    die(f"parsed 0 exclusion-ledger rows from {ROSTER.name} -- the ledger pattern is stale. An empty "
+        f"ledger would report every excluded package as an UNREACHED member and refuse on it, so "
+        f"this refuses on the real cause instead.")
+EXCLUDED = {n for n, _ in _ledger_names}
+
+DISPATCHED = set(costed)                       # every row this map assigns to a worker
+REACHED = DISPATCHED | set(UNSCHEDULED)        # dispatched, or named as carrying no cost
+
+_unreached = sorted(POPULATION_OF_RECORD_SET - REACHED)
+_unreached_excluded = [n for n in _unreached if n in EXCLUDED]
+_unreached_live = [n for n in _unreached if n not in EXCLUDED]
+_offaxis = sorted(REACHED - POPULATION_OF_RECORD_SET)
+
+print(f"\n{'='*100}\nCLOSING ARITHMETIC vs the population of record "
+      f"({POPULATION_OF_RECORD.name})")
+print(f"  population      {len(POPULATION_OF_RECORD_SET)}")
+print(f"  dispatched      {len(DISPATCHED)}")
+print(f"  unscheduled     {len(UNSCHEDULED)}")
+print(f"  reached         {len(REACHED)}  = dispatched + unscheduled")
+print(f"  UNREACHED       {len(_unreached)}  -- population member(s) in NEITHER bucket"
+      + (":" if _unreached else ""))
+for _n in _unreached:
+    _cls = "exclusion-ledger row -- correctly not dispatched" if _n in EXCLUDED \
+        else "LIVE MEMBER -- in no shard's plan; it never runs on this map"
+    print(f"      {_n}  ({_cls})")
+print(f"  OFF-AXIS        {len(_offaxis)}  -- reached name(s) that are NOT population members"
+      + (":" if _offaxis else ""))
+for _n in _offaxis:
+    print(f"      {_n}")
+
+if _offaxis:
+    die(f"{len(_offaxis)} reached row(s) are outside the population of record: "
+        f"{', '.join(_offaxis)}. A row a lane is asked to run that the population does not contain "
+        f"is a name this campaign cannot account for -- fix the population or fix the basis, but do "
+        f"not dispatch it.")
+if _unreached_live:
+    die(f"closing arithmetic does not close: {len(DISPATCHED)} dispatched + {len(UNSCHEDULED)} "
+        f"unscheduled = {len(REACHED)} != {len(POPULATION_OF_RECORD_SET)} population. "
+        f"{len(_unreached_live)} LIVE population member(s) reach no lane at all: "
+        f"{', '.join(_unreached_live)}"
+        + (f" (plus {len(_unreached_excluded)} exclusion-ledger row(s) -- "
+           f"{', '.join(_unreached_excluded)} -- which are correctly absent)"
+           if _unreached_excluded else "")
+        + ". This is the class the axis printed above CANNOT detect: that axis is banked-at-seat "
+          "plus costed, so a member neither banked nor costed is invisible to it rather than "
+          "missing from it. Dispatch them, or rule them out on the record -- never leave them "
+          "silently absent.")
+
+print(f"  CLOSED          {len(REACHED)} reached + {len(_unreached_excluded)} excluded "
+      f"= {len(POPULATION_OF_RECORD_SET)}")
 
 
 if "--emit-plan" in sys.argv:
