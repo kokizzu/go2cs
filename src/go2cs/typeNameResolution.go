@@ -854,9 +854,19 @@ func getAliasedTypeName(typeName string) string {
 	packageLock.Lock()
 	alias, exists := importedTypeAliases[typeName]
 	isConst := constImportedTypeAliases.Contains(typeName)
+	isQualified := qualifiedImportedTypeAliases.Contains(typeName)
 	packageLock.Unlock()
 
 	if exists {
+		// A key whose `global using` NAME the seeded production metadata already binds to a
+		// different target declares no alias of its own, so the reference renders through the
+		// FULLY-QUALIFIED target the map holds — which resolves with no declaration at all, leaving
+		// production's binding of that name untouched. See qualifiedImportedTypeAliases; the writer
+		// skips exactly the same keys.
+		if isQualified {
+			return alias
+		}
+
 		if isConst {
 			parts := strings.Split(typeName, ".")
 
