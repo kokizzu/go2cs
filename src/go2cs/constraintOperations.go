@@ -777,7 +777,20 @@ func interfaceHasPointerTerm(iface *types.Interface, depth int) bool {
 		switch embedded := iface.EmbeddedType(i).(type) {
 		case *types.Union:
 			for j := range embedded.Len() {
-				if _, ok := embedded.Term(j).Type().(*types.Pointer); ok {
+				term := embedded.Term(j).Type()
+
+				if _, ok := term.(*types.Pointer); ok {
+					return true
+				}
+
+				// ⚠ A UNION TERM CAN ITSELF BE A NAMED CONSTRAINT INTERFACE, and the pointer then
+				// sits one level further in: runtime's `mapBenchmarkElemType interface {
+				// mapBenchmarkKeyType | []int32 }` reaches `*int32` only through the first term.
+				// Testing each term for *types.Pointer alone made this function answer FALSE for a
+				// type set that plainly mentions a pointer — against its own doc comment — so the
+				// warning above under-reported and the constraint arm that consults it kept
+				// `new()` on 14 of the row's 28 sites. Recurse, under the same depth cap.
+				if nested, ok := term.Underlying().(*types.Interface); ok && interfaceHasPointerTerm(nested, depth+1) {
 					return true
 				}
 			}
@@ -1326,6 +1339,32 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 						// constraint can admit (unique's HashTrieMap[*abi.Type, any] was the
 						// corpus witness), and nothing needed it: golib `@new<T>` constructs via
 						// the runtime and no comparable-constrained body constructs its parameter.
+						continue
+					} else if !isMethodSetWithPointerNamedUnion(iface) && v.constraintTypeSetIsInexpressible(constraint) && interfaceHasPointerTerm(iface, 0) {
+						// ⚠ THE SAME INEXPRESSIBLE TYPE SET, but with a POINTER term in it — and the
+						// arm below keeps `new()` on the stated premise that "a composite type set
+						// admits no pointer type argument, every term is a value type". runtime's
+						// `mapBenchmarkKeyType = int32 | int64 | string | smallType | mediumType |
+						// bigType | *int32` falsifies exactly that premise: the value terms
+						// instantiate fine and the POINTER term instantiates at `ж<int32>`, which
+						// is `public abstract partial class ж<T>` — and CS0310 wants a non-abstract
+						// type with a public parameterless constructor. 22 of them in one row, and
+						// no golib change can reach it, because the abstractness is what makes a Go
+						// pointer a reference at all.
+						//
+						// So this takes the `comparable` arm's answer above rather than the one
+						// below, for that arm's own reason, quoted because it is the same sentence:
+						// "a Go pointer type argument now instantiates at the abstract ж<T>, which
+						// no constructor constraint can admit". Emit NO C# constraint: Go's checker
+						// validated every instantiation before conversion, so the clause has
+						// nothing left to enforce, and the breadcrumb cannot ride alone (`where K :
+						// /* name */` is a constraint clause with no constraint).
+						//
+						// The predicate is the one the WARNING at the head of this function already
+						// uses — interfaceHasPointerTerm, through constraintHasPointerTerm — so
+						// this is that warning's shape finally acted on rather than a second
+						// spelling of it. The warning has been right at every one of these sites
+						// and the emission ignored it.
 						continue
 					} else if !isMethodSetWithPointerNamedUnion(iface) && v.constraintTypeSetIsInexpressible(constraint) {
 						// A union whose terms are all COMPOSITE Go types — runtime/pprof's
