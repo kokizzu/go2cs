@@ -243,7 +243,7 @@ internal static void lock2(ж<mutex> Ꮡl) {
     }
 
     int64 waited = nanotime() - waitStart;
-    if (waited > 0 && Ꮡsched is not null) {
+    if (waited > 0 && Ꮡsched is not null && !Ꮡsched.IsNilPointer) {
         Ꮡsched.of(schedt.ᏑtotalRuntimeLockWaitTime).Add(waited);
     }
     pushHeld(Ꮡl);
