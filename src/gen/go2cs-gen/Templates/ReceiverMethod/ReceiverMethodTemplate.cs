@@ -17,6 +17,20 @@ internal class ReceiverMethodTemplate : TemplateBase
     // Template Parameters
     public required MethodInfo Method;
 
+    // Whether the SOURCE method carries [MethodImpl(MethodImplOptions.NoInlining)] -- the converter's
+    // mark (computeNoInliningClosure) on a function whose frame runtime.Caller/Callers' skip count
+    // depends on. The ж-forwarder emitted here must then carry it too: it is a two-line deref-and-call
+    // the optimizing JIT inlines into the CALLER, and although isGoSourceFrame never counts a go2cs-gen
+    // frame (so the skip count survives), the caller's return address then sits inside the inlinee
+    // with no IL offset -- the caller's frame resolves to file "" / line 0. Measured on log/slog's
+    // TestCallDepth: FAIL under TieredCompilation=0, PASS with JitNoInline=1. Required for the same
+    // reason ReceiverTypeIsPublic is: the one construction site cannot silently take a default.
+    public required bool NoInlining;
+
+    private string ForwarderAttributes => NoInlining
+        ? $"[{GeneratedCodeAttribute}, global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]"
+        : $"[{GeneratedCodeAttribute}]";
+
     // Whether the RECEIVER type is public IN THE EMISSION, read from its symbol by the generator
     // (Common.EffectiveScopeIsPublic) rather than from the Go export case of its name. Required, so
     // the one construction site (RecvGenerator) cannot forget it and silently take a default. See
@@ -54,7 +68,7 @@ internal class ReceiverMethodTemplate : TemplateBase
 
     public override string TemplateBody => IsRefReturnPrimary
         ? $$"""
-            [{{GeneratedCodeAttribute}}]
+            {{ForwarderAttributes}}
             {{TargetScope}} static {{ReceiverParamType}} {{Method.Name}}{{Method.GetGenericSignature()}}({{DeclParams}}){{Method.GetWhereConstraints()}}
             {
                 ref var {{ReceiverParamName}} = ref {{ReceiverBoxName}}.{{NilDeferringDerefAccessor}};
@@ -63,7 +77,7 @@ internal class ReceiverMethodTemplate : TemplateBase
             }
         """
         : $$"""
-            [{{GeneratedCodeAttribute}}]
+            {{ForwarderAttributes}}
             {{TargetScope}} static {{Method.ReturnType}} {{Method.Name}}{{Method.GetGenericSignature()}}({{DeclParams}}){{Method.GetWhereConstraints()}}
             {
                 ref var {{ReceiverParamName}} = ref {{ReceiverBoxName}}.{{NilDeferringDerefAccessor}};
