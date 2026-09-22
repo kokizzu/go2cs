@@ -44,8 +44,8 @@ using static global::go.@internal.coverage.cfile_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cfile/emitdata_test.go", "emitdata_test.cs", "AGYwgoKUgpSCgoKCgrqCgoKCgpSCgoSCqIKClIKClIKClIKClIKClIKClIKClIKClIKCAAMW8oKUgoKUlIKCgoCCAAkKsoKCgoKUgoCCpKaCgoCCpNyygoKigoKUgpSUgpSmooKCgoKUpoKUgoKCgpSCgoKCgpSUgoKCpoKUppSCgoKCgpS4goKCgtaCgoKClIKCzIKClIKCgoKUgqSmgoKClIKUgriCgoKCgoKClIKCgIKkgriCgoKCgoKClILogqSCloCCpISCgoKUguiCgoKCgoKClIK4goKCgoKCgpSCuIKCgoKUgoKUgoKAgoKkgviCgoKCqIKCloKCgqaC5oKCgoKogoKWgoKCqILmgoKCgqiCgpaCgoKoguaCgpSCloKCgoKClIKCAAoIooKUgrqChMyCgoKCqIKCgoIADQqCgpSEgoSCgoKCloKCgpaCgoKCgoLKgpSCgoKCpoKClII=")]
-[assembly: go.GoPositionMap("internal/coverage/cfile/ts_test.go", "ts_test.cs", "ACoqgoCCgILG7sKClIKUgpaCgpSCqICClLiCgoKCAAMiAA0CgpSCgIIADR7EgoCCpIKCgoCCuIKClIKCpoLmgoKUgpSCgpa6goCCpJaCuIKClICCqJKClIKUgIK4goKClIKC")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/emitdata_test.go", "emitdata_test.cs", "ACowgoKUgpSCgoKCgrqCgoKCgpSCgoSCqIKClIKClIKClIKClIKClIKClIKClIKClIKCAAMW8oKUgoKUlIKCgoCCAAkKsoKCgoKUgoCCpKaCgoCCpNyygoKigoKUgpSUgpSmooKCgoKUpoKUgoKCgpSCgoKCgpSUgoKCpoKUppSCgoKCgpS4goKCgtaCgoKClIKCzIKClIKCgoKUgqSmgoKClIKUgriCgoKCgoKClIKCgIKkgriCgoKCgoKClILogqSCloCCpISCgoKUguiCgoKCgoKClIK4goKCgoKCgpSCuIKCgoKUgoKUgoKAgoKkgviCgoKCqIKCloKCgqaC5oKCgoKogoKWgoKCqILmgoKCgqiCgpaCgoKoguaCgpSCloKCgoKClIKCAAoIooKUgrqChMyCgoKCqIKCgoIADQqCgpSEgoSCgoKCloKCgpaCgoKCgoLKgpSCgoKCpoKClII=", "57-60:1;61-64:2;65-68:3;69-72:4;73-76:5;77-80:6;81-84:7;85-88:8;89-92:9;226-265:1;269-284:1;288-298:1;302-320:1;324-334:1;338-348:1;352-369:1")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/ts_test.go", "ts_test.cs", "AB4qgoCCgILG7sKClIKUgpaCgpSCqICClLiCgoKCAAMiAA0CgpSCgIIAEx7EgoCCpIKCgoCCuIKClIKCpoLmgoKUgpSCgpa6goCCpJaCuIKClICCqJKClIKUgIK4goKClIKC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -61,4 +61,32 @@ public static partial class cfile_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸplatform() => builtin.initPackage(typeof(go.@internal.platform_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.coverage.cfile_package));
+    }
 }

@@ -66,7 +66,7 @@ public static void TestNameAccessors(ж<testing.T> Ꮡt) {
         new @string[]{@" FORM-DATA ; filename=""foo.txt""; name=foo; baz=quux"u8, "foo"u8, "foo.txt"u8}.array(),
         new @string[]{@" not-form-data ; filename=""bar.txt""; name=foo; baz=quux"u8, ""u8, "bar.txt"u8}.array()
     }.array();
-    foreach (var (i, vᴛ1) in tests) {
+    foreach (var (i, vᴛ1) in tests.ΔRangeSnapshot()) {
         var test = vᴛ1.Clone();
 
         var p = Ꮡ(new Part(Header: new map<@string, slice<@string>>()));
@@ -274,7 +274,7 @@ public static void TestVariousTextLineEndings(ж<testing.T> Ꮡt) {
         "Foo\rBar\r"u8,
         "\x00\x01\x02\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"u8
     }.array();
-    foreach (var (testNum, expectedBody) in tests) {
+    foreach (var (testNum, expectedBody) in tests.ΔRangeSnapshot()) {
         @string body = "--BOUNDARY\r\n"u8 + "Content-Disposition: form-data; name=\"value\"\r\n"u8 + "\r\n"u8 + expectedBody + "\r\n--BOUNDARY--\r\n"u8;
         var bodyReader = strings.NewReader(body);
         var reader = NewReader(new multipart_test_package.strings_ReaderжReader(bodyReader), boundaryˢ2);

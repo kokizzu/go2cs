@@ -43,17 +43,13 @@ public static void TestDefaultRace(ж<testing.T> Ꮡt) {
         nint iΔ1 = i;
         Ꮡt.Run(strconv.Itoa(iΔ1), (ж<testing.T> tΔ1) => {
             tΔ1.Parallel();
-            var (exe, err) = os.Executable();
-            if (err != default!) {
-                exe = os.Args[0];
-            }
-            var cmd = testenv.Command(new rand_test_package.testing_TжTB(tΔ1), exe, testRunTestDefaultRaceˢ);
+            var cmd = testenv.Command(new rand_test_package.testing_TжTB(tΔ1), testenv.Executable(new rand_test_package.testing_TжTB(tΔ1)), testRunTestDefaultRaceˢ);
             cmd = testenv.CleanCmdEnv(cmd);
             cmd.Value.Env = append((~cmd).Env, fmt.Sprintf("GO_RAND_TEST_HELPER_CODE=%d"u8, iΔ1 / 2));
             if (iΔ1 % 2 != 0) {
                 cmd.Value.Env = append((~cmd).Env, "GODEBUG=randautoseed=0"u8);
             }
-            (var @out, err) = cmd.CombinedOutput();
+            var (@out, err) = cmd.CombinedOutput();
             if (len(@out) > 0) {
                 tΔ1.Logf("%s"u8, @out);
             }
