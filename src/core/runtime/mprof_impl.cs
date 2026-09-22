@@ -47,6 +47,9 @@ namespace go;
 
 partial class runtime_package {
 
+internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketType which) =>
+    throw new PanicException("runtime: saveblockevent: the block/mutex profile bucket store is Go-layout memory -- one allocation holding a bucket header with reference-bearing next/allnext, the stack array and the record, reached by byte offset -- and is not expressible in the managed model");
+
 // ---- the guard's view (RuntimeBlockEventTests): GolibTests is outside runtime's InternalsVisibleTo
 //      grant, so this Go-prefixed public helper exposes the one operation ----
 

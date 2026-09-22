@@ -616,6 +616,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
 		// Caller(1) are the demonstrated consumers.
 		"callers": goosAny,
+		// saveblockevent (mprof_impl.cs): the block/mutex profile recorder, hand-owned as a REFUSAL BY
+		// NAME (COORD ruling (A), 2026-09-22). Its stack capture IS expressible (the callers branch,
+		// measured past the capture), but the store it records into is not: newBucket persistentallocs
+		// ONE block (a bucket header with reference-bearing next/allnext, the stk array, the record)
+		// reached by byte offset, and buckhash is a sysAlloc'd native array of *bucket -- the arm-2a
+		// class. The refusal replaces the stub's misleading "assembly, cgo, or linkname" throw. It is
+		// reached only above a block/mutex profile rate of 0 (Go's default), through runtime.blockevent
+		// (pulled by runtime/pprof's TestBlockProfileBias) and mutexevent. Declared once, in mprof.go,
+		// hence goosAny.
+		"saveblockevent": goosAny,
+		// setProcessCPUProfiler / setThreadCPUProfiler on WINDOWS (COORD ruling 2026-09-22): Go's
+		// Windows bodies create a waitable timer and a profileLoop thread that SuspendThread /
+		// GetThreadContext-samples every m, all through stdcall -> asmcgocall, which has no managed
+		// body. The first StartCPUProfile threw out of SetCPUProfileRate AFTER pprof's cpu.profiling
+		// and runtime's cpuprof.on were set and with cpuprof.lock held, so every later
+		// StartCPUProfile in the process answered "cpu profiling already in use". The managed model
+		// has no interrupt sampler, which is exactly Go's plan9 port (os3_plan9.go): the process
+		// setter does nothing and the thread setter records m.profilehz. windows/
+		// cpuprof_windows_impl.cs keeps that shape: a profile starts, stops and is valid, with zero
+		// samples. Windows alone: the linux and darwin bodies are signal/timer based and stay converted.
+		"setProcessCPUProfiler": goosWindows,
+		"setThreadCPUProfiler":  goosWindows,
 		// netpollGenericInit (netpoll_impl.cs) — the RUNTIME poller's one-time start-up, and a
 		// MODULE-INIT killer rather than a test failure, which is why it is here at all.
 		//

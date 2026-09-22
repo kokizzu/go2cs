@@ -499,7 +499,7 @@ public static void SetBlockProfileRate(nint rate) {
     atomic.Store64(Ꮡblockprofilerate, (uint64)r);
 }
 
-internal static void blockevent(int64 cycles, nint skip) {
+public static void blockevent(int64 cycles, nint skip) {
     if (cycles <= 0) {
         cycles = 1;
     }
@@ -518,54 +518,7 @@ internal static bool blocksampled(int64 cycles, int64 rate) {
     return true;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string invalidSkipValueˢ = "invalid skip value"u8;
-
-// saveblockevent records a profile event of the type specified by which.
-// cycles is the quantity associated with this event and rate is the sampling rate,
-// used to adjust the cycles value in the manner determined by the profile type.
-// skip is the number of frames to omit from the traceback associated with the event.
-// The traceback will be recorded from the stack of the goroutine associated with the current m.
-// skip should be positive if this event is recorded from the current stack
-// (e.g. when this is not called from a system stack)
-internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketType which) {
-    if (debug.profstackdepth == 0) {
-        // profstackdepth is set to 0 by the user, so mp.profStack is nil and we
-        // can't record a stack trace.
-        return;
-    }
-    if (skip > maxSkip) {
-        print((@string)"requested skip="u8, skip);
-        @throw(invalidSkipValueˢ);
-    }
-    var gp = getg();
-    var mp = acquirem(); // we must not be preempted while accessing profstack
-    nint nstk = default!;
-    if (tracefpunwindoff() || (~gp).m.hasCgoOnStack()){
-        if ((~(~gp).m).curg == nil || (~(~gp).m).curg == gp){
-            nstk = callers(skip, (~mp).profStack);
-        } else {
-            nstk = gcallers((~(~gp).m).curg, skip, (~mp).profStack);
-        }
-    } else {
-        if ((~(~gp).m).curg == nil || (~(~gp).m).curg == gp){
-            if (skip > 0) {
-                // We skip one fewer frame than the provided value for frame
-                // pointer unwinding because the skip value includes the current
-                // frame, whereas the saved frame pointer will give us the
-                // caller's return address first (so, not including
-                // saveblockevent)
-                skip -= 1;
-            }
-            nstk = fpTracebackPartialExpand(skip, (@unsafe.Pointer)getfp(), (~mp).profStack);
-        } else {
-            mp.Value.profStack[0] = gp.Value.m.Value.curg.Value.sched.pc;
-            nstk = 1 + fpTracebackPartialExpand(skip, (@unsafe.Pointer)(~(~(~gp).m).curg).sched.bp, (~mp).profStack[1..]);
-        }
-    }
-    saveBlockEventStack(cycles, rate, (~mp).profStack[..(int)(nstk)], which);
-    releasem(ref (mp).DerefOrNull());
-}
+// go2cs generated this placeholder — func saveblockevent is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // fpTracebackPartialExpand records a call stack obtained starting from fp.
 // This function will skip the given number of frames, properly accounting for

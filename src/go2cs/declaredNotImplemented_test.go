@@ -421,7 +421,6 @@ var declaredPushStubs = map[string]string{
 	"runtime.mapdelete_faststr":                          dispositionSuppliedElsewhere,
 	"runtime/pprof.mach_vm_region":                       dispositionLatent,
 	"runtime/pprof.proc_regionfilename":                  dispositionLatent,
-	"runtime/pprof.readProfile":                          dispositionLatent,
 	"runtime/trace.userLog":                              dispositionLatent,
 	"runtime/trace.userRegion":                           dispositionLatent,
 	"runtime/trace.userTaskCreate":                       dispositionLatent,

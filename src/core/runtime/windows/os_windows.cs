@@ -1207,33 +1207,9 @@ internal static void profileLoop() {
     }
 }
 
-internal static void setProcessCPUProfiler(int32 hz) {
-    if (profiletimer == 0) {
-        uintptr timer = default!;
-        if (haveHighResTimer){
-            timer = createHighResTimer();
-        } else {
-            timer = stdcall3(_CreateWaitableTimerA, 0, 0, 0);
-        }
-        atomic.Storeuintptr(Ꮡprofiletimer, timer);
-        newm(profileLoop, nil, -1);
-    }
-}
+// go2cs generated this placeholder — func setProcessCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void setThreadCPUProfiler(int32 hz) {
-    var ms = (int32)0;
-    ref var due = ref heap<int64>(out var Ꮡdue);
-    due = ~(int64)(~(uint64)(((uint64)1 << (int)(63))));
-    if (hz > 0) {
-        ms = 1000 / hz;
-        if (ms == 0) {
-            ms = 1;
-        }
-        due = (int64)ms * -10000;
-    }
-    stdcall6(_SetWaitableTimer, profiletimer, (uintptr)Ꮡdue, (uintptr)ms, 0, 0, 0);
-    atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
-}
+// go2cs generated this placeholder — func setThreadCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal const bool preemptMSupported = true;
 

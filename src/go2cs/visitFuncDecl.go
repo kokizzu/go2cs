@@ -2085,6 +2085,15 @@ var linknameForwardTargets = map[string]bool{
 	"runtime.pprof_threadCreateInternal": true,
 	"runtime.pprof_fpunwindExpand":       true,
 	"runtime.pprof_makeProfStack":        true,
+	// runtime's block-event recorder, pulled by runtime/pprof's OWN TEST (pprof_test.go:1221,
+	// `//go:linkname blockevent runtime.blockevent` over a bodyless declaration) for
+	// TestBlockProfileBias, and authorized by the matching one-arg handle in runtime/linkname.go.
+	// The implementation is ORDINARY CONVERTED Go (mprof.go: sample by rate, then saveblockevent), so
+	// the forwarder is an ordinary cross-assembly call. saveblockevent is hand-owned as a refusal by
+	// NAME (runtime/mprof_impl.cs: the profile bucket store is Go-layout memory), so the test reaches
+	// that named cause instead of the stub's "linkname whose push did not arrive". No new project
+	// reference: runtime/pprof already imports runtime.
+	"runtime.blockevent": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose

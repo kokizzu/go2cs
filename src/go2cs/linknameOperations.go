@@ -363,6 +363,19 @@ var linknamePushTargets = map[string]linknamePush{
 	// the row: the residual is the execution tracer (the same capability runtime/trace refuses by name),
 	// CPU profile collection, one skip and the parent shadow of those two.
 	"runtime/pprof.pprof_cyclesPerSecond": {source: "runtime.pprof_cyclesPerSecond", selfSymbolPull: true},
+	// runtime/pprof's CPU-profile reader, pushed by runtime/cpuprof.go
+	// (`//go:linkname runtime_pprof_readProfile runtime/pprof.readProfile`). BARE consumer shape: pprof.go
+	// declares `func readProfile() (data []uint64, tags []unsafe.Pointer, eof bool)` with no directive of
+	// its own. The pushed body is ORDINARY CONVERTED Go: it takes cpuprof.log under cpuprof.lock and does a
+	// blocking profBuf.read, whose wait (notetsleepg) and wake (notewakeup, from log.close) are the hand-owned
+	// managed note core, so a reader blocked on an empty buffer returns eof when StopCPUProfile closes the log.
+	//
+	// Needed WITH the windows CPU-profiler setters (manualConversionFuncs): until they stopped throwing,
+	// StartCPUProfile never reached `go profileWriter(w)`, so this stub was never called. Once
+	// StartCPUProfile completes, the writer goroutine calls readProfile at once, and the throwing stub would
+	// end the host through golib's unhandled-goroutine door. The forwarder is on the consumer side, across
+	// the runtime/pprof -> runtime edge that already exists (the same zero graph cost as the row above).
+	"runtime/pprof.readProfile": {source: "runtime.runtime_pprof_readProfile", bareDecl: true},
 	// crypto/internal/fips140's service indicator, pushed by runtime/runtime1.go
 	// (`//go:linkname fips_getIndicator crypto/internal/fips140.getIndicator`, and the setter beside it).
 	// SELF-SYMBOL consumer shape, the second and third members of that arm: indicator.go declares
