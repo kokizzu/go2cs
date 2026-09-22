@@ -18,6 +18,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -348,8 +349,12 @@ func TestTheInitializerCarriesTheOrderedEntryList(t *testing.T) {
 		Entries:    []embedEntry{{Name: "acvp_capabilities.json", SourceOS: "/x/acvp_capabilities.json"}},
 	}
 
+	// The helper is named FULLY QUALIFIED, never through the bare `embed` alias — a blank import
+	// (`_ "embed"`, which the spec requires for a string or []byte var) mints no alias, and
+	// crypto/internal/fips140test is exactly that file. See the import-form arm below.
 	got := embedInitializerExpr(embedKindString, target, "fips140test_package", "")
-	want := `embed.ΔEmbedString(typeof(fips140test_package).Assembly, "go.embed/crypto/internal/fips140test_test/", "acvp_capabilities.json")`
+	want := RootNamespace + "." + getSanitizedImport("embed"+PackageSuffix) +
+		`.ΔEmbedString(typeof(fips140test_package).Assembly, "go.embed/crypto/internal/fips140test_test/", "acvp_capabilities.json")`
 
 	if got != want {
 		t.Errorf("string initializer\n  %s\nwant\n  %s", got, want)
@@ -451,4 +456,69 @@ func embedNamesEqual(left, right []string) bool {
 	}
 
 	return true
+}
+
+// ARM 12, THE BLANK IMPORT — a CORPUS REGRESSION this seat's first cut introduced and the reason
+// the initializer is fully qualified.
+//
+// The spec REQUIRES `import _ "embed"` when the variable is a string or []byte, because nothing in
+// the file names the package. The converter mints no alias for a blank import, so an initializer
+// spelled `embed.ΔEmbedBytes(…)` names an identifier that does not exist:
+// crypto/internal/fips140test's acvp_test.cs went from compiling to CS0103 'embed' at (84,48). It
+// is the ONE corpus instance — 22 files blank-import embed at 1.24.13 and 21 are under cmd/, which
+// the converted corpus does not contain — and one is enough, because it is a package that compiled
+// before this seat touched it.
+//
+// The fix is unconditional qualification rather than minting an alias the Go file never asked for:
+// `go.embed_package` needs no import and cannot be shadowed. Both import forms are armed below, so
+// the rule is ONE rule and a later reader cannot re-introduce the alias for the named-import case.
+func TestTheInitializerIsQualifiedUnderEitherImportForm(t *testing.T) {
+	for _, form := range []struct {
+		name    string
+		imports string
+		decl    string
+	}{
+		{"blank import, the []byte form the spec requires it for", "\t_ \"embed\"\n", "//go:embed data.txt\nvar payload []byte"},
+		{"named import, the embed.FS form", "\t\"embed\"\n", "//go:embed data.txt\nvar payload embed.FS"},
+	} {
+		t.Run(form.name, func(t *testing.T) {
+			dir := t.TempDir()
+
+			writeModuleFiles(t, dir, map[string]string{
+				"go.mod":        "module example/blankembed\n\ngo 1.23\n",
+				"blankembed.go": "package blankembed\n\nfunc Use() {}\n",
+				"data.txt":      "payload bytes\n",
+				"blankembed_test.go": "package blankembed\n\nimport (\n" + form.imports + "\t\"testing\"\n)\n\n" +
+					form.decl + "\n\nfunc TestPayload(t *testing.T) { _ = payload }\n",
+			})
+
+			internal, _ := loadTestVariantsForDir(t, dir)
+
+			if internal == nil {
+				t.Fatal("the internal test variant did not load")
+			}
+
+			outputPath := t.TempDir()
+			options := testVariantOptions(Options{indentSpaces: 4, preferVarDecl: true, useChannelOperators: true}, testProjectRecompile, false, "bridge")
+
+			testMethodRenames = make(map[types.Object]bool)
+			defer func() { testMethodRenames = nil }()
+
+			if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, options); err != nil {
+				t.Fatalf("convertTestVariant: %v", err)
+			}
+
+			emitted := readConvertedAssembly(t, outputPath)
+
+			if !strings.Contains(emitted, RootNamespace+"."+getSanitizedImport("embed"+PackageSuffix)+".ΔEmbed") {
+				t.Errorf("the initializer must name %s.%s; emitted:\n%s", RootNamespace, getSanitizedImport("embed"+PackageSuffix), emitted)
+			}
+
+			// THE REGRESSION'S OWN SPELLING. A bare `embed.ΔEmbed…` compiles only where an alias
+			// exists, which a blank import never provides.
+			if strings.Contains(emitted, " embed.ΔEmbed") || strings.Contains(emitted, "=embed.ΔEmbed") || strings.Contains(emitted, "= embed.ΔEmbed") {
+				t.Errorf("the initializer used the BARE alias, which a blank import does not mint; emitted:\n%s", emitted)
+			}
+		})
+	}
 }

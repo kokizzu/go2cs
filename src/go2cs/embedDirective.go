@@ -473,6 +473,18 @@ func embedInitializerExpr(kind embedInitializerKind, target embedTarget, package
 	prefix := embedResourcePrefix(target.ImportPath, target.TestHalf)
 	assembly := fmt.Sprintf("typeof(%s).Assembly", packageClass)
 
+	// ⚠ FULLY QUALIFIED, NEVER THE BARE `embed.` ALIAS. The alias exists only where the Go file
+	// imports embed UNDER A NAME — and the spec REQUIRES a BLANK import (`_ "embed"`) for a string
+	// or []byte variable, since nothing in the file names the package. crypto/internal/fips140test
+	// is that file: its acvp_test.cs went from compiling to CS0103 'embed' at (84,48), a corpus
+	// REGRESSION of one package introduced by this seat's first cut. The qualified form needs no
+	// import at all and cannot be shadowed, which is what makes it the durable answer rather than
+	// minting an alias the Go file never asked for.
+	//
+	// Census at 1.24.13: 22 files blank-import embed, 21 of them under cmd/ (outside the converted
+	// corpus); crypto/internal/fips140test/acvp_test.go is the ONE corpus instance.
+	embedPackage := globalQualifyRooted(RootNamespace + "." + getSanitizedImport("embed"+PackageSuffix))
+
 	switch kind {
 	case embedKindFS:
 		names := make([]string, 0, len(target.Entries))
@@ -481,11 +493,11 @@ func embedInitializerExpr(kind embedInitializerKind, target embedTarget, package
 			names = append(names, strconv.Quote(entry.Name))
 		}
 
-		return fmt.Sprintf("embed.ΔEmbedFS(%s, %s, [%s])", assembly, strconv.Quote(prefix), strings.Join(names, ", "))
+		return fmt.Sprintf("%s.ΔEmbedFS(%s, %s, [%s])", embedPackage, assembly, strconv.Quote(prefix), strings.Join(names, ", "))
 	case embedKindString:
-		return fmt.Sprintf("embed.ΔEmbedString(%s, %s, %s)", assembly, strconv.Quote(prefix), strconv.Quote(target.Entries[0].Name))
+		return fmt.Sprintf("%s.ΔEmbedString(%s, %s, %s)", embedPackage, assembly, strconv.Quote(prefix), strconv.Quote(target.Entries[0].Name))
 	case embedKindBytes:
-		return fmt.Sprintf("embed.ΔEmbedBytes<%s>(%s, %s, %s)", elementType, assembly, strconv.Quote(prefix), strconv.Quote(target.Entries[0].Name))
+		return fmt.Sprintf("%s.ΔEmbedBytes<%s>(%s, %s, %s)", embedPackage, elementType, assembly, strconv.Quote(prefix), strconv.Quote(target.Entries[0].Name))
 	}
 
 	return ""
