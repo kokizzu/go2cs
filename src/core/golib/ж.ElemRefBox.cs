@@ -237,7 +237,19 @@ public sealed class ElemRefBox<T> : ж<T>
     // reference does. Its canonical storage is expected to be non-null on every reachable path,
     // so the Unpinnable arm should be unreachable here — written the same way as FieldRefBox
     // anyway, because "expected non-null" is an argument and the shape is the measurement.
+    //
+    // ⚠ A REFERENCE-BEARING ELEMENT is None, not Pinnable (COORD ruling 2026-09-22). GCHandle refuses
+    // to pin an array whose element type holds references, so PinOnly returned null and the address
+    // was handed out UNPINNED -- measured: `unsafe.Pointer(&s[i])` over []*int and []string read as
+    // untagged raw addresses at an 8-byte stride, unregistered, a dangling pointer the moment the GC
+    // moves the array, and one memmove could only byte-copy (managed references, no write barrier).
+    // No kernel can take such an address legitimately -- the pointee IS managed references -- so the
+    // order token is the honest carrier: registered on address-take, resolvable back to this box,
+    // refused on dereference by arm 2a. The criterion is the ELEMENT type, never the container:
+    // FieldRefBox's repair above records why tokenising a reference-FREE pointee inside a
+    // reference-bearing root broke every Windows TCP dial.
     public override PointerStorage StorageKind =>
+        RuntimeHelpers.IsReferenceOrContainsReferences<T>() ? PointerStorage.None :
         PinnableStorage is null ? PointerStorage.Unpinnable : PointerStorage.Pinnable;
 
     /// <inheritdoc/>
