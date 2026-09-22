@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using testing = testing_package;
 using static go.@internal.profile_package;
 
@@ -35,7 +35,7 @@ public static void TestPackedEncoding(ж<testing.T> Ꮡt) {
     }.slice()) {
         var source = Ꮡ(new packedInts(tc.uint64s, tc.int64s));
         {
-            var (got, want) = (marshal(new profile_internal_test_package.packedIntsжmessage(source)), tc.encoded); if (!reflect.DeepEqual(got, want)) {
+            var (got, want) = (marshal(new profile_internal_test_package.packedIntsжmessage(source)), tc.encoded); if (!slices.Equal<slice<byte>, byte>(got, want)) {
                 Ꮡt.Errorf("failed encode %d, got %v, want %v"u8, i, got, want);
             }
         }
@@ -47,12 +47,12 @@ public static void TestPackedEncoding(ж<testing.T> Ꮡt) {
             }
         }
         {
-            var (got, want) = (dest.Value.uint64s, tc.uint64s); if (!reflect.DeepEqual(got, want)) {
+            var (got, want) = (dest.Value.uint64s, tc.uint64s); if (!slices.Equal<slice<uint64>, uint64>(got, want)) {
                 Ꮡt.Errorf("failed decode uint64s %d, got %v, want %v"u8, i, got, want);
             }
         }
         {
-            var (got, want) = (dest.Value.int64s, tc.int64s); if (!reflect.DeepEqual(got, want)) {
+            var (got, want) = (dest.Value.int64s, tc.int64s); if (!slices.Equal<slice<int64>, int64>(got, want)) {
                 Ꮡt.Errorf("failed decode int64s %d, got %v, want %v"u8, i, got, want);
             }
         }

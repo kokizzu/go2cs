@@ -21,8 +21,6 @@ internal static class Go2CsTestHost
             "search_test.go",
             "slice.go",
             "sort.go",
-            "sort_impl_120.go",
-            "sort_impl_go121.go",
             "sort_slices_benchmark_test.go",
             "sort_test.go",
             "zsortfunc.go",

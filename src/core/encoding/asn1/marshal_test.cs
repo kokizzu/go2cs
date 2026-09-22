@@ -7,6 +7,7 @@ using bytes = bytes_package;
 using hex = go.encoding.hex_package;
 using big = go.math.big_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
@@ -318,6 +319,25 @@ public static void TestIssue11130(ж<testing.T> Ꮡt) {
     }
 }
 
+public static void TestIssue68241(ж<testing.T> Ꮡt) {
+    foreach (var (i, want) in new any[]{false, true}.slice()) {
+        var (data, err) = Marshal(want);
+        if (err != default!) {
+            Ꮡt.Errorf("cannot Marshal: %v"u8, err);
+            return;
+        }
+        ref var got = ref heap<any>(out var Ꮡgot);
+        (_, err) = Unmarshal(data, Ꮡgot);
+        if (err != default!) {
+            Ꮡt.Errorf("cannot Unmarshal: %v"u8, err);
+            return;
+        }
+        if (!reflect.DeepEqual(got, want)) {
+            Ꮡt.Errorf("#%d Unmarshal, got: %v, want: %v"u8, i, got, want);
+        }
+    }
+}
+
 public static void BenchmarkMarshal(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
@@ -356,12 +376,12 @@ public static void TestSetEncoder(ж<testing.T> Ꮡt) {
     if (len(rest) != 0) {
         Ꮡt.Error(unmarshalReturnedExtraˢ);
     }
-    if (!reflect.DeepEqual(expectedOrder, resultStruct.Strings)) {
+    if (!slices.Equal<slice<@string>, @string>(expectedOrder, resultStruct.Strings)) {
         Ꮡt.Errorf("Unexpected SET content. got: %s, want: %s"u8, resultStruct.Strings, expectedOrder);
     }
 }
 
-[GoType("[]@string")] internal partial struct TestSetEncoderSETSliceSuffix_testSetSET;
+[GoLocalName("testSetSET")] [GoType("[]@string")] internal partial struct TestSetEncoderSETSliceSuffix_testSetSET;
 
 public static void TestSetEncoderSETSliceSuffix(ж<testing.T> Ꮡt) {
     var testSet = new TestSetEncoderSETSliceSuffix_testSetSET(new @string[]{"a"u8, "aa"u8, "b"u8, "bb"u8, "c"u8, "cc"u8}.slice());

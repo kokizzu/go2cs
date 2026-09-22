@@ -149,4 +149,40 @@ public static void TestGogoarchTags(ж<testing.T> Ꮡt) {
     GOARM64 = old_goarm64;
 }
 
+internal static slice<@string> goodFIPS = new @string[]{
+    "v1.0.0"u8,
+    "v1.0.1"u8,
+    "v1.2.0"u8,
+    "v1.2.3"u8
+}.slice();
+
+internal static slice<@string> badFIPS = new @string[]{
+    "v1.0.0-fips"u8,
+    "v1.0.0+fips"u8,
+    "1.0.0"u8,
+    "x1.0.0"u8
+}.slice();
+
+public static void TestIsFIPSVersion(ж<testing.T> Ꮡt) {
+    // good
+    foreach (var (_, s) in goodFIPS) {
+        if (!isFIPSVersion(s)) {
+            Ꮡt.Errorf("isFIPSVersion(%q) = false, want true"u8, s);
+        }
+    }
+    // truncated
+    @string v = "v1.2.3"u8;
+    for (nint i = 0; i < len(v); i++) {
+        if (isFIPSVersion(v[..(int)(i)])) {
+            Ꮡt.Errorf("isFIPSVersion(%q) = true, want false"u8, v[..(int)(i)]);
+        }
+    }
+    // bad
+    foreach (var (_, s) in badFIPS) {
+        if (isFIPSVersion(s)) {
+            Ꮡt.Errorf("isFIPSVersion(%q) = true, want false"u8, s);
+        }
+    }
+}
+
 } // end buildcfg_internal_test_package

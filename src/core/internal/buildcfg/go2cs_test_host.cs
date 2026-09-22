@@ -17,6 +17,7 @@ internal static class Go2CsTestHost
         registry.Add("TestConfigFlags", buildcfg_internal_test_package.TestConfigFlags, "cfg_test.go", 12);
         registry.Add("TestGoarm64FeaturesSupports", buildcfg_internal_test_package.TestGoarm64FeaturesSupports, "cfg_test.go", 77);
         registry.Add("TestGogoarchTags", buildcfg_internal_test_package.TestGogoarchTags, "cfg_test.go", 101);
+        registry.Add("TestIsFIPSVersion", buildcfg_internal_test_package.TestIsFIPSVersion, "cfg_test.go", 141);
         return TestHost.Run(registry, args);
     }
 }

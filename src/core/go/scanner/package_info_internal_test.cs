@@ -12,6 +12,8 @@ using static go.go.scanner_package;
 using static go.go.scanner_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b2077616e7420737472696e677d", "semicolonTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b73726320737472696e673b20746f6b20676f2f746f6b656e2e546f6b656e3b20706f7320696e743b206c697420737472696e673b2065727220737472696e677d", "errorsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -28,7 +30,7 @@ using static go.go.scanner_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/scanner/scanner_test.go", "scanner_test.cs", "ABoygpSkpKQAjgG2AoKCgpSmgoKCgqamoqaClIKUgpSCurKWgpiSlt6CgpaUgpSWgoKClIKogqiClpSStqSklIKCtraCloKogpiC+IIACxiCggAKCoKCgoKWgoKCgoKCgpSmgoKmgpSAggBx/AGCgpKCqIKCAEN0koKCgpS4goKCmJKCgJKCgoIABhCCABEelJKCmJKCgoKClIKmopaCAAkKkpaCgoKClIKCgoKogoKCgpSCgpaC6IIABBKCgJSCgoKAgriCloKCloKCgpaCgoIACRSCgoKCgoKUgoKClIKUgoKUgpSClIIAUZQBgoK6kgACJoKCgoKCgpSCyqKCgoKCgoKCpoLKooKCgoKCgoKCgoLcptyCgoKCgpSCgoKCgoKCgoKCAAwQggB8sgKCgoKCpoKClpSkpKaCgpSCqIK6goKUgg==")]
+[assembly: global::go.GoPositionMap("go/scanner/scanner_test.go", "scanner_test.cs", "ABoygpSkpKQAjwG2AoKCgpSmgoKCgqamoqaClIKUgpSCurKWgpiSlt6CgpaUgpSWgoKClIKogqiClpSStqSklIKCtraCloKogpiC+IIACxiCggAKCoKCgoKWgoKCgoKCgpSmgoKmgpSAggBx/AGCgpKCqIKCAEN0koKCgpS4goKCmJKCgJKCgoIABhCCABEelJKCmJKCgoKClIKmopaCAAkKkpaCgoKClIKCgoKogoKCgpSCgpaC6IIABBKCgJSCgoKAgriCloKCloKCgpaCgoIACRSCgoKCgoKUgoKClIKUgoKUgpSClIIAUZQBgoK6kgAUJoKCgoKCgpSCyqKCgoKCgoKCpoLKooKCgoKCgoKCgoLcptyCgoKCgpSCgoKCgoKCgoKCAAwQggB8sgKCgoKCpoKClpSkpKaCgpSCqIK6goKUgg==", "230-232:1;578-578:1;617-624:1;680-680:1;721-725:1;903-924:1;1084-1088:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -44,4 +46,19 @@ public static partial class scanner_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

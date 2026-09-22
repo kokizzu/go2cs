@@ -13,7 +13,7 @@ internal static class Go2CsTestHost
             "format.go",
         });
         registry.Add("TestBasics", cformat_test_package.TestBasics, "fmt_test.go", 15);
-        registry.Add("TestEmptyPackages", cformat_test_package.TestEmptyPackages, "fmt_test.go", 133);
+        registry.Add("TestEmptyPackages", cformat_test_package.TestEmptyPackages, "fmt_test.go", 145);
         return TestHost.Run(registry, args);
     }
 }

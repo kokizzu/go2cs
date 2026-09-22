@@ -12,11 +12,6 @@ global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
-global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
-global using reflectꓸKind = go.reflect_package.ΔKind;
-global using reflectꓸMethod = go.reflect_package.ΔMethod;
-global using reflectꓸType = go.reflect_package.ΔType;
-global using reflectꓸValue = go.reflect_package.ΔValue;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
@@ -26,13 +21,15 @@ using go;
 using static global::go.io.fs_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b667320696f2f66732e46533b207061747465726e20737472696e673b20726573756c7420737472696e677d", "globTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420696f2f66735f746573742e666f726d6174546573743b2077616e7446696c65496e666f20737472696e673b2077616e74446972456e74727920737472696e677d", "formatTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696f2f66732e46537d", "TestReadDirPath_fsys")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b206f6b20626f6f6c7d", "isValidPathTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
 [assembly: GoImplement<TestReadDirPath_fsys, go.io.fs_package.FS>(Promoted = true)]
 [assembly: GoImplement<TestReadDirPath_fsys, go.io.fs_package.FS>]
-[assembly: GoImplement<TestReadFilePath_fsys, go.io.fs_package.FS>(Promoted = true)]
-[assembly: GoImplement<TestReadFilePath_fsys, go.io.fs_package.FS>]
 [assembly: GoImplement<formatTest, go.io.fs_package.DirEntry>(Pointer = true)]
 [assembly: GoImplement<formatTest, go.io.fs_package.FileInfo>(Pointer = true)]
 [assembly: GoImplement<globOnly, go.io.fs_package.FS>]
@@ -65,14 +62,14 @@ using static global::go.io.fs_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/fs/format_test.go", "format_test.cs", "ACkugqaCpoKmgqaCpoKmgqaCADdsgrKCgsqCsoKC")]
+[assembly: go.GoPositionMap("io/fs/format_test.go", "format_test.cs", "ABcugqaCpoKmgqaCpoKmgqaCADdsgrKCgsqCsoKC")]
 [assembly: go.GoPositionMap("io/fs/fs_test.go", "fs_test.cs", "AClUgoKCgg==")]
-[assembly: go.GoPositionMap("io/fs/glob_test.go", "glob_test.cs", "ADQ2goKCgoKUgqaCgoKClILKgoKCgoLKpoKC/ID0goKCgrqCloI=")]
-[assembly: go.GoPositionMap("io/fs/readdir_test.go", "readdir_test.cs", "ACEkgNSCgoKCgoKUuoKWgpaCgpSCAAgGggALHgADEoKSooKCloKAgqSAkqSAguyCgoKUAAkGgoKCgoCS")]
-[assembly: go.GoPositionMap("io/fs/readfile_test.go", "readfile_test.cs", "ACREgAAKCJSCgqiCgqiCgpSCgviCgoKCgJI=")]
-[assembly: go.GoPositionMap("io/fs/stat_test.go", "stat_test.cs", "ABcegOSCgoKCgoKUuoKWgg==")]
-[assembly: go.GoPositionMap("io/fs/sub_test.go", "sub_test.cs", "ABEegAAKBIKCgoKClIKCloKCgoKUuoKWgoSCgpSCgpSCloKC")]
-[assembly: go.GoPositionMap("io/fs/walk_test.go", "walk_test.cs", "AD1iooKCuIKCkoKUpqzSgoKCpoKCgpSU5qKEgoKUgIKkhIKSgpiCgpSClIKClAAKCKKCgoCCtoKAgqSCgoKClIKUlIKUgoI=")]
+[assembly: go.GoPositionMap("io/fs/glob_test.go", "glob_test.cs", "ABw2goKCgoKUgqaCgoKClILKgoKCgoLKpoKC/ID0goKCgrqCloI=", "74-79:1")]
+[assembly: go.GoPositionMap("io/fs/readdir_test.go", "readdir_test.cs", "ABUkgNSCgoKCgoKUuoKWgpaCgpSCAAgGggALHgADEoKSooKCloKAgqSAkqSAguyCgoKUAAkGgoKCgoCS", "21-30:1;76-92:1")]
+[assembly: go.GoPositionMap("io/fs/readfile_test.go", "readfile_test.cs", "ACREgAAKCJSCgqiCgqiCgpSCgriCgoKCgJI=")]
+[assembly: go.GoPositionMap("io/fs/stat_test.go", "stat_test.cs", "ABEegOSCgoKCgoKUuoKWgg==", "18-27:1")]
+[assembly: go.GoPositionMap("io/fs/sub_test.go", "sub_test.cs", "ABEegAAKBIKCgoKClIKCloKCgoKUuoKWgoSCgpSCgpSCloKC", "18-37:1")]
+[assembly: go.GoPositionMap("io/fs/walk_test.go", "walk_test.cs", "ADFiooKCuIKCkoKUpqzSgoKCpoKCgpSUpoKEgpKCmIKClIKUgoKU+KKCgoCCtoKAgqSCgoKClIKUlIKUgoI=", "58-64:1;73-77:1;94-96:1;105-110:2;126-134:1")]
 // </GoSourcePositionMaps>
 
 namespace go.io;
@@ -87,6 +84,8 @@ public static partial class fs_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestFileInfoToDirEntry_tests {}
+    internal partial struct TestReadDirPath_fsys {}
     internal partial struct formatTest {}
     internal partial struct formatTestsᴛ1 {}
     internal partial struct globOnly {}
@@ -98,8 +97,32 @@ public static partial class fs_test_package
     internal partial struct statOnly {}
     internal partial struct subOnly {}
     public partial struct Node {}
-    public partial struct TestFileInfoToDirEntry_tests {}
-    public partial struct TestReadDirPath_fsys {}
-    public partial struct TestReadFilePath_fsys {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸfstest() => builtin.initPackage(typeof(go.testing.fstest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.io.fs_package));
+    }
 }

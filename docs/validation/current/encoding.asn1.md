@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/asn1` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**38 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**40 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -27,6 +29,7 @@ comparison — it is the evidence behind the `encoding/asn1` row in
 | `TestImplicitTaggedTime` | pass | pass |
 | `TestInvalidUTF8` | pass | pass |
 | `TestIssue11130` | pass | pass |
+| `TestIssue68241` | pass | pass |
 | `TestMarshal` | pass | pass |
 | `TestMarshalError` | pass | pass |
 | `TestMarshalNilValue` | pass | pass |
@@ -42,6 +45,7 @@ comparison — it is the evidence behind the `encoding/asn1` row in
 | `TestParseInt32` | pass | pass |
 | `TestParseInt64` | pass | pass |
 | `TestParseTagAndLength` | pass | pass |
+| `TestParsingMemoryConsumption` | pass | pass |
 | `TestRawStructs` | pass | pass |
 | `TestSetEncoder` | pass | pass |
 | `TestSetEncoderSETSliceSuffix` | pass | pass |

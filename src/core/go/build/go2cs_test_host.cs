@@ -17,7 +17,6 @@ internal static class Go2CsTestHost
             "gccgo.go",
             "read.go",
             "read_test.go",
-            "syslist.go",
             "syslist_test.go",
             "testdata/alltags/alltags.go",
             "testdata/alltags/x_netbsd_arm.go",
@@ -53,39 +52,39 @@ internal static class Go2CsTestHost
         {
             "testdata/other",
         });
-        registry.Add("TestAllTags", build_internal_test_package.TestAllTags, "build_test.go", 764);
-        registry.Add("TestAllTagsNonSourceFile", build_internal_test_package.TestAllTagsNonSourceFile, "build_test.go", 796);
-        registry.Add("TestCgoImportsIgnored", build_internal_test_package.TestCgoImportsIgnored, "build_test.go", 746);
-        registry.Add("TestDependencies", build_internal_test_package.TestDependencies, "deps_test.go", 752);
-        registry.Add("TestDirectives", build_internal_test_package.TestDirectives, "build_test.go", 806);
-        registry.Add("TestDotSlashImport", build_internal_test_package.TestDotSlashImport, "build_test.go", 61);
-        registry.Add("TestEmptyFolderImport", build_internal_test_package.TestEmptyFolderImport, "build_test.go", 96);
-        registry.Add("TestEmptyImport", build_internal_test_package.TestEmptyImport, "build_test.go", 83);
-        registry.Add("TestExpandSrcDir", build_internal_test_package.TestExpandSrcDir, "build_test.go", 458);
-        registry.Add("TestFindImports", build_internal_test_package.TestFindImports, "deps_test.go", 879);
+        registry.Add("TestAllTags", build_internal_test_package.TestAllTags, "build_test.go", 766);
+        registry.Add("TestAllTagsNonSourceFile", build_internal_test_package.TestAllTagsNonSourceFile, "build_test.go", 798);
+        registry.Add("TestCgoImportsIgnored", build_internal_test_package.TestCgoImportsIgnored, "build_test.go", 748);
+        registry.Add("TestDependencies", build_internal_test_package.TestDependencies, "deps_test.go", 803);
+        registry.Add("TestDirectives", build_internal_test_package.TestDirectives, "build_test.go", 808);
+        registry.Add("TestDotSlashImport", build_internal_test_package.TestDotSlashImport, "build_test.go", 63);
+        registry.Add("TestEmptyFolderImport", build_internal_test_package.TestEmptyFolderImport, "build_test.go", 98);
+        registry.Add("TestEmptyImport", build_internal_test_package.TestEmptyImport, "build_test.go", 85);
+        registry.Add("TestExpandSrcDir", build_internal_test_package.TestExpandSrcDir, "build_test.go", 460);
+        registry.Add("TestFindImports", build_internal_test_package.TestFindImports, "deps_test.go", 924);
         registry.Add("TestGoodOSArch", build_internal_test_package.TestGoodOSArch, "syslist_test.go", 56);
-        registry.Add("TestGoodOSArchFile", build_internal_test_package.TestGoodOSArchFile, "build_test.go", 359);
-        registry.Add("TestImportCmd", build_internal_test_package.TestImportCmd, "build_test.go", 425);
-        registry.Add("TestImportDirNotExist", build_internal_test_package.TestImportDirNotExist, "build_test.go", 496);
-        registry.Add("TestImportPackageOutsideModule", build_internal_test_package.TestImportPackageOutsideModule, "build_test.go", 642);
-        registry.Add("TestImportVendor", build_internal_test_package.TestImportVendor, "build_test.go", 550);
-        registry.Add("TestImportVendorFailure", build_internal_test_package.TestImportVendorFailure, "build_test.go", 592);
-        registry.Add("TestImportVendorParentFailure", build_internal_test_package.TestImportVendorParentFailure, "build_test.go", 614);
+        registry.Add("TestGoodOSArchFile", build_internal_test_package.TestGoodOSArchFile, "build_test.go", 361);
+        registry.Add("TestImportCmd", build_internal_test_package.TestImportCmd, "build_test.go", 427);
+        registry.Add("TestImportDirNotExist", build_internal_test_package.TestImportDirNotExist, "build_test.go", 498);
+        registry.Add("TestImportPackageOutsideModule", build_internal_test_package.TestImportPackageOutsideModule, "build_test.go", 644);
+        registry.Add("TestImportVendor", build_internal_test_package.TestImportVendor, "build_test.go", 552);
+        registry.Add("TestImportVendorFailure", build_internal_test_package.TestImportVendorFailure, "build_test.go", 594);
+        registry.Add("TestImportVendorParentFailure", build_internal_test_package.TestImportVendorParentFailure, "build_test.go", 616);
         registry.Add("TestIsAllowed", build_internal_test_package.TestIsAllowed, "vendor_test.go", 63);
-        registry.Add("TestIssue23594", build_internal_test_package.TestIssue23594, "build_test.go", 677);
-        registry.Add("TestIssue56509", build_internal_test_package.TestIssue56509, "build_test.go", 693);
-        registry.Add("TestLocalDirectory", build_internal_test_package.TestLocalDirectory, "build_test.go", 133);
-        registry.Add("TestMatch", build_internal_test_package.TestMatch, "build_test.go", 24);
-        registry.Add("TestMatchFile", build_internal_test_package.TestMatchFile, "build_test.go", 406);
-        registry.Add("TestMissingImportErrorRepetition", build_internal_test_package.TestMissingImportErrorRepetition, "build_test.go", 710);
-        registry.Add("TestMultiplePackageImport", build_internal_test_package.TestMultiplePackageImport, "build_test.go", 103);
+        registry.Add("TestIssue23594", build_internal_test_package.TestIssue23594, "build_test.go", 679);
+        registry.Add("TestIssue56509", build_internal_test_package.TestIssue56509, "build_test.go", 695);
+        registry.Add("TestLocalDirectory", build_internal_test_package.TestLocalDirectory, "build_test.go", 135);
+        registry.Add("TestMatch", build_internal_test_package.TestMatch, "build_test.go", 26);
+        registry.Add("TestMatchFile", build_internal_test_package.TestMatchFile, "build_test.go", 408);
+        registry.Add("TestMissingImportErrorRepetition", build_internal_test_package.TestMissingImportErrorRepetition, "build_test.go", 712);
+        registry.Add("TestMultiplePackageImport", build_internal_test_package.TestMultiplePackageImport, "build_test.go", 105);
         registry.Add("TestReadComments", build_internal_test_package.TestReadComments, "read_test.go", 161);
         registry.Add("TestReadEmbed", build_internal_test_package.TestReadEmbed, "read_test.go", 328);
         registry.Add("TestReadFailuresIgnored", build_internal_test_package.TestReadFailuresIgnored, "read_test.go", 232);
         registry.Add("TestReadGoInfo", build_internal_test_package.TestReadGoInfo, "read_test.go", 153);
-        registry.Add("TestShellSafety", build_internal_test_package.TestShellSafety, "build_test.go", 469);
-        registry.Add("TestShouldBuild", build_internal_test_package.TestShouldBuild, "build_test.go", 342);
-        registry.Add("TestStdlibLowercase", build_internal_test_package.TestStdlibLowercase, "deps_test.go", 860);
+        registry.Add("TestShellSafety", build_internal_test_package.TestShellSafety, "build_test.go", 471);
+        registry.Add("TestShouldBuild", build_internal_test_package.TestShouldBuild, "build_test.go", 344);
+        registry.Add("TestStdlibLowercase", build_internal_test_package.TestStdlibLowercase, "deps_test.go", 907);
         registry.Add("TestVendorPackages", build_internal_test_package.TestVendorPackages, "vendor_test.go", 28);
         registry.SetTestMain(build_internal_test_package.TestMain);
         return TestHost.Run(registry, args);

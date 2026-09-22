@@ -4,7 +4,7 @@
 namespace go.unicode;
 
 using testenv = @internal.testenv_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using testing = testing_package;
 using unicode = unicode_package;
 using static go.unicode.utf16_package;
@@ -23,7 +23,7 @@ public static void TestConstants(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestRuneLen_type {
+[GoType("dyn")] internal partial struct TestRuneLen_type {
     internal rune r;
     internal nint length;
 }
@@ -63,7 +63,7 @@ internal static slice<encodeTest> encodeTests = new encodeTest[]{
 public static void TestEncode(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in encodeTests) {
         var @out = Encode(tt.@in);
-        if (!reflect.DeepEqual(@out, tt.@out)) {
+        if (!slices.Equal<slice<uint16>, uint16>(@out, tt.@out)) {
             Ꮡt.Errorf("Encode(%x) = %x; want %x"u8, tt.@in, @out, tt.@out);
         }
     }
@@ -75,7 +75,7 @@ public static void TestAppendRune(ж<testing.T> Ꮡt) {
         foreach (var (_, u) in tt.@in) {
             @out = AppendRune(@out, u);
         }
-        if (!reflect.DeepEqual(@out, tt.@out)) {
+        if (!slices.Equal<slice<uint16>, uint16>(@out, tt.@out)) {
             Ꮡt.Errorf("AppendRune(%x) = %x; want %x"u8, tt.@in, @out, tt.@out);
         }
     }
@@ -153,7 +153,7 @@ public static void TestAllocationsDecode(ж<testing.T> Ꮡt) {
 public static void TestDecode(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in decodeTests) {
         var @out = Decode(tt.@in);
-        if (!reflect.DeepEqual(@out, tt.@out)) {
+        if (!slices.Equal<slice<rune>, rune>(@out, tt.@out)) {
             Ꮡt.Errorf("Decode(%x) = %x; want %x"u8, tt.@in, @out, tt.@out);
         }
     }

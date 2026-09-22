@@ -30,6 +30,11 @@ q.go:30.0,31.0 2 1
 q.go:33.0,40.0 7 2
 lit.go:99.0,100.0 1 0
 """u8;
+private static readonly @string modeAtomicLitGo990100010ˢ = """
+
+mode: atomic
+lit.go:99.0,100.0 1 0
+"""u8;
 private static readonly @string myPack1Coverage667Ofˢ = """
 
        	my/pack1		coverage: 66.7% of statements
@@ -88,13 +93,25 @@ public static void TestBasics(ж<testing.T> Ꮡt) {
     ref var b2 = ref heap(new strings.Builder(), out var Ꮡb2);
     ref var b3 = ref heap(new strings.Builder(), out var Ꮡb3);
     ref var b4 = ref heap(new strings.Builder(), out var Ꮡb4);
+    ref var b5 = ref heap(new strings.Builder(), out var Ꮡb5);
     {
-        var err = fm.EmitTextual(new strings_BuilderжWriter(Ꮡb1)); if (err != default!) {
+        var err = fm.EmitTextual(default!, new strings_BuilderжWriter(Ꮡb1)); if (err != default!) {
             Ꮡt.Fatalf("EmitTextual returned %v"u8, err);
         }
     }
     @string wantText = strings.TrimSpace(modeAtomicPGo10011020PGoˢ);
     @string gotText = strings.TrimSpace(b1.String());
+    if (wantText != gotText) {
+        Ꮡt.Errorf("emit text: got:\n%s\nwant:\n%s\n"u8, gotText, wantText);
+    }
+    var selected = new @string[]{"my/pack2"u8}.slice();
+    {
+        var err = fm.EmitTextual(selected, new strings_BuilderжWriter(Ꮡb5)); if (err != default!) {
+            Ꮡt.Fatalf("EmitTextual returned %v"u8, err);
+        }
+    }
+    wantText = strings.TrimSpace(modeAtomicLitGo990100010ˢ);
+    gotText = strings.TrimSpace(b5.String());
     if (wantText != gotText) {
         Ꮡt.Errorf("emit text: got:\n%s\nwant:\n%s\n"u8, gotText, wantText);
     }

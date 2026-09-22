@@ -28,96 +28,6 @@ using static go.debug.elf_package;
 
 partial class elf_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() {
-    builtin.initPackage(typeof(compress.gzip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() {
-    builtin.initPackage(typeof(compress.zlib_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() {
-    builtin.initPackage(typeof(go.debug.dwarf_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 [GoType] internal partial struct fileTest {
     internal @string @file;
     internal global::go.debug.elf_package.FileHeader hdr;
@@ -172,80 +82,80 @@ internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTes
         }.slice(),
         new @string[]{"libc.so.6"u8}.slice(),
         new global::go.debug.elf_package.Symbol[]{
-            new(""u8, 3, 0, 1, 134512852, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 2, 134512876, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 3, 134513020, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 4, 134513292, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 5, 134513480, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 6, 134513512, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 7, 134513532, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 8, 134513612, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 9, 134513996, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 10, 134514008, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 11, 134518268, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 12, 134518280, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 13, 134518284, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 14, 134518436, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 15, 134518444, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 16, 134518452, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 17, 134518456, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 18, 134518484, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 19, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 20, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 21, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 22, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 23, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 24, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 25, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 26, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 27, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 28, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 29, 0, 0, ""u8, ""u8),
-            new("crt1.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("/usr/src/lib/csu/i386-elf/crti.S"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("<command line>"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("<built-in>"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("/usr/src/lib/csu/i386-elf/crti.S"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("crtstuff.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("__CTOR_LIST__"u8, 1, 0, 14, 134518436, 0, ""u8, ""u8),
-            new("__DTOR_LIST__"u8, 1, 0, 15, 134518444, 0, ""u8, ""u8),
-            new("__EH_FRAME_BEGIN__"u8, 1, 0, 12, 134518280, 0, ""u8, ""u8),
-            new("__JCR_LIST__"u8, 1, 0, 16, 134518452, 0, ""u8, ""u8),
-            new("p.0"u8, 1, 0, 11, 134518276, 0, ""u8, ""u8),
-            new("completed.1"u8, 1, 0, 18, 134518484, 1, ""u8, ""u8),
-            new("__do_global_dtors_aux"u8, 2, 0, 8, 134513760, 0, ""u8, ""u8),
-            new("object.2"u8, 1, 0, 18, 134518488, 24, ""u8, ""u8),
-            new("frame_dummy"u8, 2, 0, 8, 134513836, 0, ""u8, ""u8),
-            new("crtstuff.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("__CTOR_END__"u8, 1, 0, 14, 134518440, 0, ""u8, ""u8),
-            new("__DTOR_END__"u8, 1, 0, 15, 134518448, 0, ""u8, ""u8),
-            new("__FRAME_END__"u8, 1, 0, 12, 134518280, 0, ""u8, ""u8),
-            new("__JCR_END__"u8, 1, 0, 16, 134518452, 0, ""u8, ""u8),
-            new("__do_global_ctors_aux"u8, 2, 0, 8, 134513960, 0, ""u8, ""u8),
-            new("/usr/src/lib/csu/i386-elf/crtn.S"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("<command line>"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("<built-in>"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("/usr/src/lib/csu/i386-elf/crtn.S"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("hello.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("printf"u8, 18, 0, 0, 0, 44, ""u8, ""u8),
-            new("_DYNAMIC"u8, 17, 0, 65521, 134518284, 0, ""u8, ""u8),
-            new("__dso_handle"u8, 17, 2, 11, 134518272, 0, ""u8, ""u8),
-            new("_init"u8, 18, 0, 6, 134513512, 0, ""u8, ""u8),
-            new("environ"u8, 17, 0, 18, 134518512, 4, ""u8, ""u8),
-            new("__deregister_frame_info"u8, 32, 0, 0, 0, 0, ""u8, ""u8),
-            new("__progname"u8, 17, 0, 11, 134518268, 4, ""u8, ""u8),
-            new("_start"u8, 18, 0, 8, 134513612, 145, ""u8, ""u8),
-            new("__bss_start"u8, 16, 0, 65521, 134518484, 0, ""u8, ""u8),
-            new("main"u8, 18, 0, 8, 134513912, 46, ""u8, ""u8),
-            new("_init_tls"u8, 18, 0, 0, 0, 5, ""u8, ""u8),
-            new("_fini"u8, 18, 0, 9, 134513996, 0, ""u8, ""u8),
-            new("atexit"u8, 18, 0, 0, 0, 43, ""u8, ""u8),
-            new("_edata"u8, 16, 0, 65521, 134518484, 0, ""u8, ""u8),
-            new("_GLOBAL_OFFSET_TABLE_"u8, 17, 0, 65521, 134518456, 0, ""u8, ""u8),
-            new("_end"u8, 16, 0, 65521, 134518516, 0, ""u8, ""u8),
-            new("exit"u8, 18, 0, 0, 0, 68, ""u8, ""u8),
-            new("_Jv_RegisterClasses"u8, 32, 0, 0, 0, 0, ""u8, ""u8),
-            new("__register_frame_info"u8, 32, 0, 0, 0, 0, ""u8, ""u8)
+            new(""u8, 3, 0, false, 0, 1, 134512852, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 2, 134512876, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 3, 134513020, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 4, 134513292, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 5, 134513480, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 6, 134513512, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 7, 134513532, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 8, 134513612, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 9, 134513996, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 10, 134514008, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 11, 134518268, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 12, 134518280, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 13, 134518284, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 14, 134518436, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 15, 134518444, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 16, 134518452, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 17, 134518456, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 18, 134518484, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 19, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 20, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 21, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 22, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 23, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 24, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 25, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 26, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 27, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 28, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 29, 0, 0, ""u8, ""u8),
+            new("crt1.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("/usr/src/lib/csu/i386-elf/crti.S"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("<command line>"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("<built-in>"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("/usr/src/lib/csu/i386-elf/crti.S"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("crtstuff.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("__CTOR_LIST__"u8, 1, 0, false, 0, 14, 134518436, 0, ""u8, ""u8),
+            new("__DTOR_LIST__"u8, 1, 0, false, 0, 15, 134518444, 0, ""u8, ""u8),
+            new("__EH_FRAME_BEGIN__"u8, 1, 0, false, 0, 12, 134518280, 0, ""u8, ""u8),
+            new("__JCR_LIST__"u8, 1, 0, false, 0, 16, 134518452, 0, ""u8, ""u8),
+            new("p.0"u8, 1, 0, false, 0, 11, 134518276, 0, ""u8, ""u8),
+            new("completed.1"u8, 1, 0, false, 0, 18, 134518484, 1, ""u8, ""u8),
+            new("__do_global_dtors_aux"u8, 2, 0, false, 0, 8, 134513760, 0, ""u8, ""u8),
+            new("object.2"u8, 1, 0, false, 0, 18, 134518488, 24, ""u8, ""u8),
+            new("frame_dummy"u8, 2, 0, false, 0, 8, 134513836, 0, ""u8, ""u8),
+            new("crtstuff.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("__CTOR_END__"u8, 1, 0, false, 0, 14, 134518440, 0, ""u8, ""u8),
+            new("__DTOR_END__"u8, 1, 0, false, 0, 15, 134518448, 0, ""u8, ""u8),
+            new("__FRAME_END__"u8, 1, 0, false, 0, 12, 134518280, 0, ""u8, ""u8),
+            new("__JCR_END__"u8, 1, 0, false, 0, 16, 134518452, 0, ""u8, ""u8),
+            new("__do_global_ctors_aux"u8, 2, 0, false, 0, 8, 134513960, 0, ""u8, ""u8),
+            new("/usr/src/lib/csu/i386-elf/crtn.S"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("<command line>"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("<built-in>"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("/usr/src/lib/csu/i386-elf/crtn.S"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("hello.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("printf"u8, 18, 0, false, 0, 0, 0, 44, ""u8, ""u8),
+            new("_DYNAMIC"u8, 17, 0, false, 0, 65521, 134518284, 0, ""u8, ""u8),
+            new("__dso_handle"u8, 17, 2, false, 0, 11, 134518272, 0, ""u8, ""u8),
+            new("_init"u8, 18, 0, false, 0, 6, 134513512, 0, ""u8, ""u8),
+            new("environ"u8, 17, 0, false, 0, 18, 134518512, 4, ""u8, ""u8),
+            new("__deregister_frame_info"u8, 32, 0, false, 0, 0, 0, 0, ""u8, ""u8),
+            new("__progname"u8, 17, 0, false, 0, 11, 134518268, 4, ""u8, ""u8),
+            new("_start"u8, 18, 0, false, 0, 8, 134513612, 145, ""u8, ""u8),
+            new("__bss_start"u8, 16, 0, false, 0, 65521, 134518484, 0, ""u8, ""u8),
+            new("main"u8, 18, 0, false, 0, 8, 134513912, 46, ""u8, ""u8),
+            new("_init_tls"u8, 18, 0, false, 0, 0, 0, 5, ""u8, ""u8),
+            new("_fini"u8, 18, 0, false, 0, 9, 134513996, 0, ""u8, ""u8),
+            new("atexit"u8, 18, 0, false, 0, 0, 0, 43, ""u8, ""u8),
+            new("_edata"u8, 16, 0, false, 0, 65521, 134518484, 0, ""u8, ""u8),
+            new("_GLOBAL_OFFSET_TABLE_"u8, 17, 0, false, 0, 65521, 134518456, 0, ""u8, ""u8),
+            new("_end"u8, 16, 0, false, 0, 65521, 134518516, 0, ""u8, ""u8),
+            new("exit"u8, 18, 0, false, 0, 0, 0, 68, ""u8, ""u8),
+            new("_Jv_RegisterClasses"u8, 32, 0, false, 0, 0, 0, 0, ""u8, ""u8),
+            new("__register_frame_info"u8, 32, 0, false, 0, 0, 0, 0, ""u8, ""u8)
         }.slice()
     ),
     new(
@@ -302,79 +212,79 @@ internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTes
         }.slice(),
         new @string[]{"libc.so.6"u8}.slice(),
         new global::go.debug.elf_package.Symbol[]{
-            new(""u8, 3, 0, 1, 4194816, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 2, 4194844, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 3, 4194880, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 4, 4194920, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 5, 4194952, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 6, 4195048, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 7, 4195110, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 8, 4195120, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 9, 4195152, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 10, 4195176, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 11, 4195224, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 12, 4195248, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 13, 4195296, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 14, 4195732, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 15, 4195748, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 16, 4195768, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 17, 4195808, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 18, 6293128, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 19, 6293144, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 20, 6293160, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 21, 6293168, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 22, 6293584, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 23, 6293592, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 24, 6293632, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 25, 6293656, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 26, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 27, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 28, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 29, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 30, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 31, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 32, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 33, 0, 0, ""u8, ""u8),
-            new("init.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("initfini.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("call_gmon_start"u8, 2, 0, 13, 4195340, 0, ""u8, ""u8),
-            new("crtstuff.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("__CTOR_LIST__"u8, 1, 0, 18, 6293128, 0, ""u8, ""u8),
-            new("__DTOR_LIST__"u8, 1, 0, 19, 6293144, 0, ""u8, ""u8),
-            new("__JCR_LIST__"u8, 1, 0, 20, 6293160, 0, ""u8, ""u8),
-            new("__do_global_dtors_aux"u8, 2, 0, 13, 4195376, 0, ""u8, ""u8),
-            new("completed.6183"u8, 1, 0, 25, 6293656, 1, ""u8, ""u8),
-            new("p.6181"u8, 1, 0, 24, 6293648, 0, ""u8, ""u8),
-            new("frame_dummy"u8, 2, 0, 13, 4195440, 0, ""u8, ""u8),
-            new("crtstuff.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("__CTOR_END__"u8, 1, 0, 18, 6293136, 0, ""u8, ""u8),
-            new("__DTOR_END__"u8, 1, 0, 19, 6293152, 0, ""u8, ""u8),
-            new("__FRAME_END__"u8, 1, 0, 17, 4195968, 0, ""u8, ""u8),
-            new("__JCR_END__"u8, 1, 0, 20, 6293160, 0, ""u8, ""u8),
-            new("__do_global_ctors_aux"u8, 2, 0, 13, 4195680, 0, ""u8, ""u8),
-            new("initfini.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("hello.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new("_GLOBAL_OFFSET_TABLE_"u8, 1, 2, 23, 6293592, 0, ""u8, ""u8),
-            new("__init_array_end"u8, 0, 2, 18, 6293124, 0, ""u8, ""u8),
-            new("__init_array_start"u8, 0, 2, 18, 6293124, 0, ""u8, ""u8),
-            new("_DYNAMIC"u8, 1, 2, 21, 6293168, 0, ""u8, ""u8),
-            new("data_start"u8, 32, 0, 24, 6293632, 0, ""u8, ""u8),
-            new("__libc_csu_fini"u8, 18, 0, 13, 4195520, 2, ""u8, ""u8),
-            new("_start"u8, 18, 0, 13, 4195296, 0, ""u8, ""u8),
-            new("__gmon_start__"u8, 32, 0, 0, 0, 0, ""u8, ""u8),
-            new("_Jv_RegisterClasses"u8, 32, 0, 0, 0, 0, ""u8, ""u8),
-            new("puts@@GLIBC_2.2.5"u8, 18, 0, 0, 0, 396, ""u8, ""u8),
-            new("_fini"u8, 18, 0, 14, 4195732, 0, ""u8, ""u8),
-            new("__libc_start_main@@GLIBC_2.2.5"u8, 18, 0, 0, 0, 450, ""u8, ""u8),
-            new("_IO_stdin_used"u8, 17, 0, 15, 4195748, 4, ""u8, ""u8),
-            new("__data_start"u8, 16, 0, 24, 6293632, 0, ""u8, ""u8),
-            new("__dso_handle"u8, 17, 2, 24, 6293640, 0, ""u8, ""u8),
-            new("__libc_csu_init"u8, 18, 0, 13, 4195536, 137, ""u8, ""u8),
-            new("__bss_start"u8, 16, 0, 65521, 6293656, 0, ""u8, ""u8),
-            new("_end"u8, 16, 0, 65521, 6293664, 0, ""u8, ""u8),
-            new("_edata"u8, 16, 0, 65521, 6293656, 0, ""u8, ""u8),
-            new("main"u8, 18, 0, 13, 4195480, 27, ""u8, ""u8),
-            new("_init"u8, 18, 0, 11, 4195224, 0, ""u8, ""u8)
+            new(""u8, 3, 0, false, 0, 1, 4194816, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 2, 4194844, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 3, 4194880, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 4, 4194920, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 5, 4194952, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 6, 4195048, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 7, 4195110, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 8, 4195120, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 9, 4195152, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 10, 4195176, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 11, 4195224, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 12, 4195248, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 13, 4195296, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 14, 4195732, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 15, 4195748, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 16, 4195768, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 17, 4195808, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 18, 6293128, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 19, 6293144, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 20, 6293160, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 21, 6293168, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 22, 6293584, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 23, 6293592, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 24, 6293632, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 25, 6293656, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 26, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 27, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 28, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 29, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 30, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 31, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 32, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 33, 0, 0, ""u8, ""u8),
+            new("init.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("initfini.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("call_gmon_start"u8, 2, 0, false, 0, 13, 4195340, 0, ""u8, ""u8),
+            new("crtstuff.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("__CTOR_LIST__"u8, 1, 0, false, 0, 18, 6293128, 0, ""u8, ""u8),
+            new("__DTOR_LIST__"u8, 1, 0, false, 0, 19, 6293144, 0, ""u8, ""u8),
+            new("__JCR_LIST__"u8, 1, 0, false, 0, 20, 6293160, 0, ""u8, ""u8),
+            new("__do_global_dtors_aux"u8, 2, 0, false, 0, 13, 4195376, 0, ""u8, ""u8),
+            new("completed.6183"u8, 1, 0, false, 0, 25, 6293656, 1, ""u8, ""u8),
+            new("p.6181"u8, 1, 0, false, 0, 24, 6293648, 0, ""u8, ""u8),
+            new("frame_dummy"u8, 2, 0, false, 0, 13, 4195440, 0, ""u8, ""u8),
+            new("crtstuff.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("__CTOR_END__"u8, 1, 0, false, 0, 18, 6293136, 0, ""u8, ""u8),
+            new("__DTOR_END__"u8, 1, 0, false, 0, 19, 6293152, 0, ""u8, ""u8),
+            new("__FRAME_END__"u8, 1, 0, false, 0, 17, 4195968, 0, ""u8, ""u8),
+            new("__JCR_END__"u8, 1, 0, false, 0, 20, 6293160, 0, ""u8, ""u8),
+            new("__do_global_ctors_aux"u8, 2, 0, false, 0, 13, 4195680, 0, ""u8, ""u8),
+            new("initfini.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("hello.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new("_GLOBAL_OFFSET_TABLE_"u8, 1, 2, false, 0, 23, 6293592, 0, ""u8, ""u8),
+            new("__init_array_end"u8, 0, 2, false, 0, 18, 6293124, 0, ""u8, ""u8),
+            new("__init_array_start"u8, 0, 2, false, 0, 18, 6293124, 0, ""u8, ""u8),
+            new("_DYNAMIC"u8, 1, 2, false, 0, 21, 6293168, 0, ""u8, ""u8),
+            new("data_start"u8, 32, 0, false, 0, 24, 6293632, 0, ""u8, ""u8),
+            new("__libc_csu_fini"u8, 18, 0, false, 0, 13, 4195520, 2, ""u8, ""u8),
+            new("_start"u8, 18, 0, false, 0, 13, 4195296, 0, ""u8, ""u8),
+            new("__gmon_start__"u8, 32, 0, false, 0, 0, 0, 0, ""u8, ""u8),
+            new("_Jv_RegisterClasses"u8, 32, 0, false, 0, 0, 0, 0, ""u8, ""u8),
+            new("puts@@GLIBC_2.2.5"u8, 18, 0, false, 0, 0, 0, 396, ""u8, ""u8),
+            new("_fini"u8, 18, 0, false, 0, 14, 4195732, 0, ""u8, ""u8),
+            new("__libc_start_main@@GLIBC_2.2.5"u8, 18, 0, false, 0, 0, 0, 450, ""u8, ""u8),
+            new("_IO_stdin_used"u8, 17, 0, false, 0, 15, 4195748, 4, ""u8, ""u8),
+            new("__data_start"u8, 16, 0, false, 0, 24, 6293632, 0, ""u8, ""u8),
+            new("__dso_handle"u8, 17, 2, false, 0, 24, 6293640, 0, ""u8, ""u8),
+            new("__libc_csu_init"u8, 18, 0, false, 0, 13, 4195536, 137, ""u8, ""u8),
+            new("__bss_start"u8, 16, 0, false, 0, 65521, 6293656, 0, ""u8, ""u8),
+            new("_end"u8, 16, 0, false, 0, 65521, 6293664, 0, ""u8, ""u8),
+            new("_edata"u8, 16, 0, false, 0, 65521, 6293656, 0, ""u8, ""u8),
+            new("main"u8, 18, 0, false, 0, 13, 4195480, 27, ""u8, ""u8),
+            new("_init"u8, 18, 0, false, 0, 11, 4195224, 0, ""u8, ""u8)
         }.slice()
     ),
     new(
@@ -432,21 +342,21 @@ internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTes
         new global::go.debug.elf_package.ProgHeader[]{}.slice(),
         default!,
         new global::go.debug.elf_package.Symbol[]{
-            new("hello.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 1, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 3, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 4, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 5, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 6, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 8, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 9, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 11, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 13, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 15, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 16, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 14, 0, 0, ""u8, ""u8),
-            new("main"u8, 18, 0, 1, 0, 23, ""u8, ""u8),
-            new("puts"u8, 16, 0, 0, 0, 0, ""u8, ""u8)
+            new("hello.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 1, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 3, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 4, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 5, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 6, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 8, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 9, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 11, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 13, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 15, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 16, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 14, 0, 0, ""u8, ""u8),
+            new("main"u8, 18, 0, false, 0, 1, 0, 23, ""u8, ""u8),
+            new("puts"u8, 16, 0, false, 0, 0, 0, 0, ""u8, ""u8)
         }.slice()
     ),
     new(
@@ -478,21 +388,21 @@ internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTes
         new global::go.debug.elf_package.ProgHeader[]{}.slice(),
         default!,
         new global::go.debug.elf_package.Symbol[]{
-            new("hello.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 1, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 3, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 4, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 5, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 6, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 8, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 9, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 11, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 13, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 15, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 16, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 14, 0, 0, ""u8, ""u8),
-            new("main"u8, 18, 0, 1, 0, 27, ""u8, ""u8),
-            new("puts"u8, 16, 0, 0, 0, 0, ""u8, ""u8)
+            new("hello.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 1, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 3, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 4, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 5, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 6, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 8, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 9, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 11, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 13, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 15, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 16, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 14, 0, 0, ""u8, ""u8),
+            new("main"u8, 18, 0, false, 0, 1, 0, 27, ""u8, ""u8),
+            new("puts"u8, 16, 0, false, 0, 0, 0, 0, ""u8, ""u8)
         }.slice()
     ),
     new(
@@ -524,21 +434,21 @@ internal static ж<slice<fileTest>> ᏑfileTests = new StandardBox<slice<fileTes
         new global::go.debug.elf_package.ProgHeader[]{}.slice(),
         default!,
         new global::go.debug.elf_package.Symbol[]{
-            new("hello.c"u8, 4, 0, 65521, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 1, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 3, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 4, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 5, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 6, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 8, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 9, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 11, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 13, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 15, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 16, 0, 0, ""u8, ""u8),
-            new(""u8, 3, 0, 14, 0, 0, ""u8, ""u8),
-            new("main"u8, 18, 0, 1, 0, 44, ""u8, ""u8),
-            new("puts"u8, 16, 0, 0, 0, 0, ""u8, ""u8)
+            new("hello.c"u8, 4, 0, false, 0, 65521, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 1, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 3, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 4, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 5, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 6, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 8, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 9, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 11, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 13, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 15, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 16, 0, 0, ""u8, ""u8),
+            new(""u8, 3, 0, false, 0, 14, 0, 0, ""u8, ""u8),
+            new("main"u8, 18, 0, false, 0, 1, 0, 44, ""u8, ""u8),
+            new("puts"u8, 16, 0, false, 0, 0, 0, 0, ""u8, ""u8)
         }.slice()
     )
 }.slice());
@@ -655,6 +565,7 @@ internal static (io.ReaderAt, error) decompress(@string gz) {
 [GoType] internal partial struct relocationTestEntry {
     internal nint entryNumber;
     internal ж<dwarf.Entry> entry;
+    [GoArrayDims(2)]
     internal slice<array<uint64>> pcRanges;
 }
 
@@ -682,7 +593,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x6}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x6}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -704,7 +615,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x5}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x5}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -726,7 +637,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x6}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x6}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -748,7 +659,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x24}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x24}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -770,7 +681,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x28}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x28}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -792,7 +703,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrHighpc, Val: (int64)0x30, Class: dwarf.ClassConstant)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x30}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x30}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -814,7 +725,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x44}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x44}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -836,7 +747,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x24}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x24}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -858,7 +769,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x64}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x64}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -880,7 +791,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x3a}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x3a}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -902,7 +813,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x2c}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x2c}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -924,7 +835,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x58}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x58}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -946,7 +857,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x5c}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x5c}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -968,7 +879,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x64}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x64}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -990,7 +901,7 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{new uint64[]{0x0, 0x2c}.array()}.slice()
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x0, 0x2c}.array()}.slice(), 2)
             )
         }.slice()
     ),
@@ -1066,10 +977,10 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{
                     new uint64[]{0x765, 0x777}.array(),
                     new uint64[]{0x7e1, 0x7ec}.array()
-                }.slice()
+                }.slice(), 2)
             )
         }.slice()
     ),
@@ -1091,10 +1002,10 @@ internal static slice<relocationTest> relocationTests = new relocationTest[]{
                         new(Attr: dwarf.AttrStmtList, Val: (int64)0, Class: dwarf.ClassLinePtr)
                     }.slice()
                 )),
-                pcRanges: new array<uint64>[]{
+                pcRanges: GoReflect.WithElemDims(new array<uint64>[]{
                     new uint64[]{0x765, 0x777}.array(),
                     new uint64[]{0x7e1, 0x7ec}.array()
-                }.slice()
+                }.slice(), 2)
             )
         }.slice()
     )

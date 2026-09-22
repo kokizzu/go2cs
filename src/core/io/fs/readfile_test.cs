@@ -68,14 +68,10 @@ public static void TestReadFile(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReadFilePath_fsys {
-    public go.io.fs_package.FS FS;
-}
-
 public static void TestReadFilePath(ж<testing.T> Ꮡt) {
     var fsys = os.DirFS(Ꮡt.TempDir());
     var (_, err1) = ReadFile(fsys, nonExistentˢ);
-    var (_, err2) = ReadFile(new TestReadFilePath_fsys(fsys), nonExistentˢ);
+    var (_, err2) = ReadFile(new TestReadDirPath_fsys(fsys), nonExistentˢ);
     {
         @string s1 = errorPath(err1);
         @string s2 = errorPath(err2); if (s1 != s2) {

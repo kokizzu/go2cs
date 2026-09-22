@@ -10,24 +10,6 @@ using static go.net.http.httptrace_package;
 
 partial class httptrace_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string netˢ = "net"u8;
 internal static readonly @string addrˢ = "addr"u8;
@@ -91,7 +73,7 @@ public static void TestCompose(ж<testing.T> Ꮡt) {
             old: Ꮡ(new ClientTrace(ConnectStart: connectStart((rune)'O')))
         )
     };
-    foreach (var (i, tt) in tests) {
+    foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
         testNum = i;
         buf.Reset();
         ref var tr = ref heap<global::go.net.http.httptrace_package.ClientTrace>(out var Ꮡtr);

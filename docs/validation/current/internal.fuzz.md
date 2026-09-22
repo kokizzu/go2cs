@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/fuzz` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**52 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**52 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/fuzz`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fuzz).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -76,6 +78,7 @@ test requiring a capability the managed runtime does not provide — a `testing`
 has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
 the capability it needs.
 
+- BenchmarkByteSliceMutators (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMarshalCorpusFile (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMutatorAllBasicTypes (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMutatorBytes (benchmark): benchmark execution is deferred to Phase 4D

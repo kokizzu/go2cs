@@ -60,7 +60,7 @@ public static void TestSearch(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFind_tests {
+[GoType("dyn")] internal partial struct TestFind_tests {
     internal slice<@string> data;
     internal @string target;
     internal nint wantPos;
