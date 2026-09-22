@@ -112,7 +112,17 @@ var (
 	// The only widening that costs anything is the empty form `[GoType()]`, which would newly read
 	// as a wrapper — measured ZERO times in src/core against 784 real bodiless wrapper declarations,
 	// so it is inert today, and TestValueCloneIndexControls pins both halves with arms.
-	goTypeWrapperRe = regexp.MustCompile(`\[GoType\([^)]*\)\][\t ]*partial\s+(?:struct|class)\s+([\p{L}_][\p{L}\p{N}_]*)[\t ]*;`)
+	// ⚠ This pattern was BLIND TO ITS OWN POPULATION. It required `[GoType(…)]` to be followed by
+	// whitespace and then `partial`, so it could not match a declaration carrying a SECOND
+	// attribute or an access modifier — and a STAMPED wrapper always carries a second attribute,
+	// `[GoValueClone]`, by definition. Measured at the re-bank train tip: the old pattern saw 0
+	// stamped bodiless wrappers and this one sees 4, so valueCloneMintedMembers had NEVER once
+	// admitted a real corpus type — the exception was dead by construction from the day it was
+	// written, and it surfaced only when the first stamped wrapper reached the corpus
+	// (runtime/export_test.cs's PageAlloc / TimeHistogram / ΔPallocData and
+	// crypto/internal/fips140/edwards25519/scalar_test.cs's notZeroScalar). The attribute group
+	// excludes newlines so it cannot run past the end of its own line.
+	goTypeWrapperRe = regexp.MustCompile(`\[GoType\([^)]*\)\][\t ]*(?:\[[^\]\n]*\][\t ]*)*(?:(?:public|internal|private|protected)[\t ]+)?partial\s+(?:struct|class)\s+([\p{L}_][\p{L}\p{N}_]*)[\t ]*;`)
 
 	// The enclosing `partial class <pkg>_package` a declaration sits in — the q102 key.
 	//
