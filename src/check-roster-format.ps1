@@ -95,17 +95,20 @@ function Read-FixtureRoster {
 }
 
 # The exclusion-ledger sibling of Read-FixtureRoster: same unique temp file, the ledger's header.
+# The SECTION HEADING is part of the fixture because it is part of the contract -- the parser is
+# scoped to the ledger's own section, so a fixture without one is not a ledger. $Trailing appends
+# lines AFTER the table, which is how the out-of-section arms plant a row somewhere else.
 function Read-FixtureLedger {
-    param([string[]] $Rows)
+    param([string[]] $Rows, [string[]] $Trailing = @(), [string[]] $Prefix = @('## Excluded packages', ''))
 
-    $header = @(
+    $header = $Prefix + @(
         '| Package | Verdicts | Class | Mechanism | Rooting |'
         '|:--|:--:|:--:|:--|:--:|'
     )
     $path = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-ledger-fixture-' + [guid]::NewGuid().ToString('n') + '.md')
 
     try {
-        [System.IO.File]::WriteAllText($path, (($header + $Rows) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
+        [System.IO.File]::WriteAllText($path, (($header + $Rows + $Trailing) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         return @(Get-ExclusionLedgerRows -Path $path)
     }
     finally {
@@ -708,6 +711,52 @@ Assert-Equal 'ledger columns: a dashed verdicts cell still carries its class' 'E
 Assert-Equal 'ledger row does not read as a roster row' 0 `
     (@(Read-FixtureRoster @("| ``ex/one`` | 0 | E1 | Nothing eligible on this target. | [ruling][r] |")).Count)
 
+# The ledger's ADDRESS, which is the half the shape above could never supply. Added 2026-09-22 after
+# the H10 relocation seat put six more plain-code-span tables in this one document and 51 of this
+# guard's 70 failures at master 3b48e0c8e0 were the ledger parser reading them. Each arm below is
+# written so that REMOVING the scoping makes it fail:
+#
+#   out-of-section  a ledger-shaped row under a LATER sibling heading is not a ledger row, however
+#                   perfectly it matches -- this is the relocation tables' exact position.
+#   subsection      a row under the ledger's OWN deeper heading IS one; the section runs to the next
+#                   heading of equal or higher level, so `### The 215, derived` belongs to it.
+#   no heading      refuses, rather than reverting to the whole-document scan being removed here.
+#   two headings    refuses; two addresses is an ambiguity, not a choice to make silently.
+$ledgerScopeFixture = Read-FixtureLedger -Rows @(
+    "| ``ex/one`` | 0 | E1 | Nothing eligible on this target. | [ruling][r] |"
+) -Trailing @(
+    ''
+    '## The relocation map'
+    ''
+    '| banked row | decls | successor |'
+    '|:--|--:|:--|'
+    "| ``ex/moved`` | 7 | ``ex/successor`` 7 |"
+)
+
+Assert-Equal 'ledger scope: a ledger-shaped row under a LATER sibling heading is not a ledger row' 1 `
+    $ledgerScopeFixture.Count
+Assert-Equal 'ledger scope: the row that parsed is the in-section one' 'ex/one' $ledgerScopeFixture[0].Package
+
+$ledgerSubsectionFixture = Read-FixtureLedger -Rows @(
+    "| ``ex/one`` | 0 | E1 | Nothing eligible on this target. | [ruling][r] |"
+) -Trailing @(
+    ''
+    '### The derivation, dated'
+    ''
+    "| ``ex/two`` | 6 | E3 | Still the ledger's own section. | [ruling][r] |"
+)
+
+Assert-Equal 'ledger scope: the section runs through its OWN subsections' 2 $ledgerSubsectionFixture.Count
+
+Assert-Throws 'ledger scope: no heading REFUSES rather than scanning the whole document' {
+    Read-FixtureLedger -Rows @("| ``ex/one`` | 0 | E1 | Nothing. | [ruling][r] |") -Prefix @('# Some other page', '')
+} 'no markdown heading reads'
+
+Assert-Throws 'ledger scope: a DUPLICATED heading REFUSES rather than picking one' {
+    Read-FixtureLedger -Rows @("| ``ex/one`` | 0 | E1 | Nothing. | [ruling][r] |") `
+        -Trailing @('', '## Excluded packages', '')
+} 'appears 2 times'
+
 # ---- 2. the roster's own arithmetic --------------------------------------------------------------
 $rows = @(Get-ValidatedRosterRows -Path $table)
 $lines = [System.IO.File]::ReadAllLines($table)
@@ -1269,7 +1318,11 @@ foreach ($line in $lines) {
 
 # The exclusion ledger is the same kind of visitor-facing table with the same hazard, five columns
 # wide -- its Mechanism cells are exactly the prose an unescaped '|' would one day land in.
-foreach ($line in $lines) {
+#
+# Scoped through Get-ExclusionLedgerSectionLines exactly as the parse above it is, and for the same
+# reason: unscoped, this loop asserted a FIVE-column shape on the H10 relocation map's three- and
+# four-column tables and reported 14 failures that were all one defect in this loop's own address.
+foreach ($line in (Get-ExclusionLedgerSectionLines -Lines $lines)) {
     if ($line -notmatch $ExclusionLedgerRowPattern) { continue }
 
     $rowPackage = $Matches[1]

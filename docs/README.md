@@ -9,20 +9,27 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — The Go 1.23.12 record closes at 97.6% of the implementable set; the corpus hops to Go 1.24
+## 📰 NEWS — Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24
 
-**204 of the 215 testable standard-library packages pass their own Go test suites in C#** — 28,459
+**203 of the 215 testable standard-library packages pass their own Go test suites in C#** — 28,459
 matching verdicts against `go test -json`, compared verdict for verdict, with 167 divergences
 disclosed by exact failure signature and nothing else waived. Six of those 215 cannot be validated
 at all — no eligible tests on this platform, a broken upstream oracle, a suite whose whole subject
 is the raw memory layout a managed runtime deliberately does not have, or a comparison that runs
-cleanly and validates nothing — so the honest denominator is **209, putting the roster at 97.6%**.
+cleanly and validates nothing — so the honest denominator is **209, putting the roster at 97.1%**.
 Each of the six is listed with its class, mechanism and evidence in the
 [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and any one of them rejoins the
-count the day its evidence changes. On Linux, 198 of the 202 applicable rows validate at their own
+count the day its evidence changes. On Linux, 188 of the 201 applicable rows validate at their own
 Linux counts. A package appears on the [roster](ValidatedTestPackages.md) only when *every* eligible
 test agrees, and every row links a [proof page](validation/index.md) listing Go's verdict beside
 go2cs's, test by test.
+
+**The package count moved 204 → 203 on 2026-09-22, with the Go 1.24.13 relocation map.** Ten banked
+rows have no package at their banked path at Go 1.24.13 and retired; nine of their successors banked
+by inheritance, carrying those rows' own anchors, and the verdict and disclosure sums are unchanged.
+The per-row arithmetic is in the roster's
+[H10 relocation map](ValidatedTestPackages.md#the-h10-relocation-map). The 2026-09-07 announcement
+linked below records the closed 1.23.12 anchor at its own figures, which is what a record is for.
 
 Those figures are the **Go 1.23.12 anchor** — a closed record rather than a running total. The
 corpus now moves to **Go 1.24.13**, and a version hop re-derives every roster row from the new
