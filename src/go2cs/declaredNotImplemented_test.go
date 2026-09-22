@@ -76,19 +76,27 @@ func TestDeclaredNotImplementedCensus(t *testing.T) {
 	}
 
 	// ⚠ ANTI-VACUITY, arm 2: the members whose absence has already cost the fleet a dead test host
-	// must be IN the population. FOUR of the seven partial declarations in internal/sync/runtime.cs —
-	// the ones Mutex's own path takes.
+	// must be IN the population. Arm 3 below also requires every control to be a PUSHED member (its
+	// //go:linkname push exists in this corpus), so an assembly stub cannot serve here, however many
+	// hosts it has killed. Today the controls are two pushes that do not arrive and have callers in
+	// their own package: internal/runtime/maps.mapKeyError (pushed from runtime/map_swiss.cs) and
+	// internal/coverage/cfile.getCovCounterList (pushed from runtime/covercounter.cs).
 	//
 	// It named RED 7's three (fips140's getIndicator, setIndicator and fatal) until RED 7 (a) gave
 	// them bodies; they left the population and their rows left this list IN THAT SAME COMMIT, which
-	// is the mechanism working rather than an exception to it. The other three declarations in that
-	// file are not controls here: runtime_nanotime is a declaredPushStubs row of its own, and throw
-	// and fatal take the golib FatalReport hand-own instead of a push.
+	// is the mechanism working rather than an exception to it. The four internal/sync Mutex hooks
+	// (runtime_SemacquireMutex, runtime_Semrelease, runtime_canSpin, runtime_doSpin) followed the
+	// same route on 2026-09-22 when internal/sync/runtime_impl.cs bodied them: they are NEGATIVE
+	// controls below now. The list is never left EMPTY: an empty list passes this arm while
+	// checking nothing, which is the vacuity the arm exists to refuse. So when a control gains a
+	// body, a member that is still stubbed replaces it in the same commit.
 	controls := []string{
-		"internal/sync/runtime.cs:runtime_SemacquireMutex",
-		"internal/sync/runtime.cs:runtime_Semrelease",
-		"internal/sync/runtime.cs:runtime_canSpin",
-		"internal/sync/runtime.cs:runtime_doSpin",
+		"internal/coverage/cfile/emit.cs:getCovCounterList",
+		"internal/runtime/maps/runtime_swiss.cs:mapKeyError",
+	}
+
+	if len(controls) == 0 {
+		t.Fatalf("VACUOUS: the positive control list is empty; a member that is still stubbed must replace the last one to gain a body")
 	}
 
 	// ⚠ ANTI-VACUITY, arm 5 — the NEGATIVE control, and the only one this census has against a
@@ -111,6 +119,16 @@ func TestDeclaredNotImplementedCensus(t *testing.T) {
 		// NEGATIVE control now than it was as a positive one: it is a second member, beside
 		// runtimeNano, whose implementing part this predicate must SEE.
 		"time/time.cs:runtimeNow",
+
+		// The four internal/sync Mutex hooks, moved here from the controls above in the commit that
+		// bodied them (internal/sync/runtime_impl.cs, 2026-09-22), by the same rule that moved
+		// runtimeNow. They sit in a package whose companion ALREADY implemented two of the file's
+		// seven partials (throw, fatal), so the predicate must see a split inside one file, which
+		// is the shape this arm exists to check.
+		"internal/sync/runtime.cs:runtime_SemacquireMutex",
+		"internal/sync/runtime.cs:runtime_Semrelease",
+		"internal/sync/runtime.cs:runtime_canSpin",
+		"internal/sync/runtime.cs:runtime_doSpin",
 	}
 
 	found := map[string]bool{}
@@ -355,11 +373,6 @@ var declaredPushStubs = map[string]string{
 	"crypto/x509/internal/macos.syscall":                 dispositionLatent,
 	"internal/coverage/cfile.getCovCounterList":          dispositionLatent,
 	"internal/runtime/maps.mapKeyError":                  dispositionLatent,
-	"internal/sync.runtime_SemacquireMutex":              dispositionLatent,
-	"internal/sync.runtime_Semrelease":                   dispositionLatent,
-	"internal/sync.runtime_canSpin":                      dispositionLatent,
-	"internal/sync.runtime_doSpin":                       dispositionLatent,
-	"internal/sync.runtime_nanotime":                     dispositionLatent,
 	"internal/synctest.Run":                              dispositionLatent,
 	"internal/synctest.Wait":                             dispositionLatent,
 	"internal/synctest.acquire":                          dispositionLatent,
