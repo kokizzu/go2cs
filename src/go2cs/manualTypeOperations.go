@@ -1638,6 +1638,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// to own as well: Go sets it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here.
 		"Process32First": goosWindows,
 		"Process32Next":  goosWindows,
+		// The fourth member, reference-bearing through POINTER fields rather than an inline array:
+		// Go's StartupInfo holds `*uint16` (Desktop, Title, a reserved slot) and a reserved `*byte`,
+		// each a `ж<T>` reference in the converted record, so its address is not one kernel32 may
+		// write STARTUPINFOW's 104 bytes over. The boundary refuses the generated body by name
+		// ("argument 0 is a managed pointer token"), which is what kept syscall's TestGetStartupInfo
+		// -- and the banked row -- red at 1.24.13. Body in zsyscall_windows_startupinfo_impl.cs; the
+		// pointer fields come back as native-backed boxes over the process's own startup strings.
+		"getStartupInfo": goosWindows,
 		// The SOCKET-ADDRESS family — the member `net` forces, and the first that is two defects
 		// rather than one (syscall_windows_impl.cs carries the full write-up).
 		//

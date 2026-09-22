@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -85,306 +113,304 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="badlinkname_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="bpf_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="const_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="creds_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dir_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dirent.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dirent_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dll_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="env_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="env_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="errors_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_aix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_freebsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_freebsd_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_libc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_libc2.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_pdeathsig_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_solaris_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_bsd_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_rlimit_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_wasip1_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flock_aix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flock_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flock_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flock_linux_32bit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="forkpipe.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="forkpipe2.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fs_js.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fs_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fs_wasip1_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="getdirentries_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="linkname_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="linkname_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="linkname_libc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="linkname_openbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="linkname_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lsf_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mkasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mkpost.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mksyscall_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mmap_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="net.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="net_fake.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="net_js.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="net_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="netlink_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="os_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pwd_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rlimit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rlimit_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rlimit_stub.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rlimit_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_dragonfly.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_freebsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_freebsd_32bit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_freebsd_64bit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_netbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="route_openbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="security_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="setuidgid_32_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="setuidgid_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sockcmsg_dragonfly.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sockcmsg_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sockcmsg_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sockcmsg_unix_other.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_aix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_bsd_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_dragonfly.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_freebsd_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_illumos.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_js.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_accept.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_accept4.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_mips64x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_mipsx.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_ppc64x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_netbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_libc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_plan9_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_ptrace_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_solaris.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_solarisonly.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="syscall_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tables_js.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tables_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="time_fake.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="time_nofake.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="timestruct.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_aix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_dragonfly.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_freebsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_illumos_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_netbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_openbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_solaris.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_windows_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_windows_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_windows_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="types_windows_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="wtf8_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="wtf8_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_mips.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zerrors_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_mips.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_plan9_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_plan9_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_plan9_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsyscall_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysctl_openbsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_mips.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsysnum_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_mips.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ztypes_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="badlinkname_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="bpf_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="const_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="creds_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dir_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dirent.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dirent_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dll_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="env_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="env_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="errors_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_aix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_freebsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_freebsd_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_libc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_libc2.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_pdeathsig_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_solaris_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_bsd_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_rlimit_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_wasip1_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="flock_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="flock_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="flock_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="flock_linux_32bit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="forkpipe.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="forkpipe2.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fs_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fs_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fs_wasip1_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="getdirentries_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_libc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lsf_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mkasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mkpost.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mksyscall_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mmap_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_fake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netlink_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="os_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pwd_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_dragonfly.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_freebsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_freebsd_32bit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_freebsd_64bit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_netbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="route_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="security_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="setuidgid_32_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="setuidgid_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockcmsg_dragonfly.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockcmsg_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockcmsg_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockcmsg_unix_other.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_bsd_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_dragonfly.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_freebsd_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_illumos.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_mips64x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_mipsx.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_ppc64x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_netbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_libc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_plan9_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_ptrace_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_solarisonly.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="syscall_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tables_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tables_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="time_fake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="time_nofake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="timestruct.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_dragonfly.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_freebsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_illumos_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_netbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_windows_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_windows_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_windows_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="types_windows_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="wtf8_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="wtf8_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_mips.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zerrors_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_mips.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_plan9_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_plan9_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_plan9_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsyscall_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysctl_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_mips.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsysnum_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_aix_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_darwin_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_darwin_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_dragonfly_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_freebsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_freebsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_freebsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_freebsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_freebsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_loong64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_mips.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_mips64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_mipsle.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_ppc64le.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_linux_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_netbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_netbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_netbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_netbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_386.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_arm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_arm64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_mips64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_ppc64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_openbsd_riscv64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ztypes_solaris_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
