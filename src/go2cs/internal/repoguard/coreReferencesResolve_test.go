@@ -26,6 +26,9 @@ import (
 // directories (runtime/internal/math, crypto/internal/nistec, ...) and left 44 such references in 41
 // committed tests csprojs (coord-queue-q84; i9's census at 45c6b94465, C2's b779b440a3). This guard
 // holds that set: it may shrink as the H8 regeneration rewrites those files, and it may never grow.
+// GROWTH fails this test by name; SHRINKAGE is logged and passes -- see staleCoreReferences' own
+// comment for the ruling and for the close condition. Run it with -count=1: it reads the git tree, so
+// Go's test cache will otherwise report a PASS earned against the predecessor census.
 //
 // "Exists" means the TREE HAS TRACKED FILES under the directory, never os.Stat. Measured on a lane box:
 // src/core/crypto/internal/nistec survives as an EMPTY directory git does not track, so a stat-based
@@ -47,9 +50,26 @@ var coreReferencePattern = regexp.MustCompile(`\$\(go2csPath\)core[/\\]([^"';<>\
 var coreReferenceFileExtensions = []string{".csproj", ".projitems", ".props", ".targets", ".cs", ".dll", ".json"}
 
 // staleCoreReferences is the declared set: "<tracked project file> -> <absent core directory>", both
-// relative to src/core. Every row is a tests csproj the H8 regeneration rewrites. When a row's
-// reference is gone, delete the row IN THE SAME COMMIT; a new absent reference is never added here --
-// fix the file instead.
+// relative to src/core. Every row is a tests csproj the H8 regeneration rewrites. A new absent
+// reference is never added here -- fix the file instead.
+//
+// WHAT EVERY ROW ACTUALLY NAMES, and why the set only shrinks: a banked package whose tests csproj has
+// NOT YET been re-emitted at 1.24.13. The 1.23 -> 1.24 hop MOVED two directories rather than deleting
+// them -- runtime/internal/math -> internal/runtime/math (seven of the eight rows below) and
+// crypto/internal/mlkem768 -> crypto/internal/fips140/mlkem (the eighth) -- and a csproj re-emitted
+// against the 1.24.13 GOROOT carries the moved path. So each row retires exactly when its package is
+// re-run in the hop, and every row's package is on the roster.
+//
+// THE CLOSE CONDITION: at H10's close this table is SWEPT TO ZERO. A row still standing then names a
+// BANKED ROSTER ROW THAT WAS NEVER RE-RUN AT 1.24.13 -- read it that way, not as guard debt.
+//
+// ONE ARM GATES, ONE ARM LOGS (ruled 2026-09-22, after the second re-table in a week). The set may
+// never GROW: a measured-absent reference missing from this table FAILS the guard by name, and that
+// arm alone enforces "only shrinks" -- no baseline file, the committed table IS the baseline. The set
+// SHRINKING is the hop making progress, so a declared row that is no longer measured only LOGS. The
+// rule this replaces -- "delete the row in the same commit that changed the project file" -- cannot
+// hold on this fleet: the leg that re-emits a csproj runs the pipeline and does not know this guard
+// exists, which is what forced both re-tables.
 var staleCoreReferences = []string{
 	"crypto/tls/crypto.tls.tests.csproj -> crypto/internal/mlkem768",
 	"crypto/tls/crypto.tls.tests.csproj -> runtime/internal/math",
@@ -188,19 +208,28 @@ func TestCommittedCoreReferencesResolve(t *testing.T) {
 		if !declared[row] {
 			t.Errorf("UNDECLARED STALE REFERENCE: %s\n"+
 				"a committed project file names a core/ directory with no tracked files under it. Fix the reference "+
-				"(or regenerate the tests csproj); never add it to staleCoreReferences, which only shrinks", row)
+				"(or regenerate the tests csproj); never add it to staleCoreReferences, which only shrinks.\n"+
+				"This arm reads the GIT TREE, so Go's test cache cannot see a tree change: re-run it with -count=1 "+
+				"or a stale PASS is reported against the predecessor census", row)
 		}
 	}
+
+	// A declared row that is no longer measured is the HOP WORKING, not a regression: the package's
+	// tests csproj was re-emitted at 1.24.13 and the generator wrote the moved path. It LOGS and passes.
+	// Sweep the logged rows at the next commit that touches this file; nothing is owed sooner.
+	retired := 0
 
 	for _, row := range staleCoreReferences {
 		if !measured[row] {
-			t.Errorf("DECLARED BUT NOT MEASURED: %s\n"+
-				"the reference resolves now or is gone. Delete its row from staleCoreReferences IN THE SAME COMMIT "+
-				"that changed the project file", row)
+			retired++
+
+			t.Logf("RETIRED, SWEEP IT: %s\n"+
+				"this project file was re-emitted at 1.24.13 and no longer names the moved directory. "+
+				"Delete the row at the next commit that touches this file", row)
 		}
 	}
 
-	t.Logf("declared %d · measured %d", len(staleCoreReferences), len(scan.absent))
+	t.Logf("declared %d · measured %d · retired (logged, not gated) %d", len(staleCoreReferences), len(scan.absent), retired)
 }
 
 // TestCoreReferenceScannerFires is the positive control: the same scanner over a synthetic tracked tree.
