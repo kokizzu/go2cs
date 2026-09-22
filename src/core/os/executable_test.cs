@@ -6,35 +6,53 @@ namespace go;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using Δos = os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using Δtesting = testing_package;
 using @internal;
 using exec = go.os.exec_package;
 using fs = go.io.fs_package;
 using go.os;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δio = io_package;
 
 partial class os_test_package {
 
-internal static readonly @string executable_EnvVar = "OSTEST_OUTPUT_EXECPATH"u8;
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object errorˢ = (@string)"ERROR: "u8;
 
 public static void TestExecutable(ж<Δtesting.T> Ꮡt) {
-    testenv.MustHaveExec(new os_test_package.testing_TжTB(Ꮡt));
-    Ꮡt.Parallel();
-    var (ep, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Fatalf("Executable failed: %v"u8, err);
+    @string helperEnvVar = "OSTEST_OUTPUT_EXECPATH"u8;
+    if (Δos.Getenv(helperEnvVar) != ""u8) {
+        // First chdir to another path.
+        @string dirΔ1 = "/"u8;
+        if (Δruntime.GOOS == "windows"u8) {
+            var (cwd, errΔ1) = Δos.Getwd();
+            if (errΔ1 != default!) {
+                throw panic(errΔ1);
+            }
+            dirΔ1 = filepath.VolumeName(cwd);
+        }
+        Δos.Chdir(dirΔ1);
+        {
+            var (epΔ1, errΔ2) = Δos.Executable(); if (errΔ2 != default!){
+                fmt.Fprint(new Δos.FileжWriter(Δos.Stderr), errorˢ, errΔ2);
+            } else {
+                fmt.Fprint(new Δos.FileжWriter(Δos.Stderr), epΔ1);
+            }
+        }
+        Δos.Exit(0);
     }
+    Ꮡt.Parallel();
+    @string ep = testenv.Executable(new os_test_package.testing_TжTB(Ꮡt));
     // we want fn to be of the form "dir/prog"
     @string dir = filepath.Dir(filepath.Dir(ep));
-    (var fn, err) = filepath.Rel(dir, ep);
+    var (fn, err) = filepath.Rel(dir, ep);
     if (err != default!) {
         Ꮡt.Fatalf("filepath.Rel: %v"u8, err);
     }
-    var cmd = testenv.Command(new os_test_package.testing_TжTB(Ꮡt), fn, testRunˢ);
+    var cmd = testenv.Command(new os_test_package.testing_TжTB(Ꮡt), fn, "-test.run=^"u8 + Ꮡt.Name() + "$"u8);
     // make child start with a relative program path
     cmd.Value.Dir = dir;
     cmd.Value.Path = fn;
@@ -45,7 +63,7 @@ public static void TestExecutable(ж<Δtesting.T> Ꮡt) {
         // get real path of the executable without influenced by argv[0].
         cmd.Value.Args[0] = "-"u8;
     }
-    cmd.Value.Env = append(cmd.Environ(), fmt.Sprintf("%s=1"u8, executable_EnvVar));
+    cmd.Value.Env = append(cmd.Environ(), fmt.Sprintf("%s=1"u8, helperEnvVar));
     (var @out, err) = cmd.CombinedOutput();
     if (err != default!) {
         Ꮡt.Fatalf("exec(self) failed: %v"u8, err);
@@ -69,31 +87,6 @@ internal static bool sameFile(@string fn1, @string fn2) {
         return false;
     }
     return Δos.SameFile(fi1, fi2);
-}
-
-[GoInit] internal static void initΔ1() {
-    {
-        @string e = Δos.Getenv(executable_EnvVar); if (e != ""u8) {
-            // first chdir to another path
-            @string dir = "/"u8;
-            if (Δruntime.GOOS == "windows"u8) {
-                var (cwd, err) = Δos.Getwd();
-                if (err != default!) {
-                    throw panic(err);
-                }
-                dir = filepath.VolumeName(cwd);
-            }
-            Δos.Chdir(dir);
-            {
-                var (ep, err) = Δos.Executable(); if (err != default!){
-                    fmt.Fprint(new Δos.FileжWriter(Δos.Stderr), (@string)"ERROR: "u8, err);
-                } else {
-                    fmt.Fprint(new Δos.FileжWriter(Δos.Stderr), ep);
-                }
-            }
-            Δos.Exit(0);
-        }
-    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

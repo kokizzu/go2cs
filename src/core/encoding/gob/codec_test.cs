@@ -20,60 +20,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class gob_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal static ж<bool> doFuzzTests = flag.Bool("gob.fuzz"u8, false, "run the fuzz tests, which are large and very slow"u8);
 
 // Guarantee encoding format by comparing some encodings to hand-written values
@@ -1103,7 +1049,7 @@ internal static readonly object expectedErrorGotNoneˢ = (@string)"expected erro
 internal static readonly @string recursiveˢ = "recursive"u8;
 internal static readonly object expectedRecursiveTypeˢ = (@string)"expected recursive type error; got"u8;
 
-[GoType("ж<ж<ж<TestBadRecursiveType_Rec>>>")] internal partial class TestBadRecursiveType_Rec;
+[GoLocalName("Rec")] [GoType("ж<ж<ж<TestBadRecursiveType_Rec>>>")] internal partial class TestBadRecursiveType_Rec;
 
 public static void TestBadRecursiveType(ж<testing.T> Ꮡt) {
     ref var rec = ref heap<TestBadRecursiveType_Rec>(out var Ꮡrec);

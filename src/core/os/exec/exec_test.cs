@@ -44,108 +44,6 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class exec_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
-    builtin.initPackage(typeof(@internal.poll_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() {
-    builtin.initPackage(typeof(go.net.http.httptest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸsignal() {
-    builtin.initPackage(typeof(go.os.signal_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() {
-    builtin.initPackage(typeof(go.runtime.debug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // haveUnexpectedFDs is set at init time to report whether any file descriptors
 // were open at program start.
 internal static bool haveUnexpectedFDs;
@@ -275,66 +173,14 @@ internal static ж<Δexec.Cmd> /*cmd*/ helperCommandContext(ж<testing.T> Ꮡt, 
 
     ᏑhelperCommandUsed.LoadOrStore(name, true);
     Ꮡt.Helper();
-    testenv.MustHaveExec(new exec_test_package.testing_TжTB(Ꮡt));
+    @string exe = testenv.Executable(new exec_test_package.testing_TжTB(Ꮡt));
     var cs = appendꓸꓸꓸ(new @string[]{name}.slice(), args);
     if (ctx != default!){
-        cmd = Δexec.CommandContext(ctx, exePath(new exec_test_package.testing_TжTB(Ꮡt)), cs.ꓸꓸꓸ);
+        cmd = Δexec.CommandContext(ctx, exe, cs.ꓸꓸꓸ);
     } else {
-        cmd = Δexec.Command(exePath(new exec_test_package.testing_TжTB(Ꮡt)), cs.ꓸꓸꓸ);
+        cmd = Δexec.Command(exe, cs.ꓸꓸꓸ);
     }
     return cmd;
-}
-
-// exePath returns the path to the running executable.
-internal static @string exePath(testing.TB t) {
-    ᏑexeOnce.of(exeOnceᴛ1.ᏑOnce).Do(() => {
-        // Use os.Executable instead of os.Args[0] in case the caller modifies
-        // cmd.Dir: if the test binary is invoked like "./exec.test", it should
-        // not fail spuriously.
-        (exeOnce.path, exeOnce.err) = os.Executable();
-    });
-    if (exeOnce.err != default!) {
-        if (t == default!) {
-            throw panic(exeOnce.err);
-        }
-        t.Fatal(exeOnce.err);
-    }
-    return exeOnce.path;
-}
-
-
-[GoType("dyn")] partial struct exeOnceᴛ1 {
-    internal @string path;
-    internal error err;
-    public partial ref sync_package.Once Once { get; }
-}
-internal static ж<exeOnceᴛ1> ᏑexeOnce = new StandardBox<exeOnceᴛ1>(new exeOnceᴛ1(nil));
-internal static ref exeOnceᴛ1 exeOnce => ref ᏑexeOnce.Value;
-
-internal static void chdir(ж<testing.T> Ꮡt, @string dir) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    Ꮡt.Helper();
-    var (prev, err) = os.Getwd();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    {
-        var errΔ1 = os.Chdir(dir); if (errΔ1 != default!) {
-            Ꮡt.Fatal(errΔ1);
-        }
-    }
-    Ꮡt.Logf("Chdir(%#q)"u8, dir);
-    Ꮡt.Cleanup(() => {
-        {
-            var errΔ2 = os.Chdir(prev); if (errΔ2 != default!) {
-                // Couldn't chdir back to the original working directory.
-                // panic instead of t.Fatal so that we don't run other tests
-                // in an unexpected location.
-                throw panic("couldn't restore working directory: " + errΔ2.Error());
-            }
-        }
-    });
 }
 
 internal static ж<sync.Map> ᏑhelperCommandUsed = new StandardBox<sync.Map>(default(sync.Map));
@@ -781,7 +627,7 @@ internal static readonly @string stdinCloseˢ = "stdinClose"u8;
 internal static readonly object canTAccessMethodsOfˢ = (@string)"can't access methods of underlying *os.File"u8;
 internal static readonly @string copyˢ = "Copy"u8;
 
-[GoType("dyn")] partial interface TestStdinClose_type {
+[GoType("dyn")] internal partial interface TestStdinClose_type {
     uintptr Fd();
 }
 
@@ -1144,9 +990,9 @@ public static void TestExtraFilesRace(ж<testing.T> Ꮡt) {
         var ares = new channel<@string>(0);
         var bres = new channel<@string>(0);
         var runCommandʗ1 = runCommand;
-        goǃ(runCommandʗ1, ca, ares);
+        goǃ(runCommandʗ1, ca, ares.WithDirection(GoChanDir.Send));
         var runCommandʗ2 = runCommand;
-        goǃ(runCommandʗ2, cb, bres);
+        goǃ(runCommandʗ2, cb, bres.WithDirection(GoChanDir.Send));
         {
             @string got = ᐸꟷ(ares);
             @string want = fmt.Sprintf("fd3: listener %s\n"u8, la.Addr()); if (got != want) {
@@ -1399,7 +1245,7 @@ public static void TestEnvNULCharacter(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestString_tests {
+[GoType("dyn")] internal partial struct TestString_tests {
     internal @string path;
     internal slice<@string> args;
     internal @string want;
@@ -1416,7 +1262,7 @@ public static void TestString(ж<testing.T> Ꮡt) {
         new("echo"u8, new @string[]{"a"u8}.slice(), echoPath + " a"u8),
         new("echo"u8, new @string[]{"a"u8, "b"u8}.slice(), echoPath + " a b"u8)
     }.array();
-    foreach (var (_, test) in tests) {
+    foreach (var (_, test) in tests.ΔRangeSnapshot()) {
         var cmd = Δexec.Command(test.path, test.args.ꓸꓸꓸ);
         {
             @string got = cmd.String(); if (got != test.want) {
@@ -1530,7 +1376,7 @@ internal static void cmdHang(params ꓸꓸꓸstring argsʗp) {
     fs.Parse(args[1..]);
     nint pid = os.Getpid();
     if (subsleep.Value != 0) {
-        var cmd = Δexec.Command(exePath(default!), "hang"u8, (~subsleep).String(), "-read=true", "-probe=" + (~probe).String());
+        var cmd = Δexec.Command(testenv.Executable(default!), "hang"u8, (~subsleep).String(), "-read=true", "-probe=" + (~probe).String());
         cmd.Value.Stdin = new exec_test_package.os_FileжReader(os.Stdin);
         cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
         var (@out, errΔ1) = cmd.StdoutPipe();
@@ -1554,7 +1400,7 @@ internal static void cmdHang(params ꓸꓸꓸstring argsʗp) {
     }
     if (exitOnInterrupt.Value){
         var c = new channel<osꓸSignal>(1);
-        signal.Notify(c, os.Interrupt);
+        signal.Notify(c.WithDirection(GoChanDir.Send), os.Interrupt);
         var cʗ1 = c;
         goǃ(() => {
             var sig = ᐸꟷ(cʗ1);

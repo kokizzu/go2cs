@@ -5,13 +5,13 @@ namespace go;
 
 using testenv = @internal.testenv_package;
 using static os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using syscall = syscall_package;
 using Δtesting = testing_package;
 using @internal;
 using fs = go.io.fs_package;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δos = os_package;
 

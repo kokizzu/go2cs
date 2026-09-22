@@ -7,12 +7,12 @@ using errors = errors_package;
 using testenv = @internal.testenv_package;
 using fs = go.io.fs_package;
 using Δos = os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using Δtesting = testing_package;
 using @internal;
 using go.io;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 
 partial class os_test_package {

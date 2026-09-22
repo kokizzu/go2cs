@@ -25,31 +25,12 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class exec_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 [GoInit] internal static void initΔ2() {
     registerHelperCommand("printpath"u8, cmdPrintPath);
 }
 
-internal static void cmdPrintPath(params ꓸꓸꓸstring argsʗp) {
-    var args = argsʗp.sslice();
-
-    var (exe, err) = os.Executable();
-    if (err != default!) {
-        fmt.Fprintf(new os.FileжWriter(os.Stderr), "Executable: %v\n"u8, err);
-        os.Exit(1);
-    }
-    fmt.Println(exe);
+internal static void cmdPrintPath(params ꓸꓸꓸstring _ʗp) {
+    fmt.Println(testenv.Executable(default!));
 }
 
 // makePATH returns a PATH variable referring to the
@@ -111,7 +92,7 @@ internal static void installProgs(ж<testing.T> Ꮡt, @string root, slice<@strin
 internal static void installExe(ж<testing.T> Ꮡt, @string dstPath) {
     GoFrame ᒐ = default;
     try {
-        var (src, err) = os.Open(exePath(new exec_test_package.testing_TжTB(Ꮡt)));
+        var (src, err) = os.Open(testenv.Executable(new exec_test_package.testing_TжTB(Ꮡt)));
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
@@ -365,7 +346,7 @@ public static void TestLookPathWindows(ж<testing.T> Ꮡt) {
             }
             tΔ1.Setenv(pathˢ, pathVar);
             tΔ1.Logf("set PATH=%s"u8, pathVar);
-            chdir(tΔ1, root);
+            tΔ1.Chdir(root);
             if (!testing.Short() && !(ttʗ1.skipCmdExeCheck || errors.Is(ttʗ1.wantErr, Δexec.ErrDot))) {
                 // Check that cmd.exe, which is our source of ground truth,
                 // agrees that our test case is correct.
@@ -602,7 +583,7 @@ public static void TestCommand(ж<testing.T> Ꮡt) {
             @string pathVar = makePATH(root, ttʗ1.PATH);
             tΔ1.Setenv(pathˢ, pathVar);
             tΔ1.Logf("set PATH=%s"u8, pathVar);
-            chdir(tΔ1, root);
+            tΔ1.Chdir(root);
             var cmd = Δexec.Command(ttʗ1.arg0, printpathˢ);
             cmd.Value.Dir = filepath.Join(root, ttʗ1.dir);
             if (ttʗ1.wantErrDot) {

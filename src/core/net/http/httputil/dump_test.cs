@@ -192,7 +192,7 @@ public static void TestDumpRequest(ж<testing.T> Ꮡt) {
     nint numg0 = runtime.NumGoroutine();
     foreach (var (i, tt) in dumpTestsΔ1) {
         if (tt.Req != nil && tt.GetReq != default! || tt.Req == nil && tt.GetReq == default!) {
-            Ꮡt.Errorf("#%d: either .Req(%p) or .GetReq(%p) can be set/nil but not both"u8, i, tt.Req.OrTypedNil(), tt.GetReq);
+            Ꮡt.Errorf("#%d: either .Req(%p) or .GetReq(%p) can be set/nil but not both"u8, i, tt.Req.OrTypedNil(), (tt.GetReq).OrTypedNilFunc());
             continue;
         }
         ж<http.Request> freshReq(dumpTest ti) {

@@ -5,6 +5,7 @@ namespace go;
 
 using bytes = bytes_package;
 using errors = errors_package;
+using fmt = fmt_package;
 using Δio = io_package;
 using rand = math.rand.rand_package;
 using Δnet = net_package;
@@ -105,28 +106,150 @@ public static void TestLargeCopyViaNetwork(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string dstˢ = "dst"u8;
+
+public static void TestCopyFileToFile(ж<Δtesting.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        UntypedInt size = /* 1 * 1024 * 1024 */ 1048576;
+        @string dir = Ꮡt.TempDir();
+        var (src, err) = Δos.Create(dir + "/src"u8);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var srcʗ1 = src;
+        defer(() => srcʗ1.Close(), ref ᒐ);
+        {
+            var (_, errΔ1) = Δio.CopyN(new Δos.FileжWriter(src), new os_test_package.randReaderжReader(newRandReader()), size); if (errΔ1 != default!) {
+                Ꮡt.Fatal(errΔ1);
+            }
+        }
+        {
+            var (_, errΔ2) = src.Seek(0, 0); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+        }
+        int64 mustSeek(ж<Δos.File> f, int64 offset, nint whence) {
+            var (ret, errΔ3) = f.Seek(offset, whence);
+            if (errΔ3 != default!) {
+                Ꮡt.Fatal(errΔ3);
+            }
+            return ret;
+        }
+        foreach (var (_, srcStart) in new int64[]{0, 100, size}.slice()) {
+            var remaining = (int64)size - srcStart;
+            foreach (var (_, dstStart) in new int64[]{0, 200}.slice()) {
+                foreach (var (_, limit) in new int64[]{remaining, remaining - 100, size * 2, 0}.slice()) {
+                    if (limit < 0) {
+                        continue;
+                    }
+                    @string name = fmt.Sprintf("srcStart=%v/dstStart=%v/limit=%v"u8, srcStart, dstStart, limit);
+                    var mustSeekʗ1 = mustSeek;
+                    var srcʗ2 = src;
+                    Ꮡt.Run(name, (ж<Δtesting.T> tΔ1) => {
+                        GoFrame ᒐ = default;
+                        try {
+                            var (dst, errΔ4) = Δos.CreateTemp(dir, dstˢ);
+                            if (errΔ4 != default!) {
+                                tΔ1.Fatal(errΔ4);
+                            }
+                            var dstʗ1 = dst;
+                            defer(() => dstʗ1.Close(), ref ᒐ);
+                            defer(Δos.Remove, dst.Name(), ref ᒐ);
+                            mustSeekʗ1(srcʗ2, srcStart, Δio.SeekStart);
+                            {
+                                var (_, errΔ5) = Δio.CopyN(new Δos.FileжWriter(dst), new zeroReader(nil), dstStart); if (errΔ5 != default!) {
+                                    tΔ1.Fatal(errΔ5);
+                                }
+                            }
+                            int64 copied = default!;
+                            if (limit == 0){
+                                (copied, errΔ4) = Δio.Copy(new Δos.FileжWriter(dst), new os_test_package.os_FileжReader(srcʗ2));
+                            } else {
+                                (copied, errΔ4) = Δio.CopyN(new Δos.FileжWriter(dst), new os_test_package.os_FileжReader(srcʗ2), limit);
+                            }
+                            if (limit > remaining){
+                                if (!AreEqual(errΔ4, Δio.EOF)) {
+                                    tΔ1.Errorf("Copy: %v; want io.EOF"u8, errΔ4);
+                                }
+                            } else {
+                                if (errΔ4 != default!) {
+                                    tΔ1.Errorf("Copy: %v; want nil"u8, errΔ4);
+                                }
+                            }
+                            var wantCopied = remaining;
+                            if (limit != 0) {
+                                wantCopied = min(limit, wantCopied);
+                            }
+                            if (copied != wantCopied) {
+                                tΔ1.Errorf("copied %v bytes, want %v"u8, copied, wantCopied);
+                            }
+                            var srcPos = mustSeekʗ1(srcʗ2, 0, Δio.SeekCurrent);
+                            var wantSrcPos = srcStart + wantCopied;
+                            if (srcPos != wantSrcPos) {
+                                tΔ1.Errorf("source position = %v, want %v"u8, srcPos, wantSrcPos);
+                            }
+                            var dstPos = mustSeekʗ1(dst, 0, Δio.SeekCurrent);
+                            var wantDstPos = dstStart + wantCopied;
+                            if (dstPos != wantDstPos) {
+                                tΔ1.Errorf("destination position = %v, want %v"u8, dstPos, wantDstPos);
+                            }
+                            mustSeekʗ1(dst, 0, Δio.SeekStart);
+                            var rr = newRandReader();
+                            Δio.CopyN(Δio.Discard, new os_test_package.randReaderжReader(rr), srcStart);
+                            var wantReader = Δio.MultiReader(
+                                Δio.LimitReader(new zeroReader(nil), dstStart),
+                                Δio.LimitReader(new os_test_package.randReaderжReader(rr), wantCopied));
+                            {
+                                var errΔ6 = compareReaders(new os_test_package.os_FileжReader(dst), wantReader); if (errΔ6 != default!) {
+                                    tΔ1.Fatal(errΔ6);
+                                }
+                            }
+                        }
+                        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+                        finally { ᒐ.Run(); }
+                    });
+                }
+            }
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string contentsMismatchˢ = "contents mismatch"u8;
 
 internal static error compareReaders(Δio.Reader a, Δio.Reader b) {
     var bufa = new slice<byte>(4096);
     var bufb = new slice<byte>(4096);
+    nint off = 0;
     while (ᐧ) {
         var (na, erra) = Δio.ReadFull(a, bufa);
-        if (erra != default! && !AreEqual(erra, Δio.EOF)) {
+        if (erra != default! && !AreEqual(erra, Δio.EOF) && !AreEqual(erra, Δio.ErrUnexpectedEOF)) {
             return erra;
         }
         var (nb, errb) = Δio.ReadFull(b, bufb);
-        if (errb != default! && !AreEqual(errb, Δio.EOF)) {
+        if (errb != default! && !AreEqual(errb, Δio.EOF) && !AreEqual(errb, Δio.ErrUnexpectedEOF)) {
             return errb;
         }
         if (!bytes.Equal(bufa[..(int)(na)], bufb[..(int)(nb)])) {
             return errors.New(contentsMismatchˢ);
         }
-        if (AreEqual(erra, Δio.EOF) && AreEqual(errb, Δio.EOF)) {
+        if (erra != default! && errb != default!) {
             break;
         }
+        off += len(bufa);
     }
     return default!;
+}
+
+[GoType] partial struct zeroReader {
+}
+
+internal static (nint, error) Read(this zeroReader r, slice<byte> p) {
+    clear(p);
+    return (len(p), default!);
 }
 
 [GoType] partial struct randReader {
@@ -138,16 +261,8 @@ internal static ж<randReader> newRandReader() {
 }
 
 [GoRecv] internal static (nint, error) Read(this ref randReader r, slice<byte> p) {
-    uint64 v = default!;
-    nint n = default!;
     foreach (var (i, _) in p) {
-        if (n == 0) {
-            v = r.rand.Uint64();
-            n = 8;
-        }
-        p[i] = (byte)((uint64)(v & 0xff));
-        v >>= (int)(8);
-        n--;
+        p[i] = (byte)((uint32)(r.rand.Uint32() & 0xff));
     }
     return (len(p), default!);
 }

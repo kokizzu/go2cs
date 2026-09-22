@@ -13,14 +13,9 @@ using go;
 using static global::go.crypto.aes_internal_test_package;
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
-[assembly: GoImplement<testAEAD, go.crypto.cipher_package.AEAD>(Pointer = true)]
-[assembly: GoImplement<testBlock, go.crypto.cipher_package.Block>(Pointer = true)]
-[assembly: GoImplement<testBlockMode, go.crypto.cipher_package.BlockMode>(Pointer = true)]
-[assembly: GoImplement<testStream, go.crypto.cipher_package.Stream>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -34,8 +29,7 @@ using static global::go.crypto.aes_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/aes/aes_test.go", "aes_test.cs", "AAwewoKCgpSCgsySgoKClpSCqIKCpqiSgpSCgoKCuICCAAYUwoKAgqSAgt6igoKCgoKCgoCCpM6igoKCgoKCgoKCgIKkAF/CAbKCgoKCgsqCgoKCpoKCggAtWpKCgoKClIKCgoKC3pKCgoKClIKCgoKCAAkSsoSEoJKgkqCSoJKgkqC2ooKCgqSmAAoGgoCSgJKA5qKCgpSCgoKCuIKAkoCSgLaigoKUgoKCgriCgJKAkoC2ooKCgriCgJKAkoC2ooKCgII=")]
-[assembly: go.GoPositionMap("crypto/aes/modes_test.go", "modes_test.cs", "ABoygKKiooKkgqSCpILsgKKAooCigKKAppKCgIKkgoKUgIIACA6AoqKAppKCgIKkgoCCypKCgIKkgoCCAAgOooCmkoKAgqSCgII=")]
+[assembly: go.GoPositionMap("crypto/aes/aes_test.go", "aes_test.cs", "ADtukqaCgoKCgpSCgoKCgt6SpoKCgoKClIKCgoKC3pKmgoKCAAkKgoCSgJKA5qKCgpSCgoKCuIKAkoCSgLaigoKUgoKCgriCgJKAkoC2ooKCgII=", "107-109:1;114-114:1;115-115:2;116-116:3;133-133:1;134-134:2;135-135:3;152-152:1;153-153:2;154-154:3")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -51,4 +45,23 @@ public static partial class aes_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.crypto.aes_package));
+    }
 }

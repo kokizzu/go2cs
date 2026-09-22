@@ -7,10 +7,10 @@ using errors = errors_package;
 using fmt = fmt_package;
 using fs = go.io.fs_package;
 using Δos = os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δtesting = testing_package;
 using go.io;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 
 partial class os_test_package {

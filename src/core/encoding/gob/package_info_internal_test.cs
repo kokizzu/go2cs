@@ -13,6 +13,7 @@ using static go.encoding.gob_package;
 using static go.encoding.gob_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b4120696e747d", "Δtype")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -39,11 +40,11 @@ using static go.encoding.gob_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/gob/codec_test.go", "codec_test.cs", "AGVewoCC+ILMsoKCgoKCgoKmgoKCgoKClIL6ooKCgoKCgoLqkpSCgoKCgqYAEiKCgoKmooKCgtqiloKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoLK0oKCgpSC1oKCgoLaopaCgoKCgoK4goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCggAoCoIAATKSkpKSkpKCgoKCgoKCgoKCgoKCggASJoKCgpSCgoKUgqaClIIAPwiCAAAUgoKCloKmioKCgpSmgoKCgqiCpoqCgoKUpoKCgoKogqaKgoKClKaCgoKCqIKmiIKCgqiCpoiCgoKogqaIgoKCqIKmioKCgqiCpoqCgoIADQiCioKCgoKCgoKCgpSClIKUggAZMISSgoKCgoKCgoKCgoKCgoKCgoKYkoKCgoKCgoKCgoKCgoKCgqiCgoKCgoKogoKCgoKogoKCgoKCgoIAEyCCgoKCgoKCgpSCgpSCABUkgoKCgoKCgoKCgoKCgoSCgoKUgoKUggAKCIKEgoKCpAAZIpSSgoKCgoKCgoKCgoKCgoKCgoKCgpSClIKUgqaCgoKCgoKCgoKUgpSClIIAChaCyoLKgoKClO6CABgigpK2goKUgoKCgoKWkoKClIKUgpSClIKUgqaClIKCgoK2ABIggoIACBKCgpaSgoKUgqaAgqSAggAPGqKCkpLKgoKClpKCgqaAgqSAgsiCkraSgpSCgoKCgpaSgoKUgpSCAA0WgoKCgoKCgoKCgoKCgpSClIIADh6CgpSUgoKCpgAUKoKCgoKCgoKCgoKCpoKClIKCgoKClIKSgoKUprKCgoCCpoKCgqiCgoCCpKiSgqgACRSmgoKopqaigoKCgs6igpaCgoKAgqSEgoKUuOSUgpSCkoKCgrKCgIKCtoIACBDCgtyCgoKCABgygoKCgoKUgoKUggAJCIKCgpSCgpSCgpSCgpSCgpSCgpSCgpSCgoKUgoKUgoKUgoKUgoLolISCgoKC")]
-[assembly: go.GoPositionMap("encoding/gob/encoder_test.go", "encoder_test.cs", "AC8qkgATKIKCgoKClIKCgoKUggAJCoSCgoKEkoKChIKShIKokoKChIKShIKokoKChIKShIKokoKChIKShIIALEaigoKCgoKCgriCgoKCloKUgqiCgoKCgoKClIKCgoKWgpSCloKCgoKUgpSCqIKClIKCgvyigoKCgoKCgpSCgoKUggAICpKCggAIEoKCgoKCgsqCgoKCgpSCgoKU9oSIgoCCAAkIhIiCgIIACAiCiIKCgoKCgoCCpIL4goiCgIIADQiEiIKAggAQCIIAABCCgIKkgoCC6IKEkoCC6IKEkoCCAAsKkgAFGIKAggApPIKCgoKCgoKCgpSClIK0grSClMaCggARCoKagoCCpIKAgqSmkoCCpICCpAALFILcsoKCgoKCloKCggApUIKCgoKCgoKClIKCgoKmkoKClIKCgpSCygAKEu6UgoIAEBqCgoKCgoKCooKClIKCpoKClIKClIKClIIADxqCgoKEgoKCgpSCkoKClIK4ggATKIKCgviClIKCgoKCppKCgoKClIKUgriCgoKCgqaSgoKCgpSClIIACAySgoCCpP6ygoKCgoKAgraCgoKAgqSCABEcgpKikoKCgoCCpIKCgpSClILogoKCgIIAChSCyIKCgpaCgoKUggAIDKKCgoKChIKCgpSCgoKUguyigoKUgqQACQqSgoKClIKUgoK4woKCgpTEyoIACgaCAAsaAAsggoKCgpSUggANCoKCqoKCgpSCggARHqK4goKCgpSCgoKClIIAChiCgoKClIKCgoKWgoKCgvy0gpKCgqaUgoKUggAZNKKCgoKUgoKCgpSCAAwKgoqEkoKCgpaCgoKCpAAICpKChMyCgoCCppKCgIKmmoKUgoKClJSWgoKCAAgIgoySkoSCgIKmgoCCpoKChqKCgoKClpaSuJKUgpSCvsLslLiCgoI=")]
-[assembly: go.GoPositionMap("encoding/gob/gobencdec_test.go", "gobencdec_test.cs", "ADJikoKCgoLmooKmgpSCgoKmpoKmlIKUgoKCpoKmgtaCgpSCpoKmgoKmgqaCgqaCpoKCpoKmgoKmgqaCgqaCpoKCAFOqAYKUgoKClIKCgoKUgqaCkpKSgoKUgoKClIK8opSCgoKUgoKCgpSCvKKUgpKSgoKUgoKCgpSCupKCgoKCgpSCgpSCgoKClIKCgsySgoKCgoKSkoKClIKClIKCgoKUgoKCAAQU5IKCgoKUgoKCgpSCpoKCgpSCgoKUgrqkgoKCgpSCgoKClIIACQyigpKCkoK6goKAgqSCgoCCpoCSpICSpKaAkqSAkqSmgJKkgJKkzKKSgpKCkoSCgoCCpIKCgIKmgJKkpICSpoCSpKSAkqaAkqSkgJIACQiUgoKCgpSCgoKClIKmgoKClIKCgpSCupKCgoKClIKCgoKUgriCgoKSgoKUgoKCgpSCuIKUgoKClIKCgoKUgriClIKSkpKCgpSCgoKClIK4gpSCgoKUgoKCgpSClIIABxCCpoKmgoKCqqKCgoKAgqSCgoCCpIIAECTCgqaigpSCgu6CpoKmgoKCgoKClIKCgoKUgriCgoKCgoKUgpKCgpSCuJSEgoKClIL45oKCgJKCloKCgpSCgoKCgoCCuIKClIKCgoCC")]
-[assembly: go.GoPositionMap("encoding/gob/timing_test.go", "timing_test.cs", "ACUuooKCgoKUgoKCgoCCpICC7IK2kriChoK4goKCgpKClJSC+IKClIKWhIKChKKCgqaCuIKClIKWhIKCppKCgqiCkoKCgqaCuKKCgoKChIKCgoLcgoKClKaCgoKUpoKCgpTWgoKClKaCgoKUAAgSsoKClIKmsoKUgoKmgqaigoKCgpaSgoSCtIKChJSCgoKCgtyCgoKUpoKCgpSmgoKClKaCgoKUpIKCgpSkgoKClKaCgoKUpqKCgoKUgoKCgpSSgoKCgoKCgoI=")]
-[assembly: go.GoPositionMap("encoding/gob/type_test.go", "type_test.cs", "ACM4ooKCgoKU2JKCgpSCAAgMkoKClIKClIKC+IKCgoKClIKCgpSCgoKUgoKCAAgIgoKCgoKClIKCgpSCgoIACAiCgoKCgoKUgoKClIKCggAYKoKClIKC/KKEAA0OsgADEIKEgoKCpoKUgIIACQqChIKCkoKCgoKCgpSCgoKUpoLqkoKCgoKygoKCgoKUtLSCpJKCgIKCpICCgqSAgoL4gg==")]
+[assembly: go.GoPositionMap("encoding/gob/codec_test.go", "codec_test.cs", "AC9ewoCC+ILMsoKCgoKCgoKmgoKCgoKClIL6ooKCgoKCgoLqkpSCgoKCgqYAEiKCgoKmooKCgtqiloKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoK6goKCgoKCgrqCgoKCgoKCuoKCgoKCgoLK0oKCgpSC1oKCgoLaopaCgoKCgoK4goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCgrqCgoKCgoK6goKCgoKCuoKCgoKCggAoCoIAATKSkpKSkpKCgoKCgoKCgoKCgoKCggASJoKCgpSCgoKUgqaClIIAPwiCAAAUgoKCloKmioKCgpSmgoKCgqiCpoqCgoKUpoKCgoKogqaKgoKClKaCgoKCqIKmiIKCgqiCpoiCgoKogqaIgoKCqIKmioKCgqiCpoqCgoIADQiCioKCgoKCgoKCgpSClIKUggAZMISSgoKCgoKCgoKCgoKCgoKCgoKYkoKCgoKCgoKCgoKCgoKCgqiCgoKCgoKogoKCgoKogoKCgoKCgoIAEyCCgoKCgoKCgpSCgpSCABUkgoKCgoKCgoKCgoKCgoSCgoKUgoKUggAKCIKEgoKCpAAZIpSSgoKCgoKCgoKCgoKCgoKCgoKCgpSClIKUgqaCgoKCgoKCgoKUgpSClIIAChaCyoLKgoKClO6CABgigpK2goKUgoKCgoKWkoKClIKUgpSClIKUgqaClIKCgoK2ABIggoIACBKCgpaSgoKUgqaAgqSAggAPGqKCkpLKgoKClpKCgqaAgqSAgsiCkraSgpSCgoKCgpaSgoKUgpSCAA0WgoKCgoKCgoKCgoKCgpSClIIADh6CgpSUgoKCpgAUKoKCgoKCgoKCgoKCpoKClIKCgoKClIKSgoKUprKCgoCCpoKCgqiCgoCCpKiSgqgACRSmgoKopqaigoKCgs6igpaCgoKAgqSEgoKUuOSUgpSCkoKCgrKCgIKCtoIACBDCgtyCgoKCABgygoKCgoKUgoKUggAJCIKCgpSCgpSCgpSCgpSCgpSCgpSCgpSCgoKUgoKUgoKUgoKUgoLolISCgoKC", "1499-1508:1;1500-1505:1.1;1569-1580:1;1581-1592:2;1593-1605:3;1606-1617:4")]
+[assembly: go.GoPositionMap("encoding/gob/encoder_test.go", "encoder_test.cs", "ABgskgATKIKCgoKClIKCgoKUggAJCoSCgoKEkoKChIKShIKokoKChIKShIKokoKChIKShIKokoKChIKShIIALEaigoKCgoKCgriCgoKCloKUgqiCgoKCgoKClIKCgoKWgpSCloKCgoKUgpSCqIKClIKCgvyigoKCgoKCgpSCgoKUggAICpKCggAIEoKCgoKCgsqCgoKCgpSCgoKU9oSIgoCCAAkIhIiCgIIACAiCiIKCgoKCgoCCpIL4goiCgIIADQiEiIKAggAQCIIAABCCgIKkgoCC6IKEkoCC6IKEkoCCAAsKkgAFGIKAggApPIKCgoKCgoKCgpSClIK0grSClMaCggARCoKagoCCpIKAgqSmkoCCpICCpAALFILcsoKCgoKCloKCggApUIKCgoKCgoKClIKCgoKmkoKClIKCgpSCygAKEu6UgoIAEBqCgoKCgoKCooKClIKCpoKClIKClIKClIIADxqCgoKEgoKCgpSCkoKClIK4ggATKIKCgviClIKCgoKCppKCgoKClIKUgriCgoKCgqaSgoKCgpSClIIACAySgoCCpP6ygoKCgoKAgraCgoKAgqSCABEcgpKikoKCgoCCpIKCgpSClILogoKCgIIAChSCyIKCgpaCgoKUggAIDKKCgoKChIKCgpSCgoKUguyigoKUgqQACQqSgoKClIKUgoK4woKCgpTEyoIACgaCAAsaAAsggoKCgpSUggANCoKCqoKCgpSCggARHqK4goKCgpSCgoKClIIAChiCgoKClIKCgoKWgoKCgvy0gpKCgqaUgoKUggAZNKKCgoKUgoKCgpSCAAwKgoqEkoKCgpaCgoKCpAAICpKChMyCgoCCppKCgIKmmoKUgoKClJSWgoKCAAgIgoySkoSCgIKmgoCCpoKChqKCgoKClpaSuJKUgpSCvsLslLiCgoI=", "69-81:1;83-95:2;97-109:3;111-123:4;822-822:1;933-943:1;1187-1199:1;1191-1197:1.1")]
+[assembly: go.GoPositionMap("encoding/gob/gobencdec_test.go", "gobencdec_test.cs", "ACxikoKCgoLmooKmgpSCgoKmpoKmlIKUgoKCpoKmgtaCgpSCpoKmgoKmgqaCgqaCpoKCpoKmgoKmgqaCgqaCpoKCAFOqAYKUgoKClIKCgoKUgqaCkpKSgoKUgoKClIK8opSCgoKUgoKCgpSCvKKUgpKSgoKUgoKCgpSCupKCgoKCgpSCgpSCgoKClIKCgsySgoKCgoKSkoKClIKClIKCgoKUgoKCAAQU5IKCgoKUgoKCgpSCpoKCgpSCgoKUgrqkgoKCgpSCgoKClIIACQyigpKCkoK6goKAgqSCgoCCpoCSpICSpKaAkqSAkqSmgJKkgJKkzKKSgpKCkoSCgoCCpIKCgIKmgJKkpICSpoCSpKSAkqaAkqSkgJIACQiUgoKCgpSCgoKClIKmgoKClIKCgpSCupKCgoKClIKCgoKUgriCgoKSgoKUgoKCgpSCuIKUgoKClIKCgoKUgriClIKSkpKCgpSCgoKClIK4gpSCgoKUgoKCgpSClIIABxCCpoKmgoKCqqKCgoKAgqSCgoCCpIIAECTCgqaigpSCgu6CpoKmgoKCgoKClIKCgoKUgriCgoKCgoKUgpKCgpSCuJSEgoKClIL45oKCgJKCloKCgpSCgoKCgoCCuIKClIKCgoCC", "806-806:1")]
+[assembly: go.GoPositionMap("encoding/gob/timing_test.go", "timing_test.cs", "ABkuooKCgoKUgoKCgoCCpICC7IK2kriChoK4goKCgpKClJSC+IKClIKWhIKChKKCgqaCuIKClIKWhIKCppKCgqiCkoKCgqaCuKKCgoKChIKCgoLcgoKClKaCgoKUpoKCgpTWgoKClKaCgoKUAAgSsoKClIKmsoKUgoKmgqaigoKCgpaSgoSCtIKChJSCgoKCgtyCgoKUpoKCgpSmgoKClKaCgoKUpIKCgpSkgoKClKaCgoKUpqKCgoKUgoKCgpSSgoKCgoKCgoI=", "25-41:1;45-47:1;47-50:2;54-56:1;56-59:2;63-71:1;71-74:2;91-96:1;117-122:1;125-131:2;140-151:1;235-251:1")]
+[assembly: go.GoPositionMap("encoding/gob/type_test.go", "type_test.cs", "AB04ooKCgoKU2JKCgpSCAAgMkoKClIKClIKC+IKCgoKClIKCgpSCgoKUgoKCAAgIgoKCgoKClIKCgpSCgoIACAiCgoKCgoKUgoKClIKCggAYKoKClIKC/KKEAA0OsgADEIKEgoKCpoKUgIIACQqChIKCkoKCgoKCgpSCgoKUpoLqkoKCgoKygoKCgoKUtLSCpJKCgIKCpICCgqSAgoL4gg==", "201-216:1;229-258:1")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -59,4 +60,33 @@ public static partial class gob_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() => builtin.initPackage(typeof(go.encoding.gob_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(go.encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }
