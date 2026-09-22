@@ -11,8 +11,8 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ## 📰 NEWS — Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24
 
-**203 of the 215 testable standard-library packages pass their own Go test suites in C#** — 28,459
-matching verdicts against `go test -json`, compared verdict for verdict, with 167 divergences
+**203 of the 215 testable standard-library packages pass their own Go test suites in C#** — 56,595
+matching verdicts against `go test -json`, compared verdict for verdict, with 160 divergences
 disclosed by exact failure signature and nothing else waived. Six of those 215 cannot be validated
 at all — no eligible tests on this platform, a broken upstream oracle, a suite whose whole subject
 is the raw memory layout a managed runtime deliberately does not have, or a comparison that runs
