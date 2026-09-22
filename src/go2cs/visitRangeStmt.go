@@ -345,8 +345,15 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// into the loop body and the foreach iterates a temp var that is copied into the fresh box —
 	// rather than declaring the box once before the loop (which would also clash with the foreach's
 	// own re-declaration of the same name → CS0136). Captured here, emitted in the DEFINE branch.
+	//
+	// A range-over-FUNC loop is the same shape and was excluded by an arm test rather than by any
+	// property of the range: its yielded variable is per-iteration in Go exactly as a slice index
+	// is, and its foreach declares the name itself, so the before-the-loop decl produced BOTH a
+	// `ref var now = ref heap(new time.Time(), out var Ꮡnow);` and a `foreach (var now in
+	// range(seq))` in one scope — CS0136, internal/synctest's `for now := range seq` inside a
+	// goroutine. The three remaining arms (string/chan/int) keep the before-the-loop decl.
 	var keyHeapDecl, valHeapDecl string
-	deferRangeVarBox := !isStr && !isChan && !isInt && yieldFunc <= -1
+	deferRangeVarBox := !isStr && !isChan && !isInt
 
 	// If defining new variables, perform escape analysis on the key and value expressions
 	if !assignVars {
@@ -587,9 +594,45 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				keyType = "var "
 			}
 
-			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, scalarKeyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			// A heap-boxed yielded variable takes the same per-iteration box the slice/array/map
+			// arm emits (see deferRangeVarBox): the foreach iterates a temp and the body opens
+			// with the fresh box and the copy into it. Declaring the box at the loop's own scope
+			// instead put two declarations of the name in one scope — CS0136.
+			iterExpr := scalarKeyExpr
+
+			if keyHeapDecl != "" {
+				iterExpr = v.getTempVarName("i")
+
+				if !v.options.preferVarDecl {
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
+				}
+
+				bodyIndent := v.indent(v.indentLevel + 1)
+				context.innerPrefix = fmt.Sprintf("%s%s%s%s%s = %s;%s", v.newline, bodyIndent, keyHeapDecl, v.newline+bodyIndent, keyExpr, iterExpr, v.newline)
+			}
+
+			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, iterExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		} else {
-			v.writeOutput("foreach (%s(%s%s, %s%s) in range%s(%s%s%s))", varInit, keyType, keyExpr, valType, valExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			// The two-value twin of the arm above; either yielded variable may be boxed.
+			kExpr, vExpr := keyExpr, valExpr
+			var innerPrefix string
+			bodyIndent := v.indent(v.indentLevel + 1)
+
+			if keyHeapDecl != "" {
+				kExpr = v.getTempVarName("i")
+				innerPrefix += fmt.Sprintf("%s%s%s%s%s = %s;", v.newline, bodyIndent, keyHeapDecl, v.newline+bodyIndent, keyExpr, kExpr)
+			}
+
+			if valHeapDecl != "" {
+				vExpr = v.getTempVarName("v")
+				innerPrefix += fmt.Sprintf("%s%s%s%s%s = %s;", v.newline, bodyIndent, valHeapDecl, v.newline+bodyIndent, valExpr, vExpr)
+			}
+
+			if innerPrefix != "" {
+				context.innerPrefix = innerPrefix + v.newline
+			}
+
+			v.writeOutput("foreach (%s(%s%s, %s%s) in range%s(%s%s%s))", varInit, keyType, kExpr, valType, vExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		}
 	} else {
 		// Handle slice, array, and map types
