@@ -38,7 +38,7 @@ namespace go;
 /// what the caller's own frame already rooted.
 /// </para>
 /// </remarks>
-public sealed class NativeBox<T> : ж<T>
+public sealed class NativeBox<T> : ж<T>, INativeRooted
 {
     // The native address this box aliases — never managed storage it owns.
     private readonly nuint m_nativeAddr;
@@ -135,6 +135,10 @@ public sealed class NativeBox<T> : ж<T>
     public override nuint NativeAddress => m_nativeAddr;
 
     /// <inheritdoc/>
+    // The root of every native chain: a field reference over this box asks here (INativeRooted).
+    bool INativeRooted.IsNativeRooted => true;
+
+    /// <inheritdoc/>
     // A native alias is not managed storage at all: its address is m_nativeAddr and both
     // operators return it long before they consult this, so no reachable path reads the answer.
     // It is stated rather than inherited because the abstract member exists precisely so that a
@@ -165,6 +169,12 @@ public sealed class NativeBox<T> : ж<T>
 
         if (other is NativeBox<T> nb)
             return m_nativeAddr == nb.m_nativeAddr;
+
+        // A field reference rooted in NATIVE memory names a real machine address, and Go's contract for
+        // such a pointer is address identity — `&n.LFNode` over a persistentalloc'd node and the pointer
+        // lfstackUnpack rebuilds from its bits are ONE pointer. See FieldRefBox.NativeSlotAddress.
+        if (other is FieldRefBox<T> fr && fr.NativeSlotAddress is var address and not 0)
+            return m_nativeAddr == address;
 
         return m_isNull && other.IsNilPointer;
     }
