@@ -376,6 +376,7 @@ public static ж<Type> TypeOf(any a) {
 
 private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<ΔStructType>> s_structTypes = new();
 private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<ΔArrayType>> s_arrayTypes = new();
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<mapType>> s_mapTypes = new();
 
 // StructType returns t cast to a *StructType, or nil if its tag does not match.
 public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
@@ -638,6 +639,63 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
 // is ONE managed type for every key length, so the datum reaches here from the converter's stamp on
 // the declaring FIELD — the position a decode target reads, where the map itself is still nil and a
 // live entry could reveal nothing. Unstamped answers Go's dimension-less array, unchanged.
+// MapType returns t cast to a *mapType (SwissMapType under the swissmap build), or nil if its tag
+// does not match. HAND-OWNED because the auto body is `Ꮡt.Reinterpret<Type, mapType>()` -- Go's
+// `(*mapType)(unsafe.Pointer(t))` taken literally -- and a SYNTHESIZED descriptor has no native
+// storage to reinterpret. Measured (internal/sync's TestHashTrieMapTruncHash, 2026-09-20): the
+// reinterpret fell through golib's aliasing gate -- which requires `SizeOf<TDst> <= SizeOf<T>`, and
+// a mapType is WIDER than the Type it embeds -- and the address fallback minted a NativeBox over an
+// ORDER TOKEN, so the first field read panicked in ж.NativeBox.get_Value with "dereference of a
+// managed pointer with no address (*SwissMapType ...)". That refusal is CORRECT: materializing a
+// reference-bearing struct out of token bytes would fabricate managed references. So the fix belongs
+// here, at the producer -- a synthetic descriptor answers its kind view through a real PROJECTION,
+// never through a reinterpretation. Same shape, cache discipline and nil rule as StructType and
+// ArrayType above; the projection is interned per descriptor box so a caller that takes MapType
+// twice gets ONE identity, which is what Go's pointer cast gives and what equality on it expects.
+//
+// The gate also excludes a descriptor with no managed type behind it: `sysType is null` leaves
+// nothing to read a key or element type from, and a projection over unknowns would be the plausible
+// record this file refuses everywhere else.
+//
+// ⚠ WHAT THE PROJECTION HONORS, AND WHAT IT DOES NOT. Key and Elem are REAL -- they come from the
+// same hand-owned accessors reflect already reads, so a caller walking the map's types gets Go's
+// answer. HASHER IS A FUNCTION OF THE SEED ALONE, which is the honest maximum here and not a
+// shortcut: Go's Hasher means "the key's bytes are AT this address", and the only caller of an
+// installed hook in this corpus invokes it with a NIL pointer and discards the key
+// (internal/sync/hashtriemap.cs:222, over noAddress at :542) because a managed address names no
+// value. That file's own taxonomy classes an address-IGNORING hook as the honorable kind (:120) and
+// states at :124-127 that every honorable hook here is a function of the seed alone -- so honoring
+// one and forcing total collision are the same act, which is precisely the contract
+// TestHashTrieMapBadHash already proves the map satisfies (34/34 with `return 0`). What :122 refuses
+// is a hook that DEREFERENCES the address; this is not one.
+//
+// Group, GroupSize, SlotSize, ElemOff and Flags stay ZERO, deliberately and for the same reason the
+// descriptor's own TFlag bits do: each describes Go's swiss-table memory layout -- a slot group's
+// size, an element's offset within a key/elem slot -- and the managed store has no such layout to
+// report. A fabricated offset would be read as a real one. The four predicates that sit on Flags
+// (NeedKeyUpdate, HashMightPanic, IndirectKey, IndirectElem) therefore answer false, the same
+// honest zero.
+public static ж<mapType> MapType(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Map || Ꮡt.Value.sysType is null) {
+        return default!;
+    }
+    return s_mapTypes.GetOrAdd(Ꮡt, static box => synthesizeMapType(box));
+}
+
+private static ж<mapType> synthesizeMapType(ж<Type> Ꮡt) {
+    return new StandardBox<mapType>(new mapType(
+        Type: Ꮡt.Value,
+        Key: Ꮡt.Key(),
+        Elem: Ꮡt.Elem(),
+        Group: default!,
+        Hasher: static (_, seed) => seed,
+        GroupSize: 0,
+        SlotSize: 0,
+        ElemOff: 0,
+        Flags: 0
+    ));
+}
+
 public static ж<Type> Key(this ж<Type> Ꮡt) {
     if (Ꮡt == nil || Ꮡt.Value.Kind() != Map) {
         return default!;
