@@ -49,21 +49,18 @@ internal static class PointerTypeTemplate
                     return new {{className}}(new {{BoxConstructPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
                 }
                 
-                public static unsafe implicit operator uintptr({{className}} value)
-                {
-                    fixed (void* ptr = &value.Value)
-                        return (uintptr)ptr;
-                }
+                // Both OUTBOUND conversions defer to the box's own operator rather than take
+                // `&value.Value`: that is a DEREFERENCE, which a native box over a pointer-order
+                // token refuses by design (Q44 §10.3 arm 2a) although the token IS its address, and
+                // for managed storage it is an unpinned, unregistered `fixed` address. The box's
+                // operator returns a native address unread, 0 for nil, and pins and registers the rest.
+                public static unsafe implicit operator uintptr({{className}} value) => (uintptr)value.m_value;
                 
                 public static unsafe implicit operator {{className}}(void* value)
                 {
                     return new {{className}}(new {{BoxConstructPrefix}}<{{targetTypeName}}>(*({{targetTypeName}}*)value));
                 }
                 
-                public static unsafe implicit operator void*({{className}} value)
-                {
-                    fixed ({{targetTypeName}}* ptr = &value.Value)
-                        return ptr;
-                }
+                public static unsafe implicit operator void*({{className}} value) => (void*)value.m_value;
         """;
 }

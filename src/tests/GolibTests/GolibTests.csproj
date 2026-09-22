@@ -80,6 +80,9 @@
          Same reasoning, and same '!= \'\' and != windows' form, as the line above. -->
     <Compile Remove="TokenDoorWiredTests.cs" />
 
+    <!-- syscall.Pointer (`type Pointer *struct{}`) is declared only in syscall's windows/ folder. -->
+    <Compile Remove="NamedPointerTokenCarrierTests.cs" />
+
     <!-- Row 46's owed observer drives os/user's local-group DECISION, which is declared only in that
          package's L3 windows/ folder (lookup_windows_impl.cs). os/user is NOT windows-exclusive —
          it has linux/ and darwin/ folders of its own — so unlike the two files above this one would
