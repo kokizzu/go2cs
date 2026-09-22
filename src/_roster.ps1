@@ -44,7 +44,11 @@
     Get-ExclusionLedgerRows. A ledger row's first cell is a PLAIN code span on purpose -- the
     roster row's linked [`pkg`](url) shape is what $RosterRowPattern anchors on, so the two tables
     in one document can never be confused by either parser; the document's own HTML comment
-    beneath the ledger states the same rule from the other side.
+    beneath the ledger states the same rule from the other side. That shape keeps the ledger apart
+    from the ROSTER and from nothing else: since 2026-09-20 the document also carries the H10
+    relocation map's own plain-code-span tables, so the ledger parse is additionally SCOPED to the
+    ledger's own section by Get-ExclusionLedgerSectionLines, and the shape is what it always was --
+    a check on rows inside that section, not an address.
 
     Nothing here has side effects; it defines pure functions and returns.
 
@@ -131,6 +135,23 @@ $RosterExecutionPattern =
 # what keeps the two tables apart. Row shape:
 #   | `os/user` | <verdicts> | E2 | Mechanism prose. | [ruling][exclusion-ruling] |
 $ExclusionLedgerRowPattern = '^\|\s*`([^`]+)`\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|'
+
+# The exclusion ledger's own SECTION heading -- the ledger's ADDRESS, which the row pattern above is
+# not. A shape told the two tables of 2026-08 apart because there were only two; the H10 relocation
+# seat (2026-09-20) added SIX more plain-code-span tables to this same document -- the source ->
+# successor disposition table, the verdict-routing table, the pin re-naming table, the retiring
+# declarations and the new-row candidates -- and every one of their rows read as a ledger row. That
+# is 51 of the 70 failures the format guard reported at master 3b48e0c8e0: 37 rows admitted with a
+# successor name, a count or a re-pinning cell where a class belongs, 9 successors reported as
+# "excluded AND validated", and 14 column-shape assertions run against rows that are not ledger rows
+# at all. The row shape is unchanged and still right; what it was missing is WHERE to look.
+#
+# The section is this heading through the line before the next heading of EQUAL OR HIGHER level, so
+# the ledger's own subsections belong to it (`### The 215, derived` is part of "Excluded packages"
+# and always was). Anchored at any level so the ledger can be promoted or demoted without a silent
+# re-scope, and required to be UNIQUE: two headings of this name are two addresses, which is the
+# ambiguity this pattern exists to remove rather than to pick a side of.
+$ExclusionLedgerHeadingPattern = '^(#{1,6})\s+Excluded packages\s*$'
 
 # The ruled exclusion classes (owner ruling 2026-08-25): E1 no eligible tests on the target
 # platform, E2 broken oracle, E3 the test's subject is the replaced representation.
@@ -313,6 +334,56 @@ function Get-ValidatedRosterRows {
 
 <#
 .SYNOPSIS
+    The lines of the exclusion ledger's own section -- its heading through the line before the next
+    heading of equal or higher level.
+.DESCRIPTION
+    The ledger's ROW SHAPE (a plain code span in the first cell) is not an address, and stopped
+    being a discriminator the moment a third plain-code-span table joined the document. Every
+    consumer that wants ledger rows scopes through here first, so "a table that looks like the
+    ledger" and "the ledger" can never be the same question again.
+
+    REFUSES rather than degrades, in both directions. A missing heading throws instead of falling
+    back to the whole document: the fallback is precisely the behaviour being removed, and a guard
+    that silently reverts to it on a renamed heading would have reported this defect as fixed. A
+    DUPLICATED heading throws too -- two addresses is an ambiguity, and picking the first would be a
+    guess wearing a parser's authority.
+.OUTPUTS
+    The section's lines, heading line included.
+#>
+function Get-ExclusionLedgerSectionLines {
+    # AllowEmptyString is load-bearing, not decoration: a [string[]] parameter rejects an empty
+    # ELEMENT by default, and a markdown document is mostly blank lines.
+    param([Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()][string[]] $Lines)
+
+    $starts = New-Object System.Collections.Generic.List[int]
+    for ($i = 0; $i -lt $Lines.Count; $i++) {
+        if ($Lines[$i] -match $ExclusionLedgerHeadingPattern) { [void]$starts.Add($i) }
+    }
+
+    if ($starts.Count -eq 0) {
+        throw "Cannot find the exclusion ledger's section: no markdown heading reads 'Excluded packages'"
+    }
+
+    if ($starts.Count -gt 1) {
+        throw "The exclusion ledger's heading 'Excluded packages' appears $($starts.Count) times; the ledger must have exactly one address"
+    }
+
+    $start = $starts[0]
+    [void]($Lines[$start] -match $ExclusionLedgerHeadingPattern)
+    $endPattern = '^#{1,' + $Matches[1].Length + '}\s'
+
+    $end = $Lines.Count - 1
+    for ($i = $start + 1; $i -lt $Lines.Count; $i++) {
+        if ($Lines[$i] -match $endPattern) { $end = $i - 1; break }
+    }
+
+    if ($end -lt $start) { return @($Lines[$start]) }
+
+    return @($Lines[$start..$end])
+}
+
+<#
+.SYNOPSIS
     Parses the exclusion-ledger table ("Excluded packages") into row objects.
 .OUTPUTS
     One PSCustomObject per row: Package, Verdicts (the raw cell text -- a naive count where one
@@ -328,7 +399,8 @@ function Get-ExclusionLedgerRows {
 
     $rows = New-Object System.Collections.Generic.List[object]
 
-    foreach ($line in $lines) {
+    # Scoped to the ledger's own section, never the whole document -- see the heading pattern's note.
+    foreach ($line in (Get-ExclusionLedgerSectionLines -Lines $lines)) {
         if ($line -notmatch $ExclusionLedgerRowPattern) { continue }
 
         [void]$rows.Add([PSCustomObject]@{
