@@ -107,7 +107,25 @@ public static class AdapterBinder
     /// <returns><c>true</c> when a shell was built; otherwise, <c>false</c> (a MISS).</returns>
     public static bool TryCreate(object dynamicValue, Type interfaceType, [NotNullWhen(true)] out object? shell)
     {
-        Type valueType = dynamicValue.GetType();
+        return TryCreate(dynamicValue, dynamicValue.GetType(), interfaceType, out shell);
+    }
+
+    /// <summary>
+    /// Attempts to build a runtime duck-typing implementation of <paramref name="interfaceType"/>
+    /// over a Go dynamic value whose type is named explicitly.
+    /// </summary>
+    /// <param name="dynamicValue">Go dynamic value, which may be <c>null</c> for a typed nil func.</param>
+    /// <param name="valueType">Go dynamic type of <paramref name="dynamicValue"/>.</param>
+    /// <param name="interfaceType">Target converted interface type.</param>
+    /// <param name="shell">Constructed implementation, if one could be built.</param>
+    /// <returns><c>true</c> when a shell was built; otherwise, <c>false</c> (a MISS).</returns>
+    /// <remarks>
+    /// A typed nil func (<see cref="NilFuncValue"/>) has a dynamic type and no instance to read it
+    /// from: <c>any(Fn(nil))</c> holds type <c>Fn</c> and a nil value, and <c>Fn</c>'s methods run
+    /// on that nil receiver. The shell wraps the null delegate for exactly that call.
+    /// </remarks>
+    public static bool TryCreate(object? dynamicValue, Type valueType, Type interfaceType, [NotNullWhen(true)] out object? shell)
+    {
         shell = null;
 
         if (!AdapterRegistry.TryGetShellFactory(valueType, interfaceType, out Func<object, object>? factory))
@@ -128,7 +146,7 @@ public static class AdapterBinder
 
         try
         {
-            shell = factory(dynamicValue);
+            shell = factory(dynamicValue!);
         }
         catch (Exception ex) when (IsBindingFailure(ex))
         {
