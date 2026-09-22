@@ -259,6 +259,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// path. runtime/windows/usleep_windows_impl.cs sleeps the same microseconds without the OS call.
 		// Windows alone: linux already hand-owns its usleep (mem_linux_impl.cs) and darwin's converts.
 		"usleep": goosWindows,
+		// sysAllocOS / sysFreeOS on WINDOWS (COORD ruling 2026-09-22): VirtualAlloc / VirtualFree through
+		// stdcall4 / stdcall3 -> asmcgocall threw on every sysAlloc; on the runtime row one such throw under
+		// persistentalloc1 held globalAlloc's lock and echoed as 70 abandoned-lock panics.
+		// runtime/windows/mem_windows_impl.cs makes the same two kernel calls directly (the linux
+		// flavour's mmap precedent). The other sys*OS bodies are displaced only when a row reaches them.
+		"sysAllocOS": goosWindows,
+		"sysFreeOS":  goosWindows,
 		// addrRanges.init / add / cloneInto (increment 7 of the runtime row, W2a, 2026-09-05): the three
 		// writers that build a notInHeapSlice header FIELD BY FIELD over the managed a.ranges --
 		// `ranges := (*notInHeapSlice)(unsafe.Pointer(&a.ranges)); ranges.len = …; ranges.cap = …;

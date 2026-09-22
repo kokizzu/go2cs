@@ -16,13 +16,7 @@ internal static UntypedInt _PAGE_NOACCESS => 0x0001;
 internal static UntypedInt _ERROR_NOT_ENOUGH_MEMORY => 8;
 internal static UntypedInt _ERROR_COMMITMENT_LIMIT => 1455;
 
-// Don't split the stack as this function may be invoked without a valid G,
-// which prevents us from allocating more stack.
-//
-//go:nosplit
-internal static @unsafe.Pointer sysAllocOS(uintptr n) {
-    return (@unsafe.Pointer)stdcall4(_VirtualAlloc, 0, n, (uintptr)((uintptr)_MEM_COMMIT | (uintptr)_MEM_RESERVE), _PAGE_READWRITE);
-}
+// go2cs generated this placeholder — func sysAllocOS is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeFailedToDecommitˢ = "runtime: failed to decommit pages"u8;
@@ -101,20 +95,7 @@ internal static void sysNoHugePageOS(@unsafe.Pointer v, uintptr n) {
 internal static void sysHugePageCollapseOS(@unsafe.Pointer v, uintptr n) {
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string runtimeFailedToReleaseˢ = "runtime: failed to release pages"u8;
-
-// Don't split the stack as this function may be invoked without a valid G,
-// which prevents us from allocating more stack.
-//
-//go:nosplit
-internal static void sysFreeOS(@unsafe.Pointer v, uintptr n) {
-    var r = stdcall3(_VirtualFree, (uintptr)v, 0, _MEM_RELEASE);
-    if (r == 0) {
-        print((@string)"runtime: VirtualFree of "u8, n, (@string)" bytes failed with errno="u8, getlasterror(), (@string)"\n"u8);
-        @throw(runtimeFailedToReleaseˢ);
-    }
-}
+// go2cs generated this placeholder — func sysFreeOS is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static void sysFaultOS(@unsafe.Pointer v, uintptr n) {
     // SysUnused makes the memory inaccessible and prevents its reuse
