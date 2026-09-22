@@ -839,6 +839,165 @@ if ($implementable -gt 0) {
     Assert-Equal 'honest header: the percentage follows from the two counts' ('{0:0.0}' -f $expectedHonestPercent) $honestPercentText
 }
 
+# ---- 2b. the header's N is a POPULATION FILE, not a sentence (ruled 2026-09-22) ------------------
+# Everything above this point derives the header from the TABLE, which is the right authority for
+# the numerator and for both column sums -- and is structurally incapable of saying anything about
+# the DENOMINATOR. `$testable` is parsed from the header and compared to nothing: the table cannot
+# know how many testable packages exist, so until now that one number was the header's unguarded
+# exception, asserted by prose and reproducible only by whoever last re-derived it. That is the same
+# shape as the phantom ledger row the 2026-09-02 ruling struck -- an arithmetic that "comes out
+# right" over a membership nobody can check.
+#
+# It is checkable now because the population is ENUMERATED:
+# docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt holds all N import paths. Four
+# assertions follow from having it, and none of them can be satisfied by editing the header alone:
+#   1. |population| == the header's N.
+#   2. every BANKED row is a population member -- a row validated outside the denominator it is
+#      counted in is a numerator that cannot be reached from the denominator.
+#   3. every EXCLUSION row is a population member -- this is the struck-phantom rule, in code. Four
+#      more rows were struck on 2026-09-22 for exactly this reason.
+#   4. implementable == N - (exclusion rows), which 2's and 3's memberships make exact.
+# The two percentages are asserted above and follow from these.
+#
+# READ ENDING-INSENSITIVELY, deliberately. The sibling instrument (shardmap.py) REFUSES on a CR byte
+# in this file, because a CR there rides into a package name and every figure derived from it. This
+# one trims instead: it is the roster's guard and runs on any checkout, and a lane whose clone
+# predates the .gitattributes pin should get the arithmetic it asked for, not a line-endings lecture
+# from the wrong instrument. Two guards, two questions.
+$populationPath = Join-Path $repo 'docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt'
+
+function Get-PopulationRows {
+    param([Parameter(Mandatory)][string] $Path)
+
+    if (-not (Test-Path $Path)) { throw "Cannot find the population of record at $Path" }
+
+    $names = @([System.IO.File]::ReadAllLines($Path) |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and -not $_.StartsWith('#') })
+
+    if ($names.Count -eq 0) {
+        throw "The population of record at $Path parsed to ZERO rows -- a comment-only file reads as a closed arithmetic over an empty universe"
+    }
+
+    $duplicates = @($names | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
+    if ($duplicates.Count -gt 0) {
+        throw "The population of record repeats $($duplicates.Count) name(s): $($duplicates -join ', ') -- the population is a SET"
+    }
+
+    return $names
+}
+
+# The arithmetic itself, as a function over its four inputs rather than inline against the real
+# ones. That is what lets the fixture arms below drive it with a POPULATION THAT DISAGREES -- an
+# inline version could only ever be red-tested by editing the committed file, which is the exact
+# "regress the tree and hope you restore it" shape the floor forbids relying on. Returns one string
+# per violation, each NAMING what it found; an empty array is a clean reading.
+function Test-PopulationArithmetic {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Population,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $BankedPackages,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $ExcludedPackages,
+        [Parameter(Mandatory)][int] $Testable,
+        [Parameter(Mandatory)][int] $Implementable
+    )
+
+    $violations = New-Object System.Collections.Generic.List[string]
+    $member = @{}
+    foreach ($name in $Population) { $member[$name] = $true }
+
+    if ($Population.Count -ne $Testable) {
+        [void]$violations.Add("the header's N ($Testable) is not the population's size ($($Population.Count))")
+    }
+
+    $strayBanked = @($BankedPackages | Where-Object { -not $member.ContainsKey($_) })
+    if ($strayBanked.Count -gt 0) {
+        [void]$violations.Add("$($strayBanked.Count) banked row(s) outside the population: $($strayBanked -join ', ')")
+    }
+
+    $strayExcluded = @($ExcludedPackages | Where-Object { -not $member.ContainsKey($_) })
+    if ($strayExcluded.Count -gt 0) {
+        [void]$violations.Add("$($strayExcluded.Count) exclusion row(s) outside the population: $($strayExcluded -join ', ')")
+    }
+
+    $expectedImplementable = $Testable - $ExcludedPackages.Count
+    if ($Implementable -ne $expectedImplementable) {
+        [void]$violations.Add("implementable ($Implementable) is not N minus the exclusion rows ($Testable - $($ExcludedPackages.Count) = $expectedImplementable)")
+    }
+
+    return @($violations)
+}
+
+# RED FIRST. Each arm below was run BEFORE the live reading and each one FAILED BY NAME on the defect
+# it plants; the whole set was then re-run green against a fixture that closes. The fixture universe
+# is four names so the arms are readable, and every arm changes exactly ONE axis away from it.
+$popFixture = @('ex/one', 'ex/two', 'ex/three', 'ex/four')
+
+Assert-Equal 'population fixture: a closing arithmetic reports nothing' '' `
+    ((Test-PopulationArithmetic -Population $popFixture -BankedPackages @('ex/one', 'ex/two') `
+        -ExcludedPackages @('ex/three') -Testable 4 -Implementable 3) -join '; ')
+
+Assert-Equal 'population arm: a header N that is not the population size fails, naming both counts' `
+    "the header's N (5) is not the population's size (4)" `
+    ((Test-PopulationArithmetic -Population $popFixture -BankedPackages @('ex/one', 'ex/two') `
+        -ExcludedPackages @('ex/three') -Testable 5 -Implementable 4) -join '; ')
+
+Assert-Equal 'population arm: an EXCLUSION row outside the population fails, by name' `
+    '1 exclusion row(s) outside the population: ex/phantom' `
+    ((Test-PopulationArithmetic -Population $popFixture -BankedPackages @('ex/one', 'ex/two') `
+        -ExcludedPackages @('ex/phantom') -Testable 4 -Implementable 3) -join '; ')
+
+Assert-Equal 'population arm: a BANKED row outside the population fails, by name' `
+    '1 banked row(s) outside the population: ex/stray' `
+    ((Test-PopulationArithmetic -Population $popFixture -BankedPackages @('ex/one', 'ex/stray') `
+        -ExcludedPackages @('ex/three') -Testable 4 -Implementable 3) -join '; ')
+
+# The subtraction's own arm. Every arm here is written so it fires ALONE -- each fixture moves ONE
+# axis and the expectation is the WHOLE joined violation list, so an arm that dragged a sibling in
+# would fail on the extra text rather than pass on a superset. That is not theory: the N arm above
+# was first written expecting TWO violations, and it failed by name showing it had produced one,
+# which is how its fixture (N=5 against implementable=4, where 5-1=4 still closes) was found to move
+# a single axis after all. An arm that can only be seen firing beside another is not an arm.
+Assert-Equal 'population arm: an implementable that is not N minus the exclusions fails alone' `
+    'implementable (2) is not N minus the exclusion rows (4 - 1 = 3)' `
+    ((Test-PopulationArithmetic -Population $popFixture -BankedPackages @('ex/one', 'ex/two') `
+        -ExcludedPackages @('ex/three') -Testable 4 -Implementable 2) -join '; ')
+
+# Vacuity controls on the READER, which the arms above cannot reach: a file of comments and a file
+# with a repeat both read as a perfectly closed arithmetic over the wrong universe.
+Assert-Throws 'population reader: a comment-only file REFUSES rather than reading zero' {
+    $p = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-pop-fixture-' + [guid]::NewGuid().ToString('n') + '.txt')
+    try {
+        [System.IO.File]::WriteAllText($p, "# only a header`n`n", (New-Object System.Text.UTF8Encoding($false)))
+        Get-PopulationRows -Path $p
+    }
+    finally { if (Test-Path $p) { Remove-Item $p -Force } }
+} 'parsed to ZERO rows'
+
+Assert-Throws 'population reader: a repeated name REFUSES rather than double-booking' {
+    $p = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-pop-fixture-' + [guid]::NewGuid().ToString('n') + '.txt')
+    try {
+        [System.IO.File]::WriteAllText($p, "ex/one`nex/two`nex/one`n", (New-Object System.Text.UTF8Encoding($false)))
+        Get-PopulationRows -Path $p
+    }
+    finally { if (Test-Path $p) { Remove-Item $p -Force } }
+} 'repeats 1 name(s): ex/one'
+
+# ...and now the live reading, through the same function the arms just exercised.
+$population = @(Get-PopulationRows -Path $populationPath)
+$ledgerPackages = @($ledger | ForEach-Object { $_.Package })
+$populationViolations = @(Test-PopulationArithmetic -Population $population `
+    -BankedPackages $rosterPackages -ExcludedPackages $ledgerPackages `
+    -Testable $testable -Implementable $implementable)
+
+Write-Host ''
+Write-Host 'population of record vs the roster header:' -ForegroundColor Cyan
+Write-Host ('  {0,-32} {1}' -f 'file', (Resolve-Path $populationPath).Path.Substring($repo.Length + 1))
+Write-Host ('  {0,-32} population {1,-6} header N {2}' -f 'testable packages', $population.Count, $testable)
+Write-Host ('  {0,-32} banked {1,-10} excluded {2}' -f 'members accounted for', $rosterPackages.Count, $ledgerPackages.Count)
+Write-Host ('  {0,-32} {1} - {2} = {3}' -f 'implementable', $testable, $ledgerPackages.Count, $implementable)
+
+Assert-Equal 'population of record: the header closes against the enumeration' '' ($populationViolations -join '; ')
+
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
 # Three populations since the 2026-08-29 n/a ruling: validated-at-count (numeric annotation),

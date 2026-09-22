@@ -95,6 +95,21 @@ docs/ValidatedTestPackages.md text eol=lf
 docs/phase4/DATA-sweep-row-walltimes.md text eol=lf
 docs/phase4/DATA-h10-shardmap-projection-go124.md text eol=lf
 
+# 2026-09-22, H10 closing-arithmetic seat: the SAME ruling, the inputs it missed.
+# shardmap.py CR-guards FIVE files, not two -- the roster and the walltime basis
+# (pinned above), plus `recon-lists/*.txt`, `relocations.tsv` and whatever TSV
+# `--timings` names (recon-basis.tsv for the H10 pass-1 plan), none of which
+# carried a rule. Measured on a Windows checkout of this branch: population.txt
+# 255 CR bytes, relocations.tsv 14, recon-basis.tsv 214 -- every one of them LF
+# in the object store. The generator therefore REFUSED at its own population read
+# before reaching any later check, and has been unrunnable on a correct Windows
+# checkout since those guards landed; the refusal reads as a corrupted input and
+# is a correct checkout. Strengthen the premise, never weaken the guard
+# (2026-09-13). Blobs are already LF, so this pin rewrites nothing
+# (`git add --renormalize` over the directory stages nothing).
+docs/phase4/hopA-inputs/recon-lists/*.txt text eol=lf
+docs/phase4/hopA-inputs/*.tsv text eol=lf
+
 # ---------------------------------------------------------------------------
 # LF pin for the converter's embedded stdlib metadata asset
 # ---------------------------------------------------------------------------

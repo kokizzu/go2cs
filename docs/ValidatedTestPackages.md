@@ -132,11 +132,14 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **216 / 215 testable packages validated — 100.5%**
+> ### Phase 4 progress: **216 / 230 testable packages validated — 93.9%**
 >
 > **57,064 matching test verdicts · 164 disclosed** *(updated 2026-09-22 — maintained as part of the
-> Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
-> standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
+> Phase-4 validation campaign and grows as packages validate. Denominator: the 230 of the 346
+> packages `go list std` reports at go1.24.13 whose test files surviving the corpus axis —
+> windows/amd64, `-tags purego,math_big_pure_go` — declare a `Test` function. The 230 are enumerated,
+> name by name, in
+> [`docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt`](phase4/hopA-inputs/recon-lists/population-go1.24.13.txt).)*
 >
 > **The package count moved 204 → 203 on 2026-09-22, by the H10 relocation and nothing else.** Ten
 > banked rows have no package at their banked path at go1.24.13 and retired; nine of their successors
@@ -145,23 +148,21 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > the retired rows' own annotations. The per-row arithmetic is in
 > [The H10 relocation map](#the-h10-relocation-map); every figure in this block is recomputed from
 > the table by [`src/check-roster-format.ps1`](../src/check-roster-format.ps1), which fails when the
-> two disagree.
+> two disagree — and the one figure the table cannot know, the denominator, is checked against the
+> enumerated population file instead, along with every banked and excluded row's membership in it.
 >
-> **Against the implementable set (215 − 10 excluded = 205): 216 / 205 — 105.4%.** Both numbers are
+> **Against the implementable set (230 − 6 excluded = 224): 216 / 224 — 96.4%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > six, each with its class, mechanism and evidence, are in
-> [Excluded packages](#excluded-packages) below. **The denominator moved 210 → 209 by owner ruling on
-> 2026-09-07**, excluding `runtime/trace` under the newly ruled **E4** class: it was measured at this
-> master (0 matched / 2 diverged, host-qualified) and every verdict reports the same absent
-> capability, so the comparison is sound and validates nothing. Note the direction — the numerator
-> does **not** move. Banking it instead would have lifted the numerator to **205** against a
-> denominator still standing at **210** — an identical percentage, bought with a row contributing
-> zero matching verdicts. The denominator moved 209 → 210 by owner ruling on
-> 2026-09-02: `internal/runtime/syscall` was a phantom inside it — not a member of `go list std` on
-> windows/amd64 at all, so a set derived from that listing could never subtract it — and
-> `net/http/pprof`, converted and testable and in no accounting at all, is named in the remainder
-> below.
+> [Excluded packages](#excluded-packages) below — and *six* is the whole ledger now, because an
+> exclusion is only subtractable from a set that contains it: four rows that Go's own windows/amd64
+> constraints leave with no test at all are **not members of the 230**, and were struck from the
+> table on 2026-09-22 on the `internal/runtime/syscall` precedent. The derivation of the 230 and of
+> that strike is in [The 230, derived](#the-230-derived-go12413-2026-09-22) below; the 1.23.12
+> anchor's own denominators — 215, and the 209/210 the implementable line carried there — are the
+> record kept in [The 215, derived](#the-215-derived--and-the-thirteen-rows-that-are-not-yet-banked)
+> beneath it.
 >
 > **Linux: 188 of 214 applicable rows validated at their Linux counts** — 20,878 matching verdicts · 168 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
@@ -743,16 +744,21 @@ recorded on that same board.
 
 | Package | Verdicts | Class | Mechanism | Rooting |
 |:--|:--:|:--:|:--|:--:|
-| `internal/syscall/unix` | 0 | E1 | A Unix-only package; no `Test` declaration survives the windows/amd64 build constraints, and the pipeline reports `not-applicable` with zero errors. | [ruling][exclusion-ruling] |
-| `net/internal/socktest` | 0 | E1 | A socket-testing helper library other packages' suites import, not a package with a suite of its own — it declares no test entry points to compare. | [ruling][exclusion-ruling] |
-| `log/syslog` | 0 | E1 | There is no syslog on Windows; Go's own constraints exclude the entire suite on this target. | [ruling][exclusion-ruling] |
-| `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
 | `runtime/internal/wasitest` | 1 | E1 | A WASI test package. `nonblock_test.go` is `//go:build !aix && !plan9 && !solaris && !wasm && !windows`, so it does not select on windows/amd64 at all, and `host_test.go` declares no test; the only test that does select, `TestTCPEcho` in the untagged `tcpecho_test.go`, opens `if target != "wasip1/wasm" { t.Skip() }` and the oracle target is windows/amd64. The executing surface on the platform of record is EMPTY and the single verdict is that skip. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
 | `runtime/trace` | 2 | E4 | The execution tracer. `runtime.StartTrace()` is hand-owned at `runtime/windows/trace_impl.cs:59` and returns `tracing is not supported: the go2cs managed runtime has no execution tracer`; `trace.cs:128` early-returns on it before the reader goroutine spawns, so BOTH verdicts carry that one deliberate statement. MEASURED at `fd09034f5`, host-qualified (`go test -count=1 runtime/trace` -> `ok 0.394s`, exit 0), Release + tiering off: **0 matched / 2 diverged / 0 empty** — the comparison is sound and validates nothing, which is the E4 shape. It is mechanically ADMISSIBLE as 2 disclosed under the `runtime-capability` signature `os/signal``s `TestSignalTrace` already pins (trial manifest exits 0; a negative control with a wrong signature exits 1 naming that row alone) — and banking it would have contributed ZERO matching verdicts, which is why it is excluded instead. ⚠ **REVISIT CONDITION**: the two `runtime-capability` rows are re-examined for retirement potential at a later date; if they are not retirable, the row is out for good. | [ruling][exclusion-ruling] |
 | `net/internal/cgotest` | 1 | E4 | Its only test is `func Test(t *testing.T) {}` — an empty body — under Go's own comment: "Nothing to test here. The test is that the package compiles at all. See resstate.go." The comparison is sound and a pass carries no information about the port; the compile it stands for is already gated by the build. | [ruling][exclusion-ruling] |
 | `internal/copyright` | 1 | E4 | `TestCopyright` walks `testenv.GOROOT(t)/src` and errors `"%s: missing copyright notice"` per Go file lacking one. Both sides walk the SAME GOROOT and reach the same answer by construction, independent of anything the conversion emits, so the comparison validates the Go distribution's source hygiene rather than the port. | [ruling][exclusion-ruling] |
 | `crypto/internal/fips140deps` | 1 | E4 | `TestImports` shells out to `go list` (`t.Fatalf("go list: %v\n%s", …)`) and asserts the fips140 tree's dependency policy — "unexpected import of internal package" and "package %s does not import crypto/internal/fips140/check". Same input and same answer on both sides, so it validates the Go tree's import policy rather than the port. | [ruling][exclusion-ruling] |
+
+*Four E1 rows — `internal/syscall/unix`, `net/internal/socktest`, `log/syslog` and `runtime/race` —
+were struck from this table on 2026-09-22, on the `internal/runtime/syscall` precedent recorded
+below: they are **outside the population of record**. Go's own constraints leave each of them no
+test file on windows/amd64, which is exactly what the population's predicate reads, so none of them
+is a member of the 230 and none can be subtracted from it. Each row's mechanism was true and stays
+true; what goes is a subtraction that was taking something the denominator never held. Their
+Linux-axis relevance is untouched — `internal/syscall/unix` and `log/syslog` are ordinary Linux
+packages — and they belong to Linux's own denominator when the per-OS denominators land.*
 
 **`internal/runtime/syscall` was struck from this ledger on 2026-09-02, by owner ruling, because it
 was never inside the denominator it was being subtracted from.** It is not a member of
@@ -886,6 +892,72 @@ live memberships that differ by exactly one swap, and both land on 215.
   owner took the first. It moves a published headline, which is why it was owed to a ruling rather
   than taken as a docs fix; the guard needed no change at all, because that subtraction is exact
   once the ledger holds only members.
+
+### The 230, derived (go1.24.13, 2026-09-22)
+
+> **The successor to the block above, and a dated record in its own right.** It does not amend the
+> 2026-09-02 derivation — that one is the Go 1.23.12 anchor's and stays at its own date and its own
+> figures. This one is what the **Phase 4 progress** header above measures against today.
+
+The denominator is an **enumeration**, not a formula, and it is a file rather than a sentence:
+[`docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt`](phase4/hopA-inputs/recon-lists/population-go1.24.13.txt)
+carries all 230 import paths, one per line, under a header stating the ladder that produced them.
+Two instruments read that file and fail when the arithmetic here disagrees with it:
+[`src/check-roster-format.ps1`](../src/check-roster-format.ps1) (the header's `N`, and every banked
+and excluded row's membership) and
+[`docs/phase4/hopA-inputs/shardmap.py`](phase4/hopA-inputs/shardmap.py) (dispatched plus unscheduled
+against the same file, the difference named).
+
+Derived on windows/amd64 against `go1.24.13` with `GOROOT` pinned explicitly, `CGO_ENABLED=0`, under
+the tags the corpus converts with — **three rules, in order**:
+
+- **346** — `go list std`, vendored packages included, exactly as `go` prints them.
+- **234** — of those, the packages with at least one test file surviving this axis and these tags:
+  `go list -f '{{.ImportPath}} {{.TestGoFiles}} {{.XTestGoFiles}}' -tags purego,math_big_pure_go std`,
+  kept when `TestGoFiles ∪ XTestGoFiles` is non-empty. 112 drop.
+- **230** — of those, the packages whose **surviving** test files declare a `^func Test\w*\(`. Four
+  drop: `crypto/internal/fips140/aes/gcm`, `crypto/internal/fips140/drbg`,
+  `crypto/internal/fips140/nistec/fiat` and `embed`. The regex admits a bare
+  `func Test(t *testing.T)` — `internal/diff` declares one and is a banked row — so a stricter
+  `^func Test[A-Z]` would contradict the table above.
+
+**The 1.23.12 ladder's third rule is falsified at 1.24.13 and is not carried forward.** That rule
+was *"exists in the corpus as a converted package (a production `.csproj` under `src/core`)"*. Three
+**banked** rows are test-only assemblies with no production `.csproj` at all —
+`crypto/internal/fips140test`, `go/ast/internal/tests` and `internal/coverage/test` — so applying it
+here would subtract rows that have already validated. Membership is a property of GOROOT under the
+corpus's own axis and tags, and of nothing in `src/core`.
+
+The population was derived **twice, independently**, and the two sets are equal at 230: once by the
+`go list` ladder above, and once by a filesystem walk that re-implements Go's build constraints
+(filename `_GOOS`/`_GOARCH` suffixes plus `//go:build` evaluation) over each package directory —
+sharing only the list of directories, never the selection.
+
+Both closing identities hold on the enumeration:
+
+- `216 banked + 8 candidates + 6 exclusion rows = 230`
+- `212 dispatched + 18 unscheduled = 230` — and the second is the one that found something. The H10
+  dispatch map's own axis reads **226**, which is *banked-at-seat plus costed*: a package that is
+  neither banked nor carries a measured cost is not missing from that number, it is **invisible to
+  it**. Two live members sat in that blind spot — `net/http/pprof` and `runtime/pprof`, in the
+  declared population, in no shard's plan, and so never run at 1.24.13 on that map. The generator
+  now refuses rather than closing against itself.
+
+**The 8 candidates**, each a population member with no banked row today:
+
+| Candidate | Where it stands |
+|:--|:--|
+| `embed/internal/embedtest` | Read at pass 2; **lands in batch 7**. A test-only package — the 1.23.12 ladder's production-`.csproj` rule is what had kept it out, and that rule is retired above. |
+| `internal/runtime/maps` | Read at pass 2 on the pointer-model and Swiss-map work; **lands in batch 7**. |
+| `crypto/sha3` | Converted test sources compile at the version tip; **lands in batch 7**. |
+| `runtime` | Lane-owned, the largest surface on the axis. The converted host reaches most of the suite and the frontier is a named stub, not a wall. |
+| `internal/synctest` | New at 1.24; costed and dispatched, unbanked, no ruling against it. |
+| `reflect` | Lane-owned. The managed-map seat is the open work. |
+| `net/http/pprof` | Measured, unbanked, **four real divergences** — see the re-measurement recorded above, and the 2026-09-07 ruling that `TestDeltaProfile` is not a `platform-skip`. One of the two the dispatch map could not see. |
+| `runtime/pprof` | Measured and not bankable as it stands: the capability frontier, with rows that are structurally undisclosable. The other of the two the dispatch map could not see. |
+
+None of the eight is excluded; every one of them is inside the implementable 224, which is why the
+two percentages above differ by the six ledger rows and nothing else.
 
 [exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
 
