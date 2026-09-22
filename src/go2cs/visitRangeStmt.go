@@ -245,8 +245,15 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// (`range(seq.Invoke)` — see the yield-func emission below).
 	rangeIsNamedType := false
 
+	// The NAMED type itself, kept because rangeType is about to become its underlying. Go gives a
+	// range-over-int loop variable the operand's OWN type, so the integer arm below names this as
+	// range<T>'s type argument — without it the variable is typed by the underlying KIND and every
+	// method on the named type stops binding.
+	var rangeNamedType types.Type
+
 	if named, ok := rangeType.(*types.Named); ok {
 		rangeIsNamedType = true
+		rangeNamedType = named
 		rangeType = named.Underlying()
 	}
 
@@ -542,14 +549,36 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 		if untypedInt {
 			rangeExpr = fmt.Sprintf("@int(%s%s)", rangeExpr, ptrDeref)
 			ptrDeref = ""
+		} else if intBasic != nil && intBasic.Kind() != types.Int && rangeIsNamedType && rangeNamedType != nil {
+			// A NAMED integer type is its OWN type argument, and the operand is passed through
+			// unchanged. Go's rule is that the loop variable has the range operand's type, so
+			// `for days := range absDays(1e6)` gives `days` the type `absDays` — and every method
+			// on it must bind. Casting the operand down to the underlying width instead made the
+			// variable a bare `ulong`: time's abs_test.go called `.split()`, `.date()` and
+			// `.yearYday()` on it and every one failed CS1929, with three CS8130 deconstructions
+			// downstream (six errors, one root).
+			//
+			// ⚠ THE CONSTRAINT ADMITS THIS, and that is measured rather than hoped. range<T>'s
+			// bound is `struct, IComparisonOperators<T, T, bool>, IIncrementOperators<T>` — the
+			// OPERATOR PAIR the loop body actually uses, narrowed to that on purpose so golib's
+			// hand-written `uintptr` could bind (builtin.cs's own remark says so). A converted
+			// `[GoType("num:…")]` type declares both, plus the rest of the arithmetic set, from
+			// InheritedTypeTemplate — the comparison interface is gated only for `complex`, which
+			// Go cannot range over. `default(T)` is the zero of a Go named integer exactly as it
+			// is of the underlying, so the loop's start value is unchanged.
+			//
+			// The emission also READS like the Go, which is the tie-breaker the ruling named: the
+			// alternative — declaring the loop variable as the named type over a widened range and
+			// letting foreach's explicit conversion close the gap — spells two conversions where
+			// Go spells none.
+			// ⚠ SCOPE: this arm sits INSIDE the non-`int` width test, and deliberately. A named type
+			// whose underlying is `int` already emits the BARE `range(expr)` form, where C#'s own
+			// inference binds T to the named type and the variable is correctly typed — so it is
+			// right today and naming the type argument there would move corpus bytes for nothing.
+			// The defect is confined to the widths that spell the argument out.
+			rangeTypeArg = fmt.Sprintf("<%s>", v.getCSharpTypeName(rangeNamedType))
 		} else if intBasic != nil && intBasic.Kind() != types.Int {
-			csIntType := v.getCSharpTypeName(types.Default(intBasic))
-			rangeTypeArg = fmt.Sprintf("<%s>", csIntType)
-
-			if rangeIsNamedType {
-				rangeExpr = fmt.Sprintf("(%s)(%s%s)", csIntType, rangeExpr, ptrDeref)
-				ptrDeref = ""
-			}
+			rangeTypeArg = fmt.Sprintf("<%s>", v.getCSharpTypeName(types.Default(intBasic)))
 		}
 
 		if v.options.preferVarDecl {
