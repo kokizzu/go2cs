@@ -1955,17 +1955,17 @@ internal static (nint qmod2, Duration r) div(Time t, Duration d) {
 // type signature or meaning of arguments.
 
 //go:linkname legacyTimeTimeAbs time.Time.abs
-internal static uint64 legacyTimeTimeAbs(Time t) {
+public static uint64 legacyTimeTimeAbs(Time t) {
     return (uint64)(t.absSec() - (uint64)(marchThruDecember * secondsPerDay));
 }
 
 //go:linkname legacyAbsClock time.absClock
-internal static (nint hour, nint min, nint sec) legacyAbsClock(uint64 abs) {
+public static (nint hour, nint min, nint sec) legacyAbsClock(uint64 abs) {
     return ((absSeconds)(abs + (uint64)(marchThruDecember * secondsPerDay))).clock();
 }
 
 //go:linkname legacyAbsDate time.absDate
-internal static (nint year, ΔMonth month, nint day, nint yday) legacyAbsDate(uint64 abs, bool full) {
+public static (nint year, ΔMonth month, nint day, nint yday) legacyAbsDate(uint64 abs, bool full) {
     nint year = default!;
     ΔMonth month = default!;
     nint day = default!;

@@ -505,8 +505,8 @@ func (a *refLoweringAnalysis) collectFunc(funcDecl *ast.FuncDecl, fileIsHandOwne
 }
 
 // isLinknameExposed reports whether name participates in any //go:linkname registry: the package's
-// own one-arg handles, the curated forward-target list, or either side of the curated push
-// registry (§3.2 X5's linkname strip rule).
+// own one-arg handles, the curated forward-target list and the definitions it forwards to, or either
+// side of the curated push registry (§3.2 X5's linkname strip rule).
 func (a *refLoweringAnalysis) isLinknameExposed(name string) bool {
 	if a.handles.Contains(name) {
 		return true
@@ -514,7 +514,7 @@ func (a *refLoweringAnalysis) isLinknameExposed(name string) bool {
 
 	qualified := refCanonicalPkgPath(a.pkg.Path()) + "." + name
 
-	if linknameForwardTargets[qualified] || linknamePushSources[qualified] {
+	if linknameForwardTargets[qualified] || linknamePushSources[qualified] || linknameForwardDefinitionSources[qualified] {
 		return true
 	}
 
