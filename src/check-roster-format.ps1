@@ -998,6 +998,115 @@ Write-Host ('  {0,-32} {1} - {2} = {3}' -f 'implementable', $testable, $ledgerPa
 
 Assert-Equal 'population of record: the header closes against the enumeration' '' ($populationViolations -join '; ')
 
+# ---- 2b2. every tracked TEST PROJECT is accounted for BY NAME (ruled 2026-09-22) -----------------
+# The runbook's cross-check, restated as an IDENTITY a reader can re-add: the tracked *.tests.csproj
+# set is exactly the banked rows, plus the exclusion rows that kept their artifacts, plus the
+# population's rowless CANDIDATES that have them. At the batch-7 stamp that is 225 = 219 + 4 + 2
+# (the two candidates reflect and runtime). It was arithmetic in prose until now, and "225 vs 219"
+# was read as "the nine rowless" on the day a row banked -- a count that happens to close can hide a
+# stray and a missing project that cancel.
+#
+# The candidate side is NOT derived from the project files, which would make the identity circular:
+# a candidate is a POPULATION member that is neither a banked row nor an exclusion row, read from the
+# population of record section 2b already loads. So the two ways this can fail are both real:
+#   - a banked row with no tracked test project (a row whose artifacts are gone);
+#   - a tracked test project for a package that is none of row, exclusion row or candidate (a stray,
+#     e.g. a package outside N, or one whose row was struck without its artifacts).
+# The TRACKED set comes from git, never the working tree: a build or an unfinished -tests run leaves
+# untracked projects behind, and a guard that counted them would red on the lane's own debris.
+function Get-TestProjectIdentityViolations {
+    param([string[]] $Projects, [string[]] $Banked, [string[]] $Excluded, [string[]] $Population)
+
+    $violations = New-Object System.Collections.Generic.List[string]
+    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
+    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
+    $projectSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Projects)) { [void]$projectSet.Add($p) }
+    $candidateSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Population)) {
+        if (-not $bankedSet.Contains($p) -and -not $excludedSet.Contains($p)) { [void]$candidateSet.Add($p) }
+    }
+
+    foreach ($p in @($Banked | Sort-Object)) {
+        if (-not $projectSet.Contains($p)) { [void]$violations.Add("banked row has no tracked tests.csproj: $p") }
+    }
+    foreach ($p in @($Projects | Sort-Object)) {
+        if (-not ($bankedSet.Contains($p) -or $excludedSet.Contains($p) -or $candidateSet.Contains($p))) {
+            [void]$violations.Add("tracked tests.csproj belongs to no row, exclusion row or population candidate: $p")
+        }
+    }
+    return $violations.ToArray()
+}
+
+# The function's contract, both directions, against fixtures.
+$idPop = @('ex/row', 'ex/gone', 'ex/cand', 'ex/quiet')
+Assert-Equal 'test-project identity: a closed set reports nothing' 0 `
+    @(Get-TestProjectIdentityViolations -Projects @('ex/row', 'ex/gone', 'ex/cand') -Banked @('ex/row') -Excluded @('ex/gone') -Population $idPop).Count
+Assert-Equal 'test-project identity: a candidate WITHOUT artifacts is legal' 0 `
+    @(Get-TestProjectIdentityViolations -Projects @('ex/row') -Banked @('ex/row') -Excluded @('ex/gone') -Population $idPop).Count
+Assert-Equal 'test-project identity: a banked row with no project is named' 'banked row has no tracked tests.csproj: ex/row' `
+    (@(Get-TestProjectIdentityViolations -Projects @('ex/cand') -Banked @('ex/row') -Excluded @() -Population $idPop) -join '; ')
+Assert-Equal 'test-project identity: a stray project is named' 'tracked tests.csproj belongs to no row, exclusion row or population candidate: ex/stray' `
+    (@(Get-TestProjectIdentityViolations -Projects @('ex/row', 'ex/stray') -Banked @('ex/row') -Excluded @() -Population $idPop) -join '; ')
+
+$trackedCore = @(& git -C $repo ls-files -- 'src/core')
+$gitExit = $LASTEXITCODE
+Assert-Equal 'test-project identity: git ls-files read the tracked tree (exit 0)' 0 $gitExit
+$testProjects = @($trackedCore |
+    Where-Object { $_ -like 'src/core/*.tests.csproj' } |
+    ForEach-Object { $_.Substring('src/core/'.Length, $_.LastIndexOf('/') - 'src/core/'.Length) } |
+    Sort-Object -Unique)
+$projectViolations = @(Get-TestProjectIdentityViolations -Projects $testProjects -Banked $rosterPackages `
+    -Excluded $ledgerPackages -Population $population)
+
+$excludedWithArtifacts = @($ledgerPackages | Where-Object { $testProjects -contains $_ } | Sort-Object)
+$candidatesWithArtifacts = @($population | Where-Object {
+        ($rosterPackages -notcontains $_) -and ($ledgerPackages -notcontains $_) -and ($testProjects -contains $_) } | Sort-Object)
+
+# Printed UNCONDITIONALLY, both named sides, so the identity is re-addable from the output alone.
+Write-Host ''
+Write-Host 'tracked test projects vs the roster:' -ForegroundColor Cyan
+Write-Host ('  {0} = {1} banked + {2} exclusion rows with artifacts + {3} rowless candidates' -f `
+    $testProjects.Count, $rosterPackages.Count, $excludedWithArtifacts.Count, $candidatesWithArtifacts.Count)
+Write-Host ('  exclusion rows with artifacts: {0}' -f ($excludedWithArtifacts -join ', '))
+Write-Host ('  rowless candidates:            {0}' -f ($candidatesWithArtifacts -join ', '))
+
+Assert-Equal 'test-project identity: the vacuity guard (a zero means git or the pathspec read nothing)' $true ($testProjects.Count -gt 0)
+Assert-Equal 'test-project identity: every tracked tests.csproj is accounted for by name' '' ($projectViolations -join '; ')
+Assert-Equal 'test-project identity: the named sides add up' $testProjects.Count `
+    ($rosterPackages.Count + $excludedWithArtifacts.Count + $candidatesWithArtifacts.Count)
+
+# ---- 2b3. an EXCLUDED package never advertises a validated Tests badge (ruled 2026-09-22) ---------
+# An exclusion row says the package's suite is NOT validated, for a bar-class reason. Its converted
+# README is the page a reader lands on, and a green "Tests N/N validated" there says the opposite
+# (crypto/internal/fips140deps carried exactly that, linking a 1.23.12.3 snapshot, at the batch-7
+# stamp). The badge vocabulary measured over every README that day: `N/N_validated` (brightgreen),
+# `not_yet_validated` (orange), `none_to_validate` (lightgrey) -- only the first is a claim of
+# validation, so only the first is refused here.
+function Test-ReadmeAdvertisesValidated {
+    param([string] $Text)
+    return [regex]::IsMatch($Text, 'img\.shields\.io/badge/Tests-\d+%2F\d+_validated-')
+}
+
+Assert-Equal 'badge: a validated Tests badge is recognised' $true `
+    (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](x)')
+Assert-Equal 'badge: not_yet_validated is not a validation claim' $false `
+    (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](x)')
+Assert-Equal 'badge: none_to_validate is not a validation claim' $false `
+    (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](x)')
+
+$excludedReadmesRead = 0
+foreach ($pkg in @($ledgerPackages | Sort-Object)) {
+    $readme = Join-Path (Join-Path $PSScriptRoot 'core') ($pkg + '/README.md')
+    if (-not (Test-Path -LiteralPath $readme)) { continue }
+    $excludedReadmesRead++
+    Assert-Equal "an excluded package does not advertise a validated Tests badge: $pkg" $false `
+        (Test-ReadmeAdvertisesValidated ([System.IO.File]::ReadAllText($readme)))
+}
+Write-Host ('  excluded packages with a README checked for a validated badge: {0} of {1}' -f $excludedReadmesRead, $ledgerPackages.Count)
+
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
 # Three populations since the 2026-08-29 n/a ruling: validated-at-count (numeric annotation),
