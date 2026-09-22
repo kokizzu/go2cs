@@ -1130,7 +1130,13 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			return result, fmt.Errorf("read production package metadata (convert the package itself before its tests): %w", err)
 		}
 
-		if err := os.WriteFile(testInfoPath, productionInfo, 0644); err != nil {
+		// THE PASS SEPARATION IS STAMPED HERE, and this copy is the only place it can be. Every
+		// record in this file was rendered in the PRODUCTION pass and is already compiled text in
+		// the production .cs files that become this test assembly's compile items; the records the
+		// variants merge in below are rendered fresh. The facet is what lets go2cs-gen — which
+		// reads the union and cannot see the seam — keep the production names it must not rename.
+		// See adapterNameCollisions.go for the rule; byte-neutral wherever no pointer record exists.
+		if err := os.WriteFile(testInfoPath, facetProductionPointerRecords(productionInfo), 0644); err != nil {
 			return result, fmt.Errorf("seed test package metadata: %w", err)
 		}
 
@@ -1392,6 +1398,20 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		captureAdapterPairsFromInfoFile(testInfoPath, testClassName)
 		resolveAdapterNameMarkers(testAdapterResolveNames, options.testMetadataAnchorName)
 	} else {
+		// THE RECOMPILE MODEL DELIBERATELY DOES NOT TAKE THE ANCHORED PATH, and that is correct
+		// rather than an oversight — recorded here because it reads like one.
+		// anchoredAdapterMemberName is the white-box model's CROSS-ASSEMBLY anchoring: there the
+		// adapter lives in a class the cast site must name
+		// (`flate_test_package.bytes_BufferжWriter`). Under recompile the package under test is
+		// compiled into THIS assembly, so a cast reaches its adapter with no anchor to cross and
+		// the plain resolved name is the right one; passing an anchor here would qualify a local
+		// member by a class it already sits in.
+		//
+		// Chased once, on crypto/sha3, when its unprefixed cast names looked like a missing
+		// anchor. They were not: the names came from a SPLIT collision key (the
+		// package-under-test alias keyed foreign — see adapterStructQualifierIsLocal), which this
+		// arm never reaches either way. Nothing here needs to change for that class; do not
+		// re-derive it.
 		captureAdapterPairsFromInfoFile(testInfoPath)
 		resolveAdapterNameMarkers(testAdapterResolveNames)
 	}

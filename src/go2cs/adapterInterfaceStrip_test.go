@@ -38,13 +38,13 @@ const (
 func TestAdapterInterfaceStripAtTheResolvers(t *testing.T) {
 	colliding := map[string]bool{}
 
-	if got := adapterResolvedName("digest", stripIfaceLocal, colliding); got != "digest"+PointerPrefix+"keyedLike" {
+	if got := adapterResolvedName("digest", stripIfaceLocal, colliding, false); got != "digest"+PointerPrefix+"keyedLike" {
 		t.Errorf("adapterResolvedName = %s, want digest%skeyedLike — the argument list must not reach the identifier", got, PointerPrefix)
 	}
 
 	pair := [2]string{"probe_package.digest", stripIfaceLocal}
 
-	if got := anchoredAdapterMemberName(pair, colliding); got != "probe_digest"+PointerPrefix+"keyedLike" {
+	if got := anchoredAdapterMemberName(pair, colliding, false); got != "probe_digest"+PointerPrefix+"keyedLike" {
 		t.Errorf("anchoredAdapterMemberName = %s, want probe_digest%skeyedLike — unstripped it names the ARGUMENT", got, PointerPrefix)
 	}
 }
@@ -56,7 +56,7 @@ func TestAdapterInterfaceStripNested(t *testing.T) {
 		t.Errorf("stripAdapterInterfaceTypeArgs(%s) = %s, want outer", stripIfaceNested, got)
 	}
 
-	if got := adapterResolvedName("digest", stripIfaceNested, map[string]bool{}); got != "digest"+PointerPrefix+"outer" {
+	if got := adapterResolvedName("digest", stripIfaceNested, map[string]bool{}, false); got != "digest"+PointerPrefix+"outer" {
 		t.Errorf("adapterResolvedName over a nested generic = %s, want digest%souter", got, PointerPrefix)
 	}
 }
@@ -69,7 +69,7 @@ func TestAdapterInterfaceStripQualifierComesFromTheInterface(t *testing.T) {
 	pair := [2]string{stripStructRef, stripIfaceQual}
 	colliding := map[string]bool{adapterGroupKey(pair[0], pair[1]): true}
 
-	got := anchoredAdapterMemberName(pair, colliding)
+	got := anchoredAdapterMemberName(pair, colliding, false)
 
 	if got != "probe_digest"+PointerPrefix+"keyedLike" {
 		t.Errorf("anchoredAdapterMemberName under collision = %s, want probe_digest%skeyedLike — the qualifier may not come from the ARGUMENT's package", got, PointerPrefix)

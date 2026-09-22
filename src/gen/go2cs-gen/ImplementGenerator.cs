@@ -126,7 +126,14 @@ public class ImplementGenerator : ISourceGenerator
 
         // The pointer pairs this compilation records, kept so the composition below can name an
         // adapter OTHER than the one the main loop is generating — see localPointerAdapterNames.
-        List<(ITypeSymbol Struct, ITypeSymbol Interface, string PackageClass)> pointerPairs = [];
+        List<(ITypeSymbol Struct, ITypeSymbol Interface, string PackageClass, bool Production)> pointerPairs = [];
+
+        // THE PASS SEPARATION. How many members of each collision group carry the PRODUCTION facet
+        // — the records the converter stamped as it seeded a recompile-model test assembly from the
+        // production half's package_info.cs. Counted, not merely flagged, because the rule turns on
+        // the count: see KeepsProductionAdapterName. Empty for every production compilation and both
+        // reference test models, where no record carries the facet at all.
+        Dictionary<string, int> productionFacetCounts = new(StringComparer.Ordinal);
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, _) in attributeFinder.TargetAttributes)
         {
@@ -142,12 +149,16 @@ public class ImplementGenerator : ISourceGenerator
 
             string packageClass = GetFirstClassName(compilationUnit) ?? string.Empty;
             string unqualified = $"{AdapterStructKey(structType, packageClass)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceType.ToDisplayString()))}";
+            bool production = bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("Production")).value?.Trim() ?? "false");
 
             if (!adapterNameGroups.TryGetValue(unqualified, out HashSet<string>? interfaces))
                 adapterNameGroups[unqualified] = interfaces = new HashSet<string>(StringComparer.Ordinal);
 
             interfaces.Add(interfaceType.ToDisplayString());
-            pointerPairs.Add((structType, interfaceType, packageClass));
+            pointerPairs.Add((structType, interfaceType, packageClass, production));
+
+            if (production)
+                productionFacetCounts[unqualified] = productionFacetCounts.TryGetValue(unqualified, out int count) ? count + 1 : 1;
         }
 
         HashSet<string> collidingAdapterNames = new(adapterNameGroups.Where(entry => entry.Value.Count > 1).Select(entry => entry.Key), StringComparer.Ordinal);
@@ -189,7 +200,7 @@ public class ImplementGenerator : ISourceGenerator
         // survives the bound.
         Dictionary<string, string> localPointerAdapterNames = new(StringComparer.Ordinal);
 
-        foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass) in pointerPairs)
+        foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass, bool pairProduction) in pointerPairs)
         {
             if (pairStruct is INamedTypeSymbol { IsGenericType: true })
                 continue;
@@ -198,8 +209,14 @@ public class ImplementGenerator : ISourceGenerator
             string pairUnqualified = $"{pairStructKey}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(pairInterface.ToDisplayString()))}";
             string pairInterfaceName = GlobalQualify(pairInterface.GetFullTypeName(true));
 
+            // The wrap target is named by the SAME rule as the class it names, pass separation
+            // included — a production member's adapter is reached by the production name whether the
+            // reference is a cast site or another adapter's result wrap.
+            bool pairTakesPrefix = collidingAdapterNames.Contains(pairUnqualified) &&
+                !KeepsProductionAdapterName(pairUnqualified, pairProduction, productionFacetCounts);
+
             localPointerAdapterNames[$"{GlobalQualify(pairStruct.ToDisplayString())}|{GlobalQualify(pairInterface.ToDisplayString())}"] =
-                $"{pairStructKey}{PointerPrefix}{(collidingAdapterNames.Contains(pairUnqualified) ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
+                $"{pairStructKey}{PointerPrefix}{(pairTakesPrefix ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
         }
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, FileScopedNamespaceDeclarationSyntax? namespaceSyntax) in attributeFinder.TargetAttributes)
@@ -230,6 +247,7 @@ public class ImplementGenerator : ISourceGenerator
             bool promoted = bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("Promoted")).value?.Trim() ?? "false");
             bool pointer = bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("Pointer")).value?.Trim() ?? "false");
             bool constraintProxy = bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("ConstraintProxy")).value?.Trim() ?? "false");
+            bool production = bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("Production")).value?.Trim() ?? "false");
 
             if (structType.TypeKind == TypeKind.Interface)
             {
@@ -1226,7 +1244,12 @@ public class ImplementGenerator : ISourceGenerator
                     // `adapterInterfaceSimpleName` leaves the same operand unstripped on purpose, so
                     // both halves garble a generic interface reference identically today, and moving
                     // one alone would manufacture the divergence AdapterStructKey exists to prevent.
-                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{adapterInterfaceName}",
+                    //
+                    // ⚠ THE PASS SEPARATION reads the record's own `Production` facet here, and the
+                    // group key it asks with is this same expression's — so a production member of a
+                    // colliding group composes exactly what the production pass already wrote into
+                    // the .cs this assembly recompiles. See KeepsProductionAdapterName.
+                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") && !KeepsProductionAdapterName($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}", production, productionFacetCounts) ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{adapterInterfaceName}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
                     AdapterScope = adapterScope,
@@ -1498,6 +1521,41 @@ public class ImplementGenerator : ISourceGenerator
     /// first type argument is the struct itself, never its box (measured: 0 of 2,752 committed
     /// records spell one) — so the call site is the only safe place for it.
     /// </remarks>
+    /// <summary>
+    /// Decides whether a colliding pointer adapter KEEPS the unprefixed name its production text
+    /// already spells — the pass separation.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Under the recompile test model the production <c>.cs</c> files are compile items of this
+    /// assembly, so this generator reads the UNION of both halves' records — but the production text
+    /// was rendered in the production pass against the production set alone and cannot be
+    /// re-rendered. A test-half record joining a production record's collision group must therefore
+    /// not rename the production member. <c>crypto/sha3</c> is the corpus instance: production
+    /// records <c>&lt;SHA3, hash.Hash&gt;</c>, the external test half adds
+    /// <c>&lt;SHA3, fips140.Hash&gt;</c>, both compose <c>SHA3жHash</c>, and the ordinary rule
+    /// prefixes BOTH — so <c>sha3.cs</c>'s four sites name a class never emitted.
+    /// </para>
+    /// <para>
+    /// EXACTLY ONE faceted member is the separable case and the only one this returns true for. TWO
+    /// OR MORE is a collision the PRODUCTION pass already saw and already resolved, so the production
+    /// text spells the PREFIXED names and the ordinary rule is what reproduces them — exempting one
+    /// of them would rename a production site in the opposite direction. ZERO is every production
+    /// compilation and both reference test models, where this is inert by construction.
+    /// </para>
+    /// <para>
+    /// ⚠ The caller asks with the SAME group key it tests <c>collidingAdapterNames</c> with, and must:
+    /// the two questions are about one group, and composing the key twice from two spellings is the
+    /// defect <c>AdapterStructKey</c> exists to prevent. Keep in sync with the converter's
+    /// <c>adapterProductionNameKeepers</c> in <c>adapterNameCollisions.go</c>, which resolves the
+    /// matching cast-site references by the same rule over the same records.
+    /// </para>
+    /// </remarks>
+    private static bool KeepsProductionAdapterName(string groupKey, bool production, Dictionary<string, int> productionFacetCounts)
+    {
+        return production && productionFacetCounts.TryGetValue(groupKey, out int facetedMembers) && facetedMembers == 1;
+    }
+
     private static string AdapterStructKey(ITypeSymbol structType, string packageClassName)
     {
         string simpleName = GetUnsanitizedIdentifier(GetSimpleName(StripGenericTypeArguments(structType.ToDisplayString())));

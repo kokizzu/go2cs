@@ -43,11 +43,103 @@ const (
 	adapterNameMarkerSep    = "|"
 )
 
+// THE PASS SEPARATION. A production adapter name is ALREADY COMPILED TEXT. Under the recompile
+// model the production `.cs` files become COMPILE ITEMS of the test assembly, where go2cs-gen reads
+// the UNION of both halves' records — but that production text was rendered in the production pass,
+// against the PRODUCTION record set alone, and nothing can go back and re-render it. So a test-half
+// record that lands in a production record's collision group must not be allowed to rename the
+// production member: the generator would mint `SHA3жhash_Hash` where sha3.cs spells `SHA3жHash`
+// (CS0246/CS0426 ×4, crypto/sha3 — the row's second blocker, the first being the split key
+// adapterStructQualifierIsLocal fixes).
+//
+// The two halves are told apart by a FACET on the record itself. writePackageInfoFile renders every
+// record the same way, and the recompile seed is a VERBATIM byte copy of the production
+// package_info.cs (convertTestVariants), so the one place the halves are distinguishable is that
+// copy: facetProductionPointerRecords stamps `Production = true` onto the seeded records as they
+// cross into the test metadata file. Records the test pass then merges in carry no facet, and the
+// union still tells the halves apart.
+//
+// THE RULE (COORD 2026-09-21 23:33), applied here and by the generator's ImplementGenerator:
+//
+//  1. Collisions are still computed over the UNION — the facet decides naming, never grouping.
+//  2. In a colliding group with EXACTLY ONE faceted member, that member keeps the unprefixed name
+//     the production text already spells; only the unfaceted members take the interface prefix.
+//  3. TWO OR MORE faceted members are a PRODUCTION-pass collision: the production pass already
+//     resolved it and the production text already spells the prefixed names, so the ordinary rule
+//     applies to the whole group and reproduces exactly those names. Both stand.
+//  4. A group with NO faceted member is the ordinary rule — which is every production conversion
+//     and every reference model, so this is byte-neutral outside a recompile-model test project.
+//
+// Only the recompile model populates any of this: both reference models compile the production half
+// as a separate ASSEMBLY and seed a test-class-only anchor, so no faceted record exists there, every
+// group falls to case 4, and the corpus cannot move.
+const (
+	pointerRecordSuffix           = ">(Pointer = true)]"
+	pointerProductionRecordSuffix = ">(Pointer = true, Production = true)]"
+)
+
 // emittedPointerAdapterPairs holds the (structRef, interfaceRef) pairs of the pointer-form
 // GoImplement records writePackageInfoFile actually emitted, in the spelling it wrote them. Reset
 // per package-info write; consumed by resolveAdapterNameMarkers. Guarded by packageLock like the
 // registries it is derived from.
 var emittedPointerAdapterPairs [][2]string
+
+// productionFacetedAdapterPairs holds, for the same capture, which of those pairs carried the
+// PRODUCTION facet — keyed by the pair's spelling exactly as recorded, so it cannot drift from
+// emittedPointerAdapterPairs: one parse populates both. A parallel set rather than a third element
+// on the pair because [2]string is the shape seven functions and their arms already take, and
+// widening it would touch every one of them for a fact only two naming sites read.
+//
+// A given pair SPELLING has one facet state by construction: the writer's HashSet dedupes identical
+// record text, and the one way to hold both spellings of one pair — the seeded faceted record plus
+// a freshly-rendered unfaceted twin — is collapsed at the merge (see packageInfoWriter.go), because
+// two records for one pair make the generator compose the adapter twice whatever the facet says.
+var productionFacetedAdapterPairs map[string]bool
+
+// adapterPairFacetKey keys productionFacetedAdapterPairs. The RECORD spelling, not a normalized
+// key: two members of one collision group share every normalized key there is (that is what makes
+// them a group), so the facet has to be remembered against the text the record was written in.
+func adapterPairFacetKey(structRef, interfaceRef string) string {
+	return structRef + adapterNameMarkerSep + interfaceRef
+}
+
+// adapterPairIsProductionFaceted reports whether a recorded pair came from the production half.
+func adapterPairIsProductionFaceted(pair [2]string) bool {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	return productionFacetedAdapterPairs[adapterPairFacetKey(pair[0], pair[1])]
+}
+
+// facetProductionPointerRecords stamps the production facet onto every pointer-form GoImplement
+// record as a production package_info.cs is seeded into a recompile-model package_test_info.cs.
+//
+// A whole-content replacement of an exact token, deliberately: the token contains no newline, so
+// every line ending in the file is carried through untouched — the seed is the one file in the
+// `-tests` flow that is copied byte-for-byte rather than rewritten, and a line-ending normalization
+// slipped in here would be invisible until a CRLF golden moved. It is also idempotent by
+// construction: an already-faceted record does not match the unfaceted token.
+//
+// Scoped to the RECORD text and nothing else — `(Pointer = true)]` appears in no comment any
+// package_info writer emits (verified over the corpus's emitted files; the template carries no
+// `Pointer` token at all), and the value-form and `Promoted`/`ConstraintProxy` records do not
+// contain it.
+func facetProductionPointerRecords(content []byte) []byte {
+	return []byte(strings.ReplaceAll(string(content), pointerRecordSuffix, pointerProductionRecordSuffix))
+}
+
+// pointerRecordFacetedForm returns the FACETED spelling of a freshly-rendered pointer record — the
+// text a recompile seed would already hold for the same pair. The merge in writePackageInfoFile
+// asks for it by this one function rather than composing the suffix swap inline, so the two
+// spellings of one pair are related in exactly one place and an arm can hold that relation.
+// A record that is not a pointer record, or is already faceted, comes back unchanged.
+func pointerRecordFacetedForm(record string) string {
+	if !strings.HasSuffix(record, pointerRecordSuffix) {
+		return record
+	}
+
+	return strings.TrimSuffix(record, pointerRecordSuffix) + pointerProductionRecordSuffix
+}
 
 // testAdapterResolveNames accumulates every -tests emission PATH across both variants, so the
 // deferred adapter names can be resolved in one pass once the merged metadata file is final.
@@ -59,15 +151,29 @@ var testAdapterResolveNames []string
 // variant), and each variant's cast sites resolve against its OWN records.
 func recordEmittedPointerAdapterPairs(lines []string) {
 	pairs := [][2]string{}
+	faceted := map[string]bool{}
 
 	for _, line := range lines {
 		inner, ok := strings.CutPrefix(strings.TrimSpace(line), "[assembly: GoImplement<")
 
-		if !ok || !strings.HasSuffix(inner, ">(Pointer = true)]") {
+		if !ok {
 			continue
 		}
 
-		inner = strings.TrimSuffix(inner, ">(Pointer = true)]")
+		// The faceted suffix is tested FIRST and the two are mutually exclusive, so the ordinary
+		// suffix cannot claim a faceted record. Getting this wrong is silent in the worst way: the
+		// seeded production records simply fall out of the pair set, no collision is seen at all,
+		// and every test-half cast takes the bare name the production half owns.
+		isProduction := strings.HasSuffix(inner, pointerProductionRecordSuffix)
+
+		switch {
+		case isProduction:
+			inner = strings.TrimSuffix(inner, pointerProductionRecordSuffix)
+		case strings.HasSuffix(inner, pointerRecordSuffix):
+			inner = strings.TrimSuffix(inner, pointerRecordSuffix)
+		default:
+			continue
+		}
 
 		// Split on the record's separating comma. A GENERIC struct reference carries its own
 		// commas inside `<…>` (`nistCurve<ж<P224Point>>`), so track angle-bracket depth rather
@@ -92,11 +198,17 @@ func recordEmittedPointerAdapterPairs(lines []string) {
 			continue
 		}
 
-		pairs = append(pairs, [2]string{strings.TrimSpace(inner[:split]), strings.TrimSpace(inner[split+1:])})
+		structRef, interfaceRef := strings.TrimSpace(inner[:split]), strings.TrimSpace(inner[split+1:])
+		pairs = append(pairs, [2]string{structRef, interfaceRef})
+
+		if isProduction {
+			faceted[adapterPairFacetKey(structRef, interfaceRef)] = true
+		}
 	}
 
 	packageLock.Lock()
 	emittedPointerAdapterPairs = pairs
+	productionFacetedAdapterPairs = faceted
 	packageLock.Unlock()
 }
 
@@ -120,6 +232,7 @@ func captureAdapterPairsFromInfoFile(packageInfoFileName string, anchorClass ...
 	}
 
 	previous := emittedPointerAdapterPairs
+	previousFaceted := productionFacetedAdapterPairs
 	recordEmittedPointerAdapterPairs(strings.Split(string(contentBytes), "\n"))
 
 	if len(anchorClass) > 0 && anchorClass[0] != "" {
@@ -147,6 +260,14 @@ func captureAdapterPairsFromInfoFile(packageInfoFileName string, anchorClass ...
 			}
 		}
 		emittedPointerAdapterPairs = merged
+
+		// The facet set is folded back with the pairs it describes, or the earlier capture's
+		// records would be in the union naming-blind — present as pairs, unfaceted as facts.
+		for key, isProduction := range previousFaceted {
+			if isProduction {
+				productionFacetedAdapterPairs[key] = true
+			}
+		}
 		packageLock.Unlock()
 	}
 }
@@ -283,6 +404,66 @@ func adapterNameCollisionSet(pairs [][2]string) map[string]bool {
 	return colliding
 }
 
+// adapterProductionNameKeepers returns the collision-group keys in which a PRODUCTION-faceted
+// record KEEPS the unprefixed name — rule 2 of the pass separation above: the group collides and
+// exactly ONE of its members carries the facet, so that member's already-compiled production text
+// is what the union must reproduce.
+//
+// Two or more faceted members (rule 3) deliberately yield NO keeper: that group collided in the
+// production pass too, the production text therefore already spells the PREFIXED names, and the
+// ordinary rule is what reproduces them. Exempting one of them would rename a production site in
+// the opposite direction — the same defect, mirrored.
+//
+// ⚠ THE DEGENERATE CASE IS WARNED, NOT SILENTLY MIS-NAMED. Rule 2 tells the unfaceted members to
+// "take the interface prefix", and a LOCAL interface's prefix is the empty string — so a group
+// whose faceted member keeps the bare name and whose unfaceted member is local would compose ONE
+// name twice, which the generator reports as CS0102 at a site that reads like a converter bug.
+// No corpus package reaches it: every member of every recompile-model collision group today has a
+// foreign interface (crypto/sha3's hash.Hash and fips140.Hash; crypto/ecdh, the in-set negative
+// control, has no collision at all). The shape is stated and named rather than machinery built for
+// it, so the package that reaches it first arrives with its own name in the warning instead of an
+// unexplained duplicate class.
+func adapterProductionNameKeepers(pairs [][2]string, colliding map[string]bool) map[string]bool {
+	facetedCounts := map[string]int{}
+	groupMembers := map[string][][2]string{}
+
+	for _, pair := range pairs {
+		key := adapterGroupKey(pair[0], pair[1])
+
+		if !colliding[key] {
+			continue
+		}
+
+		groupMembers[key] = append(groupMembers[key], pair)
+
+		if adapterPairIsProductionFaceted(pair) {
+			facetedCounts[key]++
+		}
+	}
+
+	keepers := map[string]bool{}
+
+	for key, count := range facetedCounts {
+		if count != 1 {
+			continue
+		}
+
+		keepers[key] = true
+
+		for _, pair := range groupMembers[key] {
+			if adapterPairIsProductionFaceted(pair) {
+				continue
+			}
+
+			if adapterInterfacePackagePrefix(stripAdapterInterfaceTypeArgs(pair[1])) == "" {
+				showWarning("Adapter name \"%s\" cannot be separated by pass: the production record keeps the unprefixed name and the test-half record for interface \"%s\" is LOCAL, so it has no prefix to take", key, pair[1])
+			}
+		}
+	}
+
+	return keepers
+}
+
 // adapterGroupKey is the collision-grouping key for a pair. ONLY a key — never emitted. The same
 // struct reaches this code in three spellings that must all group together: a GoImplement record's
 // package-class form ("bufio_package.Reader"), a cast site's flattened foreign form
@@ -340,7 +521,59 @@ func adapterStructKey(structBase string) string {
 		return stripSanitizationMarkers(simpleName)
 	}
 
+	// A qualifier naming the LOCAL package class is not foreign, however it is spelled.
+	if adapterStructQualifierIsLocal(qualifier) {
+		return stripSanitizationMarkers(simpleName)
+	}
+
 	return strings.TrimSuffix(qualifier, PackageSuffix) + "_" + stripSanitizationMarkers(simpleName)
+}
+
+// adapterStructQualifierIsLocal reports whether a struct spelling's QUALIFIER names the package
+// class whose members compile into THIS assembly. It is the converter's half of the generator's
+// own locality test — AdapterStructKey's `container == packageClassName`, which decides bare
+// versus `<pkg>_<Simple>` on the other side of the SAME key — and the generator's doc states the
+// contract the two share: "the two must agree or the collision groups diverge".
+//
+// They diverged for one spelling. A RECORD names the local class outright (`sha3_package.SHA3`,
+// or bare after stripLocalTypeQualifier), but a CAST SITE in an external `<pkg>_test` variant
+// reaches the package under test through the USING ALIAS the converter itself minted for it
+// (`using sha3 = go.crypto.sha3_package;` — visitImportSpec's isPackageUnderTest arm), so its
+// qualifier is the Go package NAME, carrying no PackageSuffix for the trim below to find. The key
+// therefore composed the FOREIGN form `sha3_SHA3` while the generator, resolving the symbol,
+// composed bare `SHA3`: the group SPLIT, `colliding` was keyed on a name no cast site asked about,
+// and every reference took the unprefixed name for a class the generator never emits. crypto/sha3
+// is the corpus instance — SHA3 reaches hash.Hash and fips140.Hash, so the generator prefixes
+// BOTH members and no `SHA3жHash` exists at all (CS0246/CS0426).
+//
+// Both spellings are tested, against the SAME testLocalTypePrefixes the record side strips with
+// (stripLocalTypeQualifier), so the two halves cannot drift apart again. That set is populated
+// ONLY under the recompile model — both reference models clear testPackageName precisely so the
+// production package binds as an ordinary import (see the model branch in convertTestPackage) —
+// which is exactly the locality this test is asking about: under a reference model the package
+// under test is a separate assembly and its structs ARE foreign, so the set is empty, this
+// returns false, and compress/flate's `flate_WriterжWriter` and every other foreign key stand
+// unchanged.
+func adapterStructQualifierIsLocal(qualifier string) bool {
+	if qualifier == "" || len(testLocalTypePrefixes) == 0 {
+		return false
+	}
+
+	for _, prefix := range testLocalTypePrefixes {
+		localClass := prefix
+
+		if dot := strings.LastIndex(localClass, "."); dot >= 0 {
+			localClass = localClass[dot+1:]
+		}
+
+		// The record's spelling names the class whole; the alias spelling is the class name minus
+		// its PackageSuffix, which is what the alias is minted from.
+		if qualifier == localClass || qualifier+PackageSuffix == localClass {
+			return true
+		}
+	}
+
+	return false
 }
 
 // emittedAdapterPair finds the RECORD pair a cast's (structBase, interfaceTypeName) spelling
@@ -463,7 +696,7 @@ func adapterStructQualifierClass(structBase string) string {
 // Reached only through the `-tests` metadata-anchored path (resolveAdapterNameMarkers takes an
 // anchor only from testConversion; a production conversion resolves through adapterResolvedName,
 // which never stripped), so the corpus cannot move.
-func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string {
+func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool, keepsProductionName bool) string {
 	structPart := adapterStructKey(pair[0])
 
 	// ⚠ THE ONE SITE THE MARKER'S OWN STRIP DOES NOT REACH. adapterTypeRef strips before writing the
@@ -483,7 +716,10 @@ func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string
 		structPart = stripSanitizationMarkers(simpleName)
 	}
 
-	if !colliding[adapterGroupKey(pair[0], pair[1])] {
+	// keepsProductionName is the pass separation (rule 2): a colliding group's sole
+	// production-faceted member renders exactly as a non-colliding one would, because that is what
+	// the production pass already wrote into the production .cs this assembly recompiles.
+	if keepsProductionName || !colliding[adapterGroupKey(pair[0], pair[1])] {
 		return structPart + PointerPrefix + ifaceSimple
 	}
 
@@ -500,7 +736,7 @@ func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string
 // broke `new os.FileжWriter(f)` (namespace `os`, adapter class `FileжWriter`, generated in os's own
 // assembly) into a bare `FileжWriter` that resolves nowhere, CS0246. Only the interface side is
 // ever rewritten, and only for a colliding group.
-func adapterResolvedName(structBase string, interfaceTypeName string, colliding map[string]bool) string {
+func adapterResolvedName(structBase string, interfaceTypeName string, colliding map[string]bool, keepsProductionName bool) string {
 	// ⚠ STRIPPED HERE TOO, although in production this name arrives from the deferred marker and
 	// adapterTypeRef has already stripped it. Relying on that would make this function correct only
 	// through its one caller — and the sibling that DID rely on an upstream spelling
@@ -521,7 +757,12 @@ func adapterResolvedName(structBase string, interfaceTypeName string, colliding 
 	interfaceRef := stripAdapterInterfaceTypeArgs(interfaceTypeName)
 	ifaceSimple := adapterInterfaceSimpleName(interfaceRef)
 
-	if !colliding[adapterGroupKey(structBase, interfaceTypeName)] {
+	// The pass separation (rule 2), as at anchoredAdapterMemberName. This is the arm the RECOMPILE
+	// model takes — it resolves through the plain, unanchored path by design — so it is the one
+	// that decides whether a test-half cast onto a production record's pair spells the production
+	// name. It does when that pair is the group's sole faceted member, and the generator, reading
+	// the same facet, mints exactly that class.
+	if keepsProductionName || !colliding[adapterGroupKey(structBase, interfaceTypeName)] {
 		return structBase + PointerPrefix + ifaceSimple
 	}
 
@@ -542,6 +783,7 @@ func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...strin
 	packageLock.Unlock()
 
 	colliding := adapterNameCollisionSet(pairs)
+	keepers := adapterProductionNameKeepers(pairs, colliding)
 	defaultAnchor := ""
 	if len(metadataAnchor) > 0 {
 		defaultAnchor = metadataAnchor[0]
@@ -561,15 +803,22 @@ func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...strin
 				return "", false
 			}
 
-			resolvedName := adapterResolvedName(structBase, interfaceTypeName, colliding)
-			if defaultAnchor != "" {
-				if pair, ok := emittedAdapterPair(pairs, structBase, interfaceTypeName); ok {
-					anchorClass := emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])]
-					if anchorClass == "" {
-						anchorClass = defaultAnchor
-					}
-					resolvedName = anchorClass + "." + anchoredAdapterMemberName(pair, colliding)
+			// The RECORD the cast belongs to, looked up for EVERY marker rather than only for the
+			// anchored path: the facet is a property of the record, and the marker carries the
+			// cast's own spelling (which is the whole reason adapterStructQualifierIsLocal exists).
+			// A marker whose pair was never recorded keeps its old, unfaceted answer.
+			pair, pairFound := emittedAdapterPair(pairs, structBase, interfaceTypeName)
+			keepsProductionName := pairFound &&
+				keepers[adapterGroupKey(pair[0], pair[1])] &&
+				adapterPairIsProductionFaceted(pair)
+
+			resolvedName := adapterResolvedName(structBase, interfaceTypeName, colliding, keepsProductionName)
+			if defaultAnchor != "" && pairFound {
+				anchorClass := emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])]
+				if anchorClass == "" {
+					anchorClass = defaultAnchor
 				}
+				resolvedName = anchorClass + "." + anchoredAdapterMemberName(pair, colliding, keepsProductionName)
 			}
 
 			// The pair resolves identically wherever it appears, so substitute every occurrence.
