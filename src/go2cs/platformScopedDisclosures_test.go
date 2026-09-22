@@ -380,8 +380,12 @@ func TestCleanRecordCarriesNoOutOfScopeKey(t *testing.T) {
 }
 
 // THE COMMITTED CORPUS, and the arm that makes "additive" a measurement rather than a claim. Every
-// manifest in the tree must load unchanged on all three targets: same entry count, nothing out of
-// scope, no refusal.
+// manifest in the tree must load on all three targets with no refusal, and scoping may move ONLY the
+// entries a manifest itself scopes: an UNSCOPED entry is in scope on every target, an out-of-scope
+// entry is always a scoped entry whose list excludes that target, and in scope + out of scope is the
+// whole manifest. Until 2026-09-22 no committed manifest carried a scope and this arm asserted exactly
+// that (nothing out of scope anywhere); the H10 manifest re-sign landed the first scopes, so the
+// assertion became the rule those scopes must obey rather than their absence.
 //
 // CACHE CAVEAT, the same one fleetIdentifierCensus_test.go carries: the files read here live under
 // src/core, OUTSIDE this module, and cmd/go drops out-of-module files from the test input hash — so
@@ -411,6 +415,7 @@ func TestEveryCommittedManifestLoadsUnchanged(t *testing.T) {
 
 	totalEntries := 0
 	scopedEntries := 0
+	outOfScopeTotal := 0
 
 	for _, rel := range manifests {
 		pkgDir := filepath.Join(root, filepath.FromSlash(filepath.Dir(rel)))
@@ -433,20 +438,40 @@ func TestEveryCommittedManifestLoadsUnchanged(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s on %s: %v", rel, goos, err)
 			}
-			if len(entries) != len(reference) {
-				t.Fatalf("%s on %s: scoping changed a committed manifest — %d entries against %d "+
-					"unscoped; every count the record and the proof page publish would move with it",
-					rel, goos, len(entries), len(reference))
+			if len(entries)+len(outOfScope) != len(reference) {
+				t.Fatalf("%s on %s: scoping lost or invented entries — %d in scope + %d out of scope "+
+					"against %d in the manifest", rel, goos, len(entries), len(outOfScope), len(reference))
 			}
-			if len(outOfScope) != 0 {
-				t.Fatalf("%s on %s: no committed manifest carries a scope today, so nothing may be "+
-					"out of scope; got %v", rel, goos, outOfScope)
+			for name, entry := range reference {
+				if len(entry.Platforms) == 0 {
+					if _, in := entries[name]; !in {
+						t.Fatalf("%s on %s: UNSCOPED entry %s is not in scope; an entry with no platforms "+
+							"list applies everywhere, so every count the record and the proof page publish "+
+							"would move with it", rel, goos, name)
+					}
+				}
+			}
+			for _, out := range outOfScope {
+				entry, known := reference[out.Name]
+				if !known || len(entry.Platforms) == 0 || entry.Platforms.includes(goos) {
+					t.Fatalf("%s on %s: %s is out of scope but its manifest entry does not exclude %s "+
+						"(scoped: %v)", rel, goos, out.Name, goos, known && len(entry.Platforms) > 0)
+				}
+				outOfScopeTotal++
 			}
 		}
 	}
 
-	t.Logf("committed manifests: %d, entries: %d, of which scoped: %d (all three targets)",
-		len(manifests), totalEntries, scopedEntries)
+	// A scope that excluded no target would be indistinguishable from no scope at all, and a loader
+	// that silently ignored every scope would pass every arm above on an unscoped reading. So when the
+	// tree carries scoped entries, at least one of them must actually have been set aside.
+	if scopedEntries > 0 && outOfScopeTotal == 0 {
+		t.Fatalf("%d committed entries carry a platforms scope but none was out of scope on any of the "+
+			"three targets: the scope is not being applied", scopedEntries)
+	}
+
+	t.Logf("committed manifests: %d, entries: %d, of which scoped: %d; out of scope across the three "+
+		"targets: %d", len(manifests), totalEntries, scopedEntries, outOfScopeTotal)
 }
 
 // readTestDisclosureManifestErr is the refusal arms' reader: it returns the error ALONE, so an arm
