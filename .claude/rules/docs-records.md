@@ -43,6 +43,24 @@ paths:
   A second lane's four path-and-account arms read CLEAN on the tree that held all six name hits: its "every post censused clean" was
   TRUE and measured far less than it sounded. A disclosure of one's own broken gate is what made the second lane look at its own; a
   clean report would have moved nobody. -->
+- **The owner's PUBLIC handles are ADMITTED exceptions** (ruled 2026-09-22 at the console): the GitHub organisation /
+  NuGet author handle, and the work-mail account handle. Both are published attribution, not infrastructure, and both
+  are carried as HASHES -- never plaintext -- in `fleetPublicHandles` (the authority, in repoguard's
+  `fleetIdentifierCensus_test.go`) and in the `ADMIT` section of `.claude/coord-scripts/coord-identifier-hashes.txt`,
+  which is generated from it and held equal to it by `TestFleetIdentifierHashFileMatchesTheGoLists`. The admit is by
+  EXACT ENCLOSING WORD: a denied token found INSIDE a longer word takes that word, whole and lowercased, and an
+  admitted word is reported as `public-handle` rather than counted. **Nothing else moved.** The ACCOUNT name as a bare
+  token is still denied, every profile path is still denied whatever its segment spells, hostnames and shares are
+  unchanged, a word that merely CONTAINS a handle is still a hit, and only the two census arms whose definition carries
+  `[PUBLIC-HANDLE-ADMIT]` consult the set. <!-- Measured need, 2026-09-22 on the i7: the account derivation is a SUBSTRING
+  of the organisation handle, so the census's reduced pass read TEN hits on the published docs/README.md at master (fingerprint
+  ea436558) -- five registry-search URLs, each also read on its joined pair -- every one of them the published handle. CLEAN after,
+  arms still MATCHING (occ=5 each, hits=0). Red-first both instruments: with the admit consult disabled the README returns to 10
+  and the census self-test reds 4 of its 19 new assertions, all of them the ADMIT direction, every refusal sibling staying green;
+  a second, narrower regression of the percent-escape rule ALONE reds exactly the registry-URL case (the handle follows `%20`) and
+  leaves the bare-word admit green. Both restored byte-identically (sha256). The Go guard reads the two real rows INERT -- its
+  tokenizer has no substring pass -- which is why TestNoFleetIdentifiersInTrackedFiles was green on that README before and after;
+  the rows live there because one authority is the property worth having. -->
 - **Git HISTORY retains the pre-scrub originals, so never reintroduce one by quoting a pre-scrub record verbatim.**
   Re-census case-insensitively before banking any doc that copies old text. <!-- History retention is owner-accepted. The
   reintroduce-by-quoting mode is real: five of the seven hits found on the mailbox tree 2026-09-08 were in posts dated AT OR AFTER the scrub. -->

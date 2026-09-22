@@ -265,6 +265,13 @@ IDC_TOKFILE="$IDC_TMP/tok"
 IDC_TOKSUMMARY=""
 IDC_TOKFILE_PRESENT="no"
 IDC_HASHSUMMARY=""
+# The ADMITTED PUBLIC HANDLES, resolved to literals by the same INVERTED comparison the denied rows
+# use: this box derives a handful of candidate handles, hashes those, and keeps the ones the shared
+# list already admits. A handle this box cannot derive is not an admit here -- a number on the record
+# (admits=N matched=M) and never an assumption. Written to the same 600 temp file class, never
+# printed, never committed.
+IDC_ADMITFILE="$IDC_TMP/admit"
+IDC_ADMITSUMMARY=""
 
 idc_resolve_tokenfile() {
     # The never-push token file. Located, never printed.
@@ -293,7 +300,25 @@ idc_hash_known() {
     while IFS=$'\t' read -r f1 f2 _rest || [ -n "$f1" ]; do
         f1="${f1%$'\r'}"; f2="${f2%$'\r'}"
         case "$f1" in '#'*) continue ;; '') continue ;; esac
+        case "$f1" in 'ADMIT') continue ;; esac
         if [ "$f1" = "$len" ] && [ "$f2" = "$h" ]; then return 0; fi
+    done < "$IDC_HASHES"
+    return 1
+}
+
+idc_admit_known() {
+    # 0 if the literal's (len, hash) pair is an ADMIT row in the shared hash list. Separate reader
+    # from idc_hash_known on purpose: one function that answered both questions from one row shape
+    # is one typo away from admitting a denied token.
+    local lit="$1" h="" len="" f1="" f2="" f3=""
+    [ -f "$IDC_HASHES" ] || return 1
+    len="${#lit}"
+    h="$(idc_hash "$lit")"
+    [ -n "$h" ] || return 1
+    while IFS=$'\t' read -r f1 f2 f3 _rest || [ -n "$f1" ]; do
+        f1="${f1%$'\r'}"; f2="${f2%$'\r'}"; f3="${f3%$'\r'}"
+        case "$f1" in 'ADMIT') : ;; *) continue ;; esac
+        if [ "$f2" = "$len" ] && [ "$f3" = "$h" ]; then return 0; fi
     done < "$IDC_HASHES"
     return 1
 }
@@ -356,6 +381,80 @@ idc_add_token() {
     return 0
 }
 
+# THE PUBLIC-HANDLE ADMIT SET, derived and then FILTERED BY THE SHARED LIST -- the same inversion
+# idc_add_token's third bar uses, and for the same reason: a derivation is a GUESS about what this
+# box is called, and the authority on which words are the owner's ruled public handles is the ADMIT
+# section of coord-identifier-hashes.txt, generated from the Go guard's fleetPublicHandles.
+#
+# A candidate that is not an ADMIT row is DROPPED, silently and by construction -- it is not that the
+# admit is inert, it is that the word was never ruled a handle. The count is reported either way, so
+# `admits=N matched=0` on a box that cannot derive them reads as "the arms refuse exactly as they did
+# before", which is the safe direction and is a number rather than an inference.
+#
+# The candidates, and there are only three shapes because a wider guess is a wider admit:
+#   the local part of `git config --get user.email`               -- the published address form
+#   every alphabetic piece of `git config --get user.name`, joined -- the organisation-handle shape
+#   the first letter of the FIRST piece + the LAST piece           -- the work-mail handle shape
+idc_build_admits() {
+    : > "$IDC_ADMITFILE"
+    chmod 600 -- "$IDC_ADMITFILE" 2>/dev/null
+    local nMatch=0 nRows=0 cand="" nm="" piece="" first="" last="" joined="" line="" low=""
+
+    if [ -f "$IDC_HASHES" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%$'\r'}"
+            case "$line" in 'ADMIT	'*) nRows=$((nRows + 1)) ;; esac
+        done < "$IDC_HASHES"
+    fi
+
+    if [ -n "${IDC_TEST_ADMITS:-}" ]; then
+        # SELF-TEST OVERRIDE: synthetic handles, so a control never depends on this box's real name
+        # and never coincides with an arm it was not meant to prove.
+        for cand in $IDC_TEST_ADMITS; do
+            printf '%s\n' "$(printf '%s' "$cand" | tr 'A-Z' 'a-z')" >> "$IDC_ADMITFILE"
+            nMatch=$((nMatch + 1))
+        done
+        IDC_ADMITSUMMARY="admits=$nRows matched=$nMatch (synthetic admit set)"
+        return 0
+    fi
+
+    idc_admit_try() {
+        local lit="" low2=""
+        lit="$1"
+        [ -n "$lit" ] || return 0
+        [ "${#lit}" -ge 5 ] || return 0
+        low2="$(printf '%s' "$lit" | tr 'A-Z' 'a-z')"
+        idc_admit_known "$low2" || return 0
+        if ! grep -qxF -- "$low2" "$IDC_ADMITFILE" 2>/dev/null; then
+            printf '%s\n' "$low2" >> "$IDC_ADMITFILE"
+            nMatch=$((nMatch + 1))
+        fi
+        return 0
+    }
+
+    cand="$(git config --get user.email 2>/dev/null)"
+    cand="${cand%%@*}"
+    idc_admit_try "$cand"
+
+    nm="$(git config --get user.name 2>/dev/null)"
+    if [ -n "$nm" ]; then
+        nm="$(printf '%s' "$nm" | tr -c 'A-Za-z' ' ')"
+        first=""; last=""; joined=""
+        for piece in $nm; do
+            if [ -z "$first" ]; then first="$piece"; fi
+            last="$piece"
+            if [ "${#piece}" -ge 2 ]; then joined="$joined$piece"; fi
+        done
+        idc_admit_try "$joined"
+        if [ -n "$first" ] && [ -n "$last" ] && [ "$first" != "$last" ]; then
+            idc_admit_try "$(printf '%s' "$first" | cut -c1)$last"
+        fi
+    fi
+
+    IDC_ADMITSUMMARY="admits=$nRows matched=$nMatch unmatched=$((nRows - nMatch))"
+    return 0
+}
+
 idc_build_tokens() {
     : > "$IDC_TOKFILE"
     chmod 600 -- "$IDC_TOKFILE" 2>/dev/null
@@ -369,6 +468,9 @@ idc_build_tokens() {
     if [ -f "$IDC_HASHES" ]; then
         while IFS= read -r line || [ -n "$line" ]; do
             case "$line" in '#'*) continue ;; '') continue ;; esac
+            # The ADMIT section is a DIFFERENT list, counted by idc_build_admits. Folding it into
+            # `hashes=N` would inflate the denied denominator and make `unmatched` unreadable.
+            case "$line" in 'ADMIT	'*) continue ;; esac
             case "$line" in *"	"*) nRows=$((nRows + 1)) ;; esac
         done < "$IDC_HASHES"
     fi
@@ -376,12 +478,31 @@ idc_build_tokens() {
     if [ -n "${IDC_TEST_TOKENS:-}" ]; then
         # SELF-TEST OVERRIDE: synthetic tokens, so a control never depends on this box's real name
         # and never coincides with an arm it was not meant to prove.
+        #
+        # ARM=literal installs a synthetic literal UNDER A NAMED ARM, bypassing the three bars exactly
+        # as the bare form does. It is what lets a control prove an arm-SCOPED property -- the
+        # public-handle admit reaches RUNTIME_ACCOUNT and RUNTIME_OWNERNAME and NOT TOKENFILE --
+        # without the control depending on this box's real account name. The bare form is unchanged,
+        # so every control written before this still installs under TOKENFILE and reads as it did.
+        local nSA=0 nSM=0 nSO=0
         for piece in $IDC_TEST_TOKENS; do
-            if idc_add_token "TOKENFILE" "$piece" 4; then nTF=$((nTF + 1)); fi
+            case "$piece" in
+                RUNTIME_ACCOUNT=*|RUNTIME_MACHINE=*|RUNTIME_OWNERNAME=*|TOKENFILE=*)
+                    printf '%s\t%s\n' "${piece%%=*}" "$(printf '%s' "${piece#*=}" | tr 'A-Z' 'a-z')" >> "$IDC_TOKFILE"
+                    case "${piece%%=*}" in
+                        RUNTIME_ACCOUNT)   nSA=$((nSA + 1)) ;;
+                        RUNTIME_MACHINE)   nSM=$((nSM + 1)) ;;
+                        RUNTIME_OWNERNAME) nSO=$((nSO + 1)) ;;
+                        *)                 nTF=$((nTF + 1)) ;;
+                    esac ;;
+                *)
+                    if idc_add_token "TOKENFILE" "$piece" 4; then nTF=$((nTF + 1)); fi ;;
+            esac
         done
         IDC_TOKFILE_PRESENT="synthetic"
-        IDC_TOKSUMMARY="TOKENFILE=$nTF(synthetic) RUNTIME_ACCOUNT=0 RUNTIME_MACHINE=0 RUNTIME_OWNERNAME=0"
+        IDC_TOKSUMMARY="TOKENFILE=$nTF(synthetic) RUNTIME_ACCOUNT=$nSA RUNTIME_MACHINE=$nSM RUNTIME_OWNERNAME=$nSO"
         IDC_HASHSUMMARY="hashes=$nRows matched=0 (synthetic token set)"
+        idc_build_admits
         return 0
     fi
 
@@ -433,6 +554,7 @@ idc_build_tokens() {
     IDC_TOKSUMMARY="TOKENFILE=$nTF RUNTIME_ACCOUNT=$nAC RUNTIME_MACHINE=$nMA RUNTIME_OWNERNAME=$nOW"
     if [ -n "$skipped" ]; then IDC_TOKSUMMARY="$IDC_TOKSUMMARY  SKIPPED:$skipped"; fi
     IDC_HASHSUMMARY="hashes=$nRows matched=$IDC_HASH_HITS unmatched=$((nRows - IDC_HASH_HITS))"
+    idc_build_admits
     return 0
 }
 
@@ -778,11 +900,54 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
 # Tokenised exactly as the Go guard tokenises: maximal [a-z0-9._-] runs, plus each dot/hyphen/
 # underscore component. That is what makes a machine name and the account name inside it both match,
 # and what makes a path ENDING in the token fire -- the shape a both-sides separator rule misses.
+#
+# ⚠ THE PUBLIC-HANDLE ADMIT (ruled 2026-09-22) is consulted HERE and in scanTokensReduced, and ONLY
+# for the arms the DEFINITION marks [PUBLIC-HANDLE-ADMIT]. It reads the ENCLOSING WORD in the
+# original text -- never the token, never the line -- and it is an EXACT hash of a whole word, so
+# containment can never admit anything.
+#
+# WHY IT MUST READ THE ORIGINAL TEXT rather than the surface the arm fired on: the hits this ruling
+# is about are pass-3 hits, and the reduced surface has NO word boundaries left by construction, so
+# "the enclosing word" does not exist there. Going back to the text is what makes the decision a
+# word decision in both passes.
+#
+# EVERY occurrence must be inside an admitted word, and at least one must exist. Both halves are
+# load-bearing and both are controlled: a line carrying the handle AND the bare account name still
+# refuses (some occurrence is not admitted), and a token that exists only across a fused line break
+# -- inside no single word -- finds zero enclosing words and refuses, which is the safe direction.
+#
+# PERCENT-ESCAPES ARE SEPARATORS for the word split. The five README URLs this ruling was measured
+# on spell the handle after `%20`, an encoded SPACE, so without this the enclosing word would be the
+# two hex digits glued to the handle and the admit would miss the only surface it was ruled for.
+# COST, stated: a percent-encoded PATH whose segment is an admitted handle is admitted by this arm.
+# The structural profile/home arms are untouched and are the mitigation, exactly as the denied-token
+# pass is the mitigation for the unicode-escape admit above.
+function admitWord(tok, text,   src, n, W, i, w, seen, ok) {
+    if (nADM == 0 || tok == "") return 0
+    src = tolower(text)
+    gsub(/%[0-9a-f][0-9a-f]/, " ", src)
+    n = split(src, W, /[^a-z0-9_.-]+/)
+    seen = 0; ok = 1
+    for (i = 1; i <= n; i++) {
+        w = W[i]
+        if (w == "" || index(w, tok) == 0) continue
+        seen++
+        if (!(w in ADM)) ok = 0
+    }
+    return (seen > 0 && ok)
+}
 function checkTok(t, lineno, pass, text,   i) {
     if (t == "") return
     for (i = 1; i <= nT; i++) {
         if (t == TVAL[i]) {
             OCC[TSRC[i]]++
+            if (ADMITARM[TSRC[i]] == 1 && admitWord(TVAL[i], text)) {
+                EXC[TSRC[i] "\t" "public-handle"]++
+                nPH++
+                SEEN[lineno "\t" i] = 1
+                if (pass == 2) SEEN[(lineno - 1) "\t" i] = 1
+                continue
+            }
             record(TSRC[i], pass, lineno, TVAL[i], text)
             SEEN[lineno "\t" i] = 1
             if (pass == 2) SEEN[(lineno - 1) "\t" i] = 1
@@ -857,6 +1022,14 @@ function scanTokensReduced(lineno, red, keyline, text,   i, t) {
         if (t == "") continue
         if (index(red, t) > 0) {
             OCC[TSRC[i]]++
+            # The admit is asked about the ORIGINAL literal, not the alnum-reduced one: the reduction
+            # is how the arm FOUND the occurrence, and the word it sits in is a fact about the text.
+            if (ADMITARM[TSRC[i]] == 1 && admitWord(TVAL[i], text)) {
+                EXC[TSRC[i] "\t" "public-handle"]++
+                nPH++
+                SEEN[keyline "\t" i] = 1
+                continue
+            }
             record(TSRC[i], 3, lineno, TVAL[i], text)
             SEEN[keyline "\t" i] = 1
         }
@@ -898,7 +1071,7 @@ function scanAll(lineno, text, pass, joinAt,   a, arm, lo, blanked, red) {
 
 BEGIN {
     CHARS = " !\"#$%&()*+,-./0123456789:;<=>?@abcdefghijklmnopqrstuvwxyz[\\]^_`{|}~" "'"
-    nA = 0; nT = 0; nH = 0
+    nA = 0; nT = 0; nH = 0; nADM = 0; nPH = 0
     if (PATFILE == "" || KEYS == "" || REPORT == "" || STATUS == "") { print "awk: missing -v" > "/dev/stderr"; exit 9 }
     while ((getline L < PATFILE) > 0) {
         # The definition is a .txt with no eol pin, so a Windows checkout materialises CRLF while a
@@ -914,6 +1087,11 @@ BEGIN {
         # The CONVERTED-mode downgrade set, read from the DEFINITION rather than listed here. Not
         # anchored to the start of the note, because an arm may already carry another marker there.
         DOWNARM[F[1]] = ((n >= 4) && (F[4] ~ /\[CONVERTED-CONTEXT\]/)) ? 1 : 0
+        # The PUBLIC-HANDLE ADMIT set, read from the DEFINITION rather than listed here, for the
+        # reason the CONVERTED-CONTEXT set is: an arm is declared once, where every other property of
+        # it is declared, and a widening that must reach TWO arms travels as a per-arm marker rather
+        # than through a list every arm shares.
+        ADMITARM[F[1]] = ((n >= 4) && (F[4] ~ /\[PUBLIC-HANDLE-ADMIT\]/)) ? 1 : 0
         DOWN[F[1]] = 0
     }
     close(PATFILE)
@@ -927,6 +1105,17 @@ BEGIN {
             nT++; TSRC[nT] = F[1]; TVAL[nT] = tolower(F[2])
         }
         close(TOKFILE)
+    }
+    # The admitted public handles, one lowercased literal per line. Kept as a SET keyed by the whole
+    # word, never as a list walked with index(): the membership test is the bound.
+    if (ADMITFILE != "") {
+        while ((getline L < ADMITFILE) > 0) {
+            sub(/\r$/, "", L)
+            if (L ~ /^[ \t]*$/) continue
+            ADM[tolower(L)] = 1
+            nADM++
+        }
+        close(ADMITFILE)
     }
     # LONGEST FIRST, once, for maskLine. A contained literal must never be masked ahead of the
     # literal that contains it.
@@ -984,6 +1173,11 @@ END {
         }
         if (nAny == 0) print "    (none)" > REPORT
     }
+    # The admitted count, stated on its own line as well as in the EXCLUSIONS tally, because it is
+    # the one number that says "this run cleared something it would otherwise have refused". A zero
+    # prints nothing: the arms' own hits=0 rows already say the arms found nothing to clear.
+    if (nPH > 0)
+        printf "  PUBLIC-HANDLE ADMITS: %d occurrence(s) cleared as the owner's ruled public handles (admit set size %d)\n", nPH, nADM > REPORT
     ne = 0
     for (k in EXC) ne++
     if (ne > 0) {
@@ -1029,7 +1223,7 @@ idc_count_arms_independently() {
 
 idc_run_awk() {
     # $1 input, $2 keys, $3 report, $4 status, $5 strict
-    awk -v PATFILE="$IDC_PATTERNS" -v TOKFILE="$IDC_TOKFILE" -v REPORT="$3" \
+    awk -v PATFILE="$IDC_PATTERNS" -v TOKFILE="$IDC_TOKFILE" -v ADMITFILE="$IDC_ADMITFILE" -v REPORT="$3" \
         -v KEYS="$2" -v STATUS="$4" -v STRICT="$5" -v UNMASK="$IDC_UNMASK" \
         -v SHORT="${IDC_SHORT:-0}" -v CONVERTED="$IDC_CONVERTED" \
         -f "$IDC_AWK" -- "$1"
@@ -1094,6 +1288,7 @@ idc_census() {
     fi
     echo "  patterns: $(basename -- "$IDC_PATTERNS")   $IDC_HASHSUMMARY"
     echo "  token file: $IDC_TOKFILE_PRESENT   run-time arms: $IDC_TOKSUMMARY"
+    echo "  public handles: $IDC_ADMITSUMMARY"
     if [ -n "${IDC_INERT:-}" ]; then printf '%b' "$IDC_INERT"; fi
     if [ "$IDC_UNMASK" = "1" ]; then echo "  *** --unmask IS ON. LOCAL CONSOLE ONLY. NOTHING BELOW MAY BE PASTED INTO A POST. ***"; fi
     cat -- "$report"
@@ -1753,6 +1948,111 @@ idc_mode_selftest() {
             fi
             ;;
     esac
+
+    echo
+    echo "  D1. THE PUBLIC-HANDLE ADMIT -- ruled 2026-09-22, and every admitted case has a"
+    echo "      refusing sibling. The literals are SYNTHETIC, so no case depends on this box's real"
+    echo "      account name, and the synthetic handle CONTAINS the synthetic denied literal, which"
+    echo "      is the entire shape the ruling is about."
+    local ADMARM="RUNTIME_ACCOUNT=zorbulax" ADMTF="TOKENFILE=zorbulax" ADMSET="zorbulaxqueen"
+    unset IDC_TEST_TOKENS IDC_TEST_ADMITS
+
+    # (a) THE ADMIT, on the exact surface the ruling was measured on: a registry-search URL, where
+    # the handle follows a PERCENT-ESCAPED SPACE. Remove the escape rule from admitWord and the
+    # enclosing word becomes the two hex digits glued to the handle, and this case reds.
+    printf 'browse at https://example.invalid/packages?q=go2cs%s20%s today\n' "$pc" "$ADMSET" > "$d/h01"
+    out="$d/h01.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h01" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a handle after a percent-escape is ADMITTED"   0 "$rc"
+    idc_st_assert_present "  and the arm MATCHED and was ADMITTED, not missed" "public-handle" "$out"
+    idc_st_assert_present "  and the admitted count is on the record"     "PUBLIC-HANDLE ADMITS: 1" "$out"
+    idc_st_assert_absent  "  without spelling the handle"                 "$ADMSET" "$out"
+
+    # ⚠ THE ONE-AXIS SIBLING, and it is what makes the case above mean anything. SAME BYTES, the one
+    # difference being that the synthetic handle is no longer in the admit set. An admit control
+    # without this arm is green on an arm that simply stopped matching.
+    out="$d/h01b.out"
+    IDC_TEST_TOKENS="$ADMARM" "$IDC_SELF" entry "$d/h01" > "$out" 2>&1; rc=$?
+    idc_st_rc             "  and the SAME BYTES REFUSE off the admit set" 1 "$rc"
+    idc_st_assert_present "  naming the arm that refused"                 "RUNTIME_ACCOUNT" "$out"
+
+    # (e) The handle as an ordinary whole word, which is the work-mail handle's shape in prose.
+    printf 'the %s packages are published under that name\n' "$ADMSET" > "$d/h02"
+    out="$d/h02.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h02" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a handle as a bare WORD is ADMITTED"           0 "$rc"
+
+    # (d) THE BARE DENIED LITERAL. The admit is keyed on the enclosing word, and when the token IS
+    # the whole word the word is not an admitted handle. This is the arm that keeps the admit from
+    # ever becoming a way to clear the account name itself.
+    printf 'owner column reads %s here\n' "zorbulax" > "$d/h03"
+    out="$d/h03.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h03" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a BARE account literal still REFUSES"          1 "$rc"
+    idc_st_assert_present "  naming the arm that refused"                 "RUNTIME_ACCOUNT" "$out"
+
+    # (b) A PROFILE PATH carrying the ACCOUNT name. A different arm entirely, never consulted by this
+    # admit, and the ruling says so in as many words.
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "zorbulax" "$bs" > "$d/h04"
+    out="$d/h04.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h04" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a profile path with the ACCOUNT name REFUSES"  1 "$rc"
+    idc_st_assert_present "  naming the structural arm"                   "profile_root" "$out"
+
+    # (c) A PROFILE PATH carrying the PUBLIC HANDLE. The handle is published attribution; a profile
+    # path is infrastructure whatever its segment spells, and this is the case an admit that reached
+    # the structural arms would quietly open.
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "$ADMSET" "$bs" > "$d/h05"
+    out="$d/h05.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h05" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a profile path with the HANDLE still REFUSES"  1 "$rc"
+    idc_st_assert_present "  naming the structural arm"                   "profile_root" "$out"
+
+    # (f) CONTAINMENT IS NOT ADMISSION. The lookup is an exact hash of the WHOLE enclosing word, so a
+    # word that merely contains the account literal -- or merely contains the admitted handle -- is
+    # still a hit. This is the shape in which an admit list quietly becomes a hole.
+    printf 'owner column reads %sxyz and %sxyz here\n' "zorbulax" "$ADMSET" > "$d/h06"
+    out="$d/h06.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h06" > "$out" 2>&1; rc=$?
+    idc_st_rc             "a word CONTAINING the handle still REFUSES"    1 "$rc"
+
+    # THE MIXED LINE. Every occurrence must be inside an admitted word: a line that carries the
+    # handle AND the bare account literal is still a refusal, so an admitted span cannot launder the
+    # rest of its own line. Same property blankSpans has for public_url, asserted rather than assumed.
+    printf 'see the %s page, account %s\n' "$ADMSET" "zorbulax" > "$d/h07"
+    out="$d/h07.out"
+    IDC_TEST_TOKENS="$ADMARM" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h07" > "$out" 2>&1; rc=$?
+    idc_st_rc             "handle AND bare literal on one line REFUSES"   1 "$rc"
+
+    # SCOPE, and it is the reason the admit travels as a per-arm marker in the DEFINITION rather than
+    # as a list every arm shares. The SAME bytes and the SAME admit set, with the literal installed
+    # under TOKENFILE -- an arm the definition does not mark -- must refuse. A widening that reached
+    # every token arm would clear a locally denied literal, which no ruling has ever asked for.
+    out="$d/h08.out"
+    IDC_TEST_TOKENS="$ADMTF" IDC_TEST_ADMITS="$ADMSET" "$IDC_SELF" entry "$d/h01" > "$out" 2>&1; rc=$?
+    idc_st_rc             "an UNMARKED arm does not consult the admit"    1 "$rc"
+    idc_st_assert_present "  naming the unmarked arm that refused"        "TOKENFILE" "$out"
+
+    # THE DEFINITION IS THE DECLARATION. The two marked arms are read from the patterns file, so the
+    # count is derived from the whole construct rather than from the arms a reader happens to check.
+    c="$(awk -F'\t' 'NF >= 4 && index($4, "[PUBLIC-HANDLE-ADMIT]") > 0 { n++ } END { print n + 0 }' "$IDC_PATTERNS")"
+    case "$c" in
+        2) printf '  PASS  %-48s marked arms=2\n' "exactly two arms consult the admit"; IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
+        *) printf '  FAIL  %-48s marked arms=%s (expected 2)\n' "exactly two arms consult the admit" "$c"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
+    esac
+
+    # AND THE TWO INSTRUMENTS AGREE ABOUT THE SET. The Go guard's fleetPublicHandles is the authority
+    # and the ADMIT rows are generated from it; the tracked-tree side of that equality is asserted by
+    # TestFleetIdentifierHashFileMatchesTheGoLists. What this arm adds is that THIS tool can read the
+    # section at all -- a malformed row would otherwise leave the admit silently empty.
+    c="$(awk -F'\t' '$1 == "ADMIT" && NF >= 4 && length($3) == 64 { n++ } END { print n + 0 }' "$IDC_HASHES")"
+    case "$c" in
+        ''|0) printf '  FAIL  %-48s readable ADMIT rows=0\n' "the shared ADMIT section is readable"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
+        *)    printf '  PASS  %-48s readable ADMIT rows=%s\n' "the shared ADMIT section is readable" "$c"; IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
+    esac
+
+    unset IDC_TEST_TOKENS IDC_TEST_ADMITS
+    idc_build_tokens
 
     echo
     echo "  E. DECLARED SET"

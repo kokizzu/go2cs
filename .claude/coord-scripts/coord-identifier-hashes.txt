@@ -1,12 +1,24 @@
 # coord-identifier-hashes.txt -- the denied-identifier list, as HASHES. NO PLAINTEXT, EVER.
 #
-# GENERATED FROM src/go2cs/internal/repoguard/fleetIdentifierCensus_test.go (fleetDeniedTokens).
-# That Go file is the tracked-tree gate, run by TestNoFleetIdentifiersInTrackedFiles under the plain
-# `go test ./...` every lane already runs. This file is the same list in a form a shell census can
-# read, so the two instruments cannot disagree about WHICH names are denied. When a row is added
-# there, it is added here in the same commit, or the shell census is measuring an older order.
+# GENERATED FROM src/go2cs/internal/repoguard/fleetIdentifierCensus_test.go (fleetDeniedTokens and,
+# since 2026-09-22, fleetPublicHandles). That Go file is the tracked-tree gate, run by
+# TestNoFleetIdentifiersInTrackedFiles under the plain `go test ./...` every lane already runs. This
+# file is the same two lists in a form a shell census can read, so the two instruments cannot
+# disagree about WHICH names are denied or WHICH handles are admitted. When a row is added there, it
+# is added here in the same commit, or the shell census is measuring an older order.
 #
-# FORMAT: LEN<TAB>SHA256-OF-THE-LOWERCASED-TOKEN<TAB>WHAT
+# ⚠ AND THAT IS NOW ENFORCED RATHER THAN REMEMBERED. TestFleetIdentifierHashFileMatchesTheGoLists in
+# the same Go file reads THIS file and requires equality in BOTH directions, per section: a row here
+# with no partner in the Go list is a failure naming this file, and a row there with no partner here
+# is a failure naming the shell census. Until 2026-09-22 the only thing keeping the two in step was
+# whoever remembered to edit both, which is precisely the silent-drift shape the guard exists for.
+#
+# FORMAT, DENIED ROWS:    LEN<TAB>SHA256-OF-THE-LOWERCASED-TOKEN<TAB>WHAT
+# FORMAT, ADMITTED ROWS:  ADMIT<TAB>LEN<TAB>SHA256-OF-THE-LOWERCASED-HANDLE<TAB>WHAT
+#
+# The leading ADMIT keyword is what separates the sections, rather than a position in the file or a
+# comment banner: a section marked by its ORDER is a section a sorted edit can silently move a row
+# out of, and both readers (the shell census and the Go parity arm) dispatch on the first field.
 #
 # Len is carried WITH the hash in one record, exactly as the Go file insists, because a length kept
 # in a second list can silently disagree with its hash and disarm the entry while every test passes.
@@ -32,3 +44,32 @@
 8	deff430814c33ac000dbdf4bd1061321b8387df004594375c947fabf73d3acc1	fleet account name
 13	1070b0f89514d6852350c53ac7682edcb2d41f38d66fb95c340cdec08802c74e	fleet machine name
 15	64bcb3dc70c4e605e5f1f29e4e42af4ab20de3b69f6452e5d5444305f432ea6d	fleet machine name
+#
+# ADMITTED PUBLIC HANDLES -- the owner's PUBLIC handles, RULED known public exceptions 2026-09-22 at
+# the console. They are stored as hashes for the same reason the denied tokens are: the handles
+# themselves are public, but a file that spelled one would teach the next reader that SOME
+# account-derived token is safe to write out here, and the whole value of this list is that none is.
+#
+# SEMANTICS, and they are the narrowest that can close the measured problem. A denied token that
+# matches INSIDE a longer word takes its ENCLOSING WORD -- the maximal [A-Za-z0-9_.-] run around the
+# match, lowercased -- and if THAT word's hash is a row below, the occurrence is admitted and
+# reported as `public-handle` rather than counted as a hit. A bare denied token standing alone as a
+# word is refused without this list being consulted at all, a word that merely CONTAINS an admitted
+# handle is refused (the lookup is an exact hash, never containment), and the PROFILE and HOST arms
+# are untouched -- a profile path whose segment is a public handle is still a profile-path refusal.
+#
+# ⚠ PERCENT-ESCAPES ARE SEPARATORS when the enclosing word is taken, and that is the shape that made
+# this necessary: the published README's registry-search URLs spell the handle after `%20`, an
+# encoded SPACE, so without that rule the enclosing word would be the two hex digits glued to the
+# handle and the admit would never fire on the one surface it was ruled for. Measured 2026-09-22 on
+# docs/README.md: ten hits before, CLEAN after.
+#
+# WHAT STAYS DENIED, unchanged by the ruling: the Windows ACCOUNT name as a bare token, every profile
+# path in either platform spelling, hostnames, share names and addresses.
+#
+# SCOPE IN THE SHELL CENSUS: only the arms whose NOTE in coord-identifier-patterns.txt carries
+# [PUBLIC-HANDLE-ADMIT] consult this section -- RUNTIME_ACCOUNT and RUNTIME_OWNERNAME. TOKENFILE and
+# RUNTIME_MACHINE do not, so a locally denied literal can never be cleared by a handle.
+#
+ADMIT	14	6e20b08e8ef15c17552c9ba5ee62ff640ea39552bbdccc1f0f6c0db5e5c92818	the GitHub organisation / NuGet author handle
+ADMIT	8	f73dc7a07d73876ae6a1e18eb95a99cc5d12a628644c33ea307397700ba6c1f3	the work-mail account handle
