@@ -198,9 +198,14 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         AllocationCounter.Count();
     }
 
+    // A size hint is ADVICE, never an error, in Go: runtime.makemap clamps `hint < 0` to 0
+    // (map_swiss.go:72) and makemap64 clamps a hint that does not fit an int to 0 (:33), so
+    // `make(map[int]int, n)` with a negative or oversized runtime n yields an empty map. Dictionary's
+    // capacity argument throws on a negative value instead, which turned internal/runtime/maps'
+    // TestTableGroupCount/makemap*/n=-1 cases into a host exception where Go passes.
     public map(nint size)
     {
-        m_map = new NilKeyDictionary((int)size);
+        m_map = new NilKeyDictionary(size < 0 || size > int.MaxValue ? 0 : (int)size);
         AllocationCounter.Count();
     }
 
