@@ -59,7 +59,10 @@ func TestTokenDoorCensusControls(t *testing.T) {
 		// The type predicate can still tell a reference-bearing struct from a blittable one.
 		"controls OK: StartupInfo + Timezoneinformation flagged; Timeval + Timespec not",
 		// The wrapper scan can still find a known member and still rejects a known non-member.
-		"controls OK: getStartupInfo present; GetStdHandle absent",
+		// Re-anchored 2026-09-22 when getStartupInfo's hand-own displaced the census's first member
+		// (see the script's pass-3 controls): the member control moved to CreateProcess, and the
+		// retired member is asserted DISPLACED rather than silently dropped.
+		"controls OK: CreateProcess present; GetStdHandle absent; getStartupInfo displaced",
 	} {
 		if !strings.Contains(text, control) {
 			t.Fatalf("src/token-door-census.sh did not report the control %q -- a census whose controls stop running reports a number nobody can stand behind:\n%s", control, text)
