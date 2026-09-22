@@ -897,7 +897,8 @@ function Invoke-SweepRow {
 # (2026-08-14, i7-5820K), and the 10m default reported a passing suite as NOT MEASURED the
 # first time the full sweep ran it under load. 40m clears the solo figure with 2x headroom.
 #
-# crypto/internal/mlkem768's floor is owed by ONE test: TestPQCrystalsAccumulated runs 10,000 full
+# crypto/internal/mlkem768's floor (RE-KEYED to its two successors by the Go 1.24.13 re-check below)
+# is owed by ONE test: TestPQCrystalsAccumulated runs 10,000 full
 # ML-KEM key-gen/encapsulate/decapsulate rounds and accumulates them into a SHAKE-128 digest, and
 # measured 417.3 s of the package's 434.7 s total (2026-08-16, i7-5820K, solo). That clears the 10m
 # default by only 1.4x -- inside the run-to-run spread a loaded sweep produces -- so the package
@@ -923,8 +924,8 @@ function Invoke-SweepRow {
 # tail stating `package timeout after 01:00:00` and the comparison truncated at 108 Go rows against
 # 89 C# -- which is a host BUDGET question, never a verdict, so the row's `linux: 108` annotation
 # stands and the floor is what moves. A floor, not an override: a larger -TestTimeout still wins.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '90m'; 'net' = '40m'; 'net/http' = '60m' }
-# 'net' joined 2026-09-02: at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/fips140/mlkem' = '30m'; 'crypto/mlkem' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '90m'; 'net' = '120m'; 'net/http' = '60m' }
+# 'net' joined 2026-09-02 at 40m (RAISED to 120m by the Go 1.24.13 re-check below): at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
 #
@@ -953,6 +954,54 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # round-up; nothing measured argues for 90m/120m, which are the storage-hammering and heavy-tail rows.
 # Re-measure when the Release + tiering-off configuration of record lands -- it re-times every row, and
 # this is a Debug figure taken on one machine class.
+#
+# ---- THE GO 1.24.13 RE-CHECK (runbook H10 step 5, 2026-09-22) -----------------------------------
+# "Re-check the per-package deadline floors -- a migration can change a suite's cost." Every floored
+# row was read against the walls MEASURED at 1.24.13 -- the recon TSVs (docs/phase4/hopA-inputs/
+# recon-tsv/, i9 at 0dc65a8e8d), the i9 W=4 slice 2 (claude/i9-h10-s2-evidence, c6fdbe73c3), G-LAPTOP's
+# pass 3 (claude/g-h10-pass3-evidence, 8fc439415f) and the i7's own rows (pass 2 at f9a4b088f9, batch
+# 7 at d5414aa151) -- and RAISED where a wall exceeds its floor or comes within 25% of it (wall >=
+# 0.75 x floor). None is lowered: a floor is a floor, and most of the 1.23 figures behind these were
+# DEBUG walls that the Release+TC0 configuration of record has since re-timed downward.
+#
+#   row                            floor  largest 1.24.13 wall (host, word)       wall/floor  verdict
+#   hash/maphash                   60m    282 s (i7, PASS 59)                     0.08        holds
+#   index/suffixarray              120m   96 s (i9, PASS 12)                      0.01        holds
+#   crypto/dsa                     120m   51 s (i9, PASS 4)                       0.01        holds
+#   archive/zip                    60m    44 s (i9, PASS 100)                     0.01        holds
+#   go/parser                      90m    139 s (i9, PASS 176)                    0.03        holds
+#   crypto/internal/fips140/mlkem  30m    15 s (i9, PASS 10)                      0.01        RE-KEYED
+#   crypto/mlkem                   30m    27 s (i9, PASS 8)                       0.02        RE-KEYED
+#   time                           40m    592 s (i7, DIVERGED 178)                0.25        holds
+#   crypto/tls                     30m    885 s (G-LAPTOP, PASS 1340)             0.49        holds
+#   sync/atomic                    90m    92 s (i9, PASS 108)                     0.02        holds
+#   net                            40m    3,792 s (i9, NOVERDICT, hand-stopped)   1.58        RAISED -> 120m
+#   net/http                       60m    328 s (G-LAPTOP, DIVERGED 1387)         0.09        holds
+#
+# RE-KEYED: `crypto/internal/mlkem768` does not exist at 1.24.13, and this table is matched by row
+# NAME, so its entry reached nothing. By the relocation map (docs/phase4/hopA-inputs/relocations.tsv,
+# two arcs) and the fan-out rule (e0d5121e2 section 1: every arm of a split INHERITS the floor -- a
+# budget copied is an over-estimate, the safe direction), both successors carry its 30m. The ONE test
+# that owed it, TestPQCrystalsAccumulated, is declared nowhere at 1.24.13 (the roster's "two
+# retirements"), so the inherited floor is generous by construction; retiring it is a ruling, not a
+# re-check.
+#
+# RAISED: net's only 1.24.13 wall is 3,792 s against its 40m (2,400 s), and it is a LOWER BOUND -- the
+# run was hand-stopped with no verdict. By the net/http entry's own arithmetic a floor must clear a
+# lower bound by at least the smallest headroom this table carries (hash/maphash's 1.50x): 90m (5,400
+# s) is 1.42x and is rejected for the reason 40m was rejected there, while net's own former 1.62x
+# applied to 3,792 s gives 6,143 s (102 min) -- the 120m bracket, 1.90x over the lower bound, the
+# bracket this table already uses for its unknown-tail rows (index/suffixarray, crypto/dsa). The
+# converter applies -test-timeout to EACH child (publish, the C# host, `go test`) while the wall spans
+# all of them, so a row wall read against a per-child floor over-states the need: the safe direction.
+#
+# crypto/tls HOLDS on a reduced host state: G-LAPTOP's 885 s ran with the BoGo runner dying at its own
+# 600 s wall and its cases withdrawn; the FULL-host state is not yet measured at 1.24.13 (routed to
+# the i9, LEDGER 2026-09-22 16:03) and is the reading to re-check this row against when it lands.
+#
+# NOT FLOORED, and named so it is not re-discovered: `runtime` read 553-727 s on the i7 at 1.24.13
+# (batches 6-7) -- past this script's 10m default -- but it is not a banked row, so this sweep never
+# runs it and the H10 wrapper runs it at its asked -TestTimeout. It owes a floor the day it banks.
 
 # ---- per-package cgo state ------------------------------------------------------------------------
 # A package whose Go FILE SELECTION is cgo-conditional must be converted in the same cgo state the
