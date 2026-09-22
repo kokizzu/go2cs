@@ -30,9 +30,13 @@
 //     .NET's Volatile.Write IS a release store, so both map to the same call.
 //
 // TWO widths have no managed intrinsic and are served by a lock instead:
-//   - 8-bit (And8/Or8): the CLR has no byte-width Interlocked. A read-modify-write under a
-//     shared latch is atomic with respect to every other 8-bit atomic here, which is the only
-//     guarantee Go's callers rely on (bitmap bytes are never touched non-atomically).
+//   - 8-bit (Xchg8/And8/Or8): the CLR has no byte-width Interlocked And/Or. A read-modify-write
+//     under a shared latch is atomic with respect to every other 8-bit atomic here, which is the
+//     only guarantee Go's callers rely on (bitmap bytes are never touched non-atomically). Xchg8
+//     takes the SAME latch although .NET 9+ has a byte Interlocked.Exchange: a lock-free exchange
+//     racing a latched And8/Or8 on one byte would lose an update (the RMW reads, the exchange
+//     writes, the RMW writes back over it), and Go's own caller mixes them on one location --
+//     runtime/lock_spinbit.go's key8 byte, Xchg8 at :163/:198/:262.
 //   - the unsafe.Pointer family (Casp1/StorepNoWB/Loadp/storePointer/casPointer): golib models
 //     unsafe.Pointer as a CLASS wrapping a uintptr, so the "pointer word" is the wrapped NUMBER,
 //     not the object reference — a CAS must compare the numbers (two distinct Pointer objects
@@ -209,6 +213,16 @@ partial class atomic_package
     {
         lock (s_wideLatch)
             ptr.Value |= val;
+    }
+
+    public static partial uint8 Xchg8(ж<uint8> ptr, uint8 @new)
+    {
+        lock (s_wideLatch)
+        {
+            uint8 old = ptr.Value;
+            ptr.Value = @new;
+            return old;
+        }
     }
 
     // ---- unsafe.Pointer family (latched — compares the WRAPPED NUMBER) ----------------------
