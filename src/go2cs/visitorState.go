@@ -209,6 +209,7 @@ type Visitor struct {
 	packageImports        *strings.Builder
 	importQueue           HashSet[string]
 	requiredUsings        HashSet[string]
+	methodNamespaceUsings HashSet[string] // see collectMethodNamespaceUsings
 	typeAliasDeclarations *strings.Builder
 	// emittedClassName is the `partial class <name>` this FILE's declarations are emitted into —
 	// `<pkg>_package`, or the per-variant override under -tests (visitFile computes it; this is the

@@ -881,7 +881,7 @@ internal static error writeRuntimeProfile(io.Writer w, nint debug, @string name,
 
 
 [GoType("dyn")] partial struct cpuᴛ1 {
-    public partial ref sync_package.Mutex Mutex { get; }
+    public partial ref go.sync_package.Mutex Mutex { get; }
     internal bool profiling;
     internal channel<bool> done;
 }

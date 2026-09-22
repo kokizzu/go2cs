@@ -490,7 +490,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// unqualified csFullTypeName is kept below as the promotedInterfaceImplementations map KEY, which
 		// feeds generator-consumed strings that live in alias-less files (where the relative form
 		// resolves and the key must stay stable).
-		csEmitTypeName := rootQualifyIfAmbiguous(csFullTypeName)
+		csEmitTypeName := v.qualifyPackageReference(csFullTypeName)
 
 		// For the actual NAMED-field declaration, prefer the readable file-local package alias
 		// (`atomic.Int32` over `sync.atomic_package.Int32`) when this file imports the type's

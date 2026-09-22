@@ -307,7 +307,7 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	// group before the alias, CS0119, compress/flate) qualifies through the _package class.
 	if packageFuncMethodNames != nil && packageFuncMethodNames[ident.Name] {
 		if pkgName, ok := v.info.ObjectOf(ident).(*types.PkgName); ok {
-			return rootQualifyIfAmbiguous(convertImportPathToNamespace(pkgName.Imported().Path(), PackageSuffix))
+			return v.qualifyPackageReference(convertImportPathToNamespace(pkgName.Imported().Path(), PackageSuffix))
 		}
 	}
 
