@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -84,75 +112,75 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="abs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="acosh.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="all_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="arith_s390x.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="arith_s390x_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="asin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="asinh.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atan.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atan2.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="atanh.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="bits.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cbrt.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="const.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="const_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="copysign.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dim.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dim_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dim_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="erf.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="erfinv.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp2_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp2_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp_amd64.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="expm1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_s390x_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="floor.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="floor_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="floor_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fma.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="frexp.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="gamma.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="huge_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="hypot.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="hypot_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="hypot_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="j0.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="j1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="jn.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ldexp.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lgamma.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log10.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log1p.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log_stub.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="logb.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mod.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="modf.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="modf_asm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="modf_noasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="nextafter.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pow.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pow10.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="remainder.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="signbit.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sincos.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sinh.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sqrt.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tan.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tanh.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="trig_reduce.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="unsafe.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="abs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="acosh.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="all_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="arith_s390x.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="arith_s390x_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="asin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="asinh.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atan.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atan2.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="atanh.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="bits.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cbrt.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="const.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="const_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="copysign.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dim.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dim_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dim_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="erf.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="erfinv.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp2_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp2_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp_amd64.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="expm1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_s390x_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="floor.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="floor_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="floor_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fma.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="frexp.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="gamma.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="huge_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hypot.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hypot_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hypot_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="j0.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="j1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="jn.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ldexp.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lgamma.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log10.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log1p.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="logb.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mod.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="modf.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="modf_asm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="modf_noasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="nextafter.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pow.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pow10.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="remainder.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="signbit.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sincos.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sinh.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sqrt.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tan.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tanh.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="trig_reduce.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unsafe.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

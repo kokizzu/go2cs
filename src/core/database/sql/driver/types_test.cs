@@ -10,24 +10,6 @@ using static go.database.sql.driver_package;
 
 partial class driver_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 [GoType] internal partial struct valueConverterTest {
     internal global::go.database.sql.driver_package.ValueConverter c;
     internal any @in;
@@ -51,7 +33,7 @@ internal static ref int64 answer => ref Ꮡanswer.Value;
 
 [GoType("@string")] internal partial struct s;
 
-[GoType("time_package.Time")] internal partial struct t;
+[GoType("global::go.time_package.Time")] internal partial struct t;
 
 [GoType("[]nint")] internal partial struct @is;
 

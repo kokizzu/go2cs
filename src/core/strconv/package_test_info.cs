@@ -25,6 +25,11 @@ using go;
 using static global::go.strconv_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b426f6f6c20626f6f6c3b20496e7420696e743b20496e74363420696e7436343b2055696e7436342075696e7436343b20466c6f6174363420666c6f617436343b20436f6d706c657831323820636f6d706c65783132383b204572726f72206572726f723b204279746573205b5d627974657d", "Sinkᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b636f756e7420696e743b206465736320737472696e673b20666e2066756e6328297d", "mallocTestᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6620666c6f617436343b207320737472696e677d", "roundTripCasesᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e2075696e7436343b206f757420737472696e677d", "varlenUintsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20666c6f617420666c6f617436343b20666d7420627974653b207072656320696e743b2062697453697a6520696e747d", "ftoaBenchesᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -42,18 +47,18 @@ using static global::go.strconv_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("strconv/atob_test.go", "atob_test.cs", "ADZIooKClIKmgriClIIAChaCgoCCABAggoKCgg==")]
-[assembly: go.GoPositionMap("strconv/atoc_test.go", "atoc_test.cs", "ADFCggCSAbYCgoKClIKClIKWgoKClIKC3pKChIKCgpSC")]
-[assembly: go.GoPositionMap("strconv/atof_test.go", "atof_test.cs", "AN4D+AaCpqaCgoKmgoKCuoKUlIKCgoKWgoKCloKCuIKCgoLKgoKCgpSC3IKCgoKCgoKCqIKCgoKClIKCyoKCgoKClIKCuKaApICkgoKCgpQACgoAEiKCgoKCgpSCgpSCgoKUgoKUupKCgpSCgoKClISCgpS0tLSUqqKChIKCgpSCyqKCuKKCuKKCuKKCuKKCgoK4ooKCgriigoKClIKCgoKCgsqigriigriigriigoKCgpSCgriigoKCgpSCgg==")]
-[assembly: go.GoPositionMap("strconv/atoi_test.go", "atoi_test.cs", "ANAC/gSmgoKCpoKCgqaCgoKmgoKCpoKCgqaCgoLKgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgpSCgoKC2oKCgoL+gpSCgoKC2oKCgoL+gpSCgoKCgpSC2oKCgoKClIL+gqaCpoIAGTCCgpSClNaCgoKCgoIACAyCgoKCgoLcgoKCgoKC3IKCgoKCggAIDIKCyoCCAAgKgoKC+IKClIIACBKC7rKSgoKC3IKClIK4gsqCyrKSgoKC")]
-[assembly: go.GoPositionMap("strconv/ctoa_test.go", "ctoa_test.cs", "ABMYggAOMIKCgtyigoCCtg==")]
+[assembly: go.GoPositionMap("strconv/atob_test.go", "atob_test.cs", "ACRIooKClIKmgriClIIAChaCgoCCABAggoKCgg==")]
+[assembly: go.GoPositionMap("strconv/atoc_test.go", "atoc_test.cs", "AB9CggCSAbYCgoKClIKClIKWgoKClIKC3pKChIKCgpSC")]
+[assembly: go.GoPositionMap("strconv/atof_test.go", "atof_test.cs", "AMwD+AaCpqaCgoKmgoKCuoKUlIKCgoKWgoKCloKCuIKCgoLKgoKCgpSC3IKCgoKCgoKCqIKCgoKClIKCyoKCgoKClIKCuKaApICkgoKCgpQACgoAEiKCgoKCgpSCgpSCgoKUgoKUupKCgpSCgoKClISCgpS0tLSUqqKChIKCgpSCyqKCuKKCuKKCuKKCuKKCgoK4ooKCgriigoKClIKCgoKCgsqigriigriigriigoKCgpSCgriigoKCgpSCgg==")]
+[assembly: go.GoPositionMap("strconv/atoi_test.go", "atoi_test.cs", "AMQC/gSmgoKCpoKCgqaCgoKmgoKCpoKCgqaCgoLKgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgoKCgoLcgpSCgoKC2oKCgoL+gpSCgoKC2oKCgoL+gpSCgoKCgpSC2oKCgoKClIL+gqaCpoIAGTCCgpSClNaCgoKCgoIACAyCgoKCgoLcgoKCgoKC3IKCgoKCggAIDIKCyoCCAAgKgoKC+IKClIIACBKC7rKSgoKC3IKClIK4gsqCyrKSgoKC", "615-617:1;618-620:2;637-643:1;648-650:1;651-653:2;669-675:1")]
+[assembly: go.GoPositionMap("strconv/ctoa_test.go", "ctoa_test.cs", "ABMYggAOMIKCgtyigoCCtg==", "47-51:1")]
 [assembly: go.GoPositionMap("strconv/decimal_test.go", "decimal_test.cs", "ACBAgoKCgoKCggAdPoKCgoKCgoKmgoKCgqaCgoKCABgygoKCgoKCgg==")]
-[assembly: go.GoPositionMap("strconv/fp_test.go", "fp_test.cs", "ABwggpSkpKSqooCCgoKUgoKClKaCgoKCgpSUgoKCgoKUlKSCgpSqooCCgoKClIKCgpSkgoKClAANBqKCgpSUhIKCgpSCgoKUgoKUgoKCgpSkgoKClIKkgriC")]
-[assembly: go.GoPositionMap("strconv/ftoa_test.go", "ftoa_test.cs", "ABUqgACPAbgCgoKCgoKUgoKUgoKClIKC3IKCgoKCgIK2goKCgILsgoKClIKCgoSCgoKCgpaCgoKCgoLKooKAgrYAMmSCspKC3IKCsqKC")]
+[assembly: go.GoPositionMap("strconv/fp_test.go", "fp_test.cs", "ABAggpSkpKSqooCCgoKUgoKClKaCgoKCgpSUgoKCgoKUlKSCgpSqooCCgoKClIKCgpSkgoKClAANBqKCgpSUhIKCgpSCgoKUgoKUgoKCgpSkgoKClIKkgriC")]
+[assembly: go.GoPositionMap("strconv/ftoa_test.go", "ftoa_test.cs", "ABUqgACPAbgCgoKCgoKUgoKUgoKClIKC3IKCgoKCgIK2goKCgILsgoKClIKCgoSCgoKCgpaCgoKCgoLKooKAgrYAMmSCspKC3IKCsqKC", "250-254:1;307-311:1;318-322:1")]
 [assembly: go.GoPositionMap("strconv/ftoaryu_test.go", "ftoaryu_test.cs", "AAwagoKCgoLKgoKCgoI=")]
-[assembly: go.GoPositionMap("strconv/itoa_test.go", "itoa_test.cs", "ADx8ooKCgqaCgqiCgoKmgoK6goKC3oKAgrYAFCSCgoKCpoKCACFCgoKCgsqigoKCyqKCgoKCyqKCgoLKooKCgoLKgoKCgoKC3KKCgoKCuIKykoKCgg==")]
-[assembly: go.GoPositionMap("strconv/quote_test.go", "quote_test.cs", "ABMesoKCgoKCgt6ygoKCgoKCABgygoKAgqSAgtqCgoCCpICC2oKCgIKkgILaooK4ooLcooLcooIAGziCgoCCpICC2oKCgIKkgILagoKAgqSAggA5cIKCgIIAT6IBgoKUgpSCAAoKsgAGGoK4tIKCzIKUgoKUgoKCgpSC6KKC6KKC")]
-[assembly: go.GoPositionMap("strconv/strconv_test.go", "strconv_test.cs", "ACEwgqSkgqSmoqKkpgAJDoKClIKmgoKUgoKAggAhIoKC7gAHEpKUkpSSlJKUkpSSlJKUkpSSlJIACwiCgoKCgoQABhaCgoKClICC")]
+[assembly: go.GoPositionMap("strconv/itoa_test.go", "itoa_test.cs", "ADx8ooKCgqaCgqiCgoKmgoK6goKC3oKAgrYAFCSCgoKCpoKCACFCgoKCgsqigoKCyqKCgoKCyqKCgoLKooKCgoLKgoKCgoKC3KKCgoKCuIKykoKCgg==", "98-102:1;213-218:1;233-239:1")]
+[assembly: go.GoPositionMap("strconv/quote_test.go", "quote_test.cs", "AA0esoKCgoKCgt6ygoKCgoKCABgygoKAgqSAgtqCgoCCpICC2oKCgIKkgILaooK4ooLcooLcooIAGziCgoCCpICC2oKCgIKkgILagoKAgqSAggA5cIKCgIIAT6IBgoKUgpSCAAoKsgAGGoK4tIKCzIKUgoKUgoKCgpSC6KKC6KKC")]
+[assembly: go.GoPositionMap("strconv/strconv_test.go", "strconv_test.cs", "ABswgqSkgqSmoqKkpgAJDoKClIKmgoKUgoKAggAhIoKC7gAHEpKUkpSSlJKUkpSSlJKUkpSSlJIACwiCgoKCgoQABhaCgoKClICC", "90-97:1;91-96:1.1;99-101:2;102-104:3;105-107:4;108-110:5;111-113:6;114-116:7;117-119:8;120-122:9;123-125:10;126-128:11")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,6 +73,10 @@ public static partial class strconv_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestAllocationsFromBytes_bytes {}
+    internal partial struct TestErrorPrefixes_vectors {}
+    internal partial struct TestFormatComplex_tests {}
+    internal partial struct TestUnquoteInvalidUTF8_tests {}
     internal partial struct appendBoolTest {}
     internal partial struct atobTest {}
     internal partial struct atocTest {}
@@ -97,9 +106,36 @@ public static partial class strconv_test_package
     internal partial struct unQuoteTest {}
     internal partial struct varlenUintsᴛ1 {}
     public partial struct Sinkᴛ1 {}
-    public partial struct TestAllocationsFromBytes_bytes {}
-    public partial struct TestErrorPrefixes_vectors {}
-    public partial struct TestFormatComplex_tests {}
-    public partial struct TestUnquoteInvalidUTF8_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸcmplx() => builtin.initPackage(typeof(go.math.cmplx_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.strconv_package));
+    }
 }

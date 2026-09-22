@@ -30,31 +30,33 @@ internal static context.Context newAfterFuncContext() {
 
 internal static /*<-*/channel<EmptyStruct> Done(this ж<afterFuncContext> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
-        defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         if (c.done == default!) {
             c.done = new channel<EmptyStruct>(0);
         }
-        return c.done;
+        return c.done.WithDirection(GoChanDir.Recv);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static error Err(this ж<afterFuncContext> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
-        defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         return c.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static any Value(this ref afterFuncContext c, any key) {
@@ -66,7 +68,7 @@ internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f)
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock, ref ᒐ);
         var k = @new<byte>();
         if (c.afterFuncs == default!) {
@@ -77,7 +79,7 @@ internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f)
         return () => {
             GoFrame ᒐ = default;
             try {
-                Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
+                Ꮡc.Value.mu.Lock();
                 defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock, ref ᒐ);
                 var (_, ok) = Ꮡc.Value.afterFuncs[kʗ1, ꟷ];
                 delete(Ꮡc.Value.afterFuncs, kʗ1);
@@ -93,11 +95,12 @@ internal static Func<bool> ΔAfterFunc(this ж<afterFuncContext> Ꮡc, Action f)
 
 internal static void cancel(this ж<afterFuncContext> Ꮡc, error err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(afterFuncContext.Ꮡmu).Lock();
-        defer(Ꮡc.of(afterFuncContext.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         if (c.err != default!) {
             return;
         }
@@ -109,7 +112,7 @@ internal static void cancel(this ж<afterFuncContext> Ꮡc, error err) {
         c.afterFuncs = default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 public static void TestCustomContextAfterFuncCancel(ж<testing.T> Ꮡt) {

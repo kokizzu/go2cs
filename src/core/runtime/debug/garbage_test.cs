@@ -3,40 +3,16 @@
 // license that can be found in the LICENSE file.
 namespace go.runtime;
 
-using testenv = go.@internal.testenv_package;
+using testenv = @internal.testenv_package;
 using os = os_package;
 using runtime = runtime_package;
 using static go.runtime.debug_package;
 using testing = testing_package;
 using time = time_package;
+using @internal;
 using debug = go.runtime.debug_package;
-using go.@internal;
 
 partial class debug_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 public static void TestReadGCStats(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;

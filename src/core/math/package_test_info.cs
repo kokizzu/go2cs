@@ -14,6 +14,7 @@ using go;
 using static global::go.math_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b7820666c6f617436343b207920666c6f617436343b207a20666c6f617436343b2077616e7420666c6f617436347d", "fmaCᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -30,7 +31,7 @@ using static global::go.math_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/all_test.go", "all_test.cs", "AMsS8CC4gpSCgrqCgoKmpICigKKAooKUpKSmgoKClIKCuIKCgoCCtoKAgtqCgoKAgraCgILagoKCgIK2goCC2oKCgIK2goCC2oKCgIK2goCC2oKCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgILagoKCgIK2goCC2oKCgoCCtoKAgtqCgoKAgraCgIK2goCCtoKAgtqCgoKAgraCgIK2goCCtoKAggAJCoKCpoKCgIK2goCC2oKCgoCCtoKCgIK2goCCAAkKgoKmgoKAgraCgIK2goKCgsqCgoCCtoKAgtqCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgIK2goCC2oKCgIK2goCCtoKAgtqCgoCCtoKAgsiAgsiCgoCCtoKAgraCgILagoKAgraigoKCpJSUgsqCgoKAgraCgILagoKCgIK2goCC2oKCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgILagoKAgqSAgraCgIKkgILagoKAgraCgIK2goCCtoKAgraCgILagoKAgraCgILagoKCgIK2gIKkgoCC2oKCgIK2goCCtoKAgtqCgoKAgraAgqSCgILagoKCgIK2goCCpIKAgtqCgoKAgraAgqSCgIK2goKCgsqCgoCCtoKAgtqCgoKAgraCgILagoKAgraCgILagoKAgraCgILagoKAgtqCgoCCtoKAgsiAgraCgIK2goKCgoLKgoKAgraCgILagoKAgraCgILaooKAgraCgILYgoKAgraCgILagoKAgtqCgoCCtoKAgtqCgoKAgqSCgIK2goCCpICC2oKCgILIgoCC2oKCgIK2goCC2oKCgIK2goCC2oKCgoCCtoKAgtqCgoKAgraCgILagoKCgIKkgIK2goCCpICCtoCC7IKCgoKUgoLMkqiSqJKmyoKCgoKUgoKClIKCggAEEsKCgoKCgsqCgoKCgoLKgoKCgoKCyoKCgoKCgs6ilJSCgqaClIKEgIKkgIKkgIKkgoKCABQsgoKCgsqCgIKkgILukoKCgoKClJSCABAiooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpTKooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpTKooKClKiigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKCgpSCpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKClIKmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgoKUgqaigoKUpqKCgpSmooKClKaigoKUyqKCgpTKooKClMqigoKUpqKCgpSmooKClMqigoKUpqKCgpSmooKCgpSCpqKCgpSmooKCgpSmooKClKaigoKClKaigoKUptyCgqamooKClKaigoKUpqKCgpSkooKClKaigoKUpqKCgpSmooKClKaigoKUyqKCgpTKooKClMqigoKUpqKCgpQ=")]
+[assembly: go.GoPositionMap("math/all_test.go", "all_test.cs", "APMSxCG4gpSCgrqCgoKmpICigKKAooKUpKSmgoKClIKCuIKCgoCCtoKAgtqCgoKAgraCgILagoKCgIK2goCC2oKCgIK2goCC2oKCgIK2goCC2oKCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgtqCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgILagoKCgIK2goCC2oKCgoCCtoKAgtqCgoKAgraCgIK2goCCtoKAgtqCgoKAgraCgIK2goCCtoKAggAJCoKCpoKCgIK2goCC2oKCgoCCtoKCgIK2goCCAAkKgoKmgoKAgraCgIK2goKCgsqCgoCCtoKAgtqCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgIK2goCC2oKCgIK2goCCtoKAgtqCgoCCtoKAgsiAgsiCgoCCtoKAgraCgILagoKAgraigoKCpJSUgsqCgoKAgraCgILagoKCgIK2goCC2oKCgoCCtoKAgraCgILagoKAgraCgILagoKAgraCgILagoKAgqSAgraCgIKkgILagoKAgraCgIK2goCCtoKAgraCgILagoKAgraCgILagoKCgIK2gIKkgoCC2oKCgIK2goCCtoKAgtqCgoKAgraAgqSCgILagoKCgIK2goCCpIKAgtqCgoKAgraAgqSCgIK2goKCgsqCgoCCtoKAgtqCgoKAgraCgILagoKAgraCgILagoKAgraCgILagoKAgtqCgoCCtoKAgsiAgraCgIK2goKCgoLKgoKAgraCgILagoKAgraCgILaooKAgraCgILYgoKAgraCgILagoKAgtqCgoCCtoKAgtqCgoKAgqSCgIK2goCCpICC2oKCgILIgoCC2oKCgIK2goCC2oKCgIK2goCC2oKCgoCCtoKAgtqCgoKAgraCgILagoKCgIKkgIK2goCCpICCtoCC7IKCgoKUgoLMkqiSqJKmyoKCgoKUgoKClIKCggAEEsKCgoKCgsqCgoKCgoLKgoKCgoKCyoKCgoKCgs6ilJSCgqaClIKEgIKkgIKkgIKkgoKCABQsgoKCgsqCgIKkgILukoKCgoKClJSCABAiooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpTKooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpTKooKClKiigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKCgpSCpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKClIKmooKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgoKUgqaigoKUpqKCgpSmooKClKaigoKUyqKCgpTKooKClMqigoKUpqKCgpSmooKClMqigoKUpqKCgpSmooKCgpSCpqKCgpSmooKCgpSmooKClKaigoKClKaigoKUptyCgqamooKClKaigoKUpqKCgpSkooKClKaigoKUpqKCgpSmooKClKaigoKUyqKCgpTKooKClMqigoKUpqKCgpQ=", "2937-2941:1")]
 [assembly: go.GoPositionMap("math/const_test.go", "const_test.cs", "AAsagoCCpICCpICCpICCpICCyIKAgqSAgqSAgqSAgqSAgg==")]
 [assembly: go.GoPositionMap("math/huge_test.go", "huge_test.cs", "AESQAbKCgoKClIKCyoKCgoKClIKCyoKCgoKClIKCyoKCgoKClIKC")]
 // </GoSourcePositionMaps>
@@ -51,4 +52,23 @@ public static partial class math_test_package
     internal partial struct floatTest {}
     internal partial struct fmaCᴛ1 {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.math_package));
+    }
 }

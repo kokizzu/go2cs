@@ -10,12 +10,6 @@ using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static slice<byte> /*seq*/ makeSequence(nint start, nint n) {
     slice<byte> seq = default!;
 
@@ -55,9 +49,9 @@ internal static void testWindow(ж<testing.T> Ꮡt, nint size, slice<byte> a, sl
     w.save(b);
     w.save(c);
     slice<byte> tail = default!;
-    tail = append(tail, a.ꓸꓸꓸ);
-    tail = append(tail, b.ꓸꓸꓸ);
-    tail = append(tail, c.ꓸꓸꓸ);
+    tail = appendꓸꓸꓸ(tail, a);
+    tail = appendꓸꓸꓸ(tail, b);
+    tail = appendꓸꓸꓸ(tail, c);
     if (builtin.len(tail) > size) {
         tail = tail[(int)(builtin.len(tail) - size)..];
     }

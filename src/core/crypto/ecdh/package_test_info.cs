@@ -14,7 +14,7 @@ global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
 global using ecdhꓸCurve = go.crypto.ecdh_package.ΔCurve;
-global using ecdhꓸPublicKey = go.crypto.ecdh_package.ΔPublicKey;
+global using ecdhꓸPublicKey = go.crypto.@internal.fips140.ecdh_package.ΔPublicKey;
 global using execꓸError = go.os.exec_package.ΔError;
 global using osꓸDirEntry = go.io.fs_package.DirEntry;
 global using osꓸFileInfo = go.io.fs_package.FileInfo;
@@ -39,6 +39,9 @@ using static go.crypto.ecdh_test_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b457175616c28782063727970746f2e507269766174654b65792920626f6f6c3b205075626c696328292063727970746f2e5075626c69634b65797d", "_ᴛ2")]
+[assembly: GoDynamicTypeLift("696e746572666163657b457175616c28782063727970746f2e5075626c69634b65792920626f6f6c7d", "_ᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b507269766174654b657920737472696e673b205075626c69634b657920737472696e673b20506565725075626c69634b657920737472696e673b2053686172656453656372657420737472696e677d", "vectorsᴛ1")]
 [assembly: GoTypeAlias("Curve", "ΔCurve")]
 [assembly: GoTypeAlias("PublicKey", "ΔPublicKey")]
 // </ExportedTypeAliases>
@@ -51,12 +54,7 @@ using static go.crypto.ecdh_test_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<PrivateKey, _ᴛ2>(Pointer = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<nistCurve<P256PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P384PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P521PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<nistCurve, ΔCurve>(Pointer = true)]
 [assembly: GoImplement<x25519Curve, ΔCurve>(Pointer = true)]
 [assembly: GoImplement<ΔPublicKey, _ᴛ1>(Pointer = true)]
 // </InterfaceImplementations>
@@ -73,10 +71,10 @@ using static go.crypto.ecdh_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AGuWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
-[assembly: go.GoPositionMap("crypto/ecdh/ecdh_test.go", "ecdh_test.cs", "AJUBTIKCgoKUgoKWgoKUgpSCloKClIKUgpaCgpSCgpaCAAkUgoKCpoKCgoKCAAYQgJIALl6CgoKCgpSClIKClIKClIIACAyCgoKUpoKCgoIACAqCgoKChKCSoOaCgoKUgoKUgoKUggA5dIKCgoKCpKQAM2iCgoKCgqSkAAsMgoCSgJKAkoC2goKCgpSogoKUgoKEhIKCgpSCgoKUgoKUyoKAkoCSgJKA7JKCABc0soKUhIKCgoKWkoKCgoKUloKCgIKqooKCgoKUgqaCAAsIggAFFIKCgpaygpSigoKUgoKC")]
-[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ADVAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
-[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABgy0AAKDIKmgoKCgIKkpoKClNyigpS4goKmgoKUAAgMsoKCgpSmgoSCgoKE4oKCgoSCgoKCgoKChIKCgoKCgoKCgoKCgoSCgoKCloKEgoI=")]
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AEKIAZaiAAIU8oKClKiCABI2AA4CgpSolqIAAhTygoKUqIKmgqqi")]
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh_test.go", "ecdh_test.cs", "ADVMgoKCgpSCgpaCgpSClIKWgoKUgpSCloKClIKCloIACRSCgoKmgoKCgoIABhCAkgAuXoKCgoKClIKUgoKUgoKUggAIDIKCgpSmgoKCggAICoKCgoKEoJKg5oKCgpSCgpSCgpSCADl0goKCgoKkpAAzaIKCgoKCpKQACwyCgJKAkoCSgLaCgoKClKiCgpSCgoSEgoKClIKCgpSCgpTKgoCSgJKAkoDskoIAKDaygpSEgoKCgpaSgoKCgpSWgoKAgqqigoKCgpSCpoIACwiCAAUUgoKClrKClKKCgpSCgoI=", "39-83:1;98-113:1;159-180:1;192-197:1;206-206:1;207-207:2;283-294:1;344-355:1;359-359:1;360-360:2;361-361:3;362-362:4;366-401:1;405-405:1;406-406:2;407-407:3;408-408:4;456-464:1;511-521:1")]
+[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ABkwgtaigoKClIKClNyWgpaCgpYACRSCgoKUgoKUgpTWooKCgpSCgpTcloKClAAJFNbGgpS4goKClJSCgpSUpgAJEIKUAAIQ0AAIHAADEtAACBwAAxLQAAgc")]
+[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABQ20AAKDILWgoKUgoKAgqTWgoKUgpSCgrjugoKUgpQACAyygoKClKaChIKCgoTigoKChIKCgoKCgoKEgoKCgoKCgoKCgoKChIKCgoKWgoSCgqiSgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -91,13 +89,44 @@ public static partial class ecdh_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface nistPoint<T> {}
-    internal partial struct nistCurve<Point> {}
+    internal partial struct nistCurve {}
     internal partial struct x25519Curve {}
     public partial interface ΔCurve {}
     public partial struct PrivateKey {}
     public partial struct ΔPublicKey {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸecdh() => builtin.initPackage(typeof(go.crypto.@internal.fips140.ecdh_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸedwards25519ꓸfield() => builtin.initPackage(typeof(go.crypto.@internal.fips140.edwards25519.field_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() => builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(go.crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20() => builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20_package));
+    // </ImportInitializers>
 }
 
 [GoPackage("ecdh_test")]

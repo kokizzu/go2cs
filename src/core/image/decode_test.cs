@@ -13,22 +13,10 @@ using testing = testing_package;
 // blank import: go.image.jpeg_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
 // blank import: go.image.png_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
 using go.image;
-using io = io_package;
 using static go.image_internal_test_package;
+using Δio = io_package;
 
 partial class image_test_package {
-
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸimageꓸgif() {
-    builtin.initPackage(typeof(go.image.gif_package));
-}
-
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() {
-    builtin.initPackage(typeof(go.image.png_package));
-}
 
 [GoType] partial struct imageTest {
     internal @string goldenFilename;

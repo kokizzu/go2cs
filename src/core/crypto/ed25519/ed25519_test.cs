@@ -7,18 +7,16 @@ using bufio = bufio_package;
 using bytes = bytes_package;
 using gzip = compress.gzip_package;
 using crypto = crypto_package;
-using boring = go.crypto.@internal.boring_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using rand = go.crypto.rand_package;
 using sha512 = go.crypto.sha512_package;
 using hex = encoding.hex_package;
-using testenv = go.@internal.testenv_package;
 using log = log_package;
 using os = os_package;
 using strings = strings_package;
 using testing = testing_package;
 using compress;
 using encoding;
-using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
 using io = io_package;
@@ -47,6 +45,54 @@ public static void Example_ed25519ctx() {
         ))); if (errΔ1 != default!) {
             log.Fatal(invalidSignatureˢ);
         }
+    }
+}
+
+public static void TestGenerateKey(ж<testing.T> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    // nil is like using crypto/rand.Reader.
+    var (@public, @private, err) = GenerateKey(default!);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (len(@public) != PublicKeySize) {
+        Ꮡt.Errorf("public key has the wrong size: %d"u8, len(@public));
+    }
+    if (len(@private) != PrivateKeySize) {
+        Ꮡt.Errorf("private key has the wrong size: %d"u8, len(@private));
+    }
+    if (!bytes.Equal(@private.Public()._<PublicKey>(), @public)) {
+        Ꮡt.Errorf("public key doesn't match private key"u8);
+    }
+    var fromSeed = NewKeyFromSeed(@private.Seed());
+    if (!bytes.Equal(@private, fromSeed)) {
+        Ꮡt.Errorf("recreating key pair from seed gave different private key"u8);
+    }
+    (_, var k2, err) = GenerateKey(default!);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (bytes.Equal(@private, k2)) {
+        Ꮡt.Errorf("GenerateKey returned the same private key twice"u8);
+    }
+    (_, var k3, err) = GenerateKey(rand.Reader);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (bytes.Equal(@private, k3)) {
+        Ꮡt.Errorf("GenerateKey returned the same private key twice"u8);
+    }
+    // GenerateKey is documented to be the same as NewKeyFromSeed.
+    var seed = new slice<byte>(SeedSize);
+    rand.Read(seed);
+    (_, var k4, err) = GenerateKey(new ed25519_test_package.bytes_ReaderжReader(bytes.NewReader(seed)));
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var k4n = NewKeyFromSeed(seed);
+    if (!bytes.Equal(k4, k4n)) {
+        Ꮡt.Errorf("GenerateKey with seed gave different private key"u8);
     }
 }
 
@@ -337,14 +383,10 @@ public static void TestMalleability(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object skippingAllocationsTestˢ = (@string)"skipping allocations test with BoringCrypto"u8;
 internal static readonly object signatureDidnTVerifyˢ = (@string)"signature didn't verify"u8;
 
 public static void TestAllocations(ж<testing.T> Ꮡt) {
-    if (boring.Enabled) {
-        Ꮡt.Skip(skippingAllocationsTestˢ);
-    }
-    testenv.SkipIfOptimizationOff(new ed25519_test_package.testing_TжTB(Ꮡt));
+    cryptotest.SkipTestAllocations(Ꮡt);
     {
         var allocs = testing.AllocsPerRun(100, () => {
             var seed = new slice<byte>(SeedSize);

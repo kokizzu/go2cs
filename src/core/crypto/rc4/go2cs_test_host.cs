@@ -12,8 +12,9 @@ internal static class Go2CsTestHost
             "rc4.go",
             "rc4_test.go",
         });
-        registry.Add("TestBlock", rc4_internal_test_package.TestBlock, "rc4_test.go", 119);
-        registry.Add("TestGolden", rc4_internal_test_package.TestGolden, "rc4_test.go", 87);
+        registry.Add("TestBlock", rc4_internal_test_package.TestBlock, "rc4_test.go", 121);
+        registry.Add("TestGolden", rc4_internal_test_package.TestGolden, "rc4_test.go", 89);
+        registry.Add("TestRC4Stream", rc4_internal_test_package.TestRC4Stream, "rc4_test.go", 141);
         return TestHost.Run(registry, args);
     }
 }

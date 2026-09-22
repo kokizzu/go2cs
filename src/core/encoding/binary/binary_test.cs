@@ -5,6 +5,7 @@ namespace go.encoding;
 
 using bytes = bytes_package;
 using fmt = fmt_package;
+using asan = @internal.asan_package;
 using io = io_package;
 using math = math_package;
 using reflect = reflect_package;
@@ -12,57 +13,10 @@ using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
 using @unsafe = unsafe_package;
+using @internal;
 using static go.encoding.binary_package;
 
 partial class binary_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 [GoType] [GoValueClone("Array", "BoolArray")] public partial struct Struct {
     public int8 Int8;
@@ -155,6 +109,7 @@ internal static slice<int32> res = new int32[]{0x01020304, 0x05060708}.slice();
 internal static slice<byte> putbuf = new byte[]{0, 0, 0, 0, 0, 0, 0, 0}.slice();
 
 internal static void checkResult(ж<testing.T> Ꮡt, @string dir, global::go.encoding.binary_package.ByteOrder order, error err, any have, any want) {
+    Ꮡt.Helper();
     if (err != default!) {
         Ꮡt.Errorf("%v %v: %v"u8, dir, order, err);
         return;
@@ -223,6 +178,7 @@ internal static void initᴛdecoders() { decoders = new decodersᴛ1[]{
 }.slice(); }
 
 internal static void testRead(ж<testing.T> Ꮡt, global::go.encoding.binary_package.ByteOrder order, slice<byte> b, any s1) {
+    Ꮡt.Helper();
     foreach (var (_, vᴛ1) in decoders) {
         ref var dec = ref heap(new decodersᴛ1(), out var Ꮡdec);
         dec = vᴛ1;
@@ -238,6 +194,7 @@ internal static void testRead(ж<testing.T> Ꮡt, global::go.encoding.binary_pac
 }
 
 internal static void testWrite(ж<testing.T> Ꮡt, global::go.encoding.binary_package.ByteOrder order, slice<byte> b, any s1) {
+    Ꮡt.Helper();
     foreach (var (_, vᴛ1) in encoders) {
         ref var enc = ref heap(new encodersᴛ1(), out var Ꮡenc);
         enc = vᴛ1;
@@ -573,7 +530,7 @@ public static void TestSizeInvalid(ж<testing.T> Ꮡt) {
         ((ж<nint>)nil),
         new nuint[]{}.array(1),
         Ꮡ(new array<nuint>(1)),
-        ((ж<array<nuint>>)nil),
+        ж<array<nuint>>.NilBoxOfDims(1L),
         new nint[]{}.slice(),
         slice<nint>(default!),
         @new<slice<nint>>(),
@@ -775,7 +732,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                     Ꮡt.Errorf("AppendUint16: Uint16 = %v, want %v"u8, got, want16);
                 }
             }
-            if (len(buf) != offset + 2) {
+            if (len(buf) != (nint)(offset + 2)) {
                 Ꮡt.Errorf("AppendUint16: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 2));
             }
             var want32 = (uint32)value;
@@ -791,7 +748,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                     Ꮡt.Errorf("AppendUint32: Uint32 = %v, want %v"u8, got, want32);
                 }
             }
-            if (len(buf) != offset + 4) {
+            if (len(buf) != (nint)(offset + 4)) {
                 Ꮡt.Errorf("AppendUint32: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 4));
             }
             var want64 = (uint64)value;
@@ -807,7 +764,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                     Ꮡt.Errorf("AppendUint64: Uint64 = %v, want %v"u8, got, want64);
                 }
             }
-            if (len(buf) != offset + 8) {
+            if (len(buf) != (nint)(offset + 8)) {
                 Ꮡt.Errorf("AppendUint64: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 8));
             }
         }
@@ -883,9 +840,13 @@ public static void TestNoFixedSize(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly object appendFailedˢ = (@string)"Append failed:"u8;
 
 public static void TestAppendAllocs(ж<testing.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     var buf = new slice<byte>(0, Size(Ꮡs));
     ref var err = ref heap<error>(out var Ꮡerr);
     var bufʗ1 = buf;
@@ -922,6 +883,9 @@ internal static slice<any> sizableTypes = new any[]{
 }.slice();
 
 public static void TestSizeAllocs(ж<testing.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     foreach (var (_, data) in sizableTypes) {
         var dataʗ1 = data;
         Ꮡt.Run(fmt.Sprintf("%T"u8, data), (ж<testing.T> tΔ1) => {
