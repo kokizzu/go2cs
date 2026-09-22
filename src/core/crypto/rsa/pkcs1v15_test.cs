@@ -26,54 +26,6 @@ using static go.crypto.rsa_internal_test_package;
 
 partial class rsa_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() {
-    builtin.initPackage(typeof(go.crypto.sha1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(go.crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() {
-    builtin.initPackage(typeof(encoding.pem_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
-    builtin.initPackage(typeof(go.testing.quick_package));
-}
-
 internal static slice<byte> decodeBase64(@string @in) {
     var @out = new slice<byte>(base64.StdEncoding.DecodedLen(len(@in)));
     var (n, err) = base64.StdEncoding.Decode(@out, slice<byte>(@in));
@@ -108,12 +60,13 @@ internal static slice<DecryptPKCS1v15Test> decryptPKCS1v15Tests = new DecryptPKC
 }.slice();
 
 public static void TestDecryptPKCS1v15(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     var decryptionFuncs = new Func<slice<byte>, (slice<byte>, error)>[]{
         (slice<byte> ciphertext) => {
-            return DecryptPKCS1v15(default!, rsaPrivateKey, ciphertext);
+            return DecryptPKCS1v15(default!, test512Key, ciphertext);
         },
         (slice<byte> ciphertext) => {
-            return rsaPrivateKey.Decrypt(default!, ciphertext, default!);
+            return test512Key.Decrypt(default!, ciphertext, default!);
         }
     }.slice();
     foreach (var (_, decryptFunc) in decryptionFuncs) {
@@ -164,7 +117,7 @@ public static void TestEncryptPKCS1v15(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
         config.Value.MaxCount = 10;
     }
-    quick.Check(tryEncryptDecrypt, config);
+    quick.Check((tryEncryptDecrypt).OrTypedNilFunc(), config);
 }
 
 // These test vectors were generated with `openssl rsautl -pkcs -encrypt`
@@ -188,9 +141,10 @@ internal static slice<DecryptPKCS1v15Test> decryptPKCS1v15SessionKeyTests = new 
 }.slice();
 
 public static void TestEncryptPKCS1v15SessionKey(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     foreach (var (i, test) in decryptPKCS1v15SessionKeyTests) {
         var key = slice<byte>("FAIL"u8);
-        var err = DecryptPKCS1v15SessionKey(default!, rsaPrivateKey, decodeBase64(test.@in), key);
+        var err = DecryptPKCS1v15SessionKey(default!, test512Key, decodeBase64(test.@in), key);
         if (err != default!) {
             Ꮡt.Errorf("#%d error decrypting"u8, i);
         }
@@ -202,8 +156,9 @@ public static void TestEncryptPKCS1v15SessionKey(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEncryptPKCS1v15DecrypterSessionKey(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     foreach (var (i, test) in decryptPKCS1v15SessionKeyTests) {
-        var (plaintext, err) = rsaPrivateKey.Decrypt(rand.Reader, decodeBase64(test.@in), Ꮡ(new PKCS1v15DecryptOptions(SessionKeyLen: 4)));
+        var (plaintext, err) = test512Key.Decrypt(rand.Reader, decodeBase64(test.@in), Ꮡ(new PKCS1v15DecryptOptions(SessionKeyLen: 4)));
         if (err != default!) {
             Ꮡt.Fatalf("#%d: error decrypting: %s"u8, i, err);
         }
@@ -243,11 +198,12 @@ internal static slice<signPKCS1v15Test> signPKCS1v15Tests = new signPKCS1v15Test
 }.slice();
 
 public static void TestSignPKCS1v15(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     foreach (var (i, test) in signPKCS1v15Tests) {
         var h = sha1.New();
         h.Write(slice<byte>(test.@in));
         var digest = h.Sum(default!);
-        var (s, err) = SignPKCS1v15(default!, rsaPrivateKey, crypto.SHA1, digest);
+        var (s, err) = SignPKCS1v15(default!, test512Key, crypto.SHA1, digest);
         if (err != default!) {
             Ꮡt.Errorf("#%d %s"u8, i, err);
         }
@@ -259,12 +215,13 @@ public static void TestSignPKCS1v15(ж<testing.T> Ꮡt) {
 }
 
 public static void TestVerifyPKCS1v15(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     foreach (var (i, test) in signPKCS1v15Tests) {
         var h = sha1.New();
         h.Write(slice<byte>(test.@in));
         var digest = h.Sum(default!);
         var (sig, _) = hex.DecodeString(test.@out);
-        var err = VerifyPKCS1v15(rsaPrivateKey.of(rsa.PrivateKey.ᏑPublicKey), crypto.SHA1, digest, sig);
+        var err = VerifyPKCS1v15(test512Key.of(rsa.PrivateKey.ᏑPublicKey), crypto.SHA1, digest, sig);
         if (err != default!) {
             Ꮡt.Errorf("#%d %s"u8, i, err);
         }
@@ -275,14 +232,16 @@ public static void TestVerifyPKCS1v15(ж<testing.T> Ꮡt) {
 internal static readonly object rsaDecryptedAMessageThatˢ = (@string)"RSA decrypted a message that was too long."u8;
 
 public static void TestOverlongMessagePKCS1v15(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     var ciphertext = decodeBase64("fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAc/Y4krkeZ11XFThIrEvw\nkRiZcCq5ng=="u8);
-    var (_, err) = DecryptPKCS1v15(default!, rsaPrivateKey, ciphertext);
+    var (_, err) = DecryptPKCS1v15(default!, test512Key, ciphertext);
     if (err == default!) {
         Ꮡt.Error(rsaDecryptedAMessageThatˢ);
     }
 }
 
 public static void TestUnpaddedSignature(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     var msg = slice<byte>("Thu Dec 19 18:06:16 EST 2013\n"u8);
     // This base64 value was generated with:
     // % echo Thu Dec 19 18:06:16 EST 2013 > /tmp/msg
@@ -291,7 +250,7 @@ public static void TestUnpaddedSignature(ж<testing.T> Ꮡt) {
     // Where "key" contains the RSA private key given at the bottom of this
     // file.
     var expectedSig = decodeBase64("pX4DR8azytjdQ1rtUiC040FjkepuQut5q2ZFX1pTjBrOVKNjgsCDyiJDGZTCNoh9qpXYbhl7iEym30BWWwuiZg=="u8);
-    var (sig, err) = SignPKCS1v15(default!, rsaPrivateKey, ((crypto.Hash)0), msg);
+    var (sig, err) = SignPKCS1v15(default!, test512Key, ((crypto.Hash)0), msg);
     if (err != default!) {
         Ꮡt.Fatalf("SignPKCS1v15 failed: %s"u8, err);
     }
@@ -299,7 +258,7 @@ public static void TestUnpaddedSignature(ж<testing.T> Ꮡt) {
         Ꮡt.Fatalf("signature is not expected value: got %x, want %x"u8, sig, expectedSig);
     }
     {
-        var errΔ1 = VerifyPKCS1v15(rsaPrivateKey.of(rsa.PrivateKey.ᏑPublicKey), ((crypto.Hash)0), msg, sig); if (errΔ1 != default!) {
+        var errΔ1 = VerifyPKCS1v15(test512Key.of(rsa.PrivateKey.ᏑPublicKey), ((crypto.Hash)0), msg, sig); if (errΔ1 != default!) {
             Ꮡt.Fatalf("signature failed to verify: %s"u8, errΔ1);
         }
     }
@@ -323,25 +282,12 @@ public static void TestShortSessionKey(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("Failed to decrypt short message: %s"u8, errΔ1);
         }
     }
-    foreach (var (_, v) in key) {
+    foreach (var (_, v) in key.ΔRangeSnapshot()) {
         if (v != 0) {
             Ꮡt.Fatal(keyWasModifiedWhenˢ);
         }
     }
 }
-
-internal static ж<ж<rsa.PrivateKey>> ᏑrsaPrivateKey = new StandardBox<ж<rsa.PrivateKey>>(parseKey(testingKey("""
------BEGIN RSA TESTING KEY-----
-MIIBOgIBAAJBALKZD0nEffqM1ACuak0bijtqE2QrI/KLADv7l3kK3ppMyCuLKoF0
-fd7Ai2KW5ToIwzFofvJcS/STa6HA5gQenRUCAwEAAQJBAIq9amn00aS0h/CrjXqu
-/ThglAXJmZhOMPVn4eiu7/ROixi9sex436MaVeMqSNf7Ex9a8fRNfWss7Sqd9eWu
-RTUCIQDasvGASLqmjeffBNLTXV2A5g4t+kLVCpsEIZAycV5GswIhANEPLmax0ME/
-EO+ZJ79TJKN5yiGBRsv5yvx5UiHxajEXAiAhAol5N4EUyq6I9w1rYdhPMGpLfk7A
-IU2snfRJ6Nq2CQIgFrPsWRCkV+gOYcajD17rEqmuLrdIRexpg8N1DOSXoJ8CIGlS
-tAboUGBxTDq3ZroNism3DaMIbKPyYrAqhKov1h5V
------END RSA TESTING KEY-----
-"""u8)));
-internal static ref ж<rsa.PrivateKey> rsaPrivateKey => ref ᏑrsaPrivateKey.ValueSlot;
 
 internal static ж<rsa.PublicKey> parsePublicKey(@string s) {
     var (p, _) = pem.Decode(slice<byte>(s));

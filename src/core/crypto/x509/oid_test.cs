@@ -12,12 +12,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
 
 [GoType("dyn")] partial struct oidTestsᴛ1 {
     internal slice<byte> raw;
@@ -137,12 +131,12 @@ public static void TestInvalidOID(ж<testing.T> Ꮡt) {
 
 public static void TestOIDEqual(ж<testing.T> Ꮡt) {
     slice<TestOIDEqual_type> cases = new TestOIDEqual_type[]{
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 4}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3, 4}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{2, 33, 22}.slice()), oid2: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{2, 33, 23}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new uint64[]{1, 2, 4}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: mustNewOIDFromInts(new uint64[]{1, 2, 3, 4}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{2, 33, 22}.slice()), oid2: mustNewOIDFromInts(new uint64[]{2, 33, 23}.slice()), eq: false),
         new(oid: new OID(nil), oid2: new OID(nil), eq: true),
-        new(oid: new OID(nil), oid2: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{2, 33, 23}.slice()), eq: false)
+        new(oid: new OID(nil), oid2: mustNewOIDFromInts(new uint64[]{2, 33, 23}.slice()), eq: false)
     }.slice();
     foreach (var (_, tt) in cases) {
         {
@@ -221,6 +215,13 @@ public static void TestOIDMarshal(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("(%#v).MarshalText() = (%v, %v); want = (%v, nil)"u8, o, ((@string)marshalled), err, tt.@in);
             continue;
         }
+        var textAppend = new slice<byte>(4);
+        (textAppend, err) = o.AppendText(textAppend);
+        textAppend = textAppend[4..];
+        if (((sstring)textAppend) != tt.@in || err != default!) {
+            Ꮡt.Errorf("(%#v).AppendText() = (%v, %v); want = (%v, nil)"u8, o, ((@string)textAppend), err, tt.@in);
+            continue;
+        }
         (var binary, err) = o.MarshalBinary();
         if (err != default!) {
             Ꮡt.Errorf("(%#v).MarshalBinary() = %v; want = nil"u8, o, err);
@@ -233,6 +234,22 @@ public static void TestOIDMarshal(ж<testing.T> Ꮡt) {
         }
         if (!o3.Equal(tt.@out)) {
             Ꮡt.Errorf("(*OID).UnmarshalBinary(%v) = %v; want = %v"u8, binary, o3, tt.@out);
+            continue;
+        }
+        var binaryAppend = new slice<byte>(4);
+        (binaryAppend, err) = o.AppendBinary(binaryAppend);
+        binaryAppend = binaryAppend[4..];
+        if (err != default!) {
+            Ꮡt.Errorf("(%#v).AppendBinary() = %v; want = nil"u8, o, err);
+        }
+        global::go.crypto.x509_package.OID o4 = default!;
+        {
+            var errΔ2 = o4.UnmarshalBinary(binaryAppend); if (errΔ2 != default!) {
+                Ꮡt.Errorf("(*OID).UnmarshalBinary(%v) = %v; want = nil"u8, binaryAppend, errΔ2);
+            }
+        }
+        if (!o4.Equal(tt.@out)) {
+            Ꮡt.Errorf("(*OID).UnmarshalBinary(%v) = %v; want = %v"u8, binaryAppend, o4, tt.@out);
             continue;
         }
     }
@@ -248,30 +265,30 @@ public static void TestOIDEqualASN1OID(ж<testing.T> Ꮡt) {
     var maxInt32PlusOne = 2147483648L;
 /*convert to int, so that it compiles on 32bit*/
     slice<TestOIDEqualASN1OID_type> cases = new TestOIDEqualASN1OID_type[]{
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 3}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 4}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 3, 4}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 22}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 23}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 23}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 22}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 127}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 127}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 127}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 128}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 129}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 129}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 129}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 129}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 128}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 255}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 255}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 256}.slice()), eq: true),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{2, 33, 257}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{2, 33, 256}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{2, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{2, 33, 257}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, math.MaxInt32}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, math.MaxInt32}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33}.slice()), eq: false),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, math.MaxInt32}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, math.MaxInt32}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 3}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 4}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 2, 3}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 2, 3, 4}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 22}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 23}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 23}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 22}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 127}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 127}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 127}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 128}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 129}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 129}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 128}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 129}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 129}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 128}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 255}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 255}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 256}.slice()), eq: true),
+        new(oid: mustNewOIDFromInts(new uint64[]{2, 33, 257}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{2, 33, 256}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{2, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{2, 33, 257}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, math.MaxInt32}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, math.MaxInt32}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, math.MaxInt32}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, math.MaxInt32}.slice()), eq: true),
         new(
-            oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, math.MaxInt32 + 1}.slice()),
+            oid: mustNewOIDFromInts(new uint64[]{1, 33, math.MaxInt32 + 1}.slice()),
             oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, (nint)maxInt32PlusOne}.slice()),
             eq: false
         ),
-        new(oid: mustNewOIDFromInts(new x509_test_package.testing_TжTB(Ꮡt), new uint64[]{1, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{}.slice()), eq: false),
+        new(oid: mustNewOIDFromInts(new uint64[]{1, 33, 256}.slice()), oid2: new asn1.ObjectIdentifier(new nint[]{}.slice()), eq: false),
         new(oid: new OID(nil), oid2: new asn1.ObjectIdentifier(new nint[]{1, 33, 256}.slice()), eq: false),
         new(oid: new OID(nil), oid2: new asn1.ObjectIdentifier(new nint[]{}.slice()), eq: false)
     }.slice();
@@ -301,7 +318,7 @@ public static void TestOIDUnmarshalBinary(ж<testing.T> Ꮡt) {
 public static void BenchmarkOIDMarshalUnmarshalText(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    var oid = mustNewOIDFromInts(new x509_test_package.testing_BжTB(Ꮡb), new uint64[]{1, 2, 3, 9999, 1024}.slice());
+    var oid = mustNewOIDFromInts(new uint64[]{1, 2, 3, 9999, 1024}.slice());
     foreach (var _ᴛ1 in range(b.N)) {
         var (text, err) = oid.MarshalText();
         if (err != default!) {
@@ -314,14 +331,6 @@ public static void BenchmarkOIDMarshalUnmarshalText(ж<testing.B> Ꮡb) {
             }
         }
     }
-}
-
-internal static global::go.crypto.x509_package.OID mustNewOIDFromInts(testing.TB t, slice<uint64> ints) {
-    var (oid, err) = OIDFromInts(ints);
-    if (err != default!) {
-        t.Fatalf("OIDFromInts(%v) unexpected error: %v"u8, ints, err);
-    }
-    return oid;
 }
 
 } // end x509_internal_test_package

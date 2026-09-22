@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/types` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-27 · converter `2ac5e6646`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**557 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**574 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/go/types`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/types).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 
@@ -282,6 +284,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestFixedbugs/issue51386.go` | pass | pass |
 | `TestFixedbugs/issue51437.go` | pass | pass |
 | `TestFixedbugs/issue51472.go` | pass | pass |
+| `TestFixedbugs/issue51503.go` | pass | pass |
 | `TestFixedbugs/issue51509.go` | pass | pass |
 | `TestFixedbugs/issue51525.go` | pass | pass |
 | `TestFixedbugs/issue51533.go` | pass | pass |
@@ -298,6 +301,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestFixedbugs/issue52698.go` | pass | pass |
 | `TestFixedbugs/issue52915.go` | pass | pass |
 | `TestFixedbugs/issue53358.go` | pass | pass |
+| `TestFixedbugs/issue53535.go` | pass | pass |
 | `TestFixedbugs/issue53650.go` | pass | pass |
 | `TestFixedbugs/issue53692.go` | pass | pass |
 | `TestFixedbugs/issue54280.go` | pass | pass |
@@ -359,15 +363,25 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestFixedbugs/issue66064.go` | pass | pass |
 | `TestFixedbugs/issue66285.go` | pass | pass |
 | `TestFixedbugs/issue66323.go` | pass | pass |
+| `TestFixedbugs/issue66751.go` | pass | pass |
 | `TestFixedbugs/issue66878.go` | pass | pass |
 | `TestFixedbugs/issue67547.go` | pass | pass |
 | `TestFixedbugs/issue67628.go` | pass | pass |
 | `TestFixedbugs/issue67683.go` | pass | pass |
 | `TestFixedbugs/issue67872.go` | pass | pass |
 | `TestFixedbugs/issue67962.go` | pass | pass |
+| `TestFixedbugs/issue68184.go` | pass | pass |
 | `TestFixedbugs/issue68903.go` | pass | pass |
 | `TestFixedbugs/issue68935.go` | pass | pass |
+| `TestFixedbugs/issue69576.go` | pass | pass |
 | `TestFixedbugs/issue6977.go` | pass | pass |
+| `TestFixedbugs/issue69955.go` | pass | pass |
+| `TestFixedbugs/issue70150.go` | pass | pass |
+| `TestFixedbugs/issue70417.go` | pass | pass |
+| `TestFixedbugs/issue70526.go` | pass | pass |
+| `TestFixedbugs/issue71131.go` | pass | pass |
+| `TestFixedbugs/issue71198.go` | pass | pass |
+| `TestFixedbugs/issue71284.go` | pass | pass |
 | `TestGCSizes` | pass | pass |
 | `TestGCSizes/issue60431` | pass | pass |
 | `TestGCSizes/issue60734` | pass | pass |
@@ -482,6 +496,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestIssue65898` | pass | pass |
 | `TestIssue68334` | pass | pass |
 | `TestIssue68877` | pass | pass |
+| `TestIssue69092` | pass | pass |
 | `TestIssue7245` | pass | pass |
 | `TestIssue7827` | pass | pass |
 | `TestIssue8518` | pass | pass |
@@ -514,6 +529,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestObjectString/13` | pass | pass |
 | `TestObjectString/14` | pass | pass |
 | `TestObjectString/15` | pass | pass |
+| `TestObjectString/16` | pass | pass |
 | `TestObjectString/2` | pass | pass |
 | `TestObjectString/3` | pass | pass |
 | `TestObjectString/4` | pass | pass |
@@ -539,6 +555,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestSpec/conversions.go` | pass | pass |
 | `TestSpec/range.go` | pass | pass |
 | `TestSpec/range_int.go` | pass | pass |
+| `TestSpec/receivers.go` | pass | pass |
 | `TestSpec/typeAliases1.22.go` | pass | pass |
 | `TestSpec/typeAliases1.23a.go` | pass | pass |
 | `TestSpec/typeAliases1.23b.go` | pass | pass |
@@ -573,6 +590,8 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestUnaliasTooSoonInCycle` | pass | pass |
 | `TestUsesInfo` | pass | pass |
 | `TestValuesInfo` | pass | pass |
+| `TestVersionIssue69477` | pass | pass |
+| `TestVersionWithoutPos` | pass | pass |
 | `TestZeroTok` | pass | pass |
 
 ## Excluded declarations

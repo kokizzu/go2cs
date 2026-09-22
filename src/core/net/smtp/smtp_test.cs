@@ -379,9 +379,51 @@ QUIT
 """u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string eh502Eh221Okˢ = """
+502 EH?
+502 EH?
+221 OK
+
+"""u8;
+internal static readonly @string ehloLocalhostHeloˢ = """
+EHLO localhost
+HELO localhost
+QUIT
+
+"""u8;
+internal static readonly @string localhostˢ = "localhost"u8;
+internal static readonly object expectedEhloToFailˢ = (@string)"expected EHLO to fail"u8;
+
+public static void TestHELOFailed(ж<testing.T> Ꮡt) {
+    @string serverLines = eh502Eh221Okˢ;
+    @string clientLines = ehloLocalhostHeloˢ;
+    @string server = strings.Join(strings.Split(serverLines, "\n"u8), "\r\n"u8);
+    @string client = strings.Join(strings.Split(clientLines, "\n"u8), "\r\n"u8);
+    ref var cmdbuf = ref heap(new strings.Builder(), out var Ꮡcmdbuf);
+    var bcmdbuf = bufio.NewWriter(new smtp_test_package.strings_BuilderжWriter(Ꮡcmdbuf));
+    faker fake = new(nil);
+    fake.ReadWriter = new smtp_test_package.bufio_ReadWriterжReadWriter(bufio.NewReadWriter(bufio.NewReader(new smtp_test_package.strings_ReaderжReader(strings.NewReader(server))), bcmdbuf));
+    var c = Ꮡ(new Client(Text: textproto.NewConn(fake), localName: "localhost"u8));
+    {
+        var err = c.Hello(localhostˢ); if (err == default!) {
+            Ꮡt.Fatal(expectedEhloToFailˢ);
+        }
+    }
+    {
+        var err = c.Quit(); if (err != default!) {
+            Ꮡt.Errorf("QUIT failed: %s"u8, err);
+        }
+    }
+    bcmdbuf.Flush();
+    @string actual = cmdbuf.String();
+    if (client != actual) {
+        Ꮡt.Errorf("Got:\n%s\nWant:\n%s"u8, actual, client);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string heloˢ = "helo"u8;
 internal static readonly @string ehloˢ = "ehlo"u8;
-internal static readonly @string localhostˢ = "localhost"u8;
 internal static readonly @string ehlo8bitmimeˢ = "ehlo 8bitmime"u8;
 internal static readonly @string ehloSmtputf8ˢ = "ehlo smtputf8"u8;
 internal static readonly @string userGmailComˢ2 = "user+📧@gmail.com"u8;
@@ -1334,7 +1376,8 @@ internal static readonly @string goAheadˢ = "220 Go ahead"u8;
 internal static error serverHandle(net.Conn c, ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var send = (@string p1) => new smtpSender(c).send(p1);
+        var recvʗ1 = new smtpSender(c);
+        var send = (@string p1) => recvʗ1.send(p1);
         send(esmtpServiceReadyˢ);
         var s = bufio.NewScanner(new smtp_test_package.net_ConnᴠReader(c));
         while (s.Scan()) {
@@ -1371,7 +1414,8 @@ internal static readonly @string sendTheMailDataEndWithˢ = "354 send the mail d
 internal static readonly @string serviceClosingˢ = "221 127.0.0.1 Service closing transmission channel"u8;
 
 internal static error serverHandleTLS(net.Conn c, ж<testing.T> Ꮡt) {
-    var send = (@string p1) => new smtpSender(c).send(p1);
+    var recvʗ1 = new smtpSender(c);
+    var send = (@string p1) => recvʗ1.send(p1);
     var s = bufio.NewScanner(new smtp_test_package.net_ConnᴠReader(c));
     while (s.Scan()) {
         var exprᴛ1 = s.Text();

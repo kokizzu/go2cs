@@ -126,14 +126,14 @@ public static void TestWriter(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] internal partial struct TestWriterComment_type {
+[GoType("dyn")] internal partial struct TestWriterComment_tests {
     internal @string comment;
     internal bool ok;
 }
 
 // TestWriterComment is test for EOCD comment read/write.
 public static void TestWriterComment(ж<testing.T> Ꮡt) {
-    slice<TestWriterComment_type> tests = new TestWriterComment_type[]{
+    var tests = new TestWriterComment_tests[]{
         new("hi, hello"u8, true),
         new("hi, こんにちわ"u8, true),
         new(strings.Repeat("a"u8, uint16max), true),
@@ -178,7 +178,7 @@ public static void TestWriterComment(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] internal partial struct TestWriterUTF8_type {
+[GoType("dyn")] internal partial struct TestWriterUTF8_utf8Tests {
     internal @string name;
     internal @string comment;
     internal bool nonUTF8;
@@ -186,9 +186,7 @@ public static void TestWriterComment(ж<testing.T> Ꮡt) {
 }
 
 public static void TestWriterUTF8(ж<testing.T> Ꮡt) {
-// Name is Japanese encoded in Shift JIS.
-// UTF-8 must not be set
-    slice<TestWriterUTF8_type> utf8Tests = new TestWriterUTF8_type[]{
+    var utf8Tests = new TestWriterUTF8_utf8Tests[]{
         new(
             name: "hi, hello"u8,
             comment: "in the world"u8,
@@ -221,9 +219,11 @@ public static void TestWriterUTF8(ж<testing.T> Ꮡt) {
             flags: 0x808
         ),
         new(
-            name: ((@string)(new byte[]{0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea, 0x2e, 0x74, 0x78, 0x74})),
+            name: ((@string)(new byte[]{0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea, 0x2e, 0x74, 0x78, 0x74})), // Name is Japanese encoded in Shift JIS.
+
             comment: "in the 世界"u8,
-            flags: 0x008
+            flags: 0x008 // UTF-8 must not be set
+
         )
     }.slice();
     // write a zip file
@@ -695,20 +695,17 @@ internal static fs.FS writeTestsToFS(slice<WriteTest> tests) {
 }
 
 public static void TestWriterAddFS(ж<testing.T> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
     var buf = @new<bytes.Buffer>();
     var w = NewWriter(new zip_test_package.bytes_BufferжWriter(buf));
     var tests = new WriteTest[]{
-        new(
-            Name: "file.go"u8,
-            Data: slice<byte>("hello"u8),
-            Mode: 420
-        ),
-        new(
-            Name: "subfolder/another.go"u8,
-            Data: slice<byte>("world"u8),
-            Mode: 420
-        )
+        new(Name: "emptyfolder"u8, Mode: (fs.FileMode)(493 | os.ModeDir)),
+        new(Name: "file.go"u8, Data: slice<byte>("hello"u8), Mode: 420),
+        new(Name: "subfolder/another.go"u8, Data: slice<byte>("world"u8), Mode: 420)
     }.slice();
+    // Notably missing here is the "subfolder" directory. This makes sure even
+    // if we don't have a subfolder directory listed.
     var err = w.AddFS(writeTestsToFS(tests));
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -718,6 +715,8 @@ public static void TestWriterAddFS(ж<testing.T> Ꮡt) {
             Ꮡt.Fatal(errΔ1);
         }
     }
+    // Add subfolder into fsys to match what we'll read from the zip.
+    tests = append(tests.slice(-1, 2, 2), new WriteTest(Name: "subfolder"u8, Mode: (fs.FileMode)(365 | os.ModeDir)), tests[2]);
     // read it back
     (var r, err) = NewReader(new zip_test_package.bytes_ReaderжReaderAt(bytes.NewReader(buf.Bytes())), (int64)buf.Len());
     if (err != default!) {
@@ -727,6 +726,9 @@ public static void TestWriterAddFS(ж<testing.T> Ꮡt) {
         ref var wt = ref heap(new WriteTest(), out var Ꮡwt);
         wt = vᴛ1;
 
+        if (wt.Mode.IsDir()) {
+            wt.Name += "/"u8;
+        }
         testReadFile(Ꮡt, (~r).File[i], Ꮡwt);
     }
 }

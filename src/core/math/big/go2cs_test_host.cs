@@ -92,6 +92,8 @@ internal static class Go2CsTestHost
         registry.Add("TestFloatAdd32", big_internal_test_package.TestFloatAdd32, "float_test.go", 1287);
         registry.Add("TestFloatAdd64", big_internal_test_package.TestFloatAdd64, "float_test.go", 1320);
         registry.Add("TestFloatAddRoundZero", big_internal_test_package.TestFloatAddRoundZero, "float_test.go", 1262);
+        registry.Add("TestFloatAppendText", big_internal_test_package.TestFloatAppendText, "floatmarsh_test.go", 175);
+        registry.Add("TestFloatAppendTextNil", big_internal_test_package.TestFloatAppendTextNil, "floatmarsh_test.go", 209);
         registry.Add("TestFloatArithmeticOverflow", big_internal_test_package.TestFloatArithmeticOverflow, "float_test.go", 1669);
         registry.Add("TestFloatArithmeticRounding", big_internal_test_package.TestFloatArithmeticRounding, "float_test.go", 1738);
         registry.Add("TestFloatArithmeticSpecialValues", big_internal_test_package.TestFloatArithmeticSpecialValues, "float_test.go", 1596);
@@ -152,6 +154,8 @@ internal static class Go2CsTestHost
         registry.Add("TestGobEncodingNilRatInSlice", big_internal_test_package.TestGobEncodingNilRatInSlice, "ratmarsh_test.go", 40);
         registry.Add("TestHilbert", big_internal_test_package.TestHilbert, "hilbert_test.go", 152);
         registry.Add("TestInt64", big_internal_test_package.TestInt64, "int_test.go", 1157);
+        registry.Add("TestIntAppendText", big_internal_test_package.TestIntAppendText, "intmarsh_test.go", 136);
+        registry.Add("TestIntAppendTextNil", big_internal_test_package.TestIntAppendTextNil, "intmarsh_test.go", 160);
         registry.Add("TestIntCmpSelf", big_internal_test_package.TestIntCmpSelf, "int_test.go", 1123);
         registry.Add("TestIntGobEncoding", big_internal_test_package.TestIntGobEncoding, "intmarsh_test.go", 25);
         registry.Add("TestIntJSONEncoding", big_internal_test_package.TestIntJSONEncoding, "intmarsh_test.go", 77);
@@ -206,6 +210,7 @@ internal static class Go2CsTestHost
         registry.Add("TestQuo", big_internal_test_package.TestQuo, "int_test.go", 456);
         registry.Add("TestQuoStepD6", big_internal_test_package.TestQuoStepD6, "int_test.go", 476);
         registry.Add("TestRatAbs", big_internal_test_package.TestRatAbs, "rat_test.go", 109);
+        registry.Add("TestRatAppendText", big_internal_test_package.TestRatAppendText, "ratmarsh_test.go", 140);
         registry.Add("TestRatBin", big_internal_test_package.TestRatBin, "rat_test.go", 200);
         registry.Add("TestRatCmp", big_internal_test_package.TestRatCmp, "rat_test.go", 82);
         registry.Add("TestRatGobDecodeShortBuffer", big_internal_test_package.TestRatGobDecodeShortBuffer, "ratmarsh_test.go", 127);

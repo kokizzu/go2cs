@@ -20,36 +20,6 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
-    builtin.initPackage(typeof(global::go.testing.iotest_package));
-}
-
 public static void TestChaCha8(ж<testing.T> Ꮡt) {
     var p = NewChaCha8(chacha8seed);
     foreach (var (i, x) in chacha8output) {
@@ -150,6 +120,26 @@ public static void TestChaCha8Read(ж<testing.T> Ꮡt) {
     }
 }
 
+public static void BenchmarkChaCha8MarshalBinary(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var p = NewChaCha8(chacha8seed);
+    foreach (var _ᴛ1 in range(b.N)) {
+        p.MarshalBinary();
+    }
+}
+
+public static void BenchmarkChaCha8MarshalBinaryRead(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var p = NewChaCha8(chacha8seed);
+    var buf = new slice<byte>(1);
+    foreach (var _ᴛ1 in range(b.N)) {
+        p.MarshalBinary();
+        p.Read(buf);
+    }
+}
+
 public static void TestChaCha8Marshal(ж<testing.T> Ꮡt) {
     var p = NewChaCha8(chacha8seed);
     foreach (var (i, x) in chacha8output) {
@@ -159,6 +149,15 @@ public static void TestChaCha8Marshal(ж<testing.T> Ꮡt) {
         }
         if (((sstring)enc) != chacha8marshal[i]) {
             Ꮡt.Errorf("#%d: MarshalBinary=%q, want %q"u8, i, enc, chacha8marshal[i]);
+        }
+        var b = new slice<byte>(4, 32);
+        (b, err) = p.AppendBinary(b);
+        var encAppend = b[4..];
+        if (err != default!) {
+            Ꮡt.Fatalf("#%d: AppendBinary: %v"u8, i, err);
+        }
+        if (((sstring)encAppend) != chacha8marshal[i]) {
+            Ꮡt.Errorf("#%d: AppendBinary=%q, want %q"u8, i, encAppend, chacha8marshal[i]);
         }
         p.Value = new ChaCha8(nil);
         {
@@ -183,6 +182,15 @@ public static void TestChaCha8MarshalRead(ж<testing.T> Ꮡt) {
         }
         if (((sstring)enc) != chacha8marshalread[i]) {
             Ꮡt.Errorf("#%d: MarshalBinary=%q, want %q"u8, i, enc, chacha8marshalread[i]);
+        }
+        var b = new slice<byte>(4, 32);
+        (b, err) = p.AppendBinary(b);
+        var encAppend = b[4..];
+        if (err != default!) {
+            Ꮡt.Fatalf("#%d: AppendBinary: %v"u8, i, err);
+        }
+        if (((sstring)encAppend) != chacha8marshalread[i]) {
+            Ꮡt.Errorf("#%d: AppendBinary=%q, want %q"u8, i, encAppend, chacha8marshalread[i]);
         }
         p.Value = new ChaCha8(nil);
         {

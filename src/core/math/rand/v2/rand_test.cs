@@ -21,36 +21,6 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(global::go.sync.atomic_package));
-}
-
 internal static UntypedInt numTestSamples => 10000;
 
 internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = rand_internal_test_package.GetNormalDistributionParameters();
@@ -444,7 +414,7 @@ internal static nint encodePerm(slice<nint> s) {
     return m;
 }
 
-[GoType("dyn")] partial struct TestUniformFactorial_tests {
+[GoType("dyn")] internal partial struct TestUniformFactorial_tests {
     internal @string name;
     internal Func<nint> fn;
 }
@@ -488,7 +458,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
                     return encodePerm(pʗ1);
                 })
             }.array();
-            foreach (var (_, vᴛ1) in tests) {
+            foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
                 ref var test = ref heap(new TestUniformFactorial_tests(), out var Ꮡtest);
                 test = vᴛ1;
 

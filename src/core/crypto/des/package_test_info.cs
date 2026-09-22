@@ -31,7 +31,7 @@ using static global::go.crypto.des_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/des/des_test.go", "des_test.cs", "AMQL4hOCgoKUqJKysoKCgrqChILMkoKSgoKCzIKEgsqCgoKChILKgoKCgoSCyoKCgoKEgsqCgoSChILMkoKEgoSCzJKChIKEggAEELKChIKEggAEELKChIKEgsySgoSChILMkoKEgoSCzJKChIKEgsySgoSChILMkoKEgoSCzJKChIKEgvqigoKClIKCgoK4ooKCgpSCgoKCuKKCgoKUgoKCgriigoKClIKCgoI=")]
+[assembly: go.GoPositionMap("crypto/des/des_test.go", "des_test.cs", "AMYL5BOCgoKUqJKysoKCgrqChILMkoKSgoKCzIKEgsqCgoKChILKgoKCgoSCyoKCgoKEgsqCgoSChILMkoKEgoSCzJKChIKEggAEELKChIKEggAEELKChIKEgsySgoSChILMkoKEgoSCzJKChIKEgsySgoSChILMkoKEgoSCzJKChIKEggAIDJKCloLoooKCgpSCgoKCuKKCgoKUgoKCgriigoKClIKCgoK4ooKCgpSCgoKC", "1277-1282:1;1298-1303:1;1512-1514:1;1516-1518:2")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -48,4 +48,25 @@ public static partial class des_test_package
     // <TypeAccessibility>
     public partial struct CryptTest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸdes() => builtin.initPackage(typeof(go.crypto.des_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.crypto.des_package));
+    }
 }

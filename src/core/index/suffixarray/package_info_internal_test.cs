@@ -31,7 +31,7 @@ using static go.index.suffixarray_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("index/suffixarray/suffixarray_test.go", "suffixarray_test.cs", "AHHkAZKClIKCgpSCpqaigpaCAAYSgoKCpJSCqJSCgoLcooKWggAGEoKCpKiUgoKC7qKCgoCCAAcQgKKAooKClLiCpqKCuLKClIKUgoKCpqjygoCCpIKCgIKkgpaCgqaCgoCCpIKogoKAgqSCltaCsoKCgoKCgoK4gqaigoKU1oKCgoKCgpS4goKCgoKClAAJDKK4goKUgoKUlgALGIKCgoKClIKCgoKClLiClqaCkoKClIKopoKSgoKUgs7CgoKUloKCgoLOwpKAgoK2goKClIKCgpSCgqgACBbSgoKCgoKCgriCgoLogoKUgoKCtoKCgoKUlJSCtqSCgramgoKUlIK4goKCgoKUgpSCgpSCgoKUkoKClLKClIKCggAMFIKCgoKUgoKUsoKUgoKCgoKCgoKCgIKkgoCC")]
+[assembly: go.GoPositionMap("index/suffixarray/suffixarray_test.go", "suffixarray_test.cs", "AHHkAZKClIKCgpSCpqaigpaCAAYSgoKCpJSCqJSCgoLcooKWggAGEoKCpKiUgoKC7qKCgoCCAAcQgKKAooKClLiCpqKCuLKClIKUgoKCpqjygoCCpIKCgIKkgpaCgqaCgoCCpIKogoKAgqSCltaCsoKCgoKCgoK4gqaigoKU1oKCgoKCgpS4goKCgoKClAAJDKK4goKUgoKUlgALGIKCgoKClIKCgoKClLiClqaCkoKClIKopoKSgoKUgs7CgoKUloKCgoLOwpKAgoK2goKClIKCgpSCgqgACBbSgoKCgoKCgriCgoLogoKUgoKCtoKCgoKUlJSCtqSCgramgoKUlIK4goKCgoKUgpSCgpSCgoKUkoKClLKClIKCggAMFIKCgoKUgoKUsoKUgoKCgoKCgoKCgIKkgoCC", "267-269:1;312-314:1;319-327:1;331-339:1;345-358:1;360-392:2;394-406:3;408-420:4;445-450:1;507-516:1;537-539:1;544-579:1;561-577:1.1;566-575:1.1.1;593-614:1")]
 // </GoSourcePositionMaps>
 
 namespace go.index;
@@ -47,4 +47,24 @@ public static partial class suffixarray_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

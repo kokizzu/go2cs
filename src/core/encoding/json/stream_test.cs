@@ -16,30 +16,13 @@ using runtime = runtime_package;
 using debug = go.runtime.debug_package;
 using strings = strings_package;
 using testing = testing_package;
+using System.Runtime.CompilerServices;
 using go.net;
 using go.net.http;
 using go.runtime;
 using static go.encoding.json_package;
 
 partial class json_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() {
-    builtin.initPackage(typeof(go.net.http.httptest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
 
 // TODO(https://go.dev/issue/52751): Replace with native testing support.
 
@@ -50,7 +33,7 @@ partial class json_internal_test_package {
 }
 
 // Name annotates a case name with the file and line of the caller.
-public static CaseName /*c*/ Name(@string s) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static CaseName /*c*/ Name(@string s) {
     CaseName c = new();
 
     c.Name = s;
@@ -112,10 +95,10 @@ public static void TestEncoder(ж<testing.T> Ꮡt) {
             }
         }
         {
-            @string have = buf.String();
-            @string want = nlines(streamEncoded, i); if (have != want) {
+            @string got = buf.String();
+            @string want = nlines(streamEncoded, i); if (got != want) {
                 Ꮡt.Errorf("encoding %d items: mismatch:"u8, i);
-                diff(Ꮡt, slice<byte>(have), slice<byte>(want));
+                diff(Ꮡt, slice<byte>(got), slice<byte>(want));
                 break;
             }
         }
@@ -188,9 +171,6 @@ false
 
 """u8;
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object encodeMismatchˢ = (@string)"Encode mismatch:"u8;
-
 public static void TestEncoderIndent(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     var enc = NewEncoder(new json_test_package.strings_BuilderжWriter(Ꮡbuf));
@@ -199,10 +179,10 @@ public static void TestEncoderIndent(ж<testing.T> Ꮡt) {
         enc.Encode(v);
     }
     {
-        @string have = buf.String();
-        @string want = streamEncodedIndent; if (have != want) {
-            Ꮡt.Error(encodeMismatchˢ);
-            diff(Ꮡt, slice<byte>(have), slice<byte>(want));
+        @string got = buf.String();
+        @string want = streamEncodedIndent; if (got != want) {
+            Ꮡt.Errorf("Encode mismatch:\ngot:\n%s\n\nwant:\n%s"u8, got, want);
+            diff(Ꮡt, slice<byte>(got), slice<byte>(want));
         }
     }
 }

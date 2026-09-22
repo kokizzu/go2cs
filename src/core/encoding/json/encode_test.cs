@@ -13,6 +13,7 @@ using regexp = regexp_package;
 using debug = go.runtime.debug_package;
 using strconv = strconv_package;
 using testing = testing_package;
+using time = time_package;
 using go.runtime;
 using io = io_package;
 using static go.encoding.json_package;
@@ -20,19 +21,7 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class json_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() {
-    builtin.initPackage(typeof(go.runtime.debug_package));
-}
-
-[GoType] public partial struct Optionals {
+[GoType] public partial struct OptionalsEmpty {
     [GoTag(@"json:""sr""")]
     public @string Sr;
     [GoTag(@"json:""so,omitempty""")]
@@ -70,7 +59,10 @@ partial class json_internal_test_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string srOmitempty0SlrNullMrFr0ˢ = """
+internal static readonly @string somethingˢ = "something"u8;
+
+public static void TestOmitEmpty(ж<testing.T> Ꮡt) {
+    @string want = """
 {
  "sr": "",
  "omitempty": 0,
@@ -83,12 +75,231 @@ internal static readonly @string srOmitempty0SlrNullMrFr0ˢ = """
  "sto": {}
 }
 """u8;
-internal static readonly @string somethingˢ = "something"u8;
-
-public static void TestOmitEmpty(ж<testing.T> Ꮡt) {
-    @string want = srOmitempty0SlrNullMrFr0ˢ;
-    ref var o = ref heap(new Optionals(), out var Ꮡo);
+    ref var o = ref heap(new OptionalsEmpty(), out var Ꮡo);
     o.Sw = somethingˢ;
+    o.Mr = new map<@string, any>{};
+    o.Mo = new map<@string, any>{};
+    var (got, err) = MarshalIndent(Ꮡo, ""u8, " "u8);
+    if (err != default!) {
+        Ꮡt.Fatalf("MarshalIndent error: %v"u8, err);
+    }
+    {
+        @string gotΔ1 = ((@string)got); if (gotΔ1 != want) {
+            Ꮡt.Errorf("MarshalIndent:\n\tgot:  %s\n\twant: %s\n"u8, indentNewlines(gotΔ1), indentNewlines(want));
+        }
+    }
+}
+
+[GoType] public partial struct NonZeroStruct {
+}
+
+public static bool IsZero(this NonZeroStruct nzs) {
+    return false;
+}
+
+[GoType] public partial struct NoPanicStruct {
+    [GoTag(@"json:""int,omitzero""")]
+    public nint Int;
+}
+
+[GoRecv] public static bool IsZero(this ref NoPanicStruct nps) {
+    return nps.Int != 0;
+}
+
+[GoType] [GoValueClone("Foo2")] public partial struct OptionalsZero {
+    [GoTag(@"json:""sr""")]
+    public @string Sr;
+    [GoTag(@"json:""so,omitzero""")]
+    public @string So;
+    [GoTag(@"json:""-""")]
+    public @string Sw;
+    [GoTag(@"json:""omitzero""")]
+    public nint Ir;                  // actually named omitzero, not an option
+    [GoTag(@"json:""io,omitzero""")]
+    public nint Io;
+    [GoTag(@"json:""slr,random""")]
+    public slice<@string> Slr;
+    [GoTag(@"json:""slo,omitzero""")]
+    public slice<@string> Slo;
+    [GoTag(@"json:""slononnil,omitzero""")]
+    public slice<@string> SloNonNil;
+    [GoTag(@"json:""mr""")]
+    public map<@string, any> Mr;
+    [GoTag(@"json:"",omitzero""")]
+    public map<@string, any> Mo;
+    [GoTag(@"json:""moo,omitzero""")]
+    public map<@string, any> Moo;
+    [GoTag(@"json:""fr""")]
+    public float64 Fr;
+    [GoTag(@"json:""fo,omitzero""")]
+    public float64 Fo;
+    [GoTag(@"json:""foo,omitzero""")]
+    public float64 Foo;
+    [GoTag(@"json:""foo2,omitzero""")]
+    public array<float64> Foo2 = new(2);
+    [GoTag(@"json:""br""")]
+    public bool Br;
+    [GoTag(@"json:""bo,omitzero""")]
+    public bool Bo;
+    [GoTag(@"json:""ur""")]
+    public nuint Ur;
+    [GoTag(@"json:""uo,omitzero""")]
+    public nuint Uo;
+    [GoTag(@"json:""str""")]
+    public EmptyStruct Str;
+    [GoTag(@"json:""sto,omitzero""")]
+    public EmptyStruct Sto;
+    [GoTag(@"json:""time,omitzero""")]
+    public time.Time Time;
+    [GoTag(@"json:""timelocal,omitzero""")]
+    public time.Time TimeLocal;
+    [GoTag(@"json:""nzs,omitzero""")]
+    public NonZeroStruct Nzs;
+    [GoTag(@"json:""niliszeroer,omitzero""")]
+    public global::go.encoding.json_package.isZeroer NilIsZeroer;                                        // nil interface
+    [GoTag(@"json:""nonniliszeroer,omitzero""")]
+    public global::go.encoding.json_package.isZeroer NonNilIsZeroer;                                        // non-nil interface
+    [GoTag(@"json:""nps0,omitzero""")]
+    public global::go.encoding.json_package.isZeroer NoPanicStruct0;                                        // non-nil interface with nil pointer
+    [GoTag(@"json:""nps1,omitzero""")]
+    public global::go.encoding.json_package.isZeroer NoPanicStruct1;                                        // non-nil interface with non-nil pointer
+    [GoTag(@"json:""nps2,omitzero""")]
+    public ж<NoPanicStruct> NoPanicStruct2;                               // nil pointer
+    [GoTag(@"json:""nps3,omitzero""")]
+    public ж<NoPanicStruct> NoPanicStruct3;                               // non-nil pointer
+    [GoTag(@"json:""nps4,omitzero""")]
+    public NoPanicStruct NoPanicStruct4;                                   // concrete type
+}
+
+public static void TestOmitZero(ж<testing.T> Ꮡt) {
+    @string want = """
+{
+ "sr": "",
+ "omitzero": 0,
+ "slr": null,
+ "slononnil": [],
+ "mr": {},
+ "Mo": {},
+ "fr": 0,
+ "br": false,
+ "ur": 0,
+ "str": {},
+ "nzs": {},
+ "nps1": {},
+ "nps3": {},
+ "nps4": {}
+}
+"""u8;
+    ref var o = ref heap(new OptionalsZero(), out var Ꮡo);
+    o.Sw = somethingˢ;
+    o.SloNonNil = new slice<@string>(0);
+    o.Mr = new map<@string, any>{};
+    o.Mo = new map<@string, any>{};
+    o.Foo = -0D;
+    o.Foo2 = new float64[]{+0D, -0D}.array();
+    o.TimeLocal = new time.Time(nil).Local();
+    o.NonNilIsZeroer = new json_test_package.time_TimeᴠisZeroer(new time.Time(nil));
+    o.NoPanicStruct0 = new json_internal_test_package.NoPanicStructжisZeroer(((ж<NoPanicStruct>)nil));
+    o.NoPanicStruct1 = new json_internal_test_package.NoPanicStructжisZeroer(Ꮡ(new NoPanicStruct(nil)));
+    o.NoPanicStruct3 = Ꮡ(new NoPanicStruct(nil));
+    var (got, err) = MarshalIndent(Ꮡo, ""u8, " "u8);
+    if (err != default!) {
+        Ꮡt.Fatalf("MarshalIndent error: %v"u8, err);
+    }
+    {
+        @string gotΔ1 = ((@string)got); if (gotΔ1 != want) {
+            Ꮡt.Errorf("MarshalIndent:\n\tgot:  %s\n\twant: %s\n"u8, indentNewlines(gotΔ1), indentNewlines(want));
+        }
+    }
+}
+
+public static void TestOmitZeroMap(ж<testing.T> Ꮡt) {
+    @string want = """
+{
+ "foo": {
+  "sr": "",
+  "omitzero": 0,
+  "slr": null,
+  "mr": null,
+  "fr": 0,
+  "br": false,
+  "ur": 0,
+  "str": {},
+  "nzs": {},
+  "nps4": {}
+ }
+}
+"""u8;
+    var m = new map<@string, OptionalsZero>{["foo"u8] = new()};
+    var (got, err) = MarshalIndent(m, ""u8, " "u8);
+    if (err != default!) {
+        Ꮡt.Fatalf("MarshalIndent error: %v"u8, err);
+    }
+    {
+        @string gotΔ1 = ((@string)got); if (gotΔ1 != want) {
+            fmt.Println(gotΔ1);
+            Ꮡt.Errorf("MarshalIndent:\n\tgot:  %s\n\twant: %s\n"u8, indentNewlines(gotΔ1), indentNewlines(want));
+        }
+    }
+}
+
+[GoType] public partial struct OptionalsEmptyZero {
+    [GoTag(@"json:""sr""")]
+    public @string Sr;
+    [GoTag(@"json:""so,omitempty,omitzero""")]
+    public @string So;
+    [GoTag(@"json:""-""")]
+    public @string Sw;
+    [GoTag(@"json:""io,omitempty,omitzero""")]
+    public nint Io;
+    [GoTag(@"json:""slr,random""")]
+    public slice<@string> Slr;
+    [GoTag(@"json:""slo,omitempty,omitzero""")]
+    public slice<@string> Slo;
+    [GoTag(@"json:""slononnil,omitempty,omitzero""")]
+    public slice<@string> SloNonNil;
+    [GoTag(@"json:""mr""")]
+    public map<@string, any> Mr;
+    [GoTag(@"json:"",omitempty,omitzero""")]
+    public map<@string, any> Mo;
+    [GoTag(@"json:""fr""")]
+    public float64 Fr;
+    [GoTag(@"json:""fo,omitempty,omitzero""")]
+    public float64 Fo;
+    [GoTag(@"json:""br""")]
+    public bool Br;
+    [GoTag(@"json:""bo,omitempty,omitzero""")]
+    public bool Bo;
+    [GoTag(@"json:""ur""")]
+    public nuint Ur;
+    [GoTag(@"json:""uo,omitempty,omitzero""")]
+    public nuint Uo;
+    [GoTag(@"json:""str""")]
+    public EmptyStruct Str;
+    [GoTag(@"json:""sto,omitempty,omitzero""")]
+    public EmptyStruct Sto;
+    [GoTag(@"json:""time,omitempty,omitzero""")]
+    public time.Time Time;
+    [GoTag(@"json:""nzs,omitempty,omitzero""")]
+    public NonZeroStruct Nzs;
+}
+
+public static void TestOmitEmptyZero(ж<testing.T> Ꮡt) {
+    @string want = """
+{
+ "sr": "",
+ "slr": null,
+ "mr": {},
+ "fr": 0,
+ "br": false,
+ "ur": 0,
+ "str": {},
+ "nzs": {}
+}
+"""u8;
+    ref var o = ref heap(new OptionalsEmptyZero(), out var Ꮡo);
+    o.Sw = somethingˢ;
+    o.SloNonNil = new slice<@string>(0);
     o.Mr = new map<@string, any>{};
     o.Mo = new map<@string, any>{};
     var (got, err) = MarshalIndent(Ꮡo, ""u8, " "u8);
@@ -491,25 +702,25 @@ internal static readonly @string nestedStructAndIntsˢ = "NestedStructAndInts"u8
     public nint X;
 }
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_myInt;
+[GoLocalName("myInt")] [GoType("num:nint")] internal partial struct TestAnonymousFields_myInt;
 
 [GoType("dyn")] [GoLocalName("S")] internal partial struct TestAnonymousFields_Sᴛ2 {
     internal partial ref TestAnonymousFields_myInt myInt { get; }
 }
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt;
+[GoLocalName("MyInt")] [GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt;
 
 [GoType("dyn")] [GoLocalName("S")] internal partial struct TestAnonymousFields_Sᴛ3 {
     public partial ref TestAnonymousFields_MyInt MyInt { get; }
 }
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_myIntᴛ1;
+[GoLocalName("myInt")] [GoType("num:nint")] internal partial struct TestAnonymousFields_myIntᴛ1;
 
 [GoType("dyn")] [GoLocalName("S")] internal partial struct TestAnonymousFields_Sᴛ4 {
     internal partial ref ж<TestAnonymousFields_myIntᴛ1> myInt { get; }
 }
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_MyIntᴛ1;
+[GoLocalName("MyInt")] [GoType("num:nint")] internal partial struct TestAnonymousFields_MyIntᴛ1;
 
 [GoType("dyn")] [GoLocalName("S")] internal partial struct TestAnonymousFields_Sᴛ5 {
     public partial ref ж<TestAnonymousFields_MyIntᴛ1> MyInt { get; }
@@ -545,11 +756,11 @@ internal static readonly @string nestedStructAndIntsˢ = "NestedStructAndInts"u8
     public partial ref ж<TestAnonymousFields_S2ᴛ3> S2 { get; }
 }
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt1;
+[GoLocalName("MyInt1")] [GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt1;
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt2;
+[GoLocalName("MyInt2")] [GoType("num:nint")] internal partial struct TestAnonymousFields_MyInt2;
 
-[GoType("num:nint")] internal partial struct TestAnonymousFields_myIntᴛ2;
+[GoLocalName("myInt")] [GoType("num:nint")] internal partial struct TestAnonymousFields_myIntᴛ2;
 
 [GoType("dyn")] [GoLocalName("s2")] internal partial struct TestAnonymousFields_s2 {
     public partial ref TestAnonymousFields_MyInt2 MyInt2 { get; }

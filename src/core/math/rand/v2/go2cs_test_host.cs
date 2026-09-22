@@ -26,8 +26,8 @@ internal static class Go2CsTestHost
         });
         registry.Add("TestAuto", rand_test_package.TestAuto, "auto_test.go", 16);
         registry.Add("TestChaCha8", rand_test_package.TestChaCha8, "chacha8_test.go", 17);
-        registry.Add("TestChaCha8Marshal", rand_test_package.TestChaCha8Marshal, "chacha8_test.go", 101);
-        registry.Add("TestChaCha8MarshalRead", rand_test_package.TestChaCha8MarshalRead, "chacha8_test.go", 121);
+        registry.Add("TestChaCha8Marshal", rand_test_package.TestChaCha8Marshal, "chacha8_test.go", 117);
+        registry.Add("TestChaCha8MarshalRead", rand_test_package.TestChaCha8MarshalRead, "chacha8_test.go", 148);
         registry.Add("TestChaCha8Read", rand_test_package.TestChaCha8Read, "chacha8_test.go", 33);
         registry.Add("TestConcurrent", rand_test_package.TestConcurrent, "race_test.go", 15);
         registry.Add("TestExpTables", rand_test_package.TestExpTables, "rand_test.go", 316);
@@ -36,7 +36,7 @@ internal static class Go2CsTestHost
         registry.Add("TestNonStandardExponentialValues", rand_test_package.TestNonStandardExponentialValues, "rand_test.go", 194);
         registry.Add("TestNonStandardNormalValues", rand_test_package.TestNonStandardNormalValues, "rand_test.go", 134);
         registry.Add("TestNormTables", rand_test_package.TestNormTables, "rand_test.go", 303);
-        registry.Add("TestPCG", rand_test_package.TestPCG, "pcg_test.go", 49);
+        registry.Add("TestPCG", rand_test_package.TestPCG, "pcg_test.go", 56);
         registry.Add("TestPCGMarshal", rand_test_package.TestPCGMarshal, "pcg_test.go", 21);
         registry.Add("TestRegress", rand_test_package.TestRegress, "regress_test.go", 29);
         registry.Add("TestShuffleSmall", rand_test_package.TestShuffleSmall, "rand_test.go", 361);

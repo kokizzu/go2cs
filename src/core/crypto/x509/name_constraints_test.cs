@@ -33,114 +33,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdsa() {
-    builtin.initPackage(typeof(go.crypto.ecdsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() {
-    builtin.initPackage(typeof(go.crypto.elliptic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸpkix() {
-    builtin.initPackage(typeof(go.crypto.x509.pkix_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() {
-    builtin.initPackage(typeof(go.encoding.asn1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(go.encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() {
-    builtin.initPackage(typeof(go.encoding.pem_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal const bool testNameConstraintsAgainstOpenSSL = false;
 internal const bool debugOpenSSLFailure = false;
 
@@ -301,6 +193,9 @@ internal const bool debugOpenSSLFailure = false;
 // #85: .example.com is an invalid DNS name, it should not match the
 // constraint example.com.
 // #86: URIs with IPv6 addresses with zones and ports are rejected
+// #87: subdomain excluded constraints preclude wildcard names
+// #88: wildcard names are not matched by subdomain permitted constraints
+// #89: a TLD constraint doesn't exclude unrelated wildcards
 internal static slice<nameConstraintsTest> nameConstraintsTests = new nameConstraintsTest[]{
     new(
         roots: new slice<constraintsSpec>(1),
@@ -1561,6 +1456,50 @@ internal static slice<nameConstraintsTest> nameConstraintsTests = new nameConstr
             sans: new @string[]{"uri:http://[2006:abcd::1%25.example.com]:16/"u8}.slice()
         ),
         expectedError: "URI with IP"u8
+    ),
+    new(
+        roots: new constraintsSpec[]{
+            new(
+                bad: new @string[]{"dns:foo.example.com"u8}.slice()
+            )
+        }.slice(),
+        intermediates: new slice<constraintsSpec>[]{
+            new constraintsSpec[]{
+                new()}.slice()
+        }.slice(),
+        leaf: new leafSpec(
+            sans: new @string[]{"dns:*.example.com"u8}.slice()
+        ),
+        expectedError: "\"*.example.com\" is excluded by constraint \"foo.example.com\""u8
+    ),
+    new(
+        roots: new constraintsSpec[]{
+            new(
+                ok: new @string[]{"dns:foo.example.com"u8}.slice()
+            )
+        }.slice(),
+        intermediates: new slice<constraintsSpec>[]{
+            new constraintsSpec[]{
+                new()}.slice()
+        }.slice(),
+        leaf: new leafSpec(
+            sans: new @string[]{"dns:*.example.com"u8}.slice()
+        ),
+        expectedError: "\"*.example.com\" is not permitted"u8
+    ),
+    new(
+        roots: new constraintsSpec[]{
+            new(
+                bad: new @string[]{"dns:tld"u8}.slice()
+            )
+        }.slice(),
+        intermediates: new slice<constraintsSpec>[]{
+            new constraintsSpec[]{
+                new()}.slice()
+        }.slice(),
+        leaf: new leafSpec(
+            sans: new @string[]{"dns:*.example.com"u8}.slice()
+        )
     )
 }.slice();
 
@@ -1715,7 +1654,7 @@ internal static pkix.Extension customConstraintsExtension(nint typeNum, slice<by
         contentsΔ1 = append(contentsΔ1, (byte)typeNum);
         /* GeneralName type */
         contentsΔ1 = append(contentsΔ1, (byte)builtin.len(constraintʗ1));
-        return append(contentsΔ1, constraintʗ1.ꓸꓸꓸ);
+        return appendꓸꓸꓸ(contentsΔ1, constraintʗ1);
     }
     slice<byte> contents = default!;
     if (!isExcluded){
@@ -1729,7 +1668,7 @@ internal static pkix.Extension customConstraintsExtension(nint typeNum, slice<by
     value = append(value, (byte)(0x30));
     /* SEQUENCE */
     value = append(value, (byte)builtin.len(contents));
-    value = append(value, contents.ꓸꓸꓸ);
+    value = appendꓸꓸꓸ(value, contents);
     return new pkix.Extension(
         Id: new nint[]{2, 5, 29, 30}.slice(),
         Value: value

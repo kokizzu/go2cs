@@ -12,37 +12,49 @@ internal static class Go2CsTestHost
             "benchmark_test.go",
             "cbc.go",
             "cbc_aes_test.go",
+            "cbc_test.go",
             "cfb.go",
             "cfb_test.go",
             "cipher.go",
-            "cipher_test.go",
             "common_test.go",
             "ctr.go",
             "ctr_aes_test.go",
             "ctr_test.go",
             "example_test.go",
-            "export_test.go",
             "fuzz_test.go",
             "gcm.go",
             "gcm_test.go",
             "io.go",
+            "modes_test.go",
             "ofb.go",
             "ofb_test.go",
         });
-        registry.Add("TestAESGCM", cipher_test_package.TestAESGCM, "gcm_test.go", 374);
-        registry.Add("TestCBCDecrypterAES", cipher_test_package.TestCBCDecrypterAES, "cbc_aes_test.go", 86);
-        registry.Add("TestCBCEncrypterAES", cipher_test_package.TestCBCEncrypterAES, "cbc_aes_test.go", 66);
-        registry.Add("TestCFBInverse", cipher_test_package.TestCFBInverse, "cfb_test.go", 90);
-        registry.Add("TestCFBVectors", cipher_test_package.TestCFBVectors, "cfb_test.go", 48);
-        registry.Add("TestCTR", cipher_test_package.TestCTR, "ctr_test.go", 34);
-        registry.Add("TestCTR_AES", cipher_test_package.TestCTR_AES, "ctr_aes_test.go", 68);
-        registry.Add("TestCryptBlocks", cipher_test_package.TestCryptBlocks, "cipher_test.go", 15);
-        registry.Add("TestEmptyPlaintext", cipher_test_package.TestEmptyPlaintext, "cipher_test.go", 40);
-        registry.Add("TestGCMAsm", cipher_test_package.TestGCMAsm, "gcm_test.go", 556);
-        registry.Add("TestGCMCounterWrap", cipher_test_package.TestGCMCounterWrap, "gcm_test.go", 504);
-        registry.Add("TestGCMInvalidTagSize", cipher_test_package.TestGCMInvalidTagSize, "gcm_test.go", 457);
-        registry.Add("TestOFB", cipher_test_package.TestOFB, "ofb_test.go", 68);
-        registry.Add("TestTagFailureOverwrite", cipher_test_package.TestTagFailureOverwrite, "gcm_test.go", 470);
+        registry.Add("TestAESGCM", cipher_test_package.TestAESGCM, "gcm_test.go", 416);
+        registry.Add("TestCBCAble", cipher_test_package.TestCBCAble, "modes_test.go", 54);
+        registry.Add("TestCBCBlockMode", cipher_test_package.TestCBCBlockMode, "cbc_test.go", 20);
+        registry.Add("TestCBCDecrypterAES", cipher_test_package.TestCBCDecrypterAES, "cbc_aes_test.go", 91);
+        registry.Add("TestCBCEncrypterAES", cipher_test_package.TestCBCEncrypterAES, "cbc_aes_test.go", 67);
+        registry.Add("TestCFBInverse", cipher_test_package.TestCFBInverse, "cfb_test.go", 93);
+        registry.Add("TestCFBStream", cipher_test_package.TestCFBStream, "cfb_test.go", 118);
+        registry.Add("TestCFBVectors", cipher_test_package.TestCFBVectors, "cfb_test.go", 51);
+        registry.Add("TestCTR", cipher_test_package.TestCTR, "ctr_test.go", 38);
+        registry.Add("TestCTRAble", cipher_test_package.TestCTRAble, "modes_test.go", 34);
+        registry.Add("TestCTRStream", cipher_test_package.TestCTRStream, "ctr_test.go", 61);
+        registry.Add("TestCTR_AES", cipher_test_package.TestCTR_AES, "ctr_aes_test.go", 76);
+        registry.Add("TestCTR_AES_multiblock_XORKeyStreamAt", cipher_test_package.TestCTR_AES_multiblock_XORKeyStreamAt, "ctr_aes_test.go", 253);
+        registry.Add("TestCTR_AES_multiblock_overflow_IV", cipher_test_package.TestCTR_AES_multiblock_overflow_IV, "ctr_aes_test.go", 199);
+        registry.Add("TestCTR_AES_multiblock_random_IV", cipher_test_package.TestCTR_AES_multiblock_random_IV, "ctr_aes_test.go", 142);
+        registry.Add("TestFIPSServiceIndicator", cipher_test_package.TestFIPSServiceIndicator, "gcm_test.go", 739);
+        registry.Add("TestGCM", cipher_test_package.TestGCM, "modes_test.go", 74);
+        registry.Add("TestGCMAEAD", cipher_test_package.TestGCMAEAD, "gcm_test.go", 695);
+        registry.Add("TestGCMAsm", cipher_test_package.TestGCMAsm, "gcm_test.go", 592);
+        registry.Add("TestGCMCounterWrap", cipher_test_package.TestGCMCounterWrap, "gcm_test.go", 555);
+        registry.Add("TestGCMForSSH", cipher_test_package.TestGCMForSSH, "gcm_test.go", 808);
+        registry.Add("TestGCMInvalidTagSize", cipher_test_package.TestGCMInvalidTagSize, "gcm_test.go", 501);
+        registry.Add("TestNoExtraMethods", cipher_test_package.TestNoExtraMethods, "modes_test.go", 87);
+        registry.Add("TestOFB", cipher_test_package.TestOFB, "ofb_test.go", 71);
+        registry.Add("TestOFBStream", cipher_test_package.TestOFBStream, "ofb_test.go", 107);
+        registry.Add("TestTagFailureOverwrite", cipher_test_package.TestTagFailureOverwrite, "gcm_test.go", 517);
         return TestHost.Run(registry, args);
     }
 }

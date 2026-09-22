@@ -12,10 +12,10 @@ internal static class Go2CsTestHost
             "dsa.go",
             "dsa_test.go",
         });
-        registry.Add("TestParameterGeneration", dsa_internal_test_package.TestParameterGeneration, "dsa_test.go", 65);
-        registry.Add("TestSignAndVerify", dsa_internal_test_package.TestSignAndVerify, "dsa_test.go", 84);
-        registry.Add("TestSignAndVerifyWithBadPublicKey", dsa_internal_test_package.TestSignAndVerifyWithBadPublicKey, "dsa_test.go", 100);
-        registry.Add("TestSigningWithDegenerateKeys", dsa_internal_test_package.TestSigningWithDegenerateKeys, "dsa_test.go", 115);
+        registry.Add("TestParameterGeneration", dsa_internal_test_package.TestParameterGeneration, "dsa_test.go", 66);
+        registry.Add("TestSignAndVerify", dsa_internal_test_package.TestSignAndVerify, "dsa_test.go", 85);
+        registry.Add("TestSignAndVerifyWithBadPublicKey", dsa_internal_test_package.TestSignAndVerifyWithBadPublicKey, "dsa_test.go", 101);
+        registry.Add("TestSigningWithDegenerateKeys", dsa_internal_test_package.TestSigningWithDegenerateKeys, "dsa_test.go", 116);
         return TestHost.Run(registry, args);
     }
 }

@@ -17,12 +17,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(go.encoding.base64_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object extraDataˢ = (@string)"extra data"u8;
 internal static readonly object decryptFailedˢ = (@string)"decrypt failed: "u8;

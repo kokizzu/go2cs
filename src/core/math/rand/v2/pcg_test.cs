@@ -27,10 +27,16 @@ public static void TestPCGMarshal(ж<testing.T> Ꮡt) {
     const uint64 seed1 = 0x123456789abcdef0;
     const uint64 seed2 = 0xfedcba9876543210;
     @string want = ((@string)(new byte[]{0x70, 0x63, 0x67, 0x3a, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}));
+    @string wantAppend = ((@string)(new byte[]{0x00, 0x00, 0x00, 0x00, 0x70, 0x63, 0x67, 0x3a, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}));
     p.Seed(seed1, seed2);
     var (data, err) = p.MarshalBinary();
     if (((sstring)data) != want || err != default!) {
         Ꮡt.Errorf("MarshalBinary() = %q, %v, want %q, nil"u8, data, err, want);
+    }
+    var dataAppend = new slice<byte>(4, 32);
+    (dataAppend, err) = p.AppendBinary(dataAppend);
+    if (((sstring)dataAppend) != wantAppend || err != default!) {
+        Ꮡt.Errorf("AppendBinary() = %q, %v, want %q, nil"u8, dataAppend, err, wantAppend);
     }
     var q = new PCG(nil);
     {

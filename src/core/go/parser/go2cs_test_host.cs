@@ -38,6 +38,7 @@ internal static class Go2CsTestHost
             "testdata/issue49482.go2",
             "testdata/issue50427.go2",
             "testdata/issue64534.src",
+            "testdata/issue69506.go2",
             "testdata/linalg.go2",
             "testdata/map.go2",
             "testdata/metrics.go2",
@@ -56,6 +57,7 @@ internal static class Go2CsTestHost
         });
         registry.Add("TestColonEqualsScope", parser_internal_test_package.TestColonEqualsScope, "parser_test.go", 161);
         registry.Add("TestCommentGroups", parser_internal_test_package.TestCommentGroups, "parser_test.go", 312);
+        registry.Add("TestEmptyFileHasValidStartEnd", parser_internal_test_package.TestEmptyFileHasValidStartEnd, "parser_test.go", 843);
         registry.Add("TestErrors", parser_internal_test_package.TestErrors, "error_test.go", 185);
         registry.Add("TestFileStartEndPos", parser_internal_test_package.TestFileStartEndPos, "parser_test.go", 491);
         registry.Add("TestGoVersion", parser_internal_test_package.TestGoVersion, "parser_test.go", 785);
@@ -74,6 +76,7 @@ internal static class Go2CsTestHost
         registry.Add("TestParseExpr", parser_internal_test_package.TestParseExpr, "parser_test.go", 92);
         registry.Add("TestParseExprFrom", parser_internal_test_package.TestParseExprFrom, "parser_test.go", 52);
         registry.Add("TestParseFile", parser_internal_test_package.TestParseFile, "parser_test.go", 44);
+        registry.Add("TestParseTypeParamsAsParenExpr", parser_internal_test_package.TestParseTypeParamsAsParenExpr, "parser_test.go", 826);
         registry.Add("TestRangePos", parser_internal_test_package.TestRangePos, "parser_test.go", 740);
         registry.Add("TestResolution", parser_internal_test_package.TestResolution, "resolver_test.go", 30);
         registry.Add("TestScopeDepthLimit", parser_internal_test_package.TestScopeDepthLimit, "parser_test.go", 693);

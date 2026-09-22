@@ -8,7 +8,7 @@ using hex = encoding.hex_package;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using math = math_package;
-using rand = go.math.rand_package;
+using Δrand = go.math.rand_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
@@ -20,18 +20,6 @@ using go.testing;
 using static go.math.big_package;
 
 partial class big_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
-    builtin.initPackage(typeof(go.testing.quick_package));
-}
 
 internal static bool isNormalized(ж<global::go.math.big_package.ΔInt> Ꮡx) {
     ref var x = ref Ꮡx.DerefOrNull();
@@ -1574,14 +1562,14 @@ public static void TestBitwise(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in bitwiseTests) {
         x.SetString(test.x, 0);
         y.SetString(test.y, 0);
-        testBitFun(Ꮡt, andˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.And)), x, y, test.and);
-        testBitFunSelf(Ꮡt, andˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.And)), x, y, test.and);
-        testBitFun(Ꮡt, andNotˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.AndNot)), x, y, test.andNot);
-        testBitFunSelf(Ꮡt, andNotˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.AndNot)), x, y, test.andNot);
-        testBitFun(Ꮡt, "or"u8, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Or)), x, y, test.or);
-        testBitFunSelf(Ꮡt, "or"u8, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Or)), x, y, test.or);
-        testBitFun(Ꮡt, xorˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Xor)), x, y, test.xor);
-        testBitFunSelf(Ꮡt, xorˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Xor)), x, y, test.xor);
+        testBitFun(Ꮡt, andˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.And))), x, y, test.and);
+        testBitFunSelf(Ꮡt, andˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.And))), x, y, test.and);
+        testBitFun(Ꮡt, andNotˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.AndNot))), x, y, test.andNot);
+        testBitFunSelf(Ꮡt, andNotˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.AndNot))), x, y, test.andNot);
+        testBitFun(Ꮡt, "or"u8, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Or))), x, y, test.or);
+        testBitFunSelf(Ꮡt, "or"u8, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Or))), x, y, test.or);
+        testBitFun(Ꮡt, xorˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Xor))), x, y, test.xor);
+        testBitFunSelf(Ꮡt, xorˢ, new Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>(((Func<ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>, ж<global::go.math.big_package.ΔInt>>)(global::go.math.big_package.Xor))), x, y, test.xor);
     }
 }
 
@@ -1727,7 +1715,7 @@ public static void TestModSqrt(ж<testing.T> Ꮡt) {
     ref var modx4 = ref heap(new global::go.math.big_package.ΔInt(), out var Ꮡmodx4);
     ref var sq = ref heap(new global::go.math.big_package.ΔInt(), out var Ꮡsq);
     ref var sqrt = ref heap(new global::go.math.big_package.ΔInt(), out var Ꮡsqrt);
-    var r = rand.New(rand.NewSource(9));
+    var r = Δrand.New(Δrand.NewSource(9));
     foreach (var (i, s) in primes[1..]) {
         // skip 2, use only odd primes
         Ꮡmod.SetString(s, 10);
@@ -1835,7 +1823,7 @@ public static void TestJacobiPanic(ж<testing.T> Ꮡt) {
 public static void TestIssue2607(ж<testing.T> Ꮡt) {
     // This code sequence used to hang.
     var n = NewInt(10);
-    n.Rand(rand.New(rand.NewSource(9)), n);
+    n.Rand(Δrand.New(Δrand.NewSource(9)), n);
 }
 
 public static void TestSqrt(ж<testing.T> Ꮡt) {
@@ -1925,7 +1913,7 @@ public static void BenchmarkIntSqr(ж<testing.B> Ꮡb) {
 internal static void benchmarkDiv(ж<testing.B> Ꮡb, nint aSize, nint bSize) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    ж<rand.Rand> r = rand.New(rand.NewSource(1234));
+    ж<Δrand.Rand> r = Δrand.New(Δrand.NewSource(1234));
     var aa = randInt(r, (nuint)aSize);
     var bb = randInt(r, (nuint)bSize);
     if (aa.Cmp(bb) < 0) {

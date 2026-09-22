@@ -19,7 +19,7 @@ internal static readonly @string instˢ = "Inst"u8;
 internal static readonly @string underlyingˢ = "Underlying"u8;
 internal static readonly @string newMethodSetˢ = "NewMethodSet"u8;
 
-[GoType("dyn")] partial struct BenchmarkNamed_tests {
+[GoType("dyn")] internal partial struct BenchmarkNamed_tests {
     internal @string name;
     internal typesꓸType typ;
 }

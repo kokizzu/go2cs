@@ -24,18 +24,6 @@ using static go.net.http.cgi_package;
 
 partial class cgi_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string getTestGoFooBarABHttp10ˢ = "GET /test.go?foo=bar&a=b HTTP/1.0\nHost: example.com\n\n"u8;
 internal static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;

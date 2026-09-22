@@ -5,7 +5,7 @@ namespace go.math;
 
 using fmt = fmt_package;
 using math = math_package;
-using rand = go.math.rand_package;
+using Δrand = go.math.rand_package;
 using testing = testing_package;
 using go.math;
 using static go.math.big_package;
@@ -19,7 +19,7 @@ public static void TestFloatSqrt64(ж<testing.T> Ꮡt) {
         if (i == 100 && testing.Short()) {
             break;
         }
-        var r = rand.Float64();
+        var r = Δrand.Float64();
         var got = @new<global::go.math.big_package.Float>().SetPrec(53);
         got.Sqrt(NewFloat(r));
         var want = NewFloat(math.Sqrt(r));

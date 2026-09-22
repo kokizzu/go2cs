@@ -7,20 +7,20 @@ using bufio = bufio_package;
 using bytes = bytes_package;
 using crypto = crypto_package;
 using boring = go.crypto.@internal.boring_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using rand = go.crypto.rand_package;
 using static go.crypto.rsa_package;
 using sha1 = go.crypto.sha1_package;
 using sha256 = go.crypto.sha256_package;
+using sha512 = go.crypto.sha512_package;
 using Δx509 = go.crypto.x509_package;
 using pem = encoding.pem_package;
 using flag = flag_package;
 using fmt = fmt_package;
-using testenv = go.@internal.testenv_package;
 using big = math.big_package;
 using strings = strings_package;
 using testing = testing_package;
 using encoding;
-using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
 using hash = hash_package;
@@ -31,51 +31,38 @@ using static go.crypto.rsa_internal_test_package;
 
 partial class rsa_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
 public static void TestKeyGeneration(ж<testing.T> Ꮡt) {
-    foreach (var (_, size) in new nint[]{128, 1024, 2048, 3072}.slice()) {
-        var (priv, err) = GenerateKey(rand.Reader, size);
-        if (err != default!) {
-            Ꮡt.Errorf("GenerateKey(%d): %v"u8, size, err);
-        }
-        {
-            nint bits = (~priv).N.BitLen(); if (bits != size) {
-                Ꮡt.Errorf("key too short (%d vs %d)"u8, bits, size);
+    var sizes = new nint[]{128, 512, 1024, 2048, 3072, 4096}.slice();
+    if (testing.Short()) {
+        sizes = sizes[..2];
+    }
+    foreach (var (_, size) in sizes) {
+        Ꮡt.Run(fmt.Sprintf("%d"u8, size), (ж<testing.T> tΔ1) => {
+            if (size < 1024) {
+                var (_, errΔ1) = GenerateKey(rand.Reader, size);
+                if (errΔ1 == default!) {
+                    tΔ1.Errorf("GenerateKey(%d) succeeded without GODEBUG"u8, size);
+                }
+                tΔ1.Setenv(godebugˢ, rsa1024min0ˢ);
             }
-        }
-        testKeyBasics(Ꮡt, priv);
-        if (testing.Short()) {
-            break;
-        }
+            var (priv, err) = GenerateKey(rand.Reader, size);
+            if (err != default!) {
+                tΔ1.Errorf("GenerateKey(%d): %v"u8, size, err);
+            }
+            {
+                nint bits = (~priv).N.BitLen(); if (bits != size) {
+                    tΔ1.Errorf("key too short (%d vs %d)"u8, bits, size);
+                }
+            }
+            testKeyBasics(tΔ1, priv);
+        });
     }
 }
 
 public static void Test3PrimeKeyGeneration(ж<testing.T> Ꮡt) {
-    nint size = 768;
+    nint size = 1024;
     if (testing.Short()) {
+        Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
         size = 256;
     }
     var (priv, err) = GenerateMultiPrimeKey(rand.Reader, 3, size);
@@ -86,8 +73,9 @@ public static void Test3PrimeKeyGeneration(ж<testing.T> Ꮡt) {
 }
 
 public static void Test4PrimeKeyGeneration(ж<testing.T> Ꮡt) {
-    nint size = 768;
+    nint size = 1024;
     if (testing.Short()) {
+        Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
         size = 256;
     }
     var (priv, err) = GenerateMultiPrimeKey(rand.Reader, 4, size);
@@ -98,6 +86,7 @@ public static void Test4PrimeKeyGeneration(ж<testing.T> Ꮡt) {
 }
 
 public static void TestNPrimeKeyGeneration(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     nint primeSize = 64;
     nint maxN = 24;
     if (testing.Short()) {
@@ -118,13 +107,36 @@ public static void TestNPrimeKeyGeneration(ж<testing.T> Ꮡt) {
 public static void TestImpossibleKeyGeneration(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    // This test ensures that trying to generate toy RSA keys doesn't enter
-    // an infinite loop.
+    // This test ensures that trying to generate or validate toy RSA keys
+    // doesn't enter an infinite loop or panic.
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     for (nint i = 0; i < 32; i++) {
         GenerateKey(rand.Reader, i);
         GenerateMultiPrimeKey(rand.Reader, 3, i);
         GenerateMultiPrimeKey(rand.Reader, 4, i);
         GenerateMultiPrimeKey(rand.Reader, 5, i);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object skippingInShortModeˢ = (@string)"skipping in short mode"u8;
+
+public static void TestTinyKeyGeneration(ж<testing.T> Ꮡt) {
+    // Toy-sized keys can randomly hit hard failures in GenerateKey.
+    if (testing.Short()) {
+        Ꮡt.Skip(skippingInShortModeˢ);
+    }
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
+    foreach (var _ᴛ1 in range(10000)) {
+        var (k, err) = GenerateKey(rand.Reader, 32);
+        if (err != default!) {
+            Ꮡt.Fatalf("GenerateKey(32): %v"u8, err);
+        }
+        {
+            var errΔ1 = k.Validate(); if (errΔ1 != default!) {
+                Ꮡt.Fatalf("Validate(32): %v"u8, errΔ1);
+            }
+        }
     }
 }
 
@@ -138,6 +150,7 @@ d8Y7
 """u8;
 
 public static void TestGnuTLSKey(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     // This is a key generated by `certtool --generate-privkey --bits 128`.
     // It's such that de ≢ 1 mod φ(n), but is congruent mod the order of
     // the group.
@@ -149,7 +162,7 @@ internal static void testKeyBasics(ж<testing.T> Ꮡt, ж<rsa.PrivateKey> Ꮡpri
     ref var priv = ref Ꮡpriv.DerefOrNull();
 
     {
-        var errΔ1 = Ꮡpriv.Validate(); if (errΔ1 != default!) {
+        var errΔ1 = priv.Validate(); if (errΔ1 != default!) {
             Ꮡt.Errorf("Validate() failed: %s"u8, errΔ1);
         }
     }
@@ -172,14 +185,8 @@ internal static void testKeyBasics(ж<testing.T> Ꮡt, ж<rsa.PrivateKey> Ꮡpri
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object skippingAllocationsTestˢ = (@string)"skipping allocations test with BoringCrypto"u8;
-
 public static void TestAllocations(ж<testing.T> Ꮡt) {
-    if (boring.Enabled) {
-        Ꮡt.Skip(skippingAllocationsTestˢ);
-    }
-    testenv.SkipIfOptimizationOff(new rsa_test_package.testing_TжTB(Ꮡt));
+    cryptotest.SkipTestAllocations(Ꮡt);
     var m = slice<byte>("Hello Gophers"u8);
     var (c, err) = EncryptPKCS1v15(rand.Reader, test2048Key.of(rsa.PrivateKey.ᏑPublicKey), m);
     if (err != default!) {
@@ -205,28 +212,37 @@ public static void TestAllocations(ж<testing.T> Ꮡt) {
 internal static ж<bool> allFlag = flag.Bool("all"u8, false, "test all key sizes up to 2048"u8);
 
 public static void TestEverything(ж<testing.T> Ꮡt) {
+    if (testing.Short()) {
+        // Skip key generation, but still test real sizes.
+        foreach (var (_, key) in new ж<rsa.PrivateKey>[]{test1024Key, test2048Key}.slice()) {
+            var keyʗ1 = key;
+            Ꮡt.Run(fmt.Sprintf("%d"u8, (~key).N.BitLen()), (ж<testing.T> tΔ1) => {
+                tΔ1.Parallel();
+                testEverything(tΔ1, keyʗ1);
+            });
+        }
+        return;
+    }
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
     nint min = 32;
     nint max = 560; // any smaller than this and not all tests will run
-    if (testing.Short()) {
-        min = max;
-    }
     if (allFlag.Value) {
         max = 2048;
     }
     for (nint size = min; size <= max; size++) {
         nint sizeΔ1 = size;
-        Ꮡt.Run(fmt.Sprintf("%d"u8, sizeΔ1), (ж<testing.T> tΔ1) => {
-            tΔ1.Parallel();
+        Ꮡt.Run(fmt.Sprintf("%d"u8, sizeΔ1), (ж<testing.T> tΔ2) => {
+            tΔ2.Parallel();
             var (priv, err) = GenerateKey(rand.Reader, sizeΔ1);
             if (err != default!) {
-                tΔ1.Errorf("GenerateKey(%d): %v"u8, sizeΔ1, err);
+                tΔ2.Fatalf("GenerateKey(%d): %v"u8, sizeΔ1, err);
             }
             {
                 nint bits = (~priv).N.BitLen(); if (bits != sizeΔ1) {
-                    tΔ1.Errorf("key too short (%d vs %d)"u8, bits, sizeΔ1);
+                    tΔ2.Errorf("key too short (%d vs %d)"u8, bits, sizeΔ1);
                 }
             }
-            testEverything(tΔ1, priv);
+            testEverything(tΔ2, priv);
         });
     }
 }
@@ -239,8 +255,10 @@ internal static readonly object keyTooSmallForSignPSSˢ = (@string)"key too smal
 internal static readonly object keyTooSmallForSignPSSˢ2 = (@string)"key too small for SignPSS with PSSSaltLengthEqualsHash"u8;
 
 internal static void testEverything(ж<testing.T> Ꮡt, ж<rsa.PrivateKey> Ꮡpriv) {
+    ref var priv = ref Ꮡpriv.DerefOrNull();
+
     {
-        var errΔ1 = Ꮡpriv.Validate(); if (errΔ1 != default!) {
+        var errΔ1 = priv.Validate(); if (errΔ1 != default!) {
             Ꮡt.Errorf("Validate() failed: %s"u8, errΔ1);
         }
     }
@@ -282,8 +300,13 @@ internal static void testEverything(ж<testing.T> Ꮡt, ж<rsa.PrivateKey> Ꮡpr
             Ꮡt.Errorf("got:%x want:%x (%+v)"u8, dec, msg, Ꮡpriv.OrTypedNil());
         }
     }
+    @string hashMsg = "crypto/rsa: input must be hashed message"u8;
+    (var sig, err) = SignPKCS1v15(default!, Ꮡpriv, crypto.SHA256, msg);
+    if (err == default! || err.Error() != hashMsg) {
+        Ꮡt.Errorf("SignPKCS1v15 with bad hash: err = %q, want %q"u8, err, hashMsg);
+    }
     var hash = sha256.Sum256(msg);
-    (var sig, err) = SignPKCS1v15(default!, Ꮡpriv, crypto.SHA256, hash[..]);
+    (sig, err) = SignPKCS1v15(default!, Ꮡpriv, crypto.SHA256, hash[..]);
     if (AreEqual(err, ErrMessageTooLong)){
         Ꮡt.Log(keyTooSmallForˢ3);
     } else 
@@ -380,6 +403,73 @@ internal static void testEverything(ж<testing.T> Ꮡt, ж<rsa.PrivateKey> Ꮡpr
     if (err == default!) {
         Ꮡt.Errorf("DecryptPKCS1v15 accepted a long ciphertext"u8);
     }
+    (var der, err) = Δx509.MarshalPKCS8PrivateKey(Ꮡpriv.OrTypedNil());
+    if (err != default!) {
+        Ꮡt.Errorf("MarshalPKCS8PrivateKey: %v"u8, err);
+    }
+    (var key, err) = Δx509.ParsePKCS8PrivateKey(der);
+    if (err != default!) {
+        Ꮡt.Errorf("ParsePKCS8PrivateKey: %v"u8, err);
+    }
+    if (!key._<ж<rsa.PrivateKey>>().Equal(Ꮡpriv.OrTypedNil())) {
+        Ꮡt.Errorf("private key mismatch"u8);
+    }
+    (der, err) = Δx509.MarshalPKIXPublicKey(Ꮡpriv.of(rsa.PrivateKey.ᏑPublicKey));
+    if (err != default!) {
+        Ꮡt.Errorf("MarshalPKIXPublicKey: %v"u8, err);
+    }
+    (var pub, err) = Δx509.ParsePKIXPublicKey(der);
+    if (err != default!) {
+        Ꮡt.Errorf("ParsePKIXPublicKey: %v"u8, err);
+    }
+    if (!pub._<ж<rsa.PublicKey>>().Equal(Ꮡpriv.of(rsa.PrivateKey.ᏑPublicKey))) {
+        Ꮡt.Errorf("public key mismatch"u8);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object expectedErrorˢ = (@string)"expected error"u8;
+internal static readonly @string insecureˢ = "insecure"u8;
+
+public static void TestKeyTooSmall(ж<testing.T> Ꮡt) {
+    void checkErr(error err) {
+        Ꮡt.Helper();
+        if (err == default!) {
+            Ꮡt.Error(expectedErrorˢ);
+        }
+        if (!strings.Contains(err.Error(), insecureˢ)) {
+            Ꮡt.Errorf("unexpected error: %v"u8, err);
+        }
+    }
+    var checkErrʗ1 = checkErr;
+    void checkErr2(slice<byte> _, error err) {
+        Ꮡt.Helper();
+        checkErrʗ1(err);
+    }
+    var buf = new slice<byte>(512 / 8);
+    var (ᴛ1, ᴛ2) = test512Key.Sign(rand.Reader, buf, crypto.SHA512);
+    checkErr2(ᴛ1, ᴛ2);
+    var (ᴛ3, ᴛ4) = test512Key.Sign(rand.Reader, buf, new rsa_test_package.rsa_PSSOptionsжSignerOpts(Ꮡ(new PSSOptions(SaltLength: PSSSaltLengthEqualsHash))));
+    checkErr2(ᴛ3, ᴛ4);
+    var (ᴛ5, ᴛ6) = test512Key.Decrypt(rand.Reader, buf, Ꮡ(new PKCS1v15DecryptOptions(nil)));
+    checkErr2(ᴛ5, ᴛ6);
+    var (ᴛ7, ᴛ8) = test512Key.Decrypt(rand.Reader, buf, Ꮡ(new OAEPOptions(Hash: crypto.SHA512)));
+    checkErr2(ᴛ7, ᴛ8);
+    checkErr(VerifyPKCS1v15(test512Key.of(rsa.PrivateKey.ᏑPublicKey), crypto.SHA512, buf, buf));
+    checkErr(VerifyPSS(test512Key.of(rsa.PrivateKey.ᏑPublicKey), crypto.SHA512, buf, buf, Ꮡ(new PSSOptions(SaltLength: PSSSaltLengthEqualsHash))));
+    var (ᴛ9, ᴛ10) = SignPKCS1v15(rand.Reader, test512Key, crypto.SHA512, buf);
+    checkErr2(ᴛ9, ᴛ10);
+    var (ᴛ11, ᴛ12) = SignPSS(rand.Reader, test512Key, crypto.SHA512, buf, Ꮡ(new PSSOptions(SaltLength: PSSSaltLengthEqualsHash)));
+    checkErr2(ᴛ11, ᴛ12);
+    var (ᴛ13, ᴛ14) = EncryptPKCS1v15(rand.Reader, test512Key.of(rsa.PrivateKey.ᏑPublicKey), buf);
+    checkErr2(ᴛ13, ᴛ14);
+    var (ᴛ15, ᴛ16) = EncryptOAEP(sha512.New(), rand.Reader, test512Key.of(rsa.PrivateKey.ᏑPublicKey), buf, default!);
+    checkErr2(ᴛ15, ᴛ16);
+    var (ᴛ17, ᴛ18) = DecryptPKCS1v15(default!, test512Key, buf);
+    checkErr2(ᴛ17, ᴛ18);
+    var (ᴛ19, ᴛ20) = DecryptOAEP(sha512.New(), default!, test512Key, buf, default!);
+    checkErr2(ᴛ19, ᴛ20);
+    checkErr(DecryptPKCS1v15SessionKey(default!, test512Key, buf, buf));
 }
 
 internal static @string testingKey(@string s) {
@@ -402,7 +492,55 @@ internal static ж<rsa.PrivateKey> parseKey(@string s) {
     return k;
 }
 
-internal static ж<ж<rsa.PrivateKey>> Ꮡtest2048Key = new StandardBox<ж<rsa.PrivateKey>>(parseKey(testingKey("""
+internal static ж<ж<rsa.PrivateKey>> ᏑrsaPrivateKey = new StandardBox<ж<rsa.PrivateKey>>(default(ж<rsa.PrivateKey>));
+internal static ref ж<rsa.PrivateKey> rsaPrivateKey => ref ᏑrsaPrivateKey.ValueSlot;
+internal static void initᴛrsaPrivateKey() { rsaPrivateKey = test1024Key; }
+
+internal static ж<ж<rsa.PrivateKey>> Ꮡtest512Key = new StandardBox<ж<rsa.PrivateKey>>(parseKey(testingKey("""
+-----BEGIN RSA TESTING KEY-----
+MIIBOgIBAAJBALKZD0nEffqM1ACuak0bijtqE2QrI/KLADv7l3kK3ppMyCuLKoF0
+fd7Ai2KW5ToIwzFofvJcS/STa6HA5gQenRUCAwEAAQJBAIq9amn00aS0h/CrjXqu
+/ThglAXJmZhOMPVn4eiu7/ROixi9sex436MaVeMqSNf7Ex9a8fRNfWss7Sqd9eWu
+RTUCIQDasvGASLqmjeffBNLTXV2A5g4t+kLVCpsEIZAycV5GswIhANEPLmax0ME/
+EO+ZJ79TJKN5yiGBRsv5yvx5UiHxajEXAiAhAol5N4EUyq6I9w1rYdhPMGpLfk7A
+IU2snfRJ6Nq2CQIgFrPsWRCkV+gOYcajD17rEqmuLrdIRexpg8N1DOSXoJ8CIGlS
+tAboUGBxTDq3ZroNism3DaMIbKPyYrAqhKov1h5V
+-----END RSA TESTING KEY-----
+"""u8)));
+internal static ref ж<rsa.PrivateKey> test512Key => ref Ꮡtest512Key.ValueSlot;
+
+internal static ж<rsa.PrivateKey> test512KeyTwo = parseKey(testingKey("""
+-----BEGIN TESTING KEY-----
+MIIBVgIBADANBgkqhkiG9w0BAQEFAASCAUAwggE8AgEAAkEA0wLCoguSfgskR8tY
+Fh2AzXQzBpSEmPucxtVe93HzPdQpxvtSTvZe5kIsdvPc7QZ0dCc/qbnUBRbuGIAl
+Ir0c9QIDAQABAkAzul+AXhnhcFXKi9ziPwVOWIgRuuLupe//BluriXG53BEBSVrV
+Hr7qFqwnSLSLroMzqhZwoqyRgjsLYyGEHDGBAiEA8T0sDPuht3w2Qv61IAvBwjLH
+H4HXjRUEWYRn1XjHqAUCIQDf7BYlANRqFfvg1YK3VCM4YyK2mH1UivDi8wdPlJRk
+MQIhAMp5i2WCNeNpD6n/WkqBU6kJMXPSaPZy82mm5feYHgt5AiEAkg/QnhB9fjma
+1BzRqD4Uv0pDMXIkhooe+Rrn0OwtI3ECIQDP6nxML3JOjbAS7ydFBv176uVsMJib
+r4PZozCXKuuGNg==
+-----END PRIVATE KEY-----
+"""u8));
+
+internal static ж<rsa.PrivateKey> test1024Key = parseKey(testingKey("""
+-----BEGIN RSA TESTING KEY-----
+MIICXQIBAAKBgQCw0YNSqI9T1VFvRsIOejZ9feiKz1SgGfbe9Xq5tEzt2yJCsbyg
++xtcuCswNhdqY5A1ZN7G60HbL4/Hh/TlLhFJ4zNHVylz9mDDx3yp4IIcK2lb566d
+fTD0B5EQ9Iqub4twLUdLKQCBfyhmJJvsEqKxm4J4QWgI+Brh/Pm3d4piPwIDAQAB
+AoGASC6fj6TkLfMNdYHLQqG9kOlPfys4fstarpZD7X+fUBJ/H/7y5DzeZLGCYAIU
++QeAHWv6TfZIQjReW7Qy00RFJdgwFlTFRCsKXhG5x+IB+jL0Grr08KbgPPDgy4Jm
+xirRHZVtU8lGbkiZX+omDIU28EHLNWL6rFEcTWao/tERspECQQDp2G5Nw0qYWn7H
+Wm9Up1zkUTnkUkCzhqtxHbeRvNmHGKE7ryGMJEk2RmgHVstQpsvuFY4lIUSZEjAc
+DUFJERhFAkEAwZH6O1ULORp8sHKDdidyleYcZU8L7y9Y3OXJYqELfddfBgFUZeVQ
+duRmJj7ryu0g0uurOTE+i8VnMg/ostxiswJBAOc64Dd8uLJWKa6uug+XPr91oi0n
+OFtM+xHrNK2jc+WmcSg3UJDnAI3uqMc5B+pERLq0Dc6hStehqHjUko3RnZECQEGZ
+eRYWciE+Cre5dzfZkomeXE0xBrhecV0bOq6EKWLSVE+yr6mAl05ThRK9DCfPSOpy
+F6rgN3QiyCA9J/1FluUCQQC5nX+PTU1FXx+6Ri2ZCi6EjEKMHr7gHcABhMinZYOt
+N59pra9UdVQw9jxCU9G7eMyb0jJkNACAuEwakX3gi27b
+-----END RSA TESTING KEY-----
+"""u8));
+
+internal static @string test2048KeyPEM = testingKey("""
 -----BEGIN TESTING KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDNoyFUYeDuqw+k
 iyv47iBy/udbWmQdpbUZ8JobHv8uQrvL7sQN6l83teHgNJsXqtiLF3MC+K+XI6Dq
@@ -431,7 +569,9 @@ ZWPxPAyQUEA7EkuUhAX1bVNG6UJTYA8kmGcUCG4jPTgWzi00IyUUr8jK7efyU/zs
 qiJuVs1bia+flYIQpysMl1VzZh8gW1nkB4SVPm5l2wBvVJDIr9Mc6rueC/oVNkh2
 fLVGuFoTVIu2bF0cWAjNNMg=
 -----END TESTING KEY-----
-"""u8)));
+"""u8);
+
+internal static ж<ж<rsa.PrivateKey>> Ꮡtest2048Key = new StandardBox<ж<rsa.PrivateKey>>(parseKey(test2048KeyPEM));
 internal static ref ж<rsa.PrivateKey> test2048Key => ref Ꮡtest2048Key.ValueSlot;
 
 internal static ж<rsa.PrivateKey> test3072Key = parseKey(testingKey("""
@@ -679,6 +819,32 @@ public static void BenchmarkVerifyPSS(ж<testing.B> Ꮡb) {
             var errΔ1 = VerifyPSS(test2048Key.of(rsa.PrivateKey.ᏑPublicKey), crypto.SHA256, hashed[..], s, nil);
             if (errΔ1 != default!) {
                 bΔ1.Fatal(errΔ1);
+            }
+        }
+    });
+}
+
+public static void BenchmarkGenerateKey(ж<testing.B> Ꮡb) {
+    Ꮡb.Run("2048"u8, (ж<testing.B> bΔ1) => {
+        for (nint i = 0; i < (~bΔ1).N; i++) {
+            {
+                var (_, err) = GenerateKey(rand.Reader, 2048); if (err != default!) {
+                    bΔ1.Fatal(err);
+                }
+            }
+        }
+    });
+}
+
+public static void BenchmarkParsePKCS8PrivateKey(ж<testing.B> Ꮡb) {
+    Ꮡb.Run("2048"u8, (ж<testing.B> bΔ1) => {
+        var (p, _) = pem.Decode(slice<byte>(test2048KeyPEM));
+        bΔ1.ResetTimer();
+        for (nint i = 0; i < (~bΔ1).N; i++) {
+            {
+                var (_, err) = Δx509.ParsePKCS8PrivateKey((~p).Bytes); if (err != default!) {
+                    bΔ1.Fatal(err);
+                }
             }
         }
     });
@@ -950,5 +1116,29 @@ internal static slice<testEncryptOAEPStruct> testEncryptOAEPData = new testEncry
         }.slice()
     )
 }.slice();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string beginRsaTestingKeyˢ2 = """
+-----BEGIN RSA TESTING KEY-----
+MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu
+KUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQJAIJLixBy2qpFoS4DSmoEm
+o3qGy0t6z09AIJtH+5OeRV1be+N4cDYJKffGzDa88vQENZiRm0GRq6a+HPGQMd2k
+TQIhAKMSvzIBnni7ot/OSie2TmJLY4SwTQAevXysE2RbFDYdAiEBCUEaRQnMnbp7
+9mxDXDf6AU0cN/RPBjb9qSHDcWZHGzUCIG2Es59z8ugGrDY+pxLQnwfotadxd+Uy
+v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
+/5OiPgoTdSy7bcF9IGpSE8ZgGKzgYQVZeN97YE00
+-----END RSA TESTING KEY-----
+"""u8;
+internal static readonly object boringCryptoModeReturnsˢ = (@string)"BoringCrypto mode returns the wrong error from SignPSS"u8;
+
+public static void TestPSmallerThanQ(ж<testing.T> Ꮡt) {
+    // This key has a 256-bit P and a 257-bit Q.
+    var k = parseKey(testingKey(beginRsaTestingKeyˢ2));
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
+    if (boring.Enabled) {
+        Ꮡt.Skip(boringCryptoModeReturnsˢ);
+    }
+    testEverything(Ꮡt, k);
+}
 
 } // end rsa_test_package

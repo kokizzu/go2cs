@@ -17,6 +17,7 @@ using testenv = global::go.@internal.testenv_package;
 using os = os_package;
 using filepath = global::go.path.filepath_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
@@ -129,7 +130,7 @@ internal static (ж<types.Package>, error) ImportFrom(this ж<stdlibChecker> Ꮡ
         // unsafe cannot be type checked normally.
         return (Unsafe, default!);
     }
-    var (p, err) = Ꮡ(Δbuild.Default).Import(path, dir, Δbuild.FindOnly);
+    var (p, err) = Δbuild.ᏑDefault.Import(path, dir, Δbuild.FindOnly);
     if (err != default!) {
         return (default!, err);
     }
@@ -149,7 +150,7 @@ internal static (ж<types.Package>, error) ImportFrom(this ж<stdlibChecker> Ꮡ
 internal static (ж<types.Package>, error) getDirPackage(this ж<stdlibChecker> Ꮡc, @string dir) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(stdlibChecker.Ꮡmu).Lock();
+    c.mu.Lock();
     var (fut, ok) = c.pkgs[dir, ꟷ];
     if (!ok){
         // First request for this package dir; type check.
@@ -158,7 +159,7 @@ internal static (ж<types.Package>, error) getDirPackage(this ж<stdlibChecker> 
         ));
         c.pkgs[dir] = fut;
         var (files, okΔ1) = c.dirFiles[dir, ꟷ];
-        Ꮡc.of(stdlibChecker.Ꮡmu).Unlock();
+        c.mu.Unlock();
         if (!okΔ1){
             fut.Value.err = fmt.Errorf("no files for %s"u8, dir);
         } else {
@@ -170,7 +171,7 @@ internal static (ж<types.Package>, error) getDirPackage(this ж<stdlibChecker> 
         close((~fut).done);
     } else {
         // Otherwise, await the result.
-        Ꮡc.of(stdlibChecker.Ꮡmu).Unlock();
+        c.mu.Unlock();
         ᐸꟷ((~fut).done);
     }
     return ((~fut).pkg, (~fut).err);
@@ -360,6 +361,7 @@ internal static readonly @string issue11362Goˢ = "issue11362.go"u8;
 internal static readonly @string issue16369Goˢ = "issue16369.go"u8;
 internal static readonly @string issue18459Goˢ = "issue18459.go"u8;
 internal static readonly @string issue18882Goˢ = "issue18882.go"u8;
+internal static readonly @string issue20027Goˢ = "issue20027.go"u8;
 internal static readonly @string issue20529Goˢ = "issue20529.go"u8;
 internal static readonly @string issue22200Goˢ = "issue22200.go"u8;
 internal static readonly @string issue22200bGoˢ = "issue22200b.go"u8;
@@ -405,6 +407,8 @@ public static void TestStdFixed(ж<testing.T> Ꮡt) {
         issue18459Goˢ, // go/types doesn't check validity of //go:xxx directives
 
         issue18882Goˢ, // go/types doesn't check validity of //go:xxx directives
+
+        issue20027Goˢ, // go/types does not have constraints on channel element size
 
         issue20529Goˢ, // go/types does not have constraints on stack size
 
@@ -454,12 +458,10 @@ public static void TestStdKen(ж<testing.T> Ꮡt) {
     testTestDir(Ꮡt, filepath.Join(testenv.GOROOT(new types_test_package.testing_TжTB(Ꮡt)), testˢ, kenˢ));
 }
 
-// See go.dev/issue/46027: some imports are missing for this submodule.
 // Package paths of excluded packages.
 internal static map<@string, bool> excluded = new map<@string, bool>{
     ["builtin"u8] = true,
-    ["crypto/internal/edwards25519/field/_asm"u8] = true,
-    ["crypto/internal/bigmod/_asm"u8] = true
+    ["cmd/compile/internal/ssa/_gen"u8] = true
 };
 
 // printPackageMu synchronizes the printing of type-checked package files in
@@ -526,6 +528,9 @@ internal static (ж<types.Package>, error) typecheckFiles(@string path, slice<@s
     return (pkg, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string asmˢ = "_asm"u8;
+
 // pkgFilenames returns the list of package filenames for the given directory.
 internal static (slice<@string>, error) pkgFilenames(@string dir, bool includeTest) {
     ref var ctxt = ref heap<Δbuild.Context>(out var Ꮡctxt);
@@ -541,6 +546,11 @@ internal static (slice<@string>, error) pkgFilenames(@string dir, bool includeTe
         return (default!, err);
     }
     if (excluded[(~pkg).ImportPath]) {
+        return (default!, default!);
+    }
+    if (slices.Contains(strings.Split((~pkg).ImportPath, "/"u8), asmˢ)) {
+        // Submodules where not all dependencies are available.
+        // See go.dev/issue/46027.
         return (default!, default!);
     }
     slice<@string> filenames = default!;

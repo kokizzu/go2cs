@@ -60,8 +60,8 @@ using static global::go.net.rpc_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("net/rpc/client_test.go", "client_test.cs", "ADEogKKA0oKCpIKC1oKCgoKCggALGKKCAAkGooKCgpSCpoSCgpSEgoKWgoKCloKE")]
-[assembly: global::go.GoPositionMap("net/rpc/server_test.go", "server_test.cs", "AGBcsoKmsoLWooKUgqaygqaigqaCpqKCyqKCAAkSsoKmsoKmsoKCpoKCgpTmgoKCgoSCgoKEgvaCgoKCgoSCgoKEgtaCgoKmgoKCgoIAGAbCgoKUpoKCgoKUgqiCgoKClIKogoKUgqSogoKCgqSogoKCgoSCgpSCloKClIKogoKUgqSogoKCpJiSkoKCgqSogoKCgpSCgpaCgoKClIKogoKCgpSCAAkIooKClKaCgoKClILogoKCgqaigoKClJSClKaCgoKClIIACwiihIKClKaCkoKClIKogpKCgpSAgriCkoKClICCABEcwoKCgoKCgpSUgpSmooKCpoKClIKmooKUlKaCpoKCgoKmopKEgoKCgpSCloKCABEUgqaCpoKmggAKCJKCgpSCgpSCgpSCgqQACAyUpoLGgsaC1qKClIKigoKUtKT4ooKUgoLWgqaC1qKCgoKUlIKCsoKClIIACwqCgpSClKaCgpSClO6CpoKC1oL2ooKClJKCgpSClAAIBqKEgoKUlIKCgoKUgoIACQiChIKClIKClIKCupKCgoKEgoKC1oKCgoLCkoKClMSCgpSCgpaCgpSCgoKCgt6CgoKCgoLowoKCgpSmgoSigoKCgpSCAAgMwoKUgoKCgpSmgoKSkoKCgoKEgsKCgoKmooKCgoKCgpSCgqam1oKmgqaCpoI=")]
+[assembly: global::go.GoPositionMap("net/rpc/client_test.go", "client_test.cs", "ABMogKKA0oKCpIKC1oKCgoKCggALGKKCAAkGooKCgpSCpoSCgpSEgoKWgoKCloKE", "55-63:1")]
+[assembly: global::go.GoPositionMap("net/rpc/server_test.go", "server_test.cs", "ADBcsoKmsoLWooKUgqaygqaigqaCpqKCyqKCAAkSsoKmsoKmsoKCpoKCgpTmgoKCgoSCgoKEgvaCgoKCgoSCgoKEgtaCgoKmgoKCgoIAGAbCgoKUpoKCgoKUgqiCgoKClIKogoKUgqSogoKCgqSogoKCgoSCgpSCloKClIKogoKUgqSogoKCpJiSkoKCgqSogoKCgpSCgpaCgoKClIKogoKCgpSCAAkIooKClKaCgoKClILogoKCgqaigoKClJSClKaCgoKClIIACwiihIKClKaCkoKClIKogpKCgpSAgriCkoKClICCABEcwoKCgoKCgpSUgpSmooKCpoKClIKmooKUlKaCpoKCgoKmopKEgoKCgpSCloKCABEUgqaCpoKmggAKCJKCgpSCgpSCgpSCgqQACAyUpoLGgsaC1qKClIKigoKUtKT4ooKUgoLWgqaC1qKCgoKUlIKCsoKClIIACwqCgpSClKaCgpSClO6CpoKC1oL2ooKClJKCgpSClAAIBqKEgoKUlIKCgoKUgoIACQiChIKClIKClIKCupKCgoKEgoKC1oKCgoLCkoKClMSCgpSCgpaCgpSCgoKCgt6CgoKCgoLowoKCgpSmgoSigoKCgpSCAAgMwoKUgoKCgpSmgoKSkoKCgoKEgsKCgoKmooKCgoKCgpSCgqam1oKmgqaCpoI=", "546-550:1;560-562:1;586-594:1;705-712:1;760-771:1;798-804:1;805-820:2")]
 // </GoSourcePositionMaps>
 
 namespace go.net;
@@ -77,4 +77,33 @@ public static partial class rpc_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() => builtin.initPackage(typeof(global::go.net.http.httptest_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(global::go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.net.rpc_package));
+    }
 }

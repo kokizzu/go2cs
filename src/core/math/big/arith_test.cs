@@ -6,7 +6,7 @@ namespace go.math;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using bits = go.math.bits_package;
-using rand = go.math.rand_package;
+using Δrand = go.math.rand_package;
 using strings = strings_package;
 using testing = testing_package;
 using @internal;
@@ -15,42 +15,6 @@ using io = io_package;
 using static go.math.big_package;
 
 partial class big_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(go.math.bits_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 internal static bool isRaceBuilder = strings.HasSuffix(testenv.Builder(), "-race"u8);
 
@@ -115,7 +79,7 @@ public static void TestFunVV(ж<testing.T> Ꮡt) {
 }
 
 // Always the same seed for reproducible results.
-internal static ж<rand.Rand> rnd = rand.New(rand.NewSource(0));
+internal static ж<Δrand.Rand> rnd = Δrand.New(Δrand.NewSource(0));
 
 internal static global::go.math.big_package.Word rndW() {
     return ((global::go.math.big_package.Word)(nuint)((int64)((rnd.Int63() << (int)(1)) | rnd.Int63n(2))));
@@ -770,7 +734,7 @@ public static void BenchmarkNonZeroShifts(ж<testing.B> Ꮡb) {
             continue;
         }
         var x = rndV(n);
-        nuint s = (nuint)rand.Int63n(_W - 2) + 1; // avoid 0 and over-large shifts
+        nuint s = (nuint)Δrand.Int63n(_W - 2) + 1; // avoid 0 and over-large shifts
         var z = new slice<global::go.math.big_package.Word>(n);
         var xʗ1 = x;
         var zʗ1 = z;

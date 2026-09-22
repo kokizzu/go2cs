@@ -6,13 +6,14 @@ namespace go.archive;
 using bytes = bytes_package;
 using binary = encoding.binary_package;
 using hex = encoding.hex_package;
+using fmt = fmt_package;
 using obscuretestdata = @internal.obscuretestdata_package;
 using io = io_package;
 using fs = go.io.fs_package;
 using os = os_package;
 using filepath = go.path.filepath_package;
-using reflect = reflect_package;
 using regexp = regexp_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using fstest = go.testing.fstest_package;
@@ -818,7 +819,7 @@ public static void TestInvalidFiles(ж<testing.T> Ꮡt) {
     // repeated directoryEndSignatures
     var sig = new slice<byte>(4);
     binary.LittleEndian.PutUint32(sig, directoryEndSignature);
-    for (nint i = 0; i < size - 4; i += 4) {
+    for (nint i = 0; i < (nint)(size - 4); i += 4) {
         copy(b[(int)(i)..(int)(i + 4)], sig);
     }
     (_, err) = NewReader(new zip_test_package.bytes_ReaderжReaderAt(bytes.NewReader(b)), size);
@@ -1299,7 +1300,7 @@ public static void TestFSWalk(ж<testing.T> Ꮡt) {
             if (!testʗ1.wantErr && sawErr) {
                 tΔ1.Error(unexpectedErrorˢ);
             }
-            if (testʗ1.want != default! && !reflect.DeepEqual(Ꮡfiles.ValueSlot, testʗ1.want)) {
+            if (testʗ1.want != default! && !slices.Equal<slice<@string>, @string>(Ꮡfiles.ValueSlot, testʗ1.want)) {
                 tΔ1.Errorf("got %v want %v"u8, Ꮡfiles.ValueSlot, testʗ1.want);
             }
         });
@@ -1640,7 +1641,7 @@ public static void TestCVE202141772(ж<testing.T> Ꮡt) {
             }
         }
     }
-    if (!reflect.DeepEqual(names, entryNames)) {
+    if (!slices.Equal<slice<@string>, @string>(names, entryNames)) {
         Ꮡt.Errorf("Unexpected file entries: %q"u8, names);
     }
     {
@@ -1780,7 +1781,7 @@ public static void TestInsecurePaths(ж<testing.T> Ꮡt) {
         foreach (var (_, f) in (~zr).File) {
             gotPaths = append(gotPaths, (~f).Name);
         }
-        if (!reflect.DeepEqual(gotPaths, new @string[]{path}.slice())) {
+        if (!slices.Equal<slice<@string>, @string>(gotPaths, new @string[]{path}.slice())) {
             Ꮡt.Errorf("NewReader for archive with file %q: got files %q"u8, path, gotPaths);
             continue;
         }
@@ -1809,7 +1810,7 @@ public static void TestDisableInsecurePathCheck(ж<testing.T> Ꮡt) {
         gotPaths = append(gotPaths, (~f).Name);
     }
     {
-        var want = new @string[]{name}.slice(); if (!reflect.DeepEqual(gotPaths, want)) {
+        var want = new @string[]{name}.slice(); if (!slices.Equal<slice<@string>, @string>(gotPaths, want)) {
             Ꮡt.Errorf("NewReader with zipinsecurepath=1: got files %q, want %q"u8, gotPaths, want);
         }
     }
@@ -1932,6 +1933,88 @@ public static void TestBaseOffsetPlusOverflow(ж<testing.T> Ꮡt) {
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string doesNotExistˢ = "does-not-exist"u8;
+
+public static void BenchmarkReaderOneDeepDir(ж<testing.B> Ꮡb) {
+    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+    var zw = NewWriter(new zip_test_package.bytes_BufferжWriter(Ꮡbuf));
+    foreach (var i in range(4000)) {
+        ref var name = ref heap<@string>(out var Ꮡname);
+        name = strings.Repeat("a/"u8, i) + "data"u8;
+        zw.CreateHeader(Ꮡ(new FileHeader(
+            Name: name,
+            Method: Store
+        )));
+    }
+    {
+        var err = zw.Close(); if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+    }
+    var data = buf.Bytes();
+    while (Ꮡb.Loop()) {
+        var (zr, err) = NewReader(new zip_test_package.bytes_ReaderжReaderAt(bytes.NewReader(data)), (int64)len(data));
+        if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+        zr.Open(doesNotExistˢ);
+    }
+}
+
+public static void BenchmarkReaderManyDeepDirs(ж<testing.B> Ꮡb) {
+    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+    var zw = NewWriter(new zip_test_package.bytes_BufferжWriter(Ꮡbuf));
+    foreach (var i in range(2850)) {
+        ref var name = ref heap<@string>(out var Ꮡname);
+        name = fmt.Sprintf("%x"u8, i);
+        name = strings.Repeat("/"u8 + name, i + 1)[1..];
+        zw.CreateHeader(Ꮡ(new FileHeader(
+            Name: name,
+            Method: Store
+        )));
+    }
+    {
+        var err = zw.Close(); if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+    }
+    var data = buf.Bytes();
+    while (Ꮡb.Loop()) {
+        var (zr, err) = NewReader(new zip_test_package.bytes_ReaderжReaderAt(bytes.NewReader(data)), (int64)len(data));
+        if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+        zr.Open(doesNotExistˢ);
+    }
+}
+
+public static void BenchmarkReaderManyShallowFiles(ж<testing.B> Ꮡb) {
+    ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+    var zw = NewWriter(new zip_test_package.bytes_BufferжWriter(Ꮡbuf));
+    foreach (var i in range(310000)) {
+        ref var name = ref heap<@string>(out var Ꮡname);
+        name = fmt.Sprintf("%v"u8, i);
+        zw.CreateHeader(Ꮡ(new FileHeader(
+            Name: name,
+            Method: Store
+        )));
+    }
+    {
+        var err = zw.Close(); if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+    }
+    var data = buf.Bytes();
+    while (Ꮡb.Loop()) {
+        var (zr, err) = NewReader(new zip_test_package.bytes_ReaderжReaderAt(bytes.NewReader(data)), (int64)len(data));
+        if (err != default!) {
+            Ꮡb.Fatal(err);
+        }
+        zr.Open(doesNotExistˢ);
+    }
 }
 
 } // end zip_internal_test_package

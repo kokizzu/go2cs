@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-using static go.crypto.cipher_internal_test_package;
-
 partial class cipher_test_package {
 
 // Common values for tests.

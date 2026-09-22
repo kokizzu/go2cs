@@ -13,9 +13,9 @@ using http = go.net.http_package;
 using httptest = go.net.http.httptest_package;
 using os = os_package;
 using filepath = go.path.filepath_package;
-using reflect = reflect_package;
 using regexp = regexp_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
@@ -27,66 +27,6 @@ using go.path;
 using static go.net.http.cgi_package;
 
 partial class cgi_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string serverSoftwareˢ = "SERVER_SOFTWARE"u8;
@@ -654,7 +594,7 @@ public static void TestRemoveLeadingDuplicates(ж<testing.T> Ꮡt) {
     }.slice();
     foreach (var (_, tt) in tests) {
         var got = removeLeadingDuplicates(tt.env);
-        if (!reflect.DeepEqual(got, tt.want)) {
+        if (!slices.Equal<slice<@string>, @string>(got, tt.want)) {
             Ꮡt.Errorf("removeLeadingDuplicates(%q) = %q; want %q"u8, tt.env, got, tt.want);
         }
     }

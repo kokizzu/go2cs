@@ -6,17 +6,72 @@ namespace go.crypto;
 using bytes = bytes_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
+using boring = go.crypto.@internal.boring_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
+using fips140 = go.crypto.@internal.fips140_package;
+using fipsaes = go.crypto.@internal.fips140.aes_package;
+using gcm = go.crypto.@internal.fips140.aes.gcm_package;
 using rand = go.crypto.rand_package;
 using hex = encoding.hex_package;
 using errors = errors_package;
+using fmt = fmt_package;
 using io = io_package;
 using reflect = reflect_package;
 using testing = testing_package;
 using encoding;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
+using go.crypto.@internal;
+using go.crypto.@internal.fips140.aes;
 
 partial class cipher_test_package {
+
+internal static cipher.Block _ᴛ1ʗ = new wrapperжBlock(((ж<wrapper>)nil));
+
+[GoType] partial struct wrapper {
+    internal cipher.Block block;
+}
+
+[GoRecv] internal static nint BlockSize(this ref wrapper w) {
+    return w.block.BlockSize();
+}
+
+[GoRecv] internal static void Encrypt(this ref wrapper w, slice<byte> dst, slice<byte> src) {
+    w.block.Encrypt(dst, src);
+}
+
+[GoRecv] internal static void Decrypt(this ref wrapper w, slice<byte> dst, slice<byte> src) {
+    w.block.Decrypt(dst, src);
+}
+
+// wrap wraps the Block so that it does not type-asserts to *aes.Block.
+internal static cipher.Block wrap(cipher.Block b) {
+    return new wrapperжBlock(Ꮡ(new wrapper(b)));
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcmˢ = "gcm"u8;
+private static readonly @string fallbackˢ = "Fallback"u8;
+
+internal static void testAllImplementations(ж<testing.T> Ꮡt, Action<ж<testing.T>, Func<slice<byte>, cipher.Block>> f) {
+    cryptotest.TestAllImplementations(Ꮡt, gcmˢ, (ж<testing.T> tΔ1) => {
+        f(tΔ1, (slice<byte> b) => {
+            var (c, err) = aes.NewCipher(b);
+            if (err != default!) {
+                tΔ1.Fatal(err);
+            }
+            return c;
+        });
+    });
+    Ꮡt.Run(fallbackˢ, (ж<testing.T> tΔ2) => {
+        f(tΔ2, (slice<byte> b) => {
+            var (c, err) = aes.NewCipher(b);
+            if (err != default!) {
+                tΔ2.Fatal(err);
+            }
+            return wrap(c);
+        });
+    });
+}
 
 // key=16, plaintext=null
 // key=24, plaintext=null
@@ -404,26 +459,28 @@ internal static slice<aesGCMTestsᴛ1> aesGCMTests = new aesGCMTestsᴛ1[]{
     )
 }.slice();
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object expectedErrorForZeroˢ = (@string)"expected error for zero nonce size"u8;
-
 public static void TestAESGCM(ж<testing.T> Ꮡt) {
+    testAllImplementations(Ꮡt, testAESGCM);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object expectedErrorForZeroˢ = (@string)"expected error for zero nonce size"u8;
+
+internal static void testAESGCM(ж<testing.T> Ꮡt, Func<slice<byte>, cipher.Block> newCipher) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     foreach (var (i, test) in aesGCMTests) {
         var (key, _) = hex.DecodeString(test.key);
-        var (aesΔ1, err) = aes.NewCipher(key);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
+        var aes = newCipher(key);
         var (nonce, _) = hex.DecodeString(test.nonce);
         var (plaintext, _) = hex.DecodeString(test.plaintext);
         var (ad, _) = hex.DecodeString(test.ad);
         nint tagSize = (len(test.result) - len(test.plaintext)) / 2;
+        error err = default!;
         cipher.AEAD aesgcm = default!;
         switch (ᐧ) {
         case {} when tagSize is not 16: {
-            (aesgcm, err) = cipher.NewGCMWithTagSize(aesΔ1, // Handle non-standard tag sizes
+            (aesgcm, err) = cipher.NewGCMWithTagSize(aes, // Handle non-standard tag sizes
  tagSize);
             if (err != default!) {
                 Ꮡt.Fatal(err);
@@ -431,7 +488,7 @@ public static void TestAESGCM(ж<testing.T> Ꮡt) {
             break;
         }
         case {} when len(nonce) is 0: {
-            (aesgcm, err) = cipher.NewGCMWithNonceSize(aesΔ1, // Handle 0 nonce size (expect error and continue)
+            (aesgcm, err) = cipher.NewGCMWithNonceSize(aes, // Handle 0 nonce size (expect error and continue)
  0);
             if (err == default!) {
                 Ꮡt.Fatal(expectedErrorForZeroˢ);
@@ -440,7 +497,7 @@ public static void TestAESGCM(ж<testing.T> Ꮡt) {
             break;
         }
         case {} when len(nonce) is not 12: {
-            (aesgcm, err) = cipher.NewGCMWithNonceSize(aesΔ1, // Handle non-standard nonce sizes
+            (aesgcm, err) = cipher.NewGCMWithNonceSize(aes, // Handle non-standard nonce sizes
  len(nonce));
             if (err != default!) {
                 Ꮡt.Fatal(err);
@@ -448,7 +505,7 @@ public static void TestAESGCM(ж<testing.T> Ꮡt) {
             break;
         }
         default: {
-            (aesgcm, err) = cipher.NewGCM(aesΔ1);
+            (aesgcm, err) = cipher.NewGCM(aes);
             if (err != default!) {
                 Ꮡt.Fatal(err);
             }
@@ -498,22 +555,30 @@ public static void TestAESGCM(ж<testing.T> Ꮡt) {
 }
 
 public static void TestGCMInvalidTagSize(ж<testing.T> Ꮡt) {
+    testAllImplementations(Ꮡt, testGCMInvalidTagSize);
+}
+
+internal static void testGCMInvalidTagSize(ж<testing.T> Ꮡt, Func<slice<byte>, cipher.Block> newCipher) {
     var (key, _) = hex.DecodeString("ab72c77b97cb5fe9a382d9fe81ffdbed"u8);
-    var (aesΔ1, _) = aes.NewCipher(key);
-    foreach (var (_, tagSize) in new nint[]{0, 1, aesΔ1.BlockSize() + 1}.slice()) {
-        var (aesgcm, err) = cipher.NewGCMWithTagSize(aesΔ1, tagSize);
+    var aes = newCipher(key);
+    foreach (var (_, tagSize) in new nint[]{0, 1, aes.BlockSize() + 1}.slice()) {
+        var (aesgcm, err) = cipher.NewGCMWithTagSize(aes, tagSize);
         if (aesgcm != default! || err == default!) {
-            Ꮡt.Fatalf("NewGCMWithNonceAndTagSize was successful with an invalid %d-byte tag size"u8, tagSize);
+            Ꮡt.Fatalf("NewGCMWithTagSize was successful with an invalid %d-byte tag size"u8, tagSize);
         }
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object badOpenStillResultedInˢ = (@string)"Bad Open still resulted in nil error."u8;
-internal static readonly object failedOpenReturnedNonNilˢ = (@string)"Failed Open returned non-nil result."u8;
-internal static readonly object failedOpenDidnTZeroDstˢ = (@string)"Failed Open didn't zero dst buffer"u8;
-
 public static void TestTagFailureOverwrite(ж<testing.T> Ꮡt) {
+    testAllImplementations(Ꮡt, testTagFailureOverwrite);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object badOpenStillResultedInˢ = (@string)"Bad Open still resulted in nil error."u8;
+private static readonly object failedOpenReturnedNonNilˢ = (@string)"Failed Open returned non-nil result."u8;
+private static readonly object failedOpenDidnTZeroDstˢ = (@string)"Failed Open didn't zero dst buffer"u8;
+
+internal static void testTagFailureOverwrite(ж<testing.T> Ꮡt, Func<slice<byte>, cipher.Block> newCipher) {
     // The AESNI GCM code decrypts and authenticates concurrently and so
     // overwrites the output buffer before checking the authentication tag.
     // In order to be consistent across platforms, all implementations
@@ -521,8 +586,8 @@ public static void TestTagFailureOverwrite(ж<testing.T> Ꮡt) {
     var (key, _) = hex.DecodeString("ab72c77b97cb5fe9a382d9fe81ffdbed"u8);
     var (nonce, _) = hex.DecodeString("54cc7dc2c37ec006bcc6d1db"u8);
     var (ciphertext, _) = hex.DecodeString("0e1bde206a07a9c2c1b65300f8c649972b4401346697138c7a4891ee59867d0c"u8);
-    var (aesΔ1, _) = aes.NewCipher(key);
-    var (aesgcm, _) = cipher.NewGCM(aesΔ1);
+    var aes = newCipher(key);
+    var (aesgcm, _) = cipher.NewGCM(aes);
     var dst = new slice<byte>(len(ciphertext) - 16);
     foreach (var (i, _) in dst) {
         dst[i] = 42;
@@ -541,13 +606,17 @@ public static void TestTagFailureOverwrite(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestGCMCounterWrap_tests {
+public static void TestGCMCounterWrap(ж<testing.T> Ꮡt) {
+    testAllImplementations(Ꮡt, testGCMCounterWrap);
+}
+
+[GoType("dyn")] internal partial struct testGCMCounterWrap_tests {
     internal @string nonce, tag;
 }
 
-public static void TestGCMCounterWrap(ж<testing.T> Ꮡt) {
+internal static void testGCMCounterWrap(ж<testing.T> Ꮡt, Func<slice<byte>, cipher.Block> newCipher) {
     // Test that the last 32-bits of the counter wrap correctly.
-    var tests = new TestGCMCounterWrap_tests[]{
+    var tests = new testGCMCounterWrap_tests[]{
         new("0fa72e25"u8, "37e1948cdfff09fbde0c40ad99fee4a7"u8), // counter: 7eb59e4d961dad0dfdd75aaffffffff0
 
         new("afe05cc1"u8, "438f3aa9fee5e54903b1927bca26bbdf"u8), // counter: 75d492a7e6e6bfc979ad3a8ffffffff4
@@ -563,60 +632,33 @@ public static void TestGCMCounterWrap(ж<testing.T> Ꮡt) {
         new("01b1107a9d"u8, "939a585f342e01e17844627492d44dbf"u8)
     }.slice();
     // counter: e6d56eaf9127912b6d62c6dcffffffff
-    var (key, err) = aes.NewCipher(new slice<byte>(16));
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
+    var key = newCipher(new slice<byte>(16));
     var plaintext = new slice<byte>(16 * 17 + 1);
     foreach (var (i, test) in tests) {
         var (nonce, _) = hex.DecodeString(test.nonce);
         var (want, _) = hex.DecodeString(test.tag);
-        var (aead, errΔ1) = cipher.NewGCMWithNonceSize(key, len(nonce));
-        if (errΔ1 != default!) {
-            Ꮡt.Fatal(errΔ1);
+        var (aead, err) = cipher.NewGCMWithNonceSize(key, len(nonce));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
         }
         var got = aead.Seal(default!, nonce, plaintext, default!);
         if (!bytes.Equal(got[(int)(len(plaintext))..], want)) {
             Ꮡt.Errorf("test[%v]: got: %x, want: %x"u8, i, got[(int)(len(plaintext))..], want);
         }
-        (_, errΔ1) = aead.Open(default!, nonce, got, default!);
-        if (errΔ1 != default!) {
+        (_, err) = aead.Open(default!, nonce, got, default!);
+        if (err != default!) {
             Ꮡt.Errorf("test[%v]: authentication failed"u8, i);
         }
     }
 }
 
-internal static cipher.Block _ᴛ1ʗ = new cipher_test_package.wrapperжBlock(((ж<wrapper>)nil));
-
-[GoType] partial struct wrapper {
-    internal cipher.Block block;
-}
-
-[GoRecv] internal static nint BlockSize(this ref wrapper w) {
-    return w.block.BlockSize();
-}
-
-[GoRecv] internal static void Encrypt(this ref wrapper w, slice<byte> dst, slice<byte> src) {
-    w.block.Encrypt(dst, src);
-}
-
-[GoRecv] internal static void Decrypt(this ref wrapper w, slice<byte> dst, slice<byte> src) {
-    w.block.Decrypt(dst, src);
-}
-
-// wrap wraps the Block interface so that it does not fulfill
-// any optimizing interfaces such as gcmAble.
-internal static cipher.Block wrap(cipher.Block b) {
-    return new cipher_test_package.wrapperжBlock(Ꮡ(new wrapper(b)));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string incorrectSealOutputˢ = "incorrect Seal output"u8;
-internal static readonly @string authenticationFailedˢ = "authentication failed"u8;
-internal static readonly @string incorrectOpenOutputˢ = "incorrect Open output"u8;
+private static readonly @string incorrectSealOutputˢ = "incorrect Seal output"u8;
+private static readonly @string authenticationFailedˢ = "authentication failed"u8;
+private static readonly @string incorrectOpenOutputˢ = "incorrect Open output"u8;
 
 // generate permutations
-[GoType("dyn")] partial struct TestGCMAsm_pair {
+[GoType("dyn")] internal partial struct TestGCMAsm_pair {
     internal nint align, length;
 }
 
@@ -729,6 +771,205 @@ public static void TestGCMAsm(ж<testing.T> Ꮡt) {
             }
         }
     }
+}
+
+// Test GCM against the general cipher.AEAD interface tester.
+public static void TestGCMAEAD(ж<testing.T> Ꮡt) {
+    testAllImplementations(Ꮡt, testGCMAEAD);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string minTagSizeˢ = "MinTagSize"u8;
+private static readonly @string gcmWithRandomNonceˢ = "GCMWithRandomNonce"u8;
+private static readonly object newGCMWithRandomNonceˢ = (@string)"NewGCMWithRandomNonce requires an AES block cipher"u8;
+
+internal static void testGCMAEAD(ж<testing.T> Ꮡt, Func<slice<byte>, cipher.Block> newCipher) {
+    nint minTagSize = 12;
+    foreach (var (_, keySize) in new nint[]{128, 192, 256}.slice()) {
+        // Use AES as underlying block cipher at different key sizes for GCM.
+        Ꮡt.Run(fmt.Sprintf("AES-%d"u8, keySize), (ж<testing.T> tΔ1) => {
+            var rng = newRandReader(tΔ1);
+            var key = new slice<byte>(keySize / 8);
+            rng.Read(key);
+            var block = newCipher(key);
+            // Test GCM with the current AES block with the standard nonce and tag
+            // sizes.
+            var blockʗ1 = block;
+            cryptotest.TestAEAD(tΔ1, () => cipher.NewGCM(blockʗ1));
+            // Test non-standard tag sizes.
+            var blockʗ2 = block;
+            tΔ1.Run(minTagSizeˢ, (ж<testing.T> tΔ2) => {
+                var blockʗ3 = blockʗ2;
+                cryptotest.TestAEAD(tΔ2, () => cipher.NewGCMWithTagSize(blockʗ3, minTagSize));
+            });
+            // Test non-standard nonce sizes.
+            foreach (var (_, nonceSize) in new nint[]{1, 16, 100}.slice()) {
+                var blockʗ4 = block;
+                tΔ1.Run(fmt.Sprintf("NonceSize-%d"u8, nonceSize), (ж<testing.T> tΔ3) => {
+                    var blockʗ5 = blockʗ4;
+                    cryptotest.TestAEAD(tΔ3, () => cipher.NewGCMWithNonceSize(blockʗ5, nonceSize));
+                });
+            }
+            // Test NewGCMWithRandomNonce.
+            var blockʗ6 = block;
+            tΔ1.Run(gcmWithRandomNonceˢ, (ж<testing.T> tΔ4) => {
+                {
+                    var (_, ok) = blockʗ6._<ж<wrapper>>(ᐧ); if (ok || boring.Enabled) {
+                        tΔ4.Skip(newGCMWithRandomNonceˢ);
+                    }
+                }
+                var blockʗ7 = blockʗ6;
+                cryptotest.TestAEAD(tΔ4, () => cipher.NewGCMWithRandomNonce(blockʗ7));
+            });
+        });
+    }
+}
+
+public static void TestFIPSServiceIndicator(ж<testing.T> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    cipher.AEAD newGCM() {
+        var key = new slice<byte>(16);
+        var (block, _) = fipsaes.New(key);
+        var (aead, _) = gcm.NewGCMWithCounterNonce(block);
+        return new gcm_GCMWithCounterNonceжAEAD(aead);
+    }
+    bool tryNonce(cipher.AEAD aead, slice<byte> nonce) {
+        fips140.ResetServiceIndicator();
+        aead.Seal(default!, nonce, slice<byte>("x"u8), default!);
+        return fips140.ServiceIndicator();
+    }
+    var tryNonceʗ1 = tryNonce;
+    void expectTrue(ж<testing.T> tΔ1, cipher.AEAD aead, slice<byte> nonce) {
+        tΔ1.Helper();
+        if (!tryNonceʗ1(aead, nonce)) {
+            tΔ1.Errorf("expected service indicator true for %x"u8, nonce);
+        }
+    }
+    var tryNonceʗ2 = tryNonce;
+    void expectPanic(ж<testing.T> tΔ2, cipher.AEAD aead, slice<byte> nonce) {
+        GoFrame ᒐ = default;
+        try {
+            tΔ2.Helper();
+            var nonceʗ1 = nonce;
+            defer(() => {
+                tΔ2.Helper();
+                if (recover() == default!) {
+                    tΔ2.Errorf("expected panic for %x"u8, nonceʗ1);
+                }
+            }, ref ᒐ);
+            tryNonceʗ2(aead, nonce);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }
+    var g = newGCM();
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}.slice());
+    // Changed name.
+    expectPanic(Ꮡt, g, new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0}.slice());
+    g = newGCM();
+    expectTrue(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}.slice());
+    // Went down.
+    expectPanic(Ꮡt, g, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice());
+    g = newGCM();
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}.slice());
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13}.slice());
+    // Did not increment.
+    expectPanic(Ꮡt, g, new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13}.slice());
+    g = newGCM();
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00}.slice());
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice());
+    // Wrap is ok as long as we don't run out of values.
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0}.slice());
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xfe}.slice());
+    // Run out of counters.
+    expectPanic(Ꮡt, g, new byte[]{1, 2, 3, 4, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff}.slice());
+    g = newGCM();
+    expectTrue(Ꮡt, g, new byte[]{1, 2, 3, 4, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice());
+    // Wrap with overflow.
+    expectPanic(Ꮡt, g, new byte[]{1, 2, 3, 5, 0, 0, 0, 0, 0, 0, 0, 0}.slice());
+}
+
+public static void TestGCMForSSH(ж<testing.T> Ꮡt) {
+    // incIV from x/crypto/ssh/cipher.go.
+    void incIV(slice<byte> ivΔ1) {
+        for (nint i = 4 + 7; i >= 4; i--) {
+            ivΔ1[i]++;
+            if (ivΔ1[i] != 0) {
+                break;
+            }
+        }
+    }
+    void expectOK(cipher.AEAD aeadΔ1, slice<byte> ivΔ2) {
+        aeadΔ1.Seal(default!, ivΔ2, slice<byte>("hello, world"u8), default!);
+    }
+    void expectPanic(cipher.AEAD aeadΔ2, slice<byte> ivΔ3) {
+        GoFrame ᒐ = default;
+        try {
+            defer(() => {
+                if (recover() == default!) {
+                    Ꮡt.Errorf("expected panic"u8);
+                }
+            }, ref ᒐ);
+            aeadΔ2.Seal(default!, ivΔ3, slice<byte>("hello, world"u8), default!);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+    }
+    var key = new slice<byte>(16);
+    var (block, _) = fipsaes.New(key);
+    var (aead, err) = gcm.NewGCMForSSH(block);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var iv = decodeHex(Ꮡt, "11223344"u8 + "0000000000000000"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "fffffffffffffffe"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectPanic(new gcm_GCMForSSHжAEAD(aead), iv);
+    (aead, _) = gcm.NewGCMForSSH(block);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "fffffffffffffffe"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    (aead, _) = gcm.NewGCMForSSH(block);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "aaaaaaaaaaaaaaaa"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "ffffffffffffffff"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "aaaaaaaaaaaaaaa8"u8);
+    expectOK(new gcm_GCMForSSHжAEAD(aead), iv);
+    incIV(iv);
+    expectPanic(new gcm_GCMForSSHжAEAD(aead), iv);
+    iv = decodeHex(Ꮡt, "11223344"u8 + "bbbbbbbbbbbbbbbb"u8);
+    expectPanic(new gcm_GCMForSSHжAEAD(aead), iv);
+}
+
+internal static slice<byte> decodeHex(ж<testing.T> Ꮡt, @string s) {
+    Ꮡt.Helper();
+    var (b, err) = hex.DecodeString(s);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    return b;
 }
 
 } // end cipher_test_package

@@ -31,7 +31,6 @@ using bytes = bytes_package;
 using flag = flag_package;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
-using importer = global::go.go.importer_package;
 using parser = global::go.go.parser_package;
 using scanner = global::go.go.scanner_package;
 using token = global::go.go.token_package;
@@ -58,60 +57,6 @@ using static global::go.go.types_internal_test_package;
 using types = global::go.go.types_package;
 
 partial class types_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() {
-    builtin.initPackage(typeof(global::go.go.scanner_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() {
-    builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtypesꓸerrors() {
-    builtin.initPackage(typeof(global::go.@internal.types.errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(global::go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
 
 internal static ж<bool> haltOnError = flag.Bool("halt"u8, false, "halt on error"u8);
 internal static ж<bool> verifyErrors = flag.Bool("verify"u8, false, "verify errors (rather than list them) in TestManual"u8);
@@ -239,28 +184,28 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
         var listErrors = manual && !verifyErrors.Value;
         if (listErrors && len(errlist) > 0) {
             Ꮡt.Errorf("--- %s:"u8, pkgName);
-            foreach (var (_, errΔ1) in errlist) {
-                Ꮡt.Error(errΔ1);
+            foreach (var (_, err) in errlist) {
+                Ꮡt.Error(err);
             }
         }
         // set up typechecker
         ref var conf = ref heap(new types.Config(), out var Ꮡconf);
         boolFieldAddr(Ꮡconf, traceˢ).Value = manual && testing.Verbose();
-        conf.Importer = importer.Default();
-        conf.Error = (error errΔ2) => {
+        conf.Importer = defaultImporter(fset);
+        conf.Error = (error err) => {
             GoFrame ᒐ = default;
             try {
                 if (haltOnError.Value) {
-                    defer(ᴛ1 => throw panic(ᴛ1), errΔ2, ref ᒐ);
+                    defer(ᴛ1 => throw panic(ᴛ1), err, ref ᒐ);
                 }
                 if (listErrors) {
-                    Ꮡt.Error(errΔ2);
+                    Ꮡt.Error(err);
                     return;
                 }
                 // Ignore secondary error messages starting with "\t";
                 // they are clarifying messages for a primary error.
-                if (!strings.Contains(errΔ2.Error(), ": \t"u8)) {
-                    Ꮡerrlist.ValueSlot = append(Ꮡerrlist.ValueSlot, errΔ2);
+                if (!strings.Contains(err.Error(), ": \t"u8)) {
+                    Ꮡerrlist.ValueSlot = append(Ꮡerrlist.ValueSlot, err);
                 }
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -279,21 +224,15 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
         flags.BoolVar(Ꮡconf.of(types.Config.ᏑFakeImportC), fakeImportCˢ, false, ""u8);
         flags.StringVar(Ꮡgotypesalias, gotypesaliasˢ, ""u8, ""u8);
         {
-            var errΔ3 = parseFlags(srcs[0], flags); if (errΔ3 != default!) {
-                Ꮡt.Fatal(errΔ3);
+            var err = parseFlags(srcs[0], flags); if (err != default!) {
+                Ꮡt.Fatal(err);
             }
         }
-        var (exp, err) = buildcfg.ParseGOEXPERIMENT(runtime.GOOS, runtime.GOARCH, goexperiment);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
+        if (goexperiment != ""u8) {
+            var revert = setGOEXPERIMENT(goexperiment);
+            var revertʗ1 = revert;
+            defer(revertʗ1, ref ᒐ);
         }
-        ref var old = ref heap<buildcfg.ExperimentFlags>(out var Ꮡold);
-        old = buildcfg.Experiment;
-        var oldʗ1 = old;
-        defer(() => {
-            buildcfg.Experiment = oldʗ1;
-        }, ref ᒐ);
-        buildcfg.Experiment = exp.Value;
         // By default, gotypesalias is not set.
         if (gotypesalias != ""u8) {
             Ꮡt.Setenv(godebugˢ, "gotypesalias="u8 + gotypesalias);
@@ -326,8 +265,8 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
         }
         // match against found errors
         slice<nint> indices = default!;     // list indices of matching errors, reused for each error
-        foreach (var (_, errΔ4) in errlist) {
-            var (gotPos, gotMsg) = unpackError(fset, errΔ4);
+        foreach (var (_, err) in errlist) {
+            var (gotPos, gotMsg) = unpackError(fset, err);
             // find list of errors for the respective error line
             @string filename = gotPos.Filename;
             var filemap = errmap[filename];
@@ -347,8 +286,8 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
                         throw panic("unreachable");
                     }
                 }
-                var (unquoted, errΔ5) = strconv.Unquote(strings.TrimSpace(pattern));
-                if (errΔ5 != default!) {
+                var (unquoted, errΔ1) = strconv.Unquote(strings.TrimSpace(pattern));
+                if (errΔ1 != default!) {
                     Ꮡt.Errorf("%s:%d:%d: invalid ERROR pattern (cannot unquote %s)"u8, filename, line, want.col, pattern);
                     continue;
                 }
@@ -357,9 +296,9 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
                         continue;
                     }
                 } else {
-                    var (rx, errΔ6) = regexp.Compile(unquoted);
-                    if (errΔ6 != default!) {
-                        Ꮡt.Errorf("%s:%d:%d: %v"u8, filename, line, want.col, errΔ6);
+                    var (rx, errΔ2) = regexp.Compile(unquoted);
+                    if (errΔ2 != default!) {
+                        Ꮡt.Errorf("%s:%d:%d: %v"u8, filename, line, want.col, errΔ2);
                         continue;
                     }
                     if (!rx.MatchString(gotMsg)) {
@@ -409,8 +348,8 @@ internal static void testFilesImpl(ж<testing.T> Ꮡt, slice<@string> filenames,
             Ꮡt.Errorf("--- %s: unreported errors:"u8, pkgName);
             foreach (var (filename, filemap) in errmap) {
                 foreach (var (line, errList) in filemap) {
-                    foreach (var (_, errΔ7) in errList) {
-                        Ꮡt.Errorf("%s:%d:%d: %s"u8, filename, line, errΔ7.col, errΔ7.text);
+                    foreach (var (_, err) in errList) {
+                        Ꮡt.Errorf("%s:%d:%d: %s"u8, filename, line, err.col, err.text);
                     }
                 }
             }
@@ -440,6 +379,24 @@ internal static ж<bool> boolFieldAddr(ж<types.Config> Ꮡconf, @string name) {
 internal static ж<@string> stringFieldAddr(ж<types.Config> Ꮡconf, @string name) {
     var v = reflect.Indirect(reflect.ValueOf(Ꮡconf.OrTypedNil()));
     return (ж<@string>)(uintptr)(v.FieldByName(name).Addr().UnsafePointer());
+}
+
+// setGOEXPERIMENT overwrites the existing buildcfg.Experiment with a new one
+// based on the provided goexperiment string. Calling the result function
+// (typically via defer), reverts buildcfg.Experiment to the prior value.
+// For testing use, only.
+internal static Action setGOEXPERIMENT(@string goexperiment) {
+    var (exp, err) = buildcfg.ParseGOEXPERIMENT(runtime.GOOS, runtime.GOARCH, goexperiment);
+    if (err != default!) {
+        throw panic(err);
+    }
+    ref var old = ref heap<buildcfg.ExperimentFlags>(out var Ꮡold);
+    old = buildcfg.Experiment;
+    buildcfg.Experiment = exp.Value;
+    var oldʗ1 = old;
+    return () => {
+        buildcfg.Experiment = oldʗ1;
+    };
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

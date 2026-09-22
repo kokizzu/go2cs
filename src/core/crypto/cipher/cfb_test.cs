@@ -6,12 +6,16 @@ namespace go.crypto;
 using bytes = bytes_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
+using des = go.crypto.des_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using rand = go.crypto.rand_package;
 using hex = encoding.hex_package;
+using fmt = fmt_package;
 using testing = testing_package;
 using encoding;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
+using go.crypto.@internal;
+using io = io_package;
 
 partial class cipher_test_package {
 
@@ -106,6 +110,49 @@ public static void TestCFBInverse(ж<testing.T> Ꮡt) {
     if (!bytes.Equal(plaintextCopy, plaintext)) {
         Ꮡt.Errorf("got: %x, want: %x"u8, plaintextCopy, plaintext);
     }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string encrypterˢ = "Encrypter"u8;
+private static readonly @string decrypterˢ = "Decrypter"u8;
+
+public static void TestCFBStream(ж<testing.T> Ꮡt) {
+    foreach (var (_, keylen) in new nint[]{128, 192, 256}.slice()) {
+        Ꮡt.Run(fmt.Sprintf("AES-%d"u8, keylen), (ж<testing.T> tΔ1) => {
+            var rng = newRandReader(tΔ1);
+            var key = new slice<byte>(keylen / 8);
+            rng.Read(key);
+            var (block, err) = aes.NewCipher(key);
+            if (err != default!) {
+                throw panic(err);
+            }
+            var blockʗ1 = block;
+            tΔ1.Run(encrypterˢ, (ж<testing.T> tΔ2) => {
+                cryptotest.TestStreamFromBlock(tΔ2, blockʗ1, cipher.NewCFBEncrypter);
+            });
+            var blockʗ2 = block;
+            tΔ1.Run(decrypterˢ, (ж<testing.T> tΔ3) => {
+                cryptotest.TestStreamFromBlock(tΔ3, blockʗ2, cipher.NewCFBDecrypter);
+            });
+        });
+    }
+    Ꮡt.Run(desˢ, (ж<testing.T> tΔ4) => {
+        var rng = newRandReader(tΔ4);
+        var key = new slice<byte>(8);
+        rng.Read(key);
+        var (block, err) = des.NewCipher(key);
+        if (err != default!) {
+            throw panic(err);
+        }
+        var blockʗ3 = block;
+        tΔ4.Run(encrypterˢ, (ж<testing.T> tΔ5) => {
+            cryptotest.TestStreamFromBlock(tΔ5, blockʗ3, cipher.NewCFBEncrypter);
+        });
+        var blockʗ4 = block;
+        tΔ4.Run(decrypterˢ, (ж<testing.T> tΔ6) => {
+            cryptotest.TestStreamFromBlock(tΔ6, blockʗ4, cipher.NewCFBDecrypter);
+        });
+    });
 }
 
 } // end cipher_test_package

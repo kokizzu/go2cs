@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/json` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**491 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**532 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/encoding/json`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/json).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -122,16 +124,44 @@ comparison — it is the evidence behind the `encoding/json` row in
 | `TestInterfaceSet/#09` | pass | pass |
 | `TestInterfaceSet/#10` | pass | pass |
 | `TestInterfaceSet/#11` | pass | pass |
+| `TestInterfaceSet/#12` | pass | pass |
+| `TestInterfaceSet/#13` | pass | pass |
+| `TestInterfaceSet/#14` | pass | pass |
+| `TestInterfaceSet/#15` | pass | pass |
+| `TestInterfaceSet/#16` | pass | pass |
+| `TestInterfaceSet/#17` | pass | pass |
+| `TestInterfaceSet/#18` | pass | pass |
+| `TestInterfaceSet/#19` | pass | pass |
+| `TestInterfaceSet/#20` | pass | pass |
+| `TestInterfaceSet/#21` | pass | pass |
+| `TestInterfaceSet/#22` | pass | pass |
+| `TestInterfaceSet/#23` | pass | pass |
+| `TestInterfaceSet/#24` | pass | pass |
+| `TestInterfaceSet/#25` | pass | pass |
+| `TestInterfaceSet/#26` | pass | pass |
+| `TestInterfaceSet/#27` | pass | pass |
+| `TestInterfaceSet/#28` | pass | pass |
+| `TestInterfaceSet/#29` | pass | pass |
+| `TestInterfaceSet/#30` | pass | pass |
+| `TestInterfaceSet/#31` | pass | pass |
+| `TestInterfaceSet/#32` | pass | pass |
+| `TestInterfaceSet/#33` | pass | pass |
+| `TestInterfaceSet/#34` | pass | pass |
+| `TestInterfaceSet/#35` | pass | pass |
+| `TestInterfaceSet/#36` | pass | pass |
+| `TestInterfaceSet/#37` | pass | pass |
+| `TestInterfaceSet/#38` | pass | pass |
+| `TestInterfaceSet/#39` | pass | pass |
+| `TestInterfaceSet/#40` | pass | pass |
 | `TestInvalidStringOption` | pass | pass |
 | `TestInvalidUnmarshal` | pass | pass |
 | `TestInvalidUnmarshal/#00` | pass | pass |
 | `TestInvalidUnmarshal/#01` | pass | pass |
 | `TestInvalidUnmarshal/#02` | pass | pass |
-| `TestInvalidUnmarshalText` | pass | pass |
-| `TestInvalidUnmarshalText/#00` | pass | pass |
-| `TestInvalidUnmarshalText/#01` | pass | pass |
-| `TestInvalidUnmarshalText/#02` | pass | pass |
-| `TestInvalidUnmarshalText/#03` | pass | pass |
+| `TestInvalidUnmarshal/#03` | pass | pass |
+| `TestInvalidUnmarshal/#04` | pass | pass |
+| `TestInvalidUnmarshal/#05` | pass | pass |
+| `TestInvalidUnmarshal/#06` | pass | pass |
 | `TestIssue10281` | pass | pass |
 | `TestIssue63379` | pass | pass |
 | `TestLargeByteSlice` | pass | pass |
@@ -232,6 +262,9 @@ comparison — it is the evidence behind the `encoding/json` row in
 | `TestNumberAccessors/#02` | pass | pass |
 | `TestNumberIsValid` | pass | pass |
 | `TestOmitEmpty` | pass | pass |
+| `TestOmitEmptyZero` | pass | pass |
+| `TestOmitZero` | pass | pass |
+| `TestOmitZeroMap` | pass | pass |
 | `TestPrefilled` | pass | pass |
 | `TestPrefilled/#00` | pass | pass |
 | `TestPrefilled/#01` | pass | pass |
@@ -339,7 +372,17 @@ comparison — it is the evidence behind the `encoding/json` row in
 | `TestUnmarshal/#15` | pass | pass |
 | `TestUnmarshal/#150` | pass | pass |
 | `TestUnmarshal/#151` | pass | pass |
+| `TestUnmarshal/#152` | pass | pass |
+| `TestUnmarshal/#153` | pass | pass |
+| `TestUnmarshal/#154` | pass | pass |
+| `TestUnmarshal/#155` | pass | pass |
+| `TestUnmarshal/#156` | pass | pass |
+| `TestUnmarshal/#157` | pass | pass |
+| `TestUnmarshal/#158` | pass | pass |
+| `TestUnmarshal/#159` | pass | pass |
 | `TestUnmarshal/#16` | pass | pass |
+| `TestUnmarshal/#160` | pass | pass |
+| `TestUnmarshal/#161` | pass | pass |
 | `TestUnmarshal/#17` | pass | pass |
 | `TestUnmarshal/#18` | pass | pass |
 | `TestUnmarshal/#19` | pass | pass |

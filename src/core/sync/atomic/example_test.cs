@@ -10,18 +10,6 @@ using go.sync;
 
 partial class atomic_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal static map<@string, @string> loadConfig() {
     return new map<@string, @string>();
 }
@@ -58,7 +46,7 @@ public static void ExampleValue_config() {
     }
 }
 
-[GoType("map[@string, @string]")] partial struct ExampleValue_readMostly_Map;
+[GoLocalName("Map")] [GoType("map[@string, @string]")] internal partial struct ExampleValue_readMostly_Map;
 
 // The following example shows how to maintain a scalable frequently read,
 // but infrequently updated data structure using copy-on-write idiom.

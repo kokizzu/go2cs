@@ -5,7 +5,7 @@
 // Usage: go test math/big -test.bench GCD
 namespace go.math;
 
-using rand = go.math.rand_package;
+using Δrand = go.math.rand_package;
 using testing = testing_package;
 using go.math;
 using static go.math.big_package;
@@ -13,7 +13,7 @@ using static go.math.big_package;
 partial class big_internal_test_package {
 
 // randInt returns a pseudo-random Int in the range [1<<(size-1), (1<<size) - 1]
-internal static ж<global::go.math.big_package.ΔInt> randInt(ж<rand.Rand> Ꮡr, nuint size) {
+internal static ж<global::go.math.big_package.ΔInt> randInt(ж<Δrand.Rand> Ꮡr, nuint size) {
     var n = @new<global::go.math.big_package.ΔInt>().Lsh(intOne, size - 1);
     var x = @new<global::go.math.big_package.ΔInt>().Rand(Ꮡr, n);
     return x.Add(x, n); // make sure result > 1<<(size-1)
@@ -40,7 +40,7 @@ internal static void runGCDExt(ж<testing.B> Ꮡb, nuint aSize, nuint bSize, boo
     ref var b = ref Ꮡb.DerefOrNull();
 
     b.StopTimer();
-    ж<rand.Rand> r = rand.New(rand.NewSource(1234));
+    ж<Δrand.Rand> r = Δrand.New(Δrand.NewSource(1234));
     var aa = randInt(r, aSize);
     var bb = randInt(r, bSize);
     ж<global::go.math.big_package.ΔInt> x = default!;

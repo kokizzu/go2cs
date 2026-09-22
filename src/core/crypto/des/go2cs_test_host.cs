@@ -16,24 +16,25 @@ internal static class Go2CsTestHost
             "example_test.go",
             "internal_test.go",
         });
-        registry.Add("TestDESDecryptBlock", des_test_package.TestDESDecryptBlock, "des_test.go", 1328);
-        registry.Add("TestDESEncryptBlock", des_test_package.TestDESEncryptBlock, "des_test.go", 1316);
-        registry.Add("TestDecryptTripleDES", des_test_package.TestDecryptTripleDES, "des_test.go", 1352);
-        registry.Add("TestEncryptTripleDES", des_test_package.TestEncryptTripleDES, "des_test.go", 1340);
+        registry.Add("TestDESBlock", des_test_package.TestDESBlock, "des_test.go", 1511);
+        registry.Add("TestDESDecryptBlock", des_test_package.TestDESDecryptBlock, "des_test.go", 1329);
+        registry.Add("TestDESEncryptBlock", des_test_package.TestDESEncryptBlock, "des_test.go", 1317);
+        registry.Add("TestDecryptTripleDES", des_test_package.TestDecryptTripleDES, "des_test.go", 1353);
+        registry.Add("TestEncryptTripleDES", des_test_package.TestEncryptTripleDES, "des_test.go", 1341);
         registry.Add("TestFinalPermute", des_internal_test_package.TestFinalPermute, "internal_test.go", 20);
-        registry.Add("TestInitialPermutationKnownAnswer", des_test_package.TestInitialPermutationKnownAnswer, "des_test.go", 1412);
+        registry.Add("TestInitialPermutationKnownAnswer", des_test_package.TestInitialPermutationKnownAnswer, "des_test.go", 1413);
         registry.Add("TestInitialPermute", des_internal_test_package.TestInitialPermute, "internal_test.go", 9);
-        registry.Add("TestInversePermutationKnownAnswer", des_test_package.TestInversePermutationKnownAnswer, "des_test.go", 1396);
-        registry.Add("TestPermutationOperationKnownAnswerDecrypt", des_test_package.TestPermutationOperationKnownAnswerDecrypt, "des_test.go", 1468);
-        registry.Add("TestPermutationOperationKnownAnswerEncrypt", des_test_package.TestPermutationOperationKnownAnswerEncrypt, "des_test.go", 1454);
-        registry.Add("TestSemiWeakKeyPairs", des_test_package.TestSemiWeakKeyPairs, "des_test.go", 1295);
-        registry.Add("TestSubstitutionTableKnownAnswerDecrypt", des_test_package.TestSubstitutionTableKnownAnswerDecrypt, "des_test.go", 1496);
-        registry.Add("TestSubstitutionTableKnownAnswerEncrypt", des_test_package.TestSubstitutionTableKnownAnswerEncrypt, "des_test.go", 1482);
-        registry.Add("TestVariableCiphertextKnownAnswer", des_test_package.TestVariableCiphertextKnownAnswer, "des_test.go", 1380);
-        registry.Add("TestVariableKeyKnownAnswerDecrypt", des_test_package.TestVariableKeyKnownAnswerDecrypt, "des_test.go", 1440);
-        registry.Add("TestVariableKeyKnownAnswerEncrypt", des_test_package.TestVariableKeyKnownAnswerEncrypt, "des_test.go", 1426);
-        registry.Add("TestVariablePlaintextKnownAnswer", des_test_package.TestVariablePlaintextKnownAnswer, "des_test.go", 1366);
-        registry.Add("TestWeakKeys", des_test_package.TestWeakKeys, "des_test.go", 1274);
+        registry.Add("TestInversePermutationKnownAnswer", des_test_package.TestInversePermutationKnownAnswer, "des_test.go", 1397);
+        registry.Add("TestPermutationOperationKnownAnswerDecrypt", des_test_package.TestPermutationOperationKnownAnswerDecrypt, "des_test.go", 1469);
+        registry.Add("TestPermutationOperationKnownAnswerEncrypt", des_test_package.TestPermutationOperationKnownAnswerEncrypt, "des_test.go", 1455);
+        registry.Add("TestSemiWeakKeyPairs", des_test_package.TestSemiWeakKeyPairs, "des_test.go", 1296);
+        registry.Add("TestSubstitutionTableKnownAnswerDecrypt", des_test_package.TestSubstitutionTableKnownAnswerDecrypt, "des_test.go", 1497);
+        registry.Add("TestSubstitutionTableKnownAnswerEncrypt", des_test_package.TestSubstitutionTableKnownAnswerEncrypt, "des_test.go", 1483);
+        registry.Add("TestVariableCiphertextKnownAnswer", des_test_package.TestVariableCiphertextKnownAnswer, "des_test.go", 1381);
+        registry.Add("TestVariableKeyKnownAnswerDecrypt", des_test_package.TestVariableKeyKnownAnswerDecrypt, "des_test.go", 1441);
+        registry.Add("TestVariableKeyKnownAnswerEncrypt", des_test_package.TestVariableKeyKnownAnswerEncrypt, "des_test.go", 1427);
+        registry.Add("TestVariablePlaintextKnownAnswer", des_test_package.TestVariablePlaintextKnownAnswer, "des_test.go", 1367);
+        registry.Add("TestWeakKeys", des_test_package.TestWeakKeys, "des_test.go", 1275);
         return TestHost.Run(registry, args);
     }
 }

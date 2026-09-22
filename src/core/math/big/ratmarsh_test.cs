@@ -148,4 +148,29 @@ public static void TestRatGobDecodeShortBuffer(ж<testing.T> Ꮡt) {
     }
 }
 
+public static void TestRatAppendText(ж<testing.T> Ꮡt) {
+    foreach (var (_, num) in ratNums) {
+        foreach (var (_, denom) in ratDenoms) {
+            ref var tx = ref heap(new global::go.math.big_package.ΔRat(), out var Ꮡtx);
+            Ꮡtx.SetString(num + "/"u8 + denom);
+            var buf = new slice<byte>(4, 32);
+            var (b, err) = Ꮡtx.AppendText(buf);
+            if (err != default!) {
+                Ꮡt.Errorf("marshaling of %s failed: %s"u8, Ꮡtx, err);
+                continue;
+            }
+            ref var rx = ref heap(new global::go.math.big_package.ΔRat(), out var Ꮡrx);
+            {
+                var errΔ1 = Ꮡrx.UnmarshalText(b[4..]); if (errΔ1 != default!) {
+                    Ꮡt.Errorf("unmarshaling of %s failed: %s"u8, Ꮡtx, errΔ1);
+                    continue;
+                }
+            }
+            if (Ꮡrx.Cmp(Ꮡtx) != 0) {
+                Ꮡt.Errorf("AppendText of %s failed: got %s want %s"u8, Ꮡtx, Ꮡrx, Ꮡtx);
+            }
+        }
+    }
+}
+
 } // end big_internal_test_package

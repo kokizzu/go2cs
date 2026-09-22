@@ -9,14 +9,11 @@ internal static class Go2CsTestHost
     {
         TestRegistry registry = new("crypto/x509", new string[]
         {
-            "boring.go",
-            "boring_test.go",
             "cert_pool.go",
             "cert_pool_test.go",
             "example_test.go",
             "hybrid_pool_test.go",
             "name_constraints_test.go",
-            "notboring.go",
             "oid.go",
             "oid_test.go",
             "parser.go",
@@ -26,6 +23,7 @@ internal static class Go2CsTestHost
             "pkcs1.go",
             "pkcs8.go",
             "pkcs8_test.go",
+            "pkits_test.go",
             "platform_test.go",
             "root.go",
             "root_aix.go",
@@ -41,6 +39,440 @@ internal static class Go2CsTestHost
             "root_windows.go",
             "sec1.go",
             "sec1_test.go",
+            "testdata/nist-pkits/README.md",
+            "testdata/nist-pkits/certs/AllCertificatesNoPoliciesTest2EE.crt",
+            "testdata/nist-pkits/certs/AllCertificatesSamePoliciesTest10EE.crt",
+            "testdata/nist-pkits/certs/AllCertificatesSamePoliciesTest13EE.crt",
+            "testdata/nist-pkits/certs/AllCertificatesanyPolicyTest11EE.crt",
+            "testdata/nist-pkits/certs/AnyPolicyTest14EE.crt",
+            "testdata/nist-pkits/certs/BadCRLIssuerNameCACert.crt",
+            "testdata/nist-pkits/certs/BadCRLSignatureCACert.crt",
+            "testdata/nist-pkits/certs/BadSignedCACert.crt",
+            "testdata/nist-pkits/certs/BadnotAfterDateCACert.crt",
+            "testdata/nist-pkits/certs/BadnotBeforeDateCACert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedCRLSigningKeyCACert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedCRLSigningKeyCRLCert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedNewKeyCACert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedNewKeyOldWithNewCACert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedOldKeyCACert.crt",
+            "testdata/nist-pkits/certs/BasicSelfIssuedOldKeyNewWithOldCACert.crt",
+            "testdata/nist-pkits/certs/CPSPointerQualifierTest20EE.crt",
+            "testdata/nist-pkits/certs/DSACACert.crt",
+            "testdata/nist-pkits/certs/DSAParametersInheritedCACert.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest12EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest3EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest4EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest5EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest7EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest8EE.crt",
+            "testdata/nist-pkits/certs/DifferentPoliciesTest9EE.crt",
+            "testdata/nist-pkits/certs/GeneralizedTimeCRLnextUpdateCACert.crt",
+            "testdata/nist-pkits/certs/GoodCACert.crt",
+            "testdata/nist-pkits/certs/GoodsubCACert.crt",
+            "testdata/nist-pkits/certs/GoodsubCAPanyPolicyMapping1to2CACert.crt",
+            "testdata/nist-pkits/certs/InvalidBadCRLIssuerNameTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidBadCRLSignatureTest4EE.crt",
+            "testdata/nist-pkits/certs/InvalidBasicSelfIssuedCRLSigningKeyTest7EE.crt",
+            "testdata/nist-pkits/certs/InvalidBasicSelfIssuedCRLSigningKeyTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidBasicSelfIssuedNewWithOldTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidBasicSelfIssuedOldWithNewTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidCASignatureTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidCAnotAfterDateTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidCAnotBeforeDateTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest31EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest33EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest38EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNandRFC822nameConstraintsTest28EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNandRFC822nameConstraintsTest29EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest12EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest13EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest15EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest16EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest17EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest20EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest7EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidDNnameConstraintsTest9EE.crt",
+            "testdata/nist-pkits/certs/InvalidDSASignatureTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidEESignatureTest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidEEnotAfterDateTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidEEnotBeforeDateTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidIDPwithindirectCRLTest23EE.crt",
+            "testdata/nist-pkits/certs/InvalidIDPwithindirectCRLTest26EE.crt",
+            "testdata/nist-pkits/certs/InvalidLongSerialNumberTest18EE.crt",
+            "testdata/nist-pkits/certs/InvalidMappingFromanyPolicyTest7EE.crt",
+            "testdata/nist-pkits/certs/InvalidMappingToanyPolicyTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidMissingCRLTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidMissingbasicConstraintsTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidNameChainingOrderTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidNameChainingTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidNegativeSerialNumberTest15EE.crt",
+            "testdata/nist-pkits/certs/InvalidOldCRLnextUpdateTest11EE.crt",
+            "testdata/nist-pkits/certs/InvalidPolicyMappingTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidPolicyMappingTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidPolicyMappingTest4EE.crt",
+            "testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest22EE.crt",
+            "testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest24EE.crt",
+            "testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest26EE.crt",
+            "testdata/nist-pkits/certs/InvalidRevokedCATest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidRevokedEETest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitAnyPolicyTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitAnyPolicyTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest11EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest9EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedpathLenConstraintTest16EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedrequireExplicitPolicyTest7EE.crt",
+            "testdata/nist-pkits/certs/InvalidSelfIssuedrequireExplicitPolicyTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidSeparateCertificateandCRLKeysTest20EE.crt",
+            "testdata/nist-pkits/certs/InvalidSeparateCertificateandCRLKeysTest21EE.crt",
+            "testdata/nist-pkits/certs/InvalidURInameConstraintsTest35EE.crt",
+            "testdata/nist-pkits/certs/InvalidURInameConstraintsTest37EE.crt",
+            "testdata/nist-pkits/certs/InvalidUnknownCRLEntryExtensionTest8EE.crt",
+            "testdata/nist-pkits/certs/InvalidUnknownCRLExtensionTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidUnknownCRLExtensionTest9EE.crt",
+            "testdata/nist-pkits/certs/InvalidUnknownCriticalCertificateExtensionTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidWrongCRLTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidcAFalseTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidcAFalseTest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidcRLIssuerTest27EE.crt",
+            "testdata/nist-pkits/certs/InvalidcRLIssuerTest31EE.crt",
+            "testdata/nist-pkits/certs/InvalidcRLIssuerTest32EE.crt",
+            "testdata/nist-pkits/certs/InvalidcRLIssuerTest34EE.crt",
+            "testdata/nist-pkits/certs/InvalidcRLIssuerTest35EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLIndicatorNoBaseTest1EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLTest10EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLTest3EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLTest4EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLTest6EE.crt",
+            "testdata/nist-pkits/certs/InvaliddeltaCRLTest9EE.crt",
+            "testdata/nist-pkits/certs/InvaliddistributionPointTest2EE.crt",
+            "testdata/nist-pkits/certs/InvaliddistributionPointTest3EE.crt",
+            "testdata/nist-pkits/certs/InvaliddistributionPointTest6EE.crt",
+            "testdata/nist-pkits/certs/InvaliddistributionPointTest8EE.crt",
+            "testdata/nist-pkits/certs/InvaliddistributionPointTest9EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest4EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidkeyUsageCriticalcRLSignFalseTest4EE.crt",
+            "testdata/nist-pkits/certs/InvalidkeyUsageCriticalkeyCertSignFalseTest1EE.crt",
+            "testdata/nist-pkits/certs/InvalidkeyUsageNotCriticalcRLSignFalseTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidkeyUsageNotCriticalkeyCertSignFalseTest2EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlyContainsAttributeCertsTest14EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlyContainsCACertsTest12EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlyContainsUserCertsTest11EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlySomeReasonsTest15EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlySomeReasonsTest16EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlySomeReasonsTest17EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlySomeReasonsTest20EE.crt",
+            "testdata/nist-pkits/certs/InvalidonlySomeReasonsTest21EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest10EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest11EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest12EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest5EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest6EE.crt",
+            "testdata/nist-pkits/certs/InvalidpathLenConstraintTest9EE.crt",
+            "testdata/nist-pkits/certs/Invalidpre2000CRLnextUpdateTest12EE.crt",
+            "testdata/nist-pkits/certs/Invalidpre2000UTCEEnotAfterDateTest7EE.crt",
+            "testdata/nist-pkits/certs/InvalidrequireExplicitPolicyTest3EE.crt",
+            "testdata/nist-pkits/certs/InvalidrequireExplicitPolicyTest5EE.crt",
+            "testdata/nist-pkits/certs/LongSerialNumberCACert.crt",
+            "testdata/nist-pkits/certs/Mapping1to2CACert.crt",
+            "testdata/nist-pkits/certs/MappingFromanyPolicyCACert.crt",
+            "testdata/nist-pkits/certs/MappingToanyPolicyCACert.crt",
+            "testdata/nist-pkits/certs/MissingbasicConstraintsCACert.crt",
+            "testdata/nist-pkits/certs/NameOrderingCACert.crt",
+            "testdata/nist-pkits/certs/NegativeSerialNumberCACert.crt",
+            "testdata/nist-pkits/certs/NoCRLCACert.crt",
+            "testdata/nist-pkits/certs/NoPoliciesCACert.crt",
+            "testdata/nist-pkits/certs/NoissuingDistributionPointCACert.crt",
+            "testdata/nist-pkits/certs/OldCRLnextUpdateCACert.crt",
+            "testdata/nist-pkits/certs/OverlappingPoliciesTest6EE.crt",
+            "testdata/nist-pkits/certs/P12Mapping1to3CACert.crt",
+            "testdata/nist-pkits/certs/P12Mapping1to3subCACert.crt",
+            "testdata/nist-pkits/certs/P12Mapping1to3subsubCACert.crt",
+            "testdata/nist-pkits/certs/P1Mapping1to234CACert.crt",
+            "testdata/nist-pkits/certs/P1Mapping1to234subCACert.crt",
+            "testdata/nist-pkits/certs/P1anyPolicyMapping1to2CACert.crt",
+            "testdata/nist-pkits/certs/PanyPolicyMapping1to2CACert.crt",
+            "testdata/nist-pkits/certs/PoliciesP1234CACert.crt",
+            "testdata/nist-pkits/certs/PoliciesP1234subCAP123Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP1234subsubCAP123P12Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP123CACert.crt",
+            "testdata/nist-pkits/certs/PoliciesP123subCAP12Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP123subsubCAP12P1Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP123subsubCAP12P2Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP123subsubsubCAP12P2P1Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP12CACert.crt",
+            "testdata/nist-pkits/certs/PoliciesP12subCAP1Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP12subsubCAP1P2Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP2subCA2Cert.crt",
+            "testdata/nist-pkits/certs/PoliciesP2subCACert.crt",
+            "testdata/nist-pkits/certs/PoliciesP3CACert.crt",
+            "testdata/nist-pkits/certs/RFC3280MandatoryAttributeTypesCACert.crt",
+            "testdata/nist-pkits/certs/RFC3280OptionalAttributeTypesCACert.crt",
+            "testdata/nist-pkits/certs/RevokedsubCACert.crt",
+            "testdata/nist-pkits/certs/RolloverfromPrintableStringtoUTF8StringCACert.crt",
+            "testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCA2CRLSigningCert.crt",
+            "testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCA2CertificateSigningCACert.crt",
+            "testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCRLSigningCert.crt",
+            "testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCertificateSigningCACert.crt",
+            "testdata/nist-pkits/certs/TrustAnchorRootCertificate.crt",
+            "testdata/nist-pkits/certs/TwoCRLsCACert.crt",
+            "testdata/nist-pkits/certs/UIDCACert.crt",
+            "testdata/nist-pkits/certs/UTF8StringCaseInsensitiveMatchCACert.crt",
+            "testdata/nist-pkits/certs/UTF8StringEncodedNamesCACert.crt",
+            "testdata/nist-pkits/certs/UnknownCRLEntryExtensionCACert.crt",
+            "testdata/nist-pkits/certs/UnknownCRLExtensionCACert.crt",
+            "testdata/nist-pkits/certs/UserNoticeQualifierTest15EE.crt",
+            "testdata/nist-pkits/certs/UserNoticeQualifierTest16EE.crt",
+            "testdata/nist-pkits/certs/UserNoticeQualifierTest17EE.crt",
+            "testdata/nist-pkits/certs/UserNoticeQualifierTest18EE.crt",
+            "testdata/nist-pkits/certs/UserNoticeQualifierTest19EE.crt",
+            "testdata/nist-pkits/certs/ValidBasicSelfIssuedCRLSigningKeyTest6EE.crt",
+            "testdata/nist-pkits/certs/ValidBasicSelfIssuedNewWithOldTest3EE.crt",
+            "testdata/nist-pkits/certs/ValidBasicSelfIssuedNewWithOldTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidBasicSelfIssuedOldWithNewTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidCertificatePathTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidDNSnameConstraintsTest30EE.crt",
+            "testdata/nist-pkits/certs/ValidDNSnameConstraintsTest32EE.crt",
+            "testdata/nist-pkits/certs/ValidDNandRFC822nameConstraintsTest27EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest11EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest14EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest18EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest19EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest5EE.crt",
+            "testdata/nist-pkits/certs/ValidDNnameConstraintsTest6EE.crt",
+            "testdata/nist-pkits/certs/ValidDSAParameterInheritanceTest5EE.crt",
+            "testdata/nist-pkits/certs/ValidDSASignaturesTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidGeneralizedTimeCRLnextUpdateTest13EE.crt",
+            "testdata/nist-pkits/certs/ValidGeneralizedTimenotAfterDateTest8EE.crt",
+            "testdata/nist-pkits/certs/ValidGeneralizedTimenotBeforeDateTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest22EE.crt",
+            "testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest24EE.crt",
+            "testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest25EE.crt",
+            "testdata/nist-pkits/certs/ValidLongSerialNumberTest16EE.crt",
+            "testdata/nist-pkits/certs/ValidLongSerialNumberTest17EE.crt",
+            "testdata/nist-pkits/certs/ValidNameChainingCapitalizationTest5EE.crt",
+            "testdata/nist-pkits/certs/ValidNameChainingWhitespaceTest3EE.crt",
+            "testdata/nist-pkits/certs/ValidNameChainingWhitespaceTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidNameUIDsTest6EE.crt",
+            "testdata/nist-pkits/certs/ValidNegativeSerialNumberTest14EE.crt",
+            "testdata/nist-pkits/certs/ValidNoissuingDistributionPointTest10EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest11EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest12EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest13EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest14EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest3EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest5EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest6EE.crt",
+            "testdata/nist-pkits/certs/ValidPolicyMappingTest9EE.crt",
+            "testdata/nist-pkits/certs/ValidRFC3280MandatoryAttributeTypesTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidRFC3280OptionalAttributeTypesTest8EE.crt",
+            "testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest21EE.crt",
+            "testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest23EE.crt",
+            "testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest25EE.crt",
+            "testdata/nist-pkits/certs/ValidRolloverfromPrintableStringtoUTF8StringTest10EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedinhibitAnyPolicyTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedinhibitAnyPolicyTest9EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedinhibitPolicyMappingTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedpathLenConstraintTest15EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedpathLenConstraintTest17EE.crt",
+            "testdata/nist-pkits/certs/ValidSelfIssuedrequireExplicitPolicyTest6EE.crt",
+            "testdata/nist-pkits/certs/ValidSeparateCertificateandCRLKeysTest19EE.crt",
+            "testdata/nist-pkits/certs/ValidTwoCRLsTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidURInameConstraintsTest34EE.crt",
+            "testdata/nist-pkits/certs/ValidURInameConstraintsTest36EE.crt",
+            "testdata/nist-pkits/certs/ValidUTF8StringCaseInsensitiveMatchTest11EE.crt",
+            "testdata/nist-pkits/certs/ValidUTF8StringEncodedNamesTest9EE.crt",
+            "testdata/nist-pkits/certs/ValidUnknownNotCriticalCertificateExtensionTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidbasicConstraintsNotCriticalTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidcRLIssuerTest28EE.crt",
+            "testdata/nist-pkits/certs/ValidcRLIssuerTest29EE.crt",
+            "testdata/nist-pkits/certs/ValidcRLIssuerTest30EE.crt",
+            "testdata/nist-pkits/certs/ValidcRLIssuerTest33EE.crt",
+            "testdata/nist-pkits/certs/ValiddeltaCRLTest2EE.crt",
+            "testdata/nist-pkits/certs/ValiddeltaCRLTest5EE.crt",
+            "testdata/nist-pkits/certs/ValiddeltaCRLTest7EE.crt",
+            "testdata/nist-pkits/certs/ValiddeltaCRLTest8EE.crt",
+            "testdata/nist-pkits/certs/ValiddistributionPointTest1EE.crt",
+            "testdata/nist-pkits/certs/ValiddistributionPointTest4EE.crt",
+            "testdata/nist-pkits/certs/ValiddistributionPointTest5EE.crt",
+            "testdata/nist-pkits/certs/ValiddistributionPointTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidinhibitAnyPolicyTest2EE.crt",
+            "testdata/nist-pkits/certs/ValidinhibitPolicyMappingTest2EE.crt",
+            "testdata/nist-pkits/certs/ValidinhibitPolicyMappingTest4EE.crt",
+            "testdata/nist-pkits/certs/ValidkeyUsageNotCriticalTest3EE.crt",
+            "testdata/nist-pkits/certs/ValidonlyContainsCACertsTest13EE.crt",
+            "testdata/nist-pkits/certs/ValidonlySomeReasonsTest18EE.crt",
+            "testdata/nist-pkits/certs/ValidonlySomeReasonsTest19EE.crt",
+            "testdata/nist-pkits/certs/ValidpathLenConstraintTest13EE.crt",
+            "testdata/nist-pkits/certs/ValidpathLenConstraintTest14EE.crt",
+            "testdata/nist-pkits/certs/ValidpathLenConstraintTest7EE.crt",
+            "testdata/nist-pkits/certs/ValidpathLenConstraintTest8EE.crt",
+            "testdata/nist-pkits/certs/Validpre2000UTCnotBeforeDateTest3EE.crt",
+            "testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest1EE.crt",
+            "testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest2EE.crt",
+            "testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest4EE.crt",
+            "testdata/nist-pkits/certs/WrongCRLCACert.crt",
+            "testdata/nist-pkits/certs/anyPolicyCACert.crt",
+            "testdata/nist-pkits/certs/basicConstraintsCriticalcAFalseCACert.crt",
+            "testdata/nist-pkits/certs/basicConstraintsNotCriticalCACert.crt",
+            "testdata/nist-pkits/certs/basicConstraintsNotCriticalcAFalseCACert.crt",
+            "testdata/nist-pkits/certs/deltaCRLCA1Cert.crt",
+            "testdata/nist-pkits/certs/deltaCRLCA2Cert.crt",
+            "testdata/nist-pkits/certs/deltaCRLCA3Cert.crt",
+            "testdata/nist-pkits/certs/deltaCRLIndicatorNoBaseCACert.crt",
+            "testdata/nist-pkits/certs/distributionPoint1CACert.crt",
+            "testdata/nist-pkits/certs/distributionPoint2CACert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA1Cert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA2Cert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA3Cert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA3cRLIssuerCert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA4Cert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA4cRLIssuerCert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA5Cert.crt",
+            "testdata/nist-pkits/certs/indirectCRLCA6Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy0CACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1CACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1SelfIssuedsubCA2Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1subCA1Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1subCA2Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1subCAIAP5Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy1subsubCA2Cert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy5CACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy5subCACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicy5subsubCACert.crt",
+            "testdata/nist-pkits/certs/inhibitAnyPolicyTest3EE.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping0CACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping0subCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P12CACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P12subCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P12subCAIPM5Cert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P12subsubCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P12subsubCAIPM5Cert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P1CACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P1SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P1SelfIssuedsubCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P1subCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping1P1subsubCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping5CACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping5subCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping5subsubCACert.crt",
+            "testdata/nist-pkits/certs/inhibitPolicyMapping5subsubsubCACert.crt",
+            "testdata/nist-pkits/certs/keyUsageCriticalcRLSignFalseCACert.crt",
+            "testdata/nist-pkits/certs/keyUsageCriticalkeyCertSignFalseCACert.crt",
+            "testdata/nist-pkits/certs/keyUsageNotCriticalCACert.crt",
+            "testdata/nist-pkits/certs/keyUsageNotCriticalcRLSignFalseCACert.crt",
+            "testdata/nist-pkits/certs/keyUsageNotCriticalkeyCertSignFalseCACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN1CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN1SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN1subCA1Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN1subCA2Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN1subCA3Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN2CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN3CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN3subCA1Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN3subCA2Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN4CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDN5CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDNS1CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsDNS2CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsRFC822CA1Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsRFC822CA2Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsRFC822CA3Cert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsURI1CACert.crt",
+            "testdata/nist-pkits/certs/nameConstraintsURI2CACert.crt",
+            "testdata/nist-pkits/certs/onlyContainsAttributeCertsCACert.crt",
+            "testdata/nist-pkits/certs/onlyContainsCACertsCACert.crt",
+            "testdata/nist-pkits/certs/onlyContainsUserCertsCACert.crt",
+            "testdata/nist-pkits/certs/onlySomeReasonsCA1Cert.crt",
+            "testdata/nist-pkits/certs/onlySomeReasonsCA2Cert.crt",
+            "testdata/nist-pkits/certs/onlySomeReasonsCA3Cert.crt",
+            "testdata/nist-pkits/certs/onlySomeReasonsCA4Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint0CACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint0SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint0subCA2Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint0subCACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint1CACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint1SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint1SelfIssuedsubCACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint1subCACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6CACert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subCA0Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subCA1Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subCA4Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subsubCA00Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subsubCA11Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subsubCA41Cert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subsubsubCA11XCert.crt",
+            "testdata/nist-pkits/certs/pathLenConstraint6subsubsubCA41XCert.crt",
+            "testdata/nist-pkits/certs/pre2000CRLnextUpdateCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy0CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy0subCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy0subsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy0subsubsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy10CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy10subCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy10subsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy10subsubsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy2CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy2SelfIssuedCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy2SelfIssuedsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy2subCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy4CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy4subCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy4subsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy4subsubsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy5CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy5subCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy5subsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy5subsubsubCACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy7CACert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy7subCARE2Cert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy7subsubCARE2RE4Cert.crt",
+            "testdata/nist-pkits/certs/requireExplicitPolicy7subsubsubCARE2RE4Cert.crt",
+            "testdata/nist-pkits/vectors.json",
+            "testdata/policy_intermediate.pem",
+            "testdata/policy_intermediate_any.pem",
+            "testdata/policy_intermediate_duplicate.pem",
+            "testdata/policy_intermediate_invalid.pem",
+            "testdata/policy_intermediate_mapped.pem",
+            "testdata/policy_intermediate_mapped_any.pem",
+            "testdata/policy_intermediate_mapped_oid3.pem",
+            "testdata/policy_intermediate_require.pem",
+            "testdata/policy_intermediate_require1.pem",
+            "testdata/policy_intermediate_require2.pem",
+            "testdata/policy_intermediate_require_duplicate.pem",
+            "testdata/policy_intermediate_require_no_policies.pem",
+            "testdata/policy_leaf.pem",
+            "testdata/policy_leaf_any.pem",
+            "testdata/policy_leaf_duplicate.pem",
+            "testdata/policy_leaf_invalid.pem",
+            "testdata/policy_leaf_none.pem",
+            "testdata/policy_leaf_oid1.pem",
+            "testdata/policy_leaf_oid2.pem",
+            "testdata/policy_leaf_oid3.pem",
+            "testdata/policy_leaf_oid4.pem",
+            "testdata/policy_leaf_oid5.pem",
+            "testdata/policy_leaf_require.pem",
+            "testdata/policy_leaf_require1.pem",
+            "testdata/policy_root.pem",
+            "testdata/policy_root2.pem",
+            "testdata/policy_root_cross_inhibit_mapping.pem",
             "testdata/test-dir.crt",
             "verify.go",
             "verify_test.go",
@@ -53,121 +485,131 @@ internal static class Go2CsTestHost
             "pkix",
             "testdata",
         });
-        registry.Add("TestASN1BitLength", x509_internal_test_package.TestASN1BitLength, "x509_test.go", 1784);
-        registry.Add("TestAdditionFieldsInGeneralSubtree", x509_internal_test_package.TestAdditionFieldsInGeneralSubtree, "x509_test.go", 2320);
-        registry.Add("TestAuthKeyIdOptional", x509_internal_test_package.TestAuthKeyIdOptional, "x509_test.go", 3459);
-        registry.Add("TestBadIPMask", x509_internal_test_package.TestBadIPMask, "x509_test.go", 2266);
-        registry.Add("TestBadNamesInConstraints", x509_internal_test_package.TestBadNamesInConstraints, "name_constraints_test.go", 2122);
-        registry.Add("TestBadNamesInSANs", x509_internal_test_package.TestBadNamesInSANs, "name_constraints_test.go", 2169);
-        registry.Add("TestCRLCreation", x509_internal_test_package.TestCRLCreation, "x509_test.go", 1252);
-        registry.Add("TestCRLWithoutExpiry", x509_internal_test_package.TestCRLWithoutExpiry, "x509_test.go", 1348);
+        registry.Add("TestASN1BitLength", x509_internal_test_package.TestASN1BitLength, "x509_test.go", 1866);
+        registry.Add("TestAdditionFieldsInGeneralSubtree", x509_internal_test_package.TestAdditionFieldsInGeneralSubtree, "x509_test.go", 2397);
+        registry.Add("TestAuthKeyIdOptional", x509_internal_test_package.TestAuthKeyIdOptional, "x509_test.go", 3563);
+        registry.Add("TestBadIPMask", x509_internal_test_package.TestBadIPMask, "x509_test.go", 2343);
+        registry.Add("TestBadNamesInConstraints", x509_internal_test_package.TestBadNamesInConstraints, "name_constraints_test.go", 2172);
+        registry.Add("TestBadNamesInSANs", x509_internal_test_package.TestBadNamesInSANs, "name_constraints_test.go", 2219);
+        registry.Add("TestCRLCreation", x509_internal_test_package.TestCRLCreation, "x509_test.go", 1332);
+        registry.Add("TestCRLWithoutExpiry", x509_internal_test_package.TestCRLWithoutExpiry, "x509_test.go", 1428);
         registry.Add("TestCertPoolEqual", x509_internal_test_package.TestCertPoolEqual, "cert_pool_test.go", 9);
-        registry.Add("TestCertificateEqualOnNil", x509_internal_test_package.TestCertificateEqualOnNil, "x509_test.go", 502);
-        registry.Add("TestCertificateOIDPolicies", x509_internal_test_package.TestCertificateOIDPolicies, "x509_test.go", 3926);
-        registry.Add("TestCertificateParse", x509_internal_test_package.TestCertificateParse, "x509_test.go", 476);
-        registry.Add("TestCertificatePoliciesGODEBUG", x509_internal_test_package.TestCertificatePoliciesGODEBUG, "x509_test.go", 3962);
-        registry.Add("TestCertificateRequestOverrides", x509_internal_test_package.TestCertificateRequestOverrides, "x509_test.go", 1488);
-        registry.Add("TestCertificateRequestRoundtripFields", x509_internal_test_package.TestCertificateRequestRoundtripFields, "x509_test.go", 3217);
-        registry.Add("TestConstraintCases", x509_internal_test_package.TestConstraintCases, "name_constraints_test.go", 1876);
-        registry.Add("TestCreateCertificateBrokenSigner", x509_internal_test_package.TestCreateCertificateBrokenSigner, "x509_test.go", 3140);
-        registry.Add("TestCreateCertificateLegacy", x509_internal_test_package.TestCreateCertificateLegacy, "x509_test.go", 3154);
-        registry.Add("TestCreateCertificateRequest", x509_internal_test_package.TestCreateCertificateRequest, "x509_test.go", 1394);
-        registry.Add("TestCreateNegativeSerial", x509_internal_test_package.TestCreateNegativeSerial, "x509_test.go", 3838);
-        registry.Add("TestCreateRevocationList", x509_internal_test_package.TestCreateRevocationList, "x509_test.go", 2434);
-        registry.Add("TestCreateSelfSignedCertificate", x509_internal_test_package.TestCreateSelfSignedCertificate, "x509_test.go", 601);
-        registry.Add("TestCriticalFlagInCSRRequestedExtensions", x509_internal_test_package.TestCriticalFlagInCSRRequestedExtensions, "x509_test.go", 1602);
-        registry.Add("TestCriticalNameConstraintWithUnknownType", x509_internal_test_package.TestCriticalNameConstraintWithUnknownType, "x509_test.go", 2234);
+        registry.Add("TestCertificateChainSignedByECDSA", x509_internal_test_package.TestCertificateChainSignedByECDSA, "verify_test.go", 3100);
+        registry.Add("TestCertificateEqualOnNil", x509_internal_test_package.TestCertificateEqualOnNil, "x509_test.go", 583);
+        registry.Add("TestCertificateOIDPoliciesGODEBUG", x509_internal_test_package.TestCertificateOIDPoliciesGODEBUG, "x509_test.go", 4030);
+        registry.Add("TestCertificateParse", x509_internal_test_package.TestCertificateParse, "x509_test.go", 557);
+        registry.Add("TestCertificatePolicies", x509_internal_test_package.TestCertificatePolicies, "x509_test.go", 4068);
+        registry.Add("TestCertificateRequestOverrides", x509_internal_test_package.TestCertificateRequestOverrides, "x509_test.go", 1569);
+        registry.Add("TestCertificateRequestRoundtripFields", x509_internal_test_package.TestCertificateRequestRoundtripFields, "x509_test.go", 3321);
+        registry.Add("TestConstraintCases", x509_internal_test_package.TestConstraintCases, "name_constraints_test.go", 1926);
+        registry.Add("TestCreateCertificateBrokenSigner", x509_internal_test_package.TestCreateCertificateBrokenSigner, "x509_test.go", 3244);
+        registry.Add("TestCreateCertificateLegacy", x509_internal_test_package.TestCreateCertificateLegacy, "x509_test.go", 3258);
+        registry.Add("TestCreateCertificateRequest", x509_internal_test_package.TestCreateCertificateRequest, "x509_test.go", 1474);
+        registry.Add("TestCreateNegativeSerial", x509_internal_test_package.TestCreateNegativeSerial, "x509_test.go", 3942);
+        registry.Add("TestCreateRevocationList", x509_internal_test_package.TestCreateRevocationList, "x509_test.go", 2542);
+        registry.Add("TestCreateSelfSignedCertificate", x509_internal_test_package.TestCreateSelfSignedCertificate, "x509_test.go", 682);
+        registry.Add("TestCriticalFlagInCSRRequestedExtensions", x509_internal_test_package.TestCriticalFlagInCSRRequestedExtensions, "x509_test.go", 1683);
+        registry.Add("TestCriticalNameConstraintWithUnknownType", x509_internal_test_package.TestCriticalNameConstraintWithUnknownType, "x509_test.go", 2311);
         registry.Add("TestDecrypt", x509_internal_test_package.TestDecrypt, "pem_decrypt_test.go", 16);
-        registry.Add("TestDisableSHA1ForCertOnly", x509_internal_test_package.TestDisableSHA1ForCertOnly, "x509_test.go", 3613);
-        registry.Add("TestDuplicateAttributesCSR", x509_internal_test_package.TestDuplicateAttributesCSR, "x509_test.go", 3915);
-        registry.Add("TestDuplicateExtensionsCSR", x509_internal_test_package.TestDuplicateExtensionsCSR, "x509_test.go", 3893);
-        registry.Add("TestDuplicateExtensionsCert", x509_internal_test_package.TestDuplicateExtensionsCert, "x509_test.go", 3871);
-        registry.Add("TestECDSA", x509_internal_test_package.TestECDSA, "x509_test.go", 923);
+        registry.Add("TestDisableSHA1ForCertOnly", x509_internal_test_package.TestDisableSHA1ForCertOnly, "x509_test.go", 3717);
+        registry.Add("TestDomainNameValid", x509_internal_test_package.TestDomainNameValid, "parser_test.go", 192);
+        registry.Add("TestDuplicateAttributesCSR", x509_internal_test_package.TestDuplicateAttributesCSR, "x509_test.go", 4019);
+        registry.Add("TestDuplicateExtensionsCSR", x509_internal_test_package.TestDuplicateExtensionsCSR, "x509_test.go", 3997);
+        registry.Add("TestDuplicateExtensionsCert", x509_internal_test_package.TestDuplicateExtensionsCert, "x509_test.go", 3975);
+        registry.Add("TestECDSA", x509_internal_test_package.TestECDSA, "x509_test.go", 1003);
         registry.Add("TestECMismatchKeyFormat", x509_internal_test_package.TestECMismatchKeyFormat, "sec1_test.go", 58);
-        registry.Add("TestEKUEnforcement", x509_internal_test_package.TestEKUEnforcement, "verify_test.go", 2605);
-        registry.Add("TestEd25519SelfSigned", x509_internal_test_package.TestEd25519SelfSigned, "x509_test.go", 1153);
-        registry.Add("TestEmptyNameConstraints", x509_internal_test_package.TestEmptyNameConstraints, "x509_test.go", 2071);
-        registry.Add("TestEmptySubject", x509_internal_test_package.TestEmptySubject, "x509_test.go", 2330);
+        registry.Add("TestEKUEnforcement", x509_internal_test_package.TestEKUEnforcement, "verify_test.go", 2456);
+        registry.Add("TestEd25519SelfSigned", x509_internal_test_package.TestEd25519SelfSigned, "x509_test.go", 1233);
+        registry.Add("TestEmptyNameConstraints", x509_internal_test_package.TestEmptyNameConstraints, "x509_test.go", 2148);
+        registry.Add("TestEmptySerialNumber", x509_internal_test_package.TestEmptySerialNumber, "x509_test.go", 2407);
+        registry.Add("TestEmptySubject", x509_internal_test_package.TestEmptySubject, "x509_test.go", 2438);
         registry.Add("TestEncrypt", x509_internal_test_package.TestEncrypt, "pem_decrypt_test.go", 41);
         registry.Add("TestFallback", x509_internal_test_package.TestFallback, "root_test.go", 21);
         registry.Add("TestFallbackPanic", x509_internal_test_package.TestFallbackPanic, "root_test.go", 11);
-        registry.Add("TestGoVerify", x509_internal_test_package.TestGoVerify, "verify_test.go", 555);
-        registry.Add("TestGob", x509_internal_test_package.TestGob, "x509_test.go", 4005);
+        registry.Add("TestGoVerify", x509_internal_test_package.TestGoVerify, "verify_test.go", 540);
+        registry.Add("TestGob", x509_internal_test_package.TestGob, "x509_test.go", 4115);
         registry.Add("TestHybridPool", x509_test_package.TestHybridPool, "hybrid_pool_test.go", 21);
-        registry.Add("TestIA5SANEnforcement", x509_internal_test_package.TestIA5SANEnforcement, "x509_test.go", 2993);
-        registry.Add("TestISOOIDInCertificate", x509_internal_test_package.TestISOOIDInCertificate, "x509_test.go", 1947);
-        registry.Add("TestImports", x509_internal_test_package.TestImports, "x509_test.go", 1379);
+        registry.Add("TestIA5SANEnforcement", x509_internal_test_package.TestIA5SANEnforcement, "x509_test.go", 3097);
+        registry.Add("TestISOOIDInCertificate", x509_internal_test_package.TestISOOIDInCertificate, "x509_test.go", 2024);
+        registry.Add("TestImports", x509_internal_test_package.TestImports, "x509_test.go", 1459);
         registry.Add("TestIncompleteBlock", x509_internal_test_package.TestIncompleteBlock, "pem_decrypt_test.go", 235);
-        registry.Add("TestInsecureAlgorithmErrorString", x509_internal_test_package.TestInsecureAlgorithmErrorString, "x509_test.go", 1812);
+        registry.Add("TestInsecureAlgorithmErrorString", x509_internal_test_package.TestInsecureAlgorithmErrorString, "x509_test.go", 1894);
         registry.Add("TestInvalidOID", x509_internal_test_package.TestInvalidOID, "oid_test.go", 98);
-        registry.Add("TestIssue51759", x509_internal_test_package.TestIssue51759, "verify_test.go", 1890);
-        registry.Add("TestLargeOID", x509_internal_test_package.TestLargeOID, "x509_test.go", 3553);
-        registry.Add("TestLongChain", x509_internal_test_package.TestLongChain, "verify_test.go", 1797);
-        registry.Add("TestMD5", x509_internal_test_package.TestMD5, "x509_test.go", 1868);
-        registry.Add("TestMarshalInvalidPublicKey", x509_internal_test_package.TestMarshalInvalidPublicKey, "x509_test.go", 75);
-        registry.Add("TestMarshalRSAPrivateKey", x509_internal_test_package.TestMarshalRSAPrivateKey, "x509_test.go", 226);
-        registry.Add("TestMarshalRSAPublicKey", x509_internal_test_package.TestMarshalRSAPublicKey, "x509_test.go", 258);
-        registry.Add("TestMatchHostnames", x509_internal_test_package.TestMatchHostnames, "x509_test.go", 423);
-        registry.Add("TestMatchIP", x509_internal_test_package.TestMatchIP, "x509_test.go", 433);
-        registry.Add("TestMaxPathLen", x509_internal_test_package.TestMaxPathLen, "x509_test.go", 1692);
-        registry.Add("TestMaxPathLenNotCA", x509_internal_test_package.TestMaxPathLenNotCA, "x509_test.go", 1654);
-        registry.Add("TestMismatchedSignatureAlgorithm", x509_internal_test_package.TestMismatchedSignatureAlgorithm, "x509_test.go", 519);
-        registry.Add("TestMultipleRDN", x509_internal_test_package.TestMultipleRDN, "x509_test.go", 1992);
-        registry.Add("TestMultipleURLsInCRLDP", x509_internal_test_package.TestMultipleURLsInCRLDP, "x509_test.go", 2397);
-        registry.Add("TestNameConstraints", x509_internal_test_package.TestNameConstraints, "verify_test.go", 1549);
-        registry.Add("TestNoAuthorityKeyIdInSelfSignedCert", x509_internal_test_package.TestNoAuthorityKeyIdInSelfSignedCert, "x509_test.go", 1733);
-        registry.Add("TestNoSubjectKeyIdInCert", x509_internal_test_package.TestNoSubjectKeyIdInCert, "x509_test.go", 1757);
+        registry.Add("TestInvalidPolicyWithAnyKeyUsage", x509_internal_test_package.TestInvalidPolicyWithAnyKeyUsage, "verify_test.go", 3064);
+        registry.Add("TestIssue51759", x509_internal_test_package.TestIssue51759, "verify_test.go", 1741);
+        registry.Add("TestLargeOID", x509_internal_test_package.TestLargeOID, "x509_test.go", 3657);
+        registry.Add("TestLongChain", x509_internal_test_package.TestLongChain, "verify_test.go", 1648);
+        registry.Add("TestMD5", x509_internal_test_package.TestMD5, "x509_test.go", 1950);
+        registry.Add("TestMarshalInvalidPublicKey", x509_internal_test_package.TestMarshalInvalidPublicKey, "x509_test.go", 101);
+        registry.Add("TestMarshalRSAPrivateKey", x509_internal_test_package.TestMarshalRSAPrivateKey, "x509_test.go", 252);
+        registry.Add("TestMarshalRSAPrivateKeyInvalid", x509_internal_test_package.TestMarshalRSAPrivateKeyInvalid, "x509_test.go", 288);
+        registry.Add("TestMarshalRSAPublicKey", x509_internal_test_package.TestMarshalRSAPublicKey, "x509_test.go", 339);
+        registry.Add("TestMatchHostnames", x509_internal_test_package.TestMatchHostnames, "x509_test.go", 504);
+        registry.Add("TestMatchIP", x509_internal_test_package.TestMatchIP, "x509_test.go", 514);
+        registry.Add("TestMaxPathLen", x509_internal_test_package.TestMaxPathLen, "x509_test.go", 1774);
+        registry.Add("TestMaxPathLenNotCA", x509_internal_test_package.TestMaxPathLenNotCA, "x509_test.go", 1736);
+        registry.Add("TestMismatchedSignatureAlgorithm", x509_internal_test_package.TestMismatchedSignatureAlgorithm, "x509_test.go", 600);
+        registry.Add("TestMultipleRDN", x509_internal_test_package.TestMultipleRDN, "x509_test.go", 2069);
+        registry.Add("TestMultipleURLsInCRLDP", x509_internal_test_package.TestMultipleURLsInCRLDP, "x509_test.go", 2505);
+        registry.Add("TestNISTPKITSPolicy", x509_internal_test_package.TestNISTPKITSPolicy, "pkits_test.go", 23);
+        registry.Add("TestNameConstraints", x509_internal_test_package.TestNameConstraints, "verify_test.go", 1400);
+        registry.Add("TestNoAuthorityKeyIdInSelfSignedCert", x509_internal_test_package.TestNoAuthorityKeyIdInSelfSignedCert, "x509_test.go", 1815);
+        registry.Add("TestNoSubjectKeyIdInCert", x509_internal_test_package.TestNoSubjectKeyIdInCert, "x509_test.go", 1839);
         registry.Add("TestOID", x509_internal_test_package.TestOID, "oid_test.go", 51);
         registry.Add("TestOIDEqual", x509_internal_test_package.TestOIDEqual, "oid_test.go", 130);
-        registry.Add("TestOIDEqualASN1OID", x509_internal_test_package.TestOIDEqualASN1OID, "oid_test.go", 248);
+        registry.Add("TestOIDEqualASN1OID", x509_internal_test_package.TestOIDEqualASN1OID, "oid_test.go", 273);
         registry.Add("TestOIDMarshal", x509_internal_test_package.TestOIDMarshal, "oid_test.go", 158);
-        registry.Add("TestOIDUnmarshalBinary", x509_internal_test_package.TestOIDUnmarshalBinary, "oid_test.go", 292);
-        registry.Add("TestOmitEmptyExtensions", x509_internal_test_package.TestOmitEmptyExtensions, "x509_test.go", 3797);
-        registry.Add("TestPKCS1MismatchKeyFormat", x509_internal_test_package.TestPKCS1MismatchKeyFormat, "x509_test.go", 2424);
-        registry.Add("TestPKCS1MismatchPublicKeyFormat", x509_internal_test_package.TestPKCS1MismatchPublicKeyFormat, "x509_test.go", 64);
+        registry.Add("TestOIDUnmarshalBinary", x509_internal_test_package.TestOIDUnmarshalBinary, "oid_test.go", 317);
+        registry.Add("TestOmitEmptyExtensions", x509_internal_test_package.TestOmitEmptyExtensions, "x509_test.go", 3901);
+        registry.Add("TestPKCS1MismatchKeyFormat", x509_internal_test_package.TestPKCS1MismatchKeyFormat, "x509_test.go", 2532);
+        registry.Add("TestPKCS1MismatchPublicKeyFormat", x509_internal_test_package.TestPKCS1MismatchPublicKeyFormat, "x509_test.go", 90);
         registry.Add("TestPKCS8", x509_internal_test_package.TestPKCS8, "pkcs8_test.go", 58);
         registry.Add("TestPKCS8MismatchKeyFormat", x509_internal_test_package.TestPKCS8MismatchKeyFormat, "pkcs8_test.go", 167);
-        registry.Add("TestPKIXMismatchPublicKeyFormat", x509_internal_test_package.TestPKIXMismatchPublicKeyFormat, "x509_test.go", 174);
-        registry.Add("TestPKIXNameString", x509_internal_test_package.TestPKIXNameString, "x509_test.go", 2084);
-        registry.Add("TestParseASN1String", x509_internal_test_package.TestParseASN1String, "parser_test.go", 14);
-        registry.Add("TestParseCertificateRawEquals", x509_internal_test_package.TestParseCertificateRawEquals, "x509_test.go", 3376);
-        registry.Add("TestParseCertificateRequest", x509_internal_test_package.TestParseCertificateRequest, "x509_test.go", 1569);
-        registry.Add("TestParseCertificateWithDSASignatureAlgorithm", x509_internal_test_package.TestParseCertificateWithDSASignatureAlgorithm, "x509_test.go", 1002);
-        registry.Add("TestParseCertificateWithDsaPublicKey", x509_internal_test_package.TestParseCertificateWithDsaPublicKey, "x509_test.go", 973);
-        registry.Add("TestParseDERCRL", x509_internal_test_package.TestParseDERCRL, "x509_test.go", 1328);
+        registry.Add("TestPKIXMismatchPublicKeyFormat", x509_internal_test_package.TestPKIXMismatchPublicKeyFormat, "x509_test.go", 200);
+        registry.Add("TestPKIXNameString", x509_internal_test_package.TestPKIXNameString, "x509_test.go", 2161);
+        registry.Add("TestParseASN1String", x509_internal_test_package.TestParseASN1String, "parser_test.go", 20);
+        registry.Add("TestParseCertificateRawEquals", x509_internal_test_package.TestParseCertificateRawEquals, "x509_test.go", 3480);
+        registry.Add("TestParseCertificateRequest", x509_internal_test_package.TestParseCertificateRequest, "x509_test.go", 1650);
+        registry.Add("TestParseCertificateWithDSASignatureAlgorithm", x509_internal_test_package.TestParseCertificateWithDSASignatureAlgorithm, "x509_test.go", 1082);
+        registry.Add("TestParseCertificateWithDsaPublicKey", x509_internal_test_package.TestParseCertificateWithDsaPublicKey, "x509_test.go", 1053);
+        registry.Add("TestParseDERCRL", x509_internal_test_package.TestParseDERCRL, "x509_test.go", 1408);
         registry.Add("TestParseECPrivateKey", x509_internal_test_package.TestParseECPrivateKey, "sec1_test.go", 29);
-        registry.Add("TestParseNegativeSerial", x509_internal_test_package.TestParseNegativeSerial, "x509_test.go", 3830);
-        registry.Add("TestParsePEMCRL", x509_internal_test_package.TestParsePEMCRL, "x509_test.go", 1359);
+        registry.Add("TestParseNegativeSerial", x509_internal_test_package.TestParseNegativeSerial, "x509_test.go", 3934);
+        registry.Add("TestParsePEMCRL", x509_internal_test_package.TestParsePEMCRL, "x509_test.go", 1439);
         registry.Add("TestParsePKCS1PrivateKey", x509_internal_test_package.TestParsePKCS1PrivateKey, "x509_test.go", 41);
-        registry.Add("TestParsePKIXPublicKey", x509_internal_test_package.TestParsePKIXPublicKey, "x509_test.go", 107);
-        registry.Add("TestParseRevocationList", x509_internal_test_package.TestParseRevocationList, "x509_test.go", 3674);
-        registry.Add("TestParseUniqueID", x509_internal_test_package.TestParseUniqueID, "x509_test.go", 3599);
-        registry.Add("TestPathBuilding", x509_internal_test_package.TestPathBuilding, "verify_test.go", 2071);
-        registry.Add("TestPathologicalChain", x509_internal_test_package.TestPathologicalChain, "verify_test.go", 1757);
+        registry.Add("TestParsePKIXPublicKey", x509_internal_test_package.TestParsePKIXPublicKey, "x509_test.go", 133);
+        registry.Add("TestParsePolicies", x509_internal_test_package.TestParsePolicies, "parser_test.go", 173);
+        registry.Add("TestParseRevocationList", x509_internal_test_package.TestParseRevocationList, "x509_test.go", 3778);
+        registry.Add("TestParseUniqueID", x509_internal_test_package.TestParseUniqueID, "x509_test.go", 3703);
+        registry.Add("TestPathBuilding", x509_internal_test_package.TestPathBuilding, "verify_test.go", 1922);
+        registry.Add("TestPathologicalChain", x509_internal_test_package.TestPathologicalChain, "verify_test.go", 1608);
         registry.Add("TestPlatformVerifier", x509_internal_test_package.TestPlatformVerifier, "platform_test.go", 38);
-        registry.Add("TestRDNSequenceString", x509_internal_test_package.TestRDNSequenceString, "x509_test.go", 2174);
-        registry.Add("TestRFC2821Parsing", x509_internal_test_package.TestRFC2821Parsing, "name_constraints_test.go", 2097);
-        registry.Add("TestRSAMissingNULLParameters", x509_internal_test_package.TestRSAMissingNULLParameters, "x509_test.go", 1924);
-        registry.Add("TestRSAPSAParameters", x509_internal_test_package.TestRSAPSAParameters, "x509_test.go", 2919);
-        registry.Add("TestRSAPSSSelfSigned", x509_internal_test_package.TestRSAPSSSelfSigned, "x509_test.go", 1089);
-        registry.Add("TestRejectCriticalAIA", x509_internal_test_package.TestRejectCriticalAIA, "x509_test.go", 4040);
-        registry.Add("TestRejectCriticalAKI", x509_internal_test_package.TestRejectCriticalAKI, "x509_test.go", 4015);
-        registry.Add("TestRejectCriticalSKI", x509_internal_test_package.TestRejectCriticalSKI, "x509_test.go", 4065);
-        registry.Add("TestRevocationListCheckSignatureFrom", x509_internal_test_package.TestRevocationListCheckSignatureFrom, "x509_test.go", 3689);
-        registry.Add("TestSHA1", x509_internal_test_package.TestSHA1, "x509_test.go", 1885);
-        registry.Add("TestSigAlgMismatch", x509_internal_test_package.TestSigAlgMismatch, "x509_test.go", 3411);
-        registry.Add("TestSystemCertPool", x509_internal_test_package.TestSystemCertPool, "x509_test.go", 2008);
-        registry.Add("TestSystemRootsError", x509_internal_test_package.TestSystemRootsError, "verify_test.go", 1834);
-        registry.Add("TestSystemRootsErrorUnwrap", x509_internal_test_package.TestSystemRootsErrorUnwrap, "verify_test.go", 1864);
-        registry.Add("TestSystemVerify", x509_internal_test_package.TestSystemVerify, "verify_test.go", 567);
-        registry.Add("TestUnknownAuthorityError", x509_internal_test_package.TestUnknownAuthorityError, "verify_test.go", 1506);
-        registry.Add("TestUnknownExtKey", x509_internal_test_package.TestUnknownExtKey, "x509_test.go", 2974);
-        registry.Add("TestValidHostname", x509_internal_test_package.TestValidHostname, "verify_test.go", 1689);
-        registry.Add("TestVerifyBareWildcard", x509_internal_test_package.TestVerifyBareWildcard, "verify_test.go", 2815);
-        registry.Add("TestVerifyCertificateWithDSASignature", x509_internal_test_package.TestVerifyCertificateWithDSASignature, "x509_test.go", 1013);
-        registry.Add("TestVerifyEKURootAsLeaf", x509_internal_test_package.TestVerifyEKURootAsLeaf, "verify_test.go", 2725);
-        registry.Add("TestVerifyEmptyCertificate", x509_internal_test_package.TestVerifyEmptyCertificate, "x509_test.go", 1806);
-        registry.Add("TestVerifyNilPubKey", x509_internal_test_package.TestVerifyNilPubKey, "verify_test.go", 2796);
+        registry.Add("TestPoliciesValid", x509_internal_test_package.TestPoliciesValid, "verify_test.go", 2692);
+        registry.Add("TestPolicyParse", x509_internal_test_package.TestPolicyParse, "parser_test.go", 150);
+        registry.Add("TestRDNSequenceString", x509_internal_test_package.TestRDNSequenceString, "x509_test.go", 2251);
+        registry.Add("TestRFC2821Parsing", x509_internal_test_package.TestRFC2821Parsing, "name_constraints_test.go", 2147);
+        registry.Add("TestRSAMissingNULLParameters", x509_internal_test_package.TestRSAMissingNULLParameters, "x509_test.go", 2001);
+        registry.Add("TestRSAPSAParameters", x509_internal_test_package.TestRSAPSAParameters, "x509_test.go", 3027);
+        registry.Add("TestRSAPSSSelfSigned", x509_internal_test_package.TestRSAPSSSelfSigned, "x509_test.go", 1169);
+        registry.Add("TestRejectCriticalAIA", x509_internal_test_package.TestRejectCriticalAIA, "x509_test.go", 4150);
+        registry.Add("TestRejectCriticalAKI", x509_internal_test_package.TestRejectCriticalAKI, "x509_test.go", 4125);
+        registry.Add("TestRejectCriticalSKI", x509_internal_test_package.TestRejectCriticalSKI, "x509_test.go", 4175);
+        registry.Add("TestRevocationListCheckSignatureFrom", x509_internal_test_package.TestRevocationListCheckSignatureFrom, "x509_test.go", 3793);
+        registry.Add("TestRoundtripWeirdSANs", x509_internal_test_package.TestRoundtripWeirdSANs, "parser_test.go", 260);
+        registry.Add("TestSHA1", x509_internal_test_package.TestSHA1, "x509_test.go", 1967);
+        registry.Add("TestSigAlgMismatch", x509_internal_test_package.TestSigAlgMismatch, "x509_test.go", 3515);
+        registry.Add("TestSystemCertPool", x509_internal_test_package.TestSystemCertPool, "x509_test.go", 2085);
+        registry.Add("TestSystemRootsError", x509_internal_test_package.TestSystemRootsError, "verify_test.go", 1685);
+        registry.Add("TestSystemRootsErrorUnwrap", x509_internal_test_package.TestSystemRootsErrorUnwrap, "verify_test.go", 1715);
+        registry.Add("TestSystemVerify", x509_internal_test_package.TestSystemVerify, "verify_test.go", 548);
+        registry.Add("TestUnknownAuthorityError", x509_internal_test_package.TestUnknownAuthorityError, "verify_test.go", 1357);
+        registry.Add("TestUnknownExtKey", x509_internal_test_package.TestUnknownExtKey, "x509_test.go", 3082);
+        registry.Add("TestValidHostname", x509_internal_test_package.TestValidHostname, "verify_test.go", 1540);
+        registry.Add("TestVerifyBareWildcard", x509_internal_test_package.TestVerifyBareWildcard, "verify_test.go", 2666);
+        registry.Add("TestVerifyCertificateWithDSASignature", x509_internal_test_package.TestVerifyCertificateWithDSASignature, "x509_test.go", 1093);
+        registry.Add("TestVerifyEKURootAsLeaf", x509_internal_test_package.TestVerifyEKURootAsLeaf, "verify_test.go", 2576);
+        registry.Add("TestVerifyEmptyCertificate", x509_internal_test_package.TestVerifyEmptyCertificate, "x509_test.go", 1888);
+        registry.Add("TestVerifyNilPubKey", x509_internal_test_package.TestVerifyNilPubKey, "verify_test.go", 2647);
         return TestHost.Run(registry, args);
     }
 }

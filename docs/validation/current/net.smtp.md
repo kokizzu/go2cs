@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/smtp` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `2d53460e0`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**19 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**20 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net/smtp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/smtp).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -26,6 +28,7 @@ comparison — it is the evidence behind the `net/smtp` row in
 | `TestExtensions/ehlo_8bitmime_smtputf8` | pass | pass |
 | `TestExtensions/ehlo_smtputf8` | pass | pass |
 | `TestExtensions/helo` | pass | pass |
+| `TestHELOFailed` | pass | pass |
 | `TestHello` | pass | pass |
 | `TestNewClient` | pass | pass |
 | `TestNewClient2` | pass | pass |

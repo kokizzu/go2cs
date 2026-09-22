@@ -22,12 +22,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 // In order to run this test suite locally, you need to insert the test root, at
 // the path below, into your trust store. This root is constrained such that it
 // should not be dangerous to local developers to trust, but care should be

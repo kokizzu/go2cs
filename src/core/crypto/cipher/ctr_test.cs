@@ -4,10 +4,15 @@
 namespace go.crypto;
 
 using bytes = bytes_package;
+using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
+using des = go.crypto.des_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
+using fmt = fmt_package;
 using testing = testing_package;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
+using go.crypto.@internal;
+using io = io_package;
 
 partial class cipher_test_package {
 
@@ -22,7 +27,7 @@ internal static void Encrypt(this noopBlock _, slice<byte> dst, slice<byte> src)
 }
 
 internal static void Decrypt(this noopBlock _, slice<byte> dst, slice<byte> src) {
-    copy(dst, src);
+    throw panic("unreachable");
 }
 
 internal static void inc(slice<byte> b) {
@@ -61,6 +66,33 @@ public static void TestCTR(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("for size %d\nhave %x\nwant %x"u8, size, dst, want);
         }
     }
+}
+
+public static void TestCTRStream(ж<testing.T> Ꮡt) {
+    cryptotest.TestAllImplementations(Ꮡt, aesˢ, (ж<testing.T> tΔ1) => {
+        foreach (var (_, keylen) in new nint[]{128, 192, 256}.slice()) {
+            tΔ1.Run(fmt.Sprintf("AES-%d"u8, keylen), (ж<testing.T> tΔ2) => {
+                var rng = newRandReader(tΔ2);
+                var key = new slice<byte>(keylen / 8);
+                rng.Read(key);
+                var (block, err) = aes.NewCipher(key);
+                if (err != default!) {
+                    throw panic(err);
+                }
+                cryptotest.TestStreamFromBlock(tΔ2, block, cipher.NewCTR);
+            });
+        }
+    });
+    Ꮡt.Run(desˢ, (ж<testing.T> tΔ3) => {
+        var rng = newRandReader(tΔ3);
+        var key = new slice<byte>(8);
+        rng.Read(key);
+        var (block, err) = des.NewCipher(key);
+        if (err != default!) {
+            throw panic(err);
+        }
+        cryptotest.TestStreamFromBlock(tΔ3, block, cipher.NewCTR);
+    });
 }
 
 } // end cipher_test_package
