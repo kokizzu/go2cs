@@ -3014,6 +3014,8 @@ func TestDeclarationKeyedCapabilityEntries(t *testing.T) {
 		"testing_test.TestBenchmarkSubRace":                   {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes", internal: false},
 		"testing_test.TestRunningTests":                       {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
 		"testing_test.TestRunningTestsInCleanup":              {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
+		"testing_test.TestBenchmarkBLoopIterationCorrect":     {capability: "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBLoopPrint's own printed iterations; the host defers benchmark execution, so the child prints none", internal: false},
+		"testing_test.TestBenchmarkBNIterationCorrect":        {capability: "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBNPrint's own printed iterations; the host defers benchmark execution, so the child prints none", internal: false},
 	}
 
 	for key, want := range pinned {
