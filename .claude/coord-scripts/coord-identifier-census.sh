@@ -745,6 +745,46 @@ function scanTokens(lineno, text, lo, pass, joinAt,   i, L, s, e, c, run, nc, k)
         } else i++
     }
 }
+# ⚠⚠ THE ALPHANUMERIC REDUCTION IS NOT `gsub`, AND THAT IS A MEASUREMENT ABOUT THE ENGINE RATHER
+# THAN A STYLE CHOICE. `gsub(/[^a-z0-9]/, "", s)` is QUADRATIC IN length(s) under gawk 5.0.0 --
+# roughly half the characters of any real line match, so the match count is O(L) and each one
+# rebuilds the buffer. Timed directly, one string, nothing else in the program:
+#
+#     50,000 chars   3,615 ms        200,000 chars  61,446 ms
+#    100,000 chars  13,856 ms        (2x the length, 4.4x the time)
+#
+# That is the whole of the hang this tool showed on JSON. MEASURED 2026-09-22 on the i7, on
+# single-LINE fixtures, `entry` mode end to end, against a ~2.7 s fixed overhead:
+#
+#       5 KB  2.8 s      87 KB   9.4 s      362 KB  104.0 s
+#      20 KB  2.9 s     177 KB  26.1 s      3.06 MB never returned (~2 h by extrapolation)
+#
+# ⚠ AND IT IS LINE LENGTH, NOT BYTES, NOT JSON. One-axis A/B on the SAME 177 KB: one line 27.8 s,
+# folded to 1,769 lines 7.5 s. JSON is merely where a 3 MB single line occurs -- the pipeline's own
+# `go2cs_test_results.json` is one line of 2.9 MB, which is how the leg met this. A 46 KB manifest
+# with a longest line of 1,896 characters reads in 4.8 s, so ordinary committed JSON was never slow.
+# Bisected by disabling one stage at a time on the 177 KB line: whole program 27.4 s, without the
+# arm loop 27.8 s, without the ipv4 scan 28.4 s, WITHOUT THE TOKEN PASS 0.2 s; and inside that pass,
+# with the reduction kept and its scan dropped 24.9 s, with the reduction dropped and its scan kept
+# 0.5 s. One stage, named by subtraction.
+#
+# `split` on the COMPLEMENT class does the same work in ONE scan, and the pieces are then joined
+# PAIRWISE -- `out = out piece` over O(L) pieces is the same quadratic by another route, while a
+# balanced merge copies O(L log n). The two spellings are EXACTLY equivalent, and the reason is that
+# the class is a SINGLE CHARACTER: `split(s, P, /[^a-z0-9]+/)` yields precisely the maximal
+# alphanumeric runs, so concatenating them is the string with every non-alphanumeric removed.
+# Controlled on a gnarly literal (separators, quotes, digits, a backslash) against the gsub it
+# replaces -- identical output -- and on the three edges: empty, all-separator, all-alphanumeric.
+function alnumOnly(s,   n, i, P, m, j) {
+    n = split(s, P, /[^a-z0-9]+/)
+    while (n > 1) {
+        m = 0
+        for (i = 1; i <= n; i += 2) { m++; P[m] = (i + 1 <= n) ? P[i] P[i + 1] : P[i] }
+        for (j = m + 1; j <= n; j++) delete P[j]
+        n = m
+    }
+    return (n == 1) ? P[1] : ""
+}
 # PASS 3 -- token arms only, over an alphanumerics-only reduction. Tokens of 4+ characters only: the
 # reduction has no boundaries left, so a 3-character detector here would fire on ordinary prose.
 function scanTokensReduced(lineno, red, keyline, text,   i, t) {
@@ -790,7 +830,7 @@ function scanAll(lineno, text, pass, joinAt,   a, arm, lo, blanked, red) {
         blanked = lo
         if ("public_url" in RE) blanked = blankSpans(blanked, RE["public_url"])
         scanTokens(lineno, text, blanked, pass, joinAt)
-        red = blanked; gsub(/[^a-z0-9]/, "", red)
+        red = alnumOnly(blanked)
         scanTokensReduced(lineno, red, lineno, text)
     }
 }
@@ -841,7 +881,7 @@ BEGIN {
             if (nT > 0) {
                 jred = tolower(joined)
                 if ("public_url" in RE) jred = blankSpans(jred, RE["public_url"])
-                gsub(/[^a-z0-9]/, "", jred)
+                jred = alnumOnly(jred)
                 scanTokensReduced(NR, jred, NR, joined)
             }
         }
@@ -1224,6 +1264,13 @@ idc_mode_selftest() {
     printf 'row names x_%s_y and more\n' "quennelbee"                      > "$d/p14"; idc_st_case "token as an underscore component (PASS 1)" "TOKENFILE" "$d/p14" 1
     # PASS 3 -- a token broken by separators INSIDE a component, which tokenising cannot see.
     printf 'row names ab%s-%s2 here\n' "zorbul" "ax"                       > "$d/p15"; idc_st_case "token broken inside a component (PASS 3)"  "TOKENFILE" "$d/p15" 1
+    # PASS 3 AT THE END OF THE LINE, and this case exists because its absence was MEASURED. The
+    # reduction the pass reads is `alnumOnly`, and a reduction that loses the line's TAIL -- the
+    # likeliest way to get a piecewise reducer wrong -- is INVISIBLE to the case above, whose token
+    # sits mid-line with `2 here` after it: regressing the reducer to drop its last character read
+    # 116/0 and green. Neutering it entirely DOES red that case (115/1), so the stage was covered and
+    # its BOUNDARY was not. One case, at the boundary, and the same plant otherwise.
+    printf 'row names ab%s-%s\n' "zorbul" "ax"                             > "$d/p15b"; idc_st_case "token broken, at END of line (PASS 3)"     "TOKENFILE" "$d/p15b" 1
     # A path ENDING in the token -- the shape a both-sides separator rule misses.
     printf 'built at C:%sUsers%s%s\n' "$bs" "$bs" "zorbulax"               > "$d/p16"; idc_st_case "path ENDING in a denied token" "profile_root TOKENFILE" "$d/p16" 1
     # STRICT: the IPv4 arm takes NO CONTEXT exclusion in entry/subject mode. The quad planted here
