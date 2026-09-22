@@ -236,6 +236,7 @@ IDC_PATTERNS="${IDC_PATTERNS:-$IDC_DIR/coord-identifier-patterns.txt}"
 IDC_HASHES="${IDC_HASHES:-$IDC_DIR/coord-identifier-hashes.txt}"
 IDC_UNMASK=0
 IDC_CONVERTED=0               # set by `converted` mode and by nothing else.
+IDC_FIXTURE=0                 # set PER FILE by `converted` mode from idc_is_upstream_fixture; 0 everywhere else.
 IDC_SHORT="${IDC_SHORT:-0}"   # self-test forcing hook only; see ipv4Extent. Never set in normal use.
 IDC_TMP=""
 
@@ -606,6 +607,13 @@ function hostVal(mt,   i, j, v) {
 function armRefuses(arm) {
     if (MD[arm] != "refuse") return 0
     if (CONVERTED == 1 && DOWNARM[arm] == 1) return 0
+    # ON AN UPSTREAM FIXTURE ONLY: the Go gate's scanFleetIdentifiers sets structural :=
+    # !fleetIsUpstreamFixture(path) and runs its profile/home and network-path regexes only when it is
+    # true. Mirrored, never exceeded -- a converted-door path the Go gate does NOT call a fixture (a
+    # validation page, package_test_info.cs, go2cs_test_host.cs, a tests csproj) keeps the two-arm
+    # downgrade above and nothing more. The run-time and denied-token arms never reach this function
+    # (see the note above it), so no marker here can downgrade them.
+    if (CONVERTED == 1 && FIXTURE == 1 && FIXARM[arm] == 1) return 0
     return 1
 }
 # Anchored-whole membership in a CONTEXT arm used as an admit set. Per OCCURRENCE, on the decision
@@ -1087,6 +1095,10 @@ BEGIN {
         # The CONVERTED-mode downgrade set, read from the DEFINITION rather than listed here. Not
         # anchored to the start of the note, because an arm may already carry another marker there.
         DOWNARM[F[1]] = ((n >= 4) && (F[4] ~ /\[CONVERTED-CONTEXT\]/)) ? 1 : 0
+        # The UPSTREAM-FIXTURE downgrade set (COORD ruling 1, 2026-09-22), read from the DEFINITION for
+        # the same reason: the four STRUCTURAL arms, which the Go gate skips on an upstream fixture.
+        # Applied only when the shell classified THIS file as one -- see idc_is_upstream_fixture.
+        FIXARM[F[1]] = ((n >= 4) && (F[4] ~ /\[FIXTURE-CONTEXT\]/)) ? 1 : 0
         # The PUBLIC-HANDLE ADMIT set, read from the DEFINITION rather than listed here, for the
         # reason the CONVERTED-CONTEXT set is: an arm is declared once, where every other property of
         # it is declared, and a widening that must reach TWO arms travels as a per-arm marker rather
@@ -1145,7 +1157,8 @@ BEGIN {
 
 END {
     printf "  DECLARED SET (arms=%d, strict=%d, converted=%d -- every arm prints, so a zero is still looking):\n", nA, STRICT, CONVERTED > REPORT
-    nDown = 0
+    nDown = 0; nFix = 0
+    for (a = 1; a <= nA; a++) if (MD[ARM[a]] == "refuse" && FIXARM[ARM[a]] == 1) nFix++
     for (a = 1; a <= nA; a++) {
         arm = ARM[a]
         if (CONSULTED[arm] == 1)
@@ -1153,7 +1166,8 @@ END {
         else if (MD[arm] == "refuse" && !armRefuses(arm)) {
             # A DOWNGRADED arm prints its own mode word, so the declared set never reads as though a
             # refusing arm found nothing when what happened is that it was not allowed to refuse.
-            nDown++
+            # nDown counts the [CONVERTED-CONTEXT] set ONLY, so its meaning does not move on a fixture.
+            if (DOWNARM[arm] == 1) nDown++
             printf "    %-7s %-20s occ=%-6d down=%d\n", "down", arm, OCC[arm], DOWN[arm] > REPORT
         }
         else if (MD[arm] == "refuse")
@@ -1163,6 +1177,7 @@ END {
     }
     if (CONVERTED == 1) {
         print "  DOWNGRADED IN CONVERTED MODE (Go's own test literals -- reported, never refusing):" > REPORT
+        if (FIXTURE == 1) print "    (this file is an UPSTREAM FIXTURE by the Go gate's own predicate, so its structural arms are here too)" > REPORT
         nAny = 0
         for (a = 1; a <= nA; a++) {
             arm = ARM[a]
@@ -1197,6 +1212,7 @@ END {
     # a zero: a mode whose whole content is a marker the definition no longer carries would otherwise
     # read exactly like entry and call itself converted.
     print "downarms=" nDown > STATUS
+    print "fixarms=" nFix > STATUS
     for (a = 1; a <= nA; a++) if (DOWN[ARM[a]] > 0) print "down=" ARM[a] "|" DOWN[ARM[a]] > STATUS
     # Machine-readable, so a consumer (and the self-test) asserts on ARMS rather than on printed
     # prose. Arm names and counts only -- never a value.
@@ -1225,7 +1241,7 @@ idc_run_awk() {
     # $1 input, $2 keys, $3 report, $4 status, $5 strict
     awk -v PATFILE="$IDC_PATTERNS" -v TOKFILE="$IDC_TOKFILE" -v ADMITFILE="$IDC_ADMITFILE" -v REPORT="$3" \
         -v KEYS="$2" -v STATUS="$4" -v STRICT="$5" -v UNMASK="$IDC_UNMASK" \
-        -v SHORT="${IDC_SHORT:-0}" -v CONVERTED="$IDC_CONVERTED" \
+        -v SHORT="${IDC_SHORT:-0}" -v CONVERTED="$IDC_CONVERTED" -v FIXTURE="${IDC_FIXTURE:-0}" \
         -f "$IDC_AWK" -- "$1"
 }
 
@@ -1250,12 +1266,13 @@ idc_census() {
         exit 2
     fi
 
-    IDC_ARMS=""; IDC_HITS=""; IDC_DOWNARMS=""
+    IDC_ARMS=""; IDC_HITS=""; IDC_DOWNARMS=""; IDC_FIXARMS=""
     while IFS='=' read -r k v; do
         case "$k" in
             arms) IDC_ARMS="$v" ;;
             hits) IDC_HITS="$v" ;;
             downarms) IDC_DOWNARMS="$v" ;;
+            fixarms) IDC_FIXARMS="$v" ;;
         esac
     done < "$status"
 
@@ -1265,6 +1282,11 @@ idc_census() {
     if [ "$IDC_CONVERTED" = "1" ]; then
         case "${IDC_DOWNARMS:-0}" in
             ''|0) echo "REFUSED(2): converted mode read 0 arms marked [CONVERTED-CONTEXT] in $(basename -- "$IDC_PATTERNS") -- the mode and its definition disagree, so it does not pass"; exit 2 ;;
+        esac
+        # The same refusal for the fixture set: a file classified as an upstream fixture against a
+        # definition that marks no structural arm would read exactly like the pre-ruling mode.
+        case "${IDC_FIXARMS:-0}" in
+            ''|0) echo "REFUSED(2): converted mode read 0 arms marked [FIXTURE-CONTEXT] in $(basename -- "$IDC_PATTERNS") -- the mode and its definition disagree, so it does not pass"; exit 2 ;;
         esac
     fi
 
@@ -1282,8 +1304,15 @@ idc_census() {
     echo "IDENTIFIER CENSUS -- $label"
     if [ "$IDC_CONVERTED" = "1" ]; then
         echo "  MODE converted -- a tracked CONVERTED GO TEST SOURCE. The $IDC_DOWNARMS literal-shaped arm(s)"
-        echo "    marked [CONVERTED-CONTEXT] are REPORTED with their counts and cannot refuse; every other arm"
-        echo "    refuses exactly as in entry. THE GATE OF RECORD for the tracked tree is repoguard's"
+        echo "    marked [CONVERTED-CONTEXT] are REPORTED with their counts and cannot refuse."
+        if [ "${IDC_FIXTURE:-0}" = "1" ]; then
+            echo "    UPSTREAM FIXTURE by the Go gate's own predicate (fleetIsUpstreamFixture): the $IDC_FIXARMS structural"
+            echo "    arm(s) marked [FIXTURE-CONTEXT] are reported too and cannot refuse, as the gate skips its"
+            echo "    structural pass here. The denied-token and run-time arms refuse exactly as in entry."
+        else
+            echo "    NOT an upstream fixture by the Go gate's predicate: every other arm refuses exactly as in entry."
+        fi
+        echo "    THE GATE OF RECORD for the tracked tree is repoguard's"
         echo "    TestNoFleetIdentifiersInTrackedFiles (go test ./internal/repoguard/ under src/go2cs)."
     fi
     echo "  patterns: $(basename -- "$IDC_PATTERNS")   $IDC_HASHSUMMARY"
@@ -1345,6 +1374,32 @@ idc_converted_eligible() {
     return 3
 }
 
+# idc_is_upstream_fixture PATH -- fleetIsUpstreamFixture, MIRRORED EXACTLY (COORD ruling 1,
+# 2026-09-22). The Go gate of record for the tracked tree (src/go2cs/internal/repoguard/
+# fleetIdentifierCensus_test.go) lower-cases the path and treats it as converted-upstream or captured
+# test DATA when it contains "/testdata/" or ends in "_test.cs", "_test.cs.auto" or ".test"; on those
+# it skips its STRUCTURAL pass (profile/home and network-path) and still runs the denied-token pass.
+# Its own reason, verbatim: "Skipping both would be the blind spot; skipping neither is 2,500 false
+# positives." This census refused there while the gate passed, which made the pre-push census
+# STRICTER than the gate on exactly the files batches re-emit; the mirror is what closes that.
+#
+# ⚠ MIRROR, NEVER WIDEN. All four tests are carried even though converted mode's own door admits
+# only two of them (an .auto or .test name never reaches here): a copy reduced to "the cases that can
+# occur" is a copy that silently diverges the day the door widens. And every change here must move
+# with the Go function, or the two gates disagree again -- which is the defect this replaced.
+#
+# One stated gap: tr folds ASCII only, where strings.ToLower is Unicode-aware. They differ only on a
+# path with a non-ASCII capital, and the tracked tree carries none.
+idc_is_upstream_fixture() {
+    local p
+    p="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    case "$p" in
+        */testdata/*)                      return 0 ;;
+        *_test.cs|*_test.cs.auto|*.test)   return 0 ;;
+    esac
+    return 1
+}
+
 idc_mode_converted() {
     [ "$#" -ge 1 ] || idc_misuse "converted takes one or more converted-test-source files"
     local f="" bad=0 total=0 rc=0
@@ -1362,6 +1417,8 @@ idc_mode_converted() {
     IDC_CONVERTED=1
     idc_build_tokens
     for f in "$@"; do
+        # PER FILE, because the Go gate decides per path: one run can mix fixtures and pages.
+        if idc_is_upstream_fixture "$f"; then IDC_FIXTURE=1; else IDC_FIXTURE=0; fi
         idc_census "$f" "converted $(basename -- "$f")" "$IDC_TMP/keys.converted" 1
         total=$((total + ${IDC_HITS:-0}))
     done
@@ -1828,14 +1885,77 @@ idc_mode_selftest() {
     idc_st_rc      "  and ENTRY on the SAME FILE still REFUSES"        1 "$rc"
     idc_st_assert_present "  with both literal arms counted as hits"       "hits=2" "$out"
 
-    # THE IDENTIFIER ARMS DO NOT MOVE. A profile path in a converted source is not Go's test data.
+    # ⚠ THIS CASE CHANGED ITS VERDICT BY RULING (COORD ruling 1, 2026-09-22), and the old form is kept
+    # in the history rather than lost: it asserted "a profile path in a converted source is not Go's
+    # test data" and REFUSED. The Go gate of record never agreed -- fleetIsUpstreamFixture skips the
+    # structural pass on every *_test.cs -- so the census was refusing what the gate passes. The
+    # protection that old sentence wanted is real, and it now lives where BOTH gates put it: a
+    # converting box's own profile path is caught by the RUN-TIME account arms, and a fleet name by
+    # the DENIED-TOKEN arms, neither of which any marker can downgrade. The sibling below holds that.
     cp -- "$cdir/x_test.cs" "$cdir/y_test.cs"
     printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "sylvandeep" "$bs" >> "$cdir/y_test.cs"
     out="$d/c3b.out"; "$IDC_SELF" converted "$cdir/y_test.cs" > "$out" 2>&1; rc=$?
-    idc_st_rc      "converted mode REFUSES a profile path all the same"  1 "$rc"
-    idc_st_assert_present "  and names the arm that refused"                "profile_root" "$out"
+    idc_st_rc      "an UPSTREAM FIXTURE's profile path REPORTS, never refuses" 0 "$rc"
+    # THE ADMIT DIRECTION, named: the arm MATCHED and the fixture downgrade is what disposed of it.
+    idc_st_assert_present "  and the profile arm MATCHED and was downgraded" "profile_root occ=1 would-have-refused=1" "$out"
+    idc_st_assert_present "  and it says why"                                "UPSTREAM FIXTURE" "$out"
     idc_st_assert_absent  "  without spelling the plant segment"            "sylvandeep" "$out"
     idc_st_assert_present "  while the literal arms are still downgraded"   "ipv4 occ=1 would-have-refused=1" "$out"
+    # THE SIBLING THAT HOLDS THE PROTECTION: the same file, the gate for messages and docs.
+    out="$d/c3b2.out"; "$IDC_SELF" entry "$cdir/y_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "  and ENTRY on the SAME FILE still REFUSES"        1 "$rc"
+    idc_st_assert_present "  naming the profile arm"                        "profile_root" "$out"
+
+    # THE OTHER THREE STRUCTURAL ARMS, one file each so a case cannot pass on another arm's match.
+    printf 'fixture home: /home/%s/x\n' "sylvandeep" > "$cdir/h_test.cs"
+    out="$d/c3f1.out"; "$IDC_SELF" converted "$cdir/h_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "an UPSTREAM FIXTURE's home path REPORTS"             0 "$rc"
+    idc_st_assert_present "  and the home arm MATCHED and was downgraded"  "home_unix occ=1 would-have-refused=1" "$out"
+    printf 'fixture share: %s%s%s%sshare%sx\n' "$bs" "$bs" "sylvandeep" "$bs" "$bs" > "$cdir/u_test.cs"
+    out="$d/c3f2.out"; "$IDC_SELF" converted "$cdir/u_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "an UPSTREAM FIXTURE's backslash share REPORTS"       0 "$rc"
+    idc_st_assert_present "  and the share arm MATCHED and was downgraded" "unc_backslash occ=1 would-have-refused=1" "$out"
+    printf 'fixture share: %s%s%s%sshare%sx\n' "$sl" "$sl" "sylvandeep" "$sl" "$sl" > "$cdir/s_test.cs"
+    out="$d/c3f3.out"; "$IDC_SELF" converted "$cdir/s_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "an UPSTREAM FIXTURE's slash share REPORTS"           0 "$rc"
+    idc_st_assert_present "  and the slash arm MATCHED and was downgraded" "unc_slash occ=1 would-have-refused=1" "$out"
+
+    # ⚠ THE PROTECTION, both shapes the ruling names: a DENIED token INSIDE a UNC and INSIDE a profile
+    # path, in an upstream fixture, still refuses -- by its token arm, which no marker reaches.
+    printf 'fixture share: %s%s%s%sshare%sx\n' "$bs" "$bs" "zorbulax" "$bs" "$bs" > "$cdir/t1_test.cs"
+    out="$d/c3g1.out"
+    IDC_TEST_TOKENS="zorbulax quennelbee zorbulaxqueen" "$IDC_SELF" converted "$cdir/t1_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a DENIED token inside a UNC in a fixture REFUSES"    1 "$rc"
+    idc_st_assert_present "  and the TOKEN arm is what refused"             "TOKENFILE" "$out"
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "zorbulax" "$bs" > "$cdir/t2_test.cs"
+    out="$d/c3g2.out"
+    IDC_TEST_TOKENS="zorbulax quennelbee zorbulaxqueen" "$IDC_SELF" converted "$cdir/t2_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a DENIED token inside a profile path in a fixture REFUSES" 1 "$rc"
+    idc_st_assert_present "  and the TOKEN arm is what refused"             "TOKENFILE" "$out"
+
+    # MIRROR, NEVER EXCEED: a converted-door path the Go gate does NOT call a fixture keeps refusing
+    # on a structural hit, exactly as the gate would. package_test_info.cs ends in _info.cs, not
+    # _test.cs; a validation page is a page.
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "sylvandeep" "$bs" > "$cdir/package_test_info.cs"
+    out="$d/c3h1.out"; "$IDC_SELF" converted "$cdir/package_test_info.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a NON-fixture door path (test info) still REFUSES"   1 "$rc"
+    idc_st_assert_present "  and says it is not a fixture"                  "NOT an upstream fixture" "$out"
+    mkdir -p -- "$d/docs/validation/current"
+    printf 'page cites %s%s%s%sshare%sx\n' "$bs" "$bs" "sylvandeep" "$bs" "$bs" > "$d/docs/validation/current/x.md"
+    out="$d/c3h2.out"; "$IDC_SELF" converted "$d/docs/validation/current/x.md" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a NON-fixture door path (a page) still REFUSES"      1 "$rc"
+    idc_st_assert_present "  on the share arm"                               "unc_backslash" "$out"
+    # ...while a name that ENDS in _test.cs is a fixture by the Go predicate, whatever it is called.
+    printf 'built at C:%sUsers%s%s%sx\n' "$bs" "$bs" "sylvandeep" "$bs" > "$cdir/package_info_internal_test.cs"
+    out="$d/c3h3.out"; "$IDC_SELF" converted "$cdir/package_info_internal_test.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "package_info_internal_test.cs IS a fixture (suffix)" 0 "$rc"
+
+    # PER FILE, NEVER PER RUN: a fixture and a page in ONE call, each read by its own path. The page's
+    # hit refuses and the fixture's does not -- one hit total, and a flag hoisted out of the loop would
+    # read both the same way.
+    out="$d/c3i.out"; "$IDC_SELF" converted "$cdir/y_test.cs" "$cdir/package_test_info.cs" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a MIXED run refuses on the page alone"               1 "$rc"
+    idc_st_assert_present "  with exactly ONE hit across both files"        "REFUSED(1): 1 hit(s)" "$out"
 
     # AND NEITHER DOES A DENIED TOKEN -- the class the tracked-tree guard keeps running over exactly
     # these files, and the one an emission can actually carry into one.

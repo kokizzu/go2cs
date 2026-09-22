@@ -93,8 +93,8 @@
 # The admit set is profile_placeholder and NOTHING ELSE. The fleet nicknames are deliberately NOT
 # admitted here -- the Go guard keeps its nickname set out of the profile arm for the same reason: a
 # nickname names a HOST, so an account segment spelled with one is still an account segment.
-profile_root	users[\\/]+[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	GO GUARD. Any profile root, either separator, either platform -- it is deliberately NOT anchored to a drive letter, so the Windows, MSYS and Darwin spellings are one arm. Admit set: profile_placeholder, on the segment.
-home_unix	/home/[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	GO GUARD. The Linux home prefix. A lane that gains a Linux host inherits this exposure and re-controls the arm THERE; a Windows reading does not carry. Admit set: profile_placeholder.
+profile_root	users[\\/]+[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	[FIXTURE-CONTEXT] (COORD ruling 1, 2026-09-22: reported, never refusing, on an upstream fixture -- fleetProfileRe is in the Go gate's structural pass, which it skips there.) GO GUARD. Any profile root, either separator, either platform -- it is deliberately NOT anchored to a drive letter, so the Windows, MSYS and Darwin spellings are one arm. Admit set: profile_placeholder, on the segment.
+home_unix	/home/[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	[FIXTURE-CONTEXT] (COORD ruling 1, 2026-09-22: reported, never refusing, on an upstream fixture -- the /home/ half of fleetProfileRe, skipped there by the Go gate.) GO GUARD. The Linux home prefix. A lane that gains a Linux host inherits this exposure and re-controls the arm THERE; a Windows reading does not carry. Admit set: profile_placeholder.
 # ------------------------------------------------------------------------------------------------
 # UNC AND SHARE PATHS (class 2)
 # The doubled separator must BEGIN a path token. The leading group is a hand-rolled lookbehind and
@@ -103,8 +103,8 @@ home_unix	/home/[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	GO GUARD. The Linux home pr
 # delimiter. Without it every ESCAPED separator in prose, in a C#/Go literal, or in quoted `-json`
 # output reads as a «unc» prefix. ERE has no lookaround and grep -P does not run on this fleet, so a
 # negative lookahead here would match NOTHING and fail OPEN silently.
-unc_backslash	(^|[[:space:]"'`(\[=,])[\\][\\][a-z][a-z0-9._-]+[\\]	refuse	GO GUARD, fleetNetworkRe. The class is bracketed rather than written as a run of escapes, because a backslash run is exactly what collapses in transit. Admit set: nickname_host, on the host.
-unc_slash	(^|[[:space:]"'`(\[=,])//[a-z][a-z0-9._-]+/[a-z0-9._$-]+	refuse	NO GO-GUARD COUNTERPART -- an addition of this definition, for the POSIX spelling of a share. The leading class is what keeps every scheme-relative URL out, since a scheme ends in ':'. Admit set: nickname_host, on the host.
+unc_backslash	(^|[[:space:]"'`(\[=,])[\\][\\][a-z][a-z0-9._-]+[\\]	refuse	[FIXTURE-CONTEXT] (COORD ruling 1, 2026-09-22: reported, never refusing, on an upstream fixture -- fleetNetworkRe, skipped there by the Go gate.) GO GUARD, fleetNetworkRe. The class is bracketed rather than written as a run of escapes, because a backslash run is exactly what collapses in transit. Admit set: nickname_host, on the host.
+unc_slash	(^|[[:space:]"'`(\[=,])//[a-z][a-z0-9._-]+/[a-z0-9._$-]+	refuse	[FIXTURE-CONTEXT] (COORD ruling 1, 2026-09-22: reported, never refusing, on an upstream fixture. This arm has NO Go counterpart, so the gate refuses this shape nowhere; the mark stops the census being stricter than the gate on fixtures and widens nothing the gate enforces.) NO GO-GUARD COUNTERPART -- an addition of this definition, for the POSIX spelling of a share. The leading class is what keeps every scheme-relative URL out, since a scheme ends in ':'. Admit set: nickname_host, on the host.
 # ------------------------------------------------------------------------------------------------
 # HOSTNAMES (class 3) -- AND THE HONEST LIMIT OF THIS CLASS
 # A bare <word>.<tld>-shaped «host» that is NOT a Go import path, a module path or a public URL
