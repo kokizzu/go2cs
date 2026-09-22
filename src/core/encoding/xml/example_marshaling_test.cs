@@ -12,30 +12,6 @@ using static go.encoding.xml_internal_test_package;
 
 partial class xml_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸxml() {
-    builtin.initPackage(typeof(go.encoding.xml_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 [GoType("num:nint")] partial struct Animal;
 
 public static Animal Unknown => /* iota */ 0;
@@ -101,7 +77,7 @@ internal static readonly @string animalsAnimalGopherˢ = """
 	</animals>
 """u8;
 
-[GoType("dyn")] partial struct Example_customMarshalXML_zoo {
+[GoType("dyn")] internal partial struct Example_customMarshalXML_zoo {
     [GoTag(@"xml:""animal""")]
     public slice<Animal> Animals;
 }

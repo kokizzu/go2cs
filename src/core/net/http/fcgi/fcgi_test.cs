@@ -94,7 +94,7 @@ outer:
                     goto continue_outer;
                 }
             }
-            content = append(content, rec.content().ꓸꓸꓸ);
+            content = appendꓸꓸꓸ(content, rec.content());
         }
         if (rec.h.Type != test.recType) {
             Ꮡt.Errorf("%s: got type %d expected %d"u8, test.desc, rec.h.Type, test.recType);
@@ -136,7 +136,7 @@ break_outer:;
 }
 
 [GoRecv] internal static (nint, error) Write(this ref writeOnlyConn c, slice<byte> p) {
-    c.buf = append(c.buf, p.ꓸꓸꓸ);
+    c.buf = appendꓸꓸꓸ(c.buf, p);
     return (len(p), default!);
 }
 
@@ -438,6 +438,10 @@ public static void TestResponseWriterSniffsContentType(ж<testing.T> Ꮡt) {
     public io_package.ReadCloser ReadCloser;
     internal channel<bool> closed;
 }
+
+// Go method set entry for the promoted 'ReadCloser.Read()' - provided ONLY by the embedded
+// interface field in *signalingNopWriteCloser's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this signalingNopWriteCloser recvᴛ, slice<byte> p) => recvᴛ.ReadCloser.Read(p);
 
 [GoRecv] internal static (nint, error) Write(this ref signalingNopWriteCloser _, slice<byte> buf) {
     return (len(buf), default!);

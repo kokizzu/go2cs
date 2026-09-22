@@ -8,18 +8,14 @@
 // </ImportedTypeAliases>
 
 using go;
-using static go.text.template_package;
-using static go.text.template_internal_test_package;
+using static go.debug.buildinfo_package;
+using static go.debug.buildinfo_internal_test_package;
 
 // <ExportedTypeAliases>
-[assembly: GoDynamicTypeLift("7374727563747b6120696e743b206220737472696e677d", "Δtype")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
-[assembly: GoImplement<CustomError, error>(Pointer = true)]
-[assembly: GoImplement<ErrorWriter, io_package.Writer>]
-[assembly: GoImplement<S, I>]
-[assembly: GoImplement<T, I>(Pointer = true)]
+[assembly: GoImplement<byteExe, global::go.debug.buildinfo_package.exe>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -33,14 +29,13 @@ using static go.text.template_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/template/exec_test.go", "exec_test.cs", "AGLAAYIADRaigpQACQ6igpQANV6yxgATIrKmoqaigoKCqJKmgqaCpoKmgoKCpoKCgpTMkoKUqJLWgoKUpoIAuwO4B4KCgoLcgoKCggAHEKKCgoKU1oKmgqaCpqKokoKUgpKClJTYktiSqJKmooKClKaCpqKClIKClKaCpoKmsoLIAA0agoKCgpSUgoKUgoKUgrSCtpLGgoLKggAXFoKCgoKCgoKCgpKUkpSUlJSCgpSCgoKUggAIDJKCgoKClIKCpIKUABIakoKClIKCgpSCgoIACQyA1pKGuIKEgoL4ggAJGIKCggAhOIIAI0iCgpSClIKClIKCpoKCgpSCggAICJSUgoKCggALCpSCgoKClIKCgqaCgpSCgoKUgoKCpoKC6IKCgpSCgoIAmgGIAoKCAAoigoKCgpSCgoKClIKClIIADAqCpoKClJSCgpSCgoKmgoKCgpSCgoKmgoKCgpSCgoKmgoKCpoKCgvyigoKUgoIACRSCAAgGtIKClIKClIKmgoKUgoKUgoKUgoK4gqaC7oK6gsqCyoK4ooKClN4ACQaCvIKClJKCloKAgqSAgqaCgIKkgIIADgiiAChaspKSgoKClIIACQyCgpSSgoKClIKCuNy4gpKCgoKUggAMCu4AH0iCkoIABxSCgoKUlIKClIIACwyylKYAH0qCgoKClIKCpIKUAAsKogAwboKCgoKUgoKkgpQACAyUkoKCgpSCgpSCqIKCgoKYkoKCgoKUggAICpKCkoKCgqQACAqShIKCloKCloKEgoLCgoKCgpSCgvwADgqijoKUlIKUgg==", "737-743:1;747-753:1;789-794:1;850-850:1;996-998:1;1498-1500:1;1591-1601:1;1691-1693:1;1720-1722:1;1871-1871:1;1923-1935:1")]
-[assembly: go.GoPositionMap("text/template/multi_test.go", "multi_test.cs", "ADBiooKClIK0graSlLSClJKClIKCgoKUgoIAJEKUgoKUgoKUAAgGgoKClIKCgpTmgoKClIKClIKCgpQACAaChIKCgqiCgoKClJaCgoKClAAMFIKCgpTWgoKClAAMFJSCgpSCgpSkgoKUgoKmgoKUgqiSgoKUgqaCgoKUguiUgoKUgoKmgoKUgoKWkoKClIL6koKCgoKUggAIBoKCgoCCpICCpICC+pKCAAgIkoKClIKClIKCAAoItIKEgpSClIKWgoKClIKmgvimgoCCpICCpICCAAoIggAHGoKEmIKCgqaCgIKCpIIACRDa+IKCgoKUgoKCpoKCgsySgoKUgg==")]
+[assembly: go.GoPositionMap("debug/buildinfo/search_test.go", "search_test.cs", "ABEkgoKUpoIACQaCAAMSgoLugoLugoIACRSCgu6CAAgSgoLugoIACBKCggAJFIKCyrKSgoKCgoKUgqaC", "38-42:1;47-51:2;56-60:3;65-72:4;77-80:5;85-91:6;96-100:7;105-111:8;116-123:9;128-144:10")]
 // </GoSourcePositionMaps>
 
-namespace go.text;
+namespace go.debug;
 
-[GoPackage("template")]
-public static partial class template_internal_test_package
+[GoPackage("buildinfo")]
+public static partial class buildinfo_internal_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -59,21 +54,21 @@ public static partial class template_internal_test_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
-    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸbuildinfo() => builtin.initPackage(typeof(go.debug.buildinfo_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸpe() => builtin.initPackage(typeof(go.debug.pe_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
     [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸobscuretestdata() => builtin.initPackage(typeof(@internal.obscuretestdata_package));
     [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
     [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
-    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
-    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
     [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
     [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
-    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
-    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
     [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
-    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
     [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
-    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() => builtin.initPackage(typeof(go.text.template_package));
-    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() => builtin.initPackage(typeof(go.text.template.parse_package));
     // </ImportInitializers>
 }

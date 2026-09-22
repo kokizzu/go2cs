@@ -32,7 +32,7 @@ internal static class Go2CsTestHost
             "testdata",
         });
         registry.Add("TestBadCompile", regexp_internal_test_package.TestBadCompile, "all_test.go", 75);
-        registry.Add("TestCompileOnePass", regexp_internal_test_package.TestCompileOnePass, "onepass_test.go", 178);
+        registry.Add("TestCompileOnePass", regexp_internal_test_package.TestCompileOnePass, "onepass_test.go", 180);
         registry.Add("TestCopyMatch", regexp_internal_test_package.TestCopyMatch, "all_test.go", 132);
         registry.Add("TestDeepEqual", regexp_internal_test_package.TestDeepEqual, "all_test.go", 901);
         registry.Add("TestFind", regexp_internal_test_package.TestFind, "find_test.go", 156);
@@ -70,7 +70,7 @@ internal static class Go2CsTestHost
         registry.Add("TestReplaceAll", regexp_internal_test_package.TestReplaceAll, "all_test.go", 265);
         registry.Add("TestReplaceAllFunc", regexp_internal_test_package.TestReplaceAllFunc, "all_test.go", 331);
         registry.Add("TestReplaceAllLiteral", regexp_internal_test_package.TestReplaceAllLiteral, "all_test.go", 286);
-        registry.Add("TestRunOnePass", regexp_internal_test_package.TestRunOnePass, "onepass_test.go", 210);
+        registry.Add("TestRunOnePass", regexp_internal_test_package.TestRunOnePass, "onepass_test.go", 212);
         registry.Add("TestSplit", regexp_internal_test_package.TestSplit, "all_test.go", 514);
         registry.Add("TestSubexp", regexp_internal_test_package.TestSubexp, "all_test.go", 454);
         registry.Add("TestSwitchBacktrack", regexp_internal_test_package.TestSwitchBacktrack, "all_test.go", 579);

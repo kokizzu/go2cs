@@ -8,6 +8,7 @@ using errors = errors_package;
 using flag = flag_package;
 using fmt = fmt_package;
 using io = io_package;
+using iter = iter_package;
 using reflect = reflect_package;
 using strings = strings_package;
 using sync = sync_package;
@@ -18,60 +19,6 @@ using ꓸꓸꓸnint = Span<nint>;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class template_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 internal static ж<bool> debug = flag.Bool("debug"u8, false, "show the errors produced by the tests"u8);
 
@@ -521,6 +468,9 @@ internal static void initᴛexecTests() { execTests = new execTest[]{
     new("Interface Call"u8, @"{{stringer .S}}"u8, "foozle"u8, new map<@string, any>{["S"u8] = bytes.NewBufferString("foozle"u8).OrTypedNil()}, true),
     new(".ErrFunc"u8, "{{call .ErrFunc}}"u8, "bla"u8, tVal.OrTypedNil(), true),
     new("call nil"u8, "{{call nil}}"u8, ""u8, tVal.OrTypedNil(), false),
+    new("empty call"u8, "{{call}}"u8, ""u8, tVal.OrTypedNil(), false),
+    new("empty call after pipe valid"u8, "{{.ErrFunc | call}}"u8, "bla"u8, tVal.OrTypedNil(), true),
+    new("empty call after pipe invalid"u8, "{{1 | call}}"u8, ""u8, tVal.OrTypedNil(), false),
     new(".BinaryFuncTooFew"u8, "{{call .BinaryFunc `1`}}"u8, ""u8, tVal.OrTypedNil(), false),
     new(".BinaryFuncTooMany"u8, "{{call .BinaryFunc `1` `2` `3`}}"u8, ""u8, tVal.OrTypedNil(), false),
     new(".BinaryFuncBad0"u8, "{{call .BinaryFunc 1 3}}"u8, ""u8, tVal.OrTypedNil(), false),
@@ -691,6 +641,30 @@ internal static void initᴛexecTests() { execTests = new execTest[]{
     new("declare in range"u8, "{{range $x := .PSI}}<{{$foo:=$x}}{{$x}}>{{end}}"u8, "<21><22><23>"u8, tVal.OrTypedNil(), true),
     new("range count"u8, @"{{range $i, $x := count 5}}[{{$i}}]{{$x}}{{end}}"u8, "[0]a[1]b[2]c[3]d[4]e"u8, tVal.OrTypedNil(), true),
     new("range nil count"u8, @"{{range $i, $x := count 0}}{{else}}empty{{end}}"u8, "empty"u8, tVal.OrTypedNil(), true),
+    new("range iter.Seq[int]"u8, @"{{range $i := .}}{{$i}}{{end}}"u8, "01"u8, (fVal1(2)).OrTypedNilFunc(), true),
+    new("i = range iter.Seq[int]"u8, @"{{$i := 0}}{{range $i = .}}{{$i}}{{end}}"u8, "01"u8, (fVal1(2)).OrTypedNilFunc(), true),
+    new("range iter.Seq[int] over two var"u8, @"{{range $i, $c := .}}{{$c}}{{end}}"u8, ""u8, (fVal1(2)).OrTypedNilFunc(), false),
+    new("i, c := range iter.Seq2[int,int]"u8, @"{{range $i, $c := .}}{{$i}}{{$c}}{{end}}"u8, "0112"u8, (fVal2(2)).OrTypedNilFunc(), true),
+    new("i, c = range iter.Seq2[int,int]"u8, @"{{$i := 0}}{{$c := 0}}{{range $i, $c = .}}{{$i}}{{$c}}{{end}}"u8, "0112"u8, (fVal2(2)).OrTypedNilFunc(), true),
+    new("i = range iter.Seq2[int,int]"u8, @"{{$i := 0}}{{range $i = .}}{{$i}}{{end}}"u8, "01"u8, (fVal2(2)).OrTypedNilFunc(), true),
+    new("i := range iter.Seq2[int,int]"u8, @"{{range $i := .}}{{$i}}{{end}}"u8, "01"u8, (fVal2(2)).OrTypedNilFunc(), true),
+    new("i,c,x range iter.Seq2[int,int]"u8, @"{{$i := 0}}{{$c := 0}}{{$x := 0}}{{range $i, $c = .}}{{$i}}{{$c}}{{end}}"u8, "0112"u8, (fVal2(2)).OrTypedNilFunc(), true),
+    new("i,x range iter.Seq[int]"u8, @"{{$i := 0}}{{$x := 0}}{{range $i = .}}{{$i}}{{end}}"u8, "01"u8, (fVal1(2)).OrTypedNilFunc(), true),
+    new("range iter.Seq[int] else"u8, @"{{range $i := .}}{{$i}}{{else}}empty{{end}}"u8, "empty"u8, (fVal1(0)).OrTypedNilFunc(), true),
+    new("range iter.Seq2[int,int] else"u8, @"{{range $i := .}}{{$i}}{{else}}empty{{end}}"u8, "empty"u8, (fVal2(0)).OrTypedNilFunc(), true),
+    new("range int8"u8, rangeTestInt, rangeTestData<int8>(), (int8)5, true),
+    new("range int16"u8, rangeTestInt, rangeTestData<int16>(), (int16)5, true),
+    new("range int32"u8, rangeTestInt, rangeTestData<int32>(), (int32)5, true),
+    new("range int64"u8, rangeTestInt, rangeTestData<int64>(), (int64)5, true),
+    new("range int"u8, rangeTestInt, rangeTestData<nint>(), (nint)5, true),
+    new("range uint8"u8, rangeTestInt, rangeTestData<uint8>(), (uint8)5, true),
+    new("range uint16"u8, rangeTestInt, rangeTestData<uint16>(), (uint16)5, true),
+    new("range uint32"u8, rangeTestInt, rangeTestData<uint32>(), (uint32)5, true),
+    new("range uint64"u8, rangeTestInt, rangeTestData<uint64>(), (uint64)5, true),
+    new("range uint"u8, rangeTestInt, rangeTestData<nuint>(), (nuint)5, true),
+    new("range uintptr"u8, rangeTestInt, rangeTestData<uintptr>(), (uintptr)5, true),
+    new("range uintptr(0)"u8, @"{{range $v := .}}{{print $v}}{{else}}empty{{end}}"u8, "empty"u8, (uintptr)0, true),
+    new("range 5"u8, @"{{range $v := 5}}{{printf ""%T%d"" $v $v}}{{end}}"u8, rangeTestData<nint>(), default!, true),
     new("or as if true"u8, @"{{or .SI ""slice is empty""}}"u8, "[3 4 5]"u8, tVal.OrTypedNil(), true),
     new("or as if false"u8, @"{{or .SIEmpty ""slice is empty""}}"u8, "slice is empty"u8, tVal.OrTypedNil(), true),
     new("error method, error"u8, "{{.MyError true}}"u8, ""u8, tVal.OrTypedNil(), false),
@@ -764,6 +738,39 @@ internal static void initᴛexecTests() { execTests = new execTest[]{
     new("issue56490"u8, "{{$i := 0}}{{$x := 0}}{{range $i = .AI}}{{end}}{{$i}}"u8, "5"u8, tVal.OrTypedNil(), true),
     new("issue60801"u8, "{{$k := 0}}{{$v := 0}}{{range $k, $v = .AI}}{{$k}}={{$v}} {{end}}"u8, "0=3 1=4 2=5 "u8, tVal.OrTypedNil(), true)
 }.slice(); }
+
+internal static iter.Seq<nint> fVal1(nint i) {
+    return (Func<nint, bool> yield) => {
+        foreach (var v in range(i)) {
+            if (!yield(v)) {
+                break;
+            }
+        }
+    };
+}
+
+internal static iter.Seq2<nint, nint> fVal2(nint i) {
+    return (Func<nint, nint, bool> yield) => {
+        foreach (var v in range(i)) {
+            if (!yield(v, v + 1)) {
+                break;
+            }
+        }
+    };
+}
+
+internal static readonly @string rangeTestInt = @"{{range $v := .}}{{printf ""%T%d"" $v $v}}{{end}}"u8;
+
+internal static @string rangeTestData<T>()
+    where T : /* int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr */ IAdditionOperators<T, T, T>, ISubtractionOperators<T, T, T>, IMultiplyOperators<T, T, T>, IDivisionOperators<T, T, T>, IIncrementOperators<T>, IDecrementOperators<T>, IUnaryNegationOperators<T, T>, IModulusOperators<T, T, T>, IBitwiseOperators<T, T, T>, IShiftOperators<T, int, T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>, new()
+{
+    var I = ConvertToType<T>(5);
+    ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
+    for (var i = ConvertToType<T>(0); i < I; i++) {
+        fmt.Fprintf(new template_test_package.strings_BuilderжWriter(Ꮡbuf), "%T%d"u8, i, i);
+    }
+    return buf.String();
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string zeroArgsˢ = "zeroArgs"u8;
@@ -1059,7 +1066,7 @@ internal static readonly @string errˢ = "{{ err }}"u8;
 public static void TestExecError_CustomError(ж<testing.T> Ꮡt) {
     var failingFunc = (@string, error) () => ("", new template_internal_test_package.CustomErrorжerror(Ꮡ(new CustomError(nil))));
     var (ᴛ1, ᴛ2) = New(topˢ).Funcs(new FuncMap(new map<@string, any>{
-        ["err"u8] = failingFunc
+        ["err"u8] = (failingFunc).OrTypedNilFunc()
     })).Parse(errˢ);
     var tmpl = Must(ᴛ1, ᴛ2);
     ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
@@ -2037,7 +2044,7 @@ public static void TestIssue31810(ж<testing.T> Ꮡt) {
     // Even a plain function fails - need to use call.
     var f = @string () => resultˢ;
     b.Reset();
-    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), f);
+    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), (f).OrTypedNilFunc());
     if (err == default!) {
         Ꮡt.Error(expectedErrorWithNoCallˢ);
     }
@@ -2045,7 +2052,7 @@ public static void TestIssue31810(ж<testing.T> Ꮡt) {
     @string textCall = "{{ (call .)  }}"u8;
     (tmpl, err) = New(""u8).Parse(textCall);
     b.Reset();
-    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), f);
+    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), (f).OrTypedNilFunc());
     if (err != default!) {
         Ꮡt.Error(err);
     }
