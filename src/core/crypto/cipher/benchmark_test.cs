@@ -8,7 +8,6 @@ using cipher = go.crypto.cipher_package;
 using strconv = strconv_package;
 using testing = testing_package;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
 
 partial class cipher_test_package {
 
@@ -86,28 +85,16 @@ internal static UntypedInt almost1K => /* 1024 - 5 */ 1019;
 
 internal static UntypedInt almost8K => /* 8*1024 - 5 */ 8187;
 
-public static void BenchmarkAESCFBEncrypt1K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewCFBEncrypter, new slice<byte>(almost1K));
-}
-
-public static void BenchmarkAESCFBDecrypt1K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewCFBDecrypter, new slice<byte>(almost1K));
-}
-
-public static void BenchmarkAESCFBDecrypt8K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewCFBDecrypter, new slice<byte>(almost8K));
-}
-
-public static void BenchmarkAESOFB1K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewOFB, new slice<byte>(almost1K));
-}
-
-public static void BenchmarkAESCTR1K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewCTR, new slice<byte>(almost1K));
-}
-
-public static void BenchmarkAESCTR8K(ж<testing.B> Ꮡb) {
-    benchmarkAESStream(Ꮡb, cipher.NewCTR, new slice<byte>(almost8K));
+public static void BenchmarkAESCTR(ж<testing.B> Ꮡb) {
+    Ꮡb.Run("50"u8, (ж<testing.B> bΔ1) => {
+        benchmarkAESStream(bΔ1, cipher.NewCTR, new slice<byte>(50));
+    });
+    Ꮡb.Run("1K"u8, (ж<testing.B> bΔ2) => {
+        benchmarkAESStream(bΔ2, cipher.NewCTR, new slice<byte>(almost1K));
+    });
+    Ꮡb.Run("8K"u8, (ж<testing.B> bΔ3) => {
+        benchmarkAESStream(bΔ3, cipher.NewCTR, new slice<byte>(almost8K));
+    });
 }
 
 public static void BenchmarkAESCBCEncrypt1K(ж<testing.B> Ꮡb) {

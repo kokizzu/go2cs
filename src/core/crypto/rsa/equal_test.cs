@@ -4,48 +4,21 @@
 namespace go.crypto;
 
 using crypto = crypto_package;
-using rand = go.crypto.rand_package;
 using rsa = go.crypto.rsa_package;
 using Δx509 = go.crypto.x509_package;
 using testing = testing_package;
 using go.crypto;
-using io = io_package;
 using static go.crypto.rsa_internal_test_package;
 
 partial class rsa_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrsa() {
-    builtin.initPackage(typeof(go.crypto.rsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509() {
-    builtin.initPackage(typeof(go.crypto.x509_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+internal static readonly @string rsa1024min0ˢ = "rsa1024min=0"u8;
 
 public static void TestEqual(ж<testing.T> Ꮡt) {
-    var (@private, _) = rsa.GenerateKey(rand.Reader, 512);
+    Ꮡt.Setenv(godebugˢ, rsa1024min0ˢ);
+    var @private = test512Key;
     var @public = @private.of(rsa.PrivateKey.ᏑPublicKey);
     if (!@public.Equal(@public.OrTypedNil())) {
         Ꮡt.Errorf("public key is not equal to itself: %v"u8, @public.OrTypedNil());
@@ -70,7 +43,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
     if (!@private.Equal(decoded)) {
         Ꮡt.Errorf("private key is not equal to itself after decoding: %v"u8, @private.OrTypedNil());
     }
-    var (other, _) = rsa.GenerateKey(rand.Reader, 512);
+    var other = test512KeyTwo;
     if (@public.Equal(other.Public())) {
         Ꮡt.Errorf("different public keys are Equal"u8);
     }

@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/rsa` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**559 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**568 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/rsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rsa).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -21,7 +23,6 @@ comparison — it is the evidence behind the `crypto/rsa` row in
 | `TestAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestDecryptOAEP` | pass | pass |
 | `TestDecryptPKCS1v15` | pass | pass |
-| `TestEMSAPSS` | pass | pass |
 | `TestEncryptDecryptOAEP` | pass | pass |
 | `TestEncryptOAEP` | pass | pass |
 | `TestEncryptPKCS1v15` | pass | pass |
@@ -559,9 +560,17 @@ comparison — it is the evidence behind the `crypto/rsa` row in
 | `TestEverything/98` | pass | pass |
 | `TestEverything/99` | pass | pass |
 | `TestGnuTLSKey` | pass | pass |
+| `TestHashOverride` | pass | pass |
 | `TestImpossibleKeyGeneration` | pass | pass |
 | `TestInvalidPSSSaltLength` | pass | pass |
 | `TestKeyGeneration` | pass | pass |
+| `TestKeyGeneration/1024` | pass | pass |
+| `TestKeyGeneration/128` | pass | pass |
+| `TestKeyGeneration/2048` | pass | pass |
+| `TestKeyGeneration/3072` | pass | pass |
+| `TestKeyGeneration/4096` | pass | pass |
+| `TestKeyGeneration/512` | pass | pass |
+| `TestKeyTooSmall` | pass | pass |
 | `TestNPrimeKeyGeneration` | pass | pass |
 | `TestNonZeroRandomBytes` | pass | pass |
 | `TestOverlongMessagePKCS1v15` | pass | pass |
@@ -570,9 +579,11 @@ comparison — it is the evidence behind the `crypto/rsa` row in
 | `TestPSSNilOpts` | pass | pass |
 | `TestPSSOpenSSL` | pass | pass |
 | `TestPSSSigning` | pass | pass |
+| `TestPSmallerThanQ` | pass | pass |
 | `TestShortPKCS1v15Signature` | pass | pass |
 | `TestShortSessionKey` | pass | pass |
 | `TestSignPKCS1v15` | pass | pass |
+| `TestTinyKeyGeneration` | pass | pass |
 | `TestUnpaddedSignature` | pass | pass |
 | `TestVerifyPKCS1v15` | pass | pass |
 
@@ -599,6 +610,8 @@ the capability it needs.
 - BenchmarkDecryptPKCS1v15 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkEncryptOAEP (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkEncryptPKCS1v15 (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkGenerateKey (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkParsePKCS8PrivateKey (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSignPKCS1v15 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSignPSS (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkVerifyPKCS1v15 (benchmark): benchmark execution is deferred to Phase 4D
@@ -606,5 +619,7 @@ the capability it needs.
 - ExampleDecryptOAEP (example): example execution is deferred to Phase 4D
 - ExampleDecryptPKCS1v15SessionKey (example): example execution is deferred to Phase 4D
 - ExampleEncryptOAEP (example): example execution is deferred to Phase 4D
+- ExampleGenerateKey (example): example execution is deferred to Phase 4D
+- ExampleGenerateKey_testKey (example): example execution is deferred to Phase 4D
 - ExampleSignPKCS1v15 (example): example execution is deferred to Phase 4D
 - ExampleVerifyPKCS1v15 (example): example execution is deferred to Phase 4D

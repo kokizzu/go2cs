@@ -6,7 +6,7 @@ namespace go.crypto;
 using ecdsa = go.crypto.ecdsa_package;
 using elliptic = go.crypto.elliptic_package;
 using rand = go.crypto.rand_package;
-using tls = go.crypto.tls_package;
+using Δtls = go.crypto.tls_package;
 using Δx509 = go.crypto.x509_package;
 using pkix = go.crypto.x509.pkix_package;
 using testenv = go.@internal.testenv_package;
@@ -23,72 +23,6 @@ using math;
 using static go.crypto.x509_internal_test_package;
 
 partial class x509_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdsa() {
-    builtin.initPackage(typeof(go.crypto.ecdsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() {
-    builtin.initPackage(typeof(go.crypto.elliptic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() {
-    builtin.initPackage(typeof(go.crypto.tls_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509() {
-    builtin.initPackage(typeof(go.crypto.x509_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸpkix() {
-    builtin.initPackage(typeof(go.crypto.x509.pkix_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tcpˢ = "tcp"u8;
@@ -117,7 +51,7 @@ public static void TestHybridPool(ж<testing.T> Ꮡt) {
         var deadline = time.Now().Add((time.Duration)(10000000000L));
         var nextSleep = 10 * time.Millisecond;
         for (nint i = 0; ᐧ ; i++) {
-            var (cΔ1, errΔ1) = tls.Dial(tcpˢ, googleCom443ˢ, nil);
+            var (cΔ1, errΔ1) = Δtls.Dial(tcpˢ, googleCom443ˢ, nil);
             if (errΔ1 == default!) {
                 cΔ1.Close();
                 break;
@@ -131,7 +65,7 @@ public static void TestHybridPool(ж<testing.T> Ꮡt) {
     }
     // Get the google.com chain, which should be valid on all platforms we
     // are testing
-    var (c, err) = tls.Dial(tcpˢ, googleCom443ˢ, Ꮡ(new tls.Config(InsecureSkipVerify: true)));
+    var (c, err) = Δtls.Dial(tcpˢ, googleCom443ˢ, Ꮡ(new Δtls.Config(InsecureSkipVerify: true)));
     if (err != default!) {
         Ꮡt.Fatalf("tls connection failed: %s"u8, err);
     }

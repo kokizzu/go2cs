@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -84,6 +112,7 @@
     <Compile Include="parser_test.cs" />
     <Compile Include="pem_decrypt_test.cs" />
     <Compile Include="pkcs8_test.cs" />
+    <Compile Include="pkits_test.cs" />
     <Compile Include="platform_test.cs" />
     <Compile Include="root_test.cs" />
     <Compile Include="sec1_test.cs" />
@@ -92,44 +121,476 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="boring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="boring_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cert_pool.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cert_pool_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="hybrid_pool_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="name_constraints_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="notboring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="oid.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="oid_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="parser.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="parser_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pem_decrypt.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pem_decrypt_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pkcs1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pkcs8.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pkcs8_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="platform_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_aix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_bsd.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_darwin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_linux.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_solaris.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_wasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="root_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sec1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sec1_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/test-dir.crt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="verify.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="verify_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="x509.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="x509_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="x509_test_import.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="cert_pool.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cert_pool_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hybrid_pool_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="name_constraints_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="oid.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="oid_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parser.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parser_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pem_decrypt.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pem_decrypt_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkcs1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkcs8.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkcs8_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkits_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="platform_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_wasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="root_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sec1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sec1_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/README.md" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/AllCertificatesNoPoliciesTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/AllCertificatesSamePoliciesTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/AllCertificatesSamePoliciesTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/AllCertificatesanyPolicyTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/AnyPolicyTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BadCRLIssuerNameCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BadCRLSignatureCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BadSignedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BadnotAfterDateCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BadnotBeforeDateCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedCRLSigningKeyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedCRLSigningKeyCRLCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedNewKeyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedNewKeyOldWithNewCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedOldKeyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/BasicSelfIssuedOldKeyNewWithOldCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/CPSPointerQualifierTest20EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DSACACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DSAParametersInheritedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/DifferentPoliciesTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/GeneralizedTimeCRLnextUpdateCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/GoodCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/GoodsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/GoodsubCAPanyPolicyMapping1to2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBadCRLIssuerNameTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBadCRLSignatureTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBasicSelfIssuedCRLSigningKeyTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBasicSelfIssuedCRLSigningKeyTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBasicSelfIssuedNewWithOldTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidBasicSelfIssuedOldWithNewTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidCASignatureTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidCAnotAfterDateTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidCAnotBeforeDateTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest31EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest33EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNSnameConstraintsTest38EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNandRFC822nameConstraintsTest28EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNandRFC822nameConstraintsTest29EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest15EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest16EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest17EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest20EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDNnameConstraintsTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidDSASignatureTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidEESignatureTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidEEnotAfterDateTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidEEnotBeforeDateTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidIDPwithindirectCRLTest23EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidIDPwithindirectCRLTest26EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidLongSerialNumberTest18EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidMappingFromanyPolicyTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidMappingToanyPolicyTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidMissingCRLTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidMissingbasicConstraintsTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidNameChainingOrderTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidNameChainingTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidNegativeSerialNumberTest15EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidOldCRLnextUpdateTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidPolicyMappingTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidPolicyMappingTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidPolicyMappingTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest22EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest24EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidRFC822nameConstraintsTest26EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidRevokedCATest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidRevokedEETest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitAnyPolicyTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitAnyPolicyTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedinhibitPolicyMappingTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedpathLenConstraintTest16EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedrequireExplicitPolicyTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSelfIssuedrequireExplicitPolicyTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSeparateCertificateandCRLKeysTest20EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidSeparateCertificateandCRLKeysTest21EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidURInameConstraintsTest35EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidURInameConstraintsTest37EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidUnknownCRLEntryExtensionTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidUnknownCRLExtensionTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidUnknownCRLExtensionTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidUnknownCriticalCertificateExtensionTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidWrongCRLTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcAFalseTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcAFalseTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcRLIssuerTest27EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcRLIssuerTest31EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcRLIssuerTest32EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcRLIssuerTest34EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidcRLIssuerTest35EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLIndicatorNoBaseTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddeltaCRLTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddistributionPointTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddistributionPointTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddistributionPointTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddistributionPointTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvaliddistributionPointTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitAnyPolicyTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidinhibitPolicyMappingTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidkeyUsageCriticalcRLSignFalseTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidkeyUsageCriticalkeyCertSignFalseTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidkeyUsageNotCriticalcRLSignFalseTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidkeyUsageNotCriticalkeyCertSignFalseTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlyContainsAttributeCertsTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlyContainsCACertsTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlyContainsUserCertsTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlySomeReasonsTest15EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlySomeReasonsTest16EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlySomeReasonsTest17EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlySomeReasonsTest20EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidonlySomeReasonsTest21EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidpathLenConstraintTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/Invalidpre2000CRLnextUpdateTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/Invalidpre2000UTCEEnotAfterDateTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidrequireExplicitPolicyTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/InvalidrequireExplicitPolicyTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/LongSerialNumberCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/Mapping1to2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/MappingFromanyPolicyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/MappingToanyPolicyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/MissingbasicConstraintsCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/NameOrderingCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/NegativeSerialNumberCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/NoCRLCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/NoPoliciesCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/NoissuingDistributionPointCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/OldCRLnextUpdateCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/OverlappingPoliciesTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P12Mapping1to3CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P12Mapping1to3subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P12Mapping1to3subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P1Mapping1to234CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P1Mapping1to234subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/P1anyPolicyMapping1to2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PanyPolicyMapping1to2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP1234CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP1234subCAP123Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP1234subsubCAP123P12Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP123CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP123subCAP12Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP123subsubCAP12P1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP123subsubCAP12P2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP123subsubsubCAP12P2P1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP12CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP12subCAP1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP12subsubCAP1P2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP2subCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP2subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/PoliciesP3CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/RFC3280MandatoryAttributeTypesCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/RFC3280OptionalAttributeTypesCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/RevokedsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/RolloverfromPrintableStringtoUTF8StringCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCA2CRLSigningCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCA2CertificateSigningCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCRLSigningCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/SeparateCertificateandCRLKeysCertificateSigningCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/TrustAnchorRootCertificate.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/TwoCRLsCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UIDCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UTF8StringCaseInsensitiveMatchCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UTF8StringEncodedNamesCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UnknownCRLEntryExtensionCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UnknownCRLExtensionCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UserNoticeQualifierTest15EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UserNoticeQualifierTest16EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UserNoticeQualifierTest17EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UserNoticeQualifierTest18EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/UserNoticeQualifierTest19EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidBasicSelfIssuedCRLSigningKeyTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidBasicSelfIssuedNewWithOldTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidBasicSelfIssuedNewWithOldTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidBasicSelfIssuedOldWithNewTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidCertificatePathTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNSnameConstraintsTest30EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNSnameConstraintsTest32EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNandRFC822nameConstraintsTest27EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest18EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest19EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDNnameConstraintsTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDSAParameterInheritanceTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidDSASignaturesTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidGeneralizedTimeCRLnextUpdateTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidGeneralizedTimenotAfterDateTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidGeneralizedTimenotBeforeDateTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest22EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest24EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidIDPwithindirectCRLTest25EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidLongSerialNumberTest16EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidLongSerialNumberTest17EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNameChainingCapitalizationTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNameChainingWhitespaceTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNameChainingWhitespaceTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNameUIDsTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNegativeSerialNumberTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidNoissuingDistributionPointTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest12EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidPolicyMappingTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRFC3280MandatoryAttributeTypesTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRFC3280OptionalAttributeTypesTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest21EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest23EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRFC822nameConstraintsTest25EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidRolloverfromPrintableStringtoUTF8StringTest10EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedinhibitAnyPolicyTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedinhibitAnyPolicyTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedinhibitPolicyMappingTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedpathLenConstraintTest15EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedpathLenConstraintTest17EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSelfIssuedrequireExplicitPolicyTest6EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidSeparateCertificateandCRLKeysTest19EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidTwoCRLsTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidURInameConstraintsTest34EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidURInameConstraintsTest36EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidUTF8StringCaseInsensitiveMatchTest11EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidUTF8StringEncodedNamesTest9EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidUnknownNotCriticalCertificateExtensionTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidbasicConstraintsNotCriticalTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidcRLIssuerTest28EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidcRLIssuerTest29EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidcRLIssuerTest30EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidcRLIssuerTest33EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddeltaCRLTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddeltaCRLTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddeltaCRLTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddeltaCRLTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddistributionPointTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddistributionPointTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddistributionPointTest5EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValiddistributionPointTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidinhibitAnyPolicyTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidinhibitPolicyMappingTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidinhibitPolicyMappingTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidkeyUsageNotCriticalTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidonlyContainsCACertsTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidonlySomeReasonsTest18EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidonlySomeReasonsTest19EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidpathLenConstraintTest13EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidpathLenConstraintTest14EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidpathLenConstraintTest7EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidpathLenConstraintTest8EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/Validpre2000UTCnotBeforeDateTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest1EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest2EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/ValidrequireExplicitPolicyTest4EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/WrongCRLCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/anyPolicyCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/basicConstraintsCriticalcAFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/basicConstraintsNotCriticalCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/basicConstraintsNotCriticalcAFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/deltaCRLCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/deltaCRLCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/deltaCRLCA3Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/deltaCRLIndicatorNoBaseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/distributionPoint1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/distributionPoint2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA3Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA3cRLIssuerCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA4Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA4cRLIssuerCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA5Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/indirectCRLCA6Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy0CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1SelfIssuedsubCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1subCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1subCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1subCAIAP5Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy1subsubCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy5CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy5subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicy5subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitAnyPolicyTest3EE.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping0CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping0subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P12CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P12subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P12subCAIPM5Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P12subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P12subsubCAIPM5Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P1SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P1SelfIssuedsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P1subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping1P1subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping5CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping5subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping5subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/inhibitPolicyMapping5subsubsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/keyUsageCriticalcRLSignFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/keyUsageCriticalkeyCertSignFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/keyUsageNotCriticalCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/keyUsageNotCriticalcRLSignFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/keyUsageNotCriticalkeyCertSignFalseCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN1SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN1subCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN1subCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN1subCA3Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN3CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN3subCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN3subCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN4CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDN5CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDNS1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsDNS2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsRFC822CA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsRFC822CA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsRFC822CA3Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsURI1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/nameConstraintsURI2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlyContainsAttributeCertsCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlyContainsCACertsCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlyContainsUserCertsCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlySomeReasonsCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlySomeReasonsCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlySomeReasonsCA3Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/onlySomeReasonsCA4Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint0CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint0SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint0subCA2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint0subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint1CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint1SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint1SelfIssuedsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint1subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subCA0Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subCA1Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subCA4Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subsubCA00Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subsubCA11Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subsubCA41Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subsubsubCA11XCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pathLenConstraint6subsubsubCA41XCert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/pre2000CRLnextUpdateCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy0CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy0subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy0subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy0subsubsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy10CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy10subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy10subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy10subsubsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy2CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy2SelfIssuedCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy2SelfIssuedsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy2subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy4CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy4subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy4subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy4subsubsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy5CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy5subCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy5subsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy5subsubsubCACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy7CACert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy7subCARE2Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy7subsubCARE2RE4Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/certs/requireExplicitPolicy7subsubsubCARE2RE4Cert.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/nist-pkits/vectors.json" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_any.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_duplicate.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_invalid.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_mapped.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_mapped_any.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_mapped_oid3.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_require.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_require1.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_require2.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_require_duplicate.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_intermediate_require_no_policies.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_any.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_duplicate.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_invalid.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_none.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_oid1.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_oid2.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_oid3.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_oid4.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_oid5.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_require.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_leaf_require1.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_root.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_root2.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/policy_root_cross_inhibit_mapping.pem" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/test-dir.crt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="verify.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="verify_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="x509.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="x509_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="x509_test_import.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -153,13 +614,18 @@
     <ProjectReference Include="$(go2csPath)core/encoding/encoding.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/gob/encoding.gob.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/hex/encoding.hex.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/json/encoding.json.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/pem/encoding.pem.csproj" />
     <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/godebug/internal.godebug.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/log/log.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/big/math.big.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/math.csproj" />
     <ProjectReference Include="$(go2csPath)core/net/net.csproj" />
@@ -167,8 +633,8 @@
     <ProjectReference Include="$(go2csPath)core/net/url/net.url.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/exec/os.exec.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
+    <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
     <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />

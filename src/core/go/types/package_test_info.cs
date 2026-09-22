@@ -40,6 +40,9 @@ using go;
 using static global::go.go.types_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b54797065506172616d732829202a676f2f74797065732e54797065506172616d4c6973747d", "TestInstanceInfo_typeᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b2073726320737472696e673b2073696720737472696e677d", "builtinCallsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b73726320737472696e673b206f626a20737472696e673b2077616e7420737472696e673b20616c69617320626f6f6c7d", "testObjectsᴛ1")]
 [assembly: GoTypeAlias("Error", "ΔError")]
 [assembly: GoTypeAlias("Info", "ΔInfo")]
 [assembly: GoTypeAlias("Scope", "ΔScope")]
@@ -77,28 +80,29 @@ using static global::go.go.types_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/types/api_test.go", "api_test.cs", "AHQ6goKClKaigoKC6qaCgoKUqJKCgIKCgoCCpKQACQaCAD6cAYK2hpKCgoKmgoKUloCCgriCgIK2ggALDKSUAMIBrgOCkoKCgoKClIKmmJKCgoKmgoKogIIAFAqCrgCXAdACsoKSgoKylIKUgpSChNSCgJK4goKClISCgIKkgpSCgIK2gILKgoKClIKClIIACxiigpSGAAgGggALJIK2hpKCgoKmgoKWgIIACwqiACBSgraGkoKCgpSmgoKWgIIACgqCAAAQgoLagoKClpaCgpiikoKCgpSClIKCgIKCgoKClIKUlKTGtriClIKUgpSCAA0IooQAGzyCtpaCgpiSgpS0tMSkqIIACQqChAACKAAGFoKCyIKCgoKogoKAgriCgoKUgoKUgrqAggAQCIKCgoKClKiCgoKCgoKCgoSClAALBoKEADOCAYKSloKUgoKoggAVCqKEAEKKAYKSloKogoKUtLS0tLS0tLS0yIKCgoKCpoIACgyiAEqQAoKSloKCqIKCgoIADwyCgoK6voKAgqSAgtqC3oKCgoKEgoCCupKCgqaAkuyCgIKk1qKogoKSsoKClJYAAhAAApoBAB5CgoSChIKChIKClLiCgpS6goKCgoK2uIK4ooKCorailq6ugqaigoKitqKWqqyCprSCgoKAgrYADAaMAChggoSCgoCCgriCgoKUpoKUggAIDJIAAiCCgoKAgqaCpoKClIKCpgAKCsKCgpKCsoKCgqi4AABWgoKCgoKClIKClJSmgoKUlIKAgoKkggAHFIKCgpTegpaChJKC3IKmhAAHEM6igvaiAA4kgIIACgqiAAwggIIADQq0ABU+goKCgoKUgIIACgq0AAUSgIIADQqigoLukoKCgoKClJSUAAgYgoKAgtregoS6poKCpoKCgqaCgoKC1qaCgoCCgpS27LIADxiCgoKAgqaigoKClIKClICCyoKWvKIAAiqChKaAgqaCpoKUuoKUgsaSuIKUtAAJDqKEAAIUgoKWgoK2gpS6poKCgpaCgoKUgoKCqIKCgIKCpv6EkpaCgILKgoKogILIggACGoTMgpiCgoKCsoSCguiEgoKUgoCSAAwMggAFFoKChISCgpaCgpaC+oK4goKUggAICIKCkpKCgoKCgpSUgoKCgoKCAAgKsgACQqaCgpKCgpaShAASNoKSgIKkloKSsoCCpIKCgpSAgqSClIKUgpSClIKUgt6SlKSUAA4GogACTIKCooSSAA0iABpAgoCCyoKCgoCCpICC2oIAAiqEgrqCgpaSgoK6lpaWAAgGgoKGuIKCmLqCguiUgtySgoIACgqCAFFggoKUhJKCgoKEgoKCgpSUggAPDqIABxSCgpSEgrSkgoKCgqqSgoKCpoKCAAgOkoIAAhCChJKCuIKCroKEkoLswoKCgoKCgqKCgoKAgvj+woKCgoKAggALDIKClA==")]
+[assembly: global::go.GoPositionMap("go/types/api_test.go", "api_test.cs", "AB44gqaCgoKUprSCgoLqpoKCgpSokoKAgoKCgIKkpAAJBoIAPpwBgraGkoKCgqaCgpSWgIKCuIKAgraCAAsMpJQAsAKYBYKSgoKCgoKUgqaYkoKCgqaCgqiAggAUCoL+AJcB0AKygpKCgrKUgpSClIKE1IKAkriCgoKUhIKAgqSClIKAgraAgsqCgoKUgoKUggALGKKClIYACAaCAA8ugraGkoKCgqaCgpaAggALCqIAJV6CtoaSgoKClKaCgpaAggARCoIAABCCgtqCgoKWloKCmKKSgoKClIKUgoKAgoKCgoKUgpSUpMa2uIKUgpSClIIADQiihAAbPIK2loKCmJKClLS0xKSoggAJCoKEABQoAAYWgoLIgoKCgqiCgoCCuIKCgpSCgpSCuoCCABAIgoKCgoKUqIKCgoKCgoKChIKUAAsGgoQAM4IBgpKWgpSCgqiCABUKooQAQooBgpKWgqiCgpS0tLS0tLS0tLTIgoIACgyiAI8BkAKCkpaCgqiCgoKCAA8MgoKCur6CgIKkgILagt6CgoKChIKAgrqSgoKmgJLsgoCCpNaiqIKCkrKCgpSWAAkQAE2aAQAeQoKEgoSCgoSCgpS4goKUuoKCgoKCtriCuKKCgqK2opb+/oKmooKCorailtrsgqa0goKCgIK2AAwGjAAoYIKEgoKAgoK4goKClKaClIIACAySABAggoKCgIKmgqqigvaiAA4kgIIACgqiAAwggIIADQq0ABU+goKCgoKUgIIACgq0AAUSgIIADQqigoLukoKCgoKClJSUAAgYgoKAgtregoS6poKCpoKCgqaCgoKC1qaCgoCCgpS27LIADxiCgoKAgqaigoKClIKClICCyoKWvKIAFSqChKaAgqaCpoKUuoKUgsaSuIKUtAAJDqKEAAsUgoKWgoK2gpS6poKCgpaCgoKUgoKCqIKCgIKCpv6EkpaCgILKgoKogILIggAOGoTMgpiCgoKCsoSCguiEgoKUgoCSAAwMggAFFoKChISCgpaCgpaC+oK4goKUggAICIKCkpKCgoKCgpSUgoKCgoKCAAgKsgAiQqaCgpKCgpaShAASNoKSgIKkloKSsoCCpIKCgpSAgqSClIKUgpSClIKUgt6SlKSUAA4GogAmTIKCooSSAA0iABpAgoCCyoKCgoCCpICC2oIAFSqEgrqCgpaSgoK6lpaWAAgGgoKG6IKCmPqCguiUgtySgoIACgqCAFFggoKUhJKCgoKEgoKCgpSUggAPDqIABxSCgpSEgrSkgoKCgqqSgoKCpoKCAAgOkoIACRCChJKCuIKC/oKEkoLswoKCgoKCgqKCgoKAgvj+woKCgoKAggALDIKClP6ygpaCgIKkuoKCgIIACRoACQKCloLMgoKCgoKC", "46-46:1;746-754:1;758-804:2;817-819:1;989-1008:1;1173-1180:1;1634-1640:1;1808-1808:1;1811-1813:2;1837-1837:1;1840-1842:2;1861-1867:1;2110-2121:1;2176-2176:1;2216-2229:1;2331-2337:1;2431-2438:1;2505-2514:1;2571-2571:1;2602-2607:2;2611-2642:3;2697-2697:1;2700-2700:2;2794-2796:1;2804-2809:2;2964-2964:1;3032-3047:1;3037-3044:1.1;3055-3061:1;3081-3086:1")]
 [assembly: global::go.GoPositionMap("go/types/builtins_test.go", "builtins_test.cs", "AJoBygKihIKCgqiCgIK2goCC2oKEgoKWgoKCgIKCtoKCqJSCgoKUgIKCypSCgoKUgoKClIKClKa4tpI=")]
-[assembly: global::go.GoPositionMap("go/types/check_test.go", "check_test.cs", "AHh+goKCgoKClIKCgIKCpsimgpSklKiSgpSs1JKClIKAgqSCgoKWAAIcAA4EgoKCAA8I0oKokoKClIKCgoKqkoKCooKUgoK4guqCmKKCgoKCgoCCpoKClJKSlJaCqAALGIKCqIKCgIK6koKWgoKCgoKogoKCgoKCgqaCgoKUgoKmgoKClIKmlIKCuoKCgoCCupKCqICUgqa4grqCgoKCggAMDoKCqqKCqqKCAAYiAA4ChIKCloKCloKCgpSU6IKCgqaCgr6ygqaGotaigoKUhIIACASA0oDSgNKApIKChIKCgpaCloKUgtyChIKCgpaCgpaSuIKCgoKClJQ=")]
-[assembly: global::go.GoPositionMap("go/types/commentMap_test.go", "commentMap_test.cs", "ABU+AAwCgoSCgoSCgqSkgpSCgoKCgpS4kpSkAAgKggACEoKCgoKCgqiCgoKClKiCgg==")]
-[assembly: global::go.GoPositionMap("go/types/errorcalls_test.go", "errorcalls_test.cs", "ABUssoKCgpaCkoKClIKClIK4gIKCpIKSgIKAgoK2pJTKgoCCpKaCgoKClIK0tLS0xoKClJQ=")]
-[assembly: global::go.GoPositionMap("go/types/eval_test.go", "eval_test.cs", "AB0wgoKCgpSCgqiUgoK4goKCuoKClIK4goKCuIKCguiCAAkUgoLoggAAEAATigGCgoKCgsyUgriWkoKCloKCgoKCgoIACRaSgtaCjAAGNoKCgpaSgoKWooKClriAgqSUgILWgIKkgILGloKCgoKCgoKCgpSCAAoQgqqChIKCgpaCgJSAgraAgg==")]
-[assembly: global::go.GoPositionMap("go/types/example_test.go", "example_test.cs", "AC9EtIKCAAcgzJKCgpqigoIABkoAIgQAAxSCgoLMkoKCqIKCgoKClKiCggAHIgAOBAAFHoK62oKCgqiogoKCgoKUgoKCuJSCgoSCgoKCgoKCpqaUggAHdgA3ApSkpKSkgpSkpMiCgoI=")]
+[assembly: global::go.GoPositionMap("go/types/check_test.go", "check_test.cs", "AEF8goKCgoKClIKCgIKCpsimgpSklKiSgpSs1JKClIKAgqSCgoKWAAIcAA4EgoKCAA8I0oKokoKClIKCgoKqkoKCooKUgoK4guqCmKKCgoKCgoCCpoKCuIKoAAsYgoKogoKAgrqSgpaCgoKCgqiCgoKCgoKCpoKCgpSCgqaCgoKUgqaUgoK6goKCgIK6koKogJSCpriCuoKCgoKCAAwOgoKqooKqooKuwoKClJKCkAAHIgAOAoSCgpaCgpaCgoKUlOiCgoKmgoK+soKmhqLWooKClISCAAgEgNKA0oDSgKSCgoSCgoKWgpaClILcgoSCgoKWgoKWkriCgoKCgpSU", "167-180:1;360-360:1;408-410:1;430-432:1;460-462:1;481-483:1")]
+[assembly: global::go.GoPositionMap("go/types/commentMap_test.go", "commentMap_test.cs", "ABU+AAwCgoSCgoSCgqSkgpSCgoKCgpS4kpSkAAgKggAKEoKCgoKCgqiCgoKClKiCgg==")]
+[assembly: global::go.GoPositionMap("go/types/errorcalls_test.go", "errorcalls_test.cs", "ABUssoKCgpaCkoKClIKClIK4gIKCpIKSgIKAgoK2pJTKgoCCpKaCgoKClIK0tLS0xoKClJQ=", "30-61:1;49-59:1.1")]
+[assembly: global::go.GoPositionMap("go/types/eval_test.go", "eval_test.cs", "ABYugoKCgpSCgqiUgoK4goKCuoKClIK4goKCuIKCguiCAAkUgoLoggAAEABRigGCgoKCgsyUgriWkoKCloKCgoKCgoIACRaSgtaCjAAfNoKCgpaSgoKWooKClriAgqSUgILWgIKkgILGloKCgoKCgoKCgpSCAAoQgtqChIKCgpaCgJSAgraAgg==", "265-292:1")]
+[assembly: global::go.GoPositionMap("go/types/example_test.go", "example_test.cs", "ACNCtIKCABMgzJKCgpqigoIABkoAIgQADBSCgoLMkoKCqIKCgoKUqIKCAAciAA4EABEegrragoKCqKiCgoKCgpSCgoK4lIKChIKCgoKCgoKmppSCAAd2ADcClKSkpKSClKSkyIKCgg==")]
 [assembly: global::go.GoPositionMap("go/types/exprstring_test.go", "exprstring_test.cs", "AGfyAYKCgoKClICC")]
-[assembly: global::go.GoPositionMap("go/types/generate_test.go", "generate_test.cs", "AClI1oKCgpSCqIK4lIKCgqiWgIKokoKCgoCCpJaCgoKogIKCgoCCtgAQFIKC3IKCgoKmgoL+xqKigLaAoqLIgoKkgKKAuoKCytqAtLSA6oAAChKAAAUU4oKCgoKUlKiygILMwoCCgoCCgoKUgu7CgpKUgpS6soKSlIKUvsKCkpSClLqygpKUgpSClLzCgoCCgraqooKSlpKUgqa2gKKCxrqSgpSCgIKC2L6ygpSUgoKCgtiAgpaSkoKCgriSgoKCuJKCgoL6vKKClICCgoCUgpKCggAIDPqSgpSAgoKWgJKSgoIACQy6koKUgIKCloCSkoKCAAkMvrKClpKCtrqSgpSSgra6koCCpKiSqJKCgqiSgoKC")]
-[assembly: global::go.GoPositionMap("go/types/hilbert_test.go", "hilbert_test.cs", "ABgylIKCgpaCpoKEAAQmgoKCgoKChO6iAAkGgoaCgoKClJSCgoKClKaUAAgGgoaCgoKClKaUAAkGgoaCgoKCgpSUlJQACgaChoKCgpSUgoKUlJSWggAICIKCgoKCgpSUlAAIBoKGgoKUgqYACAaCioKU")]
-[assembly: global::go.GoPositionMap("go/types/instantiate_test.go", "instantiate_test.cs", "ABseooIATr4BsoSihIKCgpaCgoKWgILsgoKCpoKCgoKClIKClIKUggAICIKuAAgagoKCgoKCgpSAggAICoIAAhCCgoKCuoKAgsqSgpSSpoKU")]
-[assembly: global::go.GoPositionMap("go/types/issues_test.go", "issues_test.cs", "AB0wgoKCggAICIIAABaChIKClJSkpKSk1oK2ggAJCoIAABCChIKCgoCCgpS4ggAICIKKhIKCgoKWgoKEgu7SAAQWgoQAAxiQkoKCgoCCpoKCgoKmgoKUhIKCAAgU4oQAAhoAAyIABB6CgoSCgoKCgqaClIKogoKmgoSCkJKCjIK4gqYACBKEooKCgoCCuJKAgoCCgoCC6PqmzpKCqAAKEoKCmJKCgoKYkoKCgqaClKiCgoKCAAkMlIKClIKCgqaCgpSCgviCgpaCgoKAgrYABBCSgoKAgqSWgoKAgqSAgqSEgriCgoSEkgAHEIKClIKUAAISAAgCgoCCuLqCgpLoAAkUgoKCgoKCgoKWggAIBoKEgoKCloKClJSCgoK4tooAD1yClJKWgoIACwaCgoSClIKWgpSCloKUgriUgoKCupaWgoKogoKogoKCgoIACAiKABAkgoKChIKCgJSCgoKUgIK2gsqCAAsKpABDyAGCkoKCgpKCgqKCpLaC6IKGAAMoAANIguiCAAIUgoKCloKmgq6SlpLWggACHLaWgoKYkoKCgqaCqILogq6ChIKCloKCggAICKaiiKKEABtKlJKCgoKUlIKogpaCyoIABBiSpoIAAhyCxKSEhIK4ggACEoKCgoKCgg==")]
-[assembly: global::go.GoPositionMap("go/types/main_test.go", "main_test.cs", "ABcigoI=")]
-[assembly: global::go.GoPositionMap("go/types/methodset_test.go", "methodset_test.cs", "ABciogABEAAnYAAJGoKEgoKClIKCgpaCgJKCpIKCgJKkgIKkgILKgpaC6pIAAhyCgoKUgoCCpoLmgqyCgoKWgoKCqIKCpoKCgqaCgoI=")]
-[assembly: global::go.GoPositionMap("go/types/mono_test.go", "mono_test.cs", "ABEggoSCoraCgpSmgoKAgtqCgoCClA==")]
-[assembly: global::go.GoPositionMap("go/types/named_test.go", "named_test.cs", "ABoeggACJoS+AAUUkrKkgoKCzJKypIKCgu6igoKUqJIAAiSCgoKAgqaIgoKCgpSCvtIAAhSSlIKWgpKolIKCuICCgqSCgII=")]
-[assembly: global::go.GoPositionMap("go/types/object_test.go", "object_test.cs", "ABsggoKAgsqCgoCCyoKCgoKCABUevKKCloKCgqiCgoKoggAhQoKEspKCloKCgpaCgpSCgpSCgIKCgqa4gILsooKCgqY=")]
-[assembly: global::go.GoPositionMap("go/types/resolver_test.go", "resolver_test.cs", "ABkwgqaCgpSCgpSCgpSC5qKEABCGAcyCgoKogpKCgoKCqIKCuoKigIKAgoKCgpSAgoKkpKSogoKqkoKygIKCgIKCpICCgqSCpJSkuoKAkriClII=")]
-[assembly: global::go.GoPositionMap("go/types/self_test.go", "self_test.cs", "ACYqgoSCgoKWkoKCAAsIgoTugoKCgoKUgoKUggAKEKKCgoKmgoKCloKCgsiCggAIEoCCtoKmgoKCloKCgoKUlg==")]
-[assembly: global::go.GoPositionMap("go/types/sizes_test.go", "sizes_test.cs", "ABEkkqaCgoKCgIK2gqiSAAIUgpKAgqSCgILKkgACEIKClIKUgoK4gq6SyIKCgrqShAACGIKCksiClIKWgoIAHGqCgoKSkoKS")]
-[assembly: global::go.GoPositionMap("go/types/stdlib_test.go", "stdlib_test.cs", "ADNSooKWloKCkpa6AAYQgoSChIKCwpKCloKC6oSCABIogqaClJaCgpaCppSu4oKClKaCgoKCypSmgpQABhDygoKUlIKEgoKSgoKWkpSCgpSCugAMCsKCuICCgILGloKCloKUgqiCgoKAgoKUgpSkgoLKgpSCgv6CgsiWgoKmggAODKKEgpYAMRayhIKWADlIgoQAFSiShpKCgoKWloKCgoKUmJKkuJKCgoK8goKCgoKClLqokpKCgoKAgqSUgpSCgpSCgqamgoIABxCCgoKCvIKCgpSCqIKC")]
-[assembly: global::go.GoPositionMap("go/types/typestring_test.go", "typestring_test.cs", "ABUqkgBMtAGUhIKChIKCgoKClIKCgpSCgIIADwqCgoSCAAoYkoKUlICC")]
+[assembly: global::go.GoPositionMap("go/types/generate_test.go", "generate_test.cs", "ACNI1oKCgpSCqIK4lIKCgqiWgIKokoKCgoCCpJaCgoKogIKCgoCCtgASFIKC3IKCgoKmgoL+xqKigLaAoqSCgqaCpMiCgqSAooC6goLK3IKCgqSAtLSA6oAAChKAAAUU4oKCgoKUlKiygILMwoCCgoCCgoKUgu7CgpKUgpS6soKSlIKUvsKCkpSClLqygpKUgpSClLzCgoCCgraqooKSlpKUgqa2gKKCxrqSgpSCgIKC2L6ygpSUgoKCgtiAgpaSkoKCgriSgoKCuJKCgoL6vKKClICCgoCUgpKCggAIDPqSgpSAgoKWgJKSgoIACQy6koKUgIKCloCSkoKCAAkMvrKClpKCtrqSgpSSgra6koCCpKiSqJKCgqiSgoKC", "247-254:1;260-267:1;275-282:1;288-298:1;317-337:1;342-353:1;360-404:1;410-428:1;433-452:1;457-476:1;483-493:1;498-507:1")]
+[assembly: global::go.GoPositionMap("go/types/hilbert_test.go", "hilbert_test.cs", "ABgylIKCgpaCpoKEABYmgoKCgoKChO6iAAsGgoaCgoKClJSCgoKClKaUAAoGgoaCgoKClKaUAAsGgoaCgoKCgpSUlJQADAaChoKCgpSUgoKUlJSWggAICIKCgoKCgpSUlAAKBoKGgoKUgqYADAaCioKU")]
+[assembly: global::go.GoPositionMap("go/types/instantiate_test.go", "instantiate_test.cs", "ABseooIATr4BsoSihIKCgpaCgoKWgILsgoKCpoKCgoKClIKClIKUggAICIIACA4ACBqCgoKCgoKClICCAAgKggAJEIKCgoK6goCCypKClJKmgpQ=", "115-133:1")]
+[assembly: global::go.GoPositionMap("go/types/issues_test.go", "issues_test.cs", "ABwugoKCggASCIIAABaChIKClJSkpKSk1oK2ggAQCoIAABCChIKCgoCCgpS4ggAMCIKKhIKCgoKWgoKEgu7SAAwWgoQADBiQkoKCgoCCpoKCgoKmgoKUhIKCAAgU4oQADRoAESIAEh6CgoSCgoKCgqaClIKogoKmgoSCkJKCjIK4gqYACBKEooKCgoCCuJKAgoCCgoCC6PqmzpKCqAAKEoKCmJKCgoKYkoKCgqaClKiCgoKCAAkMlIKClIKCgqaCgpSCgviCgpaCgoKAgrYABBCSgoKAgqSWgoKAgqSAgqSEgriCgoSEkgAHEIKClIKUAAISAAgCgoCCuLqCgpLoAAkUgoKCgoKCgoKWggAIBoKEgoKCloKClJSCgoK4tooANVyC3JKWgoIACwaCgoSClIKWgpSCloKUgriUgoKCupaWgoKogoKogoKCgoIACAiKABAkgoKChIKCgJSCgoKUgIK2gsqCAAsKpACHAcgBgpKCgoKSgoKigqS2guiChgAPHgAqUILoggALFIKCgpaCpoL+kpaS1oIADhy2loKCmJKCgoKmgqiC6IL+goSCgpaCgoIACAimooiihAAbSpSSgoKClJSCqIKWgsqCAA0YkqaCAA4cgsSkhISCuIIACRKCgoKCgoLoguyCgqKSloKWgoKUgg==", "155-155:1;236-254:1;265-265:1;293-293:1;302-312:2;406-414:1;477-481:1;529-534:1;603-605:1;640-644:1;831-844:1;909-911:1;947-947:1;1126-1126:1;1166-1166:1")]
+[assembly: global::go.GoPositionMap("go/types/main_test.go", "main_test.cs", "ABEigoI=")]
+[assembly: global::go.GoPositionMap("go/types/methodset_test.go", "methodset_test.cs", "ABgkogABEAAnYAAJGoKEgoKClIKCgpaCgJKCpIKCgJKkgIKkgILKgpaC6pIADhyCgoKUgoCCpoLmguyCgoKWgoKCqIKCpoKCgqaCgoI=", "88-119:1")]
+[assembly: global::go.GoPositionMap("go/types/mono_test.go", "mono_test.cs", "ABEegoSCosaCgpSmgoKAgtqCgoCClA==", "20-20:1")]
+[assembly: global::go.GoPositionMap("go/types/named_test.go", "named_test.cs", "ABoeggAUJoS+AAUUkrKkgoKCzJKypIKCgu6igoKUqJIAEiSCgoKAgqaIgoKCgpSCvtIAChSSlIKWgpKolIKCuICCgqSCgII=", "54-65:1;56-63:1.1;67-78:2;69-76:2.1;116-118:1")]
+[assembly: global::go.GoPositionMap("go/types/object_test.go", "object_test.cs", "ABsggoKAgsqCgoCCyoKCgoKCABUevKKCloKCgqiCgoKoggAiRIKEsrKCgpKWgoKCloKCloKClIKWgoCCgoKmuICCAAkMooKCgqY=", "17-21:1;116-156:1")]
+[assembly: global::go.GoPositionMap("go/types/resolver_test.go", "resolver_test.cs", "ABkwgqaCgpSCgpSCgpSC5qKEAEuGAcyCgoKogpKCgoKCqIKCuoKigIKAgoKCgpSAgoKkpKSogoKqkoKygIKCgIKCpICCgqSCpJSkuoKAkriClII=", "145-162:1;174-193:2")]
+[assembly: global::go.GoPositionMap("go/types/scope2_test.go", "scope2_test.cs", "AEUqwoKCkoKygoKCqO4AAFaCgoKCgoKUgoKUlKaCgpSUgoCCgqSCAAcUgoKClN6CloKEkoLcgqaEAAcQ", "26-32:1;143-153:2")]
+[assembly: global::go.GoPositionMap("go/types/self_test.go", "self_test.cs", "ABkogoSCgoKWkoKCAAsIgoTugoKCgoKUgoKUggAKEKKCgoKmgoKCloKCgsiCggAIEoCCtoKmgoKCloKCgoKUlg==", "46-62:1;53-60:1.1;54-56:1.1.1;57-59:1.1.2;74-77:1")]
+[assembly: global::go.GoPositionMap("go/types/sizes_test.go", "sizes_test.cs", "ABEkkqaCgoKCgIK2gqiSAAsUgpKAgqSCgILKkgAJEIKClIKUgoK4ggAIDpLagoKCupKEAAwYgoKS2oKUgpaCggA7aoKCgpKSgto=", "119-136:1;191-199:1")]
+[assembly: global::go.GoPositionMap("go/types/stdlib_test.go", "stdlib_test.cs", "ADRUooKWloKCkpa6AAYQgoSChIKCwpKCloKC6oSCABIogqaClJaCgpaCppSu4oKClKaCgoKCypSmgpQABhDygoKUlIKEgoKSgoKWkpSCgpSCugAMCsKCuICCgILGloKCloKUgqiCgoKAgoKUgpSkgoLKgpSCgv6CgsiWgoKmggAODKKEgpYAMhayhIKWADtKgoQAEyKShpKCgoKWloKCgoKUmJKkuJKCgoK8goKCgoKClLrYkpKCgoKAgqSUgpSmlIKClIKCpqaCggAHEIKCgoK8goKClIKogoI=", "52-54:1;77-87:2;78-81:2.1;397-399:1")]
+[assembly: global::go.GoPositionMap("go/types/typestring_test.go", "typestring_test.cs", "ABUqkgBStAGUhIKChIKCgoKClIKCgpSCgIIADwqCgoSCAAoYkoKUlICC", "156-161:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -113,6 +117,40 @@ public static partial class types_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface TestInstanceInfo_typeᴛ1 {}
+    internal partial struct BenchmarkNamed_tests {}
+    internal partial struct TestAssignableTo_type {}
+    internal partial struct TestCompositeLitTypes_type {}
+    internal partial struct TestConvertibleTo_type {}
+    internal partial struct TestDefsInfo_type {}
+    internal partial struct TestFileVersions_type {}
+    internal partial struct TestIdenticalUnions_type {}
+    internal partial struct TestIdentical_issue15173_type {}
+    internal partial struct TestIdentical_tests {}
+    internal partial struct TestImplements_tests {}
+    internal partial struct TestImplicitsInfo_type {}
+    internal partial struct TestInitOrderInfo_type {}
+    [GoLocalName("testInst")] internal partial struct TestInstanceInfo_testInst {}
+    internal partial struct TestInstanceInfo_type {}
+    internal partial struct TestInstantiateEquality_tests {}
+    internal partial struct TestInstantiateErrors_tests {}
+    internal partial struct TestInstantiatedObjects_tests {}
+    internal partial struct TestIsAlias_type {}
+    internal partial struct TestIssue51093_type {}
+    internal partial struct TestIssue54258_tests {}
+    internal partial struct TestIssue59831_tests {}
+    internal partial struct TestLookupFieldOrMethod_type {}
+    internal partial struct TestMethodInstantiation_tests {}
+    internal partial struct TestMultiFileInitOrder_type {}
+    [GoLocalName("method")] internal partial struct TestNewMethodSet_method {}
+    internal partial struct TestPkgNameOf_type {}
+    internal partial struct TestPredicatesInfo_type {}
+    internal partial struct TestQualifiedTypeString_type {}
+    internal partial struct TestScopesInfo_type {}
+    internal partial struct TestTooNew_type {}
+    internal partial struct TestTypesInfo_type {}
+    internal partial struct TestUsesInfo_type {}
+    internal partial struct TestValuesInfo_type {}
     internal partial struct builtinCallsᴛ1 {}
     internal partial struct comment {}
     internal partial struct futurePackage {}
@@ -127,40 +165,51 @@ public static partial class types_test_package
     internal partial struct testImporter {}
     internal partial struct testObjectsᴛ1 {}
     internal partial struct walker {}
-    public partial interface TestInstanceInfo_typeᴛ1 {}
-    public partial interface TestObjectString_type {}
-    public partial struct BenchmarkNamed_tests {}
-    public partial struct TestAssignableTo_type {}
-    public partial struct TestCompositeLitTypes_type {}
-    public partial struct TestConvertibleTo_type {}
-    public partial struct TestDefsInfo_type {}
-    public partial struct TestFileVersions_type {}
-    public partial struct TestIdenticalUnions_type {}
-    public partial struct TestIdentical_issue15173_type {}
-    public partial struct TestIdentical_tests {}
-    public partial struct TestImplements_tests {}
-    public partial struct TestImplicitsInfo_type {}
-    public partial struct TestInitOrderInfo_type {}
-    [GoLocalName("testInst")] public partial struct TestInstanceInfo_testInst {}
-    public partial struct TestInstanceInfo_type {}
-    public partial struct TestInstantiateEquality_tests {}
-    public partial struct TestInstantiateErrors_tests {}
-    public partial struct TestInstantiatedObjects_tests {}
-    public partial struct TestIsAlias_type {}
-    public partial struct TestIssue51093_type {}
-    public partial struct TestIssue54258_tests {}
-    public partial struct TestIssue59831_tests {}
-    public partial struct TestLookupFieldOrMethod_type {}
-    public partial struct TestMethodInstantiation_tests {}
-    public partial struct TestMultiFileInitOrder_type {}
-    [GoLocalName("method")] public partial struct TestNewMethodSet_method {}
-    public partial struct TestPkgNameOf_type {}
-    public partial struct TestPredicatesInfo_type {}
-    public partial struct TestQualifiedTypeString_type {}
-    public partial struct TestScopesInfo_type {}
-    public partial struct TestTooNew_type {}
-    public partial struct TestTypesInfo_type {}
-    public partial struct TestUsesInfo_type {}
-    public partial struct TestValuesInfo_type {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() => builtin.initPackage(typeof(global::go.go.build_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸformat() => builtin.initPackage(typeof(global::go.go.format_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸimporter() => builtin.initPackage(typeof(global::go.go.importer_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() => builtin.initPackage(typeof(global::go.go.scanner_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() => builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸdiff() => builtin.initPackage(typeof(global::go.@internal.diff_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(global::go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(global::go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtypesꓸerrors() => builtin.initPackage(typeof(global::go.@internal.types.errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(global::go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.go.types_package));
+    }
 }

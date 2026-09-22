@@ -34,6 +34,7 @@ using static global::go.archive.tar_test_package;
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<global::go.archive.tar_package.headerError, error>]
+[assembly: GoImplement<hash_package.Hash32, io_package.Writer>]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.ReadSeeker>(Pointer = true)]
@@ -67,4 +68,43 @@ public static partial class tar_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸbzip2() => builtin.initPackage(typeof(compress.bzip2_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸcrc32() => builtin.initPackage(typeof(hash.crc32_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸfstest() => builtin.initPackage(typeof(go.testing.fstest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.archive.tar_package));
+    }
 }

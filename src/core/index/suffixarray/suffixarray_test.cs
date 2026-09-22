@@ -562,7 +562,7 @@ internal static (slice<byte>, error) makeText(@string name) {
                 if (errΔ2 != default!) {
                     return errΔ2;
                 }
-                Ꮡdata.ValueSlot = append(Ꮡdata.ValueSlot, @file.ꓸꓸꓸ);
+                Ꮡdata.ValueSlot = appendꓸꓸꓸ(Ꮡdata.ValueSlot, @file);
             }
             return default!;
         });

@@ -108,8 +108,8 @@ public static void TestTypeString(ж<testing.T> Ꮡt) {
     // The Go command is needed for the importer to determine the locations of stdlib .a files.
     testenv.MustHaveGoBuild(new types_test_package.testing_TжTB(Ꮡt));
     slice<testEntry> tests = default!;
-    tests = append(tests, independentTestTypes.ꓸꓸꓸ);
-    tests = append(tests, dependentTestTypes.ꓸꓸꓸ);
+    tests = appendꓸꓸꓸ(tests, independentTestTypes);
+    tests = appendꓸꓸꓸ(tests, dependentTestTypes);
     foreach (var (_, test) in tests) {
         @string src = @"package p; import ""io""; type _ io.Writer; type T "u8 + test.src;
         var (pkg, err) = typecheck(src, nil, nil);
@@ -135,7 +135,7 @@ public static void TestTypeString(ж<testing.T> Ꮡt) {
 internal static readonly @string packagePTypeTIntˢ = "package p; type T int"u8;
 internal static readonly @string packageQˢ = "package q"u8;
 
-[GoType("dyn")] partial struct TestQualifiedTypeString_type {
+[GoType("dyn")] internal partial struct TestQualifiedTypeString_type {
     internal typesꓸType typ;
     internal ж<types.Package> @this;
     internal @string want;

@@ -17,42 +17,6 @@ using static go.net.http.cgi_package;
 
 partial class cgi_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() {
-    builtin.initPackage(typeof(go.net.http.httptest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string goclientˢ = "goclient"u8;
 internal static readonly @string getˢ = "GET"u8;

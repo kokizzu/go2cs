@@ -8,20 +8,22 @@ namespace go.archive;
 
 using bytes = bytes_package;
 using bzip2 = compress.bzip2_package;
-using md5 = crypto.md5_package;
 using errors = errors_package;
 using fmt = fmt_package;
+using crc32 = hash.crc32_package;
 using io = io_package;
+using maps = maps_package;
 using math = math_package;
 using os = os_package;
 using path = path_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
 using compress;
-using crypto;
+using hash;
 using hash = hash_package;
 using static go.archive.tar_package;
 using ꓸꓸꓸstring = Span<@string>;
@@ -35,7 +37,7 @@ internal static readonly @string bz2ˢ = ".bz2"u8;
 [GoType("dyn")] internal partial struct TestReader_vectors {
     internal @string @file;   // Test input file
     internal slice<ж<global::go.archive.tar_package.Header>> headers; // Expected output headers
-    internal slice<@string> chksums; // MD5 checksum of files, leave as nil if not checked
+    internal slice<@string> chksums; // CRC32 checksum of files, leave as nil if not checked
     internal error err;     // Expected error to occur
 }
 
@@ -65,8 +67,8 @@ public static void TestReader(ж<testing.T> Ꮡt) {
             Format: FormatGNU))
         }.slice(),
         chksums: new @string[]{
-            "e38b27eaccb4391bdec553a7f3ae6b2f"u8,
-            "c65bd2e50a56a2138bf1716f2fd56fe9"u8
+            "6cbd88fc"u8,
+            "ddac04b3"u8
         }.slice()
     ), new(
         @file: "testdata/sparse-formats.tar"u8,
@@ -155,11 +157,11 @@ public static void TestReader(ж<testing.T> Ꮡt) {
             Format: FormatGNU))
         }.slice(),
         chksums: new @string[]{
-            "6f53234398c2449fe67c1812d993012f"u8,
-            "6f53234398c2449fe67c1812d993012f"u8,
-            "6f53234398c2449fe67c1812d993012f"u8,
-            "6f53234398c2449fe67c1812d993012f"u8,
-            "b0061974914468de549a2af8ced10316"u8
+            "5375e1d2"u8,
+            "5375e1d2"u8,
+            "5375e1d2"u8,
+            "5375e1d2"u8,
+            "8eb179ba"u8
         }.slice()
     ), new(
         @file: "testdata/star.tar"u8,
@@ -273,7 +275,7 @@ public static void TestReader(ж<testing.T> Ꮡt) {
             Format: FormatPAX))
         }.slice(),
         chksums: new @string[]{
-            "0afb597b283fe61b5d4879669a350556"u8
+            "5fd7e86a"u8
         }.slice()
     ), new(
         @file: "testdata/pax-records.tar"u8,
@@ -617,6 +619,11 @@ public static void TestReader(ж<testing.T> Ꮡt) {
             },
             Format: FormatPAX))
         }.slice()
+    ), new(
+        @file: "testdata/gnu-sparse-many-zeros.tar.bz2"u8, // Small compressed file that uncompresses to
+ // a file with a very large GNU 1.0 sparse map.
+
+        err: errSparseTooLong
     )
     }.slice();
     foreach (var (_, vᴛ1) in vectors) {
@@ -658,8 +665,8 @@ public static void TestReader(ж<testing.T> Ꮡt) {
                     if (vʗ1.chksums == default!) {
                         continue;
                     }
-                    var h = md5.New();
-                    (_, err) = io.CopyBuffer(h, new global::go.archive.tar_package.ReaderжReader(tr), rdbuf); // Effectively an incremental read
+                    var h = crc32.NewIEEE();
+                    (_, err) = io.CopyBuffer(new tar_test_package.hash_Hash32ᴠWriter(h), new global::go.archive.tar_package.ReaderжReader(tr), rdbuf); // Effectively an incremental read
                     if (err != default!) {
                         break;
                     }
@@ -798,6 +805,10 @@ public static void TestUninitializedRead(ж<testing.T> Ꮡt) {
 [GoType] internal partial struct readBadSeeker {
     public io_package.ReadSeeker ReadSeeker;
 }
+
+// Go method set entry for the promoted 'ReadSeeker.Read()' - provided ONLY by the embedded
+// interface field in *readBadSeeker's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this readBadSeeker recvᴛ, slice<byte> p) => recvᴛ.ReadSeeker.Read(p);
 
 [GoRecv] internal static (int64, error) Seek(this ref readBadSeeker rbs, int64 _Δp1, nint _Δp2) {
     return (0, fmt.Errorf("illegal seek"u8));
@@ -1091,7 +1102,7 @@ public static void TestParsePAX(ж<testing.T> Ꮡt) {
     foreach (var (i, v) in vectors) {
         var r = strings.NewReader(v.@in);
         var (got, err) = parsePAX(new tar_test_package.strings_ReaderжReader(r));
-        if (!reflect.DeepEqual(got, v.want) && !(len(got) == 0 && len(v.want) == 0)) {
+        if (!maps.Equal<map<@string, @string>, map<@string, @string>, @string, @string>(got, v.want) && !(len(got) == 0 && len(v.want) == 0)) {
             Ꮡt.Errorf("test %d, parsePAX():\ngot  %v\nwant %v"u8, i, got, v.want);
         }
         {
@@ -1136,12 +1147,12 @@ public static void TestReadOldGNUSparseMap(ж<testing.T> Ꮡt) {
         if (format != FormatUnknown) {
             Ꮡblk.setFormat(format);
         }
-        @out = append(@out, blk[..].ꓸꓸꓸ);
+        @out = appendꓸꓸꓸ(@out, blk[..]);
         // Write extended sparse blocks.
         while (len(sps) > 0) {
             global::go.archive.tar_package.block blkΔ1 = default!;
             sps = populateSparseMapʗ1(blkΔ1.toSparse(), sps);
-            @out = append(@out, blkΔ1[..].ꓸꓸꓸ);
+            @out = appendꓸꓸꓸ(@out, blkΔ1[..]);
         }
         return @out;
     }
@@ -1176,7 +1187,7 @@ public static void TestReadOldGNUSparseMap(ж<testing.T> Ꮡt) {
         wantSize: 668
     ), new(
         input: makeInput(FormatGNU, "1234"u8,
-            append(makeSparseStrings(new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(0, 0), new(1, 1)}.slice())), new @string[]{""u8, "blah"u8}.slice().ꓸꓸꓸ).ꓸꓸꓸ),
+            appendꓸꓸꓸ(makeSparseStrings(new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(0, 0), new(1, 1)}.slice())), new @string[]{""u8, "blah"u8}.slice()).ꓸꓸꓸ),
         wantMap: new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(0, 0), new(1, 1)}.slice()),
         wantSize: 668
     ), new(
@@ -1186,10 +1197,10 @@ public static void TestReadOldGNUSparseMap(ж<testing.T> Ꮡt) {
         wantSize: 1755
     ), new(
         input: makeInput(FormatGNU, ""u8,
-            append(append(
+            appendꓸꓸꓸ(appendꓸꓸꓸ(
                 makeSparseStrings(new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(0, 1), new(2, 1)}.slice())),
-                new @string[]{""u8, ""u8}.slice().ꓸꓸꓸ),
-                makeSparseStrings(new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(4, 1), new(6, 1)}.slice())).ꓸꓸꓸ).ꓸꓸꓸ),
+                new @string[]{""u8, ""u8}.slice()),
+                makeSparseStrings(new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(4, 1), new(6, 1)}.slice()))).ꓸꓸꓸ),
         wantMap: new sparseDatas(new global::go.archive.tar_package.sparseEntry[]{new(0, 1), new(2, 1), new(4, 1), new(6, 1)}.slice())
     ), new(
         input: makeInput(FormatGNU, ""u8,
@@ -1217,7 +1228,7 @@ public static void TestReadOldGNUSparseMap(ж<testing.T> Ꮡt) {
         v.input = v.input[(int)(copy(blk[..], v.input))..];
         var tr = new Reader(r: new tar_test_package.bytes_ReaderжReader(bytes.NewReader(v.input)));
         var (got, err) = tr.readOldGNUSparseMap(Ꮡhdr, Ꮡblk);
-        if (!equalSparseEntries(got, v.wantMap)) {
+        if (!slices.Equal<global::go.archive.tar_package.sparseDatas, global::go.archive.tar_package.sparseEntry>(got, v.wantMap)) {
             Ꮡt.Errorf("test %d, readOldGNUSparseMap(): got %v, want %v"u8, i, got, v.wantMap);
         }
         if (!AreEqual(err, v.wantErr)) {
@@ -1408,7 +1419,7 @@ public static void TestReadGNUSparsePAXHeaders(ж<testing.T> Ꮡt) {
         var r = strings.NewReader(v.inputData + "#"u8); // Add canary byte
         var tr = new Reader(curr: new global::go.archive.tar_package.regFileReaderжfileReader(Ꮡ(new regFileReader(new tar_test_package.strings_ReaderжReader(r), (int64)r.Len()))));
         var (got, err) = tr.readGNUSparsePAXHeaders(Ꮡhdr);
-        if (!equalSparseEntries(got, v.wantMap)) {
+        if (!slices.Equal<global::go.archive.tar_package.sparseDatas, global::go.archive.tar_package.sparseEntry>(got, v.wantMap)) {
             Ꮡt.Errorf("test %d, readGNUSparsePAXHeaders(): got %v, want %v"u8, i, got, v.wantMap);
         }
         if (!AreEqual(err, v.wantErr)) {

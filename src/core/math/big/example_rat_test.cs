@@ -10,12 +10,6 @@ using static go.math.big_internal_test_package;
 
 partial class big_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 // Use the classic continued fraction for e
 //
 //	e = [1; 0, 1, 1, 2, 1, 1, ... 2n, 1, 1, ...]

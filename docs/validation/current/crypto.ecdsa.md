@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/ecdsa` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**82 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**77 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/ecdsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdsa).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -20,11 +22,6 @@ comparison — it is the evidence behind the `crypto/ecdsa` row in
 | `TestEqual/P256` | pass | pass |
 | `TestEqual/P384` | pass | pass |
 | `TestEqual/P521` | pass | pass |
-| `TestHashToNat` | pass | pass |
-| `TestHashToNat/P-224` | pass | pass |
-| `TestHashToNat/P-256` | pass | pass |
-| `TestHashToNat/P-384` | pass | pass |
-| `TestHashToNat/P-521` | pass | pass |
 | `TestINDCCA` | pass | pass |
 | `TestINDCCA/P224` | pass | pass |
 | `TestINDCCA/P256` | pass | pass |
@@ -55,6 +52,11 @@ comparison — it is the evidence behind the `crypto/ecdsa` row in
 | `TestNonceSafety/P256/Generic` | pass | pass |
 | `TestNonceSafety/P384` | pass | pass |
 | `TestNonceSafety/P521` | pass | pass |
+| `TestRFC6979` | pass | pass |
+| `TestRFC6979/P-224` | pass | pass |
+| `TestRFC6979/P-256` | pass | pass |
+| `TestRFC6979/P-384` | pass | pass |
+| `TestRFC6979/P-521` | pass | pass |
 | `TestRMinusNSignature` | pass | pass |
 | `TestRMinusNSignature/P224` | pass | pass |
 | `TestRMinusNSignature/P256` | pass | pass |
@@ -67,11 +69,6 @@ comparison — it is the evidence behind the `crypto/ecdsa` row in
 | `TestRPlusNSignature/P256/Generic` | pass | pass |
 | `TestRPlusNSignature/P384` | pass | pass |
 | `TestRPlusNSignature/P521` | pass | pass |
-| `TestRandomPoint` | pass | pass |
-| `TestRandomPoint/P-224` | pass | pass |
-| `TestRandomPoint/P-256` | pass | pass |
-| `TestRandomPoint/P-384` | pass | pass |
-| `TestRandomPoint/P-521` | pass | pass |
 | `TestSignAndVerify` | pass | pass |
 | `TestSignAndVerify/P224` | pass | pass |
 | `TestSignAndVerify/P256` | pass | pass |

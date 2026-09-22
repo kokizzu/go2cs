@@ -6,8 +6,9 @@ namespace go.crypto;
 using bufio = bufio_package;
 using bytes = bytes_package;
 using bzip2 = compress.bzip2_package;
+using crypto = crypto_package;
 using elliptic = go.crypto.elliptic_package;
-using bigmod = go.crypto.@internal.bigmod_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using rand = go.crypto.rand_package;
 using sha1 = go.crypto.sha1_package;
 using sha256 = go.crypto.sha256_package;
@@ -24,10 +25,12 @@ using encoding;
 using go.crypto;
 using go.crypto.@internal;
 using math;
-using nistec = go.crypto.@internal.nistec_package;
 using static go.crypto.ecdsa_package;
 
 partial class ecdsa_internal_test_package {
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string ecdsaˢ = "ecdsa"u8;
 
 [GoType("dyn")] internal partial struct testAllCurves_tests {
     internal @string name;
@@ -45,12 +48,19 @@ internal static void testAllCurves(ж<testing.T> Ꮡt, Action<ж<testing.T>, ell
     if (testing.Short()) {
         tests = tests[..1];
     }
-    foreach (var (_, test) in tests) {
+    foreach (var (_, vᴛ1) in tests) {
+        ref var test = ref heap(new testAllCurves_tests(), out var Ꮡtest);
+        test = vᴛ1;
+
         var curve = test.curve;
         var curveʗ1 = curve;
-        Ꮡt.Run(test.name, (ж<testing.T> tΔ1) => {
-            tΔ1.Parallel();
-            f(tΔ1, curveʗ1);
+        var testʗ1 = test;
+        cryptotest.TestAllImplementations(Ꮡt, ecdsaˢ, (ж<testing.T> tΔ1) => {
+            var curveʗ2 = curveʗ1;
+            tΔ1.Run(testʗ1.name, (ж<testing.T> tΔ2) => {
+                tΔ2.Parallel();
+                f(tΔ2, curveʗ2);
+            });
         });
     }
 }
@@ -128,13 +138,13 @@ public static void TestNonceSafety(ж<testing.T> Ꮡt) {
 internal static void testNonceSafety(ж<testing.T> Ꮡt, elliptic.Curve c) {
     var (priv, _) = GenerateKey(c, rand.Reader);
     var hashed = slice<byte>("testing"u8);
-    var (r0, s0, err) = Sign(zeroReader, priv, hashed);
+    var (r0, s0, err) = Sign(new ecdsa_internal_test_package.readerFuncᴠReader(zeroReader), priv, hashed);
     if (err != default!) {
         Ꮡt.Errorf("error signing: %s"u8, err);
         return;
     }
     hashed = slice<byte>("testing..."u8);
-    (var r1, var s1, err) = Sign(zeroReader, priv, hashed);
+    (var r1, var s1, err) = Sign(new ecdsa_internal_test_package.readerFuncᴠReader(zeroReader), priv, hashed);
     if (err != default!) {
         Ꮡt.Errorf("error signing: %s"u8, err);
         return;
@@ -147,6 +157,17 @@ internal static void testNonceSafety(ж<testing.T> Ꮡt, elliptic.Curve c) {
         Ꮡt.Errorf("the nonce used for two different messages was the same"u8);
     }
 }
+
+internal delegate (nint, error) readerFunc(slice<byte> _Δp0);
+
+internal static (nint, error) Read(this readerFunc f, slice<byte> b) {
+    return f(b);
+}
+
+internal static readerFunc zeroReader = new readerFunc((slice<byte> b) => {
+    clear(b);
+    return (len(b), default!);
+});
 
 public static void TestINDCCA(ж<testing.T> Ꮡt) {
     testAllCurves(Ꮡt, testINDCCA);
@@ -181,12 +202,16 @@ internal static ж<bigꓸInt> fromHex(@string s) {
     return r;
 }
 
+public static void TestVectors(ж<testing.T> Ꮡt) {
+    cryptotest.TestAllImplementations(Ꮡt, ecdsaˢ, testVectors);
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdataSigVerRspBz2ˢ = "testdata/SigVer.rsp.bz2"u8;
 internal static readonly @string msgˢ = "Msg = "u8;
 internal static readonly @string resultˢ = "Result = "u8;
 
-public static void TestVectors(ж<testing.T> Ꮡt) {
+internal static void testVectors(ж<testing.T> Ꮡt) {
     // This test runs the full set of NIST test vectors from
     // https://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3ecdsatestvectors.zip
     //
@@ -352,128 +377,6 @@ internal static void testZeroHashSignature(ж<testing.T> Ꮡt, elliptic.Curve cu
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string p224ˢ = "P-224"u8;
-internal static readonly @string p256ˢ = "P-256"u8;
-internal static readonly @string p384ˢ = "P-384"u8;
-internal static readonly @string p521ˢ = "P-521"u8;
-
-public static void TestRandomPoint(ж<testing.T> Ꮡt) {
-    Ꮡt.Run(p224ˢ, (ж<testing.T> tΔ1) => {
-        testRandomPoint<P224PointжnistPoint>(tΔ1, p224());
-    });
-    Ꮡt.Run(p256ˢ, (ж<testing.T> tΔ2) => {
-        testRandomPoint<P256PointжnistPoint>(tΔ2, p256());
-    });
-    Ꮡt.Run(p384ˢ, (ж<testing.T> tΔ3) => {
-        testRandomPoint<P384PointжnistPoint>(tΔ3, p384());
-    });
-    Ꮡt.Run(p521ˢ, (ж<testing.T> tΔ4) => {
-        testRandomPoint<P521PointжnistPoint>(tΔ4, p521());
-    });
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object kIsZeroˢ = (@string)"k is zero"u8;
-internal static readonly object pIsInfinityˢ = (@string)"p is infinity"u8;
-internal static readonly object overflowWasNotRejectedˢ = (@string)"overflow was not rejected"u8;
-internal static readonly object zeroWasNotRejectedˢ = (@string)"zero was not rejected"u8;
-internal static readonly object unexpectedRejectionˢ = (@string)"unexpected rejection"u8;
-
-internal static void testRandomPoint<Point>(ж<testing.T> Ꮡt, ж<global::go.crypto.ecdsa_package.nistCurve<Point>> Ꮡc)
-    where Point : global::go.crypto.ecdsa_package.nistPoint<Point>
-{
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    Ꮡt.Cleanup(() => {
-        testingOnlyRejectionSamplingLooped = default!;
-    });
-    nint loopCount = default!;
-    testingOnlyRejectionSamplingLooped = () => {
-        loopCount++;
-    };
-    // A sequence of all ones will generate 2^N-1, which should be rejected.
-    // (Unless, for example, we are masking too many bits.)
-    var r = io.MultiReader(new ecdsa_test_package.bytes_ReaderжReader(bytes.NewReader(bytes.Repeat(new byte[]{0xff}.slice(), 100))), rand.Reader);
-    {
-        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), r); if (err != default!){
-            Ꮡt.Fatal(err);
-        } else 
-        if (k.IsZero() == 1){
-            Ꮡt.Error(kIsZeroˢ);
-        } else 
-        if (p.Bytes()[0] != 4) {
-            Ꮡt.Error(pIsInfinityˢ);
-        }
-    }
-    if (loopCount == 0) {
-        Ꮡt.Error(overflowWasNotRejectedˢ);
-    }
-    loopCount = 0;
-    // A sequence of all zeroes will generate zero, which should be rejected.
-    r = io.MultiReader(new ecdsa_test_package.bytes_ReaderжReader(bytes.NewReader(bytes.Repeat(new byte[]{0}.slice(), 100))), rand.Reader);
-    {
-        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), r); if (err != default!){
-            Ꮡt.Fatal(err);
-        } else 
-        if (k.IsZero() == 1){
-            Ꮡt.Error(kIsZeroˢ);
-        } else 
-        if (p.Bytes()[0] != 4) {
-            Ꮡt.Error(pIsInfinityˢ);
-        }
-    }
-    if (loopCount == 0) {
-        Ꮡt.Error(zeroWasNotRejectedˢ);
-    }
-    loopCount = 0;
-    // P-256 has a 2⁻³² chance or randomly hitting a rejection. For P-224 it's
-    // 2⁻¹¹², for P-384 it's 2⁻¹⁹⁴, and for P-521 it's 2⁻²⁶², so if we hit in
-    // tests, something is horribly wrong. (For example, we are masking the
-    // wrong bits.)
-    if (AreEqual(c.curve, elliptic.P256())) {
-        return;
-    }
-    {
-        var (k, p, err) = randomPoint(ref (Ꮡc).DerefOrNull(), rand.Reader); if (err != default!){
-            Ꮡt.Fatal(err);
-        } else 
-        if (k.IsZero() == 1){
-            Ꮡt.Error(kIsZeroˢ);
-        } else 
-        if (p.Bytes()[0] != 4) {
-            Ꮡt.Error(pIsInfinityˢ);
-        }
-    }
-    if (loopCount > 0) {
-        Ꮡt.Error(unexpectedRejectionˢ);
-    }
-}
-
-public static void TestHashToNat(ж<testing.T> Ꮡt) {
-    Ꮡt.Run(p224ˢ, (ж<testing.T> tΔ1) => {
-        testHashToNat<P224PointжnistPoint>(tΔ1, p224());
-    });
-    Ꮡt.Run(p256ˢ, (ж<testing.T> tΔ2) => {
-        testHashToNat<P256PointжnistPoint>(tΔ2, p256());
-    });
-    Ꮡt.Run(p384ˢ, (ж<testing.T> tΔ3) => {
-        testHashToNat<P384PointжnistPoint>(tΔ3, p384());
-    });
-    Ꮡt.Run(p521ˢ, (ж<testing.T> tΔ4) => {
-        testHashToNat<P521PointжnistPoint>(tΔ4, p521());
-    });
-}
-
-internal static void testHashToNat<Point>(ж<testing.T> Ꮡt, ж<global::go.crypto.ecdsa_package.nistCurve<Point>> Ꮡc)
-    where Point : global::go.crypto.ecdsa_package.nistPoint<Point>
-{
-    for (nint l = 0; l < 600; l++) {
-        var h = bytes.Repeat(new byte[]{0xff}.slice(), l);
-        hashToNat(ref (Ꮡc).DerefOrNull(), bigmod.NewNat(), h);
-    }
-}
-
 public static void TestZeroSignature(ж<testing.T> Ꮡt) {
     testAllCurves(Ꮡt, testZeroSignature);
 }
@@ -548,28 +451,122 @@ internal static void testRMinusNSignature(ж<testing.T> Ꮡt, elliptic.Curve cur
     }
 }
 
-internal static error randomPointForCurve(elliptic.Curve curve, io.Reader rand) {
-    var exprᴛ1 = curve.Params();
-    if (exprᴛ1 == elliptic.P224().Params()) {
-        var (_, _, err) = randomPoint<P224PointжnistPoint>(ref (p224()).DerefOrNull(), rand);
-        return err;
-    }
-    if (exprᴛ1 == elliptic.P256().Params()) {
-        var (_, _, err) = randomPoint<P256PointжnistPoint>(ref (p256()).DerefOrNull(), rand);
-        return err;
-    }
-    if (exprᴛ1 == elliptic.P384().Params()) {
-        var (_, _, err) = randomPoint<P384PointжnistPoint>(ref (p384()).DerefOrNull(), rand);
-        return err;
-    }
-    if (exprᴛ1 == elliptic.P521().Params()) {
-        var (_, _, err) = randomPoint<P521PointжnistPoint>(ref (p521()).DerefOrNull(), rand);
-        return err;
-    }
-    { /* default: */
-        throw panic("unknown curve");
-    }
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string p224ˢ = "P-224"u8;
+internal static readonly @string sampleˢ = "sample"u8;
+internal static readonly @string testˢ = "test"u8;
+internal static readonly @string p256ˢ = "P-256"u8;
+internal static readonly @string wvVnXˢ = "wv[vnX"u8;
+internal static readonly @string p384ˢ = "P-384"u8;
+internal static readonly @string p521ˢ = "P-521"u8;
 
+public static void TestRFC6979(ж<testing.T> Ꮡt) {
+    Ꮡt.Run(p224ˢ, (ж<testing.T> tΔ1) => {
+        testRFC6979(tΔ1, elliptic.P224(),
+            "F220266E1105BFE3083E03EC7A3A654651F45E37167E88600BF257C1"u8,
+            "00CF08DA5AD719E42707FA431292DEA11244D64FC51610D94B130D6C"u8,
+            "EEAB6F3DEBE455E3DBF85416F7030CBD94F34F2D6F232C69F3C1385A"u8,
+            sampleˢ,
+            "61AA3DA010E8E8406C656BC477A7A7189895E7E840CDFE8FF42307BA"u8,
+            "BC814050DAB5D23770879494F9E0A680DC1AF7161991BDE692B10101"u8);
+        testRFC6979(tΔ1, elliptic.P224(),
+            "F220266E1105BFE3083E03EC7A3A654651F45E37167E88600BF257C1"u8,
+            "00CF08DA5AD719E42707FA431292DEA11244D64FC51610D94B130D6C"u8,
+            "EEAB6F3DEBE455E3DBF85416F7030CBD94F34F2D6F232C69F3C1385A"u8,
+            testˢ,
+            "AD04DDE87B84747A243A631EA47A1BA6D1FAA059149AD2440DE6FBA6"u8,
+            "178D49B1AE90E3D8B629BE3DB5683915F4E8C99FDF6E666CF37ADCFD"u8);
+    });
+    Ꮡt.Run(p256ˢ, (ж<testing.T> tΔ2) => {
+        // This vector was bruteforced to find a message that causes the
+        // generation of k to loop. It was checked against
+        // github.com/codahale/rfc6979 (https://go.dev/play/p/FK5-fmKf7eK),
+        // OpenSSL 3.2.0 (https://github.com/openssl/openssl/pull/23130),
+        // and python-ecdsa:
+        //
+        //    ecdsa.keys.SigningKey.from_secret_exponent(
+        //        0xC9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721,
+        //        ecdsa.curves.curve_by_name("NIST256p"), hashlib.sha256).sign_deterministic(
+        //        b"wv[vnX", hashlib.sha256, lambda r, s, order: print(hex(r), hex(s)))
+        //
+        testRFC6979(tΔ2, elliptic.P256(),
+            "C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721"u8,
+            "60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6"u8,
+            "7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299"u8,
+            wvVnXˢ,
+            "EFD9073B652E76DA1B5A019C0E4A2E3FA529B035A6ABB91EF67F0ED7A1F21234"u8,
+            "3DB4706C9D9F4A4FE13BB5E08EF0FAB53A57DBAB2061C83A35FA411C68D2BA33"u8);
+        // The remaining vectors are from RFC 6979.
+        testRFC6979(tΔ2, elliptic.P256(),
+            "C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721"u8,
+            "60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6"u8,
+            "7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299"u8,
+            sampleˢ,
+            "EFD48B2AACB6A8FD1140DD9CD45E81D69D2C877B56AAF991C34D0EA84EAF3716"u8,
+            "F7CB1C942D657C41D436C7A1B6E29F65F3E900DBB9AFF4064DC4AB2F843ACDA8"u8);
+        testRFC6979(tΔ2, elliptic.P256(),
+            "C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721"u8,
+            "60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6"u8,
+            "7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299"u8,
+            testˢ,
+            "F1ABB023518351CD71D881567B1EA663ED3EFCF6C5132B354F28D3B0B7D38367"u8,
+            "019F4113742A2B14BD25926B49C649155F267E60D3814B4C0CC84250E46F0083"u8);
+    });
+    Ꮡt.Run(p384ˢ, (ж<testing.T> tΔ3) => {
+        testRFC6979(tΔ3, elliptic.P384(),
+            "6B9D3DAD2E1B8C1C05B19875B6659F4DE23C3B667BF297BA9AA47740787137D896D5724E4C70A825F872C9EA60D2EDF5"u8,
+            "EC3A4E415B4E19A4568618029F427FA5DA9A8BC4AE92E02E06AAE5286B300C64DEF8F0EA9055866064A254515480BC13"u8,
+            "8015D9B72D7D57244EA8EF9AC0C621896708A59367F9DFB9F54CA84B3F1C9DB1288B231C3AE0D4FE7344FD2533264720"u8,
+            sampleˢ,
+            "21B13D1E013C7FA1392D03C5F99AF8B30C570C6F98D4EA8E354B63A21D3DAA33BDE1E888E63355D92FA2B3C36D8FB2CD"u8,
+            "F3AA443FB107745BF4BD77CB3891674632068A10CA67E3D45DB2266FA7D1FEEBEFDC63ECCD1AC42EC0CB8668A4FA0AB0"u8);
+        testRFC6979(tΔ3, elliptic.P384(),
+            "6B9D3DAD2E1B8C1C05B19875B6659F4DE23C3B667BF297BA9AA47740787137D896D5724E4C70A825F872C9EA60D2EDF5"u8,
+            "EC3A4E415B4E19A4568618029F427FA5DA9A8BC4AE92E02E06AAE5286B300C64DEF8F0EA9055866064A254515480BC13"u8,
+            "8015D9B72D7D57244EA8EF9AC0C621896708A59367F9DFB9F54CA84B3F1C9DB1288B231C3AE0D4FE7344FD2533264720"u8,
+            testˢ,
+            "6D6DEFAC9AB64DABAFE36C6BF510352A4CC27001263638E5B16D9BB51D451559F918EEDAF2293BE5B475CC8F0188636B"u8,
+            "2D46F3BECBCC523D5F1A1256BF0C9B024D879BA9E838144C8BA6BAEB4B53B47D51AB373F9845C0514EEFB14024787265"u8);
+    });
+    Ꮡt.Run(p521ˢ, (ж<testing.T> tΔ4) => {
+        testRFC6979(tΔ4, elliptic.P521(),
+            "0FAD06DAA62BA3B25D2FB40133DA757205DE67F5BB0018FEE8C86E1B68C7E75CAA896EB32F1F47C70855836A6D16FCC1466F6D8FBEC67DB89EC0C08B0E996B83538"u8,
+            "1894550D0785932E00EAA23B694F213F8C3121F86DC97A04E5A7167DB4E5BCD371123D46E45DB6B5D5370A7F20FB633155D38FFA16D2BD761DCAC474B9A2F5023A4"u8,
+            "0493101C962CD4D2FDDF782285E64584139C2F91B47F87FF82354D6630F746A28A0DB25741B5B34A828008B22ACC23F924FAAFBD4D33F81EA66956DFEAA2BFDFCF5"u8,
+            sampleˢ,
+            "1511BB4D675114FE266FC4372B87682BAECC01D3CC62CF2303C92B3526012659D16876E25C7C1E57648F23B73564D67F61C6F14D527D54972810421E7D87589E1A7"u8,
+            "04A171143A83163D6DF460AAF61522695F207A58B95C0644D87E52AA1A347916E4F7A72930B1BC06DBE22CE3F58264AFD23704CBB63B29B931F7DE6C9D949A7ECFC"u8);
+        testRFC6979(tΔ4, elliptic.P521(),
+            "0FAD06DAA62BA3B25D2FB40133DA757205DE67F5BB0018FEE8C86E1B68C7E75CAA896EB32F1F47C70855836A6D16FCC1466F6D8FBEC67DB89EC0C08B0E996B83538"u8,
+            "1894550D0785932E00EAA23B694F213F8C3121F86DC97A04E5A7167DB4E5BCD371123D46E45DB6B5D5370A7F20FB633155D38FFA16D2BD761DCAC474B9A2F5023A4"u8,
+            "0493101C962CD4D2FDDF782285E64584139C2F91B47F87FF82354D6630F746A28A0DB25741B5B34A828008B22ACC23F924FAAFBD4D33F81EA66956DFEAA2BFDFCF5"u8,
+            testˢ,
+            "00E871C4A14F993C6C7369501900C4BC1E9C7B0B4BA44E04868B30B41D8071042EB28C4C250411D0CE08CD197E4188EA4876F279F90B3D8D74A3C76E6F1E4656AA8"u8,
+            "0CD52DBAA33B063C3A6CD8058A1FB0A46A4754B034FCC644766CA14DA8CA5CA9FDE00E88C1AD60CCBA759025299079D7A427EC3CC5B619BFBC828E7769BCD694E86"u8);
+    });
+}
+
+internal static void testRFC6979(ж<testing.T> Ꮡt, elliptic.Curve curve, @string D, @string X, @string Y, @string msg, @string r, @string s) {
+    var priv = Ꮡ(new PrivateKey(
+        D: fromHex(D),
+        PublicKey: new PublicKey(
+            Curve: curve,
+            X: fromHex(X),
+            Y: fromHex(Y)
+        )
+    ));
+    var h = sha256.Sum256(slice<byte>(msg));
+    var (sig, err) = priv.Sign(default!, h[..], crypto.SHA256);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    (var expected, err) = encodeSignature(fromHex(r).Bytes(), fromHex(s).Bytes());
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (!bytes.Equal(sig, expected)) {
+        Ꮡt.Errorf("signature mismatch:\n got: %x\nwant: %x"u8, sig, expected);
+    }
 }
 
 [GoType("dyn")] internal partial struct benchmarkAllCurves_tests {

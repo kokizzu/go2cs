@@ -15,7 +15,6 @@ namespace go.go;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using format = global::go.go.format_package;
-using importer = global::go.go.importer_package;
 using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
 using types = global::go.go.types_package;
@@ -25,21 +24,10 @@ using slices = slices_package;
 using strings = strings_package;
 using global::go.go;
 using io = io_package;
+using iter = iter_package;
 using static global::go.go.types_internal_test_package;
 
 partial class types_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸformat() {
-    builtin.initPackage(typeof(global::go.go.format_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string temperatureˢ = "temperature"u8;
@@ -77,7 +65,7 @@ func Unused() { {}; {{ var x int; _ = x }} } // make sure empty block scopes get
     // Type information for the imported "fmt" package
     // comes from $GOROOT/pkg/$GOOS_$GOOARCH/fmt.a.
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new types.Config(Importer: importer.Default());
+    conf = new types.Config(Importer: defaultImporter(fset));
     var (pkg, err) = Ꮡconf.Check(temperatureˢ, fset, files, nil);
     if (err != default!) {
         log.Fatal(err);
@@ -151,7 +139,7 @@ type I interface { m() byte }
     // Type information for the imported packages
     // comes from $GOROOT/pkg/$GOOS_$GOOARCH/fmt.a.
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new types.Config(Importer: importer.Default());
+    conf = new types.Config(Importer: defaultImporter(fset));
     (var pkg, err) = Ꮡconf.Check(temperatureˢ, fset, new ж<ast.File>[]{f}.slice(), nil);
     if (err != default!) {
         log.Fatal(err);
@@ -160,9 +148,8 @@ type I interface { m() byte }
     var celsius = pkg.Scope().Lookup(celsiusˢ).Type();
     foreach (var (_, t) in new typesꓸType[]{celsius, new types.PointerжΔType(types.NewPointer(celsius))}.slice()) {
         fmt.Printf("Method set of %s:\n"u8, t);
-        var mset = types.NewMethodSet(t);
-        for (nint i = 0; i < mset.Len(); i++) {
-            fmt.Println(mset.At(i).OrTypedNil());
+        foreach (var m in range<ж<types.Selection>>(types.NewMethodSet(t).Methods().Invoke)) {
+            fmt.Println(m.OrTypedNil());
         }
         fmt.Println();
     }

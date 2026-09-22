@@ -10,9 +10,13 @@ namespace go.crypto;
 using bytes = bytes_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
+using des = go.crypto.des_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
+using fmt = fmt_package;
 using testing = testing_package;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
+using go.crypto.@internal;
+using io = io_package;
 
 partial class cipher_test_package {
 
@@ -95,6 +99,31 @@ public static void TestOFB(ж<testing.T> Ꮡt) {
             break;
         }
     }
+}
+
+public static void TestOFBStream(ж<testing.T> Ꮡt) {
+    foreach (var (_, keylen) in new nint[]{128, 192, 256}.slice()) {
+        Ꮡt.Run(fmt.Sprintf("AES-%d"u8, keylen), (ж<testing.T> tΔ1) => {
+            var rng = newRandReader(tΔ1);
+            var key = new slice<byte>(keylen / 8);
+            rng.Read(key);
+            var (block, err) = aes.NewCipher(key);
+            if (err != default!) {
+                throw panic(err);
+            }
+            cryptotest.TestStreamFromBlock(tΔ1, block, cipher.NewOFB);
+        });
+    }
+    Ꮡt.Run(desˢ, (ж<testing.T> tΔ2) => {
+        var rng = newRandReader(tΔ2);
+        var key = new slice<byte>(8);
+        rng.Read(key);
+        var (block, err) = des.NewCipher(key);
+        if (err != default!) {
+            throw panic(err);
+        }
+        cryptotest.TestStreamFromBlock(tΔ2, block, cipher.NewOFB);
+    });
 }
 
 } // end cipher_test_package

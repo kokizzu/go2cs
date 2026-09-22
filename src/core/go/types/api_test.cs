@@ -11,108 +11,26 @@ using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
 using goversion = global::go.@internal.goversion_package;
 using testenv = global::go.@internal.testenv_package;
-using reflect = reflect_package;
-using regexp = regexp_package;
 using slices = slices_package;
 using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
 using static global::go.go.types_package;
+using runtime = runtime_package;
 using global::go.@internal;
 using global::go.go;
 using io = io_package;
 using static global::go.go.types_internal_test_package;
 using types = global::go.go.types_package;
-using ꓸꓸꓸжastꓸFile = Span<ж<global::go.go.ast_package.File>>;
 
 partial class types_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸimporter() {
-    builtin.initPackage(typeof(global::go.go.importer_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸparser() {
-    builtin.initPackage(typeof(global::go.go.parser_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(global::go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() {
-    builtin.initPackage(typeof(global::go.go.types_package));
-}
-
 // nopos indicates an unknown position
 internal static tokenꓸPos nopos;
+
+internal static types.Importer defaultImporter(ж<token.FileSet> Ꮡfset) {
+    return importer.ForCompiler(Ꮡfset, runtime.Compiler, default!);
+}
 
 internal static ж<ast.File> mustParse(ж<token.FileSet> Ꮡfset, @string src) {
     var (f, err) = parser.ParseFile(Ꮡfset, pkgName(src), src, parser.ParseComments);
@@ -125,6 +43,7 @@ internal static ж<ast.File> mustParse(ж<token.FileSet> Ꮡfset, @string src) {
 internal static (ж<types.Package>, error) typecheck(@string src, ж<types.Config> Ꮡconf, ж<typesꓸInfo> Ꮡinfo) {
     ref var conf = ref Ꮡconf.DerefOrNull();
 
+    // TODO(adonovan): plumb this from caller.
     var fset = token.NewFileSet();
     var f = mustParse(fset, src);
     if (Ꮡconf == nil) {
@@ -132,7 +51,7 @@ internal static (ж<types.Package>, error) typecheck(@string src, ж<types.Confi
             Error: (error err) => {
             }, // collect all errors
 
-            Importer: importer.Default()
+            Importer: defaultImporter(fset)
         )); conf = ref Ꮡconf.DerefOrNull();
     }
     return Ꮡconf.Check((~(~f).Name).Name, fset, new ж<ast.File>[]{f}.slice(), Ꮡinfo);
@@ -164,7 +83,7 @@ internal static @string pkgName(@string src) {
     throw panic("missing package header: " + src);
 }
 
-[GoType("dyn")] partial struct TestValuesInfo_type {
+[GoType("dyn")] internal partial struct TestValuesInfo_type {
     internal @string src;
     internal @string expr; // constant expression
     internal @string typ; // constant type
@@ -276,7 +195,7 @@ public static void TestValuesInfo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTypesInfo_type {
+[GoType("dyn")] internal partial struct TestTypesInfo_type {
     internal @string src;
     internal @string expr; // expression
     internal @string typ; // value type
@@ -308,6 +227,17 @@ public static void TestTypesInfo(ж<testing.T> Ꮡt) {
 // go.dev/issues/60212
 // go.dev/issues/60212
 // go.dev/issues/60212
+// go.dev/issue/68639
+// parenthesized and pointer type expressions in various positions
+// - as variable type, not generic
+// - as ordinary function parameter, not generic
+// - as method receiver, not generic
+// - as variable type, generic
+// - as ordinary function parameter, generic
+// - as method receiver, generic
+// For historic reasons, type parameters in receiver type expressions
+// are considered both definitions and uses and thus also show up in
+// the Info.Types map (see go.dev/issue/68670).
     slice<TestTypesInfo_type> tests = new TestTypesInfo_type[]{
         new(@"package b0; var x interface{} = false"u8, @"false"u8, @"bool"u8),
         new(@"package b1; var x interface{} = 0"u8, @"0"u8, @"int"u8),
@@ -480,7 +410,106 @@ public static void TestTypesInfo(ж<testing.T> Ꮡt) {
         new(@"package s7; func _() { f(g, h) }; func f[P any](func(int, P), func(P, string)) {}; func g[P any](P, P) {}; func h[P, Q any](P, Q) {}"u8, @"g"u8, @"func(int, int)"u8),
         new(@"package s8; func _() { f(g, h) }; func f[P any](func(int, P), func(P, string)) {}; func g[P any](P, P) {}; func h[P, Q any](P, Q) {}"u8, @"h"u8, @"func(int, string)"u8),
         new(@"package s9; func _() { f(g, h[int]) }; func f[P any](func(int, P), func(P, string)) {}; func g[P any](P, P) {}; func h[P, Q any](P, Q) {}"u8, @"h"u8, @"func[P, Q any](P, Q)"u8),
-        new(@"package s10; func _() { f(g, h[int]) }; func f[P any](func(int, P), func(P, string)) {}; func g[P any](P, P) {}; func h[P, Q any](P, Q) {}"u8, @"h[int]"u8, @"func(int, string)"u8)
+        new(@"package s10; func _() { f(g, h[int]) }; func f[P any](func(int, P), func(P, string)) {}; func g[P any](P, P) {}; func h[P, Q any](P, Q) {}"u8, @"h[int]"u8, @"func(int, string)"u8),
+        new(@"package qa1; type T int; var x T"u8, @"T"u8, @"qa1.T"u8),
+        new(@"package qa2; type T int; var x (T)"u8, @"T"u8, @"qa2.T"u8),
+        new(@"package qa3; type T int; var x (T)"u8, @"(T)"u8, @"qa3.T"u8),
+        new(@"package qa4; type T int; var x ((T))"u8, @"T"u8, @"qa4.T"u8),
+        new(@"package qa5; type T int; var x ((T))"u8, @"(T)"u8, @"qa5.T"u8),
+        new(@"package qa6; type T int; var x ((T))"u8, @"((T))"u8, @"qa6.T"u8),
+        new(@"package qa7; type T int; var x *T"u8, @"T"u8, @"qa7.T"u8),
+        new(@"package qa8; type T int; var x *T"u8, @"*T"u8, @"*qa8.T"u8),
+        new(@"package qa9; type T int; var x (*T)"u8, @"T"u8, @"qa9.T"u8),
+        new(@"package qa10; type T int; var x (*T)"u8, @"*T"u8, @"*qa10.T"u8),
+        new(@"package qa11; type T int; var x *(T)"u8, @"T"u8, @"qa11.T"u8),
+        new(@"package qa12; type T int; var x *(T)"u8, @"(T)"u8, @"qa12.T"u8),
+        new(@"package qa13; type T int; var x *(T)"u8, @"*(T)"u8, @"*qa13.T"u8),
+        new(@"package qa14; type T int; var x (*(T))"u8, @"(T)"u8, @"qa14.T"u8),
+        new(@"package qa15; type T int; var x (*(T))"u8, @"*(T)"u8, @"*qa15.T"u8),
+        new(@"package qa16; type T int; var x (*(T))"u8, @"(*(T))"u8, @"*qa16.T"u8),
+        new(@"package qb1; type T int; func _(T)"u8, @"T"u8, @"qb1.T"u8),
+        new(@"package qb2; type T int; func _((T))"u8, @"T"u8, @"qb2.T"u8),
+        new(@"package qb3; type T int; func _((T))"u8, @"(T)"u8, @"qb3.T"u8),
+        new(@"package qb4; type T int; func _(((T)))"u8, @"T"u8, @"qb4.T"u8),
+        new(@"package qb5; type T int; func _(((T)))"u8, @"(T)"u8, @"qb5.T"u8),
+        new(@"package qb6; type T int; func _(((T)))"u8, @"((T))"u8, @"qb6.T"u8),
+        new(@"package qb7; type T int; func _(*T)"u8, @"T"u8, @"qb7.T"u8),
+        new(@"package qb8; type T int; func _(*T)"u8, @"*T"u8, @"*qb8.T"u8),
+        new(@"package qb9; type T int; func _((*T))"u8, @"T"u8, @"qb9.T"u8),
+        new(@"package qb10; type T int; func _((*T))"u8, @"*T"u8, @"*qb10.T"u8),
+        new(@"package qb11; type T int; func _(*(T))"u8, @"T"u8, @"qb11.T"u8),
+        new(@"package qb12; type T int; func _(*(T))"u8, @"(T)"u8, @"qb12.T"u8),
+        new(@"package qb13; type T int; func _(*(T))"u8, @"*(T)"u8, @"*qb13.T"u8),
+        new(@"package qb14; type T int; func _((*(T)))"u8, @"(T)"u8, @"qb14.T"u8),
+        new(@"package qb15; type T int; func _((*(T)))"u8, @"*(T)"u8, @"*qb15.T"u8),
+        new(@"package qb16; type T int; func _((*(T)))"u8, @"(*(T))"u8, @"*qb16.T"u8),
+        new(@"package qc1; type T int; func (T) _() {}"u8, @"T"u8, @"qc1.T"u8),
+        new(@"package qc2; type T int; func ((T)) _() {}"u8, @"T"u8, @"qc2.T"u8),
+        new(@"package qc3; type T int; func ((T)) _() {}"u8, @"(T)"u8, @"qc3.T"u8),
+        new(@"package qc4; type T int; func (((T))) _() {}"u8, @"T"u8, @"qc4.T"u8),
+        new(@"package qc5; type T int; func (((T))) _() {}"u8, @"(T)"u8, @"qc5.T"u8),
+        new(@"package qc6; type T int; func (((T))) _() {}"u8, @"((T))"u8, @"qc6.T"u8),
+        new(@"package qc7; type T int; func (*T) _() {}"u8, @"T"u8, @"qc7.T"u8),
+        new(@"package qc8; type T int; func (*T) _() {}"u8, @"*T"u8, @"*qc8.T"u8),
+        new(@"package qc9; type T int; func ((*T)) _() {}"u8, @"T"u8, @"qc9.T"u8),
+        new(@"package qc10; type T int; func ((*T)) _() {}"u8, @"*T"u8, @"*qc10.T"u8),
+        new(@"package qc11; type T int; func (*(T)) _() {}"u8, @"T"u8, @"qc11.T"u8),
+        new(@"package qc12; type T int; func (*(T)) _() {}"u8, @"(T)"u8, @"qc12.T"u8),
+        new(@"package qc13; type T int; func (*(T)) _() {}"u8, @"*(T)"u8, @"*qc13.T"u8),
+        new(@"package qc14; type T int; func ((*(T))) _() {}"u8, @"(T)"u8, @"qc14.T"u8),
+        new(@"package qc15; type T int; func ((*(T))) _() {}"u8, @"*(T)"u8, @"*qc15.T"u8),
+        new(@"package qc16; type T int; func ((*(T))) _() {}"u8, @"(*(T))"u8, @"*qc16.T"u8),
+        new(@"package qd1; type T[_ any] int; var x T[int]"u8, @"T"u8, @"qd1.T[_ any]"u8),
+        new(@"package qd2; type T[_ any] int; var x (T[int])"u8, @"T[int]"u8, @"qd2.T[int]"u8),
+        new(@"package qd3; type T[_ any] int; var x (T[int])"u8, @"(T[int])"u8, @"qd3.T[int]"u8),
+        new(@"package qd4; type T[_ any] int; var x ((T[int]))"u8, @"T"u8, @"qd4.T[_ any]"u8),
+        new(@"package qd5; type T[_ any] int; var x ((T[int]))"u8, @"(T[int])"u8, @"qd5.T[int]"u8),
+        new(@"package qd6; type T[_ any] int; var x ((T[int]))"u8, @"((T[int]))"u8, @"qd6.T[int]"u8),
+        new(@"package qd7; type T[_ any] int; var x *T[int]"u8, @"T"u8, @"qd7.T[_ any]"u8),
+        new(@"package qd8; type T[_ any] int; var x *T[int]"u8, @"*T[int]"u8, @"*qd8.T[int]"u8),
+        new(@"package qd9; type T[_ any] int; var x (*T[int])"u8, @"T"u8, @"qd9.T[_ any]"u8),
+        new(@"package qd10; type T[_ any] int; var x (*T[int])"u8, @"*T[int]"u8, @"*qd10.T[int]"u8),
+        new(@"package qd11; type T[_ any] int; var x *(T[int])"u8, @"T[int]"u8, @"qd11.T[int]"u8),
+        new(@"package qd12; type T[_ any] int; var x *(T[int])"u8, @"(T[int])"u8, @"qd12.T[int]"u8),
+        new(@"package qd13; type T[_ any] int; var x *(T[int])"u8, @"*(T[int])"u8, @"*qd13.T[int]"u8),
+        new(@"package qd14; type T[_ any] int; var x (*(T[int]))"u8, @"(T[int])"u8, @"qd14.T[int]"u8),
+        new(@"package qd15; type T[_ any] int; var x (*(T[int]))"u8, @"*(T[int])"u8, @"*qd15.T[int]"u8),
+        new(@"package qd16; type T[_ any] int; var x (*(T[int]))"u8, @"(*(T[int]))"u8, @"*qd16.T[int]"u8),
+        new(@"package qe1; type T[_ any] int; func _(T[int])"u8, @"T"u8, @"qe1.T[_ any]"u8),
+        new(@"package qe2; type T[_ any] int; func _((T[int]))"u8, @"T[int]"u8, @"qe2.T[int]"u8),
+        new(@"package qe3; type T[_ any] int; func _((T[int]))"u8, @"(T[int])"u8, @"qe3.T[int]"u8),
+        new(@"package qe4; type T[_ any] int; func _(((T[int])))"u8, @"T"u8, @"qe4.T[_ any]"u8),
+        new(@"package qe5; type T[_ any] int; func _(((T[int])))"u8, @"(T[int])"u8, @"qe5.T[int]"u8),
+        new(@"package qe6; type T[_ any] int; func _(((T[int])))"u8, @"((T[int]))"u8, @"qe6.T[int]"u8),
+        new(@"package qe7; type T[_ any] int; func _(*T[int])"u8, @"T"u8, @"qe7.T[_ any]"u8),
+        new(@"package qe8; type T[_ any] int; func _(*T[int])"u8, @"*T[int]"u8, @"*qe8.T[int]"u8),
+        new(@"package qe9; type T[_ any] int; func _((*T[int]))"u8, @"T"u8, @"qe9.T[_ any]"u8),
+        new(@"package qe10; type T[_ any] int; func _((*T[int]))"u8, @"*T[int]"u8, @"*qe10.T[int]"u8),
+        new(@"package qe11; type T[_ any] int; func _(*(T[int]))"u8, @"T[int]"u8, @"qe11.T[int]"u8),
+        new(@"package qe12; type T[_ any] int; func _(*(T[int]))"u8, @"(T[int])"u8, @"qe12.T[int]"u8),
+        new(@"package qe13; type T[_ any] int; func _(*(T[int]))"u8, @"*(T[int])"u8, @"*qe13.T[int]"u8),
+        new(@"package qe14; type T[_ any] int; func _((*(T[int])))"u8, @"(T[int])"u8, @"qe14.T[int]"u8),
+        new(@"package qe15; type T[_ any] int; func _((*(T[int])))"u8, @"*(T[int])"u8, @"*qe15.T[int]"u8),
+        new(@"package qe16; type T[_ any] int; func _((*(T[int])))"u8, @"(*(T[int]))"u8, @"*qe16.T[int]"u8),
+        new(@"package qf1; type T[_ any] int; func (T[_]) _() {}"u8, @"T"u8, @"qf1.T[_ any]"u8),
+        new(@"package qf2; type T[_ any] int; func ((T[_])) _() {}"u8, @"T[_]"u8, @"qf2.T[_]"u8),
+        new(@"package qf3; type T[_ any] int; func ((T[_])) _() {}"u8, @"(T[_])"u8, @"qf3.T[_]"u8),
+        new(@"package qf4; type T[_ any] int; func (((T[_]))) _() {}"u8, @"T"u8, @"qf4.T[_ any]"u8),
+        new(@"package qf5; type T[_ any] int; func (((T[_]))) _() {}"u8, @"(T[_])"u8, @"qf5.T[_]"u8),
+        new(@"package qf6; type T[_ any] int; func (((T[_]))) _() {}"u8, @"((T[_]))"u8, @"qf6.T[_]"u8),
+        new(@"package qf7; type T[_ any] int; func (*T[_]) _() {}"u8, @"T"u8, @"qf7.T[_ any]"u8),
+        new(@"package qf8; type T[_ any] int; func (*T[_]) _() {}"u8, @"*T[_]"u8, @"*qf8.T[_]"u8),
+        new(@"package qf9; type T[_ any] int; func ((*T[_])) _() {}"u8, @"T"u8, @"qf9.T[_ any]"u8),
+        new(@"package qf10; type T[_ any] int; func ((*T[_])) _() {}"u8, @"*T[_]"u8, @"*qf10.T[_]"u8),
+        new(@"package qf11; type T[_ any] int; func (*(T[_])) _() {}"u8, @"T[_]"u8, @"qf11.T[_]"u8),
+        new(@"package qf12; type T[_ any] int; func (*(T[_])) _() {}"u8, @"(T[_])"u8, @"qf12.T[_]"u8),
+        new(@"package qf13; type T[_ any] int; func (*(T[_])) _() {}"u8, @"*(T[_])"u8, @"*qf13.T[_]"u8),
+        new(@"package qf14; type T[_ any] int; func ((*(T[_]))) _() {}"u8, @"(T[_])"u8, @"qf14.T[_]"u8),
+        new(@"package qf15; type T[_ any] int; func ((*(T[_]))) _() {}"u8, @"*(T[_])"u8, @"*qf15.T[_]"u8),
+        new(@"package qf16; type T[_ any] int; func ((*(T[_]))) _() {}"u8, @"(*(T[_]))"u8, @"*qf16.T[_]"u8),
+        new(@"package t1; type T[_ any] int; func (T[P]) _() {}"u8, @"P"u8, @"P"u8),
+        new(@"package t2; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"P"u8, @"P"u8),
+        new(@"package t3; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"Q"u8, @"Q"u8)
     }.slice();
     foreach (var (_, test) in tests) {
         ref var info = ref heap<typesꓸInfo>(out var Ꮡinfo);
@@ -519,18 +548,18 @@ public static void TestTypesInfo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestInstanceInfo_testInst {
+[GoType("dyn")] internal partial struct TestInstanceInfo_testInst {
     internal @string name;
     internal slice<@string> targs;
     internal @string typ;
 }
 
-[GoType("dyn")] partial struct TestInstanceInfo_type {
+[GoType("dyn")] internal partial struct TestInstanceInfo_type {
     internal @string src;
     internal slice<TestInstanceInfo_testInst> instances; // recorded instances in source order
 }
 
-[GoType("dyn")] partial interface TestInstanceInfo_typeᴛ1 {
+[GoType("dyn")] internal partial interface TestInstanceInfo_typeᴛ1 {
     ж<types.TypeParamList> TypeParams();
 }
 
@@ -793,7 +822,7 @@ internal static slice<recordedInstance> /*instances*/ sortedInstances(map<ж<ast
     return instances;
 }
 
-[GoType("dyn")] partial struct TestDefsInfo_type {
+[GoType("dyn")] internal partial struct TestDefsInfo_type {
     internal @string src;
     internal @string obj;
     internal @string want;
@@ -801,6 +830,7 @@ internal static slice<recordedInstance> /*instances*/ sortedInstances(map<ж<ast
 
 public static void TestDefsInfo(ж<testing.T> Ꮡt) {
 // Tests using generics.
+// Type parameters in receiver type expressions are definitions.
     slice<TestDefsInfo_type> tests = new TestDefsInfo_type[]{
         new(@"package p0; const x = 42"u8, @"x"u8, @"const p0.x untyped int"u8),
         new(@"package p1; const x int = 42"u8, @"x"u8, @"const p1.x int"u8),
@@ -810,7 +840,10 @@ public static void TestDefsInfo(ж<testing.T> Ꮡt) {
         new(@"package p5; func f() int { x, _ := 1, 2; return x }"u8, @"_"u8, @"var _ int"u8),
         new(@"package g0; type x[T any] int"u8, @"x"u8, @"type g0.x[T any] int"u8),
         new(@"package g1; func f[T any]() {}"u8, @"f"u8, @"func g1.f[T any]()"u8),
-        new(@"package g2; type x[T any] int; func (*x[_]) m() {}"u8, @"m"u8, @"func (*g2.x[_]).m()"u8)
+        new(@"package g2; type x[T any] int; func (*x[_]) m() {}"u8, @"m"u8, @"func (*g2.x[_]).m()"u8),
+        new(@"package r0; type T[_ any] int; func (T[P]) _() {}"u8, @"P"u8, @"type parameter P any"u8),
+        new(@"package r1; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"P"u8, @"type parameter P any"u8),
+        new(@"package r2; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"Q"u8, @"type parameter Q any"u8)
     }.slice();
     foreach (var (_, test) in tests) {
         ref var info = ref heap<typesꓸInfo>(out var Ꮡinfo);
@@ -838,7 +871,7 @@ public static void TestDefsInfo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestUsesInfo_type {
+[GoType("dyn")] internal partial struct TestUsesInfo_type {
     internal @string src;
     internal @string obj;
     internal @string want;
@@ -850,6 +883,8 @@ public static void TestUsesInfo(ж<testing.T> Ꮡt) {
 // Tests using generics.
 // Uses of fields are instantiated.
 // Uses of methods are uses of the instantiated method.
+// For historic reasons, type parameters in receiver type expressions
+// are considered both definitions and uses (see go.dev/issue/68670).
     slice<TestUsesInfo_type> tests = new TestUsesInfo_type[]{
         new(@"package p0; func _() { _ = x }; const x = 42"u8, @"x"u8, @"const p0.x untyped int"u8),
         new(@"package p1; func _() { _ = x }; const x int = 42"u8, @"x"u8, @"const p1.x int"u8),
@@ -861,7 +896,7 @@ public static void TestUsesInfo(ж<testing.T> Ꮡt) {
         new(@"package g2; type N[A any] int; var _ N[int]"u8, @"N"u8, @"type g2.N[A any] int"u8),
         new(@"package g3; type N[A any] int; func (N[_]) m() {}"u8, @"N"u8, @"type g3.N[A any] int"u8),
         new(@"package s1; type N[A any] struct{ a A }; var f = N[int]{}.a"u8, @"a"u8, @"field a int"u8),
-        new(@"package s1; type N[A any] struct{ a A }; func (r N[B]) m(b B) { r.a = b }"u8, @"a"u8, @"field a B"u8),
+        new(@"package s2; type N[A any] struct{ a A }; func (r N[B]) m(b B) { r.a = b }"u8, @"a"u8, @"field a B"u8),
         new(@"package m0; type N[A any] int; func (r N[B]) m() { r.n() }; func (N[C]) n() {}"u8, @"n"u8, @"func (m0.N[B]).n()"u8),
         new(@"package m1; type N[A any] int; func (r N[B]) m() { }; var f = N[int].m"u8, @"m"u8, @"func (m1.N[int]).m()"u8),
         new(@"package m2; func _[A any](v interface{ m() A }) { v.m() }"u8, @"m"u8, @"func (interface).m() A"u8),
@@ -878,7 +913,10 @@ public static void TestUsesInfo(ж<testing.T> Ꮡt) {
             @"func (m10.E[int]).m()"u8
         ),
         new(@"package m11; type T[A any] interface{ m(); n() }; func _(t1 T[int], t2 T[string]) { t1.m(); t2.n() }"u8, @"m"u8, @"func (m11.T[int]).m()"u8),
-        new(@"package m12; type T[A any] interface{ m(); n() }; func _(t1 T[int], t2 T[string]) { t1.m(); t2.n() }"u8, @"n"u8, @"func (m12.T[string]).n()"u8)
+        new(@"package m12; type T[A any] interface{ m(); n() }; func _(t1 T[int], t2 T[string]) { t1.m(); t2.n() }"u8, @"n"u8, @"func (m12.T[string]).n()"u8),
+        new(@"package r0; type T[_ any] int; func (T[P]) _() {}"u8, @"P"u8, @"type parameter P any"u8),
+        new(@"package r1; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"P"u8, @"type parameter P any"u8),
+        new(@"package r2; type T[_, _ any] int; func (T[P, Q]) _() {}"u8, @"Q"u8, @"type parameter Q any"u8)
     }.slice();
     foreach (var (_, test) in tests) {
         ref var info = ref heap<typesꓸInfo>(out var Ꮡinfo);
@@ -1004,7 +1042,7 @@ internal static readonly @string importSpecˢ = "importSpec"u8;
 internal static readonly @string caseClauseˢ = "caseClause"u8;
 internal static readonly @string fieldˢ = "field"u8;
 
-[GoType("dyn")] partial struct TestImplicitsInfo_type {
+[GoType("dyn")] internal partial struct TestImplicitsInfo_type {
     internal @string src;
     internal @string want;
 }
@@ -1082,7 +1120,7 @@ public static void TestImplicitsInfo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestPkgNameOf_type {
+[GoType("dyn")] internal partial struct TestPkgNameOf_type {
     internal @string path; // path string enclosed in "'s
     internal @string want;
 }
@@ -1125,7 +1163,7 @@ var (
         Implicits: new map<ast.Node, types.Object>()
     );
     ref var conf = ref heap(new types.Config(), out var Ꮡconf);
-    conf.Importer = importer.Default();
+    conf.Importer = defaultImporter(fset);
     var (_, err) = Ꮡconf.Check("p"u8, fset, new ж<ast.File>[]{f}.slice(), Ꮡinfo);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -1200,7 +1238,7 @@ internal static @string predString(types.TypeAndValue tv) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string missingˢ = "<missing>"u8;
 
-[GoType("dyn")] partial struct TestPredicatesInfo_type {
+[GoType("dyn")] internal partial struct TestPredicatesInfo_type {
     internal @string src;
     internal @string expr;
     internal @string pred;
@@ -1291,7 +1329,7 @@ internal static readonly @string commˢ = "comm"u8;
 internal static readonly @string forˢ = "for"u8;
 internal static readonly @string rangeˢ = "range"u8;
 
-[GoType("dyn")] partial struct TestScopesInfo_type {
+[GoType("dyn")] internal partial struct TestScopesInfo_type {
     internal @string src;
     internal slice<@string> scopes; // list of scope descriptors of the form kind:varlist
 }
@@ -1422,21 +1460,14 @@ public static void TestScopesInfo(ж<testing.T> Ꮡt) {
 
             // look for matching scope description
             @string desc = kind + ":"u8 + strings.Join(scope.Names(), " "u8);
-            var found = false;
-            foreach (var (_, d) in test.scopes) {
-                if (desc == d) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!slices.Contains(test.scopes, desc)) {
                 Ꮡt.Errorf("package %s: no matching scope found for %s"u8, name, desc);
             }
         }
     }
 }
 
-[GoType("dyn")] partial struct TestInitOrderInfo_type {
+[GoType("dyn")] internal partial struct TestInitOrderInfo_type {
     internal @string src;
     internal slice<@string> inits;
 }
@@ -1613,7 +1644,7 @@ internal static readonly @string packageMainVarA1ˢ = @"package main; var a = 1"
 internal static readonly @string packageMainVarB2ˢ = @"package main; var b = 2"u8;
 internal static readonly @string mainˢ = "main"u8;
 
-[GoType("dyn")] partial struct TestMultiFileInitOrder_type {
+[GoType("dyn")] internal partial struct TestMultiFileInitOrder_type {
     internal slice<ж<ast.File>> files;
     internal @string want;
 }
@@ -1961,7 +1992,7 @@ public static void TestLookupFieldOrMethodOnNil(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestLookupFieldOrMethod_type {
+[GoType("dyn")] internal partial struct TestLookupFieldOrMethod_type {
     internal @string src;
     internal bool found;
     internal slice<nint> index;
@@ -2029,7 +2060,7 @@ public static void TestLookupFieldOrMethod(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("%s: got object = %v; want none"u8, test.src, f);
             }
         }
-        if (!sameSlice(index, test.index)) {
+        if (!slices.Equal<slice<nint>, nint>(index, test.index)) {
             Ꮡt.Errorf("%s: got index = %v; want %v"u8, test.src, index, test.index);
         }
         if (indirect != test.indirect) {
@@ -2073,174 +2104,6 @@ type Instance = *Tree[int]
     (_, _, _) = LookupFieldOrMethod(T, false, pkg, "M"u8); // verify that LookupFieldOrMethod terminates
 }
 
-internal static bool sameSlice(slice<nint> a, slice<nint> b) {
-    if (len(a) != len(b)) {
-        return false;
-    }
-    foreach (var (i, x) in a) {
-        if (x != b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string packageLibVarXIntˢ = "package lib; var X int"u8;
-internal static readonly @string libPkgname5XVar1PiConst8ˢ = """
-
-/*lib=pkgname:5*/ /*X=var:1*/ /*Pi=const:8*/ /*T=typename:9*/ /*Y=var:10*/ /*F=func:12*/
-package main
-
-import "lib"
-import . "lib"
-
-const Pi = 3.1415
-type T struct{}
-var Y, _ = lib.X, X
-
-func F[T *U, U any](param1, param2 int) /*param1=undef*/ (res1 /*res1=undef*/, res2 int) /*param1=var:12*/ /*res1=var:12*/ /*U=typename:12*/ {
-	const pi, e = 3.1415, /*pi=undef*/ 2.71828 /*pi=const:13*/ /*e=const:13*/
-	type /*t=undef*/ t /*t=typename:14*/ *t
-	print(Y) /*Y=var:10*/
-	x, Y := Y, /*x=undef*/ /*Y=var:10*/ Pi /*x=var:16*/ /*Y=var:16*/ ; _ = x; _ = Y
-	var F = /*F=func:12*/ F[*int, int] /*F=var:17*/ ; _ = F
-
-	var a []int
-	for i, x := range a /*i=undef*/ /*x=var:16*/ { _ = i; _ = x }
-
-	var i interface{}
-	switch y := i.(type) { /*y=undef*/
-	case /*y=undef*/ int /*y=var:23*/ :
-	case float32, /*y=undef*/ float64 /*y=var:23*/ :
-	default /*y=var:23*/:
-		println(y)
-	}
-	/*y=undef*/
-
-        switch int := i.(type) {
-        case /*int=typename:0*/ int /*int=var:31*/ :
-        	println(int)
-        default /*int=var:31*/ :
-        }
-
-	_ = param1
-	_ = res1
-	return
-}
-/*main=undef*/
-
-"""u8;
-internal static readonly @string undefˢ = "undef"u8;
-internal static readonly @string typesˢ = "*types."u8;
-
-// TestScopeLookupParent ensures that (*Scope).LookupParent returns
-// the correct result at various positions with the source.
-public static void TestScopeLookupParent(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    var fset = token.NewFileSet();
-    var imports = new testImporter(0);
-    ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new Config(Importer: imports);
-    ref var info = ref heap(new typesꓸInfo(), out var Ꮡinfo);
-    var fsetʗ1 = fset;
-    var importsʗ1 = imports;
-    void makePkg(@string path, params ꓸꓸꓸжastꓸFile filesʗp) {
-        var files = filesʗp.slice();
-        error err = default!;
-        (importsʗ1[path], err) = Ꮡconf.Check(path, fsetʗ1, files, Ꮡinfo);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-    }
-    makePkg(libˢ, mustParse(fset, packageLibVarXIntˢ));
-    // Each /*name=kind:line*/ comment makes the test look up the
-    // name at that point and checks that it resolves to a decl of
-    // the specified kind and line number.  "undef" means undefined.
-    @string mainSrc = libPkgname5XVar1PiConst8ˢ;
-    info.Uses = new map<ж<ast.Ident>, types.Object>();
-    var f = mustParse(fset, mainSrc);
-    makePkg(mainˢ, f);
-    var mainScope = imports[mainˢ].Scope();
-    var rx = regexp.MustCompile(@"^/\*(\w*)=([\w:]*)\*/$"u8);
-    foreach (var (_, group) in (~f).Comments) {
-        foreach (var (_, comment) in (~group).List) {
-            // Parse the assertion in the comment.
-            var m = rx.FindStringSubmatch((~comment).Text);
-            if (m == default!) {
-                Ꮡt.Errorf("%s: bad comment: %s"u8,
-                    fset.Position(comment.Pos()), (~comment).Text);
-                continue;
-            }
-            @string name = m[1];
-            @string want = m[2];
-            // Look up the name in the innermost enclosing scope.
-            var inner = mainScope.Innermost(comment.Pos());
-            if (inner == nil) {
-                Ꮡt.Errorf("%s: at %s: can't find innermost scope"u8,
-                    fset.Position(comment.Pos()), (~comment).Text);
-                continue;
-            }
-            @string got = undefˢ;
-            {
-                var (_, obj) = inner.LookupParent(name, comment.Pos()); if (obj != default!) {
-                    @string kind = strings.ToLower(strings.TrimPrefix(reflect.TypeOf(obj).String(), typesˢ));
-                    got = fmt.Sprintf("%s:%d"u8, kind, fset.Position(obj.Pos()).Line);
-                }
-            }
-            if (got != want) {
-                Ꮡt.Errorf("%s: at %s: %s resolved to %s, want %s"u8,
-                    fset.Position(comment.Pos()), (~comment).Text, name, got, want);
-            }
-        }
-    }
-    // Check that for each referring identifier,
-    // a lookup of its name on the innermost
-    // enclosing scope returns the correct object.
-    foreach (var (id, wantObj) in info.Uses) {
-        var inner = mainScope.Innermost(id.Pos());
-        if (inner == nil) {
-            Ꮡt.Errorf("%s: can't find innermost scope enclosing %q"u8,
-                fset.Position(id.Pos()), (~id).Name);
-            continue;
-        }
-        // Exclude selectors and qualified identifiers---lexical
-        // refs only.  (Ideally, we'd see if the AST parent is a
-        // SelectorExpr, but that requires PathEnclosingInterval
-        // from golang.org/x/tools/go/ast/astutil.)
-        if ((~id).Name == "X"u8) {
-            continue;
-        }
-        var (_, gotObj) = inner.LookupParent((~id).Name, id.Pos());
-        if (!AreEqual(gotObj, wantObj)) {
-            // Print the scope tree of mainScope in case of error.
-            ref var printScopeTree = ref heap<Action<@string, ж<typesꓸScope>>>(out var ᏑprintScopeTree);
-            printScopeTree = (@string indent, ж<typesꓸScope> s) => {
-                Ꮡt.Logf("%sscope %s %v-%v = %v"u8,
-                    indent,
-                    types_internal_test_package.ScopeComment(s),
-                    s.Pos(),
-                    s.End(),
-                    s.Names());
-                foreach (var i in range(s.NumChildren())) {
-                    ᏑprintScopeTree.ValueSlot(indent + "  "u8, s.Child(i));
-                }
-            };
-            printScopeTree(""u8, mainScope);
-            Ꮡt.Errorf("%s: Scope(%s).LookupParent(%s@%v) got %v, want %v [scopePos=%v]"u8,
-                fset.Position(id.Pos()),
-                types_internal_test_package.ScopeComment(inner),
-                (~id).Name,
-                id.Pos(),
-                gotObj,
-                wantObj,
-                types_internal_test_package.ObjectScopePos(wantObj));
-            continue;
-        }
-    }
-}
-
 // newDefined creates a new defined type named T with the given underlying type.
 // Helper function for use with TestIncompleteInterfaces only.
 internal static ж<types.Named> newDefined(typesꓸType underlying) {
@@ -2248,7 +2111,7 @@ internal static ж<types.Named> newDefined(typesꓸType underlying) {
     return NewNamed(tname, underlying, default!);
 }
 
-[GoType("dyn")] partial struct TestConvertibleTo_type {
+[GoType("dyn")] internal partial struct TestConvertibleTo_type {
     internal typesꓸType v, t;
     internal bool want;
 }
@@ -2279,7 +2142,7 @@ public static void TestConvertibleTo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestAssignableTo_type {
+[GoType("dyn")] internal partial struct TestAssignableTo_type {
     internal typesꓸType v, t;
     internal bool want;
 }
@@ -2311,7 +2174,7 @@ public static void TestAssignableTo(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object testMustDeclareBothXAndYˢ = (@string)"test must declare both X and Y"u8;
 
-[GoType("dyn")] partial struct TestIdentical_tests {
+[GoType("dyn")] internal partial struct TestIdentical_tests {
     internal @string src;
     internal bool want;
 }
@@ -2357,7 +2220,7 @@ public static void TestIdentical(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestIdentical_issue15173_type {
+[GoType("dyn")] internal partial struct TestIdentical_issue15173_type {
     internal typesꓸType x, y;
     internal bool want;
 }
@@ -2383,7 +2246,7 @@ public static void TestIdentical_issue15173(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string myIntˢ = "myInt"u8;
 
-[GoType("dyn")] partial struct TestIdenticalUnions_type {
+[GoType("dyn")] internal partial struct TestIdenticalUnions_type {
     internal @string x, y;
     internal bool want;
 }
@@ -2485,7 +2348,7 @@ public static void TestIssue15305(ж<testing.T> Ꮡt) {
     Ꮡt.Errorf("CallExpr has no type"u8);
 }
 
-[GoType("dyn")] partial struct TestCompositeLitTypes_type {
+[GoType("dyn")] internal partial struct TestCompositeLitTypes_type {
     internal @string lit, typ;
 }
 
@@ -2773,7 +2636,7 @@ type K = Nested[string]
     }
 }
 
-[GoType("dyn")] partial struct TestInstantiateErrors_tests {
+[GoType("dyn")] internal partial struct TestInstantiateErrors_tests {
     internal @string src; // by convention, T must be the type being instantiated
     internal slice<typesꓸType> targs;
     internal nint wantAt; // -1 indicates no error
@@ -2851,7 +2714,7 @@ public static void TestInstanceIdentity(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestInstantiatedObjects_tests {
+[GoType("dyn")] internal partial struct TestInstantiatedObjects_tests {
     internal @string name;
     internal types.Object obj;
 }
@@ -3000,7 +2863,7 @@ internal static readonly @string integerˢ = "Integer"u8;
 internal static readonly @string emptyTypeSetˢ = "EmptyTypeSet"u8;
 internal static readonly @string badˢ = "Bad"u8;
 
-[GoType("dyn")] partial struct TestImplements_tests {
+[GoType("dyn")] internal partial struct TestImplements_tests {
     public typesꓸType V;
     public ж<types.Interface> T;
     internal bool want;
@@ -3226,7 +3089,7 @@ public static void TestModuleVersion(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFileVersions_type {
+[GoType("dyn")] internal partial struct TestFileVersions_type {
     internal @string goVersion;
     internal @string fileVersion;
     internal @string wantVersion;
@@ -3342,10 +3205,10 @@ public static void TestFileVersions(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string types2ˢ = "types2"u8;
-internal static readonly @string typesˢ2 = "types"u8;
+internal static readonly @string typesˢ = "types"u8;
 internal static readonly @string fTypesFuncˢ = "f:*types.Func"u8;
 
-[GoType("dyn")] partial struct TestTooNew_type {
+[GoType("dyn")] internal partial struct TestTooNew_type {
     internal @string goVersion; // package's Go version (as if derived from go.mod file)
     internal @string fileVersion; // file's Go version (becomes a build tag)
     internal @string wantErr; // expected substring of concatenation of all errors
@@ -3386,7 +3249,7 @@ public static void TestTooNew(ж<testing.T> Ꮡt) {
         slice<@string> gotObjs = default!;
         foreach (var (id, obj) in (~info).Defs) {
             if (obj != default!) {
-                @string objStr = strings.ReplaceAll(fmt.Sprintf("%s:%T"u8, (~id).Name, obj), types2ˢ, typesˢ2);
+                @string objStr = strings.ReplaceAll(fmt.Sprintf("%s:%T"u8, (~id).Name, obj), types2ˢ, typesˢ);
                 gotObjs = append(gotObjs, objStr);
             }
         }
@@ -3508,6 +3371,70 @@ internal static void setGotypesalias(ж<testing.T> Ꮡt, bool enable) {
         Ꮡt.Setenv(godebugˢ, gotypesalias1ˢ);
     } else {
         Ꮡt.Setenv(godebugˢ, gotypesalias0ˢ);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string aGoˢ = "a.go"u8;
+internal static readonly object packagePConstK123ˢ = (@string)"package p; const k = 123"u8;
+
+// TestVersionIssue69477 is a regression test for issue #69477,
+// in which the type checker would panic while attempting
+// to compute which file it is "in" based on syntax position.
+public static void TestVersionIssue69477(ж<testing.T> Ꮡt) {
+    var fset = token.NewFileSet();
+    var (f, _) = parser.ParseFile(fset, aGoˢ, packagePConstK123ˢ, 0);
+    // Set an invalid Pos on the BasicLit.
+    ast.Inspect(new ast.FileжNode(f), (ast.Node n) => {
+        {
+            var (lit, ok) = n._<ж<ast.BasicLit>>(ᐧ); if (ok) {
+                lit.Value.ValuePos = 99999;
+            }
+        }
+        return true;
+    });
+    // Type check. The checker will consult the effective
+    // version for the BasicLit 123. This used to panic.
+    var pkg = NewPackage("p"u8, "p"u8);
+    var check = NewChecker(Ꮡ(new Config(nil)), fset, pkg, nil);
+    {
+        var err = check.Files(new ж<ast.File>[]{f}.slice()); if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object goBuildGo122PackagePVarˢ = (@string)"//go:build go1.22\n\npackage p; var _ int"u8;
+internal static readonly object packageQFuncSFuncFuncˢ = (@string)"package q; func _(s func(func() bool)) { for range s {} }"u8;
+internal static readonly @string rangeOverSVariableOfTypeˢ = "range over s (variable of type func(func() bool)): requires go1.23"u8;
+
+// TestVersionWithoutPos is a regression test for issue #69477,
+// in which the type checker would use position information
+// to compute which file it is "in" based on syntax position.
+//
+// As a rule the type checker should not depend on position
+// information for correctness, only for error messages and
+// Object.Pos. (Scope.LookupParent was a mistake.)
+//
+// The Checker now holds the effective version in a state variable.
+public static void TestVersionWithoutPos(ж<testing.T> Ꮡt) {
+    var fset = token.NewFileSet();
+    var (f, _) = parser.ParseFile(fset, aGoˢ, goBuildGo122PackagePVarˢ, 0);
+    // Splice in a decl from another file. Its pos will be wrong.
+    var (f2, _) = parser.ParseFile(fset, aGoˢ, packageQFuncSFuncFuncˢ, 0);
+    f.Value.Decls[0] = (~f2).Decls[0];
+    // Type check. The checker will consult the effective
+    // version (1.22) for the for-range stmt to know whether
+    // range-over-func are permitted: they are not.
+    // (Previously, no error was reported.)
+    var pkg = NewPackage("p"u8, "p"u8);
+    var check = NewChecker(Ꮡ(new Config(nil)), fset, pkg, nil);
+    var err = check.Files(new ж<ast.File>[]{f}.slice());
+    @string got = fmt.Sprint(err);
+    @string want = rangeOverSVariableOfTypeˢ;
+    if (!strings.Contains(got, want)) {
+        Ꮡt.Errorf("check error was %q, want substring %q"u8, got, want);
     }
 }
 

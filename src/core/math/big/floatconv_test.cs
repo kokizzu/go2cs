@@ -15,12 +15,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
 internal static float64 zero_;
 
 [GoType("dyn")] internal partial struct TestFloatSetFloat64String_type {

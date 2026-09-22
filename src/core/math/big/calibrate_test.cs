@@ -22,18 +22,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal static ж<bool> calibrate = flag.Bool("calibrate"u8, false, "run calibration test"u8);
 
 internal static readonly @string sqrModeMul = "mul(x, x)"u8;

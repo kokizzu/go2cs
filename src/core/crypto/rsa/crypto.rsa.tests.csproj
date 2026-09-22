@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -76,7 +104,7 @@
     <Compile Include="equal_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="package_info_internal_test.cs" />
-    <Compile Include="package_init_internal_test.cs" />
+    <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="pkcs1v15_test.cs" />
     <Compile Include="pss_test.cs" />
@@ -85,19 +113,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="boring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="boring_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="equal_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="notboring.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pkcs1v15.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pkcs1v15_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pss.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pss_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rsa.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rsa_export_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rsa_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pss-vect.txt.bz2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="boring.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="boring_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="equal_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fips.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="notboring.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkcs1v15.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pkcs1v15_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pss_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rsa.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rsa_export_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rsa_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pss-vect.txt.bz2" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -106,11 +134,15 @@
     <ProjectReference Include="$(go2csPath)core/compress/bzip2/compress.bzip2.csproj" />
     <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/crypto.csproj" />
-    <ProjectReference Include="$(go2csPath)core/crypto/internal/bigmod/crypto.internal.bigmod.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/internal/boring/crypto.internal.boring.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/cryptotest/crypto.internal.cryptotest.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/bigmod/crypto.internal.fips140.bigmod.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/crypto.internal.fips140.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/rsa/crypto.internal.fips140.rsa.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/rand/crypto.rand.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/sha1/crypto.sha1.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/sha256/crypto.sha256.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha512/crypto.sha512.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/x509/crypto.x509.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/base64/encoding.base64.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/hex/encoding.hex.csproj" />
@@ -119,7 +151,6 @@
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
     <ProjectReference Include="$(go2csPath)core/hash/hash.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/big/math.big.csproj" />

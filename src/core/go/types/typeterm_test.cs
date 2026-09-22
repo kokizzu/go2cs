@@ -18,15 +18,15 @@ internal static void initᴛmyInt() { myInt = ((Func<global::go.go.types_package
     return new global::go.go.types_package.NamedжΔType(NewNamed(tname, new global::go.go.types_package.BasicжΔType(Typ[Int]), default!));
 }))(); }
 
-internal static map<@string, ж<global::go.go.types_package.term>> testTerms;
-internal static void initᴛtestTerms() { testTerms = new map<@string, ж<global::go.go.types_package.term>>{
+internal static map<@string, ж<global::go.go.types_package.Δterm>> testTerms;
+internal static void initᴛtestTerms() { testTerms = new map<@string, ж<global::go.go.types_package.Δterm>>{
     ["∅"u8] = default!,
-    ["𝓤"u8] = Ꮡ(new global::go.go.types_package.term()),
-    ["int"u8] = Ꮡ(new global::go.go.types_package.term(false, new global::go.go.types_package.BasicжΔType(Typ[Int]))),
-    ["~int"u8] = Ꮡ(new global::go.go.types_package.term(true, new global::go.go.types_package.BasicжΔType(Typ[Int]))),
-    ["string"u8] = Ꮡ(new global::go.go.types_package.term(false, new global::go.go.types_package.BasicжΔType(Typ[ΔString]))),
-    ["~string"u8] = Ꮡ(new global::go.go.types_package.term(true, new global::go.go.types_package.BasicжΔType(Typ[ΔString]))),
-    ["myInt"u8] = Ꮡ(new global::go.go.types_package.term(false, myInt))
+    ["𝓤"u8] = Ꮡ(new global::go.go.types_package.Δterm()),
+    ["int"u8] = Ꮡ(new global::go.go.types_package.Δterm(false, new global::go.go.types_package.BasicжΔType(Typ[Int]))),
+    ["~int"u8] = Ꮡ(new global::go.go.types_package.Δterm(true, new global::go.go.types_package.BasicжΔType(Typ[Int]))),
+    ["string"u8] = Ꮡ(new global::go.go.types_package.Δterm(false, new global::go.go.types_package.BasicжΔType(Typ[ΔString]))),
+    ["~string"u8] = Ꮡ(new global::go.go.types_package.Δterm(true, new global::go.go.types_package.BasicжΔType(Typ[ΔString]))),
+    ["myInt"u8] = Ꮡ(new global::go.go.types_package.Δterm(false, myInt))
 }; }
 
 public static void TestTermString(ж<testing.T> Ꮡt) {
@@ -47,7 +47,7 @@ internal static slice<@string> split(@string s, nint n) {
     return r;
 }
 
-internal static ж<global::go.go.types_package.term> testTerm(@string name) {
+internal static ж<global::go.go.types_package.Δterm> testTerm(@string name) {
     var (r, ok) = testTerms[name, ꟷ];
     if (!ok) {
         throw panic("invalid test argument: " + name);

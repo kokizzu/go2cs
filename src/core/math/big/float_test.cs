@@ -13,18 +13,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 // Verify that ErrNaN implements the error interface.
 internal static error _ᴛ1ʗ = new big_test_package.big_ErrNaNᴠerror(new ErrNaN(nil));
 
@@ -74,23 +62,23 @@ public static void TestFloatZeroValue(ж<testing.T> Ꮡt) {
         return Ꮡf;
     }
     foreach (var (_, test) in new TestFloatZeroValue_type[]{
-        new(0, 0, 0, 0, (rune)'+', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add)),
-        new(0, 1, 2, 3, (rune)'+', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add)),
-        new(1, 2, 0, 2, (rune)'+', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add)),
-        new(2, 0, 1, 1, (rune)'+', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add)),
-        new(0, 0, 0, 0, (rune)'-', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub)),
-        new(0, 1, 2, -1, (rune)'-', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub)),
-        new(1, 2, 0, 2, (rune)'-', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub)),
-        new(2, 0, 1, -1, (rune)'-', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub)),
-        new(0, 0, 0, 0, (rune)'*', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul)),
-        new(0, 1, 2, 2, (rune)'*', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul)),
-        new(1, 2, 0, 0, (rune)'*', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul)),
-        new(2, 0, 1, 0, (rune)'*', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul)), // {0, 0, 0, 0, '/', (*Float).Quo}, // panics
+        new(0, 0, 0, 0, (rune)'+', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add))),
+        new(0, 1, 2, 3, (rune)'+', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add))),
+        new(1, 2, 0, 2, (rune)'+', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add))),
+        new(2, 0, 1, 1, (rune)'+', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add))),
+        new(0, 0, 0, 0, (rune)'-', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub))),
+        new(0, 1, 2, -1, (rune)'-', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub))),
+        new(1, 2, 0, 2, (rune)'-', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub))),
+        new(2, 0, 1, -1, (rune)'-', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub))),
+        new(0, 0, 0, 0, (rune)'*', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul))),
+        new(0, 1, 2, 2, (rune)'*', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul))),
+        new(1, 2, 0, 0, (rune)'*', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul))),
+        new(2, 0, 1, 0, (rune)'*', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul))), // {0, 0, 0, 0, '/', (*Float).Quo}, // panics
 
-        new(0, 2, 1, 2, (rune)'/', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo)),
-        new(1, 2, 0, 0, (rune)'/', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo)), // = +Inf
+        new(0, 2, 1, 2, (rune)'/', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo))),
+        new(1, 2, 0, 0, (rune)'/', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo))), // = +Inf
 
-        new(2, 0, 1, 0, (rune)'/', (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo))
+        new(2, 0, 1, 0, (rune)'/', ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo)))
     }.slice()) {
         var z = make(test.z);
         test.op(z, make(test.x), make(test.y));
@@ -1290,7 +1278,7 @@ public static void TestFloatNeg(ж<testing.T> Ꮡt) {
 
 public static void TestFloatInc(ж<testing.T> Ꮡt) {
     UntypedInt n = 10;
-    foreach (var (_, prec) in precList) {
+    foreach (var (_, prec) in precList.ΔRangeSnapshot()) {
         if (((nint)1).Lsh(prec) < n) {
             continue; // prec must be large enough to hold all numbers from 0 to n
         }
@@ -1338,15 +1326,15 @@ internal static array<ΔBits> bitsList = new ΔBits[]{
 public static void TestFloatAdd(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    foreach (var (_, xbits) in bitsList) {
-        foreach (var (_, ybits) in bitsList) {
+    foreach (var (_, xbits) in bitsList.ΔRangeSnapshot()) {
+        foreach (var (_, ybits) in bitsList.ΔRangeSnapshot()) {
             // exact values
             var x = xbits.ΔFloat();
             var y = ybits.ΔFloat();
             var zbits = xbits.add(ybits);
             var z = zbits.ΔFloat();
             foreach (var (i, mode) in new global::go.math.big_package.RoundingMode[]{ToZero, ToNearestEven, AwayFromZero}.array()) {
-                foreach (var (_, prec) in precList) {
+                foreach (var (_, prec) in precList.ΔRangeSnapshot()) {
                     var got = @new<global::go.math.big_package.Float>().SetPrec(prec).SetMode(mode);
                     got.Add(x, y);
                     var want = zbits.round(prec, mode);
@@ -1488,15 +1476,15 @@ public static void TestIssue20490(ж<testing.T> Ꮡt) {
 public static void TestFloatMul(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    foreach (var (_, xbits) in bitsList) {
-        foreach (var (_, ybits) in bitsList) {
+    foreach (var (_, xbits) in bitsList.ΔRangeSnapshot()) {
+        foreach (var (_, ybits) in bitsList.ΔRangeSnapshot()) {
             // exact values
             var x = xbits.ΔFloat();
             var y = ybits.ΔFloat();
             var zbits = xbits.mul(ybits);
             var z = zbits.ΔFloat();
             foreach (var (i, mode) in new global::go.math.big_package.RoundingMode[]{ToZero, ToNearestEven, AwayFromZero}.array()) {
-                foreach (var (_, prec) in precList) {
+                foreach (var (_, prec) in precList.ΔRangeSnapshot()) {
                     var got = @new<global::go.math.big_package.Float>().SetPrec(prec).SetMode(mode);
                     got.Mul(x, y);
                     var want = zbits.round(prec, mode);
@@ -1570,7 +1558,7 @@ public static void TestFloatMul64(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIssue6866(ж<testing.T> Ꮡt) {
-    foreach (var (_, prec) in precList) {
+    foreach (var (_, prec) in precList.ΔRangeSnapshot()) {
         var two = @new<global::go.math.big_package.Float>().SetPrec(prec).SetInt64(2);
         var one = @new<global::go.math.big_package.Float>().SetPrec(prec).SetInt64(1);
         var three = @new<global::go.math.big_package.Float>().SetPrec(prec).SetInt64(3);
@@ -1714,25 +1702,25 @@ public static void TestFloatArithmeticSpecialValues(ж<testing.T> Ꮡt) {
                 case 0: {
                     op = "+"u8;
                     z = x + y;
-                    f = (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add);
+                    f = ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Add));
                     break;
                 }
                 case 1: {
                     op = "-"u8;
                     z = x - y;
-                    f = (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub);
+                    f = ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Sub));
                     break;
                 }
                 case 2: {
                     op = "*"u8;
                     z = x * y;
-                    f = (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul);
+                    f = ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Mul));
                     break;
                 }
                 case 3: {
                     op = "/"u8;
                     z = x / y;
-                    f = (Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo);
+                    f = ((Func<ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>, ж<global::go.math.big_package.Float>>)(global::go.math.big_package.Quo));
                     break;
                 }
                 default: {

@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/doc` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `8293ae2e9`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**85 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**86 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/go/doc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/doc).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -87,6 +89,7 @@ comparison — it is the evidence behind the `go/doc` row in
 | `TestExamples/iota` | pass | pass |
 | `TestExamples/issue43658` | pass | pass |
 | `TestExamples/multiple` | pass | pass |
+| `TestExamples/shadow_predeclared` | pass | pass |
 | `TestExamples/values` | pass | pass |
 | `TestExamples/whole_file` | pass | pass |
 | `TestExamples/whole_function` | pass | pass |

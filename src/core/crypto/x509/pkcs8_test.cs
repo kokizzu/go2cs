@@ -19,30 +19,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() {
-    builtin.initPackage(typeof(go.crypto.ecdh_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() {
-    builtin.initPackage(typeof(go.crypto.ed25519_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrsa() {
-    builtin.initPackage(typeof(go.crypto.rsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 // Generated using:
 //
 //	openssl genrsa 1024 | openssl pkcs8 -topk8 -nocrypt

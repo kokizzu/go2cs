@@ -6,8 +6,10 @@ namespace go.crypto;
 using bytes = bytes_package;
 using cipher = go.crypto.cipher_package;
 using des = go.crypto.des_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using testing = testing_package;
 using go.crypto;
+using go.crypto.@internal;
 using static go.crypto.des_internal_test_package;
 
 partial class des_test_package {
@@ -1694,6 +1696,20 @@ public static void TestSubstitutionTableKnownAnswerDecrypt(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("#%d: result: %x want: %x"u8, i, @out, tt.@in);
         }
     }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string desˢ = "DES"u8;
+internal static readonly @string tripleDESˢ = "TripleDES"u8;
+
+// Test DES against the general cipher.Block interface tester
+public static void TestDESBlock(ж<testing.T> Ꮡt) {
+    Ꮡt.Run(desˢ, (ж<testing.T> tΔ1) => {
+        cryptotest.TestBlock(tΔ1, 8, new Func<slice<byte>, (cipher.Block, error)>(des.NewCipher));
+    });
+    Ꮡt.Run(tripleDESˢ, (ж<testing.T> tΔ2) => {
+        cryptotest.TestBlock(tΔ2, 24, new Func<slice<byte>, (cipher.Block, error)>(des.NewTripleDESCipher));
+    });
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

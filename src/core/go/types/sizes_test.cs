@@ -5,7 +5,7 @@
 namespace go.go;
 
 using ast = global::go.go.ast_package;
-using importer = global::go.go.importer_package;
+using token = global::go.go.token_package;
 using types = global::go.go.types_package;
 using testenv = global::go.@internal.testenv_package;
 using testing = testing_package;
@@ -102,8 +102,9 @@ const _ = unsafe.Offsetof(struct{ x int64 }{}.x)
     ref var info = ref heap<typesꓸInfo>(out var Ꮡinfo);
     info = new typesꓸInfo(Types: new map<ast.Expr, types.TypeAndValue>());
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new types.Config(
-        Importer: importer.Default(),
+    conf = new types.Config( // TODO(adonovan): use same FileSet as mustTypecheck.
+
+        Importer: defaultImporter(token.NewFileSet()),
         Sizes: new types.StdSizesжSizes(Ꮡ(new types.StdSizes(WordSize: 8, MaxAlign: 8)))
     );
     mustTypecheck(src, Ꮡconf, Ꮡinfo);
@@ -134,8 +135,9 @@ var s struct {
         var wantʗ1 = want;
         Ꮡt.Run(arch, (ж<testing.T> tΔ1) => {
             ref var conf = ref heap<types.Config>(out var Ꮡconf);
-            conf = new types.Config(
-                Importer: importer.Default(),
+            conf = new types.Config( // TODO(adonovan): use same FileSet as findStructTypeConfig.
+
+                Importer: defaultImporter(token.NewFileSet()),
                 Sizes: types.SizesFor("gc"u8, arch)
             );
             var ts = findStructTypeConfig(tΔ1, src, Ꮡconf);
@@ -215,7 +217,11 @@ public static void TestGCSizes(ж<testing.T> Ꮡt) {
         Ꮡt.Run(tcΔ1.name, (ж<testing.T> tΔ1) => {
             tΔ1.Parallel();
             ref var conf = ref heap<types.Config>(out var Ꮡconf);
-            conf = new types.Config(Importer: importer.Default(), Sizes: types.SizesFor("gc"u8, amd64ˢ));
+            conf = new types.Config( // TODO(adonovan): use same FileSet as mustTypecheck.
+
+                Importer: defaultImporter(token.NewFileSet()),
+                Sizes: types.SizesFor("gc"u8, amd64ˢ)
+            );
             mustTypecheck(tcʗ1.src, Ꮡconf, nil);
         });
     }

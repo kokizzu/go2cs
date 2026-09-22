@@ -14,12 +14,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸxml() {
-    builtin.initPackage(typeof(encoding.xml_package));
-}
-
 internal static slice<@string> encodingTests = new @string[]{
     "0"u8,
     "1"u8,
@@ -150,6 +144,41 @@ public static void TestIntXMLEncoding(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("XML encoding of %s failed: got %s want %s"u8, Ꮡtx, Ꮡrx, Ꮡtx);
             }
         }
+    }
+}
+
+public static void TestIntAppendText(ж<testing.T> Ꮡt) {
+    foreach (var (_, test) in encodingTests) {
+        foreach (var (_, sign) in new @string[]{""u8, "+"u8, "-"u8}.slice()) {
+            @string x = sign + test;
+            ref var tx = ref heap(new global::go.math.big_package.ΔInt(), out var Ꮡtx);
+            Ꮡtx.SetString(x, 10);
+            var buf = new slice<byte>(4, 32);
+            var (b, err) = Ꮡtx.AppendText(buf);
+            if (err != default!) {
+                Ꮡt.Errorf("marshaling of %s failed: %s"u8, Ꮡtx, err);
+                continue;
+            }
+            ref var rx = ref heap(new global::go.math.big_package.ΔInt(), out var Ꮡrx);
+            {
+                var errΔ1 = Ꮡrx.UnmarshalText(b[4..]); if (errΔ1 != default!) {
+                    Ꮡt.Errorf("unmarshaling of %s failed: %s"u8, Ꮡtx, errΔ1);
+                    continue;
+                }
+            }
+            if (Ꮡrx.Cmp(Ꮡtx) != 0) {
+                Ꮡt.Errorf("AppendText of %s failed: got %s want %s"u8, Ꮡtx, Ꮡrx, Ꮡtx);
+            }
+        }
+    }
+}
+
+public static void TestIntAppendTextNil(ж<testing.T> Ꮡt) {
+    ж<global::go.math.big_package.ΔInt> x = default!;
+    var buf = new slice<byte>(4, 16);
+    var (data, _) = x.AppendText(buf);
+    if (((sstring)(data[4..])) != "<nil>"u8) {
+        Ꮡt.Errorf("got %q, want <nil>"u8, data[4..]);
     }
 }
 

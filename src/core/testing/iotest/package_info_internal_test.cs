@@ -12,6 +12,7 @@ using static go.testing.iotest_package;
 using static go.testing.iotest_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b2077616e7420737472696e673b207472756e6320696e7436343b206e20696e747d", "truncateWriterTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -29,8 +30,8 @@ using static go.testing.iotest_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("testing/iotest/logger_test.go", "logger_test.cs", "ABQoguaigoKWkoKCloKCgoSCgoCCpoCSpIKAkgAKCKKCgpaSgoKWgoKChIKCgIKmgoCSAAoIooKClpKCgpaCgoKEgoKChIKCloCCpoKAkgALCKKCgpaSgoKWgoKChIKEgoKCgpaCgJI=")]
-[assembly: go.GoPositionMap("testing/iotest/reader_test.go", "reader_test.cs", "AA4egoKChIKCgoKWlIKCgoKUgJKklICCpICSyIKEgoKAgqaCgoCCpICSyIKCgpSCgoKCpoKCgoKClICSpJSAgqSAksiChIKCgIKmgoKAgqSAksiCgoKUgoKCgqaCgIKkgJK2goKAgraCgIKkgJLIgpSCgoCCtoKAgqSAkraCgoCCtoKAgqSAksiCgoKEhIKCgoKCgoKCpoKUgJLIgoSCgoCCpoKCgIKkgJIACQiCAAQSgpKSgoKUgtyChIKAgg==")]
+[assembly: go.GoPositionMap("testing/iotest/logger_test.go", "logger_test.cs", "ABQoguaigoKWkoKCloKCgoSCgoCCpoCSpIKAkgAKCKKCgpaSgoKWgoKChIKCgIKmgoCSAAoIooKClpKCgpaCgoKEgoKChIKCloCCpoKAkgALCKKCgpaSgoKWgoKChIKEgoKCgpaCgJI=", "30-34:1;62-66:1;91-95:1;128-132:1")]
+[assembly: go.GoPositionMap("testing/iotest/reader_test.go", "reader_test.cs", "AA4egoKChIKCgoKWlIKCgoKUgJKklICCpICSyIKEgoKAgqaCgoCCpICSyIKCgpSCgoKCpoKCgoKClICSpJSAgqSAksiChIKCgIKmgoKAgqSAksiCgoKUgoKCgqaCgIKkgJK2goKAgraCgIKkgJLIgpSCgoCCtoKAgqSAkraCgoCCtoKAgqSAksiCgoKEhIKCgoKCgoKCpoKUgJLIgoSCgoCCpoKCgIKkgJIACQiCAAQSgpKSgoKUgtyChIKAgg==", "242-250:1")]
 [assembly: go.GoPositionMap("testing/iotest/writer_test.go", "writer_test.cs", "ABowooKCgoKClICSpICS")]
 // </GoSourcePositionMaps>
 
@@ -47,4 +48,20 @@ public static partial class iotest_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

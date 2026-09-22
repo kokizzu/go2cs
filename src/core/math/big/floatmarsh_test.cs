@@ -14,24 +14,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() {
-    builtin.initPackage(typeof(encoding.gob_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 internal static slice<@string> floatVals = new @string[]{
     "0"u8,
     "1"u8,
@@ -199,6 +181,51 @@ public static void TestFloatGobDecodeInvalid(ж<testing.T> Ꮡt) {
         if (err == default! || !strings.HasPrefix(err.Error(), tc.msg)) {
             Ꮡt.Errorf("expected GobDecode error prefix: %s, got: %v"u8, tc.msg, err);
         }
+    }
+}
+
+public static void TestFloatAppendText(ж<testing.T> Ꮡt) {
+    foreach (var (_, test) in floatVals) {
+        foreach (var (_, sign) in new @string[]{""u8, "+"u8, "-"u8}.slice()) {
+            foreach (var (_, prec) in new nuint[]{0, 1, 2, 10, 53, 64, 100, 1000}.slice()) {
+                if (prec > 53 && testing.Short()) {
+                    continue;
+                }
+                @string x = sign + test;
+                ref var tx = ref heap(new global::go.math.big_package.Float(), out var Ꮡtx);
+                var (_, _, err) = Ꮡtx.SetPrec(prec).Parse(x, 0);
+                if (err != default!) {
+                    Ꮡt.Errorf("parsing of %s (prec = %d) failed (invalid test case): %v"u8, x, prec, err);
+                    continue;
+                }
+                var buf = new slice<byte>(4, 32);
+                (var b, err) = Ꮡtx.AppendText(buf);
+                if (err != default!) {
+                    Ꮡt.Errorf("marshaling of %v (prec = %d) failed: %v"u8, Ꮡtx, prec, err);
+                    continue;
+                }
+                ref var rx = ref heap(new global::go.math.big_package.Float(), out var Ꮡrx);
+                Ꮡrx.SetPrec(prec);
+                {
+                    var errΔ1 = Ꮡrx.UnmarshalText(b[4..]); if (errΔ1 != default!) {
+                        Ꮡt.Errorf("unmarshaling of %v (prec = %d) failed: %v"u8, Ꮡtx, prec, errΔ1);
+                        continue;
+                    }
+                }
+                if (Ꮡrx.Cmp(Ꮡtx) != 0) {
+                    Ꮡt.Errorf("AppendText of %v (prec = %d) failed: got %v want %v"u8, Ꮡtx, prec, Ꮡrx, Ꮡtx);
+                }
+            }
+        }
+    }
+}
+
+public static void TestFloatAppendTextNil(ж<testing.T> Ꮡt) {
+    ж<global::go.math.big_package.Float> x = default!;
+    var buf = new slice<byte>(4, 16);
+    var (data, _) = x.AppendText(buf);
+    if (((sstring)(data[4..])) != "<nil>"u8) {
+        Ꮡt.Errorf("got %q, want <nil>"u8, data[4..]);
     }
 }
 

@@ -6,10 +6,14 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `archive/tar` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**97 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**98 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/archive/tar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/tar).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
+
+Both runtimes skip 1 of the matched tests identically.
 
 ## Verdicts
 
@@ -18,7 +22,7 @@ comparison — it is the evidence behind the `archive/tar` row in
 | `TestDisableInsecurePathCheck` | pass | pass |
 | `TestFileInfoHeader` | pass | pass |
 | `TestFileInfoHeaderDir` | pass | pass |
-| `TestFileInfoHeaderSymlink` | pass | pass |
+| `TestFileInfoHeaderSymlink` | skip | skip |
 | `TestFileInfoHeaderUseFileInfoNames` | pass | pass |
 | `TestFileReader` | pass | pass |
 | `TestFileWriter` | pass | pass |
@@ -55,6 +59,7 @@ comparison — it is the evidence behind the `archive/tar` row in
 | `TestReader/gnu-nil-sparse-data.tar` | pass | pass |
 | `TestReader/gnu-nil-sparse-hole.tar` | pass | pass |
 | `TestReader/gnu-not-utf8.tar` | pass | pass |
+| `TestReader/gnu-sparse-many-zeros.tar.bz2` | pass | pass |
 | `TestReader/gnu-utf8.tar` | pass | pass |
 | `TestReader/gnu.tar` | pass | pass |
 | `TestReader/invalid-go17.tar` | pass | pass |

@@ -5,7 +5,6 @@ namespace go.go;
 
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
-using importer = global::go.go.importer_package;
 using token = global::go.go.token_package;
 using testenv = global::go.@internal.testenv_package;
 using slices = slices_package;
@@ -19,6 +18,7 @@ using types = global::go.go.types_package;
 partial class types_test_package {
 
 [GoType] partial struct resolveTestImporter {
+    internal ж<token.FileSet> fset;
     internal types.ImporterFrom importer;
     internal map<@string, bool> imported;
 }
@@ -32,7 +32,7 @@ partial class types_test_package {
         throw panic("mode must be 0");
     }
     if (imp.importer == default!) {
-        imp.importer = importer.Default()._<ImporterFrom>();
+        imp.importer = defaultImporter(fset)._<ImporterFrom>();
         imp.imported = new map<@string, bool>();
     }
     var (pkg, err) = imp.importer.ImportFrom(path, srcDir, mode);
@@ -138,7 +138,7 @@ public static void TestResolveIdents(ж<testing.T> Ꮡt) {
         files = append(files, mustParse(fset, src));
     }
     // resolve and type-check package AST
-    var importer = @new<resolveTestImporter>();
+    var importer = Ꮡ(new resolveTestImporter(fset: fset));
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
     conf = new Config(Importer: new types_test_package.resolveTestImporterжImporter(importer));
     var uses = new map<ж<ast.Ident>, types.Object>();
