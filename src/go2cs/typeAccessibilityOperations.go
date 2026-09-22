@@ -919,6 +919,33 @@ func collectUnexportedNamedTypes(t types.Type, pkg *types.Package) {
 		collectUnexportedNamedTypes(t.Elem(), pkg)
 	case *types.Chan:
 		collectUnexportedNamedTypes(t.Elem(), pkg)
+	case *types.Struct:
+		// AN ANONYMOUS STRUCT under an exported field or var — `var InternalTests = []struct{ Name
+		// string; Test func(testingT) }{…}` (time's abs_test.go, new at 1.24.13). The walk peels the
+		// slice, reaches the anonymous struct, and STOPPED here: the struct has no *types.Object, so
+		// the named-only recursion had nothing to record and never looked at its fields. `testingT`
+		// was therefore never publicized while the LIFT the struct becomes was emitted PUBLIC —
+		// generatedTypeScope reads the synthesized name `InternalTestsᴛ1`, whose capital I belongs to
+		// the exported VAR and not to any type Go exported — so a public field carried an internal
+		// type: CS0052 at abs_test.cs, and CS0050/CS0051 on the members the TypeGenerator generates
+		// from it (i9's s2 evidence, claude/i9-h10-s2-evidence b2eff468c7).
+		//
+		// ⚠ THIS ARM REVERSES A DELIBERATE OMISSION, so the reason it was deliberate is worth having:
+		// collectSignatureTypes' doc says an exported field/var of an anonymous struct is "left to
+		// the named-only walker (a public struct/var over an internal anon field type is legal when
+		// its own enclosing type is internal)". That holds for a FUNCTION-LOCAL lift, which
+		// localTypeAccess pins internal — and this walk never reaches one, since it runs over PACKAGE
+		// scope. It does NOT hold for a lift named after an EXPORTED package-level var or field,
+		// which is exactly the set this arm can reach and exactly the set whose lift comes out
+		// public. The omission was correct for the lifts it was written against and wrong for these.
+		//
+		// Only EXPORTED fields force the rule, as in the named-struct arm at the call site above: an
+		// unexported field of the lift is emitted internal and may hold an internal type.
+		for i := range t.NumFields() {
+			if field := t.Field(i); field.Exported() {
+				collectUnexportedNamedTypes(field.Type(), pkg)
+			}
+		}
 	case *types.Signature:
 		// A FUNC-typed element of an exported field/var — `var SupportedKDFs =
 		// map[uint16]func() *hkdfKDF` (crypto/internal/hpke), `var F func() snapshot`, or a
