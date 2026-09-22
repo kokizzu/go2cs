@@ -55,11 +55,9 @@ var staleCoreReferences = []string{
 	"crypto/tls/crypto.tls.tests.csproj -> runtime/internal/math",
 	"fmt/fmt.tests.csproj -> runtime/internal/math",
 	"internal/trace/internal.trace.tests.csproj -> runtime/internal/math",
-	"log/slog/log.slog.tests.csproj -> runtime/internal/math",
 	"math/rand/math.rand.tests.csproj -> runtime/internal/math",
 	"mime/multipart/mime.multipart.tests.csproj -> runtime/internal/math",
 	"net/http/net.http.tests.csproj -> runtime/internal/math",
-	"sync/sync.tests.csproj -> runtime/internal/math",
 	"time/time.tests.csproj -> runtime/internal/math",
 }
 
