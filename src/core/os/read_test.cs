@@ -5,12 +5,12 @@ namespace go;
 
 using bytes = bytes_package;
 using static os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using Δtesting = testing_package;
 using fs = go.io.fs_package;
 using go.io;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δos = os_package;
 
@@ -81,44 +81,34 @@ public static void TestWriteFile(ж<Δtesting.T> Ꮡt) {
 internal static readonly @string blurpTxtˢ = "blurp.txt"u8;
 
 public static void TestReadOnlyWriteFile(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        ref var t = ref Ꮡt.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
-        if (Getuid() == 0) {
-            Ꮡt.Skipf("Root can write to read-only files anyway, so skip the read-only test."u8);
-        }
-        if (Δruntime.GOOS == "wasip1"u8) {
-            Ꮡt.Skip("no support for file permissions on " + Δruntime.GOOS);
-        }
-        Ꮡt.Parallel();
-        // We don't want to use CreateTemp directly, since that opens a file for us as 0600.
-        var (tempDir, err) = MkdirTemp(""u8, Ꮡt.Name());
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(RemoveAll, tempDir, ref ᒐ);
-        @string filename = filepath.Join(tempDir, blurpTxtˢ);
-        var shmorp = slice<byte>("shmorp"u8);
-        var florp = slice<byte>("florp"u8);
-        err = WriteFile(filename, shmorp, 292);
-        if (err != default!) {
-            Ꮡt.Fatalf("WriteFile %s: %v"u8, filename, err);
-        }
-        err = WriteFile(filename, florp, 292);
-        if (err == default!) {
-            Ꮡt.Fatalf("Expected an error when writing to read-only file %s"u8, filename);
-        }
-        (var got, err) = ReadFile(filename);
-        if (err != default!) {
-            Ꮡt.Fatalf("ReadFile %s: %v"u8, filename, err);
-        }
-        if (!bytes.Equal(got, shmorp)) {
-            Ꮡt.Fatalf("want %s, got %s"u8, shmorp, got);
-        }
+    if (Getuid() == 0) {
+        Ꮡt.Skipf("Root can write to read-only files anyway, so skip the read-only test."u8);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    if (Δruntime.GOOS == "wasip1"u8) {
+        Ꮡt.Skip("no support for file permissions on " + Δruntime.GOOS);
+    }
+    Ꮡt.Parallel();
+    // We don't want to use CreateTemp directly, since that opens a file for us as 0600.
+    @string filename = filepath.Join(Ꮡt.TempDir(), blurpTxtˢ);
+    var shmorp = slice<byte>("shmorp"u8);
+    var florp = slice<byte>("florp"u8);
+    var err = WriteFile(filename, shmorp, 292);
+    if (err != default!) {
+        Ꮡt.Fatalf("WriteFile %s: %v"u8, filename, err);
+    }
+    err = WriteFile(filename, florp, 292);
+    if (err == default!) {
+        Ꮡt.Fatalf("Expected an error when writing to read-only file %s"u8, filename);
+    }
+    (var got, err) = ReadFile(filename);
+    if (err != default!) {
+        Ꮡt.Fatalf("ReadFile %s: %v"u8, filename, err);
+    }
+    if (!bytes.Equal(got, shmorp)) {
+        Ꮡt.Fatalf("want %s, got %s"u8, shmorp, got);
+    }
 }
 
 public static void TestReadDir(ж<Δtesting.T> Ꮡt) {

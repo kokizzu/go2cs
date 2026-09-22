@@ -9,12 +9,6 @@ using static go.net.http.cookiejar_internal_test_package;
 
 partial class cookiejar_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸcookiejar() {
-    builtin.initPackage(typeof(go.net.http.cookiejar_package));
-}
-
 [GoType] partial struct dummypsl {
     public cookiejar.PublicSuffixList List;
 }

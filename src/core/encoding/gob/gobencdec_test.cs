@@ -17,12 +17,6 @@ using static go.encoding.gob_package;
 
 partial class gob_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
 // Types that implement the GobEncoder/Decoder interfaces.
 [GoType] public partial struct ByteStruct {
     internal byte a; // not an exported field
@@ -353,7 +347,7 @@ public static void TestGobEncoderArrayField(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(decodeErrorˢ, err);
     }
-    foreach (var (i, v) in (~x).A.a) {
+    foreach (var (i, v) in (~x).A.a.ΔRangeSnapshot()) {
         if (v != (byte)i) {
             Ꮡt.Errorf("expected %x got %x"u8, (byte)i, v);
             break;
@@ -386,7 +380,7 @@ public static void TestGobEncoderIndirectArrayField(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(decodeErrorˢ, err);
     }
-    foreach (var (i, v) in ((((~x).A.ValueSlot).ValueSlot).Value).a) {
+    foreach (var (i, v) in ((((~x).A.ValueSlot).ValueSlot).Value).a.ΔRangeSnapshot()) {
         if (v != (byte)i) {
             Ꮡt.Errorf("expected %x got %x"u8, (byte)i, v);
             break;
@@ -808,14 +802,14 @@ public static (slice<byte> b, error e) GobEncode(this isZeroBugArray a) {
     slice<byte> b = default!;
 
     a = a.Clone();
-    b = append(b, a[..].ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, a[..]);
     return (b, default!);
 }
 
 public static error GobDecode(this ж<isZeroBugArray> Ꮡa, slice<byte> data) {
     ref var a = ref Ꮡa.DerefOrNull();
 
-    if (len(data) != len(a.Value)) {
+    if (len(data) != 2) {
         return io.EOF;
     }
     a.Value[0] = data[0];

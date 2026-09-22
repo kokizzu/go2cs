@@ -124,7 +124,7 @@ internal static array<punycodeTestCasesᴛ1> punycodeTestCases = new punycodeTes
 }.array();
 
 public static void TestPunycode(ж<testing.T> Ꮡt) {
-    foreach (var (_, tc) in punycodeTestCases) {
+    foreach (var (_, tc) in punycodeTestCases.ΔRangeSnapshot()) {
         {
             var (got, err) = encode(""u8, tc.s); if (err != default!){
                 Ꮡt.Errorf(@"encode("""", %q): %v"u8, tc.s, err);

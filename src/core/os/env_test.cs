@@ -4,7 +4,7 @@
 namespace go;
 
 using static os_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using Δtesting = testing_package;
 using static go.os_internal_test_package;
@@ -120,7 +120,7 @@ public static void TestConsistentEnviron(ж<Δtesting.T> Ꮡt) {
     var e0 = Environ();
     for (nint i = 0; i < 10; i++) {
         var e1 = Environ();
-        if (!reflect.DeepEqual(e0, e1)) {
+        if (!slices.Equal<slice<@string>, @string>(e0, e1)) {
             Ꮡt.Fatalf("environment changed"u8);
         }
     }

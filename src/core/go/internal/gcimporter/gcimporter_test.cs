@@ -12,6 +12,7 @@ using path = path_package;
 using filepath = global::go.path.filepath_package;
 using runtime = runtime_package;
 using strings = strings_package;
+using sync = sync_package;
 using testing = testing_package;
 using time = time_package;
 using ast = global::go.go.ast_package;
@@ -31,114 +32,6 @@ using io = io_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class gcimporter_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(global::go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(global::go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(global::go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() {
-    builtin.initPackage(typeof(global::go.go.build_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸimporter() {
-    builtin.initPackage(typeof(global::go.go.importer_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸparser() {
-    builtin.initPackage(typeof(global::go.go.parser_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() {
-    builtin.initPackage(typeof(global::go.go.types_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgcimporter() {
-    builtin.initPackage(typeof(global::go.go.@internal.gcimporter_package));
-}
 
 public static void TestMain(ж<testing.M> Ꮡm) {
     build.Default.GOROOT = testenv.GOROOT(default!);
@@ -228,13 +121,7 @@ public static void TestImportTestdata(ж<testing.T> Ꮡt) {
             ["exports.go"u8] = new @string[]{"go/ast"u8, "go/token"u8}.slice(),
             ["generics.go"u8] = default!
         };
-        if (true) {
-            /* was goexperiment.Unified */
-            // TODO(mdempsky): Fix test below to flatten the transitive
-            // Package.Imports graph. Unified IR is more precise about
-            // recreating the package import graph.
-            testfiles[exportsGoˢ] = new @string[]{"go/ast"u8}.slice();
-        }
+        testfiles[exportsGoˢ] = new @string[]{"go/ast"u8}.slice();
         foreach (var (testfile, wantImports) in testfiles) {
             @string tmpdir = mktmpdir(Ꮡt);
             defer(os.RemoveAll, tmpdir, ref ᒐ);
@@ -389,6 +276,7 @@ internal static ж<types.Package> checkFile(ж<testing.T> Ꮡt, @string filename
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string versionsˢ = "versions"u8;
 private static readonly @string corruptedˢ = "corrupted"u8;
+private static readonly @string notTheStartOfAnArchiveˢ = "not the start of an archive file"u8;
 private static readonly @string noLongerSupportedˢ = "no longer supported"u8;
 private static readonly @string newerVersionˢ = "newer version"u8;
 private static readonly @string versionSkewˢ = "version skew"u8;
@@ -432,19 +320,28 @@ public static void TestVersionHandling(ж<testing.T> Ꮡt) {
             // test that export data can be imported
             var (_, errΔ2) = Import(fset, new map<@string, ж<types.Package>>(), pkgpath, dir, default!);
             if (errΔ2 != default!) {
-                // ok to fail if it fails with a no longer supported error for select files
-                if (strings.Contains(errΔ2.Error(), noLongerSupportedˢ)) {
+                // ok to fail if it fails with a 'not the start of an archive file' error for select files
+                if (strings.Contains(errΔ2.Error(), notTheStartOfAnArchiveˢ)) {
                     var exprᴛ1 = name;
-                    if (exprᴛ1 == "test_go1.7_0.a"u8 || exprᴛ1 == "test_go1.7_1.a"u8 || exprᴛ1 == "test_go1.8_4.a"u8 || exprᴛ1 == "test_go1.8_5.a"u8 || exprᴛ1 == "test_go1.11_6b.a"u8 || exprᴛ1 == "test_go1.11_999b.a"u8) {
+                    if (exprᴛ1 == "test_go1.8_4.a"u8 || exprᴛ1 == "test_go1.8_5.a"u8) {
                         continue;
                     }
 
                 }
                 // fall through
-                // ok to fail if it fails with a newer version error for select files
-                if (strings.Contains(errΔ2.Error(), newerVersionˢ)) {
+                // ok to fail if it fails with a 'no longer supported' error for select files
+                if (strings.Contains(errΔ2.Error(), noLongerSupportedˢ)) {
                     var exprᴛ2 = name;
-                    if (exprᴛ2 == "test_go1.11_999i.a"u8) {
+                    if (exprᴛ2 == "test_go1.7_0.a"u8 || exprᴛ2 == "test_go1.7_1.a"u8 || exprᴛ2 == "test_go1.8_4.a"u8 || exprᴛ2 == "test_go1.8_5.a"u8 || exprᴛ2 == "test_go1.11_0i.a"u8 || exprᴛ2 == "test_go1.11_6b.a"u8 || exprᴛ2 == "test_go1.11_999b.a"u8 || exprᴛ2 == "test_go1.11_999i.a"u8) {
+                        continue;
+                    }
+
+                }
+                // fall through
+                // ok to fail if it fails with a 'newer version' error for select files
+                if (strings.Contains(errΔ2.Error(), newerVersionˢ)) {
+                    var exprᴛ3 = name;
+                    if (exprᴛ3 == "test_go1.11_999i.a"u8) {
                         continue;
                     }
 
@@ -461,6 +358,8 @@ public static void TestVersionHandling(ж<testing.T> Ꮡt) {
             }
             // 2) find export data
             nint i = bytes.Index(data, slice<byte>("\n$$B\n"u8)) + 5;
+            // Export data can contain "\n$$\n" in string constants, however,
+            // searching for the next end of section marker "\n$$\n" is good enough for tests.
             nint j = bytes.Index(data[(int)(i)..], slice<byte>("\n$$\n"u8)) + i;
             if (i < 0 || j < 0 || i > j) {
                 Ꮡt.Fatalf("export data section not found (i = %d, j = %d)"u8, i, j);
@@ -544,7 +443,7 @@ internal static slice<importedObjectTestsᴛ1> importedObjectTests = new importe
     new("math.Pi"u8, "const Pi untyped float"u8),
     new("math.Sin"u8, "func Sin(x float64) float64"u8),
     new("go/ast.NotNilFilter"u8, "func NotNilFilter(_ string, v reflect.Value) bool"u8),
-    new("go/internal/gcimporter.FindPkg"u8, "func FindPkg(path string, srcDir string) (filename string, id string, err error)"u8),
+    new("internal/exportdata.FindPkg"u8, "func FindPkg(path string, srcDir string) (filename string, id string, err error)"u8),
     new("context.Context"u8, "type Context interface{Deadline() (deadline time.Time, ok bool); Done() <-chan struct{}; Err() error; Value(key any) any}"u8),
     new("crypto.Decrypter"u8, "type Decrypter interface{Decrypt(rand io.Reader, msg []byte, opts DecrypterOpts) (plaintext []byte, err error); Public() PublicKey}"u8),
     new("encoding.BinaryMarshaler"u8, "type BinaryMarshaler interface{MarshalBinary() (data []byte, err error)}"u8),
@@ -944,6 +843,83 @@ internal static types.Object lookupObj(ж<testing.T> Ꮡt, ж<typesꓸScope> Ꮡ
     Ꮡt.Helper();
     Ꮡt.Fatalf("%s not found"u8, name);
     return default!;
+}
+
+[GoType("map[@string, ж<types.Package>]")] partial struct importMap;
+
+internal static (ж<types.Package>, error) ΔImport(this importMap m, @string path) {
+    return (m[path], default!);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string issue69912Goˢ = "issue69912.go"u8;
+private static readonly @string testdataIssue69912ˢ = "./testdata/issue69912"u8;
+
+public static void TestIssue69912(ж<testing.T> Ꮡt) {
+    testenv.MustHaveGoBuild(new testing_TжTB(Ꮡt));
+    // This package only handles gc export data.
+    if (runtime.Compiler != "gc") {
+        Ꮡt.Skipf("gc-built packages not available (compiler = %s)"u8, runtime.Compiler);
+    }
+    @string tmpdir = Ꮡt.TempDir();
+    @string testoutdir = filepath.Join(tmpdir, testdataˢ);
+    {
+        var errΔ1 = os.Mkdir(testoutdir, 448); if (errΔ1 != default!) {
+            Ꮡt.Fatalf("making output dir: %v"u8, errΔ1);
+        }
+    }
+    compile(Ꮡt, testdataˢ, issue69912Goˢ, testoutdir, default!);
+    var fset = token.NewFileSet();
+    var (issue69912, err) = Import(fset, new map<@string, ж<types.Package>>(), testdataIssue69912ˢ, tmpdir, default!);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var fsetʗ1 = fset;
+    (ж<types.Package>, error) check(@string pkgname, @string src, importMap imports) {
+        var (f, errΔ2) = parser.ParseFile(fsetʗ1, aGoˢ, src, 0);
+        if (errΔ2 != default!) {
+            return (default!, errΔ2);
+        }
+        var config = Ꮡ(new types.Config(
+            Importer: imports
+        ));
+        return config.Check(pkgname, fsetʗ1, new ж<ast.File>[]{f}.slice(), nil);
+    }
+    // Use the resulting package concurrently, via dot-imports, to exercise the
+    // race of issue #69912.
+    @string pSrc = """
+package p
+
+import . "issue69912"
+
+type S struct {
+	f T
+}
+
+"""u8;
+    var importer = new importMap(new map<@string, ж<types.Package>>{
+        ["issue69912"u8] = issue69912
+    });
+    ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
+    foreach (var _ᴛ1 in range(10)) {
+        Ꮡwg.Add(1);
+        var checkʗ1 = check;
+        var importerʗ1 = importer;
+        goǃ(() => {
+            GoFrame ᒐ = default;
+            try {
+                defer(Ꮡwg.Done, ref ᒐ);
+                {
+                    var (_, errΔ3) = checkʗ1("p"u8, pSrc, importerʗ1); if (errΔ3 != default!) {
+                        Ꮡt.Errorf("Check failed: %v"u8, errΔ3);
+                    }
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
+    }
+    Ꮡwg.Wait();
 }
 
 } // end gcimporter_test_package

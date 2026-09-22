@@ -16,8 +16,7 @@ using Δio = io_package;
 using fs = go.io.fs_package;
 using Δos = os_package;
 using exec = go.os.exec_package;
-using filepath = path.filepath_package;
-using reflect = reflect_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using slices = slices_package;
 using strings = strings_package;
@@ -30,7 +29,7 @@ using @internal.syscall;
 using @internal.syscall.windows;
 using go.io;
 using go.os;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using unicode;
 
@@ -40,31 +39,8 @@ internal static ж<godebug.Setting> winsymlink = godebug.New("winsymlink"u8);
 
 internal static ж<godebug.Setting> winreadlinkvolume = godebug.New("winreadlinkvolume"u8);
 
-// chdir changes the current working directory to the named directory,
-// and then restore the original working directory at the end of the test.
-internal static void chdir(ж<Δtesting.T> Ꮡt, @string dir) {
-    var (olddir, err) = Δos.Getwd();
-    if (err != default!) {
-        Ꮡt.Fatalf("chdir: %v"u8, err);
-    }
-    {
-        var errΔ1 = Δos.Chdir(dir); if (errΔ1 != default!) {
-            Ꮡt.Fatalf("chdir %s: %v"u8, dir, errΔ1);
-        }
-    }
-    Ꮡt.Cleanup(() => {
-        {
-            var errΔ2 = Δos.Chdir(olddir); if (errΔ2 != default!) {
-                Ꮡt.Errorf("chdir to original working directory %s: %v"u8, olddir, errΔ2);
-                Δos.Exit(1);
-            }
-        }
-    });
-}
-
 public static void TestSameWindowsFile(ж<Δtesting.T> Ꮡt) {
-    @string temp = Ꮡt.TempDir();
-    chdir(Ꮡt, temp);
+    Ꮡt.Chdir(Ꮡt.TempDir());
     var (f, err) = Δos.Create("a"u8);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -109,7 +85,7 @@ internal static readonly @string abcˢ = "abc"u8;
 
 internal static void testDirLinks(ж<Δtesting.T> Ꮡt, slice<dirLinkTest> tests) {
     @string tmpdir = Ꮡt.TempDir();
-    chdir(Ꮡt, tmpdir);
+    Ꮡt.Chdir(tmpdir);
     @string dir = filepath.Join(tmpdir, dirˢ);
     var err = Δos.Mkdir(dir, 511);
     if (err != default!) {
@@ -495,7 +471,7 @@ public static void TestNetworkSymbolicLink(ж<Δtesting.T> Ꮡt) {
         testenv.MustHaveSymlink(new os_test_package.testing_TжTB(Ꮡt));
         syscall.Errno _NERR_ServerNotStarted = /* syscall.Errno(2114) */ 2114;
         @string dir = Ꮡt.TempDir();
-        chdir(Ꮡt, dir);
+        Ꮡt.Chdir(dir);
         nint pid = Δos.Getpid();
         @string shareName = fmt.Sprintf("GoSymbolicLinkTestShare%d"u8, pid);
         @string sharePath = filepath.Join(dir, shareName);
@@ -601,8 +577,7 @@ public static void TestStatLxSymLink(ж<Δtesting.T> Ꮡt) {
             Ꮡt.Skip(skippingWslNotDetectedˢ);
         }
     }
-    @string temp = Ꮡt.TempDir();
-    chdir(Ꮡt, temp);
+    Ꮡt.Chdir(Ꮡt.TempDir());
     @string target = "target"u8;
     @string link = "link"u8;
     var (_, err) = testenv.Command(new os_test_package.testing_TжTB(Ꮡt), wslˢ, binMkdirˢ, target).Output();
@@ -684,7 +659,7 @@ internal static readonly object raceConditionOccurredˢ = (@string)"race conditi
 public static void TestStatDir(ж<Δtesting.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        defer(chtmpdir(Ꮡt), ref ᒐ);
+        Ꮡt.Chdir(Ꮡt.TempDir());
         var (f, err) = Δos.Open("."u8);
         if (err != default!) {
             Ꮡt.Fatal(err);
@@ -715,7 +690,7 @@ public static void TestOpenVolumeName(ж<Δtesting.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
         @string tmpdir = Ꮡt.TempDir();
-        chdir(Ꮡt, tmpdir);
+        Ꮡt.Chdir(tmpdir);
         var want = new @string[]{"file1"u8, "file2"u8, "file3"u8, "gopher.txt"u8}.slice();
         slices.Sort<slice<@string>, @string>(want);
         foreach (var (_, name) in want) {
@@ -836,7 +811,7 @@ public static void TestReadStdin(ж<Δtesting.T> Ꮡt) {
                         while (len(want) < 5) {
                             want = append(want, ""u8);
                         }
-                        if (!reflect.DeepEqual(all, want)) {
+                        if (!slices.Equal<slice<@string>, @string>(all, want)) {
                             tΔ1.Errorf("reading %q:\nhave %x\nwant %x"u8, s, all, want);
                         }
                     });
@@ -1034,7 +1009,9 @@ internal static (@string, error) findOneDriveDir() {
         if (err != default!) {
             return ("", fmt.Errorf("reading UserFolder failed: %v"u8, err));
         }
-        if (valtype == registry.EXPAND_SZ) {
+        // REG_SZ values may also contain environment variables that need to be expanded.
+        // It's recommended but not required to use REG_EXPAND_SZ for paths that contain environment variables.
+        if (valtype == registry.EXPAND_SZ || valtype == registry.SZ) {
             var (expanded, errΔ1) = registry.ExpandString(path);
             if (errΔ1 != default!) {
                 return ("", fmt.Errorf("expanding UserFolder failed: %v"u8, errΔ1));
@@ -1094,20 +1071,27 @@ public static void TestWindowsDevNullFile(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestFileStatNUL(ж<Δtesting.T> Ꮡt) {
-    Ꮡt.Parallel();
-    var (f, err) = Δos.Open(nulˢ4);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    (var fi, err) = f.Stat();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    {
-        var (got, want) = (fi.Mode(), (fs.FileMode)((fs.FileMode)(Δos.ModeDevice | Δos.ModeCharDevice) | 438)); if (got != want) {
-            Ꮡt.Errorf("Open(%q).Stat().Mode() = %v, want %v"u8, nulˢ4, got, want);
+    GoFrame ᒐ = default;
+    try {
+        Ꮡt.Parallel();
+        var (f, err) = Δos.Open(nulˢ4);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var fʗ1 = f;
+        defer(() => fʗ1.Close(), ref ᒐ);
+        (var fi, err) = f.Stat();
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        {
+            var (got, want) = (fi.Mode(), (fs.FileMode)((fs.FileMode)(Δos.ModeDevice | Δos.ModeCharDevice) | 438)); if (got != want) {
+                Ꮡt.Errorf("Open(%q).Stat().Mode() = %v, want %v"u8, nulˢ4, got, want);
+            }
         }
     }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
 }
 
 public static void TestStatNUL(ж<Δtesting.T> Ꮡt) {
@@ -1124,14 +1108,14 @@ public static void TestStatNUL(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object windowsDeveloperModeIsˢ = (@string)"Windows developer mode is not active"u8;
+internal static readonly object skippingTestNoSymlinkˢ = (@string)"skipping test; no symlink support"u8;
 
 // TestSymlinkCreation verifies that creating a symbolic link
 // works on Windows when developer mode is active.
 // This is supported starting Windows 10 (1703, v10.0.14972).
 public static void TestSymlinkCreation(ж<Δtesting.T> Ꮡt) {
-    if (!testenv.HasSymlink() && !isWindowsDeveloperModeActive()) {
-        Ꮡt.Skip(windowsDeveloperModeIsˢ);
+    if (!testenv.HasSymlink()) {
+        Ꮡt.Skip(skippingTestNoSymlinkˢ);
     }
     Ꮡt.Parallel();
     @string temp = Ꮡt.TempDir();
@@ -1147,24 +1131,6 @@ public static void TestSymlinkCreation(ж<Δtesting.T> Ꮡt) {
             Ꮡt.Fatal(err);
         }
     }
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string softwareMicrosoftWindowsˢ = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock"u8;
-
-// isWindowsDeveloperModeActive checks whether or not the developer mode is active on Windows 10.
-// Returns false for prior Windows versions.
-// see https://docs.microsoft.com/en-us/windows/uwp/get-started/enable-your-device-for-development
-internal static bool isWindowsDeveloperModeActive() {
-    var (key, err) = registry.OpenKey(registry.LOCAL_MACHINE, softwareMicrosoftWindowsˢ, registry.READ);
-    if (err != default!) {
-        return false;
-    }
-    (var val, _, err) = key.GetIntegerValue("AllowDevelopmentWithoutDevLicense"u8);
-    if (err != default!) {
-        return false;
-    }
-    return val != 0;
 }
 
 // TestRootRelativeDirSymlink verifies that symlinks to paths relative to the
@@ -1241,18 +1207,7 @@ public static void TestWorkingDirectoryRelativeSymlink(ж<Δtesting.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        defer(() => {
-            {
-                var errΔ2 = Δos.Chdir(oldwd); if (errΔ2 != default!) {
-                    Ꮡt.Fatal(errΔ2);
-                }
-            }
-        }, ref ᒐ);
-        {
-            var errΔ3 = Δos.Chdir(temp); if (errΔ3 != default!) {
-                Ꮡt.Fatal(errΔ3);
-            }
-        }
+        Ꮡt.Chdir(temp);
         Ꮡt.Logf("Chdir(%#q)"u8, temp);
         @string wdRelDir = filepath.VolumeName(temp) + @"dir\sub"u8; // no backslash after volume.
         @string absLink = filepath.Join(temp, linkˢ);
@@ -1265,8 +1220,8 @@ public static void TestWorkingDirectoryRelativeSymlink(ж<Δtesting.T> Ꮡt) {
         // symlink still refers to its original path and is correctly marked as a
         // directory.
         {
-            var errΔ4 = Δos.Chdir(oldwd); if (errΔ4 != default!) {
-                Ꮡt.Fatal(errΔ4);
+            var errΔ2 = Δos.Chdir(oldwd); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
             }
         }
         Ꮡt.Logf("Chdir(%#q)"u8, oldwd);
@@ -1343,11 +1298,8 @@ public static void TestRootDirAsTemp(ж<Δtesting.T> Ꮡt) {
     }
     testenv.MustHaveExec(new os_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Parallel();
-    var (exe, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    (var newtmp, err) = findUnusedDriveLetter();
+    @string exe = testenv.Executable(new os_test_package.testing_TжTB(Ꮡt));
+    var (newtmp, err) = findUnusedDriveLetter();
     if (err != default!) {
         Ꮡt.Skip(err);
     }
@@ -1432,6 +1384,9 @@ public static void TestReadlink(ж<Δtesting.T> Ꮡt) {
         }
         var ttʗ1 = ttΔ1;
         Ꮡt.Run(name, (ж<Δtesting.T> tΔ1) => {
+            if (!ttʗ1.junction) {
+                testenv.MustHaveSymlink(new os_test_package.testing_TжTB(tΔ1));
+            }
             if (!ttʗ1.relative) {
                 tΔ1.Parallel();
             }
@@ -1463,7 +1418,7 @@ public static void TestReadlink(ж<Δtesting.T> Ꮡt) {
                 } else {
                     want = relTarget;
                 }
-                chdir(tΔ1, tmpdir);
+                tΔ1.Chdir(tmpdir);
                 link = filepath.Base(link);
                 target = relTarget;
             } else {

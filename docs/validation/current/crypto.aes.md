@@ -6,28 +6,74 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/aes` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**13 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**57 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
-| `TestCBCDecAble` | pass | pass |
-| `TestCBCEncAble` | pass | pass |
-| `TestCTRAble` | pass | pass |
+| `TestAESBlock` | pass | pass |
+| `TestAESBlock/AES-128` | pass | pass |
+| `TestAESBlock/AES-128/Decryption` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-128/Decryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-128/Encryption` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-128/Encryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-128/Roundtrip` | pass | pass |
+| `TestAESBlock/AES-192` | pass | pass |
+| `TestAESBlock/AES-192/Decryption` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-192/Decryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-192/Encryption` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-192/Encryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-192/Roundtrip` | pass | pass |
+| `TestAESBlock/AES-256` | pass | pass |
+| `TestAESBlock/AES-256/Decryption` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-256/Decryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-256/Encryption` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/Aliasing` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/AlterInput` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/BufferOverlap` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/NonZeroDst` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/OutOfBoundsRead` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/OutOfBoundsWrite` | pass | pass |
+| `TestAESBlock/AES-256/Encryption/ShortBlock` | pass | pass |
+| `TestAESBlock/AES-256/Roundtrip` | pass | pass |
 | `TestCipherDecrypt` | pass | pass |
 | `TestCipherEncrypt` | pass | pass |
-| `TestExpandKey` | pass | pass |
-| `TestGCMAble` | pass | pass |
-| `TestMul` | pass | pass |
-| `TestPowx` | pass | pass |
-| `TestSboxes` | pass | pass |
-| `TestShortBlocks` | pass | pass |
-| `TestTd` | pass | pass |
-| `TestTe` | pass | pass |
 
 ## Excluded declarations
 
@@ -40,4 +86,3 @@ the capability it needs.
 - BenchmarkCreateCipher (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkDecrypt (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkEncrypt (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkExpand (benchmark): benchmark execution is deferred to Phase 4D

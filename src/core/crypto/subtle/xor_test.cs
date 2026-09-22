@@ -7,7 +7,6 @@ using bytes = bytes_package;
 using rand = go.crypto.rand_package;
 using static go.crypto.subtle_package;
 using fmt = fmt_package;
-using io = io_package;
 using testing = testing_package;
 using go.crypto;
 using static go.crypto.subtle_internal_test_package;
@@ -22,35 +21,60 @@ public static void TestXORBytes(ж<testing.T> Ꮡt) {
         for (nint alignP = 0; alignP < 8; alignP++) {
             for (nint alignQ = 0; alignQ < 8; alignQ++) {
                 for (nint alignD = 0; alignD < 8; alignD++) {
-                    var p = new slice<byte>(alignP + n, alignP + n + 10)[(int)(alignP)..];
-                    var q = new slice<byte>(alignQ + n, alignQ + n + 10)[(int)(alignQ)..];
+                    var p = new slice<byte>(alignP + n, alignP + n + 100)[(int)(alignP)..];
+                    var q = new slice<byte>(alignQ + n, alignQ + n + 100)[(int)(alignQ)..];
                     if ((nint)(n & 1) != 0){
                         p = p[..(int)(n)];
                     } else {
                         q = q[..(int)(n)];
                     }
-                    {
-                        var (_, err) = io.ReadFull(rand.Reader, p); if (err != default!) {
-                            Ꮡt.Fatal(err);
-                        }
-                    }
-                    {
-                        var (_, err) = io.ReadFull(rand.Reader, q); if (err != default!) {
-                            Ꮡt.Fatal(err);
-                        }
-                    }
-                    var d = new slice<byte>(alignD + n, alignD + n + 10);
-                    foreach (var (i, _) in d) {
-                        d[i] = 0xdd;
-                    }
-                    var want = new slice<byte>(len(d), cap(d));
-                    copy(want[..(int)(cap(want))], d[..(int)(cap(d))]);
-                    for (nint i = 0; i < n; i++) {
+                    rand.Read(p);
+                    rand.Read(q);
+                    var d = new slice<byte>(alignD + n + 100);
+                    rand.Read(d);
+                    var want = bytes.Clone(d);
+                    foreach (var i in range(n)) {
                         want[alignD + i] = (byte)(p[i] ^ q[i]);
                     }
                     {
-                        XORBytes(d[(int)(alignD)..], p, q); if (!bytes.Equal(d, want)) {
-                            Ꮡt.Fatalf("n=%d alignP=%d alignQ=%d alignD=%d:\n\tp = %x\n\tq = %x\n\td = %x\n\twant %x\n"u8, n, alignP, alignQ, alignD, p, q, d, want);
+                        nint nn = XORBytes(d[(int)(alignD)..], p, q); if (!bytes.Equal(d, want)){
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d:\n\tp = %x\n\tq = %x\n\td = %x\n\twant %x\n"u8, n, alignP, alignQ, alignD, p, q, d, want);
+                        } else 
+                        if (nn != n) {
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %d, want %d"u8, n, alignP, alignQ, alignD, nn, n);
+                        }
+                    }
+                    var p1 = bytes.Clone(p);
+                    {
+                        nint nn = XORBytes(p, p, q); if (!bytes.Equal(p, want[(int)(alignD)..(int)(alignD + n)])){
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d:\n\tp = %x\n\tq = %x\n\td = %x\n\twant %x\n"u8, n, alignP, alignQ, alignD, p, q, d, want);
+                        } else 
+                        if (nn != n) {
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %d, want %d"u8, n, alignP, alignQ, alignD, nn, n);
+                        }
+                    }
+                    {
+                        nint nn = XORBytes(q, p1, q); if (!bytes.Equal(q, want[(int)(alignD)..(int)(alignD + n)])){
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d:\n\tp = %x\n\tq = %x\n\td = %x\n\twant %x\n"u8, n, alignP, alignQ, alignD, p, q, d, want);
+                        } else 
+                        if (nn != n) {
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %d, want %d"u8, n, alignP, alignQ, alignD, nn, n);
+                        }
+                    }
+                    {
+                        nint nn = XORBytes(p, p, p); if (!bytes.Equal(p, new slice<byte>(n))){
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %x, want %x"u8, n, alignP, alignQ, alignD, p, new slice<byte>(n));
+                        } else 
+                        if (nn != n) {
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %d, want %d"u8, n, alignP, alignQ, alignD, nn, n);
+                        }
+                    }
+                    {
+                        nint nn = XORBytes(p1, q, q); if (!bytes.Equal(p1, new slice<byte>(n))){
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %x, want %x"u8, n, alignP, alignQ, alignD, p1, new slice<byte>(n));
+                        } else 
+                        if (nn != n) {
+                            Ꮡt.Errorf("n=%d alignP=%d alignQ=%d alignD=%d: got %d, want %d"u8, n, alignP, alignQ, alignD, nn, n);
                         }
                     }
                 }
@@ -61,6 +85,7 @@ public static void TestXORBytes(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string subtleXORBytesDstTooˢ = "subtle.XORBytes: dst too short"u8;
+internal static readonly @string subtleXORBytesInvalidˢ = "subtle.XORBytes: invalid overlap"u8;
 
 public static void TestXorBytesPanic(ж<testing.T> Ꮡt) {
     mustPanic(Ꮡt, subtleXORBytesDstTooˢ, () => {
@@ -68,6 +93,14 @@ public static void TestXorBytesPanic(ж<testing.T> Ꮡt) {
     });
     mustPanic(Ꮡt, subtleXORBytesDstTooˢ, () => {
         XORBytes(new slice<byte>(1), new slice<byte>(2), new slice<byte>(3));
+    });
+    mustPanic(Ꮡt, subtleXORBytesInvalidˢ, () => {
+        var x = new slice<byte>(3);
+        XORBytes(x, x[1..], new slice<byte>(2));
+    });
+    mustPanic(Ꮡt, subtleXORBytesInvalidˢ, () => {
+        var x = new slice<byte>(3);
+        XORBytes(x, new slice<byte>(2), x[1..]);
     });
 }
 
@@ -96,6 +129,7 @@ internal static void mustPanic(ж<testing.T> Ꮡt, @string expected, Action f) {
     try {
         Ꮡt.Helper();
         defer(() => {
+            Ꮡt.Helper();
             var switchᴛ1 = recover();
             switch (switchᴛ1.type()) {
             case null: {

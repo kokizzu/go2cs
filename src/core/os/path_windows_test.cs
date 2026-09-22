@@ -7,14 +7,14 @@ using fmt = fmt_package;
 using windows = @internal.syscall.windows_package;
 using testenv = @internal.testenv_package;
 using Δos = os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using strings = strings_package;
 using syscall = syscall_package;
 using Δtesting = testing_package;
 using @internal;
 using @internal.syscall;
 using fs = go.io.fs_package;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 
 partial class os_test_package {
@@ -240,7 +240,7 @@ public static void TestRemoveAllLongPathRelative(ж<Δtesting.T> Ꮡt) {
     // Test that RemoveAll doesn't hang with long relative paths.
     // See go.dev/issue/36375.
     @string tmp = Ꮡt.TempDir();
-    chdir(Ꮡt, tmp);
+    Ꮡt.Chdir(tmp);
     @string dir = filepath.Join(tmp, fooˢ, barˢ, strings.Repeat("a"u8, 150), strings.Repeat("b"u8, 150));
     var err = Δos.MkdirAll(dir, 493);
     if (err != default!) {
@@ -286,7 +286,7 @@ public static void TestLongPathAbs(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestLongPathRel(ж<Δtesting.T> Ꮡt) {
-    chdir(Ꮡt, Ꮡt.TempDir());
+    Ꮡt.Chdir(Ꮡt.TempDir());
     @string target = strings.Repeat("b\\"u8, 300);
     testLongPathAbs(Ꮡt, target);
 }

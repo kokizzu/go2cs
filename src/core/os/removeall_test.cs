@@ -7,7 +7,7 @@ using bytes = bytes_package;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using static os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δruntime = runtime_package;
 using strconv = strconv_package;
 using strings = strings_package;
@@ -16,7 +16,7 @@ using @internal;
 using exec = go.os.exec_package;
 using fs = go.io.fs_package;
 using go.os;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δos = os_package;
 
@@ -191,89 +191,53 @@ public static void TestRemoveAllLarge(ж<Δtesting.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object skippingForNotˢ = (@string)"skipping for not implemented platforms"u8;
-internal static readonly @string testRemoveAllLongPathˢ = "TestRemoveAllLongPath-"u8;
 
 public static void TestRemoveAllLongPath(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        var exprᴛ1 = Δruntime.GOOS;
-        if (exprᴛ1 == "aix"u8 || exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8 || exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "freebsd"u8 || exprᴛ1 == "linux"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8 || exprᴛ1 == "illumos"u8 || exprᴛ1 == "solaris"u8) {
-            do {
-                break;
-            } while (false);
-        }
-        else { /* default: */
-            Ꮡt.Skip(skippingForNotˢ);
-        }
+    var exprᴛ1 = Δruntime.GOOS;
+    if (exprᴛ1 == "aix"u8 || exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8 || exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "freebsd"u8 || exprᴛ1 == "linux"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8 || exprᴛ1 == "illumos"u8 || exprᴛ1 == "solaris"u8) {
+        do {
+            break;
+        } while (false);
+    }
+    else { /* default: */
+        Ꮡt.Skip(skippingForNotˢ);
+    }
 
-        var (prevDir, err) = Getwd();
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not get wd: %s"u8, err);
-        }
-        (var startPath, err) = MkdirTemp(""u8, testRemoveAllLongPathˢ);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not create TempDir: %s"u8, err);
-        }
-        defer(RemoveAll, startPath, ref ᒐ);
-        err = Chdir(startPath);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not chdir %s: %s"u8, startPath, err);
-        }
-        // Removing paths with over 4096 chars commonly fails
-        for (nint i = 0; i < 41; i++) {
-            @string name = strings.Repeat("a"u8, 100);
-            err = Mkdir(name, 493);
-            if (err != default!) {
-                Ꮡt.Fatalf("Could not mkdir %s: %s"u8, name, err);
-            }
-            err = Chdir(name);
-            if (err != default!) {
-                Ꮡt.Fatalf("Could not chdir %s: %s"u8, name, err);
+    @string startPath = Ꮡt.TempDir();
+    Ꮡt.Chdir(startPath);
+    // Removing paths with over 4096 chars commonly fails.
+    @string name = strings.Repeat("a"u8, 100);
+    for (nint i = 0; i < 41; i++) {
+        {
+            var errΔ1 = Mkdir(name, 493); if (errΔ1 != default!) {
+                Ꮡt.Fatalf("Could not mkdir %s: %s"u8, name, errΔ1);
             }
         }
-        err = Chdir(prevDir);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not chdir %s: %s"u8, prevDir, err);
-        }
-        err = RemoveAll(startPath);
-        if (err != default!) {
-            Ꮡt.Errorf("RemoveAll could not remove long file path %s: %s"u8, startPath, err);
+        {
+            var errΔ2 = Chdir(name); if (errΔ2 != default!) {
+                Ꮡt.Fatalf("Could not chdir %s: %s"u8, name, errΔ2);
+            }
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    // Chdir out of startPath before attempting to remove it,
+    // otherwise RemoveAll fails on aix, illumos and solaris.
+    var err = Chdir(filepath.Join(startPath, ".."));
+    if (err != default!) {
+        Ꮡt.Fatalf("Could not chdir: %s"u8, err);
+    }
+    err = RemoveAll(startPath);
+    if (err != default!) {
+        Ꮡt.Errorf("RemoveAll could not remove long file path %s: %s"u8, startPath, err);
+    }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testRemoveAllDotˢ = "TestRemoveAllDot-"u8;
-
 public static void TestRemoveAllDot(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        var (prevDir, err) = Getwd();
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not get wd: %s"u8, err);
-        }
-        (var tempDir, err) = MkdirTemp(""u8, testRemoveAllDotˢ);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not create TempDir: %s"u8, err);
-        }
-        defer(RemoveAll, tempDir, ref ᒐ);
-        err = Chdir(tempDir);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not chdir to tempdir: %s"u8, err);
-        }
-        err = RemoveAll("."u8);
-        if (err == default!) {
+    Ꮡt.Chdir(Ꮡt.TempDir());
+    {
+        var err = RemoveAll("."u8); if (err == default!) {
             Ꮡt.Errorf("RemoveAll succeed to remove ."u8);
         }
-        err = Chdir(prevDir);
-        if (err != default!) {
-            Ꮡt.Fatalf("Could not chdir %s: %s"u8, prevDir, err);
-        }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
 }
 
 public static void TestRemoveAllDotDot(ж<Δtesting.T> Ꮡt) {
@@ -334,7 +298,6 @@ public static void TestRemoveReadOnlyDir(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object skippingTestWhenRunningˢ = (@string)"skipping test when running as root"u8;
 internal static readonly object removeAllSucceededˢ = (@string)"RemoveAll succeeded unexpectedly"u8;
 
 // Issue #29983.

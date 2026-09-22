@@ -20,54 +20,6 @@ using Δexec = go.os.exec_package;
 
 partial class exec_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 internal static @string pathVar = ((Func<@string>)(() => {
     if (runtime.GOOS == "plan9"u8) {
         return "path"u8;
@@ -78,7 +30,6 @@ internal static @string pathVar = ((Func<@string>)(() => {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testdirˢ = "testdir"u8;
 internal static readonly @string execabsTestˢ = "execabs-test"u8;
-internal static readonly @string pwdˢ = "PWD"u8;
 internal static readonly @string godebugˢ = "GODEBUG"u8;
 internal static readonly @string pathˢ = "PATH"u8;
 internal static readonly @string emptyˢ = "empty"u8;
@@ -107,8 +58,7 @@ public static void TestLookPath(ж<testing.T> Ꮡt) {
             Ꮡt.Fatal(err);
         }
     }
-    chdir(Ꮡt, tmpDir);
-    Ꮡt.Setenv(pwdˢ, tmpDir);
+    Ꮡt.Chdir(tmpDir);
     Ꮡt.Logf(". is %#q"u8, tmpDir);
     @string origPath = os.Getenv(pathVar);
     // Add "." to PATH so that exec.LookPath looks in the current directory on all systems.
@@ -277,12 +227,7 @@ public static void TestLookPath(ж<testing.T> Ꮡt) {
     Ꮡt.Run(pathVar + "=exe"u8, (ж<testing.T> tΔ7) => {
         // Inject an executable file (not a directory) in PATH.
         // Use our own binary os.Args[0].
-        testenv.MustHaveExec(new exec_test_package.testing_TжTB(tΔ7));
-        var (exe, err) = os.Executable();
-        if (err != default!) {
-            tΔ7.Fatal(err);
-        }
-        tΔ7.Setenv(pathVar, exe);
+        tΔ7.Setenv(pathVar, testenv.Executable(new exec_test_package.testing_TжTB(tΔ7)));
         tΔ7.Run(emptyˢ, checkerʗ2(""u8));
         tΔ7.Run(dotˢ, checkerʗ2("."u8));
         tΔ7.Run(dotdot1ˢ, checkerʗ2(abcˢ));
@@ -293,12 +238,7 @@ public static void TestLookPath(ж<testing.T> Ꮡt) {
     Ꮡt.Run(pathVar + "=exe/xx"u8, (ж<testing.T> tΔ8) => {
         // Inject an executable file (not a directory) in PATH.
         // Use our own binary os.Args[0].
-        testenv.MustHaveExec(new exec_test_package.testing_TжTB(tΔ8));
-        var (exe, err) = os.Executable();
-        if (err != default!) {
-            tΔ8.Fatal(err);
-        }
-        tΔ8.Setenv(pathVar, filepath.Join(exe, "xx"));
+        tΔ8.Setenv(pathVar, filepath.Join(testenv.Executable(new exec_test_package.testing_TжTB(tΔ8)), "xx"));
         tΔ8.Run(emptyˢ, checkerʗ3(""u8));
         tΔ8.Run(dotˢ, checkerʗ3("."u8));
         tΔ8.Run(dotdot1ˢ, checkerʗ3(abcˢ));

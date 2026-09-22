@@ -6,38 +6,27 @@ namespace go;
 using errors = errors_package;
 using fs = go.io.fs_package;
 using static os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δregexp = regexp_package;
 using strings = strings_package;
 using Δtesting = testing_package;
 using go.io;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δos = os_package;
 
 partial class os_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testCreateTempBadDirˢ = "TestCreateTempBadDir"u8;
 internal static readonly @string notExistsˢ2 = "_not_exists_"u8;
 
 public static void TestCreateTemp(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        Ꮡt.Parallel();
-        var (dir, err) = MkdirTemp(""u8, testCreateTempBadDirˢ);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(RemoveAll, dir, ref ᒐ);
-        @string nonexistentDir = filepath.Join(dir, notExistsˢ2);
-        (var f, err) = CreateTemp(nonexistentDir, fooˢ);
-        if (f != nil || err == default!) {
-            Ꮡt.Errorf("CreateTemp(%q, `foo`) = %v, %v"u8, nonexistentDir, f.OrTypedNil(), err);
-        }
+    Ꮡt.Parallel();
+    @string nonexistentDir = filepath.Join(Ꮡt.TempDir(), notExistsˢ2);
+    var (f, err) = CreateTemp(nonexistentDir, fooˢ);
+    if (f != nil || err == default!) {
+        Ꮡt.Errorf("CreateTemp(%q, `foo`) = %v, %v"u8, nonexistentDir, f.OrTypedNil(), err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
 }
 
 [GoType("dyn")] internal partial struct TestCreateTempPattern_tests {
@@ -78,56 +67,47 @@ public static void TestCreateTempPattern(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestCreateTempBadPattern(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        Ꮡt.Parallel();
-        var (tmpDir, err) = MkdirTemp(""u8, Ꮡt.Name());
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(RemoveAll, tmpDir, ref ᒐ);
-        @string sep = "\\";
-        var tests = new TestCreateTempBadPattern_tests[]{
-            new("ioutil*test"u8, false),
-            new("tempfile_test*foo"u8, false),
-            new("tempfile_test"u8 + sep + "foo"u8, true),
-            new("tempfile_test*"u8 + sep + "foo"u8, true),
-            new("tempfile_test"u8 + sep + "*foo"u8, true),
-            new(sep + "tempfile_test"u8 + sep + "*foo"u8, true),
-            new("tempfile_test*foo"u8 + sep, true)
-        }.slice();
-        foreach (var (_, vᴛ1) in tests) {
-            ref var tt = ref heap(new TestCreateTempBadPattern_tests(), out var Ꮡtt);
-            tt = vᴛ1;
+    Ꮡt.Parallel();
+    @string tmpDir = Ꮡt.TempDir();
+    @string sep = "\\";
+    var tests = new TestCreateTempBadPattern_tests[]{
+        new("ioutil*test"u8, false),
+        new("tempfile_test*foo"u8, false),
+        new("tempfile_test"u8 + sep + "foo"u8, true),
+        new("tempfile_test*"u8 + sep + "foo"u8, true),
+        new("tempfile_test"u8 + sep + "*foo"u8, true),
+        new(sep + "tempfile_test"u8 + sep + "*foo"u8, true),
+        new("tempfile_test*foo"u8 + sep, true)
+    }.slice();
+    foreach (var (_, vᴛ1) in tests) {
+        ref var tt = ref heap(new TestCreateTempBadPattern_tests(), out var Ꮡtt);
+        tt = vᴛ1;
 
-            var ttʗ1 = tt;
-            Ꮡt.Run(tt.pattern, (ж<Δtesting.T> tΔ1) => {
-                GoFrame ᒐ = default;
-                try {
-                    var (tmpfile, errΔ1) = CreateTemp(tmpDir, ttʗ1.pattern);
-                    if (tmpfile != nil) {
-                        var tmpfileʗ1 = tmpfile;
-                        defer(() => tmpfileʗ1.Close(), ref ᒐ);
-                    }
-                    if (ttʗ1.wantErr){
-                        if (errΔ1 == default!) {
-                            tΔ1.Errorf("CreateTemp(..., %#q) succeeded, expected error"u8, ttʗ1.pattern);
-                        }
-                        if (!errors.Is(errΔ1, os_internal_test_package.ErrPatternHasSeparator)) {
-                            tΔ1.Errorf("CreateTemp(..., %#q): %v, expected ErrPatternHasSeparator"u8, ttʗ1.pattern, errΔ1);
-                        }
-                    } else 
-                    if (errΔ1 != default!) {
-                        tΔ1.Errorf("CreateTemp(..., %#q): %v"u8, ttʗ1.pattern, errΔ1);
-                    }
+        var ttʗ1 = tt;
+        Ꮡt.Run(tt.pattern, (ж<Δtesting.T> tΔ1) => {
+            GoFrame ᒐ = default;
+            try {
+                var (tmpfile, err) = CreateTemp(tmpDir, ttʗ1.pattern);
+                if (tmpfile != nil) {
+                    var tmpfileʗ1 = tmpfile;
+                    defer(() => tmpfileʗ1.Close(), ref ᒐ);
                 }
-                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-                finally { ᒐ.Run(); }
-            });
-        }
+                if (ttʗ1.wantErr){
+                    if (err == default!) {
+                        tΔ1.Errorf("CreateTemp(..., %#q) succeeded, expected error"u8, ttʗ1.pattern);
+                    }
+                    if (!errors.Is(err, os_internal_test_package.ErrPatternHasSeparator)) {
+                        tΔ1.Errorf("CreateTemp(..., %#q): %v, expected ErrPatternHasSeparator"u8, ttʗ1.pattern, err);
+                    }
+                } else 
+                if (err != default!) {
+                    tΔ1.Errorf("CreateTemp(..., %#q): %v"u8, ttʗ1.pattern, err);
+                }
+            }
+            catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+            finally { ᒐ.Run(); }
+        });
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -194,30 +174,19 @@ public static void TestMkdirTemp(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string mkdirTempBadDirˢ = "MkdirTempBadDir"u8;
 internal static readonly @string notExistˢ = "not-exist"u8;
 
 // test that we return a nice error message if the dir argument to TempDir doesn't
 // exist (or that it's empty and TempDir doesn't exist)
 public static void TestMkdirTempBadDir(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        Ꮡt.Parallel();
-        var (dir, err) = MkdirTemp(""u8, mkdirTempBadDirˢ);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(RemoveAll, dir, ref ᒐ);
-        @string badDir = filepath.Join(dir, notExistˢ);
-        (_, err) = MkdirTemp(badDir, fooˢ);
-        {
-            var (pe, ok) = err._<ж<fs.PathError>>(ᐧ); if (!ok || !IsNotExist(err) || (~pe).Path != badDir) {
-                Ꮡt.Errorf("TempDir error = %#v; want PathError for path %q satisfying IsNotExist"u8, err, badDir);
-            }
+    Ꮡt.Parallel();
+    @string badDir = filepath.Join(Ꮡt.TempDir(), notExistˢ);
+    var (_, err) = MkdirTemp(badDir, fooˢ);
+    {
+        var (pe, ok) = err._<ж<fs.PathError>>(ᐧ); if (!ok || !IsNotExist(err) || (~pe).Path != badDir) {
+            Ꮡt.Errorf("TempDir error = %#v; want PathError for path %q satisfying IsNotExist"u8, err, badDir);
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
 }
 
 [GoType("dyn")] internal partial struct TestMkdirTempBadPattern_tests {
@@ -226,47 +195,38 @@ public static void TestMkdirTempBadDir(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestMkdirTempBadPattern(ж<Δtesting.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        Ꮡt.Parallel();
-        var (tmpDir, err) = MkdirTemp(""u8, Ꮡt.Name());
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(RemoveAll, tmpDir, ref ᒐ);
-        @string sep = "\\";
-        var tests = new TestMkdirTempBadPattern_tests[]{
-            new("ioutil*test"u8, false),
-            new("tempfile_test*foo"u8, false),
-            new("tempfile_test"u8 + sep + "foo"u8, true),
-            new("tempfile_test*"u8 + sep + "foo"u8, true),
-            new("tempfile_test"u8 + sep + "*foo"u8, true),
-            new(sep + "tempfile_test"u8 + sep + "*foo"u8, true),
-            new("tempfile_test*foo"u8 + sep, true)
-        }.slice();
-        foreach (var (_, vᴛ1) in tests) {
-            ref var tt = ref heap(new TestMkdirTempBadPattern_tests(), out var Ꮡtt);
-            tt = vᴛ1;
+    Ꮡt.Parallel();
+    @string tmpDir = Ꮡt.TempDir();
+    @string sep = "\\";
+    var tests = new TestMkdirTempBadPattern_tests[]{
+        new("ioutil*test"u8, false),
+        new("tempfile_test*foo"u8, false),
+        new("tempfile_test"u8 + sep + "foo"u8, true),
+        new("tempfile_test*"u8 + sep + "foo"u8, true),
+        new("tempfile_test"u8 + sep + "*foo"u8, true),
+        new(sep + "tempfile_test"u8 + sep + "*foo"u8, true),
+        new("tempfile_test*foo"u8 + sep, true)
+    }.slice();
+    foreach (var (_, vᴛ1) in tests) {
+        ref var tt = ref heap(new TestMkdirTempBadPattern_tests(), out var Ꮡtt);
+        tt = vᴛ1;
 
-            var ttʗ1 = tt;
-            Ꮡt.Run(tt.pattern, (ж<Δtesting.T> tΔ1) => {
-                var (_, errΔ1) = MkdirTemp(tmpDir, ttʗ1.pattern);
-                if (ttʗ1.wantErr){
-                    if (errΔ1 == default!) {
-                        tΔ1.Errorf("MkdirTemp(..., %#q) succeeded, expected error"u8, ttʗ1.pattern);
-                    }
-                    if (!errors.Is(errΔ1, os_internal_test_package.ErrPatternHasSeparator)) {
-                        tΔ1.Errorf("MkdirTemp(..., %#q): %v, expected ErrPatternHasSeparator"u8, ttʗ1.pattern, errΔ1);
-                    }
-                } else 
-                if (errΔ1 != default!) {
-                    tΔ1.Errorf("MkdirTemp(..., %#q): %v"u8, ttʗ1.pattern, errΔ1);
+        var ttʗ1 = tt;
+        Ꮡt.Run(tt.pattern, (ж<Δtesting.T> tΔ1) => {
+            var (_, err) = MkdirTemp(tmpDir, ttʗ1.pattern);
+            if (ttʗ1.wantErr){
+                if (err == default!) {
+                    tΔ1.Errorf("MkdirTemp(..., %#q) succeeded, expected error"u8, ttʗ1.pattern);
                 }
-            });
-        }
+                if (!errors.Is(err, os_internal_test_package.ErrPatternHasSeparator)) {
+                    tΔ1.Errorf("MkdirTemp(..., %#q): %v, expected ErrPatternHasSeparator"u8, ttʗ1.pattern, err);
+                }
+            } else 
+            if (err != default!) {
+                tΔ1.Errorf("MkdirTemp(..., %#q): %v"u8, ttʗ1.pattern, err);
+            }
+        });
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
 }
 
 } // end os_test_package

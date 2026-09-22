@@ -15,48 +15,6 @@ using static go.net.http.cookiejar_package;
 
 partial class cookiejar_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // tNow is the synthetic current time used as now during testing.
 internal static time.Time tNow = time.Date(2013, 1, 1, 12, 0, 0, 0, time.ΔUTC);
 
@@ -170,7 +128,7 @@ internal static array<hasDotSuffixTestsᴛ1> hasDotSuffixTests = new hasDotSuffi
 }.array();
 
 public static void TestHasDotSuffix(ж<testing.T> Ꮡt) {
-    foreach (var (_, tc) in hasDotSuffixTests) {
+    foreach (var (_, tc) in hasDotSuffixTests.ΔRangeSnapshot()) {
         var got = hasDotSuffix(tc.s, tc.suffix);
         var want = strings.HasSuffix(tc.s, "."u8 + tc.suffix);
         if (got != want) {
@@ -400,7 +358,7 @@ public static void TestDomainAndType(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     var jar = newTestJar();
-    foreach (var (_, tc) in domainAndTypeTests) {
+    foreach (var (_, tc) in domainAndTypeTests.ΔRangeSnapshot()) {
         var (domain, hostOnly, err) = jar.domainAndType(tc.host, tc.domain);
         if (!AreEqual(err, tc.wantErr)) {
             Ꮡt.Errorf("%q/%q: got %q error, want %v"u8,
@@ -741,7 +699,7 @@ internal static array<jarTest> basicsTests = new jarTest[]{
 }.array();
 
 public static void TestBasics(ж<testing.T> Ꮡt) {
-    foreach (var (_, test) in basicsTests) {
+    foreach (var (_, test) in basicsTests.ΔRangeSnapshot()) {
         var jar = newTestJar();
         test.run(Ꮡt, jar);
     }
@@ -895,7 +853,7 @@ internal static array<jarTest> updateAndDeleteTests = new jarTest[]{
 
 public static void TestUpdateAndDelete(ж<testing.T> Ꮡt) {
     var jar = newTestJar();
-    foreach (var (_, test) in updateAndDeleteTests) {
+    foreach (var (_, test) in updateAndDeleteTests.ΔRangeSnapshot()) {
         test.run(Ꮡt, jar);
     }
 }
@@ -1138,7 +1096,7 @@ internal static array<jarTest> chromiumBasicsTests = new jarTest[]{
 }.array();
 
 public static void TestChromiumBasics(ж<testing.T> Ꮡt) {
-    foreach (var (_, test) in chromiumBasicsTests) {
+    foreach (var (_, test) in chromiumBasicsTests.ΔRangeSnapshot()) {
         var jar = newTestJar();
         test.run(Ꮡt, jar);
     }
@@ -1200,7 +1158,7 @@ internal static array<jarTest> chromiumDomainTests = new jarTest[]{
 
 public static void TestChromiumDomain(ж<testing.T> Ꮡt) {
     var jar = newTestJar();
-    foreach (var (_, test) in chromiumDomainTests) {
+    foreach (var (_, test) in chromiumDomainTests.ΔRangeSnapshot()) {
         test.run(Ꮡt, jar);
     }
 }
@@ -1267,7 +1225,7 @@ internal static array<jarTest> chromiumDeletionTests = new jarTest[]{
 
 public static void TestChromiumDeletion(ж<testing.T> Ꮡt) {
     var jar = newTestJar();
-    foreach (var (_, test) in chromiumDeletionTests) {
+    foreach (var (_, test) in chromiumDeletionTests.ΔRangeSnapshot()) {
         test.run(Ꮡt, jar);
     }
 }
@@ -1440,7 +1398,7 @@ internal static array<jarTest> domainHandlingTests = new jarTest[]{
 }.array();
 
 public static void TestDomainHandling(ж<testing.T> Ꮡt) {
-    foreach (var (_, test) in domainHandlingTests) {
+    foreach (var (_, test) in domainHandlingTests.ΔRangeSnapshot()) {
         var jar = newTestJar();
         test.run(Ꮡt, jar);
     }

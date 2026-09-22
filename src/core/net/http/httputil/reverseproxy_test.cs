@@ -205,6 +205,7 @@ public static void TestReverseProxy(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("Trailer(X-Unannounced-Trailer) = %q ; want %q"u8, g, e);
             }
         }
+        (~res).Body.Close();
         // Test that a backend failing to be reached or one which doesn't return
         // a response results in a StatusBadGateway.
         (getReq, _) = http.NewRequest(getˢ, (~frontend).URL + "/?mode=hangup"u8, default!);
@@ -290,7 +291,7 @@ public static void TestReverseProxyStripHeadersPresentInConnection(ж<testing.T>
             slices.Sort<slice<@string>, @string>(cf);
             var expectedValues = new @string[]{"Upgrade"u8, someConnHeader, fakeConnectionToken}.slice();
             slices.Sort<slice<@string>, @string>(expectedValues);
-            if (!reflect.DeepEqual(cf, expectedValues)) {
+            if (!slices.Equal<slice<@string>, @string>(cf, expectedValues)) {
                 Ꮡt.Errorf("handler modified header %q = %q; want %q"u8, connectionˢ, cf, expectedValues);
             }
         })));
@@ -453,6 +454,8 @@ public static void TestXForwardedFor(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Fatalf("Get: %v"u8, err);
         }
+        var resʗ1 = res;
+        defer(() => (~resʗ1).Body.Close(), ref ᒐ);
         {
             nint g = res.Value.StatusCode;
             nint e = backendStatus; if (g != e) {
@@ -993,7 +996,7 @@ public static void TestReverseProxyGetPutBuffer(ж<testing.T> Ꮡt) {
         var wantLog = new @string[]{"getBuf"u8, "putBuf-"u8 + strconv.Itoa(size)}.slice();
         Ꮡmu.Lock();
         defer(Ꮡmu.Unlock, ref ᒐ);
-        if (!reflect.DeepEqual(log, wantLog)) {
+        if (!slices.Equal<slice<@string>, @string>(log, wantLog)) {
             Ꮡt.Errorf("Log events = %q; want %q"u8, log, wantLog);
         }
     }
@@ -1040,6 +1043,8 @@ public static void TestReverseProxy_Post(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Fatalf("Do: %v"u8, err);
         }
+        var resʗ1 = res;
+        defer(() => (~resʗ1).Body.Close(), ref ᒐ);
         {
             nint g = res.Value.StatusCode;
             nint e = backendStatus; if (g != e) {
@@ -2015,6 +2020,7 @@ public static void TestUnannouncedTrailer(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("Get: %v"u8, err);
         }
         io.ReadAll((~res).Body);
+        (~res).Body.Close();
         {
             @string g = (~res).Trailer.Get(xUnannouncedTrailerˢ);
             @string w = unannouncedTrailerValueˢ; if (g != w) {

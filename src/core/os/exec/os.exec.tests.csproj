@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -103,30 +115,30 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="bench_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dot_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="env_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_other_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_posix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exec_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="internal_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_linux_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_wasm.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="lp_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="read3.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="bench_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dot_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="env_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_other_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_posix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exec_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="internal_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_wasm.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lp_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="read3.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -138,6 +150,7 @@
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/poll/internal.poll.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
@@ -149,7 +162,6 @@
     <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/signal/os.signal.csproj" />
     <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
-    <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/debug/runtime.debug.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
