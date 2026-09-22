@@ -95,3 +95,58 @@ The batch-2 reading recorded `TestOnceXGC` and its three subtests as failing on 
 matched, not diverged — while the manifest pins all three subtests as disclosures. A disclosure pins a
 Go=pass/C#=fail divergence, so either that run's Go side failed them for its own reason or the three
 entries are legacy. Flagged for COORD; nothing here touches them.
+
+---
+
+# AMENDMENT 2026-09-22 — the three unit notes arrived; the entries are WRITTEN, in TWO classes
+
+The blocker above is closed. The notes from the i7's s2 run at `c6fdbe73c3` decide the label per entry,
+and they do not all land in the same arm — which is why the label had to wait for them.
+
+| entry | unit note, in brief | ladder arm | class |
+|:--|:--|:--|:--|
+| `crypto/rand.TestAllocations` | *"counted 20 go2cs-runtime object allocations (4,424 bytes) over 10 run(s) … an allocation COUNT per run … the structural mirror of runtime.MemStats.Mallocs"* | same meter, named mechanism | **`deferred`** |
+| `sync.TestMapClearOneAllocation` | *"measured 8,960 allocated BYTES over 10 run(s) … BYTES PER RUN, not an allocation count. The go2cs runtime allocation counter charged none of it"* | **incomparable unit** | **`alloc-count-semantics`** |
+| `sync.TestMapRangeNoAllocations` | *"measured 1,520 allocated BYTES over 10 run(s) … BYTES PER RUN, not an allocation count …"* | **incomparable unit** | **`alloc-count-semantics`** |
+
+**The 20-vs-2 relation, since it was flagged:** it is TOTAL against PER RUN, not two measurements. 20
+counted over 10 runs is the 2 that `allocs = 2, want 0` reports. Nothing to reconcile.
+
+**Why the two `sync` entries carry no `want`/`reading`/`plan`.** The incomparable-unit arm has *nothing
+to retire*: the entry does not claim the path allocates too much, it records that the instrument cannot
+answer the question the test asks. The keys follow `context`'s `TestAllocs` exemplar exactly
+(`name`/`class`/`signature`/`reason`).
+
+**And why the shim did not simply report zero**, which is the part worth keeping: its counter charged
+NOTHING on both `sync` paths, so every object there was allocated outside golib — a compiler-emitted
+closure in converted code, or a BCL internal. Reporting that zero would have been a **false pass**
+against wants of one and zero, so the shim reports bytes instead and the row fails honestly. These two
+are therefore not evidence that `sync.Map.Clear`/`Range` allocate too much; they are evidence that the
+meter cannot see the path.
+
+**`crypto/rand` is `deferred`, not `structural`, and the discriminator is a named mechanism rather than
+the size of the number.** Two per run, over a `make([]byte, 32)` that does not escape plus the fill
+path: nothing in the CLR's object model requires an allocation there, so the excess is reducible bridge
+work and a floor claim would be unfalsifiable. Contrast
+`crypto/internal/fips140test.TestXAESAllocations`, classed **structural** the same day on a 199-per-run
+LOWER BOUND over a whole AES-GCM seal/open round trip with five live locals. Both are want-zero
+`AllocsPerRun` asserts; what separates them is whether a mechanism that REMOVES the allocations can be
+named, not how large the reading is. Stated here so the two do not read as arbitrary.
+
+## Written by this commit
+
+- `src/core/crypto/rand/go2cs_test_disclosures.json` — **MINTED** (the directory existed, the file did
+  not), 1 entry, `deferred`, in `sync`'s shape.
+- `src/core/sync/go2cs_test_disclosures.json` — **3 → 5** entries (`codegen-liveness` 3,
+  `alloc-count-semantics` 2).
+- `docs/ValidatedTestPackages.md` — `crypto/rand` Disclosed blank → **1**; `sync` **4 → 6**; `Tests`
+  unchanged on both (298, 47); 203 rows unchanged; one sentence added to each description naming the
+  new disclosures and their class, inserted before the row's first `·` marker so it follows the prose.
+
+**Asserted by my own read, not by the guard** (`check-roster-format.ps1` is COORD's to run, pwsh): both
+manifests parse as JSON; entry counts are 1 and 5; every entry has a non-empty `signature`; every
+`deferred` entry has `want`, `reading` and `plan`. The signatures are want-free and count-free as
+Finding 2 requires.
+
+**STILL OWED, unchanged by this commit:** the rename-map entry at `sync`'s re-bank,
+`sync.TestMapClearNoAllocations` → `sync.TestMapClearOneAllocation`, a rename with a body change.
