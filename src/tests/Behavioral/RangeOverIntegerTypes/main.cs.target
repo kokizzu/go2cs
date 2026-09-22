@@ -57,7 +57,7 @@ internal static void Main() {
     }
     fmt.Println(runeSumˢ, sumR);
     nint named = 0;
-    foreach (var i in range<uintptr>((uintptr)(((myLen)3)))) {
+    foreach (var i in range<myLen>(((myLen)3))) {
         named += (nint)(uintptr)i;
     }
     fmt.Println(namedUintptrSumˢ, named);
