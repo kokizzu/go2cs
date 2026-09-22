@@ -6,20 +6,36 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `os/user` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-01 · converter `e06c04cc7`*
+*Validated 2026-09-22 · converter `bef7e02c4`*
 
-**5 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**17 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/os/user`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/user).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
+
+Both runtimes skip 2 of the matched tests identically.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
 | `TestCurrent` | pass | pass |
+| `TestCurrentNetapi32` | pass | pass |
 | `TestGroupIds` | pass | pass |
+| `TestGroupIdsTestUser` | skip | skip |
+| `TestImpersonated` | skip | skip |
+| `TestImpersonatedSelf` | pass | pass |
+| `TestImpersonatedSelf/0` | pass | pass |
+| `TestImpersonatedSelf/1` | pass | pass |
+| `TestImpersonatedSelf/2` | pass | pass |
+| `TestImpersonatedSelf/3` | pass | pass |
 | `TestLookup` | pass | pass |
 | `TestLookupGroup` | pass | pass |
+| `TestLookupGroupIdServiceAccount` | pass | pass |
+| `TestLookupGroupServiceAccount` | pass | pass |
 | `TestLookupId` | pass | pass |
+| `TestLookupIdServiceAccount` | pass | pass |
+| `TestLookupServiceAccount` | pass | pass |
 
 ## Excluded declarations
 

@@ -29,12 +29,21 @@ internal static class Go2CsTestHost
             "lookup_windows.go",
             "user.go",
             "user_test.go",
+            "user_windows_test.go",
         });
         registry.Add("TestCurrent", user_internal_test_package.TestCurrent, "user_test.go", 25);
-        registry.Add("TestGroupIds", user_internal_test_package.TestGroupIds, "user_test.go", 164);
-        registry.Add("TestLookup", user_internal_test_package.TestLookup, "user_test.go", 71);
-        registry.Add("TestLookupGroup", user_internal_test_package.TestLookupGroup, "user_test.go", 119);
-        registry.Add("TestLookupId", user_internal_test_package.TestLookupId, "user_test.go", 93);
+        registry.Add("TestCurrentNetapi32", user_internal_test_package.TestCurrentNetapi32, "user_windows_test.go", 215);
+        registry.Add("TestGroupIds", user_internal_test_package.TestGroupIds, "user_test.go", 165);
+        registry.Add("TestGroupIdsTestUser", user_internal_test_package.TestGroupIdsTestUser, "user_windows_test.go", 246);
+        registry.Add("TestImpersonated", user_internal_test_package.TestImpersonated, "user_windows_test.go", 184);
+        registry.Add("TestImpersonatedSelf", user_internal_test_package.TestImpersonatedSelf, "user_windows_test.go", 145);
+        registry.Add("TestLookup", user_internal_test_package.TestLookup, "user_test.go", 72);
+        registry.Add("TestLookupGroup", user_internal_test_package.TestLookupGroup, "user_test.go", 120);
+        registry.Add("TestLookupGroupIdServiceAccount", user_internal_test_package.TestLookupGroupIdServiceAccount, "user_windows_test.go", 317);
+        registry.Add("TestLookupGroupServiceAccount", user_internal_test_package.TestLookupGroupServiceAccount, "user_windows_test.go", 303);
+        registry.Add("TestLookupId", user_internal_test_package.TestLookupId, "user_test.go", 94);
+        registry.Add("TestLookupIdServiceAccount", user_internal_test_package.TestLookupIdServiceAccount, "user_windows_test.go", 286);
+        registry.Add("TestLookupServiceAccount", user_internal_test_package.TestLookupServiceAccount, "user_windows_test.go", 272);
         return TestHost.Run(registry, args);
     }
 }
