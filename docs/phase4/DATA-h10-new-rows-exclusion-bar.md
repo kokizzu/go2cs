@@ -65,3 +65,53 @@ by `encoding/pem`. **This is present at the base `c6fdbe73c3`** (verified by re-
 from `git show c6fdbe73c3:docs/ValidatedTestPackages.md`: 203 rows, the same single inversion), so it
 is not this seat's and is left alone. All ten insertions are individually in correct alphabetical
 position, and no row is duplicated.
+
+---
+
+# AMENDMENT 2026-09-22 — the four refusals are now ROSTER FACTS, not just a record
+
+The four packages this record refused at the bar are entered in the roster's own
+**## Excluded packages** table, in its row shape (`| package | verdicts | class | mechanism |
+rooting |`), grouped by class as that table already groups: `runtime/internal/wasitest` with the E1
+rows, and `net/internal/cgotest`, `internal/copyright`, `crypto/internal/fips140deps` with the E4
+rows. Ten exclusion rows now: 5 E1, 1 E3, 4 E4.
+
+**Why this commit exists at all** is a consequence worth recording, because it came back around from
+a different seat. `regen-validation-index.py` was taught to admit a proof page whose package the
+exclusion table names with a bar class — and the durable source for that was ruled to be **the roster
+alone**, never a `docs/phase4` record, because a record is by doctrine "amended with dated blocks,
+never rewritten, NEVER EXECUTED FROM". So while these four refusals lived only *here*, they were not
+roster facts and their pages went on orphaning. This record documents the reasoning; the roster
+carries the fact. That division is the point.
+
+**The verdict column.** Each of the four reads **1**, which is the figure its s2 TSV row recorded —
+not the `0` the other E1 rows carry. The difference is real and the mechanism sentences carry it: for
+`wasitest` the single verdict IS the immediate `t.Skip`, and for the three E4 rows it is the one
+empty-or-vacuous test executing and passing. Writing `0` would have tidied the column at the cost of
+contradicting the measurement.
+
+**Not hand-edited:** the header's excluded count and the implementable denominator are derived by the
+guard at the leg, so nothing above the tables moved.
+
+## The prediction, tested before it was claimed
+
+COORD's prediction was that the ten rows plus these four exclusion rows take the index tool's orphan
+count at the tip from 14 to 0. **Simulated and MET**, by layering this seat's roster over the
+re-bank train HEAD's proof pages (`07240495e6`, 226 pages) and running the tool's own readers:
+
+| roster | orphans | by name | by link | by exclusion | page-less rows |
+|:--|--:|--:|--:|--:|:--|
+| train HEAD (203 rows, 6 exclusions) | **14** | 202 | 10 | 0 | `crypto/internal/fips140test` |
+| + this seat (213 rows, 10 exclusions) | **0** | 212 | 10 | **4** | `crypto/internal/fips140test` |
+
+Stated as what it is: a **simulation**, not the merged tree. It layers one roster over another leg's
+pages, so if a concurrent leg adds pages or rows the real figure moves. What it does establish is that
+the arithmetic closes and that all four of these rows are readable by the tool's own parser — checked
+by calling `read_roster_exclusions` on this file and seeing all four come back with their classes.
+
+`crypto/internal/fips140test`'s page-less row is untouched and still refuses. That is the hop debt and
+the guard being right, not something for this seat to clear.
+
+**The three fips140 rows are still HELD** — `claude/r-h10-rebank-s2b` had not landed when this commit
+was cut (`git ls-remote` empty), so `crypto/internal/fips140/{aes,ecdsa,nistec}` are not in it and
+their proof pages still do not exist on any ref.
