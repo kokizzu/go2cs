@@ -441,6 +441,103 @@ function Get-DocKeys($doc, [string] $member) {
     return @(([System.Collections.IDictionary] $sub).Keys)
 }
 
+# ⚠⚠ THE CROSS-CHECK IS A FUNCTION BECAUSE A BLOCK NO ARM CAN CALL IS A BLOCK NO ARM DID CALL.
+# It was fourteen lines inline in the row loop, reachable only by running a real row against a real
+# converter output, and it carried a defect that survived every leg: see the `@( )` below.
+# Returns $true when the two counts AGREE or the cross-check could not run, $false ONLY on a measured
+# DISAGREEMENT -- which is exactly the inline block's effect on `$verdicts`, unchanged.
+#
+# ⚠⚠ `@( )` AROUND THE PIPELINE, AND IT IS THE WHOLE OF THE FIX. Under `Set-StrictMode -Version
+# Latest` a pipeline yielding EXACTLY ONE object yields the bare object, and `.Count` on a
+# `System.String` is a property that does not exist -- PropertyNotFoundException, caught two lines
+# down, printed as "comparison JSON unreadable". MEASURED on `internal/godebugs` during the
+# 2026-09-21 rehearsal: ONE Go test name, a 357-byte comparison document with no BOM that parses
+# fine, and the row reported its own artifact as unreadable. Directly on this box, pwsh 7.4.6:
+#     ($a | Sort-Object -CaseSensitive -Unique).Count   one element  -> THROWS PropertyNotFound
+#                                                       three        -> 3
+#     @($a | Sort-Object -CaseSensitive -Unique).Count   one element  -> 1
+# `$goNames` is already `@( )`-wrapped at its source; the pipeline UNWRAPS it again, so wrapping the
+# source is not the same fix as wrapping the result.
+#
+# ⚠ AND THE CATCH NOW NAMES WHAT THREW. One line stood for two different facts -- an artifact this
+# instrument cannot read, and a defect in this instrument -- and the reader had no way to tell them
+# apart. The genuinely-unreadable document keeps its own sentence (it is the one case where blaming
+# the artifact is correct, and `$cmpUnreadable` is the fact that says so); everything else prints the
+# exception TYPE and message, which is what distinguishes a code defect from a bad artifact.
+function Invoke-VerdictCrossCheck($doc, [bool] $Unreadable, $SummaryCount, [string] $SummaryLine) {
+    if ($Unreadable) {
+        Write-Host '     !! comparison JSON unreadable -- the count cannot be cross-checked' -ForegroundColor Yellow
+        return $true
+    }
+    try {
+        # THE SAME DOCUMENT THE CLASSIFIER READ, not a second parse of the same file.
+        # ORDINAL by the sweep's own comment: legal Go verdict names differ ONLY BY CASE, so a
+        # case-insensitive count COLLAPSES those pairs and undercounts with a plausible integer.
+        $goNames  = @(Get-DocKeys $doc 'go')
+        $mapCount = @($goNames | Sort-Object -CaseSensitive -Unique).Count
+        # ⚠⚠ THE TWO NUMBERS DIFFER BY THE DISCLOSURES, BY CONSTRUCTION -- measured on the
+        # one-row dry run, where bufio read "summary 80 vs map 81" and my first cross-check
+        # called that a disagreement. the converter's disclosed branch passes
+        # `len(goResults) - len(disclosed)` as the headline count while the map holds ALL of
+        # goResults, so a bare equality test fires on EVERY row carrying a disclosure and
+        # throws away a perfectly good cost. The relation is:
+        #     map == summary + disclosed-divergent
+        # The no-disclosure branch prints no such group, and 0 is then correct.
+        $disclosed = 0
+        if ($SummaryLine -match '(\d+) disclosed-divergent') { $disclosed = [int] $Matches[1] }
+        if ($mapCount -ne ($SummaryCount + $disclosed)) {
+            Write-Host ("     !! verdicts DISAGREE: map $mapCount != summary $SummaryCount + disclosed $disclosed -- emitting NOMATCH") -ForegroundColor Yellow
+            return $false
+        }
+        return $true
+    } catch {
+        Write-Host ("     !! comparison cross-check threw: {0}: {1}" -f $_.Exception.GetType().FullName, $_.Exception.Message) -ForegroundColor Yellow
+        return $true
+    }
+}
+
+# ⚠⚠ THE ARM FOR THE ABOVE, AND ITS FIRST CASE IS THE ONE THAT WAS RED. Five cases, each stating
+# what it asserts; the ONE-NAME case fails on the pre-fix expression and passes on this one, and the
+# THREE-NAME case is the control that already worked on both -- which is why the defect reached a
+# rehearsal at all. Output is captured off the information stream, so "no `!!` line" is asserted
+# rather than assumed: a cross-check that agrees prints NOTHING.
+function Test-VerdictCrossCheckContract {
+    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("recon-xcheck-" + [guid]::NewGuid().ToString('N') + ".json")
+    $ok  = $true
+    Write-Host '  verdict cross-check contract:'
+    try {
+        # $Cases: literal JSON, the $Unreadable flag, the summary count, the summary line, and what
+        # this case must produce -- the return value and whether a `!!` line is expected.
+        $cases = @(
+            @{ n = 'ONE Go name, summary 1'      ; j = '{"go":{"TestOnly":"pass"},"csharp":{"TestOnly":"pass"}}'
+               u = $false ; c = 1 ; l = 'Validated 1 tests against go test' ; want = $true  ; bang = $false }
+            @{ n = 'THREE Go names, summary 3'   ; j = '{"go":{"TestA":"pass","TestB":"pass","TestC":"pass"}}'
+               u = $false ; c = 3 ; l = 'Validated 3 tests against go test' ; want = $true  ; bang = $false }
+            @{ n = 'ONE name + 1 disclosed'      ; j = '{"go":{"TestA":"pass","TestB":"fail"}}'
+               u = $false ; c = 1 ; l = 'Validated 1 tests against go test (1 disclosed-divergent)' ; want = $true ; bang = $false }
+            @{ n = 'a REAL disagreement'         ; j = '{"go":{"TestA":"pass","TestB":"pass"}}'
+               u = $false ; c = 7 ; l = 'Validated 7 tests against go test' ; want = $false ; bang = $true }
+            @{ n = 'an unreadable document'      ; j = '{"go":{"TestOnly":"pass"}}'
+               u = $true  ; c = 1 ; l = 'Validated 1 tests against go test' ; want = $true  ; bang = $true }
+        )
+        foreach ($case in $cases) {
+            [System.IO.File]::WriteAllText($tmp, $case.j)
+            $doc  = Read-JsonDocument $tmp
+            $all  = @(Invoke-VerdictCrossCheck $doc $case.u $case.c $case.l 6>&1)
+            $rets = @($all | Where-Object { $_ -is [bool] })
+            $bangs = @($all | Where-Object { $_ -isnot [bool] -and ("$_" -match '!!') })
+            $got   = if ($rets.Count -eq 1) { $rets[0] } else { 'MALFORMED' }
+            $gotB  = ($bangs.Count -gt 0)
+            $pass  = ($got -eq $case.want) -and ($gotB -eq $case.bang)
+            if (-not $pass) { $ok = $false }
+            Write-Host ("    {0,-28} -> agrees={1,-9} !!-line={2,-5} (want {3} / {4})  {5}" -f `
+                $case.n, $got, $gotB, $case.want, $case.bang, $(if ($pass) { 'ok' } else { 'FAILED' }))
+            foreach ($b in $bangs) { Write-Host ("        " + "$b") }
+        }
+    } finally { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+    return $ok
+}
+
 # ⚠⚠ THIS IS THE WRAPPER PHASE. `Get-Content -Tail 400` OVER A ONE-LINE FILE IS ~QUADRATIC.
 #
 # Measured on all 14 rows of this leg: `go2cs_test_results.json` contains a SINGLE line -- 2.9 MB of
@@ -532,9 +629,13 @@ $goVer = Join-Path $GoRoot 'VERSION'
 if ($SelfTest) {
     Write-Host ''
     $ok = Test-SummaryContract
+    # ⚠ CAPTURED BEFORE THE CANARY FOR THE ORDER REASON ABOVE: every arm reports in one invocation,
+    # and no arm's refusal is able to exit ahead of another arm's failure.
+    $okX = Test-VerdictCrossCheckContract
     Assert-OrdinalJsonReader
-    if ($ok) { Write-Host '  SELF-TEST PASSED -- the summary-line contract AND the ordinal-reader canary'; exit 0 }
-    Deny 'the summary-line contract FAILED its self-test -- the parse and its controls disagree'
+    if ($ok -and $okX) { Write-Host '  SELF-TEST PASSED -- the summary-line contract, the verdict cross-check contract AND the ordinal-reader canary'; exit 0 }
+    if (-not $ok)  { Deny 'the summary-line contract FAILED its self-test -- the parse and its controls disagree' }
+    Deny 'the verdict cross-check contract FAILED its self-test -- see the case list above'
 }
 
 if (-not (Test-Path -LiteralPath $GoRoot)) { Deny "no GOROOT at '$GoRoot'" }
@@ -1021,29 +1122,11 @@ foreach ($row in $rows) {
     if (-not $cmpStale -and $null -ne $v.Count) {
         $verdicts = $v.Count
         if (Test-Path -LiteralPath $cmpSrc) {
-            try {
-                if ($cmpUnreadable) { throw 'the comparison document could not be parsed' }
-                # THE SAME DOCUMENT THE CLASSIFIER READ, not a second parse of the same file.
-                # ORDINAL by the sweep's own comment: legal Go verdict names differ ONLY BY CASE, so a
-                # case-insensitive count COLLAPSES those pairs and undercounts with a plausible integer.
-                $goNames = @(Get-DocKeys $cmpDoc 'go')
-                $mapCount = ($goNames | Sort-Object -CaseSensitive -Unique).Count
-                # ⚠⚠ THE TWO NUMBERS DIFFER BY THE DISCLOSURES, BY CONSTRUCTION -- measured on the
-                # one-row dry run, where bufio read "summary 80 vs map 81" and my first cross-check
-                # called that a disagreement. the converter's disclosed branch passes
-                # `len(goResults) - len(disclosed)` as the headline count while the map holds ALL of
-                # goResults, so a bare equality test fires on EVERY row carrying a disclosure and
-                # throws away a perfectly good cost. The relation is:
-                #     map == summary + disclosed-divergent
-                # The no-disclosure branch prints no such group, and 0 is then correct.
-                $disclosed = 0
-                if ($v.Line -match '(\d+) disclosed-divergent') { $disclosed = [int] $Matches[1] }
-                if ($mapCount -ne ($v.Count + $disclosed)) {
-                    Write-Host ("     !! verdicts DISAGREE: map $mapCount != summary $($v.Count) + disclosed $disclosed -- emitting NOMATCH") -ForegroundColor Yellow
-                    $verdicts = 'NOMATCH'
-                }
-            } catch {
-                Write-Host '     !! comparison JSON unreadable -- the count cannot be cross-checked' -ForegroundColor Yellow
+            # The block that used to stand here is `Invoke-VerdictCrossCheck`, beside the readers it
+            # uses and beside its arm. Behaviour is unchanged: a DISAGREEMENT emits NOMATCH, and
+            # anything else leaves this row's count where the summary line put it.
+            if (-not (Invoke-VerdictCrossCheck $cmpDoc $cmpUnreadable $v.Count $v.Line)) {
+                $verdicts = 'NOMATCH'
             }
         }
     }

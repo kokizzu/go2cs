@@ -836,24 +836,101 @@ foreach ($row in $linuxRows) {
 # declares the count, the tree must hold the artifact the count rests on, and this line is where the
 # two are compared. The Windows Disclosed column and every applicable per-OS `+ D` are checked alike,
 # because the manifest is per package, not per platform.
-foreach ($row in $rows) {
-    $needsManifest = ($row.Disclosed -gt 0)
+#
+# ⚠⚠ AND EXISTENCE WAS THE WHOLE OF IT UNTIL 2026-09-22, WHICH IS A GUARD-AS-CALCULATOR THAT NEVER
+# READ THE CALCULATION. MEASURED on `database/sql` (Disclosed 2, two pins committed): DELETING ONE
+# PIN from the manifest left this gate SILENT -- byte-identical output, still `2 of 638` -- and only
+# REMOVING THE FILE fired it. A row may therefore claim any number it likes as long as some file
+# exists beside the package, which is the shape of the hole debug/gosym opened, one level in.
+#
+# ⚠⚠ THE RELATION IS A CEILING, NOT AN EQUALITY, AND THE TREE IS WHAT SAYS SO. An equality check
+# was the obvious form and it is FALSIFIED BY 15 OF THE 42 CLAIMING ROWS -- measured before it was
+# written, which is the only reason it is not in this file. Both directions are legitimate:
+#
+#   pins < Disclosed   a PARENT of pinned SUBTESTS is itself a diverging verdict and is not pinned
+#                      separately. `sync` pins TestOnceXGC/{OnceFunc,OnceValue,OnceValues} -- three
+#                      pins, four disclosed. `testing` 14/15, `strconv` 10/11, `encoding/binary`
+#                      8/9, `log/slog` 18/19, `net/netip` 54/57 (nine unpinned parents).
+#   pins > Disclosed   a pin absorbs NOTHING on the platform the column describes -- `crypto/tls`
+#                      commits 2 and banks 1, `os/signal` 3 and 2, `runtime/debug` 6 and 5. Whether
+#                      such a pin is stale is the ORPHAN check's question, not this one's.
+#
+# So what binds is: the manifest must be able to ACCOUNT FOR the claim. The ceiling is the distinct
+# pinned names plus the ancestors those names imply and do not themselves pin, and the roster's
+# largest per-platform claim may not exceed it. Measured over the tree the day this landed: 40 rows
+# with a manifest, ZERO over the ceiling, and the ceiling EXACTLY EQUAL on 34 of them -- so deleting
+# a single pin from any of those 34 reds this guard by name, which is what the measurement above
+# asked for. The two rows with no manifest at all are the fips140 relocation orphans, which this
+# guard already named before this change and still names.
+#
+# Compared against the MAXIMUM across applicable platforms rather than per platform, because the
+# manifest is per package and a pin absorbing on one platform is committed for all of them: the
+# largest claim is the one the file has to cover, and the smaller ones follow.
+function Get-DisclosureCeiling {
+    param([string] $Path)
 
-    foreach ($key in $row.OS.Keys) {
-        if ($row.OS[$key].Applicable -and $row.OS[$key].Disclosed -gt 0) { $needsManifest = $true }
+    $names = @(([System.IO.File]::ReadAllText($Path) | ConvertFrom-Json).disclosures |
+               Where-Object { $null -ne $_ } |
+               ForEach-Object { [string]$_.name } |
+               Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+
+    # ORDINAL, for the reason section 2c states about `platforms`: Go test names differ only by case
+    # legally, and a case-folding set would merge two distinct pins into one and UNDERSTATE the
+    # ceiling -- a guard failing in the direction that accuses a correct roster.
+    $pinned = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($name in $names) { [void]$pinned.Add($name) }
+
+    $implied = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($name in $names) {
+        $parts = $name.Split([char]47)
+        for ($i = 1; $i -lt $parts.Count; $i++) {
+            $ancestor = ($parts[0..($i - 1)] -join '/')
+            if (-not $pinned.Contains($ancestor)) { [void]$implied.Add($ancestor) }
+        }
     }
 
-    if (-not $needsManifest) { continue }
+    return @{ Pins = $pinned.Count; Implied = $implied.Count; Ceiling = ($pinned.Count + $implied.Count) }
+}
+
+foreach ($row in $rows) {
+    $claims = @()
+    if ($row.Disclosed -gt 0) { $claims += @{ Platform = 'windows'; Count = $row.Disclosed } }
+
+    foreach ($key in $row.OS.Keys) {
+        if ($row.OS[$key].Applicable -and $row.OS[$key].Disclosed -gt 0) {
+            $claims += @{ Platform = $key; Count = $row.OS[$key].Disclosed }
+        }
+    }
+
+    if ($claims.Count -eq 0) { continue }
 
     $manifest = Join-Path (Join-Path $PSScriptRoot 'core') ($row.Package + '/go2cs_test_disclosures.json')
-    Assert-Equal "disclosed count is backed by a committed go2cs_test_disclosures.json: $($row.Package)" $true (Test-Path -LiteralPath $manifest)
+    $present = Test-Path -LiteralPath $manifest
+    Assert-Equal "disclosed count is backed by a committed go2cs_test_disclosures.json: $($row.Package)" $true $present
+
+    # A ceiling cannot be read out of a file that is not there, and the assertion above has already
+    # said so. Asserting a second time on the same absence would double-count one fault.
+    if (-not $present) { continue }
+
+    $largest = ($claims | Sort-Object { $_.Count } -Descending)[0]
+
+    $ceiling = $null
+    try { $ceiling = Get-DisclosureCeiling -Path $manifest }
+    catch {
+        Assert-Equal "go2cs_test_disclosures.json is readable for the ceiling: $($row.Package) ($($_.Exception.Message))" $true $false
+        continue
+    }
+
+    Assert-Equal ("the manifest can account for the disclosed claim: $($row.Package) claims $($largest.Count) on $($largest.Platform), " +
+                  "the manifest carries $($ceiling.Pins) pin(s) + $($ceiling.Implied) implied parent(s) = $($ceiling.Ceiling)") `
+        $true ($largest.Count -le $ceiling.Ceiling)
 }
 
 
 # ---- 2c. every committed manifest's ENTRIES obey the deferred/structural contract ------------------
-# The check above asks whether the FILE exists; this asks whether what is in it is legal, which is a
-# different question and the one the deferred class needs (coordinator ruling 2026-09-05,
-# owner-ratified). The converter's loader enforces the same contract at compare time, so a broken
+# The checks above ask whether the FILE exists and whether it holds ENOUGH pins to account for the
+# row's claim; this asks whether what is in it is legal, which is a third question and the one the
+# deferred class needs (coordinator ruling 2026-09-05, owner-ratified). The converter's loader enforces the same contract at compare time, so a broken
 # entry fails a sweep -- but only for the row being swept, and only once someone sweeps it. This is
 # the arm that reads all 168-odd committed entries across every row at once, so a mislabelled entry
 # is caught the day it lands rather than at that row's next rebank.

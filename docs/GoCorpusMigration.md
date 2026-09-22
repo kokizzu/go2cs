@@ -2472,6 +2472,7 @@ because a reader starting at H10 gets no pointer to them:
 | `CGO_ENABLED` pinned to the corpus state, exported rather than assumed | the corpus emission state |
 | an entirely hand-owned package converts only under `-test-allow-handown` | the converter's own refusal, by name |
 | the leg tree carries **no ignored build residue** before row 1, censused with `git status --ignored=matching` and never `--porcelain` alone, with a control | G measured **516** ignored entries under `src/core` surviving a `git clean -fd`, behind a `status --porcelain` reading **0** — porcelain cannot see an ignored path, so a tree that READS clean is not a tree that IS clean |
+| a launcher that WAITS for a sibling battery to clear excludes a `dotnet.exe` whose **command line hosts `pwsh.dll`** | 2026-09-21, the rehearsal: a launcher keyed on `dotnet.exe` alone waited **40 min** on TWO such processes with no battery running at all. A `pwsh` installed as a **dotnet tool** runs as `dotnet.exe … pwsh.dll`, so the harness's own tool shells — including the one the launcher was started from — are indistinguishable from a build by image name, and the predicate waits on itself. Measured again on the i7 the following day: both `dotnet.exe` processes on the box hosted `pwsh.dll` and neither was a battery. Read the COMMAND LINE, which is also floor 5's rule one step on: a census by image name is wrong for the same reason a kill by image name is |
 | any **preflight build** — a dry run, a red arm, a rehearsal row — runs in a tree that is **NOT the leg's** | i9 measured `go/types` (443 files) and `net` (672) carrying pre-run build output in a tree where neither had ever been converted: a `dotnet publish` builds a dependency **CLOSURE**, so the at-risk set is everything the arms' closures touched and not the rows that ran |
 
 **THE TREE DISCARD, which is a MEASUREMENT before it is a removal.** The leg's worktree is thrown away
@@ -2742,6 +2743,37 @@ want, its reading and its plan. ⚠ **Assert an artifact's freshness by LAST WRI
 creation time** — NTFS tunnels creation time back through a delete-and-recreate and will call a freshly
 rewritten record stale. ⚠ **And a gate never made to fail proves nothing** (floor 13): remove one pin
 from the rehearsal's manifest, confirm the format gate names that row, restore, verify byte-identical.
+
+**Amended 2026-09-21 (COORD, from the rehearsal):** three of those clauses are read differently than
+the sentence above them implies, and each was measured rather than reasoned.
+
+1. **The freshness clause reads FRESH *or* TRACKED-AND-UNMODIFIED, never freshness alone.** The badge
+   writer is idempotent by construction — `writeReadmeFile` writes only `if needToWriteFile(...)`, the
+   same skip the layout reconciler's comment rests on (`platformEmit.go`: *"emitted" means "the bytes
+   changed"*) — so a row whose counts did not move rewrites nothing and its README keeps a
+   `LastWriteTime` older than the row's start. On the rehearsal shard **5 of 7 READMEs** were in
+   exactly that state. A predicate reading only the timestamp calls them stale and a correct shard
+   reds; a predicate reading only trackedness cannot see a record a run failed to rewrite. Both
+   halves, disjoined, are what the clause means. (Last-write-time over creation time is unchanged, and
+   for the NTFS reason already stated.)
+2. **`go2cs_test_disclosures.json` is HAND-OWNED and is never minted by a run**, so "mint site"
+   language about it is wrong wherever it appears. `src/core/.gitignore` states the rule at the file
+   it protects — the manifest is *"deliberately NOT listed here … authored and committed like source,
+   never regenerated"*, unlike the three per-run `go2cs_test_*.json` artifacts beside it that ARE
+   ignored. A DIVERGED row's pins are **AUTHORED from that row's divergence evidence**, by a human
+   reading the comparison, and the thing that BINDS them to the roster is the format gate's
+   **pin-count check** (`check-roster-format.ps1` §2b): a row's largest per-platform `Disclosed` claim
+   may not exceed what its manifest can account for. Until 2026-09-22 that check asked only whether
+   the FILE existed — deleting one of `database/sql`'s two pins left it silent — so before that date
+   the acceptance predicate's manifest clause was weaker than it reads.
+3. **A shard's banking path list is the row's OWN directory MINUS its sub-package directories, plus
+   that row's proof page — and never `docs/validation/index.md`**, which the paragraph above already
+   excludes for its own reason. The subtraction is not tidiness: converting `crypto` mirrors GOROOT
+   testdata **recursively** into sibling packages' `testdata/` directories — on the rehearsal,
+   **28 files** under `crypto/x509/testdata` (including the nist-pkits set) and **8** under
+   `crypto/tls/testdata`, every one byte-identical to its GOROOT source. That is RESIDUE of the
+   parent's conversion, not `crypto`'s artifacts and not evidence about `x509` or `tls`, and a shard
+   that banks its row's directory wholesale carries another row's testdata into the train.
 
 ⚠ **A REFUSAL THAT NAMES A HOP DEBT IS A PASS; A FABRICATED PROOF RECORD IS NOT.** The relocation
 targets link their **source's** existing proof record — no proof file is moved, renamed or created — so
