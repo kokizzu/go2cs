@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `syscall` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `384dc371f`*
 
-**65 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**65 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/syscall`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/syscall).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 
@@ -25,7 +27,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestGetStartupInfo` | pass | pass |
 | `TestGettimeofday` | pass | pass |
 | `TestGetwd_DoesNotPanicWhenPathIsLong` | pass | pass |
-| `TestOpen_Dir` | pass | pass |
+| `TestOpen` | pass | pass |
 | `TestStdioAreInheritable` | skip | skip |
 | `TestSyscallAllocations` | pass | pass |
 | `TestSyscallAllocations/Syscall` | pass | pass |

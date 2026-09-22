@@ -19,33 +19,40 @@ using static go.syscall_internal_test_package;
 
 partial class syscall_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
+[GoType("dyn")] internal partial struct TestOpen_tests {
+    internal @string path;
+    internal nint flag;
+    internal error err;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object openShouldHaveFailedˢ = (@string)"Open should have failed"u8;
-
-public static void TestOpen_Dir(ж<testing.T> Ꮡt) {
+public static void TestOpen(ж<testing.T> Ꮡt) {
+    Ꮡt.Parallel();
     @string dir = Ꮡt.TempDir();
-    var (h, err) = syscall.Open(dir, syscall.O_RDONLY, 0);
+    @string @file = filepath.Join(dir, "a");
+    var (f, err) = Δos.Create(@file);
     if (err != default!) {
-        Ꮡt.Fatalf("Open failed: %v"u8, err);
+        Ꮡt.Fatal(err);
     }
-    syscall.CloseHandle(h);
-    (h, err) = syscall.Open(dir, (nint)((nint)syscall.O_RDONLY | (nint)syscall.O_TRUNC), 0);
-    if (err == default!){
-        Ꮡt.Error(openShouldHaveFailedˢ);
-    } else {
-        syscall.CloseHandle(h);
-    }
-    (h, err) = syscall.Open(dir, (nint)((nint)syscall.O_RDONLY | (nint)syscall.O_CREAT), 0);
-    if (err == default!){
-        Ꮡt.Error(openShouldHaveFailedˢ);
-    } else {
-        syscall.CloseHandle(h);
+    f.Close();
+    var tests = new TestOpen_tests[]{
+        new(dir, syscall.O_RDONLY, default!),
+        new(dir, syscall.O_CREAT, default!),
+        new(dir, (nint)((nint)syscall.O_RDONLY | (nint)syscall.O_CREAT), default!),
+        new(@file, (nint)((nint)(nint)((nint)syscall.O_APPEND | (nint)syscall.O_WRONLY) | Δos.O_CREATE), default!),
+        new(@file, (nint)((nint)(nint)((nint)(nint)((nint)syscall.O_APPEND | (nint)syscall.O_WRONLY) | Δos.O_CREATE) | Δos.O_TRUNC), default!),
+        new(dir, (nint)((nint)syscall.O_RDONLY | (nint)syscall.O_TRUNC), syscall.ERROR_ACCESS_DENIED),
+        new(dir, (nint)((nint)syscall.O_WRONLY | (nint)syscall.O_RDWR), syscall.EISDIR),
+        new(dir, syscall.O_WRONLY, syscall.EISDIR),
+        new(dir, syscall.O_RDWR, syscall.EISDIR)
+    }.slice();
+    foreach (var (i, tt) in tests) {
+        var (h, errΔ1) = syscall.Open(tt.path, tt.flag, 432);
+        if (errΔ1 == default!) {
+            syscall.CloseHandle(h);
+        }
+        if (!AreEqual(errΔ1, tt.err)) {
+            Ꮡt.Errorf("%d: Open got %q, want %q"u8, i, errΔ1, tt.err);
+        }
     }
 }
 
@@ -65,7 +72,7 @@ public static void TestComputerName(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string longNameAndExtensionˢ = "long_name.and_extension"u8;
 
-[GoType("dyn")] partial struct TestWin32finddata_X {
+[GoType("dyn")] internal partial struct TestWin32finddata_X {
     internal syscall.Win32finddata fd;
     internal byte got;
     internal array<byte> pad = new(10); // to protect ourselves
@@ -215,31 +222,25 @@ int main(int argc, char *argv[])
 }
 
 public static void TestGetwd_DoesNotPanicWhenPathIsLong(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        ref var t = ref Ꮡt.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
-        // Regression test for https://github.com/golang/go/issues/60051.
-        // The length of a filename is also limited, so we can't reproduce the
-        // crash by creating a single directory with a very long name; we need two
-        // layers.
-        @string a200 = strings.Repeat("a"u8, 200);
-        @string dirname = filepath.Join(Ꮡt.TempDir(), a200, a200);
-        var err = Δos.MkdirAll(dirname, 448);
-        if (err != default!) {
-            Ꮡt.Skipf("MkdirAll failed: %v"u8, err);
-        }
-        err = Δos.Chdir(dirname);
-        if (err != default!) {
-            Ꮡt.Skipf("Chdir failed: %v"u8, err);
-        }
-        // Change out of the temporary directory so that we don't inhibit its
-        // removal during test cleanup.
-        defer(Δos.Chdir, (@string)@"\", ref ᒐ);
-        syscall.Getwd();
+    // Regression test for https://github.com/golang/go/issues/60051.
+    @string tmp = Ꮡt.TempDir();
+    Ꮡt.Chdir(tmp);
+    // The length of a filename is also limited, so we can't reproduce the
+    // crash by creating a single directory with a very long name; we need two
+    // layers.
+    @string a200 = strings.Repeat("a"u8, 200);
+    @string dirname = filepath.Join(tmp, a200, a200);
+    var err = Δos.MkdirAll(dirname, 448);
+    if (err != default!) {
+        Ꮡt.Skipf("MkdirAll failed: %v"u8, err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    err = Δos.Chdir(dirname);
+    if (err != default!) {
+        Ꮡt.Skipf("Chdir failed: %v"u8, err);
+    }
+    syscall.Getwd();
 }
 
 public static void TestGetStartupInfo(ж<testing.T> Ꮡt) {
