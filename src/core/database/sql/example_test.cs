@@ -14,18 +14,6 @@ using static go.database.sql_internal_test_package;
 
 partial class sql_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 internal static context.Context ctx;
 internal static ж<Δsql.DB> db;
 
@@ -222,7 +210,7 @@ public static void ExampleDB_PingContext() {
 internal static readonly @string insertIntoProjectsIdˢ = "INSERT INTO projects(id, mascot, release, category) VALUES( ?, ?, ?, ? )"u8;
 internal static readonly object openSourceˢ = (@string)"open source"u8;
 
-[GoType("dyn")] partial struct ExampleDB_Prepare_projects {
+[GoType("dyn")] internal partial struct ExampleDB_Prepare_projects {
     internal @string mascot;
     internal nint release;
 }
@@ -254,7 +242,7 @@ public static void ExampleDB_Prepare() {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct ExampleTx_Prepare_projects {
+[GoType("dyn")] internal partial struct ExampleTx_Prepare_projects {
     internal @string mascot;
     internal nint release;
 }

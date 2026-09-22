@@ -22,18 +22,6 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class template_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 internal static ж<bool> debug = flag.Bool("debug"u8, false, "show the errors produced by the tests"u8);
 
 // T has lots of interesting pieces to use to test execution.
@@ -1870,7 +1858,7 @@ public static void TestIssue31810(ж<testing.T> Ꮡt) {
     // Even a plain function fails - need to use call.
     var f = @string () => resultˢ;
     b.Reset();
-    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), f);
+    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), (f).OrTypedNilFunc());
     if (err == default!) {
         Ꮡt.Error(expectedErrorWithNoCallˢ);
     }
@@ -1878,7 +1866,7 @@ public static void TestIssue31810(ж<testing.T> Ꮡt) {
     @string textCall = "{{ (call .)  }}"u8;
     (tmpl, err) = New(""u8).Parse(textCall);
     b.Reset();
-    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), f);
+    err = tmpl.Execute(new template_test_package.strings_BuilderжWriter(Ꮡb), (f).OrTypedNilFunc());
     if (err != default!) {
         Ꮡt.Error(err);
     }
@@ -1959,7 +1947,7 @@ public static void TestRecursiveExecute(ж<testing.T> Ꮡt) {
         return (((global::go.html.template_package.HTML)sb.String()), default!);
     };
     var m = new FuncMap(new map<@string, any>{
-        ["recur"u8] = recur
+        ["recur"u8] = (recur).OrTypedNilFunc()
     });
     var (top, err) = tmpl.New(xHtmlˢ).Funcs(m).Parse(recurˢ);
     if (err != default!) {

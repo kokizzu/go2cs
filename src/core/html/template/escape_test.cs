@@ -20,24 +20,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class template_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() {
-    builtin.initPackage(typeof(text.template_package));
-}
-
 [GoType] internal partial struct badMarshaler {
 }
 
@@ -1110,6 +1092,10 @@ public static void TestErrors(ж<testing.T> Ꮡt) {
         new(
             "{{range .Items}}<a{{if .X}}{{continue}}{{end}}>{{end}}"u8,
             "z:1:29: at range loop continue: {{range}} branches end in different contexts"u8
+        ),
+        new(
+            "{{range .Items}}{{if .X}}{{break}}{{end}}<a{{if .Y}}{{continue}}{{end}}>{{if .Z}}{{continue}}{{end}}{{end}}"u8,
+            "z:1:54: at range loop continue: {{range}} branches end in different contexts"u8
         ),
         new(
             "<a b=1 c={{.H}}"u8,
