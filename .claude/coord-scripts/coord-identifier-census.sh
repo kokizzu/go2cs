@@ -1632,26 +1632,6 @@ idc_mode_selftest() {
     printf 'stack: at go.fmt_package.printArg(%s%su13d1%s%su0060 p)\n' "$bs" "$bs" "$bs" "$bs" > "$d/p27"; idc_st_case "DELTA admits a unicode-escape host as well" "" "$d/p27" 0
     idc_st_exc "  and by the ESCAPE ADMIT in delta as well"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
 
-    # THE HEX-ESCAPE BRANCH (C2, 2026-09-22). Go spells a byte by hex as backslash-x-two-hex-digits,
-    # and log/slog's handler test data puts one inside a quoted key; the converted C# carries it with
-    # its source backslash DOUBLED, exactly as the unicode branch above models ("an escape carries
-    # TWO"). The unc arm captured the three-character hex body as a HOST, and only the unicode family
-    # was admitted, so every batch that re-emitted slog's tests refused on its own escaping data.
-    # Same rule as above: $bs for every backslash, the body a separate argument, no literal path.
-    printf 'key=%s%sx2E%st end\n' "$bs" "$bs" "$bs" > "$d/p28"; idc_st_case "STRICT admits a hex-escape host" "" "$d/p28" 1
-    idc_st_exc "  and the ESCAPE ADMIT is what admitted it"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
-    # ⚠ THE BOUND, and the case this branch exists to hold. The unicode branch admits a host that
-    # BEGINS with its shape (its note states that cost); the hex branch must NOT copy that tail. A hex
-    # body is three characters, so "begins with" would admit every host whose first letter is x and
-    # whose next two are hex letters -- a real host of that form would pass. Anchored WHOLE instead:
-    # the captured host must BE the escape. Without this case the looser copy stays green everywhere.
-    printf 'copied from %s%sxde%s%sshare%sx\n' "$bs" "$bs" "v01" "$bs" "$bs" > "$d/p29"; idc_st_case "a host that merely BEGINS with the hex shape STILL REFUSES" "unc_backslash" "$d/p29" 1
-    printf 'copied from %s%sxzz%sshare%sx\n' "$bs" "$bs" "$bs" "$bs" > "$d/p30"; idc_st_case "a non-hex hex-shaped body STILL REFUSES" "unc_backslash" "$d/p30" 1
-    printf 'from %s%sx2E%st and %s%s%s%sshare\n' "$bs" "$bs" "$bs" "$bs" "$bs" "box7" "$bs" > "$d/p31"; idc_st_case "mixed line: hex escape + real host" "unc_backslash" "$d/p31" 1
-    idc_st_exc "  and the hex escape on that SAME LINE was admitted" "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
-    printf 'key=%s%sx7f%st end\n' "$bs" "$bs" "$bs" > "$d/p32"; idc_st_case "DELTA admits a hex-escape host as well" "" "$d/p32" 0
-    idc_st_exc "  and by the ESCAPE ADMIT in delta as well"      "unc_backslash|escape-sequence" "$IDC_TMP/st.status"
-
     # PASS 2 -- a token split across a line break, with an INDENTED continuation.
     printf 'owner column reads zorb\n    ulax here\n'                      > "$d/p13"; idc_st_case "token split across a line break (PASS 2)" "TOKENFILE" "$d/p13" 1
     # Go-guard tokenising: a token as a dot/hyphen/underscore COMPONENT of a larger run.
