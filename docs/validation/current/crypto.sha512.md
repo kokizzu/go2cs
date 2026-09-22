@@ -6,17 +6,18 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/sha512` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**36 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**35 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha512).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
 | `TestAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestBlockGeneric` | pass | pass |
 | `TestBlockSize` | pass | pass |
 | `TestGolden` | pass | pass |
 | `TestGoldenMarshal` | pass | pass |
@@ -24,33 +25,33 @@ comparison — it is the evidence behind the `crypto/sha512` row in
 | `TestGoldenMarshal/512` | pass | pass |
 | `TestGoldenMarshal/512/224` | pass | pass |
 | `TestGoldenMarshal/512/256` | pass | pass |
+| `TestHash` | pass | pass |
+| `TestHash/SHA-384` | pass | pass |
+| `TestHash/SHA-384/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-384/ResetState` | pass | pass |
+| `TestHash/SHA-384/StatefulWrite` | pass | pass |
+| `TestHash/SHA-384/SumAppend` | pass | pass |
+| `TestHash/SHA-384/WriteWithoutError` | pass | pass |
+| `TestHash/SHA-512` | pass | pass |
+| `TestHash/SHA-512/224` | pass | pass |
+| `TestHash/SHA-512/224/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-512/224/ResetState` | pass | pass |
+| `TestHash/SHA-512/224/StatefulWrite` | pass | pass |
+| `TestHash/SHA-512/224/SumAppend` | pass | pass |
+| `TestHash/SHA-512/224/WriteWithoutError` | pass | pass |
+| `TestHash/SHA-512/256` | pass | pass |
+| `TestHash/SHA-512/256/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-512/256/ResetState` | pass | pass |
+| `TestHash/SHA-512/256/StatefulWrite` | pass | pass |
+| `TestHash/SHA-512/256/SumAppend` | pass | pass |
+| `TestHash/SHA-512/256/WriteWithoutError` | pass | pass |
+| `TestHash/SHA-512/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-512/ResetState` | pass | pass |
+| `TestHash/SHA-512/StatefulWrite` | pass | pass |
+| `TestHash/SHA-512/SumAppend` | pass | pass |
+| `TestHash/SHA-512/WriteWithoutError` | pass | pass |
 | `TestLargeHashes` | pass | pass |
 | `TestMarshalMismatch` | pass | pass |
-| `TestSHA512Hash` | pass | pass |
-| `TestSHA512Hash/SHA-384` | pass | pass |
-| `TestSHA512Hash/SHA-384/OutOfBoundsRead` | pass | pass |
-| `TestSHA512Hash/SHA-384/ResetState` | pass | pass |
-| `TestSHA512Hash/SHA-384/StatefulWrite` | pass | pass |
-| `TestSHA512Hash/SHA-384/SumAppend` | pass | pass |
-| `TestSHA512Hash/SHA-384/WriteWithoutError` | pass | pass |
-| `TestSHA512Hash/SHA-512` | pass | pass |
-| `TestSHA512Hash/SHA-512/224` | pass | pass |
-| `TestSHA512Hash/SHA-512/224/OutOfBoundsRead` | pass | pass |
-| `TestSHA512Hash/SHA-512/224/ResetState` | pass | pass |
-| `TestSHA512Hash/SHA-512/224/StatefulWrite` | pass | pass |
-| `TestSHA512Hash/SHA-512/224/SumAppend` | pass | pass |
-| `TestSHA512Hash/SHA-512/224/WriteWithoutError` | pass | pass |
-| `TestSHA512Hash/SHA-512/256` | pass | pass |
-| `TestSHA512Hash/SHA-512/256/OutOfBoundsRead` | pass | pass |
-| `TestSHA512Hash/SHA-512/256/ResetState` | pass | pass |
-| `TestSHA512Hash/SHA-512/256/StatefulWrite` | pass | pass |
-| `TestSHA512Hash/SHA-512/256/SumAppend` | pass | pass |
-| `TestSHA512Hash/SHA-512/256/WriteWithoutError` | pass | pass |
-| `TestSHA512Hash/SHA-512/OutOfBoundsRead` | pass | pass |
-| `TestSHA512Hash/SHA-512/ResetState` | pass | pass |
-| `TestSHA512Hash/SHA-512/StatefulWrite` | pass | pass |
-| `TestSHA512Hash/SHA-512/SumAppend` | pass | pass |
-| `TestSHA512Hash/SHA-512/WriteWithoutError` | pass | pass |
 | `TestSize` | pass | pass |
 
 ## Disclosed divergences

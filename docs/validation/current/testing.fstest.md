@@ -6,10 +6,14 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `testing/fstest` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `8293ae2e9`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**7 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**7 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/testing/fstest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing/fstest).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
+
+Both runtimes skip 1 of the matched tests identically.
 
 ## Verdicts
 
@@ -20,5 +24,5 @@ comparison — it is the evidence behind the `testing/fstest` row in
 | `TestMapFSChmodDot` | pass | pass |
 | `TestMapFSFileInfoName` | pass | pass |
 | `TestShuffledFS` | pass | pass |
-| `TestSymlink` | pass | pass |
+| `TestSymlink` | skip | skip |
 | `TestTestFSWrappedErrors` | pass | pass |

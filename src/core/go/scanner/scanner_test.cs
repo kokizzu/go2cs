@@ -478,7 +478,7 @@ internal static array<semicolonTestsᴛ1> semicolonTests = new semicolonTestsᴛ
 }.array();
 
 public static void TestSemicolons(ж<testing.T> Ꮡt) {
-    foreach (var (_, test) in semicolonTests) {
+    foreach (var (_, test) in semicolonTests.ΔRangeSnapshot()) {
         @string input = test.input;
         @string want = test.want;
         checkSemi(Ꮡt, input, want, 0);

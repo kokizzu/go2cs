@@ -9,18 +9,6 @@ using static go.text.template.parse_package;
 
 partial class parse_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // keywords
 // Make the types prettyprint.
 internal static map<global::go.text.template.parse_package.itemType, @string> itemName = new map<global::go.text.template.parse_package.itemType, @string>{
@@ -575,6 +563,16 @@ internal static slice<lexTest> lexPosTests = new lexTest[]{
         new(itemIdentifier, 10, "y"u8, 2),
         new(itemRightDelim, 11, "}}"u8, 2),
         new(itemEOF, 13, ""u8, 2)
+    }.slice()),
+    new("longcomment"u8, "{{/*\n*/}}\n{{undefinedFunction \"test\"}}"u8, new global::go.text.template.parse_package.item[]{
+        new(itemComment, 2, "/*\n*/"u8, 1),
+        new(itemText, 9, "\n"u8, 2),
+        new(itemLeftDelim, 10, "{{"u8, 3),
+        new(itemIdentifier, 12, "undefinedFunction"u8, 3),
+        new(itemSpace, 29, " "u8, 3),
+        new(itemString, 30, "\"test\""u8, 3),
+        new(itemRightDelim, 36, "}}"u8, 3),
+        new(itemEOF, 38, ""u8, 3)
     }.slice())
 }.slice();
 

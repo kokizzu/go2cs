@@ -40,6 +40,7 @@ internal static class Go2CsTestHost
             "testdata/go-relocation-test-gcc930-ranges-with-rela-x86-64",
             "testdata/hello-world-core.gz",
             "testdata/hello.c",
+            "testdata/libtiffxx.so_",
             "testdata/multiple-code-sections.c",
             "testdata/zdebug-test-gcc484-x86-64.obj",
         }, new string[]

@@ -32,7 +32,7 @@ using static go.text.scanner_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/scanner/scanner_test.go", "scanner_test.cs", "ABYssoKCgpSUpoKCgoKCgoKUlIIADh6CggCbAcwCgoKClKaigpSClIKCpoKCyqKCgoK4goKCgqamooKCgoKCgoKUlKaCgqaCgoKCgoKmgoKCgoKCgoK4ooKCgoKCgoKUgpSClIKCpoK4ooKCgoKCgoKClJSClIK4goKCgoKCgpSUgriigriCgoLmgoK4hoKCgoKCgoKCgoKmgoKCgoKCgoKCgoKCgoKCgoKCgoK4goKUgoKUgoSCgoKCgriCgoKClICCpIKUpoKClIKUggARCIKCgoSCgoSCgoSCgoSChIKCgoKCgoKChIKCgoKC7IKmgoKCgoKAgqSmgoKUgriCgsqigIKkgqaigoKAgoKCtua0goKCloKClIKUgqiCgpSClIKogoKCgoKCgoKCgoKCgoKClIKUgqiCgoKCgoKCgoKCgoKUgpSC3IKC5oKWhIKCloKCloK4gpaEgoKWgoKWgriigoKCgoKmAAgIggBuigKCgoKCqIKCgoKCgpSCpoK6gIIACgqCAAcWgoLKooKCgoKApIKUpAAJCoKCgoSCgoKCloKCgg==")]
+[assembly: go.GoPositionMap("text/scanner/scanner_test.go", "scanner_test.cs", "ABYssoKCgpSUpoKCgoKCgoKUlIIADh6CggCbAcwCgoKClKaigpSClIKCpoKCyqKCgoK4goKCgqamooKCgoKCgoKUlKaCgqaCgoKCgoKmgoKCgoKCgoK4ooKCgoKCgoKUgpSClIKCpoK4ooKCgoKCgoKClJSClIK4goKCgoKCgpSUgriigriCgoLmgoK4hoKCgoKCgoKCgoKmgoKCgoKCgoKCgoKCgoKCgoKCgoK4goKUgoKUgoSCgoKCgriCgoKClICCpIKUpoKClIKUggARCIKCgoSCgoSCgoSCgoSChIKCgoKCgoKChIKCgoKC7IKmgoKCgoKAgqSmgoKUgriCgsqigIKkgqaigoKAgoKCtua0goKCloKClIKUgqiCgpSClIKogoKCgoKCgoKCgoKCgoKClIKUgqiCgoKCgoKCgoKCgoKUgpSC3IKC5oKWhIKCloKCloK4gpaEgoKWgoKWgriigoKCgoKmAAgIggBuigKCgoKCqIKCgoKCgpSCpoK6gIIACgqCAAcWgoLKooKCgoKApIKUpAAJCoKCgoSCgoKCloKCgg==", "296-301:1;395-397:1;458-469:1;530-537:1;704-710:1;851-855:1;920-920:1")]
 // </GoSourcePositionMaps>
 
 namespace go.text;
@@ -48,4 +48,19 @@ public static partial class scanner_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

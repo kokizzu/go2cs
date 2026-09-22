@@ -14,6 +14,9 @@ using go;
 using static global::go.regexp.syntax_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b52656765787020737472696e673b2050726f6720737472696e677d", "compileTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b52656765787020737472696e673b2053696d706c6520737472696e677d", "simplifyTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b726520737472696e673b206f757420737472696e677d", "stringTestsᴛ1")]
 [assembly: GoTypeAlias("Error", "ΔError")]
 // </ExportedTypeAliases>
 
@@ -34,7 +37,7 @@ using static global::go.regexp.syntax_internal_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("regexp/syntax/parse_test.go", "parse_test.cs", "AM8BuAOCAA4egu6CAAkUggAJFIKokoKCgoKUlJSCgs6igoIAGDjSgpSYgpSkgpSUgoKCggAFHwADLIKUgraCtoK2pIKkgoKUpIKCgoKCgpTIpoKCgoKCgqaCgriClKaCgpSCgoKUlKaCgoKClIKUlIK4isKCgpSCAFCQAYKCgIKkgIK2goCCpICCtoKAgqSAgtqigoKCgpSUlIKCgpaC3IKCgpSCgpaCggAdOIKCgoKClIKC")]
-[assembly: go.GoPositionMap("regexp/syntax/prog_test.go", "prog_test.cs", "AELaAYKCgoKCgsqigoKCgpQACAyigoKCpoKU")]
+[assembly: go.GoPositionMap("regexp/syntax/prog_test.go", "prog_test.cs", "AJAB2gGCgoKCgoLKooKCgoKUAAgMooKCgqaClA==")]
 [assembly: go.GoPositionMap("regexp/syntax/simplify_test.go", "simplify_test.cs", "AI0BmgKCgoKCgpSCgg==")]
 // </GoSourcePositionMaps>
 
@@ -51,4 +54,24 @@ public static partial class syntax_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.regexp.syntax_package));
+    }
 }

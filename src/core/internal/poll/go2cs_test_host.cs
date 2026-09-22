@@ -9,7 +9,9 @@ internal static class Go2CsTestHost
     {
         TestRegistry registry = new("internal/poll", new string[]
         {
+            "copy_file_range_freebsd.go",
             "copy_file_range_linux.go",
+            "copy_file_range_unix.go",
             "errno_unix.go",
             "errno_windows.go",
             "error_linux_test.go",
@@ -47,12 +49,10 @@ internal static class Go2CsTestHost
             "iovec_unix.go",
             "read_test.go",
             "sendfile.go",
-            "sendfile_bsd.go",
-            "sendfile_linux.go",
             "sendfile_solaris.go",
+            "sendfile_unix.go",
             "sendfile_windows.go",
             "sock_cloexec.go",
-            "sock_cloexec_accept.go",
             "sock_cloexec_solaris.go",
             "sockopt.go",
             "sockopt_linux.go",

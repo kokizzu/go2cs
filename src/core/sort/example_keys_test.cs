@@ -66,7 +66,7 @@ internal static readonly object byMassˢ = (@string)"By mass:"u8;
 internal static readonly object byDistanceˢ = (@string)"By distance:"u8;
 internal static readonly object byDecreasingDistanceˢ = (@string)"By decreasing distance:"u8;
 
-// ExampleSortKeys demonstrates a technique for sorting a struct type using programmable sort criteria.
+// Example_sortKeys demonstrates a technique for sorting a struct type using programmable sort criteria.
 public static void Example_sortKeys() {
     // Closures that order the Planet structure.
     var name = (ж<Planet> p1, ж<Planet> p2) => (~p1).name < (~p2).name;
@@ -75,13 +75,13 @@ public static void Example_sortKeys() {
     var distanceʗ1 = distance;
     var decreasingDistance = (ж<Planet> p1, ж<Planet> p2) => distanceʗ1(p2, p1);
     // Sort the planets by the various criteria.
-    new By(name).ΔSort(planets);
+    NilSafeDelegateConversion<By, Func<ж<Planet>, ж<Planet>, bool>>(name).ΔSort(planets);
     fmt.Println(byNameˢ, planets);
-    new By(mass).ΔSort(planets);
+    NilSafeDelegateConversion<By, Func<ж<Planet>, ж<Planet>, bool>>(mass).ΔSort(planets);
     fmt.Println(byMassˢ, planets);
-    new By(distance).ΔSort(planets);
+    NilSafeDelegateConversion<By, Func<ж<Planet>, ж<Planet>, bool>>(distance).ΔSort(planets);
     fmt.Println(byDistanceˢ, planets);
-    new By(decreasingDistance).ΔSort(planets);
+    NilSafeDelegateConversion<By, Func<ж<Planet>, ж<Planet>, bool>>(decreasingDistance).ΔSort(planets);
     fmt.Println(byDecreasingDistanceˢ, planets);
 }
 

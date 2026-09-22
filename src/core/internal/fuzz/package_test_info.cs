@@ -56,12 +56,12 @@ using static global::go.@internal.fuzz_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("internal/fuzz/encoding_test.go", "encoding_test.cs", "AB0cggCKAfgClKioAAoUspKCgoKUlIKUgoKWgoKUgoKCAAUSsoKCloKCkoKCAAUSsoKCloKCgpKCgtyCgoKCgoKUgoLKgoKCgoKClIKCyqKCgoKCgoKChIKEgoSCgpSClIKCgsqigoKCgoKCgoKChIKChIKClIKUgoLKooKChIKChIKClIKUgoI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/minimize_test.go", "minimize_test.cs", "AB4qggADFIKCgoKmgpQABxCCgpSClAAHEIKClIKUAAcQgoKUAAgQgoKCgqaClAAHEIKClAAHEIKCgpTegpKSgrqCgoKClIKUgIKkggAJErKWgoKCgoKUgpSAgg==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mutator_test.go", "mutator_test.cs", "AA4eooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAA8igqKCggAIDIKCgoKCgoKClII=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mutators_byteslice_test.go", "mutators_byteslice_test.cs", "ABEkgoKCpoKCgqaCgoKmgoKCpoKCgqaCpoIACgaCAHHqAZKCgpSCgoI=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/encoding_test.go", "encoding_test.cs", "ACEcggDgAfgClKioAAoUspKCgoKUlIKUgoKWgoKUgoKCAAUSsoKCloKCkoKCAAUSsoKCloKCgpKCgtyCgoKCgoKUgoLKgoKCgoKClIKCyqKCgoKCgoKChIKEgoSCgpSClIKCgsqigoKCgoKCgoKChIKChIKClIKUgoLKooKChIKChIKClIKUgoI=", "202-215:1;224-249:2;264-269:1;285-290:1;334-352:1;367-382:1;390-405:1")]
+[assembly: global::go.GoPositionMap("internal/fuzz/minimize_test.go", "minimize_test.cs", "AB4qggADFIKCgoKmgpQABxCCgpSClAAHEIKClIKUAAcQgoKUAAgQgoKCgqaClAAHEIKClAAHEIKCgpTegpKSgrqCgoKClIKUgIKkggAJErKWgoKCgoKUgpSAgg==", "31-43:1;49-58:2;64-73:3;79-85:4;91-103:5;109-115:6;121-128:7;136-158:8;139-141:8.1;166-168:1")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mutator_test.go", "mutator_test.cs", "AA4eooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAAcQkoKElIKCAAgMooKAkoKEAA8igqKCggAIDIKCgoKCgoKClII=", "17-17:1;29-39:2;45-45:1;57-67:2;73-73:1;95-100:2")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mutators_byteslice_test.go", "mutators_byteslice_test.cs", "ABImgoKCpoKCgqaCgoKmgoKCpoKmggAKBoIAceoBkoKClIKCggAKDIIAEzCykpKSgoKC", "169-179:1;209-219:1;211-217:1.1")]
 [assembly: global::go.GoPositionMap("internal/fuzz/queue_test.go", "queue_test.cs", "AAoSpJKAgqSAgriCgoKAgqSAgqTcgoKCgoCCpJSkgoCCtoKCgII=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/worker_test.go", "worker_test.cs", "ABkwgoKCgpTWwoKUgoCShLqCgpSSgIK4goKEhIKCgoKE7MKClIKCgoCCAAgOwoKUgoKCgoK4goKUgpSClAADEMKCuIKUgoKCgoKClJKAgraAgqSSgIK2pqKCkoKAggAKCKKClqiSgpSCgIK2hIKCgoKCgoKCgqKCgoKClJSCgg==")]
+[assembly: global::go.GoPositionMap("internal/fuzz/worker_test.go", "worker_test.cs", "ABkwgoKCgpTWwoKUgoCShLqCgpSSgIK4goKEhIKCgoKE7MKClIKCgoCCAAgOwoKUgoKCgoK4goKUgpSClAADEMKCuIKUgoKCgoKClJKAgraAgqSSgIK2pqKCkoKAggAKCKKClqiSgpSCgIK2hIKCgoKCgoKCgqKCgoKClJSCgg==", "38-38:1;42-42:2;50-54:3;137-141:1;145-149:2;156-156:1;175-179:1;191-204:2;193-199:2.1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -77,4 +77,36 @@ public static partial class fuzz_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(global::go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸsignal() => builtin.initPackage(typeof(global::go.os.signal_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.fuzz_package));
+    }
 }

@@ -100,7 +100,7 @@ internal static readonly object byUserLinesˢ2 = (@string)"By user,>lines:"u8;
 internal static readonly object byLanguageLinesˢ = (@string)"By language,<lines:"u8;
 internal static readonly object byLanguageLinesUserˢ = (@string)"By language,<lines,user:"u8;
 
-// ExampleMultiKeys demonstrates a technique for sorting a struct type using different
+// Example_sortMultiKeys demonstrates a technique for sorting a struct type using different
 // sets of multiple fields in the comparison. We chain together "Less" functions, each of
 // which compares a single field.
 public static void Example_sortMultiKeys() {

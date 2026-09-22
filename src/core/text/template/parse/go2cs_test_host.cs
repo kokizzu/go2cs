@@ -29,7 +29,7 @@ internal static class Go2CsTestHost
         registry.Add("TestParse", parse_internal_test_package.TestParse, "parse_test.go", 368);
         registry.Add("TestParseCopy", parse_internal_test_package.TestParseCopy, "parse_test.go", 373);
         registry.Add("TestParseWithComments", parse_internal_test_package.TestParseWithComments, "parse_test.go", 377);
-        registry.Add("TestPos", parse_internal_test_package.TestPos, "lex_test.go", 552);
+        registry.Add("TestPos", parse_internal_test_package.TestPos, "lex_test.go", 562);
         registry.Add("TestSkipFuncCheck", parse_internal_test_package.TestSkipFuncCheck, "parse_test.go", 431);
         return TestHost.Run(registry, args);
     }

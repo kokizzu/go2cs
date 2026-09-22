@@ -15,18 +15,6 @@ using go.testing;
 
 partial class fs_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸfstest() {
-    builtin.initPackage(typeof(go.testing.fstest_package));
-}
-
 [GoType] partial struct readDirOnly {
     public go.io.fs_package.ReadDirFS ReadDirFS;
 }
@@ -64,7 +52,7 @@ public static void TestReadDir(ж<testing.T> Ꮡt) {
     check(subˢ, dirs, err);
 }
 
-[GoType("dyn")] partial struct TestFileInfoToDirEntry_tests {
+[GoType("dyn")] internal partial struct TestFileInfoToDirEntry_tests {
     internal @string path;
     internal fs.FileMode wantMode;
     internal bool wantDir;
@@ -129,7 +117,7 @@ internal static @string errorPath(error err) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string nonExistentˢ = "non-existent"u8;
 
-[GoType("dyn")] partial struct TestReadDirPath_fsys {
+[GoType("dyn")] internal partial struct TestReadDirPath_fsys {
     public go.io.fs_package.FS FS;
 }
 

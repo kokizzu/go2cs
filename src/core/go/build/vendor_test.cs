@@ -3,12 +3,13 @@
 // license that can be found in the LICENSE file.
 namespace go.go;
 
-using testenv = global::go.@internal.testenv_package;
+using testenv = @internal.testenv_package;
 using runtime = runtime_package;
 using strings = strings_package;
 using testing = testing_package;
+using @internal;
+using System.Runtime.CompilerServices;
 using exec = global::go.os.exec_package;
-using global::go.@internal;
 using global::go.os;
 using static global::go.go.build_package;
 
@@ -33,7 +34,7 @@ internal static readonly @string cmdˢ = "cmd"u8;
 internal static readonly @string vendorˢ3 = "/vendor/"u8;
 
 // Verify that the vendor directories contain only packages matching the list above.
-public static void TestVendorPackages(ж<testing.T> Ꮡt) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void TestVendorPackages(ж<testing.T> Ꮡt) {
     var (_, thisFile, _, _) = runtime.Caller(0);
     @string goBin = testenv.GoToolPath(new build_internal_test_package.testing_TжTB(Ꮡt));
     var listCmd = testenv.Command(new build_internal_test_package.testing_TжTB(Ꮡt), goBin, listˢ, stdˢ, cmdˢ);

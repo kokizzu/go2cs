@@ -24,7 +24,6 @@ internal static class Go2CsTestHost
         {
             "bbig",
             "bcache",
-            "fipstls",
             "sig",
             "syso",
         });

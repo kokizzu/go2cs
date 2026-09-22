@@ -4,75 +4,23 @@
 namespace go.go;
 
 using fmt = fmt_package;
-using testenv = global::go.@internal.testenv_package;
+using testenv = @internal.testenv_package;
 using io = io_package;
+using maps = maps_package;
 using os = os_package;
 using filepath = global::go.path.filepath_package;
 using reflect = reflect_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
+using @internal;
 using fs = global::go.io.fs_package;
-using global::go.@internal;
 using global::go.path;
 using static global::go.go.build_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class build_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(global::go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(global::go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 public static void TestMain(ж<testing.M> Ꮡm) {
     Default.GOROOT = testenv.GOROOT(default!);
@@ -93,7 +41,7 @@ public static void TestMatch(ж<testing.T> Ꮡt) {
         if (!Ꮡctxt.matchAuto(tag, m)) {
             Ꮡt.Errorf("%s context should match %s, does not"u8, what, tag);
         }
-        if (!reflect.DeepEqual(m, want)) {
+        if (!maps.Equal<map<@string, bool>, map<@string, bool>, @string, bool>(m, want)) {
             Ꮡt.Errorf("%s tags = %v, want %v"u8, tag, m, want);
         }
     }
@@ -103,7 +51,7 @@ public static void TestMatch(ж<testing.T> Ꮡt) {
         if (Ꮡctxt.matchAuto(tag, m)) {
             Ꮡt.Errorf("%s context should NOT match %s, does"u8, what, tag);
         }
-        if (!reflect.DeepEqual(m, want)) {
+        if (!maps.Equal<map<@string, bool>, map<@string, bool>, @string, bool>(m, want)) {
             Ꮡt.Errorf("%s tags = %v, want %v"u8, tag, m, want);
         }
     }
@@ -202,12 +150,12 @@ public static void TestMultiplePackageImport(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var wantGoFiles = new @string[]{"file.go"u8, "file_appengine.go"u8}.slice(); if (!reflect.DeepEqual((~pkg).GoFiles, wantGoFiles)) {
+        var wantGoFiles = new @string[]{"file.go"u8, "file_appengine.go"u8}.slice(); if (!slices.Equal<slice<@string>, @string>((~pkg).GoFiles, wantGoFiles)) {
             Ꮡt.Errorf("pkg.GoFiles = %q; want %q"u8, (~pkg).GoFiles, wantGoFiles);
         }
     }
     {
-        var wantInvalidFiles = new @string[]{"file_appengine.go"u8}.slice(); if (!reflect.DeepEqual((~pkg).InvalidGoFiles, wantInvalidFiles)) {
+        var wantInvalidFiles = new @string[]{"file_appengine.go"u8}.slice(); if (!slices.Equal<slice<@string>, @string>((~pkg).InvalidGoFiles, wantInvalidFiles)) {
             Ꮡt.Errorf("pkg.InvalidGoFiles = %q; want %q"u8, (~pkg).InvalidGoFiles, wantInvalidFiles);
         }
     }
@@ -389,7 +337,7 @@ public static void TestShouldBuild(ж<testing.T> Ꮡt) {
             var ctx = Ꮡ(new Context(BuildTags: new @string[]{"yes"u8}.slice()));
             var tags = new map<@string, bool>{};
             var (shouldBuild, binaryOnly, err) = ctx.shouldBuild(slice<byte>(ttʗ1.content), tags);
-            if (shouldBuild != ttʗ1.shouldBuild || binaryOnly != ttʗ1.binaryOnly || !reflect.DeepEqual(tags, ttʗ1.tags) || !AreEqual(err, ttʗ1.err)) {
+            if (shouldBuild != ttʗ1.shouldBuild || binaryOnly != ttʗ1.binaryOnly || !maps.Equal<map<@string, bool>, map<@string, bool>, @string, bool>(tags, ttʗ1.tags) || !AreEqual(err, ttʗ1.err)) {
                 tΔ1.Errorf("mismatch:\n"u8 + "have shouldBuild=%v, binaryOnly=%v, tags=%v, err=%v\n"u8 + "want shouldBuild=%v, binaryOnly=%v, tags=%v, err=%v"u8,
                     shouldBuild, binaryOnly, tags, err,
                     ttʗ1.shouldBuild, ttʗ1.binaryOnly, ttʗ1.tags, ttʗ1.err);
@@ -408,7 +356,7 @@ public static void TestGoodOSArchFile(ж<testing.T> Ꮡt) {
     if (!ctx.goodOSArchFile(helloLinuxGoˢ, m)) {
         Ꮡt.Errorf("goodOSArchFile(hello_linux.go) = false, want true"u8);
     }
-    if (!reflect.DeepEqual(m, want)) {
+    if (!maps.Equal<map<@string, bool>, map<@string, bool>, @string, bool>(m, want)) {
         Ꮡt.Errorf("goodOSArchFile(hello_linux.go) tags = %v, want %v"u8, m, want);
     }
 }
@@ -568,7 +516,7 @@ internal static readonly @string cannotFindPackageOrIsNotˢ = @"""cannot find pa
 public static void TestImportDirNotExist(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        testenv.MustHaveGoBuild(new build_internal_test_package.testing_TжTB(Ꮡt)); // really must just have source
+        testenv.MustHaveGoBuild(new build_internal_test_package.testing_TжTB(Ꮡt)); // Need 'go list' internally.
         ref var ctxt = ref heap<global::go.go.build_package.Context>(out var Ꮡctxt);
         ctxt = Default;
         @string emptyDir = Ꮡt.TempDir();
@@ -622,7 +570,7 @@ internal static readonly @string srcABˢ = "src/a/b"u8;
 internal static readonly @string aVendorCDˢ = "a/vendor/c/d"u8;
 
 public static void TestImportVendor(ж<testing.T> Ꮡt) {
-    testenv.MustHaveGoBuild(new build_internal_test_package.testing_TжTB(Ꮡt)); // really must just have source
+    testenv.MustHaveSource(new build_internal_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Setenv(go111moduleˢ, offˢ);
     ref var ctxt = ref heap<global::go.go.build_package.Context>(out var Ꮡctxt);
     ctxt = Default;
@@ -644,7 +592,7 @@ public static void TestImportVendor(ж<testing.T> Ꮡt) {
 public static void BenchmarkImportVendor(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    testenv.MustHaveGoBuild(new build_internal_test_package.testing_BжTB(Ꮡb)); // really must just have source
+    testenv.MustHaveSource(new build_internal_test_package.testing_BжTB(Ꮡb));
     Ꮡb.Setenv(go111moduleˢ, offˢ);
     ref var ctxt = ref heap<global::go.go.build_package.Context>(out var Ꮡctxt);
     ctxt = Default;
@@ -668,7 +616,7 @@ internal static readonly @string xComYZˢ = "x.com/y/z"u8;
 internal static readonly @string vendorTreeˢ = " (vendor tree)"u8;
 
 public static void TestImportVendorFailure(ж<testing.T> Ꮡt) {
-    testenv.MustHaveGoBuild(new build_internal_test_package.testing_TжTB(Ꮡt)); // really must just have source
+    testenv.MustHaveSource(new build_internal_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Setenv(go111moduleˢ, offˢ);
     ref var ctxt = ref heap<global::go.go.build_package.Context>(out var Ꮡctxt);
     ctxt = Default;
@@ -688,7 +636,7 @@ public static void TestImportVendorFailure(ж<testing.T> Ꮡt) {
 }
 
 public static void TestImportVendorParentFailure(ж<testing.T> Ꮡt) {
-    testenv.MustHaveGoBuild(new build_internal_test_package.testing_TжTB(Ꮡt)); // really must just have source
+    testenv.MustHaveSource(new build_internal_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Setenv(go111moduleˢ, offˢ);
     ref var ctxt = ref heap<global::go.go.build_package.Context>(out var Ꮡctxt);
     ctxt = Default;
@@ -886,11 +834,11 @@ public static void TestAllTags(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     var want = new @string[]{"arm"u8, "netbsd"u8}.slice();
-    if (!reflect.DeepEqual((~p).AllTags, want)) {
+    if (!slices.Equal<slice<@string>, @string>((~p).AllTags, want)) {
         Ꮡt.Errorf("AllTags = %v, want %v"u8, (~p).AllTags, want);
     }
     var wantFiles = new @string[]{"alltags.go"u8, "x_netbsd_arm.go"u8}.slice();
-    if (!reflect.DeepEqual((~p).GoFiles, wantFiles)) {
+    if (!slices.Equal<slice<@string>, @string>((~p).GoFiles, wantFiles)) {
         Ꮡt.Errorf("GoFiles = %v, want %v"u8, (~p).GoFiles, wantFiles);
     }
     ctxt.GOARCH = amd64ˢ;
@@ -899,11 +847,11 @@ public static void TestAllTags(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    if (!reflect.DeepEqual((~p).AllTags, want)) {
+    if (!slices.Equal<slice<@string>, @string>((~p).AllTags, want)) {
         Ꮡt.Errorf("AllTags = %v, want %v"u8, (~p).AllTags, want);
     }
     wantFiles = new @string[]{"alltags.go"u8}.slice();
-    if (!reflect.DeepEqual((~p).GoFiles, wantFiles)) {
+    if (!slices.Equal<slice<@string>, @string>((~p).GoFiles, wantFiles)) {
         Ꮡt.Errorf("GoFiles = %v, want %v"u8, (~p).GoFiles, wantFiles);
     }
 }
