@@ -31,7 +31,7 @@ using static global::go.@internal.saferio_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/saferio/io_test.go", "io_test.cs", "ABUagoKEkoKClIKokoKCqJKCgqiCgoKogoKCqIKCgvqCgoSSgoKUgqiSgoKokoKCqMiCgoKUggAICoKCgoKogoKCpKiCgoKogoKC")]
+[assembly: go.GoPositionMap("internal/saferio/io_test.go", "io_test.cs", "ABUagoKEkoKClIKokoKCqJKCgqiCgoKogoKCqIKCgvqCgoSSgoKUgqiSgoKokoKCqMiCgoKUggAICoKCgoKogoKCpKiCgoKogoKC", "17-25:1;27-32:2;34-39:3;41-46:4;48-53:5;55-60:6;67-75:1;77-82:2;84-89:3;91-103:4;107-112:1;114-121:2;123-128:3;130-135:4")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -47,4 +47,23 @@ public static partial class saferio_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.saferio_package));
+    }
 }

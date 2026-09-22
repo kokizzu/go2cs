@@ -14,6 +14,7 @@ using static go.text.tabwriter_package;
 using static go.text.tabwriter_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b746573746e616d6520737472696e673b206d696e776964746820696e743b20746162776964746820696e743b2070616464696e6720696e743b207061646368617220627974653b20666c6167732075696e743b2073726320737472696e673b20657870656374656420737472696e677d", "testsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -50,4 +51,17 @@ public static partial class tabwriter_test_package
     internal partial struct panicWriter {}
     internal partial struct testsᴛ1 {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

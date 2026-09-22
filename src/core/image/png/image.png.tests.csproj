@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -84,136 +112,136 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="../testdata/triangle-001.gif" Link="go2cs_shared_fixtures/up1/testdata/triangle-001.gif" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.221212.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.221212.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.221212.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.221212.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.5bpp.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.5bpp.gif" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.cmyk.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.cmyk.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.cmyk.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.cmyk.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.gif" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.interlaced.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.interlaced.gif" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.progressive.truncated.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.truncated.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.progressive.truncated.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.truncated.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.410.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.410.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.410.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.410.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.411.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.411.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.411.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.411.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.420.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.420.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.420.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.420.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.422.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.422.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.422.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.422.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.440.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.440.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.440.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.440.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.444.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.444.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.q50.444.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.444.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.restart2.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.restart2.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.rgb.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.rgb.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.rgb.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.rgb.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.separate.dc.progression.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.separate.dc.progression.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-001.separate.dc.progression.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.separate.dc.progression.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.gif" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.gif" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.png" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.q50.2x2.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.2x2.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.q50.2x2.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.2x2.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.q50.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/video-005.gray.q50.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fuzz_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="paeth.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="paeth_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="reader.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="reader_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchGray.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchNRGBA-gradient.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchNRGBA-opaque.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchPaletted.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchRGB-interlace.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/benchRGB.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gray-gradient.interlaced.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gray-gradient.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/invalid-crc32.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/invalid-noend.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/invalid-palette.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/invalid-trunc.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/invalid-zlib.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/README" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/README.original" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g01-30.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g01-30.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g01.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g01.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g02-29.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g02-29.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g02.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g02.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g04-31.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g04-31.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g04.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g04.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn0g16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn2c08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn2c08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn2c16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn2c16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p01.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p01.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p02.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p02.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p04-31i.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p04-31i.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p04.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p04.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p08-trns.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p08-trns.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn4a08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn4a08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn4a16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn4a16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn6a08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn6a08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn6a16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/basn6a16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g01.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g01.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g02.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g02.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g04.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn0g04.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn2c16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn2c16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbbn3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbgn2c16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbgn2c16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbgn3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbgn3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbrn2c08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbrn2c08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbwn0g16.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbwn0g16.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbwn3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbwn3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbyn3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftbyn3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n0g08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n0g08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n2c08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n2c08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp0n3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp1n3p08.png" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/pngsuite/ftp1n3p08.sng" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="writer.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="writer_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../testdata/triangle-001.gif" Link="go2cs_shared_fixtures/up1/testdata/triangle-001.gif" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.221212.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.221212.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.221212.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.221212.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.5bpp.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.5bpp.gif" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.cmyk.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.cmyk.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.cmyk.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.cmyk.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.gif" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.interlaced.gif" Link="go2cs_shared_fixtures/up1/testdata/video-001.interlaced.gif" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.progressive.truncated.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.truncated.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.progressive.truncated.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.progressive.truncated.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.410.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.410.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.410.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.410.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.411.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.411.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.411.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.411.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.420.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.420.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.420.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.420.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.422.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.422.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.422.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.422.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.440.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.440.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.440.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.440.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.444.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.444.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.q50.444.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.q50.444.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.restart2.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.restart2.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.rgb.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.rgb.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.rgb.png" Link="go2cs_shared_fixtures/up1/testdata/video-001.rgb.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.separate.dc.progression.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.separate.dc.progression.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-001.separate.dc.progression.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-001.separate.dc.progression.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.gif" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.gif" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.png" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.q50.2x2.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.2x2.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.q50.2x2.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.2x2.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.q50.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/video-005.gray.q50.progressive.jpeg" Link="go2cs_shared_fixtures/up1/testdata/video-005.gray.q50.progressive.jpeg" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fuzz_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="paeth.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="paeth_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="reader.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="reader_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchGray.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchNRGBA-gradient.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchNRGBA-opaque.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchPaletted.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchRGB-interlace.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/benchRGB.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gray-gradient.interlaced.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gray-gradient.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-crc32.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-noend.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-palette.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-trunc.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-zlib.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/README" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/README.original" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g01-30.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g01-30.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g01.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g01.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g02-29.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g02-29.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g02.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g02.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g04-31.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g04-31.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g04.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g04.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn0g16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn2c08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn2c08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn2c16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn2c16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p01.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p01.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p02.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p02.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p04-31i.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p04-31i.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p04.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p04.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p08-trns.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p08-trns.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn4a08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn4a08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn4a16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn4a16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn6a08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn6a08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn6a16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/basn6a16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g01.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g01.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g02.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g02.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g04.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn0g04.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn2c16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn2c16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbbn3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbgn2c16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbgn2c16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbgn3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbgn3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbrn2c08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbrn2c08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbwn0g16.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbwn0g16.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbwn3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbwn3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbyn3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftbyn3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n0g08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n0g08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n2c08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n2c08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp0n3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp1n3p08.png" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/pngsuite/ftp1n3p08.sng" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="writer.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="writer_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
