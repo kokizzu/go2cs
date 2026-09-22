@@ -2276,9 +2276,14 @@ public static partial class builtin
     /// Formats arguments in an implementation-specific way and writes the result to standard-error along with a new line.
     /// </summary>
     /// <param name="args">Arguments to display.</param>
+    /// <remarks>
+    /// The terminator is a bare <c>\n</c> on every OS, as Go's runtime printer writes it — never
+    /// <c>WriteLine</c>, whose CRLF on Windows breaks a Go test matching <c>"...\n"</c> in a child's
+    /// output (crypto/internal/fips140test's TestCASTPasses failed 24 verdicts on exactly that).
+    /// </remarks>
     public static void println(params object[] args)
     {
-        Console.Error.WriteLine(string.Join(" ", args.Select(printArg)));
+        Console.Error.Write(string.Join(" ", args.Select(printArg)) + "\n");
     }
 
     // Formats a single print/println argument the way gc's runtime printer does where the BCL
@@ -2301,7 +2306,8 @@ public static partial class builtin
     #if DEBUG
         throw new InvalidOperationException($"{message} [{code}]");
     #else
-        Console.Error.WriteLine(message);
+        // A bare "\n", as Go's runtime writes "fatal error: ..." on every OS (see println).
+        Console.Error.Write(message + "\n");
         Environment.Exit((int)code);
     #endif
     }
