@@ -28,24 +28,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class sql_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 [GoType("dyn")] [GoLocalName("dbConn")] internal partial struct init_dbConn {
     internal ж<global::go.database.sql_package.DB> db;
     internal ж<global::go.database.sql_package.driverConn> c;
@@ -250,7 +232,7 @@ internal static void closeDB(testing.TB t, ж<global::go.database.sql_package.DB
                 t.Errorf("Error closing fakeConn: %v"u8, errΔ1);
             }
         });
-        Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Lock();
+        db.mu.Lock();
         foreach (var (i, dc) in db.freeConn) {
             {
                 nint n = len((~dc).openStmt); if (n > 0) {
@@ -263,7 +245,7 @@ internal static void closeDB(testing.TB t, ж<global::go.database.sql_package.DB
                 }
             }
         }
-        Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         var err = Ꮡdb.Close();
         if (err != default!) {
             t.Fatalf("error closing DB: %v"u8, err);
@@ -295,15 +277,16 @@ internal static nint numPrepares(ж<testing.T> Ꮡt, ж<global::go.database.sql_
 
 internal static nint numDeps(this ж<global::go.database.sql_package.DB> Ꮡdb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Lock();
-        defer(Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Unlock, ref ᒐ);
+        db.mu.Lock();
+        ᒐd1 = true;
         return len(db.dep);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Dependencies are closed via a goroutine, so this polls waiting for
@@ -319,28 +302,30 @@ internal static nint numDepsPoll(this ж<global::go.database.sql_package.DB> Ꮡ
 
 internal static nint numFreeConns(this ж<global::go.database.sql_package.DB> Ꮡdb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Lock();
-        defer(Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Unlock, ref ᒐ);
+        db.mu.Lock();
+        ᒐd1 = true;
         return len(db.freeConn);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static nint numOpenConns(this ж<global::go.database.sql_package.DB> Ꮡdb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Lock();
-        defer(Ꮡdb.of(global::go.database.sql_package.DB.Ꮡmu).Unlock, ref ᒐ);
+        db.mu.Lock();
+        ᒐd1 = true;
         return db.numOpen;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // clearAllConns closes all connections in db.
@@ -2193,7 +2178,7 @@ internal static void setRowsCloseHook(Action<ж<global::go.database.sql_package.
         fn = (ж<global::go.database.sql_package.Rows> _Δp0, ж<error> _Δp1) => {
         };
     }
-    ᏑatomicRowsCloseHook.Store(fn);
+    ᏑatomicRowsCloseHook.Store((fn).OrTypedNilFunc());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -3945,8 +3930,8 @@ public static void TestTxEndBadConn(ж<testing.T> Ꮡt) {
                 return endTx(tx);
             };
         }
-        simulateBadConn(dbTxExecCommitˢ, ᏑhookCommitBadConn, dbExec((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Commit)));
-        simulateBadConn(dbTxExecRollbackˢ, ᏑhookRollbackBadConn, dbExec((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Rollback)));
+        simulateBadConn(dbTxExecCommitˢ, ᏑhookCommitBadConn, dbExec(((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Commit))));
+        simulateBadConn(dbTxExecRollbackˢ, ᏑhookRollbackBadConn, dbExec(((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Rollback))));
         // db.Query
         var dbʗ4 = db;
         Func<error> dbQuery(Func<ж<global::go.database.sql_package.Tx>, error> endTx) {
@@ -3965,8 +3950,8 @@ public static void TestTxEndBadConn(ж<testing.T> Ꮡt) {
                 return endTx(tx);
             };
         }
-        simulateBadConn(dbTxQueryCommitˢ, ᏑhookCommitBadConn, dbQuery((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Commit)));
-        simulateBadConn(dbTxQueryRollbackˢ, ᏑhookRollbackBadConn, dbQuery((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Rollback)));
+        simulateBadConn(dbTxQueryCommitˢ, ᏑhookCommitBadConn, dbQuery(((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Commit))));
+        simulateBadConn(dbTxQueryRollbackˢ, ᏑhookRollbackBadConn, dbQuery(((Func<ж<global::go.database.sql_package.Tx>, error>)(global::go.database.sql_package.Rollback))));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -5698,7 +5683,7 @@ public static void TestPing(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("@string")] internal partial struct TestTypedString_Str;
+[GoLocalName("Str")] [GoType("@string")] internal partial struct TestTypedString_Str;
 
 // Issue 18101.
 public static void TestTypedString(ж<testing.T> Ꮡt) {
@@ -6024,6 +6009,52 @@ public static void BenchmarkConnRequestSet(ж<testing.B> Ꮡb) {
                 Ꮡb.Fatal(unexpectedOkˢ);
             }
         }
+    }
+}
+
+public static void TestIssue69837(ж<testing.T> Ꮡt) {
+    var u = new Null<nuint>(V: 1, Valid: true);
+    var (val, err) = driver.DefaultParameterConverter.ConvertValue(u);
+    if (err != default!) {
+        Ꮡt.Errorf("ConvertValue() error = %v, want nil"u8, err);
+    }
+    {
+        var (v, ok) = val._<int64>(ᐧ); if (!ok){
+            Ꮡt.Errorf("val.(type): got %T, expected int64"u8, val);
+        } else 
+        if (v != 1) {
+            Ꮡt.Errorf("val: got %d, expected 1"u8, v);
+        }
+    }
+}
+
+[GoType] internal partial struct issue69728Type {
+    public nint ID;
+    public @string Name;
+}
+
+internal static (driverꓸValue, error) Value(this issue69728Type t) {
+    return (slice<byte>(fmt.Sprintf("%d, %s"u8, t.ID, t.Name)), default!);
+}
+
+public static void TestIssue69728(ж<testing.T> Ꮡt) {
+    var forValue = new Null<issue69728Type>(
+        Valid: true,
+        V: new issue69728Type(
+            ID: 42,
+            Name: "foobar"u8
+        )
+    );
+    var (v1, err) = forValue.Value();
+    if (err != default!) {
+        Ꮡt.Errorf("forValue.Value() error = %v, want nil"u8, err);
+    }
+    (var v2, err) = forValue.V.Value();
+    if (err != default!) {
+        Ꮡt.Errorf("forValue.V.Value() error = %v, want nil"u8, err);
+    }
+    if (!reflect.DeepEqual(v1, v2)) {
+        Ꮡt.Errorf("not equal; v1 = %v, v2 = %v"u8, v1, v2);
     }
 }
 

@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `database/sql` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**138 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**140 matched · 2 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -80,6 +82,8 @@ comparison — it is the evidence behind the `database/sql` row in
 | `TestIssue4902` | pass | pass |
 | `TestIssue6081` | pass | pass |
 | `TestIssue6651` | pass | pass |
+| `TestIssue69728` | pass | pass |
+| `TestIssue69837` | pass | pass |
 | `TestManyErrBadConn` | pass | pass |
 | `TestMaxIdleConns` | pass | pass |
 | `TestMaxIdleTime` | pass | pass |

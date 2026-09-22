@@ -90,7 +90,7 @@ public static void TestBulkHash4(ж<testing.T> Ꮡt) {
         if (len(y) < minMatchLength) {
             continue;
         }
-        y = append(y, y.ꓸꓸꓸ);
+        y = appendꓸꓸꓸ(y, y);
         for (nint j = 4; j < len(y); j++) {
             var yΔ1 = y[..(int)(j)];
             var dst = new slice<uint32>(len(yΔ1) - (nint)minMatchLength + 1);
@@ -702,7 +702,7 @@ outer:
                     continue;
                 }
                 foreach (var (_, n) in tc) {
-                    want = append(want, abcabc[..(int)(n)].ꓸꓸꓸ);
+                    want = appendꓸꓸꓸ(want, abcabc[..(int)(n)]);
                     {
                         var (_, errΔ1) = w.Write(abcabc[..(int)(n)]); if (errΔ1 != default!) {
                             Ꮡt.Errorf("i=%d, firstN=%d, flush=%t: Write: %v"u8, i, firstN, flush, errΔ1);

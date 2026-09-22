@@ -18,42 +18,6 @@ using text.template;
 
 partial class template_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhtmlꓸtemplate() {
-    builtin.initPackage(typeof(go.html.template_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() {
-    builtin.initPackage(typeof(text.template.parse_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string nameˢ = "name"u8;
 
@@ -213,7 +177,7 @@ public static void TestNumbers(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string jsStringIsJsonStringˢ = "JS string is JSON string"u8;
 
-[GoType("dyn")] partial struct TestStringsInScriptsWithJsonContentTypeAreCorrectlyEscaped_tests {
+[GoType("dyn")] internal partial struct TestStringsInScriptsWithJsonContentTypeAreCorrectlyEscaped_tests {
     internal @string name, @in;
 }
 

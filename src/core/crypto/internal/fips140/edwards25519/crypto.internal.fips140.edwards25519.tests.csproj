@@ -18,8 +18,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
-    <RootNamespace>go.@internal</RootNamespace>
-    <AssemblyName>internal.godebugs.tests</AssemblyName>
+    <RootNamespace>go.crypto.@internal.fips140</RootNamespace>
+    <AssemblyName>crypto.internal.fips140.edwards25519.tests</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -71,7 +71,7 @@
   <PropertyGroup Condition="'$(go2csPath)'==''">
     <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
     <go2csPath Condition="'$(Configuration)'=='Debug' and '$(SolutionDir)'!=''">$(SolutionDir)</go2csPath>
-    <go2csPath Condition="'$(go2csPath)'==''">$(MSBuildThisFileDirectory)../../../</go2csPath>
+    <go2csPath Condition="'$(go2csPath)'==''">$(MSBuildThisFileDirectory)../../../../../</go2csPath>
   </PropertyGroup>
 
   <!-- Expose output of source generators as local files -->
@@ -101,29 +101,42 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
+    <Compile Include="edwards25519_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="godebugs_test.cs" />
+    <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
+    <Compile Include="scalar_alias_test.cs" />
+    <Compile Include="scalar_test.cs" />
+    <Compile Include="scalarmult_test.cs" />
+    <Compile Include="tables_test.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="godebugs_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
-    <None Include="table.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="edwards25519.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="edwards25519_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalar.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalar_alias_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalar_fiat.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalar_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalarmult.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="scalarmult_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tables.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tables_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/edwards25519/field/crypto.internal.fips140.edwards25519.field.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/hex/encoding.hex.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
-    <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/exec/os.exec.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
-    <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
-    <ProjectReference Include="$(go2csPath)core/regexp/regexp.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
-    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core/math/big/math.big.csproj" />
+    <ProjectReference Include="$(go2csPath)core/math/rand/math.rand.csproj" />
+    <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
+    <ProjectReference Include="$(go2csPath)core/testing/quick/testing.quick.csproj" />
     <ProjectReference Include="$(go2csPath)core/testing/testing.csproj" />
-    <ProjectReference Include="internal.godebugs.csproj" />
+    <ProjectReference Include="crypto.internal.fips140.edwards25519.csproj" />
     <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
