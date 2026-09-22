@@ -357,7 +357,6 @@ var declaredPushStubs = map[string]string{
 	"internal/runtime/maps.mapKeyError":                  dispositionLatent,
 	"internal/runtime/maps.newarray":                     dispositionLatent,
 	"internal/runtime/maps.newobject":                    dispositionLatent,
-	"internal/runtime/maps.rand":                         dispositionLatent,
 	"internal/runtime/maps.typedmemclr":                  dispositionLatent,
 	"internal/runtime/maps.typedmemmove":                 dispositionLatent,
 	"internal/sync.runtime_SemacquireMutex":              dispositionLatent,
