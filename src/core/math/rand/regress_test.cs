@@ -66,7 +66,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                                 fmt.Printf("\tskipped, // must run printgolden on 64-bit machine\n"u8);
                             }
                             p++;
-                            continue;
+                            goto continueᴛ2;
                         }
                         x = (nint)big;
                     } while (false);
@@ -121,6 +121,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                 }
             }
             p++;
+continueᴛ2:;
         }
     }
     if (printgolden.Value) {

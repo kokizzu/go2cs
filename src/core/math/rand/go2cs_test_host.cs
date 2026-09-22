@@ -39,6 +39,7 @@ internal static class Go2CsTestHost
         registry.Add("TestReadSeedReset", rand_test_package.TestReadSeedReset, "rand_test.go", 434);
         registry.Add("TestReadUniformity", rand_test_package.TestReadUniformity, "rand_test.go", 393);
         registry.Add("TestRegress", rand_test_package.TestRegress, "regress_test.go", 24);
+        registry.Add("TestSeedNop", rand_test_package.TestSeedNop, "rand_test.go", 559);
         registry.Add("TestShuffleSmall", rand_test_package.TestShuffleSmall, "rand_test.go", 452);
         registry.Add("TestStandardExponentialValues", rand_test_package.TestStandardExponentialValues, "rand_test.go", 191);
         registry.Add("TestStandardNormalValues", rand_test_package.TestStandardNormalValues, "rand_test.go", 131);

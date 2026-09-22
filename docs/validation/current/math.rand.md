@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `math/rand` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `8fc439415`*
 
-**43 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**47 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -34,6 +36,10 @@ comparison — it is the evidence behind the `math/rand` row in
 | `TestReadSeedReset` | pass | pass |
 | `TestReadUniformity` | pass | pass |
 | `TestRegress` | pass | pass |
+| `TestSeedNop` | pass | pass |
+| `TestSeedNop/GODEBUG_unset` | pass | pass |
+| `TestSeedNop/randseednop=0` | pass | pass |
+| `TestSeedNop/randseednop=1` | pass | pass |
 | `TestShuffleSmall` | pass | pass |
 | `TestStandardExponentialValues` | pass | pass |
 | `TestStandardNormalValues` | pass | pass |
