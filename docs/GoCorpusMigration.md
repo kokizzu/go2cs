@@ -2241,6 +2241,19 @@ Per banked package:
 percentage — are reported every migration, because they can move in opposite directions when a release
 adds testable packages faster than validation adds rows.
 
+⚠ **AMENDED 2026-09-22 (the unmeasured-rows rule made concrete, coordinator ruling; ledger 14:45 ·
+d5414aa151). "Every roster row re-validates from scratch" has a closing test, and it is taken BY NAME.**
+A page census at the batch-7 tree found 25 of 219 rows linking no 1.24.13 page, and **fourteen of them
+were BANKED rows never measured at 1.24.13 at all**: the recon leg's 13 NOVERDICT rows at the early tree
+0dc65a8e8d (crypto/tls, fmt, internal/coverage/cfile, internal/godebug, internal/runtime/atomic,
+internal/trace, math/rand, mime/multipart, net/http, os/user, syscall, testing, unicode/utf8 — several
+of them casualties of the `testing` row's contamination of one worker's list), plus net, hand-stopped at
+3,792 s. A banked row with no reading at the new release is carry-forward by omission, which this stage
+rules out. **H10 closes only when each such row re-banks at the new release or is demoted to a
+candidate BY NAME, with the header recomputed by the guard** — never by the row keeping its old count.
+The coordinator re-dispatches them with a raised budget; pass 3 (at 8fc439415f) banked three and routed
+the rest by class (ledger 16:03 · c660a17d8c).
+
 **One arithmetic cross-check, free and worth running here:** the count of banked test project files
 must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
 a migration ends with the two unequal the badge census miscounts — loudly, by design.
@@ -2337,6 +2350,18 @@ now refuses when `dispatched + unscheduled` does not close on it, naming every m
 The exclusion ledger takes the same rule the population does: an exclusion is subtractable only from
 a set that contains it, which is what struck four E1 rows from the roster's table on the same date.
 
+⚠ **AMENDED 2026-09-22 (the two live members COSTED, coordinator ruling; ledger 16:31 · 3469154a95;
+evidence ledger 11:36 · 553cdcbae3). The closing check above now closes.** The basis
+(`docs/phase4/hopA-inputs/recon-basis.tsv`) carries `runtime/pprof` and `net/http/pprof` as COSTED rows
+from the i9's measured walls — runtime/pprof 175 s, net/http/pprof 68 s, both DIVERGED at f545b18d4d —
+appended from the two result TSVs on `claude/i9-h10-pprof-evidence` 553cdcbae3 with their eleventh column
+(`post_s`) dropped to the basis's ten. `shardmap.py --timings recon-basis.tsv` reads **214 dispatched + 14
+unscheduled = 228 reached + 2 exclusion-ledger rows (internal/unsafeheader, runtime/trace) = 230** and
+exits 0, where it refused before at 212 + 14 = 226 naming the two; they report as candidates (costed,
+not banked). **No plan was regenerated**: the committed `h10-dispatch-plan.tsv` still records the pass-1
+basis digest (`c3715b2332b5f1ef…`; the basis now reads `6089133e6e3f8144…`), which is correct, since a plan
+is the record of the basis it was cut from.
+
 ⚠ **A relocated row's disclosure file does not MOVE.** Measured at this hop: there is no tree on which
 the move is possible — at master the target directories do not exist, and at the version tip the
 source directories are already deleted by the reconvert. **The disclosures retire with the row and are
@@ -2380,6 +2405,18 @@ duplicates — and the **eight** rows from it to the end of that list carry **on
 not eight readings**. The tell is `unicode`, `unicode/utf8` and `unique` failing to BUILD; rows before
 it are unaffected, so the ordering decides how much a list loses. A list that includes it does not
 fail loudly — it produces readings, which is why this is a list-construction rule and not a gate.
+
+⚠ **AMENDED 2026-09-22 (the refusing seat has landed, coordinator ruling; ledger 14:45 · d5414aa151).
+The precondition above is SATISFIED.** The converter's hand-own guard, `requireConvertibleTestTarget`,
+runs a wholly hand-owned host **tests-only** and never emits its production, so the row can no longer
+convert `testing.go` over the host. **`testing` is admissible, and it runs LAST in its list**: the
+ordering half of the rule stays, since a row that did disturb the tree would still take every later
+row with it. Pass 3 dispatched it that way. What remains is a separate converter defect, not this
+hazard: the tests-only mode excluded the EXTERNAL `testing_test.go` whole for one bridged reference —
+1.24's `export_test.go` adds `const ParallelConflict = parallelConflict` — although the hand-owned host
+already declares a public `ParallelConflict` for exactly that binding, so 30 verdicts left the
+comparison. Admitting a bridged name the host declares, while still excluding one it does not, is G's
+seat (ledger 16:05 · 3469154a95).
 
 **THE TSV the plan is emitted from**, as the generator reads it — `--timings <path>`, no default and
 no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
@@ -2500,6 +2537,16 @@ parity-campaign item disclosed as such with the row's bank being its linux readi
 banked. **Hop completion is same-platform by construction.** Two row classes are decided by the
 package and not by scheduling: a package with no Go files under a platform's build constraints
 **cannot be converted there at all** (the converter refuses by name), and its marker reads `n/a`.
+
+⚠ **AMENDED 2026-09-22 (the host rule at the CLOSE, coordinator finding; ledger 16:31 · 3469154a95).
+The rule binds at the close, not only mid-campaign.** A row still DIVERGED on windows when H10 closes is
+re-read on the linux leg at the same tip **before** it is classified or demoted by name: a demotion
+taken without the linux reading decides a platform question on one platform. And a windows pass does
+not refresh the roster's linux evidence: **the header's linux line and its 190 `linux:` annotations are
+1.23.12 evidence until the linux leg re-reads them at the new tip**, so that leg is a GATING item before
+the final figures, not a follow-up. Ruled on C1's linux-annotation sizing (ledger 16:32 · 93cc9e215a):
+the leg runs after batch 8b's STAMP, banks only the annotations with the guard re-deriving the header's
+linux line, and re-reads on linux every row still diverged on windows.
 
 **THE PRECONDITIONS, which H10 above states only in part.** The step names the four overrides and the
 never-the-sweep-wrapper rule; the rest are inherited from earlier stages and are restated here
@@ -2703,6 +2750,24 @@ go2cs -tests -test-action all -test-config Release -test-timeout <floor> \
   Keep `2>&1` — the classifier reads stderr to separate CONVERT from BUILD — lower the error preference
   around that call alone, restore it in a `finally`, and reset the code per row.
 
+⚠ **AMENDED 2026-09-22 (two wrapper rules measured at pass 3, coordinator rulings; ledger 14:52 ·
+158ce37f6c and 16:17 · 3469154a95). Both fixes ride the i7 wrapper instrument seat.**
+
+- **A derived floor never LOWERS an asked `-TestTimeout`: the row runs at `max(asked, floor)`.** "Floors
+  are floors" above says raise and never lower, and the sweep's own `$raisesTheFloor` takes the larger;
+  `src/run-h10-recon.ps1` (blob 158ce37f6c, line 829) let a row's floor REPLACE an asked raise instead —
+  crypto/tls would have run at 30m where 60m was asked, net/http at 60m where 90m was. G's per-run copy
+  took the maximum, ruled correct.
+- **Every row runs with its roster `execution:` pin, exactly as the sweep does** (`_roster.ps1`'s
+  `Get-RosterExecutionArgs`: `release-tiered` → `-test-config Release -test-tiered`, `release-tc0` →
+  `-test-config Release`). The same wrapper passes `-test-config $TestConfig` and an empty extra for every
+  row, so a `release-tiered` row ran at Release+TC0 — and those rows carry the pin precisely because they
+  fail there (`CENSUS-release-tc0-delta.md` §2 and its amendment: internal/godebug, log/slog, net/http).
+  Measured at pass 3: internal/godebug's TestCmdBisect read bisect's source lines one low, and net/http's
+  TestRegisterErr//a lost its registration site ("registered at unknown location"). The position map
+  decodes to Go's lines exactly at both platforms' emission, so neither is a converter defect. **A reading
+  taken without the row's pin is not that row's reading**; both rows are re-read with it.
+
 **THE WORDS are the fixed vocabulary, filled and never placeholdered**: `PASS` banks; `DIVERGED` mints
 or re-signs disclosures, then banks or routes; `CONVERT` and `BUILD` bank nothing and owe a sizing;
 `TIMEOUT` re-dispatches at a raised budget; `NOVERDICT` is recorded by cause. ⚠ **A long wall is not a
@@ -2716,6 +2781,18 @@ that a red row names its own shard. ⚠ **The roster's figures are DERIVED and n
 `src/check-roster-format.ps1` recomputes the header from the table — validated count against row count,
 verdicts against the Tests column, disclosed against the Disclosed column, the percentage following
 from those — so a worker edits rows and the coordinator takes the header from the guard.
+
+⚠ **AMENDED 2026-09-22 (what the Tests cell holds, coordinator correction; ledger 15:42 · 3469154a95).
+The Tests cell is the page's MATCHED count, never matched + disclosed.** Disclosed verdicts have their
+own column, and the header's "matching" figure is the sum of the Tests cells, so a cell that adds them
+counts disclosed verdicts as matching. Batch 7's three new cells did — crypto/internal/fips140test 2267
+for the page's 2260 + 7, crypto/sha3 23 for 18 + 5, internal/runtime/maps 111 for 3 + 108 — overstating
+the header by 120, and four older rows disagreed with their own 1.24.13 pages on Disclosed. **The guard
+enforces it**: `check-roster-format.ps1` section 2f (C1's `claude/c1-own-page-cells` 51a1d30ff9, accepted
+for batch 8b; ledger 15:49) requires, for every row whose FIRST `[proof]` page was generated at the pin
+read from `src/version.props`, Tests == the page's matched and Disclosed == the page's disclosed. Rows
+whose first page is older are counted, never gated. A figure set in a brief is a prediction; the page is
+the reading.
 
 ⚠ **`docs/validation/index.md` IS ONE SHARED FILE EVERY ROW REWRITES, so no lane ref may carry it.**
 Measured on a one-row dry run: re-banking a single row's proof page **removed 25 lines from the shared
