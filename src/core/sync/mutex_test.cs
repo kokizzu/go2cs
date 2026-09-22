@@ -20,18 +20,6 @@ using Δsync = sync_package;
 
 partial class sync_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 public static void HammerSemaphore(ж<uint32> Ꮡs, nint loops, channel<bool> cdone) {
     for (nint i = 0; i < loops; i++) {
         sync_internal_test_package.Runtime_Semacquire(Ꮡs);
@@ -288,7 +276,7 @@ public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct BenchmarkMutexUncontended_PaddedMutex {
+[GoType("dyn")] internal partial struct BenchmarkMutexUncontended_PaddedMutex {
     public partial ref sync_package.Mutex Mutex { get; }
     internal array<uint8> pad = new(128);
 }

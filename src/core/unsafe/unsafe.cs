@@ -249,7 +249,19 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     // What the constructor still earns its place for: a WRAPPER box reaches its address through
     // StableAddress (the plain `(uintptr)` conversion is not defined on a generated named-pointer
     // wrapper), and a structurally nil box mints the zero address rather than pinning anything.
-    public Pointer(INilPointer box) : this(box is null || box.IsNilPointer ? (uintptr)0 : (uintptr)box.StableAddress(), null)
+    //
+    // ⚠ EXCEPT A TOKEN (COORD ruling 2026-09-22). When the number minted is an ORDER TOKEN -- a pointee
+    // with no address at all, which since that ruling includes an element of a reference-bearing
+    // array ([]*int, []string) -- the number cannot recover its box except through the WEAK token
+    // registry, so a bare mint whose box the minting frame drops leaves a token that resolves to
+    // nothing. Go's unsafe.Pointer keeps its referent alive; for a token the only faithful way is to
+    // carry the box. A real address (pinned or native) still retains nothing, so the positive
+    // control above (a pinnable StandardBox<long>) is unmoved: its number is an address, not a token.
+    public Pointer(INilPointer box) : this(box, box is null || box.IsNilPointer ? 0 : box.StableAddress())
+    {
+    }
+
+    private Pointer(INilPointer? box, nuint number) : this((uintptr)number, ManagedPointerTokens.IsTaggedToken(number) ? box : null)
     {
     }
 

@@ -12,12 +12,6 @@ using static go.log.slog_package;
 
 partial class slog_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
 [GoType("dyn")] internal partial struct TestLevelString_type {
     internal global::go.log.slog_package.ΔLevel @in;
     internal @string want;
@@ -110,6 +104,19 @@ public static void TestLevelMarshalText(ж<testing.T> Ꮡt) {
     }
 }
 
+public static void TestLevelAppendText(ж<testing.T> Ꮡt) {
+    var buf = new slice<byte>(4, 16);
+    global::go.log.slog_package.ΔLevel want = LevelWarn - 3;
+    var wantData = slice<byte>("\x00\x00\x00\x00INFO+1"u8);
+    var (data, err) = want.AppendText(buf);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (!bytes.Equal(data, wantData)) {
+        Ꮡt.Errorf("got %s, want %s"u8, ((@string)data), ((@string)wantData));
+    }
+}
+
 [GoType("dyn")] internal partial struct TestLevelParse_type {
     internal @string @in;
     internal global::go.log.slog_package.ΔLevel want;
@@ -192,6 +199,28 @@ public static void TestLevelVarMarshalText(ж<testing.T> Ꮡt) {
     ref var v2 = ref heap(new global::go.log.slog_package.LevelVar(), out var Ꮡv2);
     {
         var errΔ1 = Ꮡv2.UnmarshalText(data); if (errΔ1 != default!) {
+            Ꮡt.Fatal(errΔ1);
+        }
+    }
+    {
+        global::go.log.slog_package.ΔLevel g = Ꮡv2.Level();
+        global::go.log.slog_package.ΔLevel w = LevelWarn; if (g != w) {
+            Ꮡt.Errorf("got %s, want %s"u8, g, w);
+        }
+    }
+}
+
+public static void TestLevelVarAppendText(ж<testing.T> Ꮡt) {
+    ref var v = ref heap(new global::go.log.slog_package.LevelVar(), out var Ꮡv);
+    Ꮡv.Set(LevelWarn);
+    var buf = new slice<byte>(4, 16);
+    var (data, err) = Ꮡv.AppendText(buf);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    ref var v2 = ref heap(new global::go.log.slog_package.LevelVar(), out var Ꮡv2);
+    {
+        var errΔ1 = Ꮡv2.UnmarshalText(data[4..]); if (errΔ1 != default!) {
             Ꮡt.Fatal(errΔ1);
         }
     }

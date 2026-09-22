@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `log/slog` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-26 · converter `92c6a58b5`*
+*Validated 2026-09-22 · converter `f9a4b088f`*
 
-**194 matched · 19 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**197 matched · 19 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -51,6 +53,7 @@ comparison — it is the evidence behind the `log/slog` row in
 | `TestDefaultHandle/preformatted` | pass | pass |
 | `TestDefaultHandle/preformatted_groups` | pass | pass |
 | `TestDefaultHandle/two_with-groups` | pass | pass |
+| `TestDiscardHandler` | pass | pass |
 | `TestEmptyGroup` | pass | pass |
 | `TestHandlerEnabled` | pass | pass |
 | `TestJSONAndTextHandlers` | pass | pass |
@@ -170,6 +173,7 @@ comparison — it is the evidence behind the `log/slog` row in
 | `TestJSONHandler/none` | pass | pass |
 | `TestJSONHandler/replace` | pass | pass |
 | `TestKindString` | pass | pass |
+| `TestLevelAppendText` | pass | pass |
 | `TestLevelFlag` | pass | pass |
 | `TestLevelMarshalJSON` | pass | pass |
 | `TestLevelMarshalText` | pass | pass |
@@ -177,6 +181,7 @@ comparison — it is the evidence behind the `log/slog` row in
 | `TestLevelParseError` | pass | pass |
 | `TestLevelString` | pass | pass |
 | `TestLevelVar` | pass | pass |
+| `TestLevelVarAppendText` | pass | pass |
 | `TestLevelVarFlag` | pass | pass |
 | `TestLevelVarMarshalText` | pass | pass |
 | `TestLevelVarString` | pass | pass |
@@ -283,4 +288,5 @@ the capability it needs.
 - ExampleLogValuer_secret (example): example execution is deferred to Phase 4D
 - ExampleSetLogLoggerLevel_log (example): example execution is deferred to Phase 4D
 - ExampleSetLogLoggerLevel_slog (example): example execution is deferred to Phase 4D
+- Example_discardHandler (example): example execution is deferred to Phase 4D
 - Example_wrapping (example): example execution is deferred to Phase 4D

@@ -110,6 +110,7 @@ public class RecvGenerator : ISourceGenerator
                     Scope = scope,
                     Method = method,
                     ReceiverTypeIsPublic = receiverTypeIsPublic,
+                    NoInlining = HasNoInliningMark(methodSyntax),
                     UsingStatements = usingStatements
                 }
                 .Generate();
@@ -118,5 +119,27 @@ public class RecvGenerator : ISourceGenerator
                 context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{identifier}.{method.Parameters[0].type}.g.cs")), generatedSource);
             }
         }
+    }
+
+    // The converter's frame-preserving mark, read as it is SPELLED in the emission --
+    // `[MethodImpl(MethodImplOptions.NoInlining)]` (computeNoInliningClosure) -- so the forwarder
+    // inherits exactly the functions the converter protected and nothing else.
+    private static bool HasNoInliningMark(MethodDeclarationSyntax methodSyntax)
+    {
+        foreach (AttributeListSyntax list in methodSyntax.AttributeLists)
+        {
+            foreach (AttributeSyntax attribute in list.Attributes)
+            {
+                string name = attribute.Name.ToString();
+
+                if (!name.EndsWith("MethodImpl", StringComparison.Ordinal) && !name.EndsWith("MethodImplAttribute", StringComparison.Ordinal))
+                    continue;
+
+                if (attribute.ArgumentList?.ToString().Contains("NoInlining") == true)
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

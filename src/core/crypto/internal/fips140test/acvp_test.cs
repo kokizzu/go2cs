@@ -81,7 +81,7 @@ internal static void wrapperMain() {
     internal Func<slice<slice<byte>>, (slice<slice<byte>>, error)> handler;
 }
 
-internal static slice<byte> capabilitiesJson;
+internal static slice<byte> capabilitiesJson = go.embed_package.ΔEmbedBytes<byte>(typeof(fipstest_internal_test_package).Assembly, "go.embed/crypto/internal/fips140test_test/", "acvp_capabilities.json");
 internal static map<@string, command> commands = new map<@string, command>{
     ["getConfig"u8] = cmdGetConfig(),
     ["SHA2-224"u8] = cmdHashAft(new fipstest_internal_test_package.sha256_DigestжHash(sha256.New224())),

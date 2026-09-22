@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/x509` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-26 · converter `ee5682818`*
+*Validated 2026-09-22 · converter `f9a4b088f`*
 
-**341 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**518 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/x509`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/x509).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 17 of the matched tests identically.
 
@@ -36,10 +38,11 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestCertPoolEqual/two_populated_pools,_different_content` | pass | pass |
 | `TestCertPoolEqual/two_populated_pools,_different_content#01` | pass | pass |
 | `TestCertPoolEqual/two_populated_system_pools` | pass | pass |
+| `TestCertificateChainSignedByECDSA` | pass | pass |
 | `TestCertificateEqualOnNil` | pass | pass |
-| `TestCertificateOIDPolicies` | pass | pass |
+| `TestCertificateOIDPoliciesGODEBUG` | pass | pass |
 | `TestCertificateParse` | pass | pass |
-| `TestCertificatePoliciesGODEBUG` | pass | pass |
+| `TestCertificatePolicies` | pass | pass |
 | `TestCertificateRequestOverrides` | pass | pass |
 | `TestCertificateRequestRoundtripFields` | pass | pass |
 | `TestConstraintCases` | pass | pass |
@@ -129,6 +132,9 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestConstraintCases/#84` | pass | pass |
 | `TestConstraintCases/#85` | pass | pass |
 | `TestConstraintCases/#86` | pass | pass |
+| `TestConstraintCases/#87` | pass | pass |
+| `TestConstraintCases/#88` | pass | pass |
+| `TestConstraintCases/#89` | pass | pass |
 | `TestConstraintCases/#9` | pass | pass |
 | `TestCreateCertificateBrokenSigner` | pass | pass |
 | `TestCreateCertificateLegacy` | pass | pass |
@@ -158,6 +164,32 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestCriticalNameConstraintWithUnknownType` | pass | pass |
 | `TestDecrypt` | pass | pass |
 | `TestDisableSHA1ForCertOnly` | pass | pass |
+| `TestDomainNameValid` | pass | pass |
+| `TestDomainNameValid/253_char_label,_constraint` | pass | pass |
+| `TestDomainNameValid/253_char_label,_name` | pass | pass |
+| `TestDomainNameValid/254_char_label,_constraint` | pass | pass |
+| `TestDomainNameValid/254_char_label,_name` | pass | pass |
+| `TestDomainNameValid/63_char_label,_constraint` | pass | pass |
+| `TestDomainNameValid/63_char_label,_name` | pass | pass |
+| `TestDomainNameValid/63_char_single_label,_constraint` | pass | pass |
+| `TestDomainNameValid/63_char_single_label,_name` | pass | pass |
+| `TestDomainNameValid/64_char_label,_constraint` | pass | pass |
+| `TestDomainNameValid/64_char_label,_name` | pass | pass |
+| `TestDomainNameValid/64_char_single_label,_constraint` | pass | pass |
+| `TestDomainNameValid/64_char_single_label,_name` | pass | pass |
+| `TestDomainNameValid/bare_label,_constraint` | pass | pass |
+| `TestDomainNameValid/bare_label,_name` | pass | pass |
+| `TestDomainNameValid/empty_label,_constraint` | pass | pass |
+| `TestDomainNameValid/empty_label,_name` | pass | pass |
+| `TestDomainNameValid/empty_name,_constraint` | pass | pass |
+| `TestDomainNameValid/leading_period,_constraint` | pass | pass |
+| `TestDomainNameValid/leading_period,_name` | pass | pass |
+| `TestDomainNameValid/period,_constraint` | pass | pass |
+| `TestDomainNameValid/period,_name` | pass | pass |
+| `TestDomainNameValid/trailing_period,_constraint` | pass | pass |
+| `TestDomainNameValid/trailing_period,_name` | pass | pass |
+| `TestDomainNameValid/valid,_constraint` | pass | pass |
+| `TestDomainNameValid/valid,_name` | pass | pass |
 | `TestDuplicateAttributesCSR` | pass | pass |
 | `TestDuplicateExtensionsCSR` | pass | pass |
 | `TestDuplicateExtensionsCert` | pass | pass |
@@ -174,6 +206,7 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestEKUEnforcement/valid,_two_EKUs,_one_path` | pass | pass |
 | `TestEd25519SelfSigned` | pass | pass |
 | `TestEmptyNameConstraints` | pass | pass |
+| `TestEmptySerialNumber` | pass | pass |
 | `TestEmptySubject` | pass | pass |
 | `TestEncrypt` | pass | pass |
 | `TestFallback` | pass | pass |
@@ -206,13 +239,12 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestGoVerify/MultipleConstraints` | pass | pass |
 | `TestGoVerify/RootInIntermediates` | pass | pass |
 | `TestGoVerify/SHA-384` | pass | pass |
+| `TestGoVerify/TooManyDNS` | pass | pass |
+| `TestGoVerify/TooManyIPs` | pass | pass |
 | `TestGoVerify/Valid` | pass | pass |
 | `TestGoVerify/ValidCN` | pass | pass |
 | `TestGoVerify/Valid_(fqdn)` | pass | pass |
 | `TestGoVerify/X509v1Intermediate` | pass | pass |
-| `TestGoVerify/dnssec-exp` | pass | pass |
-| `TestGoVerify/dnssec-exp/AnyEKU` | pass | pass |
-| `TestGoVerify/dnssec-exp/RootInIntermediates` | pass | pass |
 | `TestGob` | pass | pass |
 | `TestHybridPool` | pass | pass |
 | `TestIA5SANEnforcement` | pass | pass |
@@ -224,12 +256,14 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestIncompleteBlock` | pass | pass |
 | `TestInsecureAlgorithmErrorString` | pass | pass |
 | `TestInvalidOID` | pass | pass |
+| `TestInvalidPolicyWithAnyKeyUsage` | pass | pass |
 | `TestIssue51759` | skip | skip |
 | `TestLargeOID` | pass | pass |
 | `TestLongChain` | pass | pass |
 | `TestMD5` | pass | pass |
 | `TestMarshalInvalidPublicKey` | pass | pass |
 | `TestMarshalRSAPrivateKey` | pass | pass |
+| `TestMarshalRSAPrivateKeyInvalid` | pass | pass |
 | `TestMarshalRSAPublicKey` | pass | pass |
 | `TestMatchHostnames` | pass | pass |
 | `TestMatchIP` | pass | pass |
@@ -238,6 +272,95 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestMismatchedSignatureAlgorithm` | pass | pass |
 | `TestMultipleRDN` | pass | pass |
 | `TestMultipleURLsInCRLDP` | pass | pass |
+| `TestNISTPKITSPolicy` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.1.1_Valid_Policy_Mapping_Test1_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.1.2_Valid_Policy_Mapping_Test1_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.1.3_Valid_Policy_Mapping_Test1_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.10_Invalid_Policy_Mapping_Test10` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.11_Valid_Policy_Mapping_Test11` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.12_Valid_Policy_Mapping_Test12_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.12_Valid_Policy_Mapping_Test12_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.13_Valid_Policy_Mapping_Test13_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.13_Valid_Policy_Mapping_Test13_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.13_Valid_Policy_Mapping_Test13_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.14_Valid_Policy_Mapping_Test14` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.2_Invalid_Policy_Mapping_Test2_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.2_Invalid_Policy_Mapping_Test2_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.3_Valid_Policy_Mapping_Test3_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.3_Valid_Policy_Mapping_Test3_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.4_Invalid_Policy_Mapping_Test4` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.5_Valid_Policy_Mapping_Test5_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.5_Valid_Policy_Mapping_Test5_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.6_Valid_Policy_Mapping_Test6_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.6_Valid_Policy_Mapping_Test6_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.7_Invalid_Mapping_From_anyPolicy_Test7` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.8_Invalid_Mapping_To_anyPolicy_Test8` | pass | pass |
+| `TestNISTPKITSPolicy/4.10.9_Valid_Policy_Mapping_Test9` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.10_Invalid_Self-Issued_inhibitPolicyMapping_Test10` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.11_Invalid_Self-Issued_inhibitPolicyMapping_Test11` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.1_Invalid_inhibitPolicyMapping_Test1` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.2_Valid_inhibitPolicyMapping_Test2` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.3_Invalid_inhibitPolicyMapping_Test3` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.4_Valid_inhibitPolicyMapping_Test4` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.5_Invalid_inhibitPolicyMapping_Test5` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.6_Invalid_inhibitPolicyMapping_Test6` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.7_Valid_Self-Issued_inhibitPolicyMapping_Test7` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.8_Invalid_Self-Issued_inhibitPolicyMapping_Test8` | pass | pass |
+| `TestNISTPKITSPolicy/4.11.9_Invalid_Self-Issued_inhibitPolicyMapping_Test9` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.10_Invalid_Self-Issued_inhibitAnyPolicy_Test10` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.1_Invalid_inhibitAnyPolicy_Test1` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.2_Valid_inhibitAnyPolicy_Test2` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.3_inhibitAnyPolicy_Test3_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.3_inhibitAnyPolicy_Test3_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.4_Invalid_inhibitAnyPolicy_Test4` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.5_Invalid_inhibitAnyPolicy_Test5` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.6_Invalid_inhibitAnyPolicy_Test6` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.7_Valid_Self-Issued_inhibitAnyPolicy_Test7` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.8_Invalid_Self-Issued_inhibitAnyPolicy_Test8` | pass | pass |
+| `TestNISTPKITSPolicy/4.12.9_Valid_Self-Issued_inhibitAnyPolicy_Test9` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.10_All_Certificates_Same_Policies_Test10_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.10_All_Certificates_Same_Policies_Test10_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.10_All_Certificates_Same_Policies_Test10_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.11_All_Certificates_AnyPolicy_Test11_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.11_All_Certificates_AnyPolicy_Test11_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.12_Different_Policies_Test12` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.13_All_Certificates_Same_Policies_Test13_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.13_All_Certificates_Same_Policies_Test13_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.13_All_Certificates_Same_Policies_Test13_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.14_AnyPolicy_Test14_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.14_AnyPolicy_Test14_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.15_User_Notice_Qualifier_Test15` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.16_User_Notice_Qualifier_Test16` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.17_User_Notice_Qualifier_Test17` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.18_User_Notice_Qualifier_Test18_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.18_User_Notice_Qualifier_Test18_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.19_User_Notice_Qualifier_Test19` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.1_All_Certificates_Same_Policy_Test1_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.1_All_Certificates_Same_Policy_Test1_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.1_All_Certificates_Same_Policy_Test1_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.1_All_Certificates_Same_Policy_Test1_(Subpart_4)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.20_CPS_Pointer_Qualifier_Test20` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.2_All_Certificates_No_Policies_Test2_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.2_All_Certificates_No_Policies_Test2_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.3_Different_Policies_Test3_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.3_Different_Policies_Test3_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.3_Different_Policies_Test3_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.4_Different_Policies_Test4` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.5_Different_Policies_Test5` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.6_Overlapping_Policies_Test6_(Subpart_1)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.6_Overlapping_Policies_Test6_(Subpart_2)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.6_Overlapping_Policies_Test6_(Subpart_3)` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.7_Different_Policies_Test7` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.8_Different_Policies_Test8` | pass | pass |
+| `TestNISTPKITSPolicy/4.8.9_Different_Policies_Test9` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.1_Valid_RequireExplicitPolicy_Test1` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.2_Valid_RequireExplicitPolicy_Test2` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.3_Invalid_RequireExplicitPolicy_Test3` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.4_Valid_RequireExplicitPolicy_Test4` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.5_Invalid_RequireExplicitPolicy_Test5` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.6_Valid_Self-Issued_requireExplicitPolicy_Test6` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.7_Invalid_Self-Issued_requireExplicitPolicy_Test7` | pass | pass |
+| `TestNISTPKITSPolicy/4.9.8_Invalid_Self-Issued_requireExplicitPolicy_Test8` | pass | pass |
 | `TestNameConstraints` | pass | pass |
 | `TestNoAuthorityKeyIdInSelfSignedCert` | pass | pass |
 | `TestNoSubjectKeyIdInCert` | pass | pass |
@@ -278,6 +401,9 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestParsePKIXPublicKey/Ed25519` | pass | pass |
 | `TestParsePKIXPublicKey/RSA` | pass | pass |
 | `TestParsePKIXPublicKey/X25519` | pass | pass |
+| `TestParsePolicies` | pass | pass |
+| `TestParsePolicies/testdata/policy_leaf_duplicate.pem` | pass | pass |
+| `TestParsePolicies/testdata/policy_leaf_invalid.pem` | pass | pass |
 | `TestParseRevocationList` | pass | pass |
 | `TestParseUniqueID` | pass | pass |
 | `TestPathBuilding` | pass | pass |
@@ -293,6 +419,59 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestPathBuilding/leaf_with_same_subject,_key,_as_parent_but_with_SAN` | pass | pass |
 | `TestPathologicalChain` | pass | pass |
 | `TestPlatformVerifier` | skip | skip |
+| `TestPoliciesValid` | pass | pass |
+| `TestPoliciesValid/0` | pass | pass |
+| `TestPoliciesValid/1` | pass | pass |
+| `TestPoliciesValid/10` | pass | pass |
+| `TestPoliciesValid/11` | pass | pass |
+| `TestPoliciesValid/12` | pass | pass |
+| `TestPoliciesValid/13` | pass | pass |
+| `TestPoliciesValid/14` | pass | pass |
+| `TestPoliciesValid/15` | pass | pass |
+| `TestPoliciesValid/16` | pass | pass |
+| `TestPoliciesValid/17` | pass | pass |
+| `TestPoliciesValid/18` | pass | pass |
+| `TestPoliciesValid/19` | pass | pass |
+| `TestPoliciesValid/2` | pass | pass |
+| `TestPoliciesValid/20` | pass | pass |
+| `TestPoliciesValid/21` | pass | pass |
+| `TestPoliciesValid/22` | pass | pass |
+| `TestPoliciesValid/23` | pass | pass |
+| `TestPoliciesValid/24` | pass | pass |
+| `TestPoliciesValid/25` | pass | pass |
+| `TestPoliciesValid/26` | pass | pass |
+| `TestPoliciesValid/27` | pass | pass |
+| `TestPoliciesValid/28` | pass | pass |
+| `TestPoliciesValid/29` | pass | pass |
+| `TestPoliciesValid/3` | pass | pass |
+| `TestPoliciesValid/30` | pass | pass |
+| `TestPoliciesValid/31` | pass | pass |
+| `TestPoliciesValid/32` | pass | pass |
+| `TestPoliciesValid/33` | pass | pass |
+| `TestPoliciesValid/34` | pass | pass |
+| `TestPoliciesValid/35` | pass | pass |
+| `TestPoliciesValid/36` | pass | pass |
+| `TestPoliciesValid/37` | pass | pass |
+| `TestPoliciesValid/38` | pass | pass |
+| `TestPoliciesValid/39` | pass | pass |
+| `TestPoliciesValid/4` | pass | pass |
+| `TestPoliciesValid/40` | pass | pass |
+| `TestPoliciesValid/41` | pass | pass |
+| `TestPoliciesValid/42` | pass | pass |
+| `TestPoliciesValid/43` | pass | pass |
+| `TestPoliciesValid/44` | pass | pass |
+| `TestPoliciesValid/45` | pass | pass |
+| `TestPoliciesValid/46` | pass | pass |
+| `TestPoliciesValid/47` | pass | pass |
+| `TestPoliciesValid/48` | pass | pass |
+| `TestPoliciesValid/49` | pass | pass |
+| `TestPoliciesValid/5` | pass | pass |
+| `TestPoliciesValid/50` | pass | pass |
+| `TestPoliciesValid/6` | pass | pass |
+| `TestPoliciesValid/7` | pass | pass |
+| `TestPoliciesValid/8` | pass | pass |
+| `TestPoliciesValid/9` | pass | pass |
+| `TestPolicyParse` | pass | pass |
 | `TestRDNSequenceString` | pass | pass |
 | `TestRFC2821Parsing` | pass | pass |
 | `TestRSAMissingNULLParameters` | pass | pass |
@@ -308,6 +487,7 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestRevocationListCheckSignatureFrom/valid` | pass | pass |
 | `TestRevocationListCheckSignatureFrom/valid,_key_usage_set` | pass | pass |
 | `TestRevocationListCheckSignatureFrom/wrong_key` | pass | pass |
+| `TestRoundtripWeirdSANs` | pass | pass |
 | `TestSHA1` | pass | pass |
 | `TestSigAlgMismatch` | pass | pass |
 | `TestSystemCertPool` | skip | skip |
@@ -334,13 +514,12 @@ Both runtimes skip 17 of the matched tests identically.
 | `TestSystemVerify/MultipleConstraints` | pass | pass |
 | `TestSystemVerify/RootInIntermediates` | pass | pass |
 | `TestSystemVerify/SHA-384` | pass | pass |
+| `TestSystemVerify/TooManyDNS` | skip | skip |
+| `TestSystemVerify/TooManyIPs` | skip | skip |
 | `TestSystemVerify/Valid` | pass | pass |
 | `TestSystemVerify/ValidCN` | skip | skip |
 | `TestSystemVerify/Valid_(fqdn)` | pass | pass |
 | `TestSystemVerify/X509v1Intermediate` | skip | skip |
-| `TestSystemVerify/dnssec-exp` | skip | skip |
-| `TestSystemVerify/dnssec-exp/AnyEKU` | pass | pass |
-| `TestSystemVerify/dnssec-exp/RootInIntermediates` | skip | skip |
 | `TestUnknownAuthorityError` | pass | pass |
 | `TestUnknownAuthorityError/self-signed,_cn` | pass | pass |
 | `TestUnknownAuthorityError/self-signed,_no_cn,_no_org` | pass | pass |
@@ -372,3 +551,4 @@ the capability it needs.
 - BenchmarkParseCertificate (benchmark): benchmark execution is deferred to Phase 4D
 - ExampleCertificate_Verify (example): example execution is deferred to Phase 4D
 - ExampleParsePKIXPublicKey (example): example execution is deferred to Phase 4D
+- FuzzDomainNameValid (fuzz): fuzz execution is deferred to Phase 4D

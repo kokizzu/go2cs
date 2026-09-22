@@ -682,6 +682,15 @@ public static ж<mapType> MapType(this ж<Type> Ꮡt) {
     return s_mapTypes.GetOrAdd(Ꮡt, static box => synthesizeMapType(box));
 }
 
+// The raw spelling of the same downcast -- `(*SwissMapType)(unsafe.Pointer(abi.TypeOf(m)))`, which
+// internal/runtime/maps' newTestMapType writes -- reaches golib's Reinterpret, not MapType. Register
+// the projection there so both spellings answer the ONE cached box (Go's pointer identity), and a
+// descriptor of any other kind answers nil and keeps the reinterpret it had.
+[System.Runtime.CompilerServices.ModuleInitializer]
+internal static void registerMapTypeProjection() {
+    PrefixProjection<Type, mapType>.Project = static box => box.MapType();
+}
+
 private static ж<mapType> synthesizeMapType(ж<Type> Ꮡt) {
     return new StandardBox<mapType>(new mapType(
         Type: Ꮡt.Value,

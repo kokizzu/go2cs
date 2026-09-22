@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
+using isync = @internal.sync_package;
 using testenv = @internal.testenv_package;
 using rand = go.math.rand_package;
 using reflect = reflect_package;
@@ -18,24 +19,6 @@ using go.testing;
 using static go.sync_internal_test_package;
 
 partial class sync_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
-    builtin.initPackage(typeof(go.testing.quick_package));
-}
 
 [GoType("@string")] partial struct mapOp;
 
@@ -170,6 +153,10 @@ internal static (slice<mapResult>, map<any, any>) applyDeepCopyMap(slice<mapCall
     return applyCalls(new sync_test_package.DeepCopyMapжmapInterface(@new<DeepCopyMap>()), calls);
 }
 
+internal static (slice<mapResult>, map<any, any>) applyHashTrieMap(slice<mapCall> calls) {
+    return applyCalls(new sync_test_package.sync_HashTrieMapжmapInterface(@new<isync.HashTrieMap<any, any>>()), calls);
+}
+
 public static void TestMapMatchesRWMutex(ж<Δtesting.T> Ꮡt) {
     {
         var err = quick.CheckEqual(applyMap, applyRWMutexMap, nil); if (err != default!) {
@@ -181,6 +168,14 @@ public static void TestMapMatchesRWMutex(ж<Δtesting.T> Ꮡt) {
 public static void TestMapMatchesDeepCopy(ж<Δtesting.T> Ꮡt) {
     {
         var err = quick.CheckEqual(applyMap, applyDeepCopyMap, nil); if (err != default!) {
+            Ꮡt.Error(err);
+        }
+    }
+}
+
+public static void TestMapMatchesHashTrieMap(ж<Δtesting.T> Ꮡt) {
+    {
+        var err = quick.CheckEqual(applyMap, applyHashTrieMap, nil); if (err != default!) {
             Ꮡt.Error(err);
         }
     }
@@ -415,14 +410,14 @@ public static void TestConcurrentClear(ж<Δtesting.T> Ꮡt) {
     });
 }
 
-public static void TestMapClearNoAllocations(ж<Δtesting.T> Ꮡt) {
+public static void TestMapClearOneAllocation(ж<Δtesting.T> Ꮡt) {
     testenv.SkipIfOptimizationOff(new sync_test_package.testing_TжTB(Ꮡt));
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
     var allocs = Δtesting.AllocsPerRun(10, () => {
         Ꮡm.Clear();
     });
-    if (allocs > 0D) {
-        Ꮡt.Errorf("AllocsPerRun of m.Clear = %v; want 0"u8, allocs);
+    if (allocs > 1D) {
+        Ꮡt.Errorf("AllocsPerRun of m.Clear = %v; want 1"u8, allocs);
     }
 }
 
