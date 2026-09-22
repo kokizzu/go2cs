@@ -935,7 +935,10 @@ public static error StartCPUProfile(io.Writer w) {
 // If profiling is turned off and all the profile data accumulated while it was
 // on has been returned, readProfile returns eof=true.
 // The caller must save the returned data and tags before calling readProfile again.
-internal static partial (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) readProfile();
+internal static (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) readProfile() {
+    var (ᴛ1, ᴛ2, ᴛ3) = runtime.runtime_pprof_readProfile();
+    return (ᴛ1, ᴛ2, ᴛ3);
+}
 
 internal static void profileWriter(io.Writer w) {
     var b = newProfileBuilder(w);
