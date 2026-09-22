@@ -6,15 +6,18 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/netip` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `c3bea225e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**210 matched · 57 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**211 matched · 57 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net/netip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/netip).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `TestAddrAppendText` | pass | pass |
 | `TestAddrFrom16` | pass | pass |
 | `TestAddrFrom16/v4-raw` | pass | pass |
 | `TestAddrFrom16/v6-raw` | pass | pass |
@@ -27,6 +30,7 @@ comparison — it is the evidence behind the `net/netip` row in
 | `TestAddrPortMarshalUnmarshal` | pass | pass |
 | `TestAddrPortMarshalUnmarshal/#00` | pass | pass |
 | `TestAddrPortMarshalUnmarshalBinary` | pass | pass |
+| `TestAddrPortString` | pass | pass |
 | `TestAddrStringAllocs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAddrStringAllocs/ipv4` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAddrStringAllocs/ipv4-in-ipv6` | pass | fail ([disclosed](#disclosed-divergences)) |
@@ -85,7 +89,6 @@ comparison — it is the evidence behind the `net/netip` row in
 | `TestIPv4Constructors` | pass | pass |
 | `TestIPv6Accessor` | pass | pass |
 | `TestInlining` | pass | pass |
-| `TestInvalidAddrPortString` | pass | pass |
 | `TestIs4AndIs6` | pass | pass |
 | `TestIs4In6` | pass | pass |
 | `TestNoAllocs` | pass | fail ([disclosed](#disclosed-divergences)) |

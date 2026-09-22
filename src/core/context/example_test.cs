@@ -44,7 +44,7 @@ public static void ExampleWithCancel() {
                     }}
                 }
             });
-            return dst;
+            return dst.WithDirection(GoChanDir.Recv);
         }
         var (ctx, cancel) = context.WithCancel(context.Background());
         var cancelʗ1 = cancel;
@@ -133,7 +133,7 @@ internal static readonly object keyNotFoundˢ = (@string)"key not found:"u8;
 internal static readonly @string languageˢ = "language"u8;
 internal static readonly @string colorˢ = "color"u8;
 
-[GoType("@string")] partial struct ExampleWithValue_favContextKey;
+[GoLocalName("favContextKey")] [GoType("@string")] internal partial struct ExampleWithValue_favContextKey;
 
 // Output:
 // context deadline exceeded
@@ -190,8 +190,8 @@ public static void ExampleAfterFunc_cond() {
             var stopfʗ1 = stopf;
             defer(() => stopfʗ1(), ref ᒐ);
             // Since the wakeups are using Broadcast instead of Signal, this call to
-            // Wait may unblock due to some other goroutine's context becoming done,
-            // so to be sure that ctx is actually done we need to check it in a loop.
+            // Wait may unblock due to some other goroutine's context being canceled,
+            // so to be sure that ctx is actually canceled we need to check it in a loop.
             while (!conditionMet()) {
                 condΔ1.Wait();
                 if (ctx.Err() != default!) {
@@ -231,6 +231,7 @@ public static void ExampleAfterFunc_cond() {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tcpˢ = "tcp"u8;
+internal static readonly @string localhost0ˢ = "localhost:0"u8;
 
 // Output:
 // context deadline exceeded
@@ -262,7 +263,7 @@ public static void ExampleAfterFunc_connection() {
             }
             return (n, errΔ1);
         }
-        var (listener, err) = Δnet.Listen(tcpˢ, ":0"u8);
+        var (listener, err) = Δnet.Listen(tcpˢ, localhost0ˢ);
         if (err != default!) {
             fmt.Println(err);
             return;

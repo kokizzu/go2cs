@@ -21,6 +21,8 @@ using go;
 using static global::go.image_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b536574524742413634287820696e742c207920696e742c206320696d6167652f636f6c6f722e524742413634297d", "TestRGBA64Image_type")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20696d6167652066756e63282920696d6167652e696d6167657d", "testImagesᴛ1")]
 [assembly: GoTypeAlias("Opaque", "const:ΔOpaque")]
 [assembly: GoTypeAlias("RGBA", "ΔRGBA")]
 // </ExportedTypeAliases>
@@ -45,8 +47,8 @@ using static global::go.image_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("image/decode_example_test.go", "decode_example_test.cs", "ACAwgoKCgpQACQYABxCCgoKUjtKCgqaCgoK6gqI=")]
-[assembly: go.GoPositionMap("image/decode_test.go", "decode_test.cs", "ADlaooKClJLWooKClJLWgoKClKaCgoKCgoKCpoKCgpaCgoKCgoKCgoKUlIKCgpSCgoKUgoKClLi4lIKCgpSCgg==")]
+[assembly: go.GoPositionMap("image/decode_example_test.go", "decode_example_test.cs", "ABowgoKCgpQACQYABxCCgoKUjtKCgqaCgoK6gqI=")]
+[assembly: go.GoPositionMap("image/decode_test.go", "decode_test.cs", "AC1aooKClJLWooKClJLWgoKClKaCgoKCgoKCpoKCgpaCgoKCgoKCgoKUlIKCgpSCgoKUgoKClLi4lIKCgpSCgg==", "82-85:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -63,4 +65,33 @@ public static partial class image_test_package
     // <TypeAccessibility>
     internal partial struct imageTest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() => builtin.initPackage(typeof(global::go.image.color.palette_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸgif() => builtin.initPackage(typeof(go.image.gif_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸjpeg() => builtin.initPackage(typeof(go.image.jpeg_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸpng() => builtin.initPackage(typeof(go.image.png_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.image_package));
+    }
 }

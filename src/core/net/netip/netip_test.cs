@@ -9,6 +9,7 @@ using bytes = bytes_package;
 using json = go.encoding.json_package;
 using flag = flag_package;
 using fmt = fmt_package;
+using asan = @internal.asan_package;
 using testenv = @internal.testenv_package;
 using net = net_package;
 using static go.net.netip_package;
@@ -24,36 +25,6 @@ using netip = go.net.netip_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class netip_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(go.encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunique() {
-    builtin.initPackage(typeof(unique_package));
-}
 
 internal static ж<bool> @long = flag.Bool("long"u8, false, "run long tests"u8);
 
@@ -394,6 +365,39 @@ public static void TestIPv4Constructors(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string fd7a115cA1e0Ab124843Cd96ˢ = "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b"u8;
+internal static readonly @string ffff192168140255ˢ = "::ffff:192.168.140.255"u8;
+internal static readonly @string ffff192168140255En0ˢ = "::ffff:192.168.140.255%en0"u8;
+
+[GoType("dyn")] internal partial struct TestAddrAppendText_tests {
+    internal netipꓸAddr ip;
+    internal @string want;
+}
+
+public static void TestAddrAppendText(ж<testing.T> Ꮡt) {
+    var tests = new TestAddrAppendText_tests[]{
+        new(new netipꓸAddr(nil), ""u8), // zero IP
+
+        new(mustIP("1.2.3.4"u8), "1.2.3.4"u8),
+        new(mustIP(fd7a115cA1e0Ab124843Cd96ˢ), "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b"u8),
+        new(mustIP(ffff192168140255ˢ), "::ffff:192.168.140.255"u8),
+        new(mustIP(ffff192168140255En0ˢ), "::ffff:192.168.140.255%en0"u8)
+    }.slice();
+    foreach (var (i, tc) in tests) {
+        var ip = tc.ip;
+        var mtAppend = new slice<byte>(4, 32);
+        (mtAppend, var err) = ip.AppendText(mtAppend);
+        mtAppend = mtAppend[4..];
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (((sstring)mtAppend) != tc.want) {
+            Ꮡt.Errorf("%d. for (%v) AppendText = %q; want %q"u8, i, ip, mtAppend, tc.want);
+        }
+    }
+}
+
 [GoType("dyn")] internal partial struct TestAddrMarshalUnmarshalBinary_tests {
     internal @string ip;
     internal nint wantSize;
@@ -428,6 +432,24 @@ public static void TestAddrMarshalUnmarshalBinary(ж<testing.T> Ꮡt) {
         }
         if (ip != ip2) {
             Ꮡt.Fatalf("got %v; want %v"u8, ip2, ip);
+        }
+        var bAppend = new slice<byte>(4, 32);
+        (bAppend, err) = ip.AppendBinary(bAppend);
+        bAppend = bAppend[4..];
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (len(bAppend) != tc.wantSize) {
+            Ꮡt.Fatalf("%q encoded to size %d; want %d"u8, tc.ip, len(bAppend), tc.wantSize);
+        }
+        netipꓸAddr ip3 = default!;
+        {
+            var errΔ2 = ip3.UnmarshalBinary(bAppend); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+        }
+        if (ip != ip3) {
+            Ꮡt.Fatalf("got %v; want %v"u8, ip3, ip);
         }
     }
     // Cannot unmarshal from unexpected IP length.
@@ -475,6 +497,16 @@ public static void TestAddrPortMarshalTextString(ж<testing.T> Ꮡt) {
         if (((sstring)mt) != tt.want) {
             Ꮡt.Errorf("%d. for (%v, %v) MarshalText = %q; want %q"u8, i, tt.@in.Addr(), tt.@in.Port(), mt, tt.want);
         }
+        var mtAppend = new slice<byte>(4, 32);
+        (mtAppend, err) = tt.@in.AppendText(mtAppend);
+        mtAppend = mtAppend[4..];
+        if (err != default!) {
+            Ꮡt.Errorf("%d. for (%v, %v) AppendText error: %v"u8, i, tt.@in.Addr(), tt.@in.Port(), err);
+            continue;
+        }
+        if (((sstring)mtAppend) != tt.want) {
+            Ꮡt.Errorf("%d. for (%v, %v) AppendText = %q; want %q"u8, i, tt.@in.Addr(), tt.@in.Port(), mtAppend, tt.want);
+        }
     }
 }
 
@@ -511,6 +543,24 @@ public static void TestAddrPortMarshalUnmarshalBinary(ж<testing.T> Ꮡt) {
         if (ipport != ipport2) {
             Ꮡt.Fatalf("got %v; want %v"u8, ipport2, ipport);
         }
+        var bAppend = new slice<byte>(4, 32);
+        (bAppend, err) = ipport.AppendBinary(bAppend);
+        bAppend = bAppend[4..];
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (len(bAppend) != tc.wantSize) {
+            Ꮡt.Fatalf("%q encoded to size %d; want %d"u8, tc.ipport, len(bAppend), tc.wantSize);
+        }
+        netip.AddrPort ipport3 = default!;
+        {
+            var errΔ2 = ipport3.UnmarshalBinary(bAppend); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+        }
+        if (ipport != ipport3) {
+            Ꮡt.Fatalf("got %v; want %v"u8, ipport3, ipport);
+        }
     }
     // Cannot unmarshal from unexpected lengths.
     foreach (var (_, n) in new nint[]{3, 7}.slice()) {
@@ -524,7 +574,7 @@ public static void TestAddrPortMarshalUnmarshalBinary(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string fd7a115cA1e0Ab124843Cd96ˢ = "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b/118"u8;
+internal static readonly @string fd7a115cA1e0Ab124843Cd96ˢ2 = "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b/118"u8;
 internal static readonly @string ffffC000028096ˢ = "::ffff:c000:0280/96"u8;
 internal static readonly @string ffff1921681402558ˢ = "::ffff:192.168.140.255/8"u8;
 internal static readonly @string ffffC0000280ˢ = "::ffff:c000:0280"u8;
@@ -537,7 +587,7 @@ internal static readonly @string ffffC0000280ˢ = "::ffff:c000:0280"u8;
 public static void TestPrefixMarshalTextString(ж<testing.T> Ꮡt) {
     var tests = new TestPrefixMarshalTextString_tests[]{
         new(mustPrefix("1.2.3.4/24"u8), "1.2.3.4/24"u8),
-        new(mustPrefix(fd7a115cA1e0Ab124843Cd96ˢ), "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b/118"u8),
+        new(mustPrefix(fd7a115cA1e0Ab124843Cd96ˢ2), "fd7a:115c:a1e0:ab12:4843:cd96:626b:430b/118"u8),
         new(mustPrefix(ffffC000028096ˢ), "::ffff:192.0.2.128/96"u8),
         new(mustPrefix(ffff1921681402558ˢ), "::ffff:192.168.140.255/8"u8),
         new(PrefixFrom(mustIP(ffffC0000280ˢ).WithZone(eth0ˢ), 37), "::ffff:192.0.2.128/37"u8)
@@ -557,6 +607,16 @@ public static void TestPrefixMarshalTextString(ж<testing.T> Ꮡt) {
         if (((sstring)mt) != tt.want) {
             Ꮡt.Errorf("%d. for %v MarshalText = %q; want %q"u8, i, tt.@in, mt, tt.want);
         }
+        var mtAppend = new slice<byte>(4, 64);
+        (mtAppend, err) = tt.@in.AppendText(mtAppend);
+        mtAppend = mtAppend[4..];
+        if (err != default!) {
+            Ꮡt.Errorf("%d. for %v AppendText error: %v"u8, i, tt.@in, err);
+            continue;
+        }
+        if (((sstring)mtAppend) != tt.want) {
+            Ꮡt.Errorf("%d. for %v AppendText = %q; want %q"u8, i, tt.@in, mtAppend, tt.want);
+        }
     }
 }
 
@@ -568,7 +628,7 @@ public static void TestPrefixMarshalTextString(ж<testing.T> Ꮡt) {
 public static void TestPrefixMarshalUnmarshalBinary(ж<testing.T> Ꮡt) {
     var tests = new TestPrefixMarshalUnmarshalBinary_testCase[]{
         new(mustPrefix("1.2.3.4/24"u8), 4 + 1),
-        new(mustPrefix(fd7a115cA1e0Ab124843Cd96ˢ), 16 + 1),
+        new(mustPrefix(fd7a115cA1e0Ab124843Cd96ˢ2), 16 + 1),
         new(mustPrefix(ffffC000028096ˢ), 16 + 1),
         new(PrefixFrom(mustIP(ffffC0000280ˢ).WithZone(eth0ˢ), 37), 16 + 1)
     }.slice();
@@ -593,6 +653,24 @@ public static void TestPrefixMarshalUnmarshalBinary(ж<testing.T> Ꮡt) {
         }
         if (prefix != prefix2) {
             Ꮡt.Fatalf("got %v; want %v"u8, prefix2, prefix);
+        }
+        var bAppend = new slice<byte>(4, 32);
+        (bAppend, err) = prefix.AppendBinary(bAppend);
+        bAppend = bAppend[4..];
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        if (len(bAppend) != tc.wantSize) {
+            Ꮡt.Fatalf("%q encoded to size %d; want %d"u8, tc.prefix, len(bAppend), tc.wantSize);
+        }
+        netipꓸPrefix prefix3 = default!;
+        {
+            var errΔ2 = prefix3.UnmarshalBinary(bAppend); if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+        }
+        if (prefix != prefix3) {
+            Ꮡt.Fatalf("got %v; want %v"u8, prefix3, prefix);
         }
     }
     // Cannot unmarshal from unexpected lengths.
@@ -1042,7 +1120,7 @@ public static void TestAddrLessCompare(ж<testing.T> Ꮡt) {
         mustIP("8.8.8.8"u8),
         mustIP(fooˢ)
     }.slice();
-    slices.SortFunc<slice<netipꓸAddr>, netipꓸAddr>(values, (Func<netipꓸAddr, netipꓸAddr, nint>)(netip.Compare));
+    slices.SortFunc<slice<netipꓸAddr>, netipꓸAddr>(values, ((Func<netipꓸAddr, netipꓸAddr, nint>)(netip.Compare)));
     @string got = fmt.Sprintf("%s"u8, values);
     @string want = invalidIp1234888811Foo2ˢ;
     if (got != want) {
@@ -1095,7 +1173,7 @@ public static void TestAddrPortCompare(ж<testing.T> Ꮡt) {
         mustIPPort("8.8.8.8:8080"u8),
         mustIPPort(foo1024ˢ)
     }.slice();
-    slices.SortFunc<slice<netip.AddrPort>, netip.AddrPort>(values, (Func<netip.AddrPort, netip.AddrPort, nint>)(netip.Compare));
+    slices.SortFunc<slice<netip.AddrPort>, netip.AddrPort>(values, ((Func<netip.AddrPort, netip.AddrPort, nint>)(netip.Compare)));
     @string got = fmt.Sprintf("%s"u8, values);
     @string want = invalidAddrPort123444388ˢ;
     if (got != want) {
@@ -1152,7 +1230,7 @@ public static void TestPrefixCompare(ж<testing.T> Ꮡt) {
         mustPrefix(fe8048ˢ),
         mustPrefix("1.2.0.0/24"u8)
     }.slice();
-    slices.SortFunc<slice<netipꓸPrefix>, netipꓸPrefix>(values, (Func<netipꓸPrefix, netipꓸPrefix, nint>)(netip.Compare));
+    slices.SortFunc<slice<netipꓸPrefix>, netipꓸPrefix>(values, ((Func<netipꓸPrefix, netipꓸPrefix, nint>)(netip.Compare)));
     @string got = fmt.Sprintf("%s"u8, values);
     @string want = invalidPrefix1200161200ˢ;
     if (got != want) {
@@ -2294,6 +2372,7 @@ internal static slice<byte> sinkBytes;
 internal static ж<net.UDPAddr> sinkUDPAddr = Ꮡ(new net.UDPAddr(IP: new net.IP(0, 16)));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly @string iPv4ˢ = "IPv4"u8;
 internal static readonly @string addrFrom4ˢ = "AddrFrom4"u8;
 internal static readonly @string addrFrom16ˢ = "AddrFrom16"u8;
@@ -2347,6 +2426,9 @@ internal static readonly @string prefixIsSingleIPˢ = "Prefix.IsSingleIP"u8;
 internal static readonly @string prefixMaskedˢ = "Prefix.Masked"u8;
 
 public static void TestNoAllocs(ж<testing.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     // Wrappers that panic on error, to prove that our alloc-free
     // methods are returning successfully.
     netipꓸAddr panicIP(netipꓸAddr ip, error err) {
@@ -2606,13 +2688,19 @@ public static void TestPrefixString(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] internal partial struct TestInvalidAddrPortString_tests {
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string ffff18080ˢ = "[FFFF::1]:8080"u8;
+
+[GoType("dyn")] internal partial struct TestAddrPortString_tests {
     internal netip.AddrPort ipp;
     internal @string want;
 }
 
-public static void TestInvalidAddrPortString(ж<testing.T> Ꮡt) {
-    var tests = new TestInvalidAddrPortString_tests[]{
+public static void TestAddrPortString(ж<testing.T> Ꮡt) {
+    var tests = new TestAddrPortString_tests[]{
+        new(MustParseAddrPort("127.0.0.1:80"u8), "127.0.0.1:80"u8),
+        new(MustParseAddrPort("[0000::0]:8080"u8), "[::]:8080"u8),
+        new(MustParseAddrPort(ffff18080ˢ), "[ffff::1]:8080"u8),
         new(new AddrPort(nil), "invalid AddrPort"u8),
         new(AddrPortFrom(new netipꓸAddr(nil), 80), "invalid AddrPort"u8)
     }.slice();

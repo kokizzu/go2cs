@@ -13,6 +13,7 @@ using go;
 using static global::go.hash_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b206e65772066756e63282920686173682e486173683b20676f6c64656e205b5d627974657d", "marshalTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -31,7 +32,7 @@ using static global::go.hash_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/marshal_test.go", "marshal_test.cs", "ABs2goKClAAcNoKykoKCloKChIKCgoKUgoKUgoKUgpSCgpSAgqSCgoKCgpSC")]
+[assembly: go.GoPositionMap("hash/marshal_test.go", "marshal_test.cs", "ABs2goKClAAcNoKykoKCloKChIKCgoKUgoKUgoKUgpSCgpSAgqSCgoKCgpSC", "61-105:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -48,4 +49,32 @@ public static partial class hash_test_package
     // <TypeAccessibility>
     internal partial struct marshalTestsᴛ1 {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() => builtin.initPackage(typeof(crypto.md5_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() => builtin.initPackage(typeof(crypto.sha1_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() => builtin.initPackage(typeof(crypto.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(go.encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸadler32() => builtin.initPackage(typeof(go.hash.adler32_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸcrc32() => builtin.initPackage(typeof(go.hash.crc32_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸcrc64() => builtin.initPackage(typeof(go.hash.crc64_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸfnv() => builtin.initPackage(typeof(go.hash.fnv_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.hash_package));
+    }
 }

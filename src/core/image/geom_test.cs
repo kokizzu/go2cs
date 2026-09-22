@@ -77,7 +77,7 @@ public static void TestRectangle(ж<testing.T> Ꮡt) {
             largerThanA[1].Min.Y--;
             largerThanA[2].Max.X++;
             largerThanA[3].Max.Y++;
-            foreach (var (i, b) in largerThanA) {
+            foreach (var (i, b) in largerThanA.ΔRangeSnapshot()) {
                 if (b.Empty()) {
                     // b isn't actually larger than a.
                     continue;
@@ -113,7 +113,7 @@ public static void TestRectangle(ж<testing.T> Ꮡt) {
             smallerThanA[1].Min.Y++;
             smallerThanA[2].Max.X--;
             smallerThanA[3].Max.Y--;
-            foreach (var (i, b) in smallerThanA) {
+            foreach (var (i, b) in smallerThanA.ΔRangeSnapshot()) {
                 if (@in(r, b) == default! && @in(s, b) == default!) {
                     Ꮡt.Errorf("Union: r=%s, s=%s, a=%s, b=%s, i=%d: union could be smaller"u8,
                         r, s, a, b, i);

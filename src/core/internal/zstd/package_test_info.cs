@@ -19,6 +19,8 @@ using go;
 using static global::go.@internal.zstd_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6461746120737472696e673b20686173682075696e7436347d", "xxHashTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20756e636f6d7072657373656420737472696e673b20636f6d7072657373656420737472696e677d", "testsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -43,11 +45,11 @@ using static global::go.@internal.zstd_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/zstd/fse_test.go", "fse_test.cs", "ADdQwgAWOoKSkoKCgIKmgoCCpoI=")]
-[assembly: go.GoPositionMap("internal/zstd/fuzz_test.go", "fuzz_test.cs", "ADdAsoKUgpSCggADEOKEgqiCgoKUgoSCgoKCgoKAgqaCgoKUgv7ihIKogoCUgoKEgoKCgoKChIKCAAsagoKUgoKCgoKC")]
-[assembly: go.GoPositionMap("internal/zstd/window_test.go", "window_test.cs", "ABIaooKUpoKSgoKCgoKEsgAHFKKChIKChIKCgoSCloKWkoKCgoSC")]
-[assembly: go.GoPositionMap("internal/zstd/xxhash_test.go", "xxhash_test.cs", "ACU6goKCgoKAggAJCoKCloKCloKCgpSCgpSCloKCgviCgoKU1qKEgpSCgoKUgoSCgoKCgoCCpIKCgpaCgoKEgg==")]
-[assembly: go.GoPositionMap("internal/zstd/zstd_test.go", "zstd_test.cs", "AGHiAYKCkpKCgoKUgoLcgoKCgpKygoKCgpSCggAKGpKCgoKmgpTmgoKClAAHGLKEhJKCgoKCgoCCgqaUgpSqooKWgoSEgoKCloLqkoKClIKCgpSCgoKU+oKCgpaCgoKygoKUgviCgoKWgoKCloKCgpaCgoCCpISCggAIDIKCgoKC3KKChISEgoSCgoKC")]
+[assembly: go.GoPositionMap("internal/zstd/fse_test.go", "fse_test.cs", "ACtQwgAWOoKSkoKCgIKmgoCCpoI=", "72-87:1")]
+[assembly: go.GoPositionMap("internal/zstd/fuzz_test.go", "fuzz_test.cs", "AB9AsoKUgpSCggADEOKEgqiCgoKUgoSCgoKCgoKAgqaCgoKUgv7ihIKogoCUgoKEgoKCgoKChIKCAAsagoKUgoKCgoKC", "39-42:1;65-83:1;97-97:1;99-139:2")]
+[assembly: go.GoPositionMap("internal/zstd/window_test.go", "window_test.cs", "AAwaooKUpoKSgoKCgoKEsgAHFKKChIKChIKCgoSCloKWkoKCgoSC", "29-31:1")]
+[assembly: go.GoPositionMap("internal/zstd/xxhash_test.go", "xxhash_test.cs", "AB86goKCgoKAggAJCoKCloKCloKCgpSCgpSCloKCgviCgoKU1qKEgpSCgoKUgoSCgoKCgoCCpIKCgpaCgoKEgg==", "92-114:1")]
+[assembly: go.GoPositionMap("internal/zstd/zstd_test.go", "zstd_test.cs", "AETiAYKCkpKCgoKUgoLcgoKCgpKygoKCgpSCggAKGpKCgoKmgpTmgoKClAAHGLKEhJKCgoKCgoCCgqaUgpSqooKWgoSEgoKCloLqkoKClIKCgpSCgoKU+oKCgpaCgoKygoKUgviCgoKWgoKCloKCgpaCgoCCpISCggAIDIKCgoKC3KKChISEgoSCgoKC", "116-126:1;135-146:1;158-163:1;192-204:1;264-268:1;286-303:1;309-314:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -63,4 +65,34 @@ public static partial class zstd_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.zstd_package));
+    }
 }

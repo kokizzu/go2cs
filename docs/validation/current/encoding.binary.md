@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/binary` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**137 matched · 9 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**140 matched · 6 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -77,10 +79,10 @@ comparison — it is the evidence behind the `encoding/binary` row in
 | `TestSizeAllocs/[1]binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestSizeAllocs/[]binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestSizeAllocs/[]binary.Struct#01` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestSizeAllocs/binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestSizeAllocs/binary.Struct` | pass | pass |
 | `TestSizeAllocs/bool` | pass | pass |
-| `TestSizeAllocs/complex128` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestSizeAllocs/complex64` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestSizeAllocs/complex128` | pass | pass |
+| `TestSizeAllocs/complex64` | pass | pass |
 | `TestSizeAllocs/float32` | pass | pass |
 | `TestSizeAllocs/float64` | pass | pass |
 | `TestSizeAllocs/int16` | pass | pass |
@@ -177,9 +179,6 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 | `TestSizeAllocs/[1]binary.Struct` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes the array argument per call (a full managed copy of the array struct) — CLR heap allocations Go's non-escaping eface avoids |
 | `TestSizeAllocs/[]binary.Struct` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids |
 | `TestSizeAllocs/[]binary.Struct#01` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids |
-| `TestSizeAllocs/binary.Struct` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes the struct argument per call, and the cached-struct-size lookup constructs a boxed reflect.Value — CLR heap allocations Go's non-escaping eface and pointer-word Value avoid |
-| `TestSizeAllocs/complex128` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids |
-| `TestSizeAllocs/complex64` | `alloc-profile` | want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids; the interned descriptor read behind it is allocation-free but the boxing alone fails the want-zero |
 
 ## Excluded declarations
 

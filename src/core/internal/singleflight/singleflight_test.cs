@@ -5,10 +5,11 @@ namespace go.@internal;
 
 using errors = errors_package;
 using fmt = fmt_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using atomic = go.sync.atomic_package;
 using testing = testing_package;
 using time = time_package;
+using go;
 using go.sync;
 using static go.@internal.singleflight_package;
 

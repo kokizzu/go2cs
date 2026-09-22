@@ -13,6 +13,9 @@ using static go.crypto.ecdh_package;
 using static go.crypto.ecdh_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b457175616c28782063727970746f2e507269766174654b65792920626f6f6c3b205075626c696328292063727970746f2e5075626c69634b65797d", "_ᴛ2")]
+[assembly: GoDynamicTypeLift("696e746572666163657b457175616c28782063727970746f2e5075626c69634b65792920626f6f6c7d", "_ᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b507269766174654b657920737472696e673b205075626c69634b657920737472696e673b20506565725075626c69634b657920737472696e673b2053686172656453656372657420737472696e677d", "vectorsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -48,9 +51,34 @@ public static partial class ecdh_test_package
     // <TypeAccessibility>
     internal partial interface _ᴛ1 {}
     internal partial interface _ᴛ2 {}
+    internal partial struct TestMismatchedCurves_curves {}
     internal partial struct countingReader {}
     internal partial struct vectorsᴛ1 {}
     internal partial struct zr {}
-    public partial struct TestMismatchedCurves_curves {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(go.crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20() => builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20_package));
+    // </ImportInitializers>
 }

@@ -29,7 +29,7 @@ using static go.crypto.ed25519_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ed25519/ed25519_test.go", "ed25519_test.cs", "AB8ugoKCloSmgpaApvyCgqaCgoSCgoKWgoLolIKChIKCgoKClIKUgoKUgpSAgqaAgqaCgpaCgpSCgoK6goKUgIKkgIKkgIL4lIKCgpSCgoKClIKUgIKmgpSCloKClIKCgriCgoSEgoKCloKWgoKCgpaCgpSCloK4goSClIKUgpaCgpSC6MaCgpSSgoKUlIKEgoSCgoKWgoKCpoSAgqaCgoSCgpaCloKCloCCpoCCuICCAAoIuIIABxDMgviCgpSEgIKCgoKCgoKmyKKCgoCC2qKCgriigoKClIKCgriigoKClIKCgoI=")]
+[assembly: go.GoPositionMap("crypto/ed25519/ed25519_test.go", "ed25519_test.cs", "AB0sgoKCloSmgpaApsi0goKWgpSClIKUgoKWgoKUgpaCgpSCqIKCgoKUgoLsgoKmgoKEgoKCloKC6JSCgoSCgoKCgpSClIKClIKUgIKmgIKmgoKWgoKUgoKCuoKClICCpICCpICC+JSCgoKUgoKCgpSClICCpoKUgpaCgpSCgoK4goKEhIKCgpaCloKCgoKWgoKUgpaCuIKEgpSClIKWgoKUgujGgoKUkoKClJSChIKEgoKCloKCgqaEgIKmgoKEgoKWgpaCgpaAgqaAgriAggAKCLiCAAcQzILogoKAgoKCgoKCgqbIooKCgILaooKCuKKCgoKUgoKCuKKCgoKUgoKCgg==", "372-381:1")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -45,4 +45,28 @@ public static partial class ed25519_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() => builtin.initPackage(typeof(compress.gzip_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() => builtin.initPackage(typeof(go.crypto.ed25519_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() => builtin.initPackage(typeof(go.crypto.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

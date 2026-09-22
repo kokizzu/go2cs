@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/mail` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**11 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**11 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -37,4 +39,5 @@ the capability it needs.
 
 - ExampleParseAddress (example): example execution is deferred to Phase 4D
 - ExampleParseAddressList (example): example execution is deferred to Phase 4D
+- ExampleParseDate (example): example execution is deferred to Phase 4D
 - ExampleReadMessage (example): example execution is deferred to Phase 4D

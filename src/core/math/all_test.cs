@@ -503,7 +503,7 @@ internal static slice<float64> log2 = new float64[]{
     3.118679457227342224364709e+00D
 }.slice();
 
-internal static slice<array<float64>> modf = new array<float64>[]{
+internal static slice<array<float64>> modf = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{4.0000000000000000e+00D, 9.7901192488367350108546816e-01D}.array(),
     new float64[]{7.0000000000000000e+00D, 7.3887247457810456552351752e-01D}.array(),
     new float64[]{Copysign(0D, -1D), -2.7688005719200159404635997e-01D}.array(),
@@ -514,7 +514,7 @@ internal static slice<array<float64>> modf = new array<float64>[]{
     new float64[]{2.0000000000000000e+00D, 7.2793991043601025126008608e-01D}.array(),
     new float64[]{1.0000000000000000e+00D, 8.2530809168085506044576505e-01D}.array(),
     new float64[]{-8.0000000000000000e+00D, -6.8592476857560136238589621e-01D}.array()
-}.slice();
+}.slice(), 2);
 
 internal static slice<float32> nextafter32 = new float32[]{
     4.979012489318848e+00F,
@@ -855,7 +855,7 @@ internal static slice<float64> atanhSC = new float64[]{
     NaN()
 }.slice();
 
-internal static slice<array<float64>> vfatan2SC = new array<float64>[]{
+internal static slice<array<float64>> vfatan2SC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), Inf(-1)}.array(),
     new float64[]{Inf(-1), -Pi}.array(),
     new float64[]{Inf(-1), 0D}.array(),
@@ -893,7 +893,7 @@ internal static slice<array<float64>> vfatan2SC = new array<float64>[]{
     new float64[]{Inf(1), Inf(1)}.array(),
     new float64[]{Inf(1), NaN()}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 // atan2(-Inf, -Inf)
 // atan2(-Inf, -Pi)
@@ -988,7 +988,25 @@ internal static slice<float64> cbrtSC = new float64[]{
     NaN()
 }.slice();
 
+// largest fractional float64
+// smallest fractional float64
 internal static slice<float64> vfceilSC = new float64[]{
+    Inf(-1),
+    Copysign(0D, -1D),
+    0D,
+    Inf(1),
+    NaN(),
+    4503599627370495D,
+    4503599627370496D - 0.5D,
+    4503599627370496D,
+    -4503599627370496D,
+    -4503599627370496D + 0.5D,
+    -4503599627370495D,
+    9007199254740992D,
+    -9007199254740992D
+}.slice();
+
+internal static slice<float64> ceilBaseSC = new float64[]{
     Inf(-1),
     Copysign(0D, -1D),
     0D,
@@ -996,13 +1014,35 @@ internal static slice<float64> vfceilSC = new float64[]{
     NaN()
 }.slice();
 
-internal static slice<float64> ceilSC = new float64[]{
-    Inf(-1),
-    Copysign(0D, -1D),
-    0D,
-    Inf(1),
-    NaN()
-}.slice();
+internal static slice<float64> ceilSC = append(ceilBaseSC,
+    4503599627370495D,
+    4503599627370496D,
+    4503599627370496D,
+    -4503599627370496D,
+    -4503599627370495D,
+    -4503599627370495D,
+    9007199254740992D,
+    -9007199254740992D);
+
+internal static slice<float64> floorSC = append(ceilBaseSC,
+    4503599627370495D,
+    4503599627370495D,
+    4503599627370496D,
+    -4503599627370496D,
+    -4503599627370496D,
+    -4503599627370495D,
+    9007199254740992D,
+    -9007199254740992D);
+
+internal static slice<float64> truncSC = append(ceilBaseSC,
+    4503599627370495D,
+    4503599627370495D,
+    4503599627370496D,
+    -4503599627370496D,
+    -4503599627370495D,
+    -4503599627370495D,
+    9007199254740992D,
+    -9007199254740992D);
 
 internal static slice<float64> vfcopysignSC = new float64[]{
     Inf(-1),
@@ -1209,7 +1249,7 @@ internal static slice<float64> fabsSC = new float64[]{
     NaN()
 }.slice();
 
-internal static slice<array<float64>> vffdimSC = new array<float64>[]{
+internal static slice<array<float64>> vffdimSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), Inf(-1)}.array(),
     new float64[]{Inf(-1), Inf(1)}.array(),
     new float64[]{Inf(-1), NaN()}.array(),
@@ -1225,11 +1265,11 @@ internal static slice<array<float64>> vffdimSC = new array<float64>[]{
     new float64[]{NaN(), 0D}.array(),
     new float64[]{NaN(), Inf(1)}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 internal static float64 nan = Float64frombits(0xFFF8000000000000UL); // SSE2 DIVSD 0/0
 
-internal static slice<array<float64>> vffdim2SC = new array<float64>[]{
+internal static slice<array<float64>> vffdim2SC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), Inf(-1)}.array(),
     new float64[]{Inf(-1), Inf(1)}.array(),
     new float64[]{Inf(-1), nan}.array(),
@@ -1245,7 +1285,7 @@ internal static slice<array<float64>> vffdim2SC = new array<float64>[]{
     new float64[]{nan, 0D}.array(),
     new float64[]{nan, Inf(1)}.array(),
     new float64[]{nan, nan}.array()
-}.slice();
+}.slice(), 2);
 
 internal static slice<float64> fdimSC = new float64[]{
     NaN(),
@@ -1301,7 +1341,7 @@ internal static slice<float64> fminSC = new float64[]{
     NaN()
 }.slice();
 
-internal static slice<array<float64>> vffmodSC = new array<float64>[]{
+internal static slice<array<float64>> vffmodSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), Inf(-1)}.array(),
     new float64[]{Inf(-1), -Pi}.array(),
     new float64[]{Inf(-1), 0D}.array(),
@@ -1336,7 +1376,7 @@ internal static slice<array<float64>> vffmodSC = new array<float64>[]{
     new float64[]{NaN(), Pi}.array(),
     new float64[]{NaN(), Inf(1)}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 // fmod(-Inf, -Inf)
 // fmod(-Inf, -Pi)
@@ -1434,7 +1474,7 @@ internal static slice<fi> frexpSC = new fi[]{
 // gamma(-2.0000000000000004) = -1249999999999999.5386078562728167651513, while
 // gamma(-2.00000000000000044408920985626161695) = -1125899906826907.2044875028130093136826.
 // Thus the table lists -1.1258999068426235e+15 as the answer.
-internal static slice<array<float64>> vfgamma = new array<float64>[]{
+internal static slice<array<float64>> vfgamma = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(1), Inf(1)}.array(),
     new float64[]{Inf(-1), NaN()}.array(),
     new float64[]{0D, Inf(1)}.array(),
@@ -1506,10 +1546,10 @@ internal static slice<array<float64>> vfgamma = new array<float64>[]{
     new float64[]{-4.5035996273704955e+15D, 0D}.array(),
     new float64[]{-63.349078729022985D, 4.177797167776188e-88D}.array(),
     new float64[]{-127.45117632943295D, 1.183111089623681e-214D}.array()
-}.slice();
+}.slice(), 2);
 
 // +0, +0
-internal static slice<array<float64>> vfhypotSC = new array<float64>[]{
+internal static slice<array<float64>> vfhypotSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), Inf(-1)}.array(),
     new float64[]{Inf(-1), 0D}.array(),
     new float64[]{Inf(-1), Inf(1)}.array(),
@@ -1529,7 +1569,7 @@ internal static slice<array<float64>> vfhypotSC = new array<float64>[]{
     new float64[]{NaN(), 0D}.array(),
     new float64[]{NaN(), Inf(1)}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 internal static slice<float64> hypotSC = new float64[]{
     Inf(1),
@@ -1714,14 +1754,14 @@ internal static slice<float64> vfmodfSC = new float64[]{
 
 // [2]float64{Copysign(0, -1), Inf(-1)},
 // [2]float64{0, Inf(1)},
-internal static slice<array<float64>> modfSC = new array<float64>[]{
+internal static slice<array<float64>> modfSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), NaN()}.array(),
     new float64[]{Copysign(0D, -1D), Copysign(0D, -1D)}.array(),
     new float64[]{Inf(1), NaN()}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
-internal static slice<array<float32>> vfnextafter32SC = new array<float32>[]{
+internal static slice<array<float32>> vfnextafter32SC = GoReflect.WithElemDims(new array<float32>[]{
     new float32[]{0F, 0F}.array(),
     new float32[]{0F, (float32)Copysign(0D, -1D)}.array(),
     new float32[]{0F, -1F}.array(),
@@ -1732,7 +1772,7 @@ internal static slice<array<float32>> vfnextafter32SC = new array<float32>[]{
     new float32[]{(float32)Copysign(0D, -1D), -1F}.array(),
     new float32[]{(float32)NaN(), 0F}.array(),
     new float32[]{(float32)NaN(), (float32)NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 // Float32frombits(0x80000001)
 // Float32frombits(0x00000001)
@@ -1750,7 +1790,7 @@ internal static slice<float32> nextafter32SC = new float32[]{
     (float32)NaN()
 }.slice();
 
-internal static slice<array<float64>> vfnextafter64SC = new array<float64>[]{
+internal static slice<array<float64>> vfnextafter64SC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{0D, 0D}.array(),
     new float64[]{0D, Copysign(0D, -1D)}.array(),
     new float64[]{0D, -1D}.array(),
@@ -1761,7 +1801,7 @@ internal static slice<array<float64>> vfnextafter64SC = new array<float64>[]{
     new float64[]{Copysign(0D, -1D), -1D}.array(),
     new float64[]{NaN(), 0D}.array(),
     new float64[]{NaN(), NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 // Float64frombits(0x8000000000000001)
 // Float64frombits(0x0000000000000001)
@@ -1781,7 +1821,7 @@ internal static slice<float64> nextafter64SC = new float64[]{
 
 // Issue #7394 overflow checks
 // Issue #57465
-internal static slice<array<float64>> vfpowSC = new array<float64>[]{
+internal static slice<array<float64>> vfpowSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{Inf(-1), -Pi}.array(),
     new float64[]{Inf(-1), -3D}.array(),
     new float64[]{Inf(-1), Copysign(0D, -1D)}.array(),
@@ -1857,7 +1897,7 @@ internal static slice<array<float64>> vfpowSC = new array<float64>[]{
     new float64[]{Copysign(0D, -1D), -1e19D}.array(),
     new float64[]{Copysign(0D, -1D), 9007199254740991D}.array(),
     new float64[]{Copysign(0D, -1D), -(9007199254740991L)}.array()
-}.slice();
+}.slice(), 2);
 
 // pow(-Inf, -Pi)
 // pow(-Inf, -3)
@@ -2071,7 +2111,7 @@ internal static slice<float64> pow10SC = new float64[]{
 // 1 bit fraction
 // 1 bit fraction, rounding to 0 bit fraction
 // large integer
-internal static slice<array<float64>> vfroundSC = new array<float64>[]{
+internal static slice<array<float64>> vfroundSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{0D, 0D}.array(),
     new float64[]{1.390671161567e-309D, 0D}.array(),
     new float64[]{0.49999999999999994D, 0D}.array(),
@@ -2085,7 +2125,7 @@ internal static slice<array<float64>> vfroundSC = new array<float64>[]{
     new float64[]{2251799813685250.5D, 2251799813685251D}.array(),
     new float64[]{4503599627370495.5D, 4503599627370496D}.array(),
     new float64[]{4503599627370497D, 4503599627370497D}.array()
-}.slice();
+}.slice(), 2);
 
 // denormal
 // 0.5-epsilon
@@ -2093,7 +2133,7 @@ internal static slice<array<float64>> vfroundSC = new array<float64>[]{
 // 1 bit fraction
 // 1 bit fraction, rounding to 0 bit fraction
 // large integer
-internal static slice<array<float64>> vfroundEvenSC = new array<float64>[]{
+internal static slice<array<float64>> vfroundEvenSC = GoReflect.WithElemDims(new array<float64>[]{
     new float64[]{0D, 0D}.array(),
     new float64[]{1.390671161567e-309D, 0D}.array(),
     new float64[]{0.49999999999999994D, 0D}.array(),
@@ -2107,7 +2147,7 @@ internal static slice<array<float64>> vfroundEvenSC = new array<float64>[]{
     new float64[]{2251799813685250.5D, 2251799813685250D}.array(),
     new float64[]{4503599627370495.5D, 4503599627370496D}.array(),
     new float64[]{4503599627370497D, 4503599627370497D}.array()
-}.slice();
+}.slice(), 2);
 
 internal static slice<float64> vfsignbitSC = new float64[]{
     Inf(-1),
@@ -2885,8 +2925,8 @@ public static void TestFloor(ж<testing.T> Ꮡt) {
     }
     for (nint i = 0; i < len(vfceilSC); i++) {
         {
-            var f = Floor(vfceilSC[i]); if (!alike(ceilSC[i], f)) {
-                Ꮡt.Errorf("Floor(%g) = %g, want %g"u8, vfceilSC[i], f, ceilSC[i]);
+            var f = Floor(vfceilSC[i]); if (!alike(floorSC[i], f)) {
+                Ꮡt.Errorf("Floor(%g) = %g, want %g"u8, vfceilSC[i], f, floorSC[i]);
             }
         }
     }
@@ -3604,8 +3644,8 @@ public static void TestTrunc(ж<testing.T> Ꮡt) {
     }
     for (nint i = 0; i < len(vfceilSC); i++) {
         {
-            var f = Trunc(vfceilSC[i]); if (!alike(ceilSC[i], f)) {
-                Ꮡt.Errorf("Trunc(%g) = %g, want %g"u8, vfceilSC[i], f, ceilSC[i]);
+            var f = Trunc(vfceilSC[i]); if (!alike(truncSC[i], f)) {
+                Ꮡt.Errorf("Trunc(%g) = %g, want %g"u8, vfceilSC[i], f, truncSC[i]);
             }
         }
     }

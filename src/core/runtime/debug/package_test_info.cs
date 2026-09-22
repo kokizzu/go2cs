@@ -49,11 +49,11 @@ using static global::go.runtime.debug_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/debug/example_monitor_test.go", "example_monitor_test.cs", "AC0mwgACIAANApaCAAcS4oKUgoSCgpSUqIKClICCpICCpLqCgpSCgoKCgoKUgoCC")]
-[assembly: go.GoPositionMap("runtime/debug/garbage_test.go", "garbage_test.cs", "ACggooSCgriCgpaChIKUgpSClIKClIKUgoKCgpSClIKUqIKCgpaCgrqClIKCgoKUAAgMuoKWhIKoAAgUhIK6ggAJFoKCgpSUlIIABhKiloKCgqiCgpSChJKCgoKCgoKWkoCCtoKUlIKCgIK4gpSUgoKUgoKCguiCgpSmAAgSgg==")]
+[assembly: go.GoPositionMap("runtime/debug/example_monitor_test.go", "example_monitor_test.cs", "AA8mwgACIAANApaCAAcS4oKUgoSCgpSUqIKClICCpICCpLqCgpSCgoKCgoKUgoCC")]
+[assembly: go.GoPositionMap("runtime/debug/garbage_test.go", "garbage_test.cs", "ABAgooSCgriCgpaChIKUgpSClIKClIKUgoKCgpSClIKUqIKCgpaCgrqClIKCgoKUAAgMuoKWhIKoAAgUhIK6ggAJFoKCgpSUlIIABhKiloKCgqiCgpSChJKCgoKCgoKWkoCCtoKUlIKCgIK4gpSUgoKUgoKCguiCgpSmAAgSgg==", "169-172:1")]
 [assembly: go.GoPositionMap("runtime/debug/heapdump_test.go", "heapdump_test.cs", "ABEcooKUgoKUgpKCgoKUgoCCAAsQqNKClIKClIKmgoKCgpaCloKCAAwS+qKClIKClIKSgoI=")]
-[assembly: go.GoPositionMap("runtime/debug/mod_test.go", "mod_test.cs", "ABkekoKClAARBrSclgABEJ6MgoKUgrqCgoKWgg==")]
-[assembly: go.GoPositionMap("runtime/debug/stack_test.go", "stack_test.cs", "AC8sgpSCpoKClICCpIK4yoKkggANKrKCgoLegoDcgoKCgpSCgoKClLikgoKWgpKEgoKUhISCgpSUhIKCgoLmgoKCgpaEgoKCgoKClAAKGIKClIKClsqClIK6goKUgg==")]
+[assembly: go.GoPositionMap("runtime/debug/mod_test.go", "mod_test.cs", "AA0ekoKClAAhBrSclgABEJ6MgoKUgrqCgoKWgg==", "55-74:1")]
+[assembly: go.GoPositionMap("runtime/debug/stack_test.go", "stack_test.cs", "AB0sgpSCpoKClICCpIK4yoKkggANKgAUAoKCgt6CgNyCgoKClIKCgoKUuKSCgpaCkoSCgpSEhIKClJSEgoKCguaCgoKCloSCgoKCgoKUAAoYgoKUgoKWyoKUgrqCgpSC", "113-129:1")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;
@@ -73,4 +73,34 @@ public static partial class debug_test_package
     public partial struct Obj {}
     public partial struct T {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() => builtin.initPackage(typeof(go.runtime.debug_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.runtime.debug_package));
+    }
 }

@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/url` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**48 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**49 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -42,6 +44,7 @@ comparison — it is the evidence behind the `net/url` row in
 | `TestParseQuery/a=1;` | pass | pass |
 | `TestParseQuery/a=1;b=2` | pass | pass |
 | `TestParseQuery/ascii=%3Ckey%3A+0x90%3E` | pass | pass |
+| `TestParseQueryLimits` | pass | pass |
 | `TestParseRequestURI` | pass | pass |
 | `TestPathEscape` | pass | pass |
 | `TestQueryEscape` | pass | pass |
@@ -88,6 +91,7 @@ the capability it needs.
 - ExampleURL_EscapedPath (example): example execution is deferred to Phase 4D
 - ExampleURL_Hostname (example): example execution is deferred to Phase 4D
 - ExampleURL_IsAbs (example): example execution is deferred to Phase 4D
+- ExampleURL_JoinPath (example): example execution is deferred to Phase 4D
 - ExampleURL_MarshalBinary (example): example execution is deferred to Phase 4D
 - ExampleURL_Parse (example): example execution is deferred to Phase 4D
 - ExampleURL_Port (example): example execution is deferred to Phase 4D

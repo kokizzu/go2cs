@@ -31,7 +31,7 @@ using static global::go.hash.crc64_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/crc64/crc64_test.go", "crc64_test.cs", "ADhwgoKCgoKCgoKClIKCgoIACAqCgoKCgoSEgoKCloKCloCCgqaChIK4goKCgoSEgoKCloKCloCCgqaChILcgoKEgoKWgILIooKCgpSChIKCgoIACwiCgpSClIKUgpSClII=")]
+[assembly: go.GoPositionMap("hash/crc64/crc64_test.go", "crc64_test.cs", "ADhwgoKCgoKCgoKClIKCgoIACAqCgoKCgoSEgoKCloKCgpSEgoKWgoKWgIKCpoKEgriCgoKChISCgoKWgoKClISCgpaCgpaAgoKmgoSC3IKChIKCloCCyKKCgoKUgoSCgoKCAAsIgoKUgpSClIKUgpSC", "77-120:1;121-164:2;199-201:1;202-204:2;205-207:3;208-210:4;211-213:5;214-216:6")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;
@@ -47,4 +47,22 @@ public static partial class crc64_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.hash.crc64_package));
+    }
 }

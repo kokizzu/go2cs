@@ -90,8 +90,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                 tΔ1.Errorf("could not marshal: %v"u8, err);
                 continue;
             }
+            (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+            if (err != default!) {
+                tΔ1.Errorf("could not marshal: %v"u8, err);
+                continue;
+            }
+            stateAppend = stateAppend[4..];
             if (((sstring)state) != g.halfStateISO) {
                 tΔ1.Errorf("ISO crc64(%q) state = %q, want %q"u8, g.@in, state, g.halfStateISO);
+                continue;
+            }
+            if (((sstring)stateAppend) != g.halfStateISO) {
+                tΔ1.Errorf("ISO crc64(%q) state = %q, want %q"u8, g.@in, stateAppend, g.halfStateISO);
                 continue;
             }
             {
@@ -118,8 +128,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                 tΔ2.Errorf("could not marshal: %v"u8, err);
                 continue;
             }
+            (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+            if (err != default!) {
+                tΔ2.Errorf("could not marshal: %v"u8, err);
+                continue;
+            }
+            stateAppend = stateAppend[4..];
             if (((sstring)state) != g.halfStateECMA) {
                 tΔ2.Errorf("ECMA crc64(%q) state = %q, want %q"u8, g.@in, state, g.halfStateECMA);
+                continue;
+            }
+            if (((sstring)stateAppend) != g.halfStateECMA) {
+                tΔ2.Errorf("ECMA crc64(%q) state = %q, want %q"u8, g.@in, stateAppend, g.halfStateECMA);
                 continue;
             }
             {

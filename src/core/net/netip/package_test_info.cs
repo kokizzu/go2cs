@@ -42,6 +42,8 @@ using static go.net.netip_test_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6970206e65742f6e657469702e416464723b206e657874206e65742f6e657469702e416464723b2070726576206e65742f6e657469702e416464727d", "nextPrevTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20697020737472696e677d", "parseBenchInputsᴛ1")]
 [assembly: GoTypeAlias("Addr", "ΔAddr")]
 [assembly: GoTypeAlias("AddrDetail", "go.net.netip_package.addrDetail")]
 [assembly: GoTypeAlias("Prefix", "ΔPrefix")]
@@ -79,13 +81,13 @@ using static go.net.netip_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("net/netip/export_test.go", "export_test.cs", "ABQmgqaCpoKmgMiAooCkgA==")]
-[assembly: go.GoPositionMap("net/netip/fuzz_test.go", "fuzz_test.cs", "AKMB/gGigpaCgoKWgoKCloKCgpSCgpSClIKUgpSClIKUgpSClIKUgpSCzIKUgpaCgoKUgoKEgoKClIKCupKCgpSCgoKClIKCgoKUgoKCgpSCgoKCupKCgpSCgoKClIKCgoKUgoKCgpSCgoKCuIKCgpSCggAJFJKCgpaCgoIAECKylJaCgoKUgpSCgriCgoKCloCC", "132-211:1")]
-[assembly: go.GoPositionMap("net/netip/inlining_test.go", "inlining_test.cs", "ACogooKCyoKUgpKClAAsWpbugoKClJSCgpQ=", "28-31:1")]
-[assembly: go.GoPositionMap("net/netip/netip.go", "netip.cs", "AGeYAaCooKaQppCmkKayAAUS0gAIGLKClKSo1qqigoKUAAgSgoKClKaCkoKCgoKClIKCguyCpoKUgoKClKaClIKosoKCgpSoksyCgoKClKiCloKClIK6gqaCgoKCgqSklJSUlJSmlKiClJSUloKClIKClIKCqIKCloKCqIKklJaCkpSCgpLMgqiCgpSCgpS2lKyylKSkqqKqoqqiAAIQ9qywrtKUpKSokoKUrLKSgpSClIKClIKUgoKUgpSCkoKUgqassKqyqJKqoq7CgpSssoKUgoKUgqqigpSCqJKokoK6griClKiSgrqCuIKUqJKCuoK4gpSqxoKUqJKCuoK4gpQAAhgACQKUloK6gpYAAhTCgqimmqaWrsIABRDSgpSClKSClKSCtoIAAhDygoKs0oKClIKUqJKUpIKCpIKCgsyigoKUppSmqqKCgraUggAFHgAMApSkpIKUzrKUpKSClAAIEriClIKUqLiClIKUgpSokqaCgoKCpoKCgoKCgoKCpoKCgoKmgoKCgoKUAAIQAAUQ8oKCpoKCgoKClICCuIKCgoKCtpaWgoKUrLKUpoKCgoKWlqaClKyylKSCgqSCgoKUgoIABBLSgoKUgoKmgoKUpIKkgoKCgqSuwtqigpSCpIKkgqSCpAAIFqCmkKaQAAgOAAkCgoKWgoKUgpSCgpSClq7CgoKClIKClIKCgpSCpJSqooKClKqgqrKAgqTWgoKUpIKCpIKCgoKUgoKClKSCgqyylKSkgoKUlKSCgqyygrakpIKCrLKCgpSCgqyygoKqooKUgoKClIIADS4ACAKCgpTekKqwqrCkgKaQAAIUAAgCgIKkgIKkAAcQggACFPKCgpSCgqaClpaCloKClIKClIKUqqKCgpSuwoIAAhTygpSAkqQACBLKAAMS0oKUgpSClIKAkpSkgpzCgIKkgIKkrLKClIKogpSCgpSogoKssoK2pKSCgqyygoKUgoKssoKCqqKClIKCgpSC2JKClA==")]
+[assembly: go.GoPositionMap("net/netip/fuzz_test.go", "fuzz_test.cs", "AH/+AaKCloKCgpaCgoKWgoKClIKClIKUgpSClIKUgpSClIKUgpSClILMgpSCloKCgpSCgoSCgoKUgoK6koKClIKCgoKUgoKCgpSCgoKClIKCgoK6koKClIKCgoKUgoKCgpSCgoKClIKCgoK4goKClIKCAAkUkoKCloKCggAQIrKUloKCgpSClIKCuIKCgoKWgII=", "132-211:1")]
+[assembly: go.GoPositionMap("net/netip/inlining_test.go", "inlining_test.cs", "ABggooKCyoKUgpKClAAsWpbugoKClJSCgpQ=", "28-31:1")]
+[assembly: go.GoPositionMap("net/netip/netip.go", "netip.cs", "AEmYAaCooKaQppCmkKayAAUS0gAIGLKClKSo1qqigoKUAAgSgoKClKaCkoKCgoKClIKCguyCpoKUgoKClKaClIKosoKCgpSoksyCgoKClKiCloKClIK6gqaCgoKCgqSklJSUlJSmlKiClJSUloKClIKClIKCqIKCloKCqIKklJaCkpSCgpLMgqiCgpSCgpS2lKyylKSkqqKqoqqiAAIQ9qywrtKUpKSokoKUrLKSgpSClIKClIKUgoKUgpSCkoKUgqassKqyrLKqoq7CgpSssoKUgoKUgqqigpSCqJKokoK6griClKiSgrqCuIKUqJKCuoK4gpSqxoKUqJKCuoK4gpQAAhgACQKUloK6gpYAAhTCgqimmqaWrsIABRDSgpSClKSClKSCtoIAAhDygoKs0oKClIKUqJKUpIKCpIKCgsyigoKUppSmqqKCgraUggAFHgAMApSkpIKUzrKUpKSClAAIEriClIKUqLiClIKUgpSokqaCgoKCpoKCgoKCgoKCpoKCgoKmgoKCgoKUAAIQAAUQ8oKCpoKCgoKClICCuIKCgoKCtpaWgoKUrLKUpoKCgoKWlqaClKqirLKCtoK0goKClIK0AAIQ0oKClIKCqJK2pIKCpKaClKSkAAQQwtqigpSCpIKkgqSCpAAIFqCmkKaQAAgOAAkCgoKWgoKUgpSCgpSClq7CgoKClIKClIKCgpSCpJSqooKClKqgqrKAgqTWgoKUpIKCpIKCgoKUgoKClKSCgqyylKSkgoKUlKSCgqqirLKCtoKkgqSssoKClIKCrLKCgpSssqqigpSCgoKUggANLgAIAoKClN6QqrCqsKSAppAAAhQACAKAgqSAgqQABxCCAAIU8oKClIKCpoKWloKWgoKUgoKUgpSqooKClK7CggACFPKClICSpAAIEsoAAxLSgpSClIKUgoCSlKSCnMKAgqSAgqSssoKUgqiClIKClKiCgqqirLKCtoKkgqSssoKClIKCrLKCgpSsxKqigpSCgoKUgtiSgpQ=")]
 [assembly: go.GoPositionMap("net/netip/netip_pkg_test.go", "netip_pkg_test.cs", "ABgogoKCABEugoKCqIKCABgsgoS4goKogoKWuIKCyqKCuIKCgoKUgpSClIIADQqCAAcWgoKCAAoKggAdRIKCggANCoIAFDCykoKClICCpIKUgIIADAyCAAkaspKCgoKUlIKUgqiSgoLekoKCgoKClJSClIKClIIACgyCrrKShIKAgqaCgpaCgpYAChiigoKClIKCgriCgoKUgoKAgg==", "219-233:1;252-266:1;268-273:2;278-298:3;311-330:1")]
-[assembly: go.GoPositionMap("net/netip/netip_test.go", "netip_test.cs", "AEpAogBh0AGykoKCgpSUgpSCqIKClIKogoKClIKogoKUgqiCgoKUgqjMgoKAgqSClIKClIKCgroAPoABgoKCgpaCgpaCgpamlIKCgIIADwyCABU0goKCyqKCAAgIggAHFIKCgpSCgpSClIKAgqSCuoKCgIIAEAqCAAcWgoCCpIKCgpSCAAkKggAFEoKCgpSCgpSClIKAgqSCuoKCgIIAEAqCAAcUgoCCpIKCgpSCAAkKggAGFKaCgoKClIKUgoCCpIK6goKAgtq4goKAgqSCloKClIKCAAkIggALILKSgoIAIQyCABU+AJ4B1gKykoKCloKCloKCloKCloKCloKCloKCloKCAAsMggAaQLKSgoSCAA8MogAYQoKCgpSCgpSClIKUgqiCgoK6goK6AAcQgoKCggAMCIIACiSCgoKogoKAgtwABxCCgoKCAA8IggAKJIKCgqiCgoCC3AAIEoKCgoIACwiCABU0spKChIIAFwyCAAAQgoKWAB5AADNwspKypISCgpSClIKCloKWgIIACBCCAAcSgqaEgoCCpoKCloKCAAgMgoKAggAPCIIACBqCgoKWgoIAEQqCAAwigoKClIKCAAkKggARKrKSgoIAFAyCADN0spKCgpSClIKUgoKmgoKmgoKUgIKmAAkKgoKCAA4kgoKAggAKCoK+soKSkpSClICCAA4MggAybLKSgoKUgIIACwyCAAgYgoKCyqKCgpT2ooIABBCykoKCgoKUgoCC/qKCgoKCgoLKooKCgoKCggAQIoKosoKCgoKCgsqigoKCgoKCyqKCgoKCgoLKooKCgoK4ooKCgoIAEB6CgrKSgoLcgrKSgoLcgoKSkoKC3IKCkpKCgtyCgpKSgoLcgoKCkpKCgtyCgoKSkoKCAAsMggAuaLKShILcooKCgriCgoKClJSChIIACwyCABY0woKCgqaC1KKCgoKUggAJCoKCAB1KgoCCtoCCAFg0poKClJSCgpSUgoKUlIKCgoLMgJKAkoCSkKKQooCSgJKAkoCSgKaAkoCSgJKAkoCSgoKClIKCgpSAkoCSgJKAkoCSgJKAkoCSgJKAkoCSgJKAkpCikKKAkoCSgJKApoCSkKKApoCSkKKQooCmgJKCgpSAkoCSgAANBoIABxiCspKUlJKUggAKDIIABBKCgIIACgqCAAMQgoCCAA0KggAEEoKCgu6igoI=", "138-215:1;283-309:2;570-575:1;783-823:1;861-868:1;1088-1095:1;1108-1143:1;1202-1229:2;1204-1227:2.1;1244-1263:1;1354-1359:1;1423-1453:1;1496-1506:1;1497-1499:1.1;1500-1502:1.2;1566-1574:1;1618-1630:1;1743-1748:1;1754-1759:1;1766-1771:1;1778-1783:1;1790-1795:1;1803-1808:1;1816-1821:1;1879-1885:1;1905-1911:1;1942-1951:1;1943-1948:1.1;2038-2043:1;2044-2049:2;2050-2055:3;2056-2063:4;2057-2062:4.1;2066-2066:5;2067-2067:6;2068-2068:7;2069-2069:8;2070-2070:9;2071-2071:10;2072-2072:11;2073-2073:12;2074-2074:13;2075-2075:14;2078-2078:15;2079-2079:16;2080-2080:17;2081-2081:18;2082-2082:19;2083-2087:20;2088-2092:21;2093-2093:22;2094-2094:23;2095-2095:24;2096-2096:25;2097-2097:26;2098-2098:27;2099-2099:28;2100-2100:29;2101-2101:30;2102-2102:31;2103-2103:32;2104-2104:33;2105-2105:34;2106-2106:35;2107-2107:36;2108-2108:37;2109-2109:38;2110-2110:39;2111-2111:40;2114-2114:41;2115-2115:42;2116-2116:43;2119-2119:44;2120-2120:45;2121-2121:46;2122-2122:47;2125-2125:48;2126-2129:49;2130-2130:50;2131-2131:51;2132-2132:52;2150-2161:1;2155-2157:1.1")]
-[assembly: go.GoPositionMap("net/netip/slow_test.go", "slow_test.cs", "ABlQABUGooLIgpLGuIKClJaCgrqCgpSCgoKClIKWAAIqABICloKClIKCgpSCqILIlrKClIKUgpSGopSCgpS2tq7CgoKUgoKCgpSUqqKClIKClA==")]
-[assembly: go.GoPositionMap("net/netip/uint128.go", "uint128.cs", "ABkoogACENCmkqiSqJKokqiSgqiSgq7CqqKqog==")]
+[assembly: go.GoPositionMap("net/netip/netip_test.go", "netip_test.cs", "AC1CogBh0AGykoKCgpSUgpSCqIKClIKogoKClIKogoKUgqiCgoKUgqjMgoKAgqSClIKClIKCgroAPoABgoKCgpaCgpaCgpamlIKCgIIADwyCABU0goKCyqKCAA0IggAHFIKEgoKCgpSCAAkKggAHFIKCgpSCgpSClIKAgqSCloKCgoKUgpSCgIKkgrqCgoCCABAKggAHFoKAgqSCgoKUgpaCgoKCgpSCAAkKggAFEoKCgpSCgpSClIKAgqSCloKCgoKUgpSCgIKkgrqCgoCCABAKggAHFIKAgqSCgoKUgpaCgoKCgpSCAAkKggAGFKaCgoKClIKUgoCCpIKWgoKCgpSClIKAgqSCuoKCgILauIKCgIKkgpaCgpSCggAJCIIACyCykoKCACEMggAVPgCeAdYCspKCgpaCgpaCgpaCgpaCgpaCgpaCgpaCggALDIIAGkCykoKEggAPDKIAGEKCgoKUgoKUgpSClIKogoKCuoKCugAHEIKCgoIADAiCAAokgoKCqIKCgILcAAcQgoKCggAPCIIACiSCgoKogoKAgtwACBKCgoKCAAsIggAVNLKSgoSCABcMggAAEIKClgAeQAAzcLKSsqSEgoKUgpSCgpaCloCCAAgQggAHEoKmhIKAgqaCgpaCggAIDIKCgIIADwiCAAgagoKCloKCABEKggAMIoKCgpSCggAJCoIAESqykoKCABQMggAzdLKSgoKUgpSClIKCpoKCpoKClICCpgAJCoKCggAOJIKCgIIACgqCvrKCkpKUgpSAggAODIIAMmyykoKClICCAAsMggAIGIKCgsqigoKU9qKCAAQQspKCgoKClIKAgv6igoKCgoKCyqKCgoKCgoIAECKCqLKCgoKCgoLKooKCgoKCgsqigoKCgoKCyqKCgoKCuKKCgoKCABAegoKykoKC3IKykoKC3IKCkpKCgtyCgpKSgoLcgoKSkoKC3IKCgpKSgoLcgoKCkpKCggALDIIALmiykoSC3KKCgoK4goKCgpSUgoSCAAsMggAWNMKCgoKmgtSigoKClIIACQqCggAdSoKAgraAggBZNIKCuoKClJSCgpSUgoKUlIKCgoLMgJKAkoCSkKKQooCSgJKAkoCSgKaAkoCSgJKAkoCSgoKClIKCgpSAkoCSgJKAkoCSgJKAkoCSgJKAkoCSgJKAkpCikKKAkoCSgJKApoCSkKKApoCSkKKQooCmgJKCgpSAkoCSgAANBoIABxiCspKUlJKUggAKDIIABBKCgIIADQqCAAYWgoCCAA0KggAEEoKCgu6igoI=", "139-216:1;284-310:2;670-675:1;883-923:1;961-968:1;1188-1195:1;1208-1243:1;1302-1329:2;1304-1327:2.1;1344-1363:1;1454-1459:1;1523-1553:1;1596-1606:1;1597-1599:1.1;1600-1602:1.2;1666-1674:1;1718-1730:1;1843-1848:1;1854-1859:1;1866-1871:1;1878-1883:1;1890-1895:1;1903-1908:1;1916-1921:1;1979-1985:1;2005-2011:1;2042-2051:1;2043-2048:1.1;2142-2147:1;2148-2153:2;2154-2159:3;2160-2167:4;2161-2166:4.1;2170-2170:5;2171-2171:6;2172-2172:7;2173-2173:8;2174-2174:9;2175-2175:10;2176-2176:11;2177-2177:12;2178-2178:13;2179-2179:14;2182-2182:15;2183-2183:16;2184-2184:17;2185-2185:18;2186-2186:19;2187-2191:20;2192-2196:21;2197-2197:22;2198-2198:23;2199-2199:24;2200-2200:25;2201-2201:26;2202-2202:27;2203-2203:28;2204-2204:29;2205-2205:30;2206-2206:31;2207-2207:32;2208-2208:33;2209-2209:34;2210-2210:35;2211-2211:36;2212-2212:37;2213-2213:38;2214-2214:39;2215-2215:40;2218-2218:41;2219-2219:42;2220-2220:43;2223-2223:44;2224-2224:45;2225-2225:46;2226-2226:47;2229-2229:48;2230-2233:49;2234-2234:50;2235-2235:51;2236-2236:52;2254-2265:1;2259-2261:1.1")]
+[assembly: go.GoPositionMap("net/netip/slow_test.go", "slow_test.cs", "ABNQABUGooLIgpLGuIKClJaCgrqCgpSCgoKClIKWAAIqABICloKClIKCgpSCqILIlrKClIKUgpSGopSCgpS2tq7CgoKUgoKCgpSUqqKClIKClA==")]
+[assembly: go.GoPositionMap("net/netip/uint128.go", "uint128.cs", "ABMoogACENCmkqiSqJKokqiSgqiSgq7CqqKqog==")]
 [assembly: go.GoPositionMap("net/netip/uint128_test.go", "uint128_test.cs", "AA8WgoKCAAsigoKUpKSkggAJCoIACBiCgoKCAAkKggAIGIKCgoI=")]
 // </GoSourcePositionMaps>
 
@@ -120,6 +122,34 @@ public static partial class netip_package
     public partial struct ΔAddr {}
     public partial struct ΔPrefix {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(go.encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunique() => builtin.initPackage(typeof(unique_package));
+    // </ImportInitializers>
 }
 
 [GoPackage("netip_test")]
