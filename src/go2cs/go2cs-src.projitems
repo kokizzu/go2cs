@@ -13,6 +13,7 @@
     <None Include="$(MSBuildThisFileDirectory)adapterNameCollisions.go" />
     <None Include="$(MSBuildThisFileDirectory)addressTakenPredicates_test.go" />
     <None Include="$(MSBuildThisFileDirectory)aliasReferenceImports_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)anonStructPublicization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)archExclusive_test.go" />
