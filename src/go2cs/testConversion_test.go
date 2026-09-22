@@ -5406,3 +5406,72 @@ func TestHostRowReferencesTheHostExactlyOnce(t *testing.T) {
 		t.Errorf("an ordinary row must reference testing.csproj exactly once (the fixed entry), got %d", got)
 	}
 }
+
+// TestHandOwnHostBridgedNameTheHostDeclaresIsNotGone pins markHandOwnHostExcludedTestFiles'
+// exemption in BOTH directions. export_test.go (internal) publishes two exported aliases of one
+// unexported constant; an EXTERNAL file reading the name the hand-owned host DECLARES stays
+// compiled, and one reading a name the host does NOT declare is still excluded, its reason naming
+// the symbol. The CONTROL arm runs the same fixture with an empty host set and requires both files
+// excluded -- the exemption, not the fixture, is what admits the first file. MEASURED at 1.24.13:
+// testing_test.go's one `testing.ParallelConflict` (declared by the host's ExportTest.cs, q92) took
+// all 30 of its verdicts out of the row.
+func TestHandOwnHostBridgedNameTheHostDeclaresIsNotGone(t *testing.T) {
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod":         "module example/bridge\n\ngo 1.23\n",
+		"lib.go":         "package bridge\n\nconst conflict = \"conflict\"\n",
+		"export_test.go": "package bridge\n\nconst Declared = conflict\n\nconst Undeclared = conflict\n",
+		"declared_test.go": "package bridge_test\n\nimport (\n\t\"testing\"\n\n\t\"example/bridge\"\n)\n\n" +
+			"func TestDeclared(t *testing.T) {\n\tif bridge.Declared == \"\" {\n\t\tt.Fatal(\"empty\")\n\t}\n}\n",
+		"undeclared_test.go": "package bridge_test\n\nimport (\n\t\"testing\"\n\n\t\"example/bridge\"\n)\n\n" +
+			"func TestUndeclared(t *testing.T) {\n\tif bridge.Undeclared == \"\" {\n\t\tt.Fatal(\"empty\")\n\t}\n}\n",
+	})
+
+	internal, external := loadTestVariantsForDir(t, dir)
+	if internal == nil || external == nil {
+		t.Fatalf("expected both internal and external test variants, got internal=%v external=%v", internal, external)
+	}
+
+	// A host directory shaped like src/core/testing's ExportTest.cs: hand-owned, declaring ONE name.
+	host := t.TempDir()
+	if err := os.WriteFile(filepath.Join(host, "ExportTest.cs"), []byte(
+		"// hand-owned\n[module: go.GoManualConversion]\n\nnamespace go;\n\npublic static partial class bridge_package\n{\n"+
+			"    public static readonly @string Declared = \"conflict\";\n}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	hostDeclared := handOwnHostDeclaredNames(host)
+	if !hostDeclared.Contains("Declared") || hostDeclared.Contains("Undeclared") {
+		t.Fatalf("host-declared names = %v, want Declared only", hostDeclared.Keys())
+	}
+
+	excludedNames := func(result map[string][]string) map[string][]string {
+		names := make(map[string][]string, len(result))
+		for path, bridged := range result {
+			if strings.HasSuffix(path, "_test.go") && !strings.HasSuffix(path, "export_test.go") {
+				names[filepath.Base(path)] = bridged
+			}
+		}
+		return names
+	}
+
+	got := excludedNames(markHandOwnHostExcludedTestFiles(internal, external, map[string]bool{}, hostDeclared))
+	want := map[string][]string{"undeclared_test.go": {"bridge.Undeclared"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("with the host declaring Declared: excluded external files = %v, want %v", got, want)
+	}
+
+	reason := handOwnHostExcludedReason(externalTestSourceKind, got["undeclared_test.go"])
+	if !strings.Contains(reason, "bridge.Undeclared") {
+		t.Fatalf("the exclusion reason must name the bridged symbol, got %q", reason)
+	}
+
+	// CONTROL: nothing declared by the host -- the pre-exemption behaviour, both files out.
+	control := excludedNames(markHandOwnHostExcludedTestFiles(internal, external, map[string]bool{}, NewHashSet[string](nil)))
+	if _, ok := control["declared_test.go"]; !ok {
+		t.Fatalf("control: with no host declaration, declared_test.go must be excluded, got %v", control)
+	}
+	if _, ok := control["undeclared_test.go"]; !ok {
+		t.Fatalf("control: undeclared_test.go must be excluded, got %v", control)
+	}
+}

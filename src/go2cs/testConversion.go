@@ -742,11 +742,11 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// separate assembly the test project takes a colocated ProjectReference on — which for a host
 	// row is the hand-written counterpart itself. There is no white-box bridge to build, because
 	// there are no internal test files to put in one.
-	handOwnHostExcluded := map[string]bool{}
+	handOwnHostExcluded := map[string][]string{}
 
 	if options.testHandOwnHost {
 		model = testProjectReference
-		handOwnHostExcluded = markHandOwnHostExcludedTestFiles(internal, external, compileExcluded)
+		handOwnHostExcluded = markHandOwnHostExcludedTestFiles(internal, external, compileExcluded, handOwnHostDeclaredNames(outputPath))
 	}
 	conversion, err := convertTestVariants(model, production, internal, external, compileExcluded, inputPath, outputPath, projectNamespace, supported, options)
 
@@ -2035,9 +2035,15 @@ func testSourceKind(external *packages.Package, path string) string {
 }
 
 // handOwnHostExcludedReason names the MECHANISM that dropped a hand-owned host's _test.go file,
-// read from its kind rather than assumed.
-func handOwnHostExcludedReason(kind string) string {
+// read from its kind rather than assumed. An EXTERNAL file also names the bridged symbol(s) that
+// took it out -- the ones the host does not declare -- so the next reader knows which declaration
+// would bring the file back, instead of reading a mechanism and hunting for its instance.
+func handOwnHostExcludedReason(kind string, bridged []string) string {
 	if kind == externalTestSourceKind {
+		if len(bridged) > 0 {
+			return handOwnHostExcludedExternalReason + " (bridged, not declared by the host: " + strings.Join(bridged, ", ") + ")"
+		}
+
 		return handOwnHostExcludedExternalReason
 	}
 
@@ -2049,7 +2055,7 @@ func handOwnHostExcludedReason(kind string) string {
 // declarations slice and the separate TestMain field — pass through a single rule: the invariant
 // "the host may name only what the compilation contains" is a property of a DECLARATION, not of the
 // container it happens to sit in, and TestMain sits in its own field as a copy taken at discovery.
-func markCompileExcludedDeclaration(declaration *testDeclaration, inputPath string, compileExcluded, handOwnHostExcluded map[string]bool, external *packages.Package) {
+func markCompileExcludedDeclaration(declaration *testDeclaration, inputPath string, compileExcluded map[string]bool, handOwnHostExcluded map[string][]string, external *packages.Package) {
 	if declaration == nil || declaration.Status != "included" {
 		return
 	}
@@ -2062,8 +2068,8 @@ func markCompileExcludedDeclaration(declaration *testDeclaration, inputPath stri
 
 	declaration.Status = "unsupported"
 
-	if handOwnHostExcluded[sourcePath] {
-		declaration.Reason = handOwnHostExcludedReason(testSourceKind(external, sourcePath))
+	if bridged, hostExcluded := handOwnHostExcluded[sourcePath]; hostExcluded {
+		declaration.Reason = handOwnHostExcludedReason(testSourceKind(external, sourcePath), bridged)
 	} else {
 		declaration.Reason = compileExcludedSourceReason
 	}
@@ -2088,8 +2094,20 @@ func markCompileExcludedDeclaration(declaration *testDeclaration, inputPath stri
 // Every excluded file's DECLARATIONS still reach the manifest — discovery runs over the full entry
 // list and only emission is filtered (convertTestVariants) — so the F6 census still accounts for
 // every name `go test` produces, each with the capability status its own analysis assigned.
-func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excluded map[string]bool) map[string]bool {
-	added := map[string]bool{}
+//
+// ⚠ A BRIDGED NAME THE HOST DECLARES IS NOT GONE. export_test.go publishes an exported alias of an
+// unexported symbol; when the hand-owned host ITSELF declares that exported name (testing's
+// ExportTest.cs declares `public ParallelConflict`, q92), the external file's reference resolves in
+// the compilation and there is nothing to exclude it for. MEASURED at 1.24.13: testing_test.go's one
+// `testing.ParallelConflict` took the whole file -- 30 verdicts the 1.23.12 row compared -- out of a
+// host that declared the name. The exemption is by the host's DECLARATIONS (hostDeclared, read from
+// its hand-owned sources by handOwnHostDeclaredNames), never by the Go file: a bridged name the host
+// does NOT declare still excludes the file, and the returned map carries that name for the reason.
+//
+// The returned map is the excluded set: a key per excluded file, its value the bridged names that
+// excluded an EXTERNAL file (nil for the internal variant's own files).
+func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excluded map[string]bool, hostDeclared HashSet[string]) map[string][]string {
+	added := map[string][]string{}
 
 	if internal == nil {
 		return added
@@ -2181,11 +2199,18 @@ func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excl
 		}
 
 		excluded[filepath.Clean(path)] = true
-		added[filepath.Clean(path)] = true
+		added[filepath.Clean(path)] = nil
 	}
 
 	if external == nil {
 		return added
+	}
+
+	// declaredByHost: an exported member of the package under test whose NAME the hand-owned host
+	// declares. Only such an object is exempt; an unexported object or another package's never is.
+	declaredByHost := func(object types.Object) bool {
+		return object.Exported() && object.Pkg() != nil && object.Pkg().Path() == internal.PkgPath &&
+			hostDeclared.Contains(object.Name())
 	}
 
 	for changed := true; changed; {
@@ -2205,19 +2230,75 @@ func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excl
 				continue
 			}
 
+			var bridged []string
+
 			for object := range info.used {
-				if gone[object] {
-					excluded[path] = true
-					added[path] = true
-					changed = true
-					break
+				if gone[object] && !declaredByHost(object) {
+					bridged = append(bridged, object.Pkg().Name()+"."+object.Name())
 				}
+			}
+
+			if len(bridged) > 0 {
+				sort.Strings(bridged)
+				excluded[path] = true
+				added[path] = bridged
+				changed = true
 			}
 		}
 	}
 
 	return added
 }
+
+// handOwnHostDeclaredNames reads the member and type names a hand-owned host DECLARES, from its
+// hand-owned sources in outputPath: every non-test `.cs` carrying the `GoManualConversion` module
+// marker. A declaration line opens with an access modifier; its name is the last identifier before
+// the first `=`, `(`, `{`, `;` or `<` -- `public static readonly @string ParallelConflict = …`,
+// `public static void Run(…)`, `public partial struct T {`. Read as TEXT, deliberately: the host is
+// C#, go/types never sees it, and the only question asked of it is "is this exported name
+// declared". An unreadable directory answers the empty set, which exempts nothing.
+func handOwnHostDeclaredNames(outputPath string) HashSet[string] {
+	names := NewHashSet[string](nil)
+
+	files, err := filepath.Glob(filepath.Join(outputPath, "*.cs"))
+	if err != nil {
+		return names
+	}
+
+	for _, file := range files {
+		if strings.HasSuffix(strings.ToLower(file), "_test.cs") {
+			continue
+		}
+
+		content, err := os.ReadFile(file)
+		if err != nil || !strings.Contains(string(content), "GoManualConversion") {
+			continue
+		}
+
+		for _, line := range strings.Split(string(content), "\n") {
+			match := hostDeclarationLine.FindStringSubmatch(line)
+			if match == nil {
+				continue
+			}
+
+			head := match[1]
+			if cut := strings.IndexAny(head, "=({;<"); cut >= 0 {
+				head = head[:cut]
+			}
+
+			fields := strings.Fields(head)
+			if len(fields) == 0 {
+				continue
+			}
+
+			names.Add(strings.TrimPrefix(fields[len(fields)-1], "@"))
+		}
+	}
+
+	return names
+}
+
+var hostDeclarationLine = regexp.MustCompile(`^\s*(?:public|internal)\s+(.*)$`)
 
 // seedProductionAliasLifts makes the production conversion's package-scope ALIAS LIFTS reachable
 // from the test compilation — both halves of "reachable", which is why they are seeded together.
@@ -6063,7 +6144,7 @@ func copyTestFixtures(inputPath, outputPath string) (copied []string, linkStaged
 	return copied, linkStaged, nil
 }
 
-func classifyTestSources(inputPath string, included HashSet[string], compileExcluded, handOwnHostExcluded map[string]bool, external *packages.Package) ([]testSource, error) {
+func classifyTestSources(inputPath string, included HashSet[string], compileExcluded map[string]bool, handOwnHostExcluded map[string][]string, external *packages.Package) ([]testSource, error) {
 	matches, err := filepath.Glob(filepath.Join(inputPath, "*_test.go"))
 	if err != nil {
 		return nil, err
@@ -6075,12 +6156,13 @@ func classifyTestSources(inputPath string, included HashSet[string], compileExcl
 		// platform-SELECTED (so it is not platform-excluded) yet is deliberately not compiled, and
 		// its distinct status keeps the manifest truthful about why.
 		status, reason := "included", ""
+		bridged, hostExcluded := handOwnHostExcluded[filepath.Clean(path)]
 		switch {
-		case handOwnHostExcluded[filepath.Clean(path)]:
+		case hostExcluded:
 			// Checked ahead of the Phase-4D status: a host row's internal file may satisfy both
 			// predicates, and "the host replaces this representation" is the accurate reason where
 			// "deferred to Phase 4D" would promise a later run that is never coming.
-			status, reason = handOwnHostExcludedSourceStatus, handOwnHostExcludedReason(kind)
+			status, reason = handOwnHostExcludedSourceStatus, handOwnHostExcludedReason(kind, bridged)
 		case compileExcluded[filepath.Clean(path)]:
 			status, reason = compileExcludedSourceStatus, compileExcludedSourceReason
 		case !included.Contains(filepath.Clean(path)):
