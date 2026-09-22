@@ -8,6 +8,7 @@ using bytes = bytes_package;
 using context = context_package;
 using json = go.encoding.json_package;
 using io = io_package;
+using os = os_package;
 using filepath = path.filepath_package;
 using slices = slices_package;
 using strconv = strconv_package;
@@ -21,60 +22,6 @@ using static go.log.slog_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class slog_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(go.encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string preˢ = "pre"u8;
@@ -846,6 +793,34 @@ public static void BenchmarkWriteTime(ж<testing.B> Ꮡb) {
     for (nint i = 0; i < b.N; i++) {
         buf = appendRFC3339Millis(buf[..0], tm);
     }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string msgˢ = "msg"u8;
+internal static readonly @string durˢ = "dur"u8;
+internal static readonly @string badˢ = "bad"u8;
+internal static readonly @string aBCˢ = "a b c"u8;
+internal static readonly @string infoˢ2 = "info"u8;
+
+public static void TestDiscardHandler(ж<testing.T> Ꮡt) {
+    var ctx = context.Background();
+    var (stdout, stderr) = (os.Stdout, os.Stderr);
+    (os.Stdout, os.Stderr) = (default!, default!); // panic on write
+    var stderrʗ1 = stderr;
+    var stdoutʗ1 = stdout;
+    Ꮡt.Cleanup(() => {
+        (os.Stdout, os.Stderr) = (stdoutʗ1, stderrʗ1);
+    });
+    // Just ensure nothing panics during normal usage
+    var l = New(DiscardHandler);
+    l.Info(msgˢ, (@string)"a"u8, (nint)(1), (@string)"b"u8, (nint)(2));
+    l.Debug("bg"u8, Int("a"u8, 1), (@string)"b"u8, (nint)(2));
+    l.Warn("w"u8, go.log.slog_package.Duration(durˢ, (time.Duration)(3000000000L)));
+    l.Error(badˢ, (@string)"a"u8, (nint)(1));
+    l.Log(ctx, LevelWarn + 1, "w"u8, Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ));
+    l.LogAttrs(ctx, LevelInfo + 1, aBCˢ, Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ));
+    l.Info(infoˢ2, (@string)"a"u8, new global::go.log.slog_package.Attr[]{Int("i"u8, 1)}.slice());
+    l.Info(infoˢ2, (@string)"a"u8, GroupValue(Int("i"u8, 1)));
 }
 
 } // end slog_internal_test_package

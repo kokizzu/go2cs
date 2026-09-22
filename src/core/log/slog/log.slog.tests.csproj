@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -66,6 +78,22 @@
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
   </PropertyGroup>
 
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
@@ -90,32 +118,33 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="attr.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="attr_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_custom_levels_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_level_handler_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_log_level_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_logvaluer_group_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_logvaluer_secret_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_wrap_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handler.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="handler_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="json_handler.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="json_handler_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="level.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="level_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="logger.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="logger_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="record.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="record_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="slogtest_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="text_handler.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="text_handler_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="value.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="value_access_benchmark_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="value_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="attr.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="attr_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="doc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_custom_levels_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_discard_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_level_handler_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_log_level_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_logvaluer_group_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_logvaluer_secret_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_wrap_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handler.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="handler_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="json_handler.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="json_handler_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="level.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="level_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="logger.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="logger_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="record.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="record_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="slogtest_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="text_handler.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="text_handler_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="value.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="value_access_benchmark_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="value_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -127,7 +156,11 @@
     <ProjectReference Include="$(go2csPath)core/flag/flag.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/asan/internal.asan.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/msan/internal.msan.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/race/internal.race.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
@@ -141,7 +174,6 @@
     <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
     <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
     <ProjectReference Include="$(go2csPath)core/regexp/regexp.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />

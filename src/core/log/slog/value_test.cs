@@ -4,20 +4,16 @@
 namespace go.log;
 
 using fmt = fmt_package;
+using asan = go.@internal.asan_package;
 using reflect = reflect_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
 using @unsafe = unsafe_package;
+using go.@internal;
 using static go.log.slog_package;
 
 partial class slog_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string groupˢ = "Group"u8;
@@ -118,9 +114,15 @@ public static void TestValueString(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
+
 public static void TestValueNoAlloc(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     // Assign values just to make sure the compiler doesn't optimize away the statements.
     ref var i = ref heap(new int64(), out var Ꮡi);
     

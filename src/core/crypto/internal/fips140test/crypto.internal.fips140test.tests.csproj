@@ -131,6 +131,7 @@
     <None Include="nistec_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="sshkdf_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="xaes_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <EmbeddedResource Include="acvp_capabilities.json" LogicalName="go.embed/crypto/internal/fips140test_test/acvp_capabilities.json" />
   </ItemGroup>
 
   <ItemGroup>

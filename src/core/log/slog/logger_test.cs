@@ -5,6 +5,8 @@ namespace go.log;
 
 using bytes = bytes_package;
 using context = context_package;
+using asan = go.@internal.asan_package;
+using msan = go.@internal.msan_package;
 using race = go.@internal.race_package;
 using testenv = go.@internal.testenv_package;
 using io = io_package;
@@ -18,29 +20,12 @@ using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using go.@internal;
 using path;
 using static go.log.slog_package;
 
 partial class slog_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 // textTimeRE is a regexp to match log timestamps for Text handler.
 // This is RFC3339Nano with the fixed 3 digit sub-second precision.
@@ -51,16 +36,11 @@ internal static readonly @string textTimeRE = @"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d
 internal static readonly @string jsonTimeRE = @"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string msgˢ = "msg"u8;
 internal static readonly @string levelInfoMsgMsgA1B2ˢ = @"level=INFO msg=msg a=1 b=2"u8;
-internal static readonly @string durˢ = "dur"u8;
 internal static readonly @string levelWarnMsgWDur3sˢ = @"level=WARN msg=w dur=3s"u8;
-internal static readonly @string badˢ = "bad"u8;
 internal static readonly @string levelErrorMsgBadA1ˢ = @"level=ERROR msg=bad a=1"u8;
 internal static readonly @string levelWarn1MsgWA1BTwoˢ = @"level=WARN\+1 msg=w a=1 b=two"u8;
-internal static readonly @string aBCˢ = "a b c"u8;
 internal static readonly @string levelInfo1MsgABCA1BTwoˢ = @"level=INFO\+1 msg=""a b c"" a=1 b=two"u8;
-internal static readonly @string infoˢ2 = "info"u8;
 internal static readonly @string levelInfoMsgInfoAI1ˢ = @"level=INFO msg=info a.i=1"u8;
 
 public static void TestLogTextHandler(ж<testing.T> Ꮡt) {
@@ -300,23 +280,23 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
         var ctx = context.Background();
-        var dl = New(new discardHandler(nil));
+        var dl = New(new discardTestHandler(nil));
         defer(SetDefault, Default(), ref ᒐ); // restore
         SetDefault(dl);
         Ꮡt.Run(infoˢ3, (ж<testing.T> tΔ1) => {
-            wantAllocs(tΔ1, 0, () => {
+            wantAllocs(tΔ1, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 Info(helloˢ);
             });
         });
         Ꮡt.Run(errorˢ2, (ж<testing.T> tΔ2) => {
-            wantAllocs(tΔ2, 0, () => {
+            wantAllocs(tΔ2, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 go.log.slog_package.Error(helloˢ);
             });
         });
         var dlʗ1 = dl;
         Ꮡt.Run(loggerInfoˢ, (ж<testing.T> tΔ3) => {
             var dlʗ2 = dlʗ1;
-            wantAllocs(tΔ3, 0, () => {
+            wantAllocs(tΔ3, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ2.Info(helloˢ);
             });
         });
@@ -325,7 +305,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         Ꮡt.Run(loggerLogˢ, (ж<testing.T> tΔ4) => {
             var ctxʗ2 = ctxʗ1;
             var dlʗ4 = dlʗ3;
-            wantAllocs(tΔ4, 0, () => {
+            wantAllocs(tΔ4, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ4.Log(ctxʗ2, LevelDebug, helloˢ);
             });
         });
@@ -334,7 +314,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
             @string s = abcˢ;
             nint i = 2000;
             var dlʗ6 = dlʗ5;
-            wantAllocs(tΔ5, 2, () => {
+            wantAllocs(tΔ5, 2, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ6.Info(helloˢ,
                     (@string)"n"u8, i,
                     (@string)"s"u8, s);
@@ -342,12 +322,12 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         });
         var ctxʗ3 = ctx;
         Ꮡt.Run(pairsDisabledInlineˢ, (ж<testing.T> tΔ6) => {
-            var l = New(new discardHandler(disabled: true));
+            var l = New(DiscardHandler);
             @string s = abcˢ;
             nint i = 2000;
             var ctxʗ4 = ctxʗ3;
             var lʗ1 = l;
-            wantAllocs(tΔ6, 2, () => {
+            wantAllocs(tΔ6, 2, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 lʗ1.Log(ctxʗ4, LevelInfo, helloˢ,
                     (@string)"n"u8, i,
                     (@string)"s"u8, s);
@@ -355,7 +335,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         });
         var ctxʗ5 = ctx;
         Ꮡt.Run(pairsDisabledˢ, (ж<testing.T> tΔ7) => {
-            var l = New(new discardHandler(disabled: true));
+            var l = New(DiscardHandler);
             @string s = abcˢ;
             nint i = 2000;
             var ctxʗ6 = ctxʗ5;
@@ -374,7 +354,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
             nint i = 2000;
             var d = time_package.ΔSecond;
             var dlʗ8 = dlʗ7;
-            wantAllocs(tΔ8, 10, () => {
+            wantAllocs(tΔ8, 10, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ8.Info(helloˢ,
                     (@string)"n"u8, i, (@string)"s"u8, s, (@string)"d"u8, d,
                     (@string)"n"u8, i, (@string)"s"u8, s, (@string)"d"u8, d,
@@ -384,7 +364,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         var dlʗ9 = dl;
         Ꮡt.Run(pairsˢ2, (ж<testing.T> tΔ9) => {
             var dlʗ10 = dlʗ9;
-            wantAllocs(tΔ9, 0, () => {
+            wantAllocs(tΔ9, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ10.Info(""u8, errorˢ3, io.EOF);
             });
         });
@@ -393,12 +373,12 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         Ꮡt.Run(attrs1ˢ, (ж<testing.T> tΔ10) => {
             var ctxʗ8 = ctxʗ7;
             var dlʗ12 = dlʗ11;
-            wantAllocs(tΔ10, 0, () => {
+            wantAllocs(tΔ10, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ12.LogAttrs(ctxʗ8, LevelInfo, ""u8, Int("a"u8, 1));
             });
             var ctxʗ9 = ctxʗ7;
             var dlʗ13 = dlʗ11;
-            wantAllocs(tΔ10, 0, () => {
+            wantAllocs(tΔ10, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ13.LogAttrs(ctxʗ9, LevelInfo, ""u8, go.log.slog_package.Any(errorˢ3, io.EOF));
             });
         });
@@ -407,16 +387,16 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         Ꮡt.Run(attrs3ˢ, (ж<testing.T> tΔ11) => {
             var ctxʗ11 = ctxʗ10;
             var dlʗ15 = dlʗ14;
-            wantAllocs(tΔ11, 0, () => {
+            wantAllocs(tΔ11, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ15.LogAttrs(ctxʗ11, LevelInfo, helloˢ, Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ), go.log.slog_package.Duration("c"u8, time_package.ΔSecond));
             });
         });
         var ctxʗ12 = ctx;
         Ꮡt.Run(attrs3Disabledˢ, (ж<testing.T> tΔ12) => {
-            var logger = New(new discardHandler(disabled: true));
+            var logger = New(DiscardHandler);
             var ctxʗ13 = ctxʗ12;
             var loggerʗ1 = logger;
-            wantAllocs(tΔ12, 0, () => {
+            wantAllocs(tΔ12, 0, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 loggerʗ1.LogAttrs(ctxʗ13, LevelInfo, helloˢ, Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ), go.log.slog_package.Duration("c"u8, time_package.ΔSecond));
             });
         });
@@ -425,7 +405,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         Ꮡt.Run(attrs6ˢ, (ж<testing.T> tΔ13) => {
             var ctxʗ15 = ctxʗ14;
             var dlʗ17 = dlʗ16;
-            wantAllocs(tΔ13, 1, () => {
+            wantAllocs(tΔ13, 1, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ17.LogAttrs(ctxʗ15, LevelInfo, helloˢ,
                     Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ), go.log.slog_package.Duration("c"u8, time_package.ΔSecond),
                     Int("d"u8, 1), go.log.slog_package.String("e"u8, twoˢ), go.log.slog_package.Duration("f"u8, time_package.ΔSecond));
@@ -436,7 +416,7 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
         Ꮡt.Run(attrs9ˢ, (ж<testing.T> tΔ14) => {
             var ctxʗ17 = ctxʗ16;
             var dlʗ19 = dlʗ18;
-            wantAllocs(tΔ14, 1, () => {
+            wantAllocs(tΔ14, 1, [MethodImpl(MethodImplOptions.NoInlining)] () => {
                 dlʗ19.LogAttrs(ctxʗ17, LevelInfo, helloˢ,
                     Int("a"u8, 1), go.log.slog_package.String("b"u8, twoˢ), go.log.slog_package.Duration("c"u8, time_package.ΔSecond),
                     Int("d"u8, 1), go.log.slog_package.String("e"u8, twoˢ), go.log.slog_package.Duration("f"u8, time_package.ΔSecond),
@@ -684,18 +664,19 @@ internal static @string clean(@string s) {
 
 internal static error Handle(this ж<captureHandler> Ꮡh, context.Context ctx, global::go.log.slog_package.Record r) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         r = r.ΔClone();
 
         ref var h = ref Ꮡh.DerefOrNull();
-        Ꮡh.of(captureHandler.Ꮡmu).Lock();
-        defer(Ꮡh.of(captureHandler.Ꮡmu).Unlock, ref ᒐ);
+        h.mu.Lock();
+        ᒐd1 = true;
         h.ctx = ctx;
         h.r = r.ΔClone();
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡh.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static bool Enabled(this ref captureHandler _Δp0, context.Context _Δp1, global::go.log.slog_package.ΔLevel _Δp2) {
@@ -704,11 +685,12 @@ internal static error Handle(this ж<captureHandler> Ꮡh, context.Context ctx, 
 
 internal static global::go.log.slog_package.ΔHandler WithAttrs(this ж<captureHandler> Ꮡc, slice<global::go.log.slog_package.Attr> @as) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(captureHandler.Ꮡmu).Lock();
-        defer(Ꮡc.of(captureHandler.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         ref var c2 = ref heap(new captureHandler(), out var Ꮡc2);
         c2.r = c.r.ΔClone();
         c2.groups = c.groups;
@@ -716,16 +698,17 @@ internal static global::go.log.slog_package.ΔHandler WithAttrs(this ж<captureH
         return new slog_internal_test_package.captureHandlerжΔHandler(Ꮡc2);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static global::go.log.slog_package.ΔHandler WithGroup(this ж<captureHandler> Ꮡc, @string name) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(captureHandler.Ꮡmu).Lock();
-        defer(Ꮡc.of(captureHandler.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         ref var c2 = ref heap(new captureHandler(), out var Ꮡc2);
         c2.r = c.r.ΔClone();
         c2.attrs = c.attrs;
@@ -733,42 +716,42 @@ internal static global::go.log.slog_package.ΔHandler WithGroup(this ж<captureH
         return new slog_internal_test_package.captureHandlerжΔHandler(Ꮡc2);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void clear(this ж<captureHandler> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(captureHandler.Ꮡmu).Lock();
-        defer(Ꮡc.of(captureHandler.Ꮡmu).Unlock, ref ᒐ);
+        c.mu.Lock();
+        ᒐd1 = true;
         c.ctx = default!;
         c.r = new Record(nil);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
-[GoType] internal partial struct discardHandler {
-    internal bool disabled;
+[GoType] internal partial struct discardTestHandler {
     internal slice<global::go.log.slog_package.Attr> attrs;
 }
 
-internal static bool Enabled(this discardHandler d, context.Context _Δp1, global::go.log.slog_package.ΔLevel _Δp2) {
-    return !d.disabled;
+internal static bool Enabled(this discardTestHandler d, context.Context _Δp1, global::go.log.slog_package.ΔLevel _Δp2) {
+    return true;
 }
 
-internal static error Handle(this discardHandler _Δp0, context.Context _Δp1, global::go.log.slog_package.Record _Δp2) {
+internal static error Handle(this discardTestHandler _Δp0, context.Context _Δp1, global::go.log.slog_package.Record _Δp2) {
     return default!;
 }
 
-internal static global::go.log.slog_package.ΔHandler WithAttrs(this discardHandler d, slice<global::go.log.slog_package.Attr> @as) {
+internal static global::go.log.slog_package.ΔHandler WithAttrs(this discardTestHandler d, slice<global::go.log.slog_package.Attr> @as) {
     d.attrs = concat(d.attrs, @as);
     return d;
 }
 
-internal static global::go.log.slog_package.ΔHandler WithGroup(this discardHandler h, @string name) {
+internal static global::go.log.slog_package.ΔHandler WithGroup(this discardTestHandler h, @string name) {
     return h;
 }
 
@@ -854,18 +837,18 @@ public static void BenchmarkNopLog(ж<testing.B> Ꮡb) {
 }
 
 // callerPC returns the program counter at the given stack depth.
-internal static uintptr callerPC(nint depth) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr callerPC(nint depth) {
     array<uintptr> pcs = new(1);
     runtime.Callers(depth, pcs[..]);
     return pcs[0];
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object skippingTestInRaceModeˢ = (@string)"skipping test in race mode"u8;
+internal static readonly object skippingTestInRaceAsanˢ = (@string)"skipping test in race, asan, and msan modes"u8;
 
 internal static void wantAllocs(ж<testing.T> Ꮡt, nint want, Action f) {
-    if (race.Enabled) {
-        Ꮡt.Skip(skippingTestInRaceModeˢ);
+    if (race.Enabled || asan.Enabled || msan.Enabled) {
+        Ꮡt.Skip(skippingTestInRaceAsanˢ);
     }
     testenv.SkipIfOptimizationOff(new slog_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Helper();

@@ -141,7 +141,7 @@ internal static slice<global::go.log.slog_package.Attr> attrsSlice(global::go.lo
 }
 
 internal static bool attrsEqual(slice<global::go.log.slog_package.Attr> as1, slice<global::go.log.slog_package.Attr> as2) {
-    return slices.EqualFunc<slice<global::go.log.slog_package.Attr>, slice<global::go.log.slog_package.Attr>, global::go.log.slog_package.Attr, global::go.log.slog_package.Attr>(as1, as2, (Func<global::go.log.slog_package.Attr, global::go.log.slog_package.Attr, bool>)(global::go.log.slog_package.Equal));
+    return slices.EqualFunc<slice<global::go.log.slog_package.Attr>, slice<global::go.log.slog_package.Attr>, global::go.log.slog_package.Attr, global::go.log.slog_package.Attr>(as1, as2, ((Func<global::go.log.slog_package.Attr, global::go.log.slog_package.Attr, bool>)(global::go.log.slog_package.Equal)));
 }
 
 // Currently, pc(2) takes over 400ns, which is too expensive

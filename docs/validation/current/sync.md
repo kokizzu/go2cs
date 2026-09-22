@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `sync` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-03 · converter `93a131a3f`*
+*Validated 2026-09-22 · converter `f9a4b088f`*
 
-**47 matched · 4 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**46 matched · 6 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync).
 
-Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 windows/amd64`.
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -26,11 +26,12 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 windows/amd
 | `TestCondSignalGenerations` | pass | pass |
 | `TestCondSignalStealing` | pass | pass |
 | `TestIssue40999` | pass | pass |
-| `TestMapClearNoAllocations` | pass | pass |
+| `TestMapClearOneAllocation` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestMapMatchesDeepCopy` | pass | pass |
+| `TestMapMatchesHashTrieMap` | pass | pass |
 | `TestMapMatchesRWMutex` | pass | pass |
 | `TestMapRangeNestedCall` | pass | pass |
-| `TestMapRangeNoAllocations` | pass | pass |
+| `TestMapRangeNoAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestMutex` | pass | pass |
 | `TestMutexFairness` | pass | pass |
 | `TestMutexMisuse` | pass | pass |
@@ -78,6 +79,8 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |
 |:--|:--|:--|
+| `TestMapClearOneAllocation` | `alloc-count-semantics` | at-most-one AllocsPerRun assert over sync.Map.Clear (`allocs > 1` errors, so the want is at most ONE object per run). The managed shim reported BYTES, not a count: `measured 8,960 allocated BYTES over 10 run(s) ... BYTES PER RUN, not an allocation count. The go2cs runtime allocation counter charged none of it`, so every object on this path was allocated outside golib (a compiler-emitted closure in converted code, or a BCL internal) and NO COUNT IS AVAILABLE. A byte figure cannot be compared with an object want at any allocation behavior, which is the ladder's incomparable-unit arm: nothing to retire, and no plan, because the entry does not assert that the path allocates too much -- it records that the instrument cannot answer the question the test asks. Note why the shim does not simply report zero: its counter charged nothing, and reporting that zero would be a FALSE PASS against a want of one. SIGNATURE IS WANT-FREE deliberately: this declaration is a 1.24 RENAME of 1.23.12's TestMapClearNoAllocations and the want moved 0 -> 1 with it, so a signature carrying the want would stop matching the moment sync is reconverted at 1.24.13. |
+| `TestMapRangeNoAllocations` | `alloc-count-semantics` | want-zero AllocsPerRun assert over sync.Map.Range with a `func(key, value any) bool` callback. Same incomparable-unit arm as TestMapClearOneAllocation: the shim reported `measured 1,520 allocated BYTES over 10 run(s) ... BYTES PER RUN, not an allocation count. The go2cs runtime allocation counter charged none of it`, so no object count exists to compare with the want and the figure is byte-derived by construction. Nothing to retire and no plan. Unlike its sibling this declaration is UNCHANGED across 1.23.12 and 1.24.13 (same name, `allocs > 0`, `want 0`), so it carries no rename; the signature is still want-free for consistency with the sibling and because a want-bearing signature buys nothing. |
 | `TestOnceXGC` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestOnceXGC/OnceFunc` | `codegen-liveness` | The test asserts its own frame's `buf` is collectible while the frame is still running. sync.OnceFunc DOES drop the wrapped function (measured: the backing array is released after the first call), but the test's own `f := fn(buf)` passes the 32-byte slice header BY VALUE, so the x64 ABI makes the caller materialize an address-exposed stack temp; an address-exposed slot is not lifetime-tracked and the CLR reports it live for the whole method, pinning the array until the subtest RETURNS. Go's per-safepoint liveness maps release the caller's copy at its last use. Not satisfiable at any layer go2cs owns — it is the CLR's GC-info conservatism, and it holds in fully optimized code, not just under the non-optimizing JIT. |
 | `TestOnceXGC/OnceValue` | `codegen-liveness` | Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking |
@@ -91,17 +94,6 @@ test requiring a capability the managed runtime does not provide — a `testing`
 has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
 the capability it needs.
 
-- BenchmarkAdversarialAlloc (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkAdversarialDelete (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkClear (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndDeleteMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndDeleteMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndSwapCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndSwapMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndSwapMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndSwapNoExistingKey (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkCompareAndSwapValueNotEqual (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCond1 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCond16 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCond2 (benchmark): benchmark execution is deferred to Phase 4D
@@ -109,15 +101,30 @@ the capability it needs.
 - BenchmarkCond4 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCond8 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkContendedSemaphore (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadAndDeleteBalanced (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadAndDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadAndDeleteUnique (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadOrStoreBalanced (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadOrStoreCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkLoadOrStoreUnique (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapAdversarialAlloc (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapAdversarialDelete (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapClear (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndDeleteMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndDeleteMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndSwapCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndSwapMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndSwapMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndSwapNoExistingKey (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapCompareAndSwapValueNotEqual (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadAndDeleteBalanced (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadAndDeleteCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadAndDeleteUnique (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadOrStoreBalanced (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadOrStoreCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapLoadOrStoreUnique (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapRange (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapSwapCollision (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapSwapMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMapSwapMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMutex (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMutexNoSpin (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMutexSlack (benchmark): benchmark execution is deferred to Phase 4D
@@ -138,15 +145,11 @@ the capability it needs.
 - BenchmarkRWMutexWorkWrite100 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkRWMutexWrite10 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkRWMutexWrite100 (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkRange (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSemaSyntBlock (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSemaSyntNonblock (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSemaUncontended (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSemaWorkBlock (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSemaWorkNonblock (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkSwapCollision (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkSwapMostlyHits (benchmark): benchmark execution is deferred to Phase 4D
-- BenchmarkSwapMostlyMisses (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkUncontendedSemaphore (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkWaitGroupActuallyWait (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkWaitGroupAddDone (benchmark): benchmark execution is deferred to Phase 4D

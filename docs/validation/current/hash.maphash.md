@@ -6,15 +6,39 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `hash/maphash` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-04 · converter `f6e9c0cf0`*
+*Validated 2026-09-22 · converter `f9a4b088f`*
 
-**22 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**59 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/hash/maphash).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
+
+Both runtimes skip 1 of the matched tests identically.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `TestComparable` | pass | pass |
+| `TestComparable/*float64` | pass | pass |
+| `TestComparable/bool` | pass | pass |
+| `TestComparable/chan_struct_{}` | pass | pass |
+| `TestComparable/chan_struct_{}#01` | pass | pass |
+| `TestComparable/complex128` | pass | pass |
+| `TestComparable/float32` | pass | pass |
+| `TestComparable/float64` | pass | pass |
+| `TestComparable/float64#01` | pass | pass |
+| `TestComparable/int64` | pass | pass |
+| `TestComparable/interface_{}` | pass | pass |
+| `TestComparable/maphash.S` | pass | pass |
+| `TestComparable/string` | pass | pass |
+| `TestComparable/string#01` | pass | pass |
+| `TestComparable/struct_{_i_int;_u_uint;_b_bool;_f_float64;_p_*int;_a_interface_{}_}` | pass | pass |
+| `TestComparable/struct_{}` | pass | pass |
+| `TestComparable/uint64` | pass | pass |
+| `TestComparable/uintptr` | pass | pass |
+| `TestComparableAllocations` | skip | skip |
+| `TestComparableShouldPanic` | pass | pass |
 | `TestHashBytesVsString` | pass | pass |
 | `TestHashGrouping` | pass | pass |
 | `TestHashHighBytes` | pass | pass |
@@ -37,6 +61,23 @@ comparison — it is the evidence behind the `hash/maphash` row in
 | `TestSmhasherWindowed` | pass | pass |
 | `TestSmhasherZeros` | pass | pass |
 | `TestUnseededHash` | pass | pass |
+| `TestWriteComparable` | pass | pass |
+| `TestWriteComparable/*float64` | pass | pass |
+| `TestWriteComparable/bool` | pass | pass |
+| `TestWriteComparable/complex128` | pass | pass |
+| `TestWriteComparable/float32` | pass | pass |
+| `TestWriteComparable/float64` | pass | pass |
+| `TestWriteComparable/float64#01` | pass | pass |
+| `TestWriteComparable/int64` | pass | pass |
+| `TestWriteComparable/interface_{}` | pass | pass |
+| `TestWriteComparable/maphash.S` | pass | pass |
+| `TestWriteComparable/string` | pass | pass |
+| `TestWriteComparable/string#01` | pass | pass |
+| `TestWriteComparable/struct_{_i_int;_u_uint;_b_bool;_f_float64;_p_*int;_a_interface_{}_}` | pass | pass |
+| `TestWriteComparable/struct_{}` | pass | pass |
+| `TestWriteComparable/uint64` | pass | pass |
+| `TestWriteComparable/uintptr` | pass | pass |
+| `TestWriteComparableNoncommute` | pass | pass |
 
 ## Excluded declarations
 
@@ -46,5 +87,6 @@ test requiring a capability the managed runtime does not provide — a `testing`
 has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
 the capability it needs.
 
+- BenchmarkComparable (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkHash (benchmark): benchmark execution is deferred to Phase 4D
 - Example (example): example execution is deferred to Phase 4D

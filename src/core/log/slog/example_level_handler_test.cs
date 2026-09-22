@@ -14,30 +14,6 @@ using static go.log.slog_internal_test_package;
 
 partial class slog_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlogꓸslog() {
-    builtin.initPackage(typeof(go.log.slog_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸslogtest() {
-    builtin.initPackage(typeof(go.log.slog.@internal.slogtest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
 // A LevelHandler wraps a Handler with an Enabled method
 // that returns false for levels below a minimum.
 [GoType] partial struct LevelHandler {
