@@ -1510,6 +1510,43 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// A Go conversion between two DIFFERENT struct types whose shared underlying is the EMPTY
+		// struct — unique's handle_test.go:50 `testZeroSize(struct{}{})`, where `type testZeroSize
+		// struct{}` emits as a bare `[GoType] internal partial struct testZeroSize {}` and `struct{}{}`
+		// emits as golib's shared `new EmptyStruct()`. The two are UNRELATED C# structs: a bare
+		// [GoType] with no underlying argument is a struct DEFINITION, not a wrapper, so it declares no
+		// conversion operator for the cast to bind and `((testZeroSize)new EmptyStruct())` is CS0030.
+		//
+		// The composite-underlying hop above cannot serve this: it is restricted to Map/Slice/Array
+		// precisely because a struct underlying has no nameable C# cast target, and the constructor
+		// route below it wants an EXPORTED test-file-declared target over an UNEXPORTED NAMED struct —
+		// this target is unexported and this argument is ANONYMOUS, so neither arm reaches the site.
+		//
+		// A zero-field struct has exactly one value, so the construction IS the conversion: `new T()`
+		// is total here, not an approximation. The shape is already the corpus's own — 200 zero-field
+		// [GoType] structs exist and 15 sites already emit `new X()` over 7 of them (`new sigset()` x8),
+		// in a tree that compiles clean.
+		//
+		// GATED ON AN OPERAND THAT CANNOT CARRY COMPUTATION, because `new T()` DISCARDS the operand's
+		// emission: an empty composite literal, or a pure read (isPureReadExpr — identifiers, selectors
+		// and indexes over them, never a call). `T(f())` therefore does NOT take this arm; it keeps the
+		// cast and fails LOUDLY at compile time rather than silently dropping the call. That direction
+		// is deliberate. Corpus population measured at the pin: `T(struct{}{})` appears 6 times in
+		// GOROOT/src and FIVE are function calls (reflect's `V` is `var V = ValueOf`) or uncompiled
+		// testdata — unique's is the only genuine conversion, and the reverse spelling `struct{}(x)` has
+		// no struct site at all (maphash's `chan struct{}(nil)` is the bare-chan class, already closed).
+		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok {
+			if targetStruct, targetIsStruct := targetNamed.Underlying().(*types.Struct); targetIsStruct && targetStruct.NumFields() == 0 {
+				if argType := v.info.TypeOf(arg); argType != nil && !types.Identical(types.Unalias(argType), targetNamed) {
+					if argStruct, argIsStruct := argType.Underlying().(*types.Struct); argIsStruct && argStruct.NumFields() == 0 {
+						if isEmptyCompositeLit(arg) || isPureReadExpr(arg) {
+							return fmt.Sprintf("new %s()", targetTypeName)
+						}
+					}
+				}
+			}
+		}
+
 		// Determine if we need parentheses around the expression
 		if v.needsParentheses(arg) {
 			if targetIsBasic {
@@ -6635,4 +6672,26 @@ func (v *Visitor) exprHasCallOrReceive(expr ast.Expr) bool {
 	})
 
 	return found
+}
+
+// isEmptyCompositeLit reports whether expr is a composite literal with NO elements — `struct{}{}`,
+// `T{}` — through any parentheses. Distinct from isPureReadExpr, which deliberately admits only
+// literals, identifiers and reads composed of them (a CompositeLit is not one of its cases, and
+// widening it there would change the contract the string-view analysis depends on). Both answer the
+// same question for the empty-struct conversion arm: can this operand be discarded without dropping
+// an evaluation.
+func isEmptyCompositeLit(expr ast.Expr) bool {
+	for {
+		paren, ok := expr.(*ast.ParenExpr)
+
+		if !ok {
+			break
+		}
+
+		expr = paren.X
+	}
+
+	lit, ok := expr.(*ast.CompositeLit)
+
+	return ok && len(lit.Elts) == 0
 }
