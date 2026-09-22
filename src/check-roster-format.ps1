@@ -1452,6 +1452,107 @@ foreach ($figure in $newsFigures) {
     Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" $figure.Roster $figure.Readme
 }
 
+# ---- 2f. a row's cells agree with its OWN page at the pin (ruled 2026-09-22) ----------------------
+# The Tests column is the page's MATCHED count and the Disclosed column is the page's disclosed
+# count -- the same pair the per-OS annotation spells "N + D". Nothing compared a row's cells with the
+# page its [proof] link names, and at the 1.24.13 batch-7 stamp seven rows disagreed with their own
+# pages in two ways:
+#   - three rows put matched + disclosed in Tests (crypto/internal/fips140test 2267 for 2260,
+#     crypto/sha3 23 for 18, internal/runtime/maps 111 for 3), so the header's "matching test
+#     verdicts" silently counted 120 DISCLOSED verdicts as matching -- and section 2's header
+#     assertion could not see it, because it sums the same wrong cells it is compared against;
+#   - four rows carried a Disclosed count the re-banked page no longer reports (encoding/binary 8
+#     for 6, net/netip 54 for 57, runtime/debug 6 for 5, strconv 10 for 11).
+#
+# WHICH PAGE: the row's FIRST [proof] link, which is the row's own evidence at the hop (an
+# inheritance row keeps its retired anchor links AFTER its own page, as provenance). WHICH ROWS: only
+# those whose first page was generated at the Go pin, read from src/version.props' GoStdLibVersion --
+# the pin's source of truth -- so the arm moves with the next hop instead of naming this one. A row
+# whose first page is older is COUNTED and printed, never silently skipped: it is a row the hop has not
+# yet re-measured, and a gate cannot compare it against a page from a different Go.
+#
+# The headline parser returns NOTHING for a malformed headline, never zero: a page whose shape moved
+# must fail by name here, not read as "0 matched" and fail as a count mismatch that points at the row.
+function Get-ProofPageHeadline {
+    param([string] $Text)
+
+    $pattern = '(?m)^\*\*([\d,]+) matched ' + $dot + ' ([\d,]+) disclosed\*\* ' + $dash + ' Go (\S+?), '
+    $m = [regex]::Match($Text, $pattern)
+    if (-not $m.Success) { return $null }
+
+    return [PSCustomObject]@{
+        Matched   = [int]($m.Groups[1].Value -replace ',', '')
+        Disclosed = [int]($m.Groups[2].Value -replace ',', '')
+        GoVersion = $m.Groups[3].Value
+    }
+}
+
+# The parser's contract, against fixture text, both ways -- the page shape is generated, so the one
+# place it can be pinned down independently of today's pages is here.
+$headlineFixture = "*Validated 2026-09-22*`n`n**2,260 matched $dot 7 disclosed** $dash Go 1.24.13, ``windows/amd64``, converted package"
+$parsedHeadline = Get-ProofPageHeadline $headlineFixture
+Assert-Equal 'page headline: matched, read through its thousands separator' 2260 $parsedHeadline.Matched
+Assert-Equal 'page headline: disclosed' 7 $parsedHeadline.Disclosed
+Assert-Equal 'page headline: the Go version the page was generated at' '1.24.13' $parsedHeadline.GoVersion
+Assert-Equal 'page headline: a malformed headline reads as NOTHING, never as zero' $true `
+    ($null -eq (Get-ProofPageHeadline "**7 matched** $dash Go 1.24.13, ``windows/amd64``"))
+
+$versionProps = Join-Path $PSScriptRoot 'version.props'
+$pinMatch = [regex]::Match([System.IO.File]::ReadAllText($versionProps), '<GoStdLibVersion>\s*([^<\s]+)\s*</GoStdLibVersion>')
+Assert-Equal 'the Go pin reads from version.props (GoStdLibVersion)' $true $pinMatch.Success
+$goPin = $pinMatch.Groups[1].Value
+
+$pagesRoot = Join-Path $repo 'docs/validation'
+$ownPageChecked = 0
+$ownPageOlder = 0
+$ownPageUnread = 0
+
+foreach ($line in $lines) {
+    if ($line -notmatch $RosterRowPattern) { continue }
+
+    # Row fields FIRST, read by the parser's own pattern so the cells are the ones section 2 sums.
+    $ownPkg = $Matches[1]
+    $ownTests = [int]$Matches[2]
+    $ownDisclosed = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+
+    $link = [regex]::Match($line, '\[proof\]\((?:validation/)?(current/[^)\s]+)\)')
+    if (-not $link.Success) {
+        $ownPageUnread++
+        Assert-Equal "own page: $ownPkg carries a [proof] link" $true $false
+        continue
+    }
+
+    $rel = $link.Groups[1].Value
+    $pagePath = Join-Path $pagesRoot $rel
+    if (-not (Test-Path -LiteralPath $pagePath)) {
+        $ownPageUnread++
+        Assert-Equal "own page: the first [proof] page of $ownPkg exists ($rel)" $true $false
+        continue
+    }
+
+    $headline = Get-ProofPageHeadline ([System.IO.File]::ReadAllText($pagePath))
+    if ($null -eq $headline) {
+        $ownPageUnread++
+        Assert-Equal "own page: the first [proof] page of $ownPkg has a parseable headline ($rel)" $true $false
+        continue
+    }
+
+    if ($headline.GoVersion -ne $goPin) { $ownPageOlder++; continue }
+
+    $ownPageChecked++
+    Assert-Equal "own page: $ownPkg Tests equals its page's MATCHED count ($rel)" $headline.Matched $ownTests
+    Assert-Equal "own page: $ownPkg Disclosed equals its page's disclosed count ($rel)" $headline.Disclosed $ownDisclosed
+}
+
+# Printed UNCONDITIONALLY, like the README comparison: a gate whose reach is never shown cannot be
+# told apart from one that reached nothing.
+Write-Host ''
+Write-Host ('rows against their own page at go{0}: {1} checked, {2} still link an older page first (not gated), {3} unread' -f $goPin, $ownPageChecked, $ownPageOlder, $ownPageUnread) -ForegroundColor Cyan
+
+# Two derivations of one population: the rows section 2 parsed, and the rows this loop classified.
+Assert-Equal 'own-page arm: every roster row is classified (checked + older + unread)' $rows.Count ($ownPageChecked + $ownPageOlder + $ownPageUnread)
+Assert-Equal 'own-page arm: at least one row links a page generated at the pin (a zero means it checked nothing)' $true ($ownPageChecked -gt 0)
+
 # ---- 3. the RENDERED table's column integrity -----------------------------------------------------
 # Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a
 # reader, which nothing else does -- and the two can disagree silently.
