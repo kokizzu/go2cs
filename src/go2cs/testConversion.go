@@ -4116,6 +4116,16 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	"testing_test.TestBenchmarkSubRace":                   "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes",
 	"testing_test.TestRunningTests":                       "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail",
 	"testing_test.TestRunningTestsInCleanup":              "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail",
+	// FAMILY 3 — benchmark EXECUTION in a re-exec'd child, new at 1.24.13 with b.Loop. Each runs
+	// runTest(t, "Benchmark…Print") -- the test binary re-exec'd with -test.bench -- and COUNTS the
+	// lines the benchmark body prints (testing_test.go:977 and :999). The host defers benchmark
+	// execution to Phase 4D, the same capability the owner-ruled subset already excludes by KIND
+	// (Option 1, 2026-08-30: its benchmarks "because benchmark execution is Phase-4D"), so the child
+	// runs no benchmark and prints nothing. A TEST that reaches that capability through a subprocess
+	// is invisible to the kind rule, so it is named here, by the same reason; no disclosure (nothing
+	// is a failure to pin), and no host benchmark runner.
+	"testing_test.TestBenchmarkBLoopIterationCorrect": "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBLoopPrint's own printed iterations; the host defers benchmark execution, so the child prints none",
+	"testing_test.TestBenchmarkBNIterationCorrect":    "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBNPrint's own printed iterations; the host defers benchmark execution, so the child prints none",
 }
 
 // unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
