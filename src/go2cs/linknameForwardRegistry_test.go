@@ -37,6 +37,12 @@ import (
 //     <name>` handle. Without the handle the forwarder compiles into a different assembly and calls
 //     an inaccessible symbol: CS0122, at corpus-build time, for a row that looked perfectly fine here.
 //
+// A row with a linknameForwardDefinitions entry is a third shape and is verified at its DEFINITION:
+// Go gives the symbol its body in a func of another name (time's legacyAbsClock for time.absClock),
+// under a two-arg directive naming the symbol, and that directive -- not a one-arg handle -- is the
+// authorization packageFuncAccess widens on. The symbol itself is not a func name there (and
+// time.Time.abs is not even a method), so the lookup below would find nothing and report a stale row.
+//
 // So the discriminator is "does Go give this symbol a body anywhere", which is also why the body scan
 // looks at EVERY declaration rather than the first: runtime.fcntl is declared once per GOOS, bodyless
 // on the BSDs and with a body on linux/darwin/solaris/aix, and which one comes first is an artifact of
@@ -59,7 +65,18 @@ func TestLinknameForwardTargetsMatchGoSource(t *testing.T) {
 		t.Fatal("linknameForwardTargets is empty: the registry guard is vacuous")
 	}
 
+	for target, definition := range linknameForwardDefinitions {
+		if !linknameForwardTargets[target] {
+			t.Errorf("definition entry %q -> %q has no linknameForwardTargets row, so funcLinknameForward never reaches it and it forwards nothing", target, definition)
+		}
+	}
+
 	for target := range linknameForwardTargets {
+		if definition, isDefined := linknameForwardDefinitions[target]; isDefined {
+			verifyLinknameForwardDefinition(t, goRoot, target, definition)
+			continue
+		}
+
 		pkgPath, symbol, ok := splitLastDot(target)
 
 		if !ok {
@@ -84,6 +101,42 @@ func TestLinknameForwardTargetsMatchGoSource(t *testing.T) {
 		if !pkgHasLinknameHandle(t, goRoot, pkgPath, symbol) {
 			t.Errorf("whitelist entry %q: %s has a Go body but %s carries no one-arg `//go:linkname %s` handle — packageFuncAccess widens a forward target to `public` only on that handle, so the emitted forwarder would call an `internal` symbol across an assembly boundary (CS0122)", target, symbol, pkgPath, symbol)
 		}
+	}
+}
+
+// verifyLinknameForwardDefinition checks a forward row whose symbol Go defines under another name: the
+// definition exists in the symbol's own package with a real body, and carries the exact two-arg
+// `//go:linkname <definition> <symbol>` directive that gives the symbol that body. Remove or respell the
+// directive at a new pin and the row is forwarding to a func Go no longer links to the symbol.
+func verifyLinknameForwardDefinition(t *testing.T, goRoot string, target string, definition string) {
+	t.Helper()
+
+	pkgPath, definitionFunc, ok := splitLastDot(definition)
+
+	if !ok {
+		t.Errorf("definition entry %q -> %q is not <pkgPath>.<func>", target, definition)
+		return
+	}
+
+	// The directive names the definition's OWN package; a symbol elsewhere is a push, not this shape.
+	if !strings.HasPrefix(target, pkgPath+".") {
+		t.Errorf("definition entry %q -> %q: the symbol is not in the definition's package %s, so this is not a definition under another name", target, definition, pkgPath)
+		return
+	}
+
+	decls := findGoFuncDecls(t, goRoot, pkgPath, definitionFunc)
+
+	if len(decls) == 0 {
+		t.Errorf("definition entry %q -> %q: no func %s declared in %s (renamed? deleted?), so the forwarder calls nothing", target, definition, definitionFunc, pkgPath)
+		return
+	}
+
+	if !anyDeclHasBody(decls) {
+		t.Errorf("definition entry %q -> %q: %s has no Go body anywhere, so the converter emits no implementation to forward to", target, definition, definitionFunc)
+	}
+
+	if !pkgHasLinknamePush(t, goRoot, pkgPath, definitionFunc, target) {
+		t.Errorf("definition entry %q -> %q: %s carries no `//go:linkname %s %s` -- Go does not give the symbol this body, so the row forwards to the wrong func", target, definition, pkgPath, definitionFunc, target)
 	}
 }
 

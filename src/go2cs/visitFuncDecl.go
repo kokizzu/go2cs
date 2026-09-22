@@ -2085,7 +2085,53 @@ var linknameForwardTargets = map[string]bool{
 	"runtime.pprof_threadCreateInternal": true,
 	"runtime.pprof_fpunwindExpand":       true,
 	"runtime.pprof_makeProfStack":        true,
+	// time's legacy absolute-time API, pulled by time's own external test (linkname_test.go:
+	// `//go:linkname timeAbs time.Time.abs`, `absClock time.absClock`, `absDate time.absDate`). time
+	// keeps the three symbols linkable for compatibility after the functions behind them were
+	// reworked (time.go: "Do not remove these routines or their linknames"), and gives each its body
+	// under ANOTHER name with a two-arg directive naming its own package -- `//go:linkname
+	// legacyAbsClock time.absClock`. No func called absClock exists, and time.Time.abs is not even a
+	// method, so each row carries its definition in linknameForwardDefinitions. The bodies are
+	// ORDINARY CONVERTED Go (absSeconds arithmetic over the current representation), so each forwarder
+	// is an ordinary cross-assembly call to something that genuinely works. No new project reference:
+	// time_test already references time.
+	//
+	// What the stubs were costing: time's TestLinkname, the package's last divergence at batch 7 --
+	// its oracle is the constant wantAbs 9223372029851535845, the Jan-1-based absolute time the
+	// legacy routines exist to reproduce.
+	"time.Time.abs": true,
+	"time.absClock": true,
+	"time.absDate":  true,
 }
+
+// linknameForwardDefinitions names the DEFINITION of a linknameForwardTargets row whose symbol is not
+// a func name in its package: Go gives the symbol its body in a func of ANOTHER name, under a two-arg
+// `//go:linkname <definition> <ownPkg>.<symbol>` directive on the definition itself. Keyed by the
+// forward row; the value is "<pkgPath>.<definitionFunc>". The forwarder calls the definition, and the
+// definition's package is read from the VALUE, because a method-shaped symbol (time.Time.abs) split
+// at its last dot names a package that does not exist.
+//
+// A row with no entry here forwards to the symbol's own name, as every row did before this map.
+// TestLinknameForwardTargetsMatchGoSource verifies each entry against the directive in Go's source.
+var linknameForwardDefinitions = map[string]string{
+	"time.Time.abs": "time.legacyTimeTimeAbs",
+	"time.absClock": "time.legacyAbsClock",
+	"time.absDate":  "time.legacyAbsDate",
+}
+
+// linknameForwardDefinitionSources is the reverse index of linknameForwardDefinitions: the set of
+// definitions ("<pkgPath>.<funcName>") a forwarder calls, so packageFuncAccess can emit each public.
+// The definition's own two-arg directive is Go's authorization for the pull, in the place a one-arg
+// handle carries it for an ordinary row. Built once from the registry so the two can never disagree.
+var linknameForwardDefinitionSources = func() map[string]bool {
+	sources := map[string]bool{}
+
+	for _, definition := range linknameForwardDefinitions {
+		sources[definition] = true
+	}
+
+	return sources
+}()
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose
 // implementation is a golib BUILTIN — a compiler intrinsic Go defines in the runtime and links
@@ -2130,6 +2176,12 @@ func (v *Visitor) funcLinknameForward(funcDecl *ast.FuncDecl) (alias string, tar
 
 		if !linknameForwardTargets[target] {
 			return "", "", false
+		}
+
+		// A symbol Go defines under another name forwards to that definition, whose value also
+		// carries the package: a method-shaped symbol (time.Time.abs) has no package at its last dot.
+		if definition, isDefined := linknameForwardDefinitions[target]; isDefined {
+			target = definition
 		}
 
 		dot := strings.LastIndex(target, ".")

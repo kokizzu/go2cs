@@ -278,6 +278,14 @@ func packageFuncAccess(goIDName string, isFreeFunction bool) string {
 		return "public"
 	}
 
+	// A forward row's DEFINITION under another name (linknameForwardDefinitions: time's
+	// legacyAbsClock for the symbol time.absClock) is what the puller's forwarder calls, so it is
+	// public for the same reason. Go authorizes the pull with the definition's own two-arg directive
+	// rather than a one-arg handle, so this arm reads the registry alone, as the push arm does.
+	if isFreeFunction && linknameForwardDefinitionSources[currentPackagePath+"."+goIDName] {
+		return "public"
+	}
+
 	return getAccess(goIDName)
 }
 
