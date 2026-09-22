@@ -439,7 +439,32 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						// promoted-embed case above already covers its own superset, so exclude it.
 						needsConstruction := !hasPromotedEmbeds && v.structZeroValueNeedsConstruction(def.Type())
 
-						if v.isAddressedGlobal(ident) {
+						// A `//go:embed` variable is declared with NO initializer in Go and gets its
+						// bytes from the toolchain, so it arrives here — in the branch for a global
+						// with no value — and left alone it emits uninitialized, which is the whole
+						// defect (crypto/internal/fips140test's TestACVP read a zero-byte config;
+						// internal/trace/traceviewer shipped an empty FS in a PRODUCTION assembly).
+						// The directive resolves to a resource-backed initializer instead. Nothing
+						// here fires for a variable without a directive, which is every other global
+						// in the corpus — see embedDirective.go for the rule and its scope.
+						if target, kind, elementType := v.embedTargetForSpec(valueSpec, doc, v.getIdentType(ident)); kind != embedKindNone {
+							initializer := embedInitializerExpr(kind, target, v.emittedClassName, elementType)
+
+							// The declared type may be a NAMED string or byte-slice type
+							// (embedtest's EmbedString / EmbedBytes / []T): the helpers return the
+							// BASE shape, so a cast carries it to the declared type through the
+							// alias conversions go2cs-gen already emits for named types. Identical
+							// spellings take no cast, so the common case stays byte-clean.
+							if base := embedBaseCSTypeName(kind, elementType); base != "" && base != csTypeName {
+								initializer = fmt.Sprintf("(%s)(%s)", csTypeName, initializer)
+							}
+
+							if v.isAddressedGlobal(ident) {
+								v.writeAddressedGlobalDecl(access, csTypeName, csIDName, initializer, isInherentlyHeapAllocatedType(v.getIdentType(ident)))
+							} else {
+								v.writeOutput("%s static %s %s = %s;", access, csTypeName, csIDName, initializer)
+							}
+						} else if v.isAddressedGlobal(ident) {
 							// Box an N-sized array, not the empty default, so writes through the
 							// pointer (and indexing) hit real storage.
 							initExpr := ""

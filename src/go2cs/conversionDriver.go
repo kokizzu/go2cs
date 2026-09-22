@@ -247,6 +247,13 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 
 		// Reset package level variables and capture the per-package inputs (packageDoc,
 		// importPackageDirs) — shared with the test-conversion path, see packageStateOperations.go
+		// PER PACKAGE, deliberately NOT inside resetPackageState: that runs per VARIANT, and a
+		// registry whose whole job is to span the variants of one package cannot be cleared at
+		// that boundary (the same reason whiteboxBridgeTypeNames is reset where it is). Measured:
+		// with the reset one level too low, embed/internal/embedtest's tests csproj carried FIVE
+		// EmbeddedResource items — the external half's — and every file the internal half's three
+		// embed.FS variables name was missing from the assembly.
+		resetEmbedTargets()
 		resetPackageState(pkg)
 
 		files := []FileEntry{}
