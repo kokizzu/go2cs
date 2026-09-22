@@ -26,6 +26,8 @@ using go;
 using static global::go.errors_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b54696d656f7574282920626f6f6c7d", "TestAs_timeout")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "TestJoin_typeᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -52,7 +54,7 @@ using static global::go.errors_test_package;
 [assembly: go.GoPositionMap("errors/errors_test.go", "errors_test.cs", "AA8YlIKUgqiCgriCgoI=")]
 [assembly: go.GoPositionMap("errors/example_test.go", "example_test.cs", "ABQqgqaC3IKAgvqSgoK+wpKCggAJCpKCgoKCgpSCAAcS0oCCgpQACBCigIKCgpQACBCigoKC")]
 [assembly: go.GoPositionMap("errors/join_test.go", "join_test.cs", "AAsagoCCpICCpICCAA0IgoKCAAoagoKUggAJCoKCggAKGoKC")]
-[assembly: go.GoPositionMap("errors/wrap_test.go", "wrap_test.cs", "ABUggoKChIS4AB9IspKAggANGoCigKKClLS0xJQAEAaCgoKCgoKEAFvAAbKUkoKigoKUgpSAggAJDIKC3IKCwoKUgoKUAAoKooKEgoL6ooKCgoIACQqCgoQABhSCgIIACQ6A/oCigPiAooAACQyCpoKC")]
+[assembly: go.GoPositionMap("errors/wrap_test.go", "wrap_test.cs", "ABUggoKChIS4AB9IspKAggANGoCigKKClLS0xJQAEAaCgoKCgoKEAFvAAbKUkoKigoKUgpSAggAJDIKC3IKCwoKUgoKUAAoKooKEgoL6ooKCgoIACQqCgoQABhSCgIIACQ6A/oCigPiAooAACQyCpoKC", "23-25:1;64-68:2;204-215:1;229-238:1;230-232:1.1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -67,18 +69,41 @@ public static partial class errors_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface TestAs_timeout {}
+    internal partial interface TestJoin_typeᴛ1 {}
+    internal partial struct TestAs_testCases {}
+    internal partial struct TestIs_testCases {}
+    internal partial struct TestJoinErrorMethod_type {}
+    internal partial struct TestJoin_type {}
+    internal partial struct TestUnwrap_testCases {}
     internal partial struct errorT {}
     internal partial struct errorUncomparable {}
     internal partial struct multiErr {}
     internal partial struct poser {}
     internal partial struct wrapped {}
-    public partial interface TestAs_timeout {}
-    public partial interface TestJoin_typeᴛ1 {}
     public partial struct MyError {}
-    public partial struct TestAs_testCases {}
-    public partial struct TestIs_testCases {}
-    public partial struct TestJoinErrorMethod_type {}
-    public partial struct TestJoin_type {}
-    public partial struct TestUnwrap_testCases {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.errors_package));
+    }
 }

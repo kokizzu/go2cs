@@ -13,26 +13,14 @@ using testing = testing_package;
 using ecdh = go.crypto.ecdh_package;
 // blank import: go.crypto.sha256_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
 // blank import: go.crypto.sha512_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
-using crypto = crypto_package;
 using encoding;
 using go.crypto;
 using static go.crypto.@internal.hpke_package;
 
 partial class hpke_internal_test_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(go.crypto.sha256_package));
-}
-
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸcryptoꓸsha512() {
-    builtin.initPackage(typeof(go.crypto.sha512_package));
-}
-
 internal static slice<byte> mustDecodeHex(ж<testing.T> Ꮡt, @string @in) {
+    Ꮡt.Helper();
     var (b, err) = hex.DecodeString(@in);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -74,6 +62,7 @@ internal static readonly @string infoˢ = "info"u8;
 internal static readonly @string pkRmˢ = "pkRm"u8;
 internal static readonly @string skEmˢ = "skEm"u8;
 internal static readonly @string encˢ = "enc"u8;
+internal static readonly @string skRmˢ = "skRm"u8;
 internal static readonly @string exporterSecretˢ = "exporter_secret"u8;
 internal static readonly @string sequenceNumberˢ = "sequence number"u8;
 internal static readonly @string nonceˢ = "nonce"u8;
@@ -86,8 +75,6 @@ internal static readonly @string aadˢ = "aad"u8;
 }
 
 public static void TestRFC9180Vectors(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
     var (vectorsJSON, err) = os.ReadFile(testdataRfc9180Vectorsˢ);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -144,11 +131,11 @@ public static void TestRFC9180Vectors(ж<testing.T> Ꮡt) {
             tΔ1.Cleanup(() => {
                 testingOnlyGenerateKey = default!;
             });
-            (var encap, var context, errΔ2) = SetupSender(
+            (var encap, var sender, errΔ2) = SetupSender(
                 (uint16)kemID,
                 (uint16)kdfID,
                 (uint16)aeadID,
-                pub.OrTypedNil(),
+                pub,
                 info);
             if (errΔ2 != default!) {
                 tΔ1.Fatal(errΔ2);
@@ -157,48 +144,70 @@ public static void TestRFC9180Vectors(ж<testing.T> Ꮡt) {
             if (!bytes_package.Equal(encap, expectedEncap)) {
                 tΔ1.Errorf("unexpected encapsulated key, got: %x, want %x"u8, encap, expectedEncap);
             }
-            var expectedSharedSecret = mustDecodeHex(tΔ1, setup[sharedSecretˢ]);
-            if (!bytes_package.Equal((~context).sharedSecret, expectedSharedSecret)) {
-                tΔ1.Errorf("unexpected shared secret, got: %x, want %x"u8, (~context).sharedSecret, expectedSharedSecret);
+            var privKeyBytes = mustDecodeHex(tΔ1, setup[skRmˢ]);
+            (var priv, errΔ2) = ParseHPKEPrivateKey((uint16)kemID, privKeyBytes);
+            if (errΔ2 != default!) {
+                tΔ1.Fatal(errΔ2);
             }
-            var expectedKey = mustDecodeHex(tΔ1, setup[keyˢ]);
-            if (!bytes_package.Equal((~context).key, expectedKey)) {
-                tΔ1.Errorf("unexpected key, got: %x, want %x"u8, (~context).key, expectedKey);
+            (var receipient, errΔ2) = SetupReceipient(
+                (uint16)kemID,
+                (uint16)kdfID,
+                (uint16)aeadID,
+                priv,
+                info,
+                encap);
+            if (errΔ2 != default!) {
+                tΔ1.Fatal(errΔ2);
             }
-            var expectedBaseNonce = mustDecodeHex(tΔ1, setup[baseNonceˢ]);
-            if (!bytes_package.Equal((~context).baseNonce, expectedBaseNonce)) {
-                tΔ1.Errorf("unexpected base nonce, got: %x, want %x"u8, (~context).baseNonce, expectedBaseNonce);
-            }
-            var expectedExporterSecret = mustDecodeHex(tΔ1, setup[exporterSecretˢ]);
-            if (!bytes_package.Equal((~context).exporterSecret, expectedExporterSecret)) {
-                tΔ1.Errorf("unexpected exporter secret, got: %x, want %x"u8, (~context).exporterSecret, expectedExporterSecret);
+            foreach (var (_, ctx) in new ж<global::go.crypto.@internal.hpke_package.context>[]{(~sender).context, (~receipient).context}.slice()) {
+                var expectedSharedSecret = mustDecodeHex(tΔ1, setup[sharedSecretˢ]);
+                if (!bytes_package.Equal((~ctx).sharedSecret, expectedSharedSecret)) {
+                    tΔ1.Errorf("unexpected shared secret, got: %x, want %x"u8, (~ctx).sharedSecret, expectedSharedSecret);
+                }
+                var expectedKey = mustDecodeHex(tΔ1, setup[keyˢ]);
+                if (!bytes_package.Equal((~ctx).key, expectedKey)) {
+                    tΔ1.Errorf("unexpected key, got: %x, want %x"u8, (~ctx).key, expectedKey);
+                }
+                var expectedBaseNonce = mustDecodeHex(tΔ1, setup[baseNonceˢ]);
+                if (!bytes_package.Equal((~ctx).baseNonce, expectedBaseNonce)) {
+                    tΔ1.Errorf("unexpected base nonce, got: %x, want %x"u8, (~ctx).baseNonce, expectedBaseNonce);
+                }
+                var expectedExporterSecret = mustDecodeHex(tΔ1, setup[exporterSecretˢ]);
+                if (!bytes_package.Equal((~ctx).exporterSecret, expectedExporterSecret)) {
+                    tΔ1.Errorf("unexpected exporter secret, got: %x, want %x"u8, (~ctx).exporterSecret, expectedExporterSecret);
+                }
             }
             foreach (var (_, enc) in parseVectorEncryptions(vectorʗ1.Encryptions)) {
-                var contextʗ1 = context;
                 var encʗ1 = enc;
+                var receipientʗ1 = receipient;
+                var senderʗ1 = sender;
                 tΔ1.Run("seq num " + enc[sequenceNumberˢ], (ж<testing.T> tΔ2) => {
                     var (seqNum, errΔ3) = strconv.Atoi(encʗ1[sequenceNumberˢ]);
                     if (errΔ3 != default!) {
                         tΔ2.Fatal(errΔ3);
                     }
-                    contextʗ1.Value.seqNum = new uint128(lo: (uint64)seqNum);
+                    senderʗ1.Value.seqNum = new uint128(lo: (uint64)seqNum);
+                    receipientʗ1.Value.seqNum = new uint128(lo: (uint64)seqNum);
                     var expectedNonce = mustDecodeHex(tΔ2, encʗ1[nonceˢ]);
-                    // We can't call nextNonce, because it increments the sequence number,
-                    // so just compute it directly.
-                    var computedNonce = (~contextʗ1).seqNum.bytes()[(int)(16 - (~contextʗ1).aead.NonceSize())..];
-                    foreach (var (i, _) in (~contextʗ1).baseNonce) {
-                        computedNonce[i] ^= (byte)((~contextʗ1).baseNonce[i]);
-                    }
+                    var computedNonce = senderʗ1.nextNonce();
                     if (!bytes_package.Equal(computedNonce, expectedNonce)) {
                         tΔ2.Errorf("unexpected nonce: got %x, want %x"u8, computedNonce, expectedNonce);
                     }
                     var expectedCiphertext = mustDecodeHex(tΔ2, encʗ1["ct"u8]);
-                    (var ciphertext, errΔ3) = contextʗ1.Seal(mustDecodeHex(tΔ2, encʗ1[aadˢ]), mustDecodeHex(tΔ2, encʗ1["pt"u8]));
+                    (var ciphertext, errΔ3) = senderʗ1.Seal(mustDecodeHex(tΔ2, encʗ1[aadˢ]), mustDecodeHex(tΔ2, encʗ1["pt"u8]));
                     if (errΔ3 != default!) {
                         tΔ2.Fatal(errΔ3);
                     }
                     if (!bytes_package.Equal(ciphertext, expectedCiphertext)) {
                         tΔ2.Errorf("unexpected ciphertext: got %x want %x"u8, ciphertext, expectedCiphertext);
+                    }
+                    var expectedPlaintext = mustDecodeHex(tΔ2, encʗ1["pt"u8]);
+                    (var plaintext, errΔ3) = receipientʗ1.Open(mustDecodeHex(tΔ2, encʗ1[aadˢ]), mustDecodeHex(tΔ2, encʗ1["ct"u8]));
+                    if (errΔ3 != default!) {
+                        tΔ2.Fatal(errΔ3);
+                    }
+                    if (!bytes_package.Equal(plaintext, expectedPlaintext)) {
+                        tΔ2.Errorf("unexpected plaintext: got %x want %x"u8, plaintext, expectedPlaintext);
                     }
                 });
             }

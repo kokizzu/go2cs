@@ -13,14 +13,17 @@ internal static class Go2CsTestHost
             "pem.go",
             "pem_test.go",
         });
-        registry.Add("TestBadDecode", pem_internal_test_package.TestBadDecode, "pem_test.go", 150);
-        registry.Add("TestBadEncode", pem_internal_test_package.TestBadEncode, "pem_test.go", 626);
-        registry.Add("TestCVE202224675", pem_internal_test_package.TestCVE202224675, "pem_test.go", 162);
+        registry.Add("TestBadDecode", pem_internal_test_package.TestBadDecode, "pem_test.go", 151);
+        registry.Add("TestBadEncode", pem_internal_test_package.TestBadEncode, "pem_test.go", 627);
+        registry.Add("TestCVE202224675", pem_internal_test_package.TestCVE202224675, "pem_test.go", 163);
         registry.Add("TestDecode", pem_internal_test_package.TestDecode, "pem_test.go", 44);
-        registry.Add("TestEncode", pem_internal_test_package.TestEncode, "pem_test.go", 171);
-        registry.Add("TestFuzz", pem_internal_test_package.TestFuzz, "pem_test.go", 238);
+        registry.Add("TestDecodeStrangeCases", pem_internal_test_package.TestDecodeStrangeCases, "pem_test.go", 643);
+        registry.Add("TestEncode", pem_internal_test_package.TestEncode, "pem_test.go", 172);
+        registry.Add("TestFuzz", pem_internal_test_package.TestFuzz, "pem_test.go", 239);
         registry.Add("TestGetLine", pem_internal_test_package.TestGetLine, "pem_test.go", 35);
-        registry.Add("TestLineBreaker", pem_internal_test_package.TestLineBreaker, "pem_test.go", 193);
+        registry.Add("TestJustEnd", pem_internal_test_package.TestJustEnd, "pem_test.go", 724);
+        registry.Add("TestLineBreaker", pem_internal_test_package.TestLineBreaker, "pem_test.go", 194);
+        registry.Add("TestMissingEndTrailer", pem_internal_test_package.TestMissingEndTrailer, "pem_test.go", 740);
         return TestHost.Run(registry, args);
     }
 }

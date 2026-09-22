@@ -9,18 +9,6 @@ using static go.math.cmplx_package;
 
 partial class cmplx_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // The higher-precision values in vc26 were used to derive the
 // input arguments vc (see also comment below). For reference
 // only (do not delete).
@@ -752,10 +740,10 @@ internal static slice<ff> polarSC = new ff[]{
     new(math.NaN(), math.NaN())
 }.slice();
 
-internal static slice<array<complex128>> vcPowSC = new array<complex128>[]{
+internal static slice<array<complex128>> vcPowSC = GoReflect.WithElemDims(new array<complex128>[]{
     new complex128[]{NaN(), NaN()}.array(),
     new complex128[]{0D, NaN()}.array()
-}.slice();
+}.slice(), 2);
 
 internal static slice<complex128> powSC = new complex128[]{
     NaN(),
@@ -919,7 +907,7 @@ internal static float64 zero = 0.0D;
 
 internal static float64 eps = 1.0D / (9007199254740992D);
 
-internal static slice<array<complex128>> branchPoints = new array<complex128>[]{
+internal static slice<array<complex128>> branchPoints = GoReflect.WithElemDims(new array<complex128>[]{
     new complex128[]{complex(2.0D, zero), complex(2.0D, eps)}.array(),
     new complex128[]{complex(2.0D, -zero), complex(2.0D, -eps)}.array(),
     new complex128[]{complex(-2.0D, zero), complex(-2.0D, eps)}.array(),
@@ -928,7 +916,7 @@ internal static slice<array<complex128>> branchPoints = new array<complex128>[]{
     new complex128[]{complex(-zero, 2.0D), complex(-eps, 2.0D)}.array(),
     new complex128[]{complex(zero, -2.0D), complex(eps, -2.0D)}.array(),
     new complex128[]{complex(-zero, -2.0D), complex(-eps, -2.0D)}.array()
-}.slice();
+}.slice(), 2);
 
 // functions borrowed from pkg/math/all_test.go
 internal static bool tolerance(float64 a, float64 b, float64 e) {
@@ -1491,12 +1479,12 @@ public static void TestPolar(ж<testing.T> Ꮡt) {
 public static void TestPow(ж<testing.T> Ꮡt) {
     // Special cases for Pow(0, c).
     complex128 zero = complex(0D, 0D);
-    var zeroPowers = new array<complex128>[]{
+    var zeroPowers = GoReflect.WithElemDims(new array<complex128>[]{
         new complex128[]{0D, 1D + 0D.i()}.array(),
         new complex128[]{1.5D, 0D.i()}.array(),
         new complex128[]{-1.5D, complex(math.Inf(0), 0D)}.array(),
         new complex128[]{-1.5D + 1.5D.i(), Inf()}.array()
-    }.slice();
+    }.slice(), 2);
     foreach (var (_, vᴛ1) in zeroPowers) {
         var zp = vᴛ1.Clone();
 

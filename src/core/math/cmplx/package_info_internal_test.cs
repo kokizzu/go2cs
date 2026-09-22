@@ -12,6 +12,7 @@ using static go.math.cmplx_package;
 using static go.math.cmplx_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20636f6d706c65783132383b2077616e7420636f6d706c65783132387d", "acosSCᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -28,7 +29,7 @@ using static go.math.cmplx_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/cmplx/cmath_test.go", "cmath_test.cs", "AKQH5g2SgoK6goKCpqSAooKUpLSmgoKCgoKmpICigKKCkoKmlIKmlKSmpoKCgIK2goCC2IKCgIK2goCCpJSmgIK2ooCC2IKCgIK2goCCpJSmgIK4ooCC2IKCgIK2goCCpJSmgIKklKaAgraigILYgoKAgraCgIKklKaAgqSUpoCCtqKAgtiCgoCCtoKAgqSUpoCCpJSmgIK2ooCC2IKCgIK2goCCpJSmgIKklKaAgraigILYgoKAgraCgILYgoKAgraCgIKklKaAgqSUpoCC2IKCgIK2goCCpJSmgIKklKaAgtiCgoCCtoKAgqSUpoCC2IKCgILYgoKAgraCgIKklKaAgraigILYgoKAgraCgIKklKaAgtiCgoCCtoKAgtiEktyigIK2goKAgraCgIK2ooCC2IKCgIK2goCC2IKCgIK2goCCpJSmgIKklKaAgtiCgoCCtoKAgqSUpoCCpJSmgILYgoKAgraCgIKklKaAgraigILYgoKAgraCgIKklKaAgqSUpoCC2IKCgIK2goCCpJSmgIKklKaAgtySgoCCyKKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKC")]
+[assembly: go.GoPositionMap("math/cmplx/cmath_test.go", "cmath_test.cs", "AJgH5g2SgoK6goKCpqSAooKUpLSmgoKCgoKmpICigKKCkoKmlIKmlKSmpoKCgIK2goCC2IKCgIK2goCCpJSmgIK2ooCC2IKCgIK2goCCpJSmgIK4ooCC2IKCgIK2goCCpJSmgIKklKaAgraigILYgoKAgraCgIKklKaAgqSUpoCCtqKAgtiCgoCCtoKAgqSUpoCCpJSmgIK2ooCC2IKCgIK2goCCpJSmgIKklKaAgraigILYgoKAgraCgILYgoKAgraCgIKklKaAgqSUpoCC2IKCgIK2goCCpJSmgIKklKaAgtiCgoCCtoKAgqSUpoCC2IKCgILYgoKAgraCgIKklKaAgraigILYgoKAgraCgIKklKaAgtiCgoCCtoKAgtiEktyigIK2goKAgraCgIK2ooCC2IKCgIK2goCC2IKCgIK2goCCpJSmgIKklKaAgtiCgoCCtoKAgqSUpoCCpJSmgILYgoKAgraCgIKklKaAgraigILYgoKAgraCgIKklKaAgqSUpoCC2IKCgIK2goCCpJSmgIKklKaAgtySgoCCyKKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKCtqKC")]
 [assembly: go.GoPositionMap("math/cmplx/huge_test.go", "huge_test.cs", "AA0ggoKAgg==")]
 // </GoSourcePositionMaps>
 
@@ -45,4 +46,15 @@ public static partial class cmplx_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

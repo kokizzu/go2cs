@@ -15,11 +15,16 @@ internal static class Go2CsTestHost
             "escape_test.go",
             "example_test.go",
             "fuzz_test.go",
+            "template/testdata/file1.tmpl",
+            "template/testdata/file2.tmpl",
+            "template/testdata/fs.zip",
+            "template/testdata/tmpl1.tmpl",
+            "template/testdata/tmpl2.tmpl",
         }, new string[]
         {
             "template",
         });
-        registry.Add("TestEntityLength", html_internal_test_package.TestEntityLength, "entity_test.go", 16);
+        registry.Add("TestEntityLength", html_internal_test_package.TestEntityLength, "entity_test.go", 12);
         registry.Add("TestUnescape", html_internal_test_package.TestUnescape, "escape_test.go", 90);
         registry.Add("TestUnescapeEscape", html_internal_test_package.TestUnescapeEscape, "escape_test.go", 99);
         return TestHost.Run(registry, args);

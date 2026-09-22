@@ -245,7 +245,7 @@ internal static void benchmarkCompareBytesBigUnaligned(ж<testing.B> Ꮡb, nint 
     while (len(b1) < (1 << (int)(20))) {
         b1 = append(b1, ((@string)"Hello Gophers!"u8).ꓸꓸꓸ);
     }
-    var b2 = append(slice<byte>("12345678"u8)[..(int)(offset)], b1.ꓸꓸꓸ);
+    var b2 = appendꓸꓸꓸ(slice<byte>("12345678"u8)[..(int)(offset)], b1);
     b.StartTimer();
     for (nint j = 0; j < b.N; j++) {
         if (Compare(b1, b2[(int)(offset)..]) != 0) {
@@ -271,7 +271,7 @@ internal static void benchmarkCompareBytesBigBothUnaligned(ж<testing.B> Ꮡb, n
     var pattern = slice<byte>("Hello Gophers!"u8);
     var b1 = new slice<byte>(0, (1 << (int)(20)) + len(pattern));
     while (len(b1) < (1 << (int)(20))) {
-        b1 = append(b1, pattern.ꓸꓸꓸ);
+        b1 = appendꓸꓸꓸ(b1, pattern);
     }
     var b2 = new slice<byte>(len(b1));
     copy(b2, b1);
@@ -301,7 +301,7 @@ public static void BenchmarkCompareBytesBig(ж<testing.B> Ꮡb) {
     while (len(b1) < (1 << (int)(20))) {
         b1 = append(b1, ((@string)"Hello Gophers!"u8).ꓸꓸꓸ);
     }
-    var b2 = append(new byte[]{}.slice(), b1.ꓸꓸꓸ);
+    var b2 = appendꓸꓸꓸ(new byte[]{}.slice(), b1);
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {

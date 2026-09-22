@@ -13,7 +13,7 @@ using io;
 
 partial class errors_test_package {
 
-[GoType("dyn")] partial struct TestIs_testCases {
+[GoType("dyn")] internal partial struct TestIs_testCases {
     internal error err;
     internal error target;
     internal bool match;
@@ -114,11 +114,11 @@ internal static bool As(this ж<poser> Ꮡp, any err) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string errˢ = "err"u8;
 
-[GoType("dyn")] partial interface TestAs_timeout {
+[GoType("dyn")] internal partial interface TestAs_timeout {
     bool Timeout();
 }
 
-[GoType("dyn")] partial struct TestAs_testCases {
+[GoType("dyn")] internal partial struct TestAs_testCases {
     internal error err;
     internal any target;
     internal bool match;
@@ -315,7 +315,7 @@ public static void BenchmarkAs(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct TestUnwrap_testCases {
+[GoType("dyn")] internal partial struct TestUnwrap_testCases {
     internal error err;
     internal error want;
 }

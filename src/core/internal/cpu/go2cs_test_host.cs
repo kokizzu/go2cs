@@ -20,6 +20,8 @@ internal static class Go2CsTestHost
             "cpu_arm64_openbsd.go",
             "cpu_arm64_other.go",
             "cpu_loong64.go",
+            "cpu_loong64_hwcap.go",
+            "cpu_loong64_linux.go",
             "cpu_mips.go",
             "cpu_mips64x.go",
             "cpu_mipsle.go",

@@ -5,15 +5,12 @@
 namespace go.crypto;
 
 using bytes = bytes_package;
-using boring = go.crypto.@internal.boring_package;
 using cryptotest = go.crypto.@internal.cryptotest_package;
-using rand = go.crypto.rand_package;
 using encoding = encoding_package;
 using fmt = fmt_package;
 using hash = hash_package;
 using io = io_package;
 using testing = testing_package;
-using go.crypto;
 using go.crypto.@internal;
 using static go.crypto.sha256_package;
 
@@ -93,9 +90,15 @@ internal static slice<sha256Test> golden224 = new sha256Test[]{
     new("86ed2eaa9c75ba98396e5c9fb2f679ecf0ea2ed1e0ee9ceecb4a9332"u8, "How can you write a big system without C++?  -Paul Glick"u8, ((@string)(new byte[]{0x73, 0x68, 0x61, 0x02, 0xc1, 0x05, 0x9e, 0xd8, 0x36, 0x7c, 0xd5, 0x07, 0x30, 0x70, 0xdd, 0x17, 0xf7, 0x0e, 0x59, 0x39, 0xff, 0xc0, 0x0b, 0x31, 0x68, 0x58, 0x15, 0x11, 0x64, 0xf9, 0x8f, 0xa7, 0xbe, 0xfa, 0x4f, 0xa4, 0x48, 0x6f, 0x77, 0x20, 0x63, 0x61, 0x6e, 0x20, 0x79, 0x6f, 0x75, 0x20, 0x77, 0x72, 0x69, 0x74, 0x65, 0x20, 0x61, 0x20, 0x62, 0x69, 0x67, 0x20, 0x73, 0x79, 0x73, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1c})))
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string sha256ˢ = "sha256"u8;
+
 public static void TestGolden(ж<testing.T> Ꮡt) {
-    for (nint i = 0; i < len(golden); i++) {
-        var g = golden[i];
+    cryptotest.TestAllImplementations(Ꮡt, sha256ˢ, testGolden);
+}
+
+internal static void testGolden(ж<testing.T> Ꮡt) {
+    foreach (var (_, g) in golden) {
         @string s = fmt.Sprintf("%x"u8, Sum256(slice<byte>(g.@in)));
         if (s != g.@out) {
             Ꮡt.Fatalf("Sum256 function: sha256(%s) = %s want %s"u8, g.@in, s, g.@out);
@@ -105,7 +108,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
             if (j < 2){
                 io.WriteString(c, g.@in);
             } else {
-                io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
+                io.WriteString(c, g.@in[..(int)(len(g.@in) / 2)]);
                 c.Sum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
             }
@@ -116,8 +119,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
             c.Reset();
         }
     }
-    for (nint i = 0; i < len(golden224); i++) {
-        var g = golden224[i];
+    foreach (var (_, g) in golden224) {
         @string s = fmt.Sprintf("%x"u8, Sum224(slice<byte>(g.@in)));
         if (s != g.@out) {
             Ꮡt.Fatalf("Sum224 function: sha224(%s) = %s want %s"u8, g.@in, s, g.@out);
@@ -127,7 +129,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
             if (j < 2){
                 io.WriteString(c, g.@in);
             } else {
-                io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
+                io.WriteString(c, g.@in[..(int)(len(g.@in) / 2)]);
                 c.Sum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
             }
@@ -140,19 +142,23 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] internal partial struct TestGoldenMarshal_tests {
+public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
+    cryptotest.TestAllImplementations(Ꮡt, sha256ˢ, testGoldenMarshal);
+}
+
+[GoType("dyn")] internal partial struct testGoldenMarshal_tests {
     internal @string name;
     internal Func<hash.Hash> newHash;
     internal slice<sha256Test> gold;
 }
 
-public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
-    var tests = new TestGoldenMarshal_tests[]{
+internal static void testGoldenMarshal(ж<testing.T> Ꮡt) {
+    var tests = new testGoldenMarshal_tests[]{
         new("256"u8, New, golden),
         new("224"u8, New224, golden224)
     }.slice();
     foreach (var (_, vᴛ1) in tests) {
-        ref var tt = ref heap(new TestGoldenMarshal_tests(), out var Ꮡtt);
+        ref var tt = ref heap(new testGoldenMarshal_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
         var ttʗ1 = tt;
@@ -166,8 +172,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                     tΔ1.Errorf("could not marshal: %v"u8, err);
                     continue;
                 }
+                (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+                if (err != default!) {
+                    tΔ1.Errorf("could not marshal: %v"u8, err);
+                    continue;
+                }
+                stateAppend = stateAppend[4..];
                 if (((sstring)state) != g.halfState) {
                     tΔ1.Errorf("sha%s(%q) state = %q, want %q"u8, ttʗ1.name, g.@in, state, g.halfState);
+                    continue;
+                }
+                if (((sstring)stateAppend) != g.halfState) {
+                    tΔ1.Errorf("sha%s(%q) stateAppend = %q, want %q"u8, ttʗ1.name, g.@in, stateAppend, g.halfState);
                     continue;
                 }
                 {
@@ -205,8 +221,8 @@ public static void TestMarshalTypeMismatch(ж<testing.T> Ꮡt) {
 public static void TestSize(ж<testing.T> Ꮡt) {
     var c = New();
     {
-        nint got = c.Size(); if (got != ΔSize) {
-            Ꮡt.Errorf("Size = %d; want %d"u8, got, (nint)(ΔSize));
+        nint got = c.Size(); if (got != Size) {
+            Ꮡt.Errorf("Size = %d; want %d"u8, got, (nint)(Size));
         }
     }
     c = New224();
@@ -220,28 +236,9 @@ public static void TestSize(ж<testing.T> Ꮡt) {
 public static void TestBlockSize(ж<testing.T> Ꮡt) {
     var c = New();
     {
-        nint got = c.BlockSize(); if (got != ΔBlockSize) {
-            Ꮡt.Errorf("BlockSize = %d want %d"u8, got, (nint)(ΔBlockSize));
+        nint got = c.BlockSize(); if (got != BlockSize) {
+            Ꮡt.Errorf("BlockSize = %d want %d"u8, got, (nint)(BlockSize));
         }
-    }
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
-internal static readonly object blockAndBlockGenericˢ = (@string)"block and blockGeneric resulted in different states"u8;
-
-// Tests that blockGeneric (pure Go) and block (in assembly for some architectures) match.
-public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
-    if (boring.Enabled) {
-        Ꮡt.Skip(boringCryptoDoesnTExposeˢ);
-    }
-    var (gen, asm) = (New()._<ж<global::go.crypto.sha256_package.digest>>(), New()._<ж<global::go.crypto.sha256_package.digest>>());
-    var buf = new slice<byte>(ΔBlockSize * 20); // arbitrary factor
-    rand.Read(buf);
-    blockGeneric(ref (gen).DerefOrNull(), buf);
-    block(ref (asm).DerefOrNull(), buf);
-    if (gen.Value != asm.Value) {
-        Ꮡt.Error(blockAndBlockGenericˢ);
     }
 }
 
@@ -315,26 +312,29 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
-
 public static void TestAllocations(ж<testing.T> Ꮡt) {
-    if (boring.Enabled) {
-        Ꮡt.Skip(boringCryptoDoesnTˢ);
-    }
-    var @in = slice<byte>("hello, world!"u8);
-    ref var @out = ref heap<slice<byte>>(out var Ꮡout);
-    @out = new slice<byte>(0, ΔSize);
-    var h = New();
-    var hʗ1 = h;
-    var inʗ1 = @in;
-    nint n = (nint)testing.AllocsPerRun(10, () => {
-        hʗ1.Reset();
-        hʗ1.Write(inʗ1);
-        Ꮡout.ValueSlot = hʗ1.Sum(Ꮡout.ValueSlot[..0]);
-    });
-    if (n > 0) {
-        Ꮡt.Errorf("allocs = %d, want 0"u8, n);
+    cryptotest.SkipTestAllocations(Ꮡt);
+    {
+        var n = testing.AllocsPerRun(10, () => {
+            var @in = slice<byte>("hello, world!"u8);
+            var @out = new slice<byte>(0, Size);
+            {
+                var h = New();
+                h.Reset();
+                h.Write(@in);
+                @out = h.Sum(@out[..0]);
+            }
+            {
+                var h = New224();
+                h.Reset();
+                h.Write(@in);
+                @out = h.Sum(@out[..0]);
+            }
+            Sum256(@in);
+            Sum224(@in);
+        }); if (n > 0D) {
+            Ꮡt.Errorf("allocs = %v, want 0"u8, n);
+        }
     }
 }
 
@@ -348,6 +348,7 @@ public static void TestCgo(ж<testing.T> Ꮡt) {
     // The scan (if any) should be limited to the [16]byte.
     var d = @new<cgoData>();
     d.Value.Ptr = d;
+    _ = d.Value.Ptr; // for unusedwrite check
     var h = New();
     h.Write((~d).Data[..]);
     h.Sum(default!);
@@ -355,14 +356,18 @@ public static void TestCgo(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sha224ˢ = "SHA-224"u8;
-internal static readonly @string sha256ˢ = "SHA-256"u8;
+internal static readonly @string sha256ˢ2 = "SHA-256"u8;
 
-public static void TestSHA256Hash(ж<testing.T> Ꮡt) {
+public static void TestHash(ж<testing.T> Ꮡt) {
     Ꮡt.Run(sha224ˢ, (ж<testing.T> tΔ1) => {
-        cryptotest.TestHash(tΔ1, new Func<hash.Hash>(New224));
+        cryptotest.TestAllImplementations(tΔ1, sha256ˢ, (ж<testing.T> tΔ2) => {
+            cryptotest.TestHash(tΔ2, new Func<hash.Hash>(New224));
+        });
     });
-    Ꮡt.Run(sha256ˢ, (ж<testing.T> tΔ2) => {
-        cryptotest.TestHash(tΔ2, new Func<hash.Hash>(New));
+    Ꮡt.Run(sha256ˢ2, (ж<testing.T> tΔ3) => {
+        cryptotest.TestAllImplementations(tΔ3, sha256ˢ, (ж<testing.T> tΔ4) => {
+            cryptotest.TestHash(tΔ4, new Func<hash.Hash>(New));
+        });
     });
 }
 

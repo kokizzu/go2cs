@@ -12,62 +12,15 @@ using os = os_package;
 using filepath = path.filepath_package;
 using Δruntime = runtime_package;
 using strings = strings_package;
-using sync = sync_package;
+using sync = global::go.sync_package;
 using testing = testing_package;
+using global::go;
 using global::go.go;
 using global::go.io;
 using path;
 using static global::go.@internal.reflectlite_internal_test_package;
 
 partial class reflectlite_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸparser() {
-    builtin.initPackage(typeof(global::go.go.parser_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(global::go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 internal static slice<@string> typeNames = new @string[]{
     "uncommonType"u8,
@@ -138,7 +91,7 @@ internal static void loadTypes(@string path, @string pkgName, visitor v) {
 internal static readonly @string srcˢ = "src"u8;
 internal static readonly @string reflectˢ = "reflect"u8;
 
-[GoType("dyn")] partial struct TestMirrorWithReflect_type {
+[GoType("dyn")] internal partial struct TestMirrorWithReflect_type {
     internal @string path, pkg;
     internal visitor v;
 }

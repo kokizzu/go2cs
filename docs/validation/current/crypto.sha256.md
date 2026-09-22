@@ -6,38 +6,39 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/sha256` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**23 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**22 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
 | `TestAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestBlockGeneric` | pass | pass |
 | `TestBlockSize` | pass | pass |
 | `TestCgo` | pass | pass |
 | `TestGolden` | pass | pass |
 | `TestGoldenMarshal` | pass | pass |
 | `TestGoldenMarshal/224` | pass | pass |
 | `TestGoldenMarshal/256` | pass | pass |
+| `TestHash` | pass | pass |
+| `TestHash/SHA-224` | pass | pass |
+| `TestHash/SHA-224/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-224/ResetState` | pass | pass |
+| `TestHash/SHA-224/StatefulWrite` | pass | pass |
+| `TestHash/SHA-224/SumAppend` | pass | pass |
+| `TestHash/SHA-224/WriteWithoutError` | pass | pass |
+| `TestHash/SHA-256` | pass | pass |
+| `TestHash/SHA-256/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-256/ResetState` | pass | pass |
+| `TestHash/SHA-256/StatefulWrite` | pass | pass |
+| `TestHash/SHA-256/SumAppend` | pass | pass |
+| `TestHash/SHA-256/WriteWithoutError` | pass | pass |
 | `TestLargeHashes` | pass | pass |
 | `TestMarshalTypeMismatch` | pass | pass |
-| `TestSHA256Hash` | pass | pass |
-| `TestSHA256Hash/SHA-224` | pass | pass |
-| `TestSHA256Hash/SHA-224/OutOfBoundsRead` | pass | pass |
-| `TestSHA256Hash/SHA-224/ResetState` | pass | pass |
-| `TestSHA256Hash/SHA-224/StatefulWrite` | pass | pass |
-| `TestSHA256Hash/SHA-224/SumAppend` | pass | pass |
-| `TestSHA256Hash/SHA-224/WriteWithoutError` | pass | pass |
-| `TestSHA256Hash/SHA-256` | pass | pass |
-| `TestSHA256Hash/SHA-256/OutOfBoundsRead` | pass | pass |
-| `TestSHA256Hash/SHA-256/ResetState` | pass | pass |
-| `TestSHA256Hash/SHA-256/StatefulWrite` | pass | pass |
-| `TestSHA256Hash/SHA-256/SumAppend` | pass | pass |
-| `TestSHA256Hash/SHA-256/WriteWithoutError` | pass | pass |
 | `TestSize` | pass | pass |
 
 ## Disclosed divergences

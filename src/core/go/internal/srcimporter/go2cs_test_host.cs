@@ -18,13 +18,13 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("TestCgo", srcimporter_internal_test_package.TestCgo, "srcimporter_test.go", 242);
+        registry.Add("TestCgo", srcimporter_internal_test_package.TestCgo, "srcimporter_test.go", 232);
         registry.Add("TestImportStdLib", srcimporter_internal_test_package.TestImportStdLib, "srcimporter_test.go", 85);
-        registry.Add("TestImportedTypes", srcimporter_internal_test_package.TestImportedTypes, "srcimporter_test.go", 111);
-        registry.Add("TestIssue20855", srcimporter_internal_test_package.TestIssue20855, "srcimporter_test.go", 197);
-        registry.Add("TestIssue23092", srcimporter_internal_test_package.TestIssue23092, "srcimporter_test.go", 233);
-        registry.Add("TestIssue24392", srcimporter_internal_test_package.TestIssue24392, "srcimporter_test.go", 238);
-        registry.Add("TestReimport", srcimporter_internal_test_package.TestReimport, "srcimporter_test.go", 181);
+        registry.Add("TestImportedTypes", srcimporter_internal_test_package.TestImportedTypes, "srcimporter_test.go", 109);
+        registry.Add("TestIssue20855", srcimporter_internal_test_package.TestIssue20855, "srcimporter_test.go", 191);
+        registry.Add("TestIssue23092", srcimporter_internal_test_package.TestIssue23092, "srcimporter_test.go", 223);
+        registry.Add("TestIssue24392", srcimporter_internal_test_package.TestIssue24392, "srcimporter_test.go", 228);
+        registry.Add("TestReimport", srcimporter_internal_test_package.TestReimport, "srcimporter_test.go", 177);
         registry.SetTestMain(srcimporter_internal_test_package.TestMain);
         return TestHost.Run(registry, args);
     }

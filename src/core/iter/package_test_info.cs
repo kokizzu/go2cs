@@ -30,7 +30,7 @@ using static global::go.iter_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("iter/pull_test.go", "pull_test.cs", "ACUcgoKCgtyCgoKC3IKSgoKCgIKCtoKCgoKCgpSUgoKClIKCgpSUhIKCgsqCkoKCgoCCgraCgoKCgoKUlIKCgpSCgoKUlISCgoLOAA0UhIKCgoKClIKUlJSUAAgGgoKCgoLcgqKCgqbogoKCgoLcgqKCgqYACQiigpKClJSCguiCgoKC7qKCkoKUlIKC6IKCgoIADg6igoKQkqaAgraUgoKCgpSQkqaAgra4goK4goKCgtyigoKQkqaAgraUgoKCgpSQkqaAgra4goK4goKCgtyygoCCgpS2ggALBqKCgoKCgpSUgIKklIKCgoKUkpSmgIK2uIKCuIKCgoIACAyigoKCgoKUlICCpJSCgoKClJKUpoCCtriCgriCgoKC3IKEgrKCkpSCxNaigpSAgsiigpSAgg==", "15-21:1;25-31:1;36-72:1;38-43:1.1;78-114:1;80-85:1.1;163-170:1;164-168:1.1;185-192:1;186-190:1.1;197-202:1;210-215:1;222-227:1;235-240:1;246-257:1;248-248:1.1;258-273:2;264-264:2.1;277-279:1;283-289:1;293-304:1;295-295:1.1;305-320:2;311-311:2.1;324-326:1;330-336:1;340-347:1;353-366:1;356-359:1.1;367-384:2;373-375:2.1;388-390:1;394-400:1;404-417:1;407-410:1.1;418-435:2;424-426:2.1;439-441:1;445-451:1;458-465:1;460-462:1.1")]
+[assembly: go.GoPositionMap("iter/pull_test.go", "pull_test.cs", "AA0cgoKCgtyCgoKC3IKSgoKCgIKCtoKCgoKCgpSUgoKClIKCgpSUhIKCgsqCkoKCgoCCgraCgoKCgoKUlIKCgpSCgoKUlISCgoLOAA0UhIKCgoKClIKUlJSUAAgGgoKCgoLcgqKCgqbogoKCgoLcgqKCgqYACgiigoKClJKClJSCguiCgoKC7qKCgoKUkoKUlIKC6IKCgoIADg6igoKQkqaAgraUgoKCgpSQkqaAgra4goK4goKCgtyigoKQkqaAgraUgoKCgpSQkqaAgra4goK4goKCgtyygoCCgpS2ggALBqKCgoKCgpSUgIKklIKCgoKUkpSmgIK2uIKCuIKCgoIACAyigoKCgoKUlICCpJSCgoKClJKUpoCCtriCgriCgoKC3IKEgrKCkpSCxNaigpSAgsiigpSAgg==", "15-21:1;25-31:1;36-72:1;38-43:1.1;78-114:1;80-85:1.1;163-170:1;164-168:1.1;185-192:1;186-190:1.1;201-206:1;214-219:1;230-235:1;243-248:1;254-265:1;256-256:1.1;266-281:2;272-272:2.1;285-287:1;291-297:1;301-312:1;303-303:1.1;313-328:2;319-319:2.1;332-334:1;338-344:1;348-355:1;361-374:1;364-367:1.1;375-392:2;381-383:2.1;396-398:1;402-408:1;412-425:1;415-418:1.1;426-443:2;432-434:2.1;447-449:1;453-459:1;466-473:1;468-470:1.1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -46,4 +46,24 @@ public static partial class iter_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.iter_package));
+    }
 }

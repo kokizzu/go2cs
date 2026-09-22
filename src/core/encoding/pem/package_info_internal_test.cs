@@ -12,6 +12,7 @@ using static go.encoding.pem_package;
 using static go.encoding.pem_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20696e70757420737472696e677d", "badPEMTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -28,7 +29,7 @@ using static go.encoding.pem_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/pem/pem_test.go", "pem_test.cs", "ACNGgoKCgsqCgoKUgoKWhoKClIKClIKCloKCloKWgoIAQYoBgoKCgpSC+pSCgoK4goKCABImgoKCgoKCgoKUgoKCloCCuIKCgoSCgoKCpoKCgpaAgtrGiMaClKaCqIKAgoKkgpSUlJSCgpSCgpSoypamooKCgriigoKCgoIA5AH4BIKCgoCCpIKUgILIgA==")]
+[assembly: go.GoPositionMap("encoding/pem/pem_test.go", "pem_test.cs", "ACNGgoKCgsqCgoKWgoKWhoKClIKClIKCloKCloKWgoIAUooBgoKCgpSC+pSCgoK4goKCABImgoKCgoKCgoKUgoKCloCCuIKCgoSCgoKCpoKCgpaAgtrGiMaClKaCqIKAgoKkgpSUlJSCgpSCgpSoypamooKCgriigoKCgoIAvwL4BIKCgoCCpIKUgILIgAALBIKCggBMfqKCgpSClIIADAyChoKCuIKCuII=", "55-57:1;242-244:1;246-283:2;709-720:1;735-737:1")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -44,4 +45,19 @@ public static partial class pem_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() => builtin.initPackage(typeof(go.testing.quick_package));
+    // </ImportInitializers>
 }

@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -98,16 +110,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="iter.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="iter_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="slices.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="slices_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sort.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sort_benchmark_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sort_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsortanyfunc.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zsortordered.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iter.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iter_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="slices.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="slices_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sort.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sort_benchmark_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sort_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsortanyfunc.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zsortordered.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,16 +127,19 @@
     <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/asan/internal.asan.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/msan/internal.msan.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/race/internal.race.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/iter/iter.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/math.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/rand/math.rand.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/rand/v2/math.rand.v2.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />
     <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
     <ProjectReference Include="$(go2csPath)core/testing/testing.csproj" />
+    <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
     <ProjectReference Include="slices.csproj" />
     <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>

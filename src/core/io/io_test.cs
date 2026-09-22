@@ -380,7 +380,7 @@ public static void TestTeeReader(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string aLongSampleDataˢ = "a long sample data, 1234567890"u8;
 
-[GoType("dyn")] partial struct TestSectionReader_ReadAt_tests {
+[GoType("dyn")] internal partial struct TestSectionReader_ReadAt_tests {
     internal @string data;
     internal nint off;
     internal nint n;
@@ -448,7 +448,7 @@ public static void TestSectionReader_Seek(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestSectionReader_Size_tests {
+[GoType("dyn")] internal partial struct TestSectionReader_Size_tests {
     internal @string data;
     internal int64 want;
 }
@@ -525,12 +525,12 @@ public static void TestCopyLargeWriter(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestNopCloserWriterToForwarding_type {
+[GoType("dyn")] internal partial struct TestNopCloserWriterToForwarding_type {
     public @string Name;
     internal Δio.Reader r;
 }
 
-[GoType("dyn")] partial struct TestNopCloserWriterToForwarding_typeᴛ1 {
+[GoType("dyn")] internal partial struct TestNopCloserWriterToForwarding_typeᴛ1 {
     public io_package.Reader Reader;
     public io_package.WriterTo WriterTo;
 }
@@ -557,7 +557,7 @@ internal static readonly @string errWhenceˢ = "errWhence"u8;
 internal static readonly @string errOffsetˢ = "errOffset"u8;
 internal static readonly @string normalˢ = "normal"u8;
 
-[GoType("dyn")] partial struct TestOffsetWriter_Seek_tests {
+[GoType("dyn")] internal partial struct TestOffsetWriter_Seek_tests {
     internal int64 offset;
     internal nint whence;
     internal int64 returnOff;
@@ -568,7 +568,7 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
     try {
         @string tmpfilename = testOffsetWriterSeekˢ;
         var (tmpfile, err) = os.CreateTemp(Ꮡt.TempDir(), tmpfilename);
-        if (err != default! || tmpfile == nil) {
+        if (err != default!) {
             Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
         }
         var tmpfileʗ1 = tmpfile;
@@ -624,23 +624,17 @@ public static void TestOffsetWriter_Seek(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testOffsetWriterWriteAtˢ = "TestOffsetWriter_WriteAt"u8;
-
 public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
     @string content = "0123456789ABCDEF"u8;
     var contentSize = (int64)len(content);
-    var (tmpdir, err) = os.MkdirTemp(Ꮡt.TempDir(), testOffsetWriterWriteAtˢ);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
+    @string tmpdir = Ꮡt.TempDir();
     void work(int64 off, int64 at) {
         GoFrame ᒐ = default;
         try {
             @string position = fmt.Sprintf("off_%d_at_%d"u8, off, at);
-            var (tmpfile, errΔ1) = os.CreateTemp(tmpdir, position);
-            if (errΔ1 != default! || tmpfile == nil) {
-                Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, position, errΔ1);
+            var (tmpfile, err) = os.CreateTemp(tmpdir, position);
+            if (err != default!) {
+                Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, position, err);
             }
             var tmpfileʗ1 = tmpfile;
             defer(() => tmpfileʗ1.Close(), ref ᒐ);
@@ -667,9 +661,9 @@ public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
             Ꮡwg.Wait();
             // Read one more byte to reach EOF
             var buf = new slice<byte>((nint)(contentSize + 1));
-            (var readN, errΔ1) = tmpfile.ReadAt(buf, off + at);
-            if (!AreEqual(errΔ1, EOF)) {
-                Ꮡt.Fatalf("ReadAt failed: %v"u8, errΔ1);
+            (var readN, err) = tmpfile.ReadAt(buf, off + at);
+            if (!AreEqual(err, EOF)) {
+                Ꮡt.Fatalf("ReadAt failed: %v"u8, err);
             }
             @string readContent = ((@string)(buf[..(int)(contentSize)]));
             if (ᏑwriteN.Value != (int64)readN || ᏑwriteN.Value != contentSize || readContent != content) {
@@ -686,6 +680,9 @@ public static void TestOffsetWriter_WriteAt(ж<testing.T> Ꮡt) {
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string testOffsetWriterWriteAtˢ = "TestOffsetWriter_WriteAt"u8;
 
 public static void TestWriteAt_PositionPriorToBase(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
@@ -724,7 +721,7 @@ public static void TestOffsetWriter_Write(ж<testing.T> Ꮡt) {
     (ж<Δio.OffsetWriter>, ж<os.File>) makeOffsetWriter(@string nameΔ1) {
         @string tmpfilename = "TestOffsetWriter_Write_"u8 + nameΔ1;
         var (tmpfile, err) = os.CreateTemp(tmpdir, tmpfilename);
-        if (err != default! || tmpfile == nil) {
+        if (err != default!) {
             Ꮡt.Fatalf("CreateTemp(%s) failed: %v"u8, tmpfilename, err);
         }
         return (NewOffsetWriter(new io_test_package.os_FileжWriterAt(tmpfile), 0), tmpfile);

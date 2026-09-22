@@ -81,7 +81,7 @@ internal static readonly @string foobazˢ = "foobaz"u8;
 internal static readonly @string matchˢ = "[match]"u8;
 internal static readonly @string helloˢ3 = "Hello"u8;
 
-[GoType("dyn")] partial struct TestReplacer_testCase {
+[GoType("dyn")] internal partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
     internal @string @in, @out;
 }
@@ -336,7 +336,7 @@ public static void TestWriteStringError(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestGenericTrieBuilding_testCases {
+[GoType("dyn")] internal partial struct TestGenericTrieBuilding_testCases {
     internal @string @in, @out;
 }
 

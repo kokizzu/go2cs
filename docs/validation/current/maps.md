@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `maps` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**14 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**14 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -39,8 +41,13 @@ has not implemented, or a platform behavior it provably cannot reproduce. Each i
 the capability it needs.
 
 - BenchmarkMapClone (benchmark): benchmark execution is deferred to Phase 4D
+- ExampleAll (example): example execution is deferred to Phase 4D
 - ExampleClone (example): example execution is deferred to Phase 4D
+- ExampleCollect (example): example execution is deferred to Phase 4D
 - ExampleCopy (example): example execution is deferred to Phase 4D
 - ExampleDeleteFunc (example): example execution is deferred to Phase 4D
 - ExampleEqual (example): example execution is deferred to Phase 4D
 - ExampleEqualFunc (example): example execution is deferred to Phase 4D
+- ExampleInsert (example): example execution is deferred to Phase 4D
+- ExampleKeys (example): example execution is deferred to Phase 4D
+- ExampleValues (example): example execution is deferred to Phase 4D

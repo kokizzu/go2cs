@@ -40,8 +40,8 @@ using static global::go.log.slog.@internal.benchmarks_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/benchmarks_test.go", "benchmarks_test.cs", "ADIiggAVDrKCAAkWgrKClAAPFgAKGAAKGAAQJAAuWpKCkoI=")]
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers_test.go", "handlers_test.cs", "ACEegoKSgqKCgoCCpIKCpqKCgIKkgoLKooKAgJI=")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/benchmarks_test.go", "benchmarks_test.cs", "ABQiggAVDrKCAAkWgrKClAAPFgAKGAAKGAAQJAAuWpKCkoI=", "39-150:1;53-61:1.1;65-73:1.2;77-90:1.3;95-138:1.4;141-148:1.5;143-147:1.5.1")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers_test.go", "handlers_test.cs", "ABUegoKSgqKCgoCCpIKCpqKCgIKkgoLKooKAgJI=", "19-29:1;30-39:2;44-44:1")]
 // </GoSourcePositionMaps>
 
 namespace go.log.slog.@internal;
@@ -57,4 +57,28 @@ public static partial class benchmarks_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslog() => builtin.initPackage(typeof(go.log.slog_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.log.slog.@internal.benchmarks_package));
+    }
 }

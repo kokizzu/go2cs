@@ -24,6 +24,9 @@ internal static class Go2CsTestHost
             "scope.go",
             "walk.go",
             "walk_test.go",
+        }, new string[]
+        {
+            "internal",
         });
         registry.Add("TestCommentMap", ast_test_package.TestCommentMap, "commentmap_test.go", 104);
         registry.Add("TestCommentText", ast_internal_test_package.TestCommentText, "ast_test.go", 41);

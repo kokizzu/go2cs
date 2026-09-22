@@ -28,9 +28,9 @@ using static go.mime_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("mime/encodedword_test.go", "encodedword_test.cs", "ABccopIADyqCgIIACgqCAAcYgoKCgoKCloKCAAsOggAOJoKCgoKClIKClIIACAqiABxAgoKCgpSCAAsKggAMJrKCpIKUgoKUgoKUhKaCgpSCAAkKgqyAgviiguiihIK4ooSC")]
-[assembly: go.GoPositionMap("mime/mediatype_test.go", "mediatype_test.cs", "AA0agtyigoKCgrbcggALGKKCgoKCttyCAAwaooKCgoKCtrYAORi0koKClJaCAKAC4gSCgoKCgpSUgJKUpIKUggAfRIKCgoKClIKUgpSClIIAIUKCgoKClIKUgoKUgpSigoI=")]
-[assembly: go.GoPositionMap("mime/type_test.go", "type_test.cs", "AA0cgoKCgoK4gqaCgpSAgsiC7oSCgoIADArCgoKCgpSUAAcQgoKCAAwKooKEgoKClKaAgqSAgriAggAUCKKCgoKCgoKUlAAGFoKCgpSCgpSCgpSCAAsKgoKClIK4ooKEyoKCgu6igoTKgoKCgIIADRCigpSUlK6CgoKClII=")]
+[assembly: go.GoPositionMap("mime/encodedword_test.go", "encodedword_test.cs", "ABccopIADyqCgIIACgqCAAcYgoKCgoKCloKCAAsOggAOJoKCgoKClIKClIIACAqiABxAgoKCgpSCAAsKggAMJrKCpIKUgoKUgoKUhKaCgpSCAAkKgqyAgviiguiihIK4ooSC", "180-195:1;209-211:1")]
+[assembly: go.GoPositionMap("mime/mediatype_test.go", "mediatype_test.cs", "AA0agtyigoKCgrbcggALGKKCgoKCttyCAAwaooKCgoKCtrYAORi0koKClJaCAKIC4gSCgoKCgpSUgJKUpIKUggAfRIKCgoKClIKUgpSClIIAIUKCgoKClIKUgoKUgpSigoI=", "101-107:1")]
+[assembly: go.GoPositionMap("mime/type_test.go", "type_test.cs", "AA8egoKCgoK4gqaCgpSAgsiC7oSCgoIADArCgoKCgpSUAAcQgoKCAAwKooKEgoKClKaAgqSAgriAggAUCKKCgoKCgoKUlAAGFoKCgpSCgpSCgpSCAAwKgoKUgoKUgriigoTKgoKC7qKChMqCgoKAggANEKKClJSUroKCgoKUgg==", "18-21:1;56-61:1;84-88:1;106-113:1;150-153:1;168-174:1;169-173:1.1;187-195:1;188-194:1.1;200-204:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -46,4 +46,20 @@ public static partial class mime_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

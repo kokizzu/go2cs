@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using static go.@internal.dag_package;
@@ -59,7 +59,7 @@ public static void TestParse(ж<testing.T> Ꮡt) {
     // Basic smoke test for graph parsing.
     var g = mustParse(Ꮡt, diamond);
     var wantNodes = strings.Fields(aBCDˢ);
-    if (!reflect.DeepEqual(wantNodes, (~g).Nodes)) {
+    if (!slices.Equal<slice<@string>, @string>(wantNodes, (~g).Nodes)) {
         Ꮡt.Fatalf("want nodes %v, got %v"u8, wantNodes, (~g).Nodes);
     }
     // Parse returns the transitive closure, so it adds d->a.

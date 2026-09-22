@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/abi` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-03 · converter `8873a1437`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**1 matched · 1 disclosed** — Go 1.23.12, `linux/amd64`, converted package
+**1 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi).
 
-Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 linux/amd64`.
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 

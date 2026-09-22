@@ -77,7 +77,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
     {
         var (rgbaΔ1, ok) = m._<ж<imageꓸRGBA>>(ᐧ); if (ok) {
             return Ꮡ(new slowestRGBA(
-                Pix: append(slice<byte>(default!), (~rgbaΔ1).Pix.ꓸꓸꓸ),
+                Pix: appendꓸꓸꓸ(slice<byte>(default!), (~rgbaΔ1).Pix),
                 Stride: (~rgbaΔ1).Stride,
                 Rect: (~rgbaΔ1).Rect
             ));
@@ -174,7 +174,7 @@ internal static ж<slowerRGBA> convertToSlowerRGBA(image.Image m) {
     {
         var (rgbaΔ1, ok) = m._<ж<imageꓸRGBA>>(ᐧ); if (ok) {
             return Ꮡ(new slowerRGBA(
-                Pix: append(slice<byte>(default!), (~rgbaΔ1).Pix.ꓸꓸꓸ),
+                Pix: appendꓸꓸꓸ(slice<byte>(default!), (~rgbaΔ1).Pix),
                 Stride: (~rgbaΔ1).Stride,
                 Rect: (~rgbaΔ1).Rect
             ));
@@ -857,7 +857,7 @@ public static void TestSqDiff(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var err = quick.CheckEqual(orig, sqDiff, Ꮡ(new quick.Config(MaxCountScale: 10D))); if (err != default!) {
+        var err = quick.CheckEqual((orig).OrTypedNilFunc(), sqDiff, Ꮡ(new quick.Config(MaxCountScale: 10D))); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }

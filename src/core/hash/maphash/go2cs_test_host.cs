@@ -16,28 +16,33 @@ internal static class Go2CsTestHost
             "maphash_test.go",
             "smhasher_test.go",
         });
-        registry.Add("TestHashBytesVsString", maphash_internal_test_package.TestHashBytesVsString, "maphash_test.go", 101);
-        registry.Add("TestHashGrouping", maphash_internal_test_package.TestHashGrouping, "maphash_test.go", 38);
-        registry.Add("TestHashHighBytes", maphash_internal_test_package.TestHashHighBytes, "maphash_test.go", 120);
-        registry.Add("TestRepeat", maphash_internal_test_package.TestRepeat, "maphash_test.go", 134);
-        registry.Add("TestSeedFromFlush", maphash_internal_test_package.TestSeedFromFlush, "maphash_test.go", 184);
-        registry.Add("TestSeedFromReset", maphash_internal_test_package.TestSeedFromReset, "maphash_test.go", 198);
-        registry.Add("TestSeedFromSeed", maphash_internal_test_package.TestSeedFromSeed, "maphash_test.go", 170);
-        registry.Add("TestSeedFromSum64", maphash_internal_test_package.TestSeedFromSum64, "maphash_test.go", 157);
-        registry.Add("TestSeededHash", maphash_internal_test_package.TestSeededHash, "maphash_test.go", 25);
-        registry.Add("TestSmhasherAppendedZeros", maphash_internal_test_package.TestSmhasherAppendedZeros, "smhasher_test.go", 122);
-        registry.Add("TestSmhasherAvalanche", maphash_internal_test_package.TestSmhasherAvalanche, "smhasher_test.go", 349);
-        registry.Add("TestSmhasherCyclic", maphash_internal_test_package.TestSmhasherCyclic, "smhasher_test.go", 216);
-        registry.Add("TestSmhasherPermutation", maphash_internal_test_package.TestSmhasherPermutation, "smhasher_test.go", 282);
+        registry.Add("TestComparable", maphash_internal_test_package.TestComparable, "maphash_test.go", 224);
+        registry.Add("TestComparableAllocations", maphash_internal_test_package.TestComparableAllocations, "maphash_test.go", 429);
+        registry.Add("TestComparableShouldPanic", maphash_internal_test_package.TestComparableShouldPanic, "maphash_test.go", 396);
+        registry.Add("TestHashBytesVsString", maphash_internal_test_package.TestHashBytesVsString, "maphash_test.go", 106);
+        registry.Add("TestHashGrouping", maphash_internal_test_package.TestHashGrouping, "maphash_test.go", 43);
+        registry.Add("TestHashHighBytes", maphash_internal_test_package.TestHashHighBytes, "maphash_test.go", 125);
+        registry.Add("TestRepeat", maphash_internal_test_package.TestRepeat, "maphash_test.go", 139);
+        registry.Add("TestSeedFromFlush", maphash_internal_test_package.TestSeedFromFlush, "maphash_test.go", 189);
+        registry.Add("TestSeedFromReset", maphash_internal_test_package.TestSeedFromReset, "maphash_test.go", 203);
+        registry.Add("TestSeedFromSeed", maphash_internal_test_package.TestSeedFromSeed, "maphash_test.go", 175);
+        registry.Add("TestSeedFromSum64", maphash_internal_test_package.TestSeedFromSum64, "maphash_test.go", 162);
+        registry.Add("TestSeededHash", maphash_internal_test_package.TestSeededHash, "maphash_test.go", 30);
+        registry.Add("TestSmhasherAppendedZeros", maphash_internal_test_package.TestSmhasherAppendedZeros, "smhasher_test.go", 123);
+        registry.Add("TestSmhasherAvalanche", maphash_internal_test_package.TestSmhasherAvalanche, "smhasher_test.go", 352);
+        registry.Add("TestSmhasherCyclic", maphash_internal_test_package.TestSmhasherCyclic, "smhasher_test.go", 217);
+        registry.Add("TestSmhasherPermutation", maphash_internal_test_package.TestSmhasherPermutation, "smhasher_test.go", 284);
         registry.Add("TestSmhasherSanity", maphash_internal_test_package.TestSmhasherSanity, "smhasher_test.go", 33);
-        registry.Add("TestSmhasherSeed", maphash_internal_test_package.TestSmhasherSeed, "smhasher_test.go", 483);
-        registry.Add("TestSmhasherSmallKeys", maphash_internal_test_package.TestSmhasherSmallKeys, "smhasher_test.go", 133);
-        registry.Add("TestSmhasherSparse", maphash_internal_test_package.TestSmhasherSparse, "smhasher_test.go", 243);
-        registry.Add("TestSmhasherText", maphash_internal_test_package.TestSmhasherText, "smhasher_test.go", 448);
-        registry.Add("TestSmhasherTwoNonzero", maphash_internal_test_package.TestSmhasherTwoNonzero, "smhasher_test.go", 170);
-        registry.Add("TestSmhasherWindowed", maphash_internal_test_package.TestSmhasherWindowed, "smhasher_test.go", 419);
-        registry.Add("TestSmhasherZeros", maphash_internal_test_package.TestSmhasherZeros, "smhasher_test.go", 155);
-        registry.Add("TestUnseededHash", maphash_internal_test_package.TestUnseededHash, "maphash_test.go", 14);
+        registry.Add("TestSmhasherSeed", maphash_internal_test_package.TestSmhasherSeed, "smhasher_test.go", 488);
+        registry.Add("TestSmhasherSmallKeys", maphash_internal_test_package.TestSmhasherSmallKeys, "smhasher_test.go", 134);
+        registry.Add("TestSmhasherSparse", maphash_internal_test_package.TestSmhasherSparse, "smhasher_test.go", 244);
+        registry.Add("TestSmhasherText", maphash_internal_test_package.TestSmhasherText, "smhasher_test.go", 452);
+        registry.Add("TestSmhasherTwoNonzero", maphash_internal_test_package.TestSmhasherTwoNonzero, "smhasher_test.go", 171);
+        registry.Add("TestSmhasherWindowed", maphash_internal_test_package.TestSmhasherWindowed, "smhasher_test.go", 423);
+        registry.Add("TestSmhasherZeros", maphash_internal_test_package.TestSmhasherZeros, "smhasher_test.go", 156);
+        registry.Add("TestUnseededHash", maphash_internal_test_package.TestUnseededHash, "maphash_test.go", 19);
+        registry.Add("TestWriteComparable", maphash_internal_test_package.TestWriteComparable, "maphash_test.go", 316);
+        registry.Add("TestWriteComparableNoncommute", maphash_internal_test_package.TestWriteComparableNoncommute, "maphash_test.go", 413);
         return TestHost.Run(registry, args);
     }
 }

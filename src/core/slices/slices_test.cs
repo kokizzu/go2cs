@@ -6,34 +6,19 @@ global using BenchmarkCompactFunc_Large_Element = nint;
 namespace go;
 
 using cmp = cmp_package;
+using asan = @internal.asan_package;
+using msan = @internal.msan_package;
 using race = @internal.race_package;
 using testenv = @internal.testenv_package;
 using Δmath = math_package;
 using static slices_package;
 using strings = strings_package;
 using testing = testing_package;
+using @unsafe = unsafe_package;
 using @internal;
 using ꓸꓸꓸany = Span<any>;
 
 partial class slices_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
 
 
 [GoType("dyn")] partial struct equalIntTestsᴛ1 {
@@ -160,14 +145,14 @@ public static void TestEqualFunc(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[4096]byte")] /* [4 * 1024]byte */
-partial struct BenchmarkEqualFunc_Large_Large;
+[GoLocalName("Large")] [GoType("[4096]byte")] /* [4 * 1024]byte */
+internal partial struct BenchmarkEqualFunc_Large_Large;
 
 public static void BenchmarkEqualFunc_Large(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    var xs = new slice<BenchmarkEqualFunc_Large_Large>(1024);
-    var ys = new slice<BenchmarkEqualFunc_Large_Large>(1024);
+    var xs = GoReflect.WithElemDims(new slice<BenchmarkEqualFunc_Large_Large>(1024), 4096);
+    var ys = GoReflect.WithElemDims(new slice<BenchmarkEqualFunc_Large_Large>(1024), 4096);
     for (nint i = 0; i < b.N; i++) {
         _ = EqualFunc(xs, ys, (BenchmarkEqualFunc_Large_Large x, BenchmarkEqualFunc_Large_Large y) => {
             x = x.Clone();
@@ -450,13 +435,13 @@ internal static Func<T, bool> equalToIndex<T>(Func<T, T, bool> f, T v1) {
     return (T v2) => f(v1, v2);
 }
 
-[GoType("[4096]byte")] /* [4 * 1024]byte */
-partial struct BenchmarkIndex_Large_Large;
+[GoLocalName("Large")] [GoType("[4096]byte")] /* [4 * 1024]byte */
+internal partial struct BenchmarkIndex_Large_Large;
 
 public static void BenchmarkIndex_Large(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    var ss = new slice<BenchmarkIndex_Large_Large>(1024);
+    var ss = GoReflect.WithElemDims(new slice<BenchmarkIndex_Large_Large>(1024), 4096);
     for (nint i = 0; i < b.N; i++) {
         _ = Index(ss, new BenchmarkIndex_Large_Large(new byte[]{1}.array(4096)));
     }
@@ -483,13 +468,13 @@ public static void TestIndexFunc(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[4096]byte")] /* [4 * 1024]byte */
-partial struct BenchmarkIndexFunc_Large_Large;
+[GoLocalName("Large")] [GoType("[4096]byte")] /* [4 * 1024]byte */
+internal partial struct BenchmarkIndexFunc_Large_Large;
 
 public static void BenchmarkIndexFunc_Large(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    var ss = new slice<BenchmarkIndexFunc_Large_Large>(1024);
+    var ss = GoReflect.WithElemDims(new slice<BenchmarkIndexFunc_Large_Large>(1024), 4096);
     for (nint i = 0; i < b.N; i++) {
         _ = IndexFunc(ss, (BenchmarkIndexFunc_Large_Large e) => {
             e = e.Clone();
@@ -587,7 +572,7 @@ public static void TestInsert(ж<testing.T> Ꮡt) {
             }
         }
     }
-    if (!testenv.OptimizationOff() && !race.Enabled) {
+    if (!testenv.OptimizationOff() && !race.Enabled && !asan.Enabled && !msan.Enabled) {
         // Allocations should be amortized.
         UntypedInt count = 50;
         var n = testing.AllocsPerRun(10, () => {
@@ -631,7 +616,7 @@ public static void TestInsertOverlap(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestInsertPanics_type {
+[GoType("dyn")] internal partial struct TestInsertPanics_type {
     internal @string name;
     internal slice<nint> s;
     internal nint i;
@@ -784,7 +769,7 @@ internal static bool /*b*/ panics(Action f) {
     return b;
 }
 
-[GoType("dyn")] partial struct TestDeletePanics_type {
+[GoType("dyn")] internal partial struct TestDeletePanics_type {
     internal @string name;
     internal slice<nint> s;
     internal nint i, j;
@@ -937,19 +922,19 @@ public static void BenchmarkCompact(ж<testing.B> Ꮡb) {
 private static readonly @string allDupˢ = "all_dup"u8;
 private static readonly @string noDupˢ = "no_dup"u8;
 
-[GoType("[16]nint")] partial struct BenchmarkCompact_Large_Large;
+[GoLocalName("Large")] [GoType("[16]nint")] internal partial struct BenchmarkCompact_Large_Large;
 
 public static void BenchmarkCompact_Large(ж<testing.B> Ꮡb) {
     const nint N = 1024;
     Ꮡb.Run(allDupˢ, (ж<testing.B> bΔ1) => {
-        var ss = new slice<BenchmarkCompact_Large_Large>(N);
+        var ss = GoReflect.WithElemDims(new slice<BenchmarkCompact_Large_Large>(N), 16);
         bΔ1.ResetTimer();
         for (nint i = 0; i < (~bΔ1).N; i++) {
             _ = Compact<slice<BenchmarkCompact_Large_Large>, BenchmarkCompact_Large_Large>(ss);
         }
     });
     Ꮡb.Run(noDupˢ, (ж<testing.B> bΔ2) => {
-        var ss = new slice<BenchmarkCompact_Large_Large>(N);
+        var ss = GoReflect.WithElemDims(new slice<BenchmarkCompact_Large_Large>(N), 16);
         foreach (var (i, _) in ss) {
             ss[i][0] = i;
         }
@@ -1116,7 +1101,7 @@ public static void TestGrow(ж<testing.T> Ꮡt) {
         }); if (n != 1D) {
             
             Actionꓸꓸꓸ<@string, any> errorf = (@string p1, params ꓸꓸꓸany p2) => Ꮡt.Errorf(p1, p2);
-            if (race.Enabled || testenv.OptimizationOff()) {
+            if (race.Enabled || msan.Enabled || asan.Enabled || testenv.OptimizationOff()) {
                                 errorf = (@string p1, params ꓸꓸꓸany p2) => Ꮡt.Logf(p1, p2); // this allocates multiple times in race detector mode
             }
             errorf("Grow should allocate once when given insufficient capacity; allocated %v times"u8, n);
@@ -1189,7 +1174,7 @@ public static void TestReverse(ж<testing.T> Ꮡt) {
     Reverse<slice<@string>, @string>(singleton);
     {
         var want = new @string[]{"one"u8}.slice(); if (!Equal<slice<@string>, @string>(singleton, want)) {
-            Ꮡt.Errorf("Reverse(singeleton) = %v, want %v"u8, singleton, want);
+            Ꮡt.Errorf("Reverse(singleton) = %v, want %v"u8, singleton, want);
         }
     }
     Reverse<slice<@string>, @string>(default!);
@@ -1206,7 +1191,7 @@ internal static S naiveReplace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     return s;
 }
 
-[GoType("dyn")] partial struct TestReplace_type {
+[GoType("dyn")] internal partial struct TestReplace_type {
     internal slice<nint> s, v;
     internal nint i, j;
 }
@@ -1249,7 +1234,7 @@ public static void TestReplace(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReplacePanics_type {
+[GoType("dyn")] internal partial struct TestReplacePanics_type {
     internal @string name;
     internal slice<nint> s, v;
     internal nint i, j;
@@ -1402,7 +1387,7 @@ public static void TestReplaceEndClearTail(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkReplace_cases {
+[GoType("dyn")] internal partial struct BenchmarkReplace_cases {
     internal @string name;
     internal Func<slice<nint>> s, v;
     internal nint i, j;
@@ -1488,7 +1473,7 @@ internal static void apply<T>(T v, Action<T> f) {
     f(v);
 }
 
-[GoType("[]nint")] partial struct TestInference_S;
+[GoLocalName("S")] [GoType("[]nint")] internal partial struct TestInference_S;
 
 // Test type inference with a named slice type.
 public static void TestInference(ж<testing.T> Ꮡt) {
@@ -1508,7 +1493,7 @@ public static void TestInference(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestConcat_cases {
+[GoType("dyn")] internal partial struct TestConcat_cases {
     internal slice<slice<nint>> s;
     internal slice<nint> want;
 }
@@ -1549,7 +1534,7 @@ public static void TestConcat(ж<testing.T> Ꮡt) {
         if (allocs > 1D) {
             
             Actionꓸꓸꓸ<@string, any> errorf = (@string p1, params ꓸꓸꓸany p2) => Ꮡt.Errorf(p1, p2);
-            if (testenv.OptimizationOff() || race.Enabled) {
+            if (testenv.OptimizationOff() || race.Enabled || asan.Enabled || msan.Enabled) {
                                 errorf = (@string p1, params ꓸꓸꓸany p2) => Ꮡt.Logf(p1, p2);
             }
             errorf("Concat(%v) allocated %v times; want 1"u8, tc.s, allocs);
@@ -1558,10 +1543,10 @@ public static void TestConcat(ж<testing.T> Ꮡt) {
 }
 
 // Use zero length element to minimize memory in testing
-[GoType("dyn")] partial struct TestConcat_too_large_void {
+[GoType("dyn")] internal partial struct TestConcat_too_large_void {
 }
 
-[GoType("dyn")] partial struct TestConcat_too_large_cases {
+[GoType("dyn")] internal partial struct TestConcat_too_large_cases {
     internal slice<nint> lengths;
     internal bool shouldPanic;
 }
@@ -1625,13 +1610,13 @@ public static void TestConcat_too_large(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestRepeat_type {
+[GoType("dyn")] internal partial struct TestRepeat_type {
     internal slice<nint> x;
     internal nint count;
     internal slice<nint> want;
 }
 
-[GoType("dyn")] partial struct TestRepeat_typeᴛ1 {
+[GoType("dyn")] internal partial struct TestRepeat_typeᴛ1 {
     internal slice<EmptyStruct> x;
     internal nint count;
     internal slice<EmptyStruct> want;
@@ -1690,7 +1675,7 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestRepeatPanics_type {
+[GoType("dyn")] internal partial struct TestRepeatPanics_type {
     internal @string name;
     internal slice<EmptyStruct> x;
     internal nint count;
@@ -1712,6 +1697,19 @@ public static void TestRepeatPanics(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Repeat %s: got no panic, want panic"u8, test.name);
         }
     }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object cloneKeepsAliveSDueToˢ = (@string)"clone keeps alive s due to array overlap"u8;
+
+public static void TestIssue68488(ж<testing.T> Ꮡt) {
+    var s = new slice<nint>(3);
+    var clone = Clone<slice<nint>, nint>(s[1..1]);
+    var exprᴛ1 = @unsafe.SliceData(clone);
+    if (exprᴛ1 == Ꮡ(s, 0) || exprᴛ1 == Ꮡ(s, 1) || exprᴛ1 == Ꮡ(s, 2)) {
+        Ꮡt.Error(cloneKeepsAliveSDueToˢ);
+    }
+
 }
 
 } // end slices_test_package

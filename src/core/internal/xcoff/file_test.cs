@@ -4,6 +4,7 @@
 namespace go.@internal;
 
 using reflect = reflect_package;
+using slices = slices_package;
 using testing = testing_package;
 using static go.@internal.xcoff_package;
 
@@ -86,7 +87,7 @@ public static void TestOpen(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Error(err);
         }
-        if (!reflect.DeepEqual(tl, fl)) {
+        if (!slices.Equal<slice<@string>, @string>(tl, fl)) {
             Ꮡt.Errorf("open %s: loader import = %v, want %v"u8, (~tt).@file, tl, fl);
         }
     }

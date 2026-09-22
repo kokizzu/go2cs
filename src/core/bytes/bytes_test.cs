@@ -6,9 +6,10 @@ namespace go;
 using static bytes_package;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
+using iter = iter_package;
 using Δmath = math_package;
 using rand = go.math.rand_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using Δunicode = unicode_package;
@@ -22,48 +23,43 @@ using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-internal static bool eq(slice<@string> a, slice<@string> b) {
-    if (len(a) != len(b)) {
-        return false;
-    }
-    for (nint i = 0; i < len(a); i++) {
-        if (a[i] != b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 internal static slice<@string> sliceOfString(slice<slice<byte>> s) {
     var result = new slice<@string>(len(s));
     foreach (var (i, v) in s) {
         result[i] = ((@string)v);
     }
     return result;
+}
+
+internal static slice<slice<byte>> collect(ж<testing.T> Ꮡt, iter.Seq<slice<byte>> seq) {
+    var @out = slices.Collect(seq);
+    var out1 = slices.Collect(seq);
+    if (!slices.Equal<slice<@string>, @string>(sliceOfString(@out), sliceOfString(out1))) {
+        Ꮡt.Fatalf("inconsistent seq:\n%s\n%s"u8, @out, out1);
+    }
+    return @out;
+}
+
+[GoType] partial struct LinesTest {
+    internal @string a;
+    internal slice<@string> b;
+}
+
+internal static slice<LinesTest> linesTests = new LinesTest[]{
+    new(a: "abc\nabc\n"u8, b: new @string[]{"abc\n"u8, "abc\n"u8}.slice()),
+    new(a: "abc\r\nabc"u8, b: new @string[]{"abc\r\n"u8, "abc"u8}.slice()),
+    new(a: "abc\r\n"u8, b: new @string[]{"abc\r\n"u8}.slice()),
+    new(a: "\nabc"u8, b: new @string[]{"\n"u8, "abc"u8}.slice()),
+    new(a: "\nabc\n\n"u8, b: new @string[]{"\n"u8, "abc\n"u8, "\n"u8}.slice())
+}.slice();
+
+public static void TestLines(ж<testing.T> Ꮡt) {
+    foreach (var (_, s) in linesTests) {
+        var result = sliceOfString(slices.Collect(Lines(slice<byte>(s.a))));
+        if (!slices.Equal<slice<@string>, @string>(result, s.b)) {
+            Ꮡt.Errorf(@"slices.Collect(Lines(%q)) = %q; want %q"u8, s.a, result, s.b);
+        }
+    }
 }
 
 // For ease of reading, the test cases use strings that are converted to byte
@@ -149,6 +145,9 @@ public static void TestNotEqual(ж<testing.T> Ꮡt) {
 
 // cases with one byte strings - test IndexByte and special case in Index()
 // test fallback to Rabin-Karp.
+// test fallback to IndexRune
+// invalid UTF-8 byte sequence (must be longer than bytealg.MaxBruteForce to
+// test that we don't use IndexRune)
 internal static slice<BinOpTest> indexTests = new BinOpTest[]{
     new(""u8, ""u8, 0),
     new(""u8, "a"u8, -1),
@@ -204,7 +203,9 @@ internal static slice<BinOpTest> indexTests = new BinOpTest[]{
     new("oooooooooooooooooooooo"u8, "r"u8, -1),
     new("oxoxoxoxoxoxoxoxoxoxoxoy"u8, "oy"u8, 22),
     new("oxoxoxoxoxoxoxoxoxoxoxox"u8, "oy"u8, -1),
-    new("000000000000000000000000000000000000000000000000000000000000000000000001"u8, "0000000000000000000000000000000000000000000000000000000000000000001"u8, 5)
+    new("000000000000000000000000000000000000000000000000000000000000000000000001"u8, "0000000000000000000000000000000000000000000000000000000000000000001"u8, 5),
+    new("oxoxoxoxoxoxoxoxoxoxox☺"u8, "☺"u8, 22),
+    new(((@string)(new byte[]{0x78, 0x78, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x78, 0x78, 0x78, 0xed, 0x9f, 0xc0})), ((@string)(new byte[]{0xed, 0x9f, 0xc0})), 105)
 }.slice();
 
 internal static slice<BinOpTest> lastIndexTests = new BinOpTest[]{
@@ -263,7 +264,7 @@ internal static slice<BinOpTest> lastIndexAnyTests = new BinOpTest[]{
     new(((@string)(new byte[]{0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0xcf, 0x80, 0x61, 0x62, 0x63})), ((@string)(new byte[]{0xcf, 0x62, 0x80})), 10)
 }.slice();
 
-[GoType("dyn")] partial struct runIndexTests_type {
+[GoType("dyn")] internal partial struct runIndexTests_type {
     internal slice<byte> a;
     internal slice<byte> b;
     internal nint i;
@@ -469,7 +470,7 @@ public static void TestIndexByteSmall(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestIndexRune_tests {
+[GoType("dyn")] internal partial struct TestIndexRune_tests {
     internal @string @in;
     internal rune rune;
     internal nint want;
@@ -486,7 +487,34 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
         new("a A x"u8, (rune)'A', 2),
         new("some_text=some_value"u8, (rune)'=', 9),
         new("☺a"u8, (rune)'a', 3),
-        new("a☻☺b"u8, (rune)'☺', 4), // RuneError should match any invalid UTF-8 byte sequence.
+        new("a☻☺b"u8, (rune)'☺', 4),
+        new("𠀳𠀗𠀾𠁄𠀧𠁆𠁂𠀫𠀖𠀪𠀲𠀴𠁀𠀨𠀿"u8, (rune)0x2003F, 56), // 2 bytes
+
+        new("ӆ"u8, (rune)'ӆ', 0),
+        new("a"u8, (rune)'ӆ', -1),
+        new("  ӆ"u8, (rune)'ӆ', 2),
+        new("  a"u8, (rune)'ӆ', -1),
+        new(strings.Repeat("ц"u8, 64) + "ӆ"u8, (rune)'ӆ', 128), // test cutover
+
+        new(strings.Repeat("ц"u8, 64), (rune)'ӆ', -1), // 3 bytes
+
+        new("Ꚁ"u8, (rune)'Ꚁ', 0),
+        new("a"u8, (rune)'Ꚁ', -1),
+        new("  Ꚁ"u8, (rune)'Ꚁ', 2),
+        new("  a"u8, (rune)'Ꚁ', -1),
+        new(strings.Repeat("Ꙁ"u8, 64) + "Ꚁ"u8, (rune)'Ꚁ', 192), // test cutover
+
+        new(strings.Repeat("Ꙁ"u8, 64) + "Ꚁ"u8, (rune)'䚀', -1), // 'Ꚁ' and '䚀' share the same last two bytes
+ // 4 bytes
+
+        new("𡌀"u8, (rune)0x21300, 0),
+        new("a"u8, (rune)0x21300, -1),
+        new("  𡌀"u8, (rune)0x21300, 2),
+        new("  a"u8, (rune)0x21300, -1),
+        new(strings.Repeat("𡋀"u8, 64) + "𡌀"u8, (rune)0x21300, 256), // test cutover
+
+        new(strings.Repeat("𡋀"u8, 64) + "𡌀"u8, (rune)0x23300, -1), // '𡌀' and '𣌀' share the same last two bytes
+ // RuneError should match any invalid UTF-8 byte sequence.
 
         new("�"u8, (rune)'�', 0),
         new(((@string)(new byte[]{0xff})), (rune)'�', 0),
@@ -498,7 +526,15 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
         new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), -1, -1),
         new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), 0xD800, -1), // Surrogate pair
 
-        new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), utf8.MaxRune + 1, -1)
+        new(((@string)(new byte[]{0x61, 0xe2, 0x98, 0xba, 0x62, 0xe2, 0x98, 0xbb, 0x63, 0xe2, 0x98, 0xb9, 0x64, 0xe2, 0x98, 0xef, 0xbf, 0xbd, 0xff, 0xef, 0xbf, 0xbd, 0xed, 0xa0, 0x80})), utf8.MaxRune + 1, -1), // Test the cutover to bytealg.Index when it is triggered in
+ // the middle of rune that contains consecutive runs of equal bytes.
+
+        new("aaaaaKKKK\U000bc104"u8, (rune)0xBC104, 17), // cutover: (n + 16) / 8
+
+        new("aaaaaKKKK鄄"u8, (rune)'鄄', 17),
+        new("aaKKKKKa\U000bc104"u8, (rune)0xBC104, 18), // cutover: 4 + n>>4
+
+        new("aaKKKKKa鄄"u8, (rune)'鄄', 18)
     }.slice();
     foreach (var (_, tt) in tests) {
         {
@@ -666,6 +702,26 @@ public static void BenchmarkIndexRuneASCII(ж<testing.B> Ꮡb) {
     benchBytes(Ꮡb, indexSizes, bmIndexRuneASCII(IndexRune));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string latinˢ = "Latin"u8;
+internal static readonly @string cyrillicˢ = "Cyrillic"u8;
+internal static readonly @string hanˢ = "Han"u8;
+
+public static void BenchmarkIndexRuneUnicode(ж<testing.B> Ꮡb) {
+    Ꮡb.Run(latinˢ, (ж<testing.B> bΔ1) => {
+        // Latin is mostly 1, 2, 3 byte runes.
+        benchBytes(bΔ1, indexSizes, bmIndexRuneUnicode(Δunicode.Latin, (rune)'é'));
+    });
+    Ꮡb.Run(cyrillicˢ, (ж<testing.B> bΔ2) => {
+        // Cyrillic is mostly 2 and 3 byte runes.
+        benchBytes(bΔ2, indexSizes, bmIndexRuneUnicode(Δunicode.Cyrillic, (rune)'Ꙁ'));
+    });
+    Ꮡb.Run(hanˢ, (ж<testing.B> bΔ3) => {
+        // Han consists only of 3 and 4 byte runes.
+        benchBytes(bΔ3, indexSizes, bmIndexRuneUnicode(Δunicode.Han, (rune)0x2003F));
+    });
+}
+
 internal static Action<ж<testing.B>, nint> bmIndexRuneASCII(Func<slice<byte>, rune, nint> index) {
     return (ж<testing.B> b, nint n) => {
         var buf = bmbuf[0..(int)(n)];
@@ -693,6 +749,61 @@ internal static Action<ж<testing.B>, nint> bmIndexRune(Func<slice<byte>, rune, 
         buf[n - 3] = (rune)'\x00';
         buf[n - 2] = (rune)'\x00';
         buf[n - 1] = (rune)'\x00';
+    };
+}
+
+internal static Action<ж<testing.B>, nint> bmIndexRuneUnicode(ж<Δunicode.RangeTable> Ꮡrt, rune needle) {
+    ref var rt = ref Ꮡrt.DerefOrNull();
+
+    slice<rune> rs = default!;
+    foreach (var (_, r16) in rt.R16) {
+        for (var r = (rune)r16.Lo; r <= (rune)r16.Hi; r += (rune)r16.Stride) {
+            if (r != needle) {
+                rs = append(rs, (rune)r);
+            }
+        }
+    }
+    foreach (var (_, r32) in rt.R32) {
+        for (var r = (rune)r32.Lo; r <= (rune)r32.Hi; r += (rune)r32.Stride) {
+            if (r != needle) {
+                rs = append(rs, (rune)r);
+            }
+        }
+    }
+    // Shuffle the runes so that they are not in descending order.
+    // The sort is deterministic since this is used for benchmarks,
+    // which need to be repeatable.
+    var rr = rand.New(rand.NewSource(1));
+    var rsʗ1 = rs;
+    rr.Shuffle(len(rs), (nint i, nint j) => {
+        (rsʗ1[i], rsʗ1[j]) = (rsʗ1[j], rsʗ1[i]);
+    });
+    @string uchars = ((@string)rs);
+    return (ж<testing.B> b, nint n) => {
+        var buf = bmbuf[0..(int)(n)];
+        nint o = copy(buf, uchars);
+        while (o < len(buf)) {
+            o += copy(buf[(int)(o)..], uchars);
+        }
+        // Make space for the needle rune at the end of buf.
+        nint m = utf8.RuneLen(needle);
+        for (nint oΔ1 = m; oΔ1 > 0; ) {
+            var (_, sz) = utf8.DecodeLastRune(buf);
+            copy(buf[(int)(len(buf) - sz)..], "\x00\x00\x00\x00"u8);
+            buf = buf[..(int)(len(buf) - sz)];
+            oΔ1 -= sz;
+        }
+        buf = utf8.AppendRune(buf[..(int)(n - m)], needle);
+        n -= m; // adjust for rune len
+        for (nint i = 0; i < (~b).N; i++) {
+            nint j = IndexRune(buf, needle);
+            if (j != n) {
+                b.Fatal(badIndexˢ, j);
+            }
+        }
+        foreach (var (i, _) in buf) {
+            buf[i] = (rune)'\x00';
+        }
     };
 }
 
@@ -743,7 +854,7 @@ internal static Action<ж<testing.B>, nint> bmEqual(Func<slice<byte>, slice<byte
 public static void BenchmarkEqualBothUnaligned(ж<testing.B> Ꮡb) {
     var sizes = new nint[]{64, (4 << (int)(10))}.slice();
     if (!isRaceBuilder) {
-        sizes = append(sizes, new nint[]{(4 << (int)(20)), (64 << (int)(20))}.slice().ꓸꓸꓸ);
+        sizes = appendꓸꓸꓸ(sizes, new nint[]{(4 << (int)(20)), (64 << (int)(20))}.slice());
     }
     nint maxSize = 2 * (sizes[len(sizes) - 1] + 8);
     if (len(bmbuf) < maxSize) {
@@ -895,9 +1006,15 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
             x = append(v, (byte)((rune)'z'));
         }
         var result = sliceOfString(a);
-        if (!eq(result, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(result, tt.a)) {
             Ꮡt.Errorf(@"Split(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, result, tt.a);
             continue;
+        }
+        if (tt.n < 0) {
+            var b = sliceOfString(slices.Collect(SplitSeq(slice<byte>(tt.s), slice<byte>(tt.sep))));
+            if (!slices.Equal<slice<@string>, @string>(b, tt.a)) {
+                Ꮡt.Errorf(@"collect(SplitSeq(%q, %q)) = %v; want %v"u8, tt.s, tt.sep, b, tt.a);
+            }
         }
         if (tt.n == 0 || len(a) == 0) {
             continue;
@@ -912,8 +1029,8 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf(@"Join(Split(%q, %q, %d), %q) = %q"u8, tt.s, tt.sep, tt.n, tt.sep, s);
         }
         if (tt.n < 0) {
-            var b = Split(slice<byte>(tt.s), slice<byte>(tt.sep));
-            if (!reflect.DeepEqual(a, b)) {
+            var b = sliceOfString(Split(slice<byte>(tt.s), slice<byte>(tt.sep)));
+            if (!slices.Equal<slice<@string>, @string>(result, b)) {
                 Ꮡt.Errorf("Split disagrees withSplitN(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, b, a);
             }
         }
@@ -951,9 +1068,15 @@ public static void TestSplitAfter(ж<testing.T> Ꮡt) {
             x = append(v, (byte)((rune)'z'));
         }
         var result = sliceOfString(a);
-        if (!eq(result, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(result, tt.a)) {
             Ꮡt.Errorf(@"Split(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, result, tt.a);
             continue;
+        }
+        if (tt.n < 0) {
+            var b = sliceOfString(slices.Collect(SplitAfterSeq(slice<byte>(tt.s), slice<byte>(tt.sep))));
+            if (!slices.Equal<slice<@string>, @string>(b, tt.a)) {
+                Ꮡt.Errorf(@"collect(SplitAfterSeq(%q, %q)) = %v; want %v"u8, tt.s, tt.sep, b, tt.a);
+            }
         }
         {
             @string want = tt.a[len(tt.a) - 1] + "z"; if (((sstring)x) != want) {
@@ -965,8 +1088,8 @@ public static void TestSplitAfter(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf(@"Join(Split(%q, %q, %d), %q) = %q"u8, tt.s, tt.sep, tt.n, tt.sep, s);
         }
         if (tt.n < 0) {
-            var b = SplitAfter(slice<byte>(tt.s), slice<byte>(tt.sep));
-            if (!reflect.DeepEqual(a, b)) {
+            var b = sliceOfString(SplitAfter(slice<byte>(tt.s), slice<byte>(tt.sep)));
+            if (!slices.Equal<slice<@string>, @string>(result, b)) {
                 Ꮡt.Errorf("SplitAfter disagrees withSplitAfterN(%q, %q, %d) = %v; want %v"u8, tt.s, tt.sep, tt.n, b, a);
             }
         }
@@ -1002,9 +1125,13 @@ public static void TestFields(ж<testing.T> Ꮡt) {
             x = append(v, (byte)((rune)'z'));
         }
         var result = sliceOfString(a);
-        if (!eq(result, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(result, tt.a)) {
             Ꮡt.Errorf("Fields(%q) = %v; want %v"u8, tt.s, a, tt.a);
             continue;
+        }
+        var result2 = sliceOfString(collect(Ꮡt, FieldsSeq(slice<byte>(tt.s))));
+        if (!slices.Equal<slice<@string>, @string>(result2, tt.a)) {
+            Ꮡt.Errorf(@"collect(FieldsSeq(%q)) = %v; want %v"u8, tt.s, result2, tt.a);
         }
         if (((sstring)b) != tt.s) {
             Ꮡt.Errorf("slice changed to %s; want %s"u8, ((@string)b), tt.s);
@@ -1023,7 +1150,7 @@ public static void TestFieldsFunc(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in fieldstests) {
         var a = FieldsFunc(slice<byte>(tt.s), Δunicode.IsSpace);
         var result = sliceOfString(a);
-        if (!eq(result, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(result, tt.a)) {
             Ꮡt.Errorf("FieldsFunc(%q, unicode.IsSpace) = %v; want %v"u8, tt.s, a, tt.a);
             continue;
         }
@@ -1044,8 +1171,12 @@ public static void TestFieldsFunc(ж<testing.T> Ꮡt) {
             x = append(v, (byte)((rune)'z'));
         }
         var result = sliceOfString(a);
-        if (!eq(result, tt.a)) {
+        if (!slices.Equal<slice<@string>, @string>(result, tt.a)) {
             Ꮡt.Errorf("FieldsFunc(%q) = %v, want %v"u8, tt.s, a, tt.a);
+        }
+        var result2 = sliceOfString(collect(Ꮡt, FieldsFuncSeq(slice<byte>(tt.s), pred)));
+        if (!slices.Equal<slice<@string>, @string>(result2, tt.a)) {
+            Ꮡt.Errorf(@"collect(FieldsFuncSeq(%q)) = %v; want %v"u8, tt.s, result2, tt.a);
         }
         if (((sstring)b) != tt.s) {
             Ꮡt.Errorf("slice changed to %s; want %s"u8, b, tt.s);
@@ -1364,7 +1495,7 @@ internal static error /*err*/ repeat(slice<byte> b, nint count) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string bitˢ = "64-bit"u8;
 
-[GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
+[GoType("dyn")] internal partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
     internal @string errStr;
@@ -1405,18 +1536,6 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
     });
 }
 
-internal static bool runesEqual(slice<rune> a, slice<rune> b) {
-    if (len(a) != len(b)) {
-        return false;
-    }
-    foreach (var (i, r) in a) {
-        if (r != b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 [GoType] partial struct RunesTest {
     internal @string @in;
     internal slice<rune> @out;
@@ -1439,7 +1558,7 @@ public static void TestRunes(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in RunesTests) {
         var tin = slice<byte>(tt.@in);
         var a = Runes(tin);
-        if (!runesEqual(a, tt.@out)) {
+        if (!slices.Equal<slice<rune>, rune>(a, tt.@out)) {
             Ꮡt.Errorf("Runes(%q) = %v; want %v"u8, tin, a, tt.@out);
             continue;
         }
@@ -1679,7 +1798,7 @@ internal static slice<TrimFuncTest> trimFuncTests = new TrimFuncTest[]{
         slice<byte>(""u8))
 }.slice();
 
-[GoType("dyn")] partial struct TestTrimFunc_trimmers {
+[GoType("dyn")] internal partial struct TestTrimFunc_trimmers {
     internal @string name;
     internal Func<slice<byte>, Func<rune, bool>, slice<byte>> trim;
     internal slice<byte> @out;
@@ -2207,7 +2326,7 @@ public static void BenchmarkFieldsFunc(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkTrimSpace_tests {
+[GoType("dyn")] internal partial struct BenchmarkTrimSpace_tests {
     internal @string name;
     internal slice<byte> input;
 }
@@ -2232,7 +2351,7 @@ public static void BenchmarkTrimSpace(ж<testing.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkToValidUTF8_tests {
+[GoType("dyn")] internal partial struct BenchmarkToValidUTF8_tests {
     internal @string name;
     internal slice<byte> input;
 }
@@ -2283,6 +2402,11 @@ internal static slice<byte> benchInputHard = makeBenchInputHard();
 internal static void benchmarkIndexHard(ж<testing.B> Ꮡb, slice<byte> sep) {
     ref var b = ref Ꮡb.DerefOrNull();
 
+    nint n = Index(benchInputHard, sep);
+    if (n < 0) {
+        n = len(benchInputHard);
+    }
+    b.SetBytes((int64)n);
     for (nint i = 0; i < b.N; i++) {
         Index(benchInputHard, sep);
     }

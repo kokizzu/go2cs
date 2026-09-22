@@ -33,7 +33,7 @@ using static global::go.unicode_test_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("unicode/digit_test.go", "digit_test.cs", "AGnUAYKCgqaCgsySgoI=")]
 [assembly: go.GoPositionMap("unicode/graphic_test.go", "graphic_test.cs", "AAsewoKCgpS0tILKooKCgoLKooKCgoLKooKCgoLKooKCgoLKooKCgoKUgsqigoKCgsqigoKCgsqigoKCgsqigoKCgg==")]
-[assembly: go.GoPositionMap("unicode/letter_test.go", "letter_test.cs", "AOIB3AOCgoKmgoKmgoLKgoKCpoKCpoKCAAoKgpSkpKSmgoKCgsqCgoKUgoLKgoKClIKCyoKCgpSCgsqCgoKmgoLOooKClIKUgpSClIKUgpSClILKgoKCgoKClIKUgpSClIKUggAXOoKCgoKCgIKkqICCAA8ggoKWgt6CgpKCgoKCuJKCgoKCuIKCgpSmgoKClKaCgoKClIKmppSCgoKCgoKUgpSmpoLugoKCgpSCAAkMhqKCgoK47gARJIKCgrqCgpSClIKUgpSClIKUgpSClIKUgpSClIKUgpSC")]
+[assembly: go.GoPositionMap("unicode/letter_test.go", "letter_test.cs", "AOIB3AOCgoKmgoKmgoLKgoKCpoKCpoKCAAoKgpSkpKSmgoKCgsqCgoKUgoLKgoKClIKCyoKCgpSCgsqCgoKmgoLOooKClIKUgpSClIKUgpSClILKgoKCgoKClIKUgpSClIKUggAXOoKCgoKCgIKkqICCAA8ggoKWgt6CgpKCgoKCuJKCgoKCuIKCgpSmgoKClKaCgoKClIKmppSCgoKCgoKUgpSmpoLugoKCgpSCAAkMhqKCgoK47gARJIKCgrqCgpSClIKUgpSClIKUgpSClIKUgpSClIKUgpSCyqKCuKKCAAkIgoKCgriCgoI=", "467-491:1;469-477:1.1;478-486:1.2;659-665:1;660-664:1.1")]
 [assembly: go.GoPositionMap("unicode/script_test.go", "script_test.cs", "AGO+AYKCgpSCgIKkgpSUgviCgoKUgoCCpIKUlII=")]
 // </GoSourcePositionMaps>
 
@@ -52,4 +52,27 @@ public static partial class unicode_test_package
     internal partial struct caseT {}
     public partial struct T {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.unicode_package));
+    }
 }

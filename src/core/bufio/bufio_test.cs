@@ -7,6 +7,7 @@ using static bufio_package;
 using bytes = bytes_package;
 using errors = errors_package;
 using fmt = fmt_package;
+using asan = @internal.asan_package;
 using Δio = io_package;
 using rand = math.rand_package;
 using strconv = strconv_package;
@@ -15,6 +16,7 @@ using Δtesting = testing_package;
 using iotest = go.testing.iotest_package;
 using time = time_package;
 using utf8 = go.unicode.utf8_package;
+using @internal;
 using bufio = bufio_package;
 using go.testing;
 using go.unicode;
@@ -493,8 +495,8 @@ public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
 // the last byte.
     // A list of readers to use in conjunction with UnreadByte.
     slice<Func<ж<bufio.Reader>, byte, (slice<byte>, error)>> readers = new Func<ж<bufio.Reader>, byte, (slice<byte>, error)>[]{
-        (Func<ж<bufio.Reader>, byte, (slice<byte>, error)>)(bufio.ReadBytes),
-        (Func<ж<bufio.Reader>, byte, (slice<byte>, error)>)(bufio.ReadSlice),
+        ((Func<ж<bufio.Reader>, byte, (slice<byte>, error)>)(bufio.ReadBytes)),
+        ((Func<ж<bufio.Reader>, byte, (slice<byte>, error)>)(bufio.ReadSlice)),
         (ж<bufio.Reader> r, byte delim) => {
             var (data, err) = r.ReadString(delim);
             return (slice<byte>(data), err);
@@ -700,9 +702,13 @@ public static void TestWriteInvalidRune(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly @string fooFoo424242424242424242ˢ = "       foo       foo        42        42        42        42        42        42        42        42       4.2       4.2       4.2       4.2\n"u8;
 
 public static void TestReadStringAllocs(ж<Δtesting.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     var r = strings.NewReader(fooFoo424242424242424242ˢ);
     var buf = NewReader(new bufio_test_package.strings_ReaderжReader(r));
     var bufʗ1 = buf;
@@ -753,7 +759,7 @@ public static void TestWriter(ж<Δtesting.T> Ꮡt) {
             for (nint l = 0; l < len(written); l++) {
                 if (written[l] != data[l]) {
                     Ꮡt.Errorf("wrong bytes written"u8);
-                    Ꮡt.Errorf("want=%q"u8, data[0..(int)(len(written))]);
+                    Ꮡt.Errorf("want=%q"u8, data[..(int)(len(written))]);
                     Ꮡt.Errorf("have=%q"u8, written);
                 }
             }
@@ -1109,7 +1115,6 @@ internal static slice<byte> testInputrn = slice<byte>("012\r\n345\r\n678\r\n9ab\
 internal static void testReadLine(ж<Δtesting.T> Ꮡt, slice<byte> input) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    //for stride := 1; stride < len(input); stride++ {
     for (nint stride = 1; stride < 2; stride++) {
         nint done = 0;
         ref var reader = ref heap<testReader>(out var Ꮡreader);
@@ -1149,7 +1154,7 @@ public static void TestReadLine(ж<Δtesting.T> Ꮡt) {
 
 public static void TestLineTooLong(ж<Δtesting.T> Ꮡt) {
     var data = new slice<byte>(0);
-    for (nint i = 0; i < minReadBufferSize * 5 / 2; i++) {
+    for (nint i = 0; i < (nint)(minReadBufferSize * 5 / 2); i++) {
         data = append(data, (byte)((rune)'0' + (byte)(i % 10)));
     }
     var buf = bytes.NewReader(data);
@@ -1641,14 +1646,14 @@ public static void TestWriterReadFromErrNoProgress(ж<Δtesting.T> Ꮡt) {
 }
 
 [GoRecv] internal static (nint, error) Write(this ref readFromWriter w, slice<byte> p) {
-    w.buf = append(w.buf, p.ꓸꓸꓸ);
+    w.buf = appendꓸꓸꓸ(w.buf, p);
     w.writeBytes += len(p);
     return (len(p), default!);
 }
 
 [GoRecv] internal static (int64, error) ReadFrom(this ref readFromWriter w, Δio.Reader r) {
     var (b, err) = Δio.ReadAll(r);
-    w.buf = append(w.buf, b.ꓸꓸꓸ);
+    w.buf = appendꓸꓸꓸ(w.buf, b);
     w.readFromBytes += len(b);
     return ((int64)len(b), err);
 }
@@ -1801,7 +1806,7 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string thenErrorˢ = "5-then-error"u8;
 
-[GoType("dyn")] partial struct TestReaderDiscard_tests {
+[GoType("dyn")] internal partial struct TestReaderDiscard_tests {
     internal @string name;
     internal Δio.Reader r;
     internal nint bufSize; // 0 means 16

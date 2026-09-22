@@ -7,11 +7,6 @@
 global using static global::go.@internal.dag_package;
 
 // <ImportedTypeAliases>
-global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
-global using reflectꓸKind = go.reflect_package.ΔKind;
-global using reflectꓸMethod = go.reflect_package.ΔMethod;
-global using reflectꓸType = go.reflect_package.ΔType;
-global using reflectꓸValue = go.reflect_package.ΔValue;
 using testing = go.testing_package;
 // </ImportedTypeAliases>
 
@@ -36,8 +31,8 @@ using static global::go.@internal.dag_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/dag/alg_test.go", "alg_test.cs", "AA8agoKC1oKC7oKCAAkIgoKCgpSCgoKC")]
-[assembly: go.GoPositionMap("internal/dag/parse_test.go", "parse_test.cs", "ABAigoKCgpSmooSCgoKWgoKCgoKkpAAJDJSEgoKo")]
+[assembly: go.GoPositionMap("internal/dag/alg_test.go", "alg_test.cs", "AA8agoKC1oKC7oKCAAkIgoKCgpSCgoKC", "35-39:1;40-45:2")]
+[assembly: go.GoPositionMap("internal/dag/parse_test.go", "parse_test.cs", "ABIigoKCgpSmooSCgoKWgoKCgoKkpAAJDJSEgoKo")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -53,4 +48,23 @@ public static partial class dag_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.dag_package));
+    }
 }

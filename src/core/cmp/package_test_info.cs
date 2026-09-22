@@ -13,6 +13,7 @@ using go;
 using static global::go.cmp_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b7820616e793b207920616e793b20636f6d7061726520696e747d", "testsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -29,7 +30,7 @@ using static global::go.cmp_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("cmp/cmp_test.go", "cmp_test.cs", "AGByooKClLC0tLS0gsqCgoKUsLS0tLSCyqaCgoKClIIACQqCAAgYgoCCAAkKpoKEgoIACA7CAAgcvoI=")]
+[assembly: go.GoPositionMap("cmp/cmp_test.go", "cmp_test.cs", "ADxyooKClLC0tLS0gsqCgoKUsLS0tLSCyqaCgoKClIIACQqCAAgYgoCCAAkKpoKEgoIACA7CAAgcvoI=", "160-166:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -44,8 +45,30 @@ public static partial class cmp_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("Order")] internal partial struct ExampleOr_sort_Order {}
+    internal partial struct TestOr_cases {}
     internal partial struct testsᴛ1 {}
-    [GoLocalName("Order")] public partial struct ExampleOr_sort_Order {}
-    public partial struct TestOr_cases {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.cmp_package));
+    }
 }

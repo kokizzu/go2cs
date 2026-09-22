@@ -27,12 +27,12 @@ public static void TestJoinReturnsNil(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestJoin_type {
+[GoType("dyn")] internal partial struct TestJoin_type {
     internal slice<error> errs;
     internal slice<error> want;
 }
 
-[GoType("dyn")] partial interface TestJoin_typeᴛ1 {
+[GoType("dyn")] internal partial interface TestJoin_typeᴛ1 {
     slice<error> Unwrap();
 }
 
@@ -60,7 +60,7 @@ public static void TestJoin(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestJoinErrorMethod_type {
+[GoType("dyn")] internal partial struct TestJoinErrorMethod_type {
     internal slice<error> errs;
     internal @string want;
 }

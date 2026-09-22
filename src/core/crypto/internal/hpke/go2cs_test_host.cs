@@ -16,7 +16,7 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("TestRFC9180Vectors", hpke_internal_test_package.TestRFC9180Vectors, "hpke_test.go", 51);
+        registry.Add("TestRFC9180Vectors", hpke_internal_test_package.TestRFC9180Vectors, "hpke_test.go", 52);
         return TestHost.Run(registry, args);
     }
 }

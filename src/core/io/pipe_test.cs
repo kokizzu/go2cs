@@ -338,11 +338,11 @@ public static void TestWriteAfterWriterClose(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestPipeCloseError_testError1 {
+[GoType("dyn")] internal partial struct TestPipeCloseError_testError1 {
     internal error error;
 }
 
-[GoType("dyn")] partial struct TestPipeCloseError_testError2 {
+[GoType("dyn")] internal partial struct TestPipeCloseError_testError2 {
     internal error error;
 }
 
@@ -439,7 +439,7 @@ public static void TestPipeConcurrent(ж<testing.T> Ꮡt) {
         // is that it is a permutation of the input in readSized groups.
         var got = new slice<byte>(0, (nint)count * len(input));
         for (nint i = 0; i < cap(c); i++) {
-            got = append(got, (ᐸꟷ(c)).ꓸꓸꓸ);
+            got = appendꓸꓸꓸ(got, (ᐸꟷ(c)));
         }
         got = sortBytesInGroups(got, readSize);
         var want = bytes.Repeat(slice<byte>(input), count);

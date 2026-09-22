@@ -16,14 +16,17 @@ internal static class Go2CsTestHost
             "md5block.go",
             "md5block_decl.go",
             "md5block_generic.go",
+        }, new string[]
+        {
+            "_asm",
         });
-        registry.Add("TestAllocations", md5_internal_test_package.TestAllocations, "md5_test.go", 215);
-        registry.Add("TestBlockGeneric", md5_internal_test_package.TestBlockGeneric, "md5_test.go", 147);
+        registry.Add("TestAllocations", md5_internal_test_package.TestAllocations, "md5_test.go", 227);
+        registry.Add("TestBlockGeneric", md5_internal_test_package.TestBlockGeneric, "md5_test.go", 159);
         registry.Add("TestGolden", md5_internal_test_package.TestGolden, "md5_test.go", 59);
         registry.Add("TestGoldenMarshal", md5_internal_test_package.TestGoldenMarshal, "md5_test.go", 90);
-        registry.Add("TestLarge", md5_internal_test_package.TestLarge, "md5_test.go", 122);
-        registry.Add("TestLargeHashes", md5_internal_test_package.TestLargeHashes, "md5_test.go", 194);
-        registry.Add("TestMD5Hash", md5_internal_test_package.TestMD5Hash, "md5_test.go", 229);
+        registry.Add("TestLarge", md5_internal_test_package.TestLarge, "md5_test.go", 134);
+        registry.Add("TestLargeHashes", md5_internal_test_package.TestLargeHashes, "md5_test.go", 206);
+        registry.Add("TestMD5Hash", md5_internal_test_package.TestMD5Hash, "md5_test.go", 242);
         return TestHost.Run(registry, args);
     }
 }

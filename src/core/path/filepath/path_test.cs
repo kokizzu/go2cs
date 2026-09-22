@@ -127,9 +127,9 @@ public static void TestClean(ж<testing.T> Ꮡt) {
         foreach (var (i, _) in tests) {
             tests[i].result = filepath.FromSlash(tests[i].result);
         }
-        tests = append(tests, wincleantests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, wincleantests);
     } else {
-        tests = append(tests, nonwincleantests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, nonwincleantests);
     }
     foreach (var (_, test) in tests) {
         {
@@ -232,10 +232,10 @@ internal static slice<IsLocalTest> plan9islocaltests = new IsLocalTest[]{
 public static void TestIsLocal(ж<testing.T> Ꮡt) {
     var tests = islocaltests;
     if (runtime.GOOS == "windows"u8) {
-        tests = append(tests, winislocaltests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winislocaltests);
     }
     if (runtime.GOOS == "plan9"u8) {
-        tests = append(tests, plan9islocaltests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, plan9islocaltests);
     }
     foreach (var (_, test) in tests) {
         {
@@ -295,16 +295,16 @@ public static void TestLocalize(ж<testing.T> Ꮡt) {
     var tests = localizetests;
     var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "plan9"u8) {
-        tests = append(tests, plan9localizetests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, plan9localizetests);
     }
     else if (exprᴛ1 == "windows"u8) {
-        tests = append(tests, winlocalizetests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winlocalizetests);
         foreach (var (i, _) in tests) {
             tests[i].want = filepath.FromSlash(tests[i].want);
         }
     }
     else { /* default: */
-        tests = append(tests, unixlocalizetests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, unixlocalizetests);
     }
 
     foreach (var (_, test) in tests) {
@@ -379,11 +379,11 @@ internal static slice<SplitListTest> winsplitlisttests = new SplitListTest[]{
 public static void TestSplitList(ж<testing.T> Ꮡt) {
     var tests = splitlisttests;
     if (runtime.GOOS == "windows"u8) {
-        tests = append(tests, winsplitlisttests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winsplitlisttests);
     }
     foreach (var (_, test) in tests) {
         {
-            var l = filepath.SplitList(test.list); if (!reflect.DeepEqual(l, test.result)) {
+            var l = filepath.SplitList(test.list); if (!slices.Equal<slice<@string>, @string>(l, test.result)) {
                 Ꮡt.Errorf("SplitList(%#q) = %#q, want %#q"u8, test.list, l, test.result);
             }
         }
@@ -419,7 +419,7 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
     slice<SplitTest> splittests = default!;
     splittests = unixsplittests;
     if (runtime.GOOS == "windows"u8) {
-        splittests = append(splittests, winsplittests.ꓸꓸꓸ);
+        splittests = appendꓸꓸꓸ(splittests, winsplittests);
     }
     foreach (var (_, test) in splittests) {
         {
@@ -499,9 +499,9 @@ internal static slice<JoinTest> winjointests = new JoinTest[]{
 
 public static void TestJoin(ж<testing.T> Ꮡt) {
     if (runtime.GOOS == "windows"u8){
-        jointests = append(jointests, winjointests.ꓸꓸꓸ);
+        jointests = appendꓸꓸꓸ(jointests, winjointests);
     } else {
-        jointests = append(jointests, nonwinjointests.ꓸꓸꓸ);
+        jointests = appendꓸꓸꓸ(jointests, nonwinjointests);
     }
     foreach (var (_, test) in jointests) {
         @string expected = filepath.FromSlash(test.path);
@@ -626,55 +626,6 @@ internal static error mark(fs.DirEntry d, error err, ж<slice<error>> Ꮡerrors,
     return default!;
 }
 
-// chdir changes the current working directory to the named directory,
-// and then restore the original working directory at the end of the test.
-internal static void chdir(ж<testing.T> Ꮡt, @string dir) {
-    var (olddir, err) = os.Getwd();
-    if (err != default!) {
-        Ꮡt.Fatalf("getwd %s: %v"u8, dir, err);
-    }
-    {
-        var errΔ1 = os.Chdir(dir); if (errΔ1 != default!) {
-            Ꮡt.Fatalf("chdir %s: %v"u8, dir, errΔ1);
-        }
-    }
-    Ꮡt.Cleanup(() => {
-        {
-            var errΔ2 = os.Chdir(olddir); if (errΔ2 != default!) {
-                Ꮡt.Errorf("restore original working directory %s: %v"u8, olddir, errΔ2);
-                os.Exit(1);
-            }
-        }
-    });
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string testˢ = "test"u8;
-
-internal static Action /*restore*/ chtmpdir(ж<testing.T> Ꮡt) {
-    var (oldwd, err) = os.Getwd();
-    if (err != default!) {
-        Ꮡt.Fatalf("chtmpdir: %v"u8, err);
-    }
-    (var d, err) = os.MkdirTemp(""u8, testˢ);
-    if (err != default!) {
-        Ꮡt.Fatalf("chtmpdir: %v"u8, err);
-    }
-    {
-        var errΔ1 = os.Chdir(d); if (errΔ1 != default!) {
-            Ꮡt.Fatalf("chtmpdir: %v"u8, errΔ1);
-        }
-    }
-    return () => {
-        {
-            var errΔ2 = os.Chdir(oldwd); if (errΔ2 != default!) {
-                Ꮡt.Fatalf("chtmpdir: %v"u8, errΔ2);
-            }
-        }
-        os.RemoveAll(d);
-    };
-}
-
 // tempDirCanonical returns a temporary directory for the test to use, ensuring
 // that the returned path does not contain symlinks.
 internal static @string tempDirCanonical(ж<testing.T> Ꮡt) {
@@ -696,106 +647,84 @@ public static void TestWalkDir(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object findingWorkingDirˢ = (@string)"finding working dir:"u8;
-internal static readonly object enteringTempDirˢ = (@string)"entering temp dir:"u8;
 internal static readonly @string permErrˢ = "PermErr"u8;
 internal static readonly object skippingAsRootˢ = (@string)"skipping as root"u8;
 internal static readonly object skippingInShortModeˢ = (@string)"skipping in short mode"u8;
 
 internal static void testWalk(ж<testing.T> Ꮡt, Func<@string, Func<@string, fs.DirEntry, error, error>, error> walk, nint errVisit) {
-    GoFrame ᒐ = default;
-    try {
-        if (runtime.GOOS == "ios"u8) {
-            var restore = chtmpdir(Ꮡt);
-            var restoreʗ1 = restore;
-            defer(restoreʗ1, ref ᒐ);
-        }
-        @string tmpDir = Ꮡt.TempDir();
-        var (origDir, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(findingWorkingDirˢ, err);
-        }
-        {
-            err = os.Chdir(tmpDir); if (err != default!) {
-                Ꮡt.Fatal(enteringTempDirˢ, err);
-            }
-        }
-        defer(os.Chdir, origDir, ref ᒐ);
-        makeTree(Ꮡt);
-        ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
-        errors = new slice<error>(0, 10);
-        var clear = true;
-        var markFn = (@string path, fs.DirEntry d, error errΔ1) => mark(d, errΔ1, Ꮡerrors, clear);
-        // Expect no errors.
-        err = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFn));
-        if (err != default!) {
-            Ꮡt.Fatalf("no error expected, found: %s"u8, err);
-        }
-        if (len(errors) != 0) {
-            Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
-        }
-        checkMarks(Ꮡt, true);
-        errors = errors[0..0];
-        var markFnʗ1 = markFn;
-        Ꮡt.Run(permErrˢ, (ж<testing.T> tΔ1) => {
-            // Test permission errors. Only possible if we're not root
-            // and only on some file systems (AFS, FAT).  To avoid errors during
-            // all.bash on those file systems, skip during go test -short.
-            // Chmod is not supported on wasip1.
-            if (runtime.GOOS == "windows"u8 || runtime.GOOS == "wasip1"u8) {
-                tΔ1.Skip("skipping on " + runtime.GOOS);
-            }
-            if (os.Getuid() == 0) {
-                tΔ1.Skip(skippingAsRootˢ);
-            }
-            if (testing.Short()) {
-                tΔ1.Skip(skippingInShortModeˢ);
-            }
-            // introduce 2 errors: chmod top-level directories to 0
-            os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[1]).name), 0);
-            os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[3]).name), 0);
-            // 3) capture errors, expect two.
-            // mark respective subtrees manually
-            markTree((~tree).entries[1]);
-            markTree((~tree).entries[3]);
-            // correct double-marking of directory itself
-            (~tree).entries[1].Value.mark -= errVisit;
-            (~tree).entries[3].Value.mark -= errVisit;
-            var errΔ2 = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFnʗ1));
-            if (errΔ2 != default!) {
-                tΔ1.Fatalf("expected no error return from Walk, got %s"u8, errΔ2);
-            }
-            if (len(Ꮡerrors.ValueSlot) != 2) {
-                tΔ1.Errorf("expected 2 errors, got %d: %s"u8, len(Ꮡerrors.ValueSlot), Ꮡerrors.ValueSlot);
-            }
-            // the inaccessible subtrees were marked manually
-            checkMarks(tΔ1, true);
-            Ꮡerrors.ValueSlot = Ꮡerrors.ValueSlot[0..0];
-            // 4) capture errors, stop after first error.
-            // mark respective subtrees manually
-            markTree((~tree).entries[1]);
-            markTree((~tree).entries[3]);
-            // correct double-marking of directory itself
-            (~tree).entries[1].Value.mark -= errVisit;
-            (~tree).entries[3].Value.mark -= errVisit;
-            clear = false; // error will stop processing
-            errΔ2 = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFnʗ1));
-            if (errΔ2 == default!) {
-                tΔ1.Fatalf("expected error return from Walk"u8);
-            }
-            if (len(Ꮡerrors.ValueSlot) != 1) {
-                tΔ1.Errorf("expected 1 error, got %d: %s"u8, len(Ꮡerrors.ValueSlot), Ꮡerrors.ValueSlot);
-            }
-            // the inaccessible subtrees were marked manually
-            checkMarks(tΔ1, false);
-            Ꮡerrors.ValueSlot = Ꮡerrors.ValueSlot[0..0];
-            // restore permissions
-            os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[1]).name), 504);
-            os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[3]).name), 504);
-        });
+    Ꮡt.Chdir(Ꮡt.TempDir());
+    makeTree(Ꮡt);
+    ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
+    errors = new slice<error>(0, 10);
+    var clear = true;
+    var markFn = (@string path, fs.DirEntry d, error errΔ1) => mark(d, errΔ1, Ꮡerrors, clear);
+    // Expect no errors.
+    var err = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFn));
+    if (err != default!) {
+        Ꮡt.Fatalf("no error expected, found: %s"u8, err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    if (len(errors) != 0) {
+        Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
+    }
+    checkMarks(Ꮡt, true);
+    errors = errors[0..0];
+    var markFnʗ1 = markFn;
+    Ꮡt.Run(permErrˢ, (ж<testing.T> tΔ1) => {
+        // Test permission errors. Only possible if we're not root
+        // and only on some file systems (AFS, FAT).  To avoid errors during
+        // all.bash on those file systems, skip during go test -short.
+        // Chmod is not supported on wasip1.
+        if (runtime.GOOS == "windows"u8 || runtime.GOOS == "wasip1"u8) {
+            tΔ1.Skip("skipping on " + runtime.GOOS);
+        }
+        if (os.Getuid() == 0) {
+            tΔ1.Skip(skippingAsRootˢ);
+        }
+        if (testing.Short()) {
+            tΔ1.Skip(skippingInShortModeˢ);
+        }
+        // introduce 2 errors: chmod top-level directories to 0
+        os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[1]).name), 0);
+        os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[3]).name), 0);
+        // 3) capture errors, expect two.
+        // mark respective subtrees manually
+        markTree((~tree).entries[1]);
+        markTree((~tree).entries[3]);
+        // correct double-marking of directory itself
+        (~tree).entries[1].Value.mark -= errVisit;
+        (~tree).entries[3].Value.mark -= errVisit;
+        var errΔ2 = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFnʗ1));
+        if (errΔ2 != default!) {
+            tΔ1.Fatalf("expected no error return from Walk, got %s"u8, errΔ2);
+        }
+        if (len(Ꮡerrors.ValueSlot) != 2) {
+            tΔ1.Errorf("expected 2 errors, got %d: %s"u8, len(Ꮡerrors.ValueSlot), Ꮡerrors.ValueSlot);
+        }
+        // the inaccessible subtrees were marked manually
+        checkMarks(tΔ1, true);
+        Ꮡerrors.ValueSlot = Ꮡerrors.ValueSlot[0..0];
+        // 4) capture errors, stop after first error.
+        // mark respective subtrees manually
+        markTree((~tree).entries[1]);
+        markTree((~tree).entries[3]);
+        // correct double-marking of directory itself
+        (~tree).entries[1].Value.mark -= errVisit;
+        (~tree).entries[3].Value.mark -= errVisit;
+        clear = false; // error will stop processing
+        errΔ2 = walk((~tree).name, new Func<@string, fs.DirEntry, error, error>(markFnʗ1));
+        if (errΔ2 == default!) {
+            tΔ1.Fatalf("expected error return from Walk"u8);
+        }
+        if (len(Ꮡerrors.ValueSlot) != 1) {
+            tΔ1.Errorf("expected 1 error, got %d: %s"u8, len(Ꮡerrors.ValueSlot), Ꮡerrors.ValueSlot);
+        }
+        // the inaccessible subtrees were marked manually
+        checkMarks(tΔ1, false);
+        Ꮡerrors.ValueSlot = Ꮡerrors.ValueSlot[0..0];
+        // restore permissions
+        os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[1]).name), 504);
+        os.Chmod(filepath.Join((~tree).name, (~(~tree).entries[3]).name), 504);
+    });
 }
 
 internal static void touch(ж<testing.T> Ꮡt, @string name) {
@@ -997,7 +926,7 @@ internal static readonly @string linkˢ = "link"u8;
 internal static readonly @string abslinkˢ = "abslink"u8;
 internal static readonly @string linklinkˢ = "linklink"u8;
 
-[GoType("dyn")] partial struct TestWalkSymlinkRoot_type {
+[GoType("dyn")] internal partial struct TestWalkSymlinkRoot_type {
     internal @string desc;
     internal @string root;
     internal slice<@string> want;
@@ -1093,7 +1022,7 @@ public static void TestWalkSymlinkRoot(ж<testing.T> Ꮡt) {
             if (err != default!) {
                 tΔ1.Fatal(err);
             }
-            if (!reflect.DeepEqual(Ꮡwalked.ValueSlot, ttʗ1.want)) {
+            if (!slices.Equal<slice<@string>, @string>(Ꮡwalked.ValueSlot, ttʗ1.want)) {
                 tΔ1.Logf("Walk(%#q) visited %#q; want %#q"u8, ttʗ1.root, Ꮡwalked.ValueSlot, ttʗ1.want);
                 if (slices.Contains(ttʗ1.buggyGOOS, runtime.GOOS)){
                     tΔ1.Logf("(ignoring known bug on %v)"u8, runtime.GOOS);
@@ -1138,7 +1067,7 @@ public static void TestBase(ж<testing.T> Ꮡt) {
             tests[i].result = filepath.Clean(tests[i].result);
         }
         // add windows specific tests
-        tests = append(tests, winbasetests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winbasetests);
     }
     foreach (var (_, test) in tests) {
         {
@@ -1188,9 +1117,9 @@ public static void TestDir(ж<testing.T> Ꮡt) {
             tests[i].result = filepath.Clean(tests[i].result);
         }
         // add windows specific tests
-        tests = append(tests, windirtests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, windirtests);
     } else {
-        tests = append(tests, nonwindirtests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, nonwindirtests);
     }
     foreach (var (_, test) in tests) {
         {
@@ -1239,7 +1168,7 @@ internal static slice<IsAbsTest> winisabstests = new IsAbsTest[]{
 public static void TestIsAbs(ж<testing.T> Ꮡt) {
     slice<IsAbsTest> tests = default!;
     if (runtime.GOOS == "windows"u8){
-        tests = append(tests, winisabstests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winisabstests);
         // All non-windows tests should fail, because they have no volume letter.
         foreach (var (_, test) in isabstests) {
             tests = append(tests, new IsAbsTest(test.path, false));
@@ -1319,37 +1248,20 @@ internal static void testEvalSymlinks(ж<testing.T> Ꮡt, @string path, @string 
 }
 
 internal static void testEvalSymlinksAfterChdir(ж<testing.T> Ꮡt, @string wd, @string path, @string want) {
-    GoFrame ᒐ = default;
-    try {
-        var (cwd, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(() => {
-            var errΔ1 = os.Chdir(cwd);
-            if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-        }, ref ᒐ);
-        err = os.Chdir(wd);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        (var have, err) = filepath.EvalSymlinks(path);
-        if (err != default!) {
-            Ꮡt.Errorf("EvalSymlinks(%q) in %q directory error: %v"u8, path, wd, err);
-            return;
-        }
-        if (filepath.Clean(have) != filepath.Clean(want)) {
-            Ꮡt.Errorf("EvalSymlinks(%q) in %q directory returns %q, want %q"u8, path, wd, have, want);
-        }
+    Ꮡt.Chdir(wd);
+    var (have, err) = filepath.EvalSymlinks(path);
+    if (err != default!) {
+        Ꮡt.Errorf("EvalSymlinks(%q) in %q directory error: %v"u8, path, wd, err);
+        return;
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    if (filepath.Clean(have) != filepath.Clean(want)) {
+        Ꮡt.Errorf("EvalSymlinks(%q) in %q directory returns %q, want %q"u8, path, wd, have, want);
+    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object evalSymlinkForTmpDirˢ = (@string)"eval symlink for tmp dir:"u8;
+internal static readonly @string testˢ = "test"u8;
 
 public static void TestEvalSymlinks(ж<testing.T> Ꮡt) {
     testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
@@ -1410,7 +1322,7 @@ public static void TestEvalSymlinksIsNotExist(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
         testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
-        defer(chtmpdir(Ꮡt), ref ᒐ);
+        Ꮡt.Chdir(Ꮡt.TempDir());
         var (_, err) = filepath.EvalSymlinks(notexistˢ);
         if (!os.IsNotExist(err)) {
             Ꮡt.Errorf("expected the file is not found, got %v\n"u8, err);
@@ -1435,7 +1347,7 @@ internal static readonly @string fileˢ = "file"u8;
 internal static readonly @string link1ˢ = "link1"u8;
 internal static readonly @string link2ˢ = "link2"u8;
 
-[GoType("dyn")] partial struct TestIssue13582_tests {
+[GoType("dyn")] internal partial struct TestIssue13582_tests {
     internal @string path, want;
 }
 
@@ -1494,10 +1406,12 @@ public static void TestIssue13582(ж<testing.T> Ꮡt) {
 
 // Issue 57905.
 public static void TestRelativeSymlinkToAbsolute(ж<testing.T> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
     testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
-    // Not parallel: uses os.Chdir.
+    // Not parallel: uses t.Chdir.
     @string tmpDir = Ꮡt.TempDir();
-    chdir(Ꮡt, tmpDir);
+    Ꮡt.Chdir(tmpDir);
     // Create "link" in the current working directory as a symlink to an arbitrary
     // absolute path. On macOS, this path is likely to begin with a symlink
     // itself: generally either in /var (symlinked to "private/var") or /tmp
@@ -1549,121 +1463,94 @@ internal static slice<@string> absTests = new @string[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object getwdFailedˢ = (@string)"getwd failed: "u8;
-internal static readonly object chdirFailedˢ = (@string)"chdir failed: "u8;
 internal static readonly object mkdirFailedˢ = (@string)"Mkdir failed: "u8;
+internal static readonly object chdirFailedˢ = (@string)"chdir failed: "u8;
 
 public static void TestAbs(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        ref var t = ref Ꮡt.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
-        @string root = Ꮡt.TempDir();
-        var (wd, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(getwdFailedˢ, err);
-        }
-        err = os.Chdir(root);
-        if (err != default!) {
-            Ꮡt.Fatal(chdirFailedˢ, err);
-        }
-        defer(os.Chdir, wd, ref ᒐ);
-        foreach (var (_, dir) in absTestDirs) {
-            err = os.Mkdir(dir, 511);
-            if (err != default!) {
-                Ꮡt.Fatal(mkdirFailedˢ, err);
-            }
-        }
-        // Make sure the global absTests slice is not
-        // modified by multiple invocations of TestAbs.
-        var tests = absTests;
-        if (runtime.GOOS == "windows"u8) {
-            @string vol = filepath.VolumeName(root);
-            slice<@string> extra = default!;
-            foreach (var (_, vᴛ1) in absTests) {
-                var path = vᴛ1;
-
-                if (strings.Contains(path, "$"u8)) {
-                    continue;
-                }
-                path = vol + path;
-                extra = append(extra, path);
-            }
-            tests = append(slices.Clip<slice<@string>, @string>(tests), extra.ꓸꓸꓸ);
-        }
-        err = os.Chdir(absTestDirs[0]);
-        if (err != default!) {
-            Ꮡt.Fatal(chdirFailedˢ, err);
-        }
-        foreach (var (_, vᴛ2) in tests) {
-            var path = vᴛ2;
-
-            path = strings.ReplaceAll(path, "$"u8, root);
-            var (info, errΔ1) = os.Stat(path);
-            if (errΔ1 != default!) {
-                Ꮡt.Errorf("%s: %s"u8, path, errΔ1);
-                continue;
-            }
-            (var abspath, errΔ1) = filepath.Abs(path);
-            if (errΔ1 != default!) {
-                Ꮡt.Errorf("Abs(%q) error: %v"u8, path, errΔ1);
-                continue;
-            }
-            (var absinfo, errΔ1) = os.Stat(abspath);
-            if (errΔ1 != default! || !os.SameFile(absinfo, info)) {
-                Ꮡt.Errorf("Abs(%q)=%q, not the same file"u8, path, abspath);
-            }
-            if (!filepath.IsAbs(abspath)) {
-                Ꮡt.Errorf("Abs(%q)=%q, not an absolute path"u8, path, abspath);
-            }
-            if (filepath.IsAbs(abspath) && abspath != filepath.Clean(abspath)) {
-                Ꮡt.Errorf("Abs(%q)=%q, isn't clean"u8, path, abspath);
-            }
+    @string root = Ꮡt.TempDir();
+    Ꮡt.Chdir(root);
+    foreach (var (_, dir) in absTestDirs) {
+        var errΔ1 = os.Mkdir(dir, 511);
+        if (errΔ1 != default!) {
+            Ꮡt.Fatal(mkdirFailedˢ, errΔ1);
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    // Make sure the global absTests slice is not
+    // modified by multiple invocations of TestAbs.
+    var tests = absTests;
+    if (runtime.GOOS == "windows"u8) {
+        @string vol = filepath.VolumeName(root);
+        slice<@string> extra = default!;
+        foreach (var (_, vᴛ1) in absTests) {
+            var path = vᴛ1;
+
+            if (strings.Contains(path, "$"u8)) {
+                continue;
+            }
+            path = vol + path;
+            extra = append(extra, path);
+        }
+        tests = appendꓸꓸꓸ(slices.Clip<slice<@string>, @string>(tests), extra);
+    }
+    var err = os.Chdir(absTestDirs[0]);
+    if (err != default!) {
+        Ꮡt.Fatal(chdirFailedˢ, err);
+    }
+    foreach (var (_, vᴛ2) in tests) {
+        var path = vᴛ2;
+
+        path = strings.ReplaceAll(path, "$"u8, root);
+        var (info, errΔ2) = os.Stat(path);
+        if (errΔ2 != default!) {
+            Ꮡt.Errorf("%s: %s"u8, path, errΔ2);
+            continue;
+        }
+        (var abspath, errΔ2) = filepath.Abs(path);
+        if (errΔ2 != default!) {
+            Ꮡt.Errorf("Abs(%q) error: %v"u8, path, errΔ2);
+            continue;
+        }
+        (var absinfo, errΔ2) = os.Stat(abspath);
+        if (errΔ2 != default! || !os.SameFile(absinfo, info)) {
+            Ꮡt.Errorf("Abs(%q)=%q, not the same file"u8, path, abspath);
+        }
+        if (!filepath.IsAbs(abspath)) {
+            Ꮡt.Errorf("Abs(%q)=%q, not an absolute path"u8, path, abspath);
+        }
+        if (filepath.IsAbs(abspath) && abspath != filepath.Clean(abspath)) {
+            Ꮡt.Errorf("Abs(%q)=%q, isn't clean"u8, path, abspath);
+        }
+    }
 }
 
 // Empty path needs to be special-cased on Windows. See golang.org/issue/24441.
 // We test it separately from all other absTests because the empty string is not
 // a valid path, so it can't be used with os.Stat.
 public static void TestAbsEmptyString(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        ref var t = ref Ꮡt.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
-        @string root = Ꮡt.TempDir();
-        var (wd, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(getwdFailedˢ, err);
-        }
-        err = os.Chdir(root);
-        if (err != default!) {
-            Ꮡt.Fatal(chdirFailedˢ, err);
-        }
-        defer(os.Chdir, wd, ref ᒐ);
-        (var info, err) = os.Stat(root);
-        if (err != default!) {
-            Ꮡt.Fatalf("%s: %s"u8, root, err);
-        }
-        (var abspath, err) = filepath.Abs(""u8);
-        if (err != default!) {
-            Ꮡt.Fatalf(@"Abs("""") error: %v"u8, err);
-        }
-        (var absinfo, err) = os.Stat(abspath);
-        if (err != default! || !os.SameFile(absinfo, info)) {
-            Ꮡt.Errorf(@"Abs("""")=%q, not the same file"u8, abspath);
-        }
-        if (!filepath.IsAbs(abspath)) {
-            Ꮡt.Errorf(@"Abs("""")=%q, not an absolute path"u8, abspath);
-        }
-        if (filepath.IsAbs(abspath) && abspath != filepath.Clean(abspath)) {
-            Ꮡt.Errorf(@"Abs("""")=%q, isn't clean"u8, abspath);
-        }
+    @string root = Ꮡt.TempDir();
+    Ꮡt.Chdir(root);
+    var (info, err) = os.Stat(root);
+    if (err != default!) {
+        Ꮡt.Fatalf("%s: %s"u8, root, err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    (var abspath, err) = filepath.Abs(""u8);
+    if (err != default!) {
+        Ꮡt.Fatalf(@"Abs("""") error: %v"u8, err);
+    }
+    (var absinfo, err) = os.Stat(abspath);
+    if (err != default! || !os.SameFile(absinfo, info)) {
+        Ꮡt.Errorf(@"Abs("""")=%q, not the same file"u8, abspath);
+    }
+    if (!filepath.IsAbs(abspath)) {
+        Ꮡt.Errorf(@"Abs("""")=%q, not an absolute path"u8, abspath);
+    }
+    if (filepath.IsAbs(abspath) && abspath != filepath.Clean(abspath)) {
+        Ꮡt.Errorf(@"Abs("""")=%q, isn't clean"u8, abspath);
+    }
 }
 
 [GoType] partial struct RelTests {
@@ -1724,12 +1611,12 @@ internal static slice<RelTests> winreltests = new RelTests[]{
 }.slice();
 
 public static void TestRel(ж<testing.T> Ꮡt) {
-    var tests = append(new RelTests[]{}.slice(), reltests.ꓸꓸꓸ);
+    var tests = appendꓸꓸꓸ(new RelTests[]{}.slice(), reltests);
     if (runtime.GOOS == "windows"u8) {
         foreach (var (i, _) in tests) {
             tests[i].want = filepath.FromSlash(tests[i].want);
         }
-        tests = append(tests, winreltests.ꓸꓸꓸ);
+        tests = appendꓸꓸꓸ(tests, winreltests);
     }
     foreach (var (_, test) in tests) {
         var (got, err) = filepath.Rel(test.root, test.path);
@@ -1879,45 +1766,32 @@ public static void TestBug3486(ж<testing.T> Ꮡt) {
 }
 
 internal static void testWalkSymlink(ж<testing.T> Ꮡt, Func<@string, @string, error> mklink) {
-    GoFrame ᒐ = default;
-    try {
-        @string tmpdir = Ꮡt.TempDir();
-        var (wd, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        defer(os.Chdir, wd, ref ᒐ);
-        err = os.Chdir(tmpdir);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        err = mklink(tmpdir, linkˢ);
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        ref var visited = ref heap<slice<@string>>(out var Ꮡvisited);
-        err = filepath.Walk(tmpdir, (@string path, fs.FileInfo info, error errΔ1) => {
-            if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-            (var rel, errΔ1) = filepath.Rel(tmpdir, path);
-            if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-            Ꮡvisited.ValueSlot = append(Ꮡvisited.ValueSlot, rel);
-            return default!;
-        });
-        if (err != default!) {
-            Ꮡt.Fatal(err);
-        }
-        slices.Sort<slice<@string>, @string>(visited);
-        var want = new @string[]{"."u8, "link"u8}.slice();
-        if (fmt.Sprintf("%q"u8, visited) != fmt.Sprintf("%q"u8, want)) {
-            Ꮡt.Errorf("unexpected paths visited %q, want %q"u8, visited, want);
-        }
+    @string tmpdir = Ꮡt.TempDir();
+    Ꮡt.Chdir(tmpdir);
+    var err = mklink(tmpdir, linkˢ);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    ref var visited = ref heap<slice<@string>>(out var Ꮡvisited);
+    err = filepath.Walk(tmpdir, (@string path, fs.FileInfo info, error errΔ1) => {
+        if (errΔ1 != default!) {
+            Ꮡt.Fatal(errΔ1);
+        }
+        (var rel, errΔ1) = filepath.Rel(tmpdir, path);
+        if (errΔ1 != default!) {
+            Ꮡt.Fatal(errΔ1);
+        }
+        Ꮡvisited.ValueSlot = append(Ꮡvisited.ValueSlot, rel);
+        return default!;
+    });
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    slices.Sort<slice<@string>, @string>(visited);
+    var want = new @string[]{"."u8, "link"u8}.slice();
+    if (fmt.Sprintf("%q"u8, visited) != fmt.Sprintf("%q"u8, want)) {
+        Ꮡt.Errorf("unexpected paths visited %q, want %q"u8, visited, want);
+    }
 }
 
 public static void TestWalkSymlink(ж<testing.T> Ꮡt) {
@@ -2012,57 +1886,47 @@ public static void TestEvalSymlinksAboveRoot(ж<testing.T> Ꮡt) {
 
 // Issue 30520 part 2.
 public static void TestEvalSymlinksAboveRootChdir(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
-        var (tmpDir, err) = os.MkdirTemp(""u8, "TestEvalSymlinksAboveRootChdir"u8);
-        if (err != default!) {
+    testenv.MustHaveSymlink(new filepath_test_package.testing_TжTB(Ꮡt));
+    Ꮡt.Chdir(Ꮡt.TempDir());
+    @string subdir = filepath.Join("a"u8, "b");
+    {
+        var err = os.MkdirAll(subdir, 511); if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        defer(os.RemoveAll, tmpDir, ref ᒐ);
-        chdir(Ꮡt, tmpDir);
-        @string subdir = filepath.Join("a"u8, "b");
-        {
-            var errΔ1 = os.MkdirAll(subdir, 511); if (errΔ1 != default!) {
-                Ꮡt.Fatal(errΔ1);
-            }
-        }
-        {
-            var errΔ2 = os.Symlink(subdir, "c"u8); if (errΔ2 != default!) {
-                Ꮡt.Fatal(errΔ2);
-            }
-        }
-        {
-            var errΔ3 = os.WriteFile(filepath.Join(subdir, fileˢ), default!, 438); if (errΔ3 != default!) {
-                Ꮡt.Fatal(errΔ3);
-            }
-        }
-        subdir = filepath.Join("d"u8, "e", "f");
-        {
-            var errΔ4 = os.MkdirAll(subdir, 511); if (errΔ4 != default!) {
-                Ꮡt.Fatal(errΔ4);
-            }
-        }
-        {
-            var errΔ5 = os.Chdir(subdir); if (errΔ5 != default!) {
-                Ꮡt.Fatal(errΔ5);
-            }
-        }
-        @string check = filepath.Join(".."u8, "..", "..", "c", fileˢ);
-        @string wantSuffix = filepath.Join("a"u8, "b", fileˢ);
-        {
-            var (resolved, errΔ6) = filepath.EvalSymlinks(check); if (errΔ6 != default!){
-                Ꮡt.Errorf("EvalSymlinks(%q) failed: %v"u8, check, errΔ6);
-            } else 
-            if (!strings.HasSuffix(resolved, wantSuffix)){
-                Ꮡt.Errorf("EvalSymlinks(%q) = %q does not end with %q"u8, check, resolved, wantSuffix);
-            } else {
-                Ꮡt.Logf("EvalSymlinks(%q) = %q"u8, check, resolved);
-            }
+    }
+    {
+        var err = os.Symlink(subdir, "c"u8); if (err != default!) {
+            Ꮡt.Fatal(err);
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    {
+        var err = os.WriteFile(filepath.Join(subdir, fileˢ), default!, 438); if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+    }
+    subdir = filepath.Join("d"u8, "e", "f");
+    {
+        var err = os.MkdirAll(subdir, 511); if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+    }
+    {
+        var err = os.Chdir(subdir); if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+    }
+    @string check = filepath.Join(".."u8, "..", "..", "c", fileˢ);
+    @string wantSuffix = filepath.Join("a"u8, "b", fileˢ);
+    {
+        var (resolved, err) = filepath.EvalSymlinks(check); if (err != default!){
+            Ꮡt.Errorf("EvalSymlinks(%q) failed: %v"u8, check, err);
+        } else 
+        if (!strings.HasSuffix(resolved, wantSuffix)){
+            Ꮡt.Errorf("EvalSymlinks(%q) = %q does not end with %q"u8, check, resolved, wantSuffix);
+        } else {
+            Ꮡt.Logf("EvalSymlinks(%q) = %q"u8, check, resolved);
+        }
+    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -2105,7 +1969,7 @@ public static void TestIssue51617(ж<testing.T> Ꮡt) {
             Ꮡt.Fatal(err);
         }
         var want = new @string[]{"."u8, "a"u8, filepath.Join("a"u8, badˢ), filepath.Join("a"u8, nextˢ)}.slice();
-        if (!reflect.DeepEqual(saw, want)) {
+        if (!slices.Equal<slice<@string>, @string>(saw, want)) {
             Ꮡt.Errorf("got directories %v, want %v"u8, saw, want);
         }
     }
@@ -2114,11 +1978,10 @@ public static void TestIssue51617(ж<testing.T> Ꮡt) {
 }
 
 public static void TestEscaping(ж<testing.T> Ꮡt) {
-    @string dir1 = Ꮡt.TempDir();
-    @string dir2 = Ꮡt.TempDir();
-    chdir(Ꮡt, dir1);
+    @string dir = Ꮡt.TempDir();
+    Ꮡt.Chdir(Ꮡt.TempDir());
     foreach (var (_, p) in new @string[]{
-        filepath.Join(dir2, "x")
+        filepath.Join(dir, "x")
     }.slice()) {
         if (!filepath.IsLocal(p)) {
             continue;
@@ -2127,7 +1990,7 @@ public static void TestEscaping(ж<testing.T> Ꮡt) {
         if (err != default!) {
             f.Close();
         }
-        (var ents, err) = os.ReadDir(dir2);
+        (var ents, err) = os.ReadDir(dir);
         if (err != default!) {
             Ꮡt.Fatal(err);
         }

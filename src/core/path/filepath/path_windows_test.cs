@@ -11,8 +11,8 @@ using fs = io.fs_package;
 using os = os_package;
 using exec = go.os.exec_package;
 using filepath = go.path.filepath_package;
-using reflect = reflect_package;
 using debug = go.runtime.debug_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using @internal;
@@ -97,7 +97,7 @@ internal static void testWinSplitListTestIsValid(ж<testing.T> Ꮡt, nint ti, Sp
             Ꮡt.Errorf("%d,%d: execution error %v\n%q"u8, ti, i, err, @out);
             return;
         }
-        case {} when !reflect.DeepEqual(@out, exp): {
+        case {} when !slices.Equal<slice<byte>, byte>(@out, exp): {
             Ꮡt.Errorf("%d,%d: expected %#q, got %#q"u8, ti, i, exp, @out);
             return;
         }
@@ -334,152 +334,142 @@ internal static readonly @string tmpˢ = "{{tmp}}"u8;
 internal static readonly @string tmpvolˢ = "{{tmpvol}}"u8;
 internal static readonly @string tmpnovolˢ = "{{tmpnovol}}"u8;
 
-[GoType("dyn")] partial struct TestToNorm_tests {
+[GoType("dyn")] internal partial struct TestToNorm_tests {
     internal @string arg;
     internal @string want;
 }
 
-[GoType("dyn")] partial struct TestToNorm_testsDir {
+[GoType("dyn")] internal partial struct TestToNorm_testsDir {
     internal @string wd;
     internal @string arg;
     internal @string want;
 }
 
 public static void TestToNorm(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        var stubBase = (@string, error) (@string path) => {
-            @string vol = filepath.VolumeName(path);
-            path = path[(int)(len(vol))..];
-            if (strings.Contains(path, "/"u8)) {
-                return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
-            }
-            if (path == ""u8 || path == "."u8 || path == @"\"u8) {
-                return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
-            }
-            nint i = strings.LastIndexByte(path, filepath.Separator);
-            if (i == len(path) - 1) {
-                // trailing '\' is invalid
-                return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
-            }
-            if (i == -1) {
-                return (strings.ToUpper(path), default!);
-            }
-            return (strings.ToUpper(path[(int)(i + 1)..]), default!);
-        };
-        // On this test, toNorm should be same as string.ToUpper(filepath.Clean(path)) except empty string.
-        var tests = new TestToNorm_tests[]{
-            new(""u8, ""u8),
-            new("."u8, "."u8),
-            new("./foo/bar"u8, @"FOO\BAR"u8),
-            new("/"u8, @"\"u8),
-            new("/foo/bar"u8, @"\FOO\BAR"u8),
-            new("/foo/bar/baz/qux"u8, @"\FOO\BAR\BAZ\QUX"u8),
-            new("foo/bar"u8, @"FOO\BAR"u8),
-            new("C:/foo/bar"u8, @"C:\FOO\BAR"u8),
-            new("C:foo/bar"u8, @"C:FOO\BAR"u8),
-            new("c:/foo/bar"u8, @"C:\FOO\BAR"u8),
-            new("C:/foo/bar"u8, @"C:\FOO\BAR"u8),
-            new("C:/foo/bar/"u8, @"C:\FOO\BAR"u8),
-            new(@"C:\foo\bar"u8, @"C:\FOO\BAR"u8),
-            new(@"C:\foo/bar\"u8, @"C:\FOO\BAR"u8),
-            new("C:/ふー/バー"u8, @"C:\ふー\バー"u8)
-        }.slice();
-        foreach (var (_, test) in tests) {
-            @string path = default!;
-            if (test.arg != ""u8) {
-                path = filepath.Clean(test.arg);
-            }
-            var (got, errΔ1) = filepath_internal_test_package.ToNorm(path, stubBase);
-            if (errΔ1 != default!){
-                Ꮡt.Errorf("toNorm(%s) failed: %v\n"u8, test.arg, errΔ1);
-            } else 
-            if (got != test.want) {
-                Ꮡt.Errorf("toNorm(%s) returns %s, but %s expected\n"u8, test.arg, got, test.want);
-            }
+    var stubBase = (@string, error) (@string path) => {
+        @string vol = filepath.VolumeName(path);
+        path = path[(int)(len(vol))..];
+        if (strings.Contains(path, "/"u8)) {
+            return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
         }
-        @string testPath = tmpTestFooBarˢ;
-        var testsDir = new TestToNorm_testsDir[]{ // test absolute paths
-
-            new("."u8, @"{{tmp}}\test\foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
-            new("."u8, @"{{tmp}}\.\test/foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
-            new("."u8, @"{{tmp}}\test\..\test\foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
-            new("."u8, @"{{tmp}}\TEST\FOO\BAR"u8, @"{{tmp}}\test\foo\bar"u8), // test relative paths begin with drive letter
-
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}."u8, @"{{tmpvol}}."u8),
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}.."u8, @"{{tmpvol}}.."u8),
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}.\foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}foo\..\foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @"{{tmpvol}}FOO\BAR"u8, @"{{tmpvol}}foo\bar"u8), // test relative paths begin with '\'
-
-            new("{{tmp}}"u8, @"{{tmpnovol}}\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
-            new("{{tmp}}"u8, @"{{tmpnovol}}\.\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
-            new("{{tmp}}"u8, @"{{tmpnovol}}\test\..\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
-            new("{{tmp}}"u8, @"{{tmpnovol}}\TEST\FOO\BAR"u8, @"{{tmpnovol}}\test\foo\bar"u8), // test relative paths begin without '\'
-
-            new(@"{{tmp}}\test"u8, "."u8, @"."u8),
-            new(@"{{tmp}}\test"u8, ".."u8, @".."u8),
-            new(@"{{tmp}}\test"u8, @"foo\bar"u8, @"foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @".\foo\bar"u8, @"foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @"foo\..\foo\bar"u8, @"foo\bar"u8),
-            new(@"{{tmp}}\test"u8, @"FOO\BAR"u8, @"foo\bar"u8), // test UNC paths
-
-            new("."u8, @"\\localhost\c$"u8, @"\\localhost\c$"u8)
-        }.slice();
-        @string ctmp = tempDirCanonical(Ꮡt);
-        {
-            var errΔ2 = os.MkdirAll(strings.ReplaceAll(testPath, tmpˢ, ctmp), 511); if (errΔ2 != default!) {
-                Ꮡt.Fatal(errΔ2);
-            }
+        if (path == ""u8 || path == "."u8 || path == @"\"u8) {
+            return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
         }
-        var (cwd, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(err);
+        nint i = strings.LastIndexByte(path, filepath.Separator);
+        if (i == len(path) - 1) {
+            // trailing '\' is invalid
+            return ("", fmt.Errorf("invalid path is given to base: %s"u8, vol + path));
         }
-        defer(() => {
-            var errΔ3 = os.Chdir(cwd);
-            if (errΔ3 != default!) {
-                Ꮡt.Fatal(errΔ3);
-            }
-        }, ref ᒐ);
-        @string tmpVol = filepath.VolumeName(ctmp);
-        if (len(tmpVol) != 2) {
-            Ꮡt.Fatalf("unexpected temp volume name %q"u8, tmpVol);
+        if (i == -1) {
+            return (strings.ToUpper(path), default!);
         }
-        @string tmpNoVol = ctmp[(int)(len(tmpVol))..];
-        var replacer = strings.NewReplacer(tmpˢ, ctmp, tmpvolˢ, tmpVol, tmpnovolˢ, tmpNoVol);
-        foreach (var (_, test) in testsDir) {
-            @string wd = replacer.Replace(test.wd);
-            @string arg = replacer.Replace(test.arg);
-            @string want = replacer.Replace(test.want);
-            if (test.wd == "."u8){
-                var errΔ4 = os.Chdir(cwd);
-                if (errΔ4 != default!) {
-                    Ꮡt.Error(errΔ4);
-                    continue;
-                }
-            } else {
-                var errΔ5 = os.Chdir(wd);
-                if (errΔ5 != default!) {
-                    Ꮡt.Error(errΔ5);
-                    continue;
-                }
-            }
-            if (arg != ""u8) {
-                arg = filepath.Clean(arg);
-            }
-            var (got, errΔ6) = filepath_internal_test_package.ToNorm(arg, filepath_internal_test_package.NormBase);
-            if (errΔ6 != default!){
-                Ꮡt.Errorf("toNorm(%s) failed: %v (wd=%s)\n"u8, arg, errΔ6, wd);
-            } else 
-            if (got != want) {
-                Ꮡt.Errorf("toNorm(%s) returns %s, but %s expected (wd=%s)\n"u8, arg, got, want, wd);
-            }
+        return (strings.ToUpper(path[(int)(i + 1)..]), default!);
+    };
+    // On this test, toNorm should be same as string.ToUpper(filepath.Clean(path)) except empty string.
+    var tests = new TestToNorm_tests[]{
+        new(""u8, ""u8),
+        new("."u8, "."u8),
+        new("./foo/bar"u8, @"FOO\BAR"u8),
+        new("/"u8, @"\"u8),
+        new("/foo/bar"u8, @"\FOO\BAR"u8),
+        new("/foo/bar/baz/qux"u8, @"\FOO\BAR\BAZ\QUX"u8),
+        new("foo/bar"u8, @"FOO\BAR"u8),
+        new("C:/foo/bar"u8, @"C:\FOO\BAR"u8),
+        new("C:foo/bar"u8, @"C:FOO\BAR"u8),
+        new("c:/foo/bar"u8, @"C:\FOO\BAR"u8),
+        new("C:/foo/bar"u8, @"C:\FOO\BAR"u8),
+        new("C:/foo/bar/"u8, @"C:\FOO\BAR"u8),
+        new(@"C:\foo\bar"u8, @"C:\FOO\BAR"u8),
+        new(@"C:\foo/bar\"u8, @"C:\FOO\BAR"u8),
+        new("C:/ふー/バー"u8, @"C:\ふー\バー"u8)
+    }.slice();
+    foreach (var (_, test) in tests) {
+        @string path = default!;
+        if (test.arg != ""u8) {
+            path = filepath.Clean(test.arg);
+        }
+        var (got, errΔ1) = filepath_internal_test_package.ToNorm(path, stubBase);
+        if (errΔ1 != default!){
+            Ꮡt.Errorf("toNorm(%s) failed: %v\n"u8, test.arg, errΔ1);
+        } else 
+        if (got != test.want) {
+            Ꮡt.Errorf("toNorm(%s) returns %s, but %s expected\n"u8, test.arg, got, test.want);
         }
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    @string testPath = tmpTestFooBarˢ;
+    var testsDir = new TestToNorm_testsDir[]{ // test absolute paths
+
+        new("."u8, @"{{tmp}}\test\foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
+        new("."u8, @"{{tmp}}\.\test/foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
+        new("."u8, @"{{tmp}}\test\..\test\foo\bar"u8, @"{{tmp}}\test\foo\bar"u8),
+        new("."u8, @"{{tmp}}\TEST\FOO\BAR"u8, @"{{tmp}}\test\foo\bar"u8), // test relative paths begin with drive letter
+
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}."u8, @"{{tmpvol}}."u8),
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}.."u8, @"{{tmpvol}}.."u8),
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}.\foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}foo\..\foo\bar"u8, @"{{tmpvol}}foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @"{{tmpvol}}FOO\BAR"u8, @"{{tmpvol}}foo\bar"u8), // test relative paths begin with '\'
+
+        new("{{tmp}}"u8, @"{{tmpnovol}}\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
+        new("{{tmp}}"u8, @"{{tmpnovol}}\.\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
+        new("{{tmp}}"u8, @"{{tmpnovol}}\test\..\test\foo\bar"u8, @"{{tmpnovol}}\test\foo\bar"u8),
+        new("{{tmp}}"u8, @"{{tmpnovol}}\TEST\FOO\BAR"u8, @"{{tmpnovol}}\test\foo\bar"u8), // test relative paths begin without '\'
+
+        new(@"{{tmp}}\test"u8, "."u8, @"."u8),
+        new(@"{{tmp}}\test"u8, ".."u8, @".."u8),
+        new(@"{{tmp}}\test"u8, @"foo\bar"u8, @"foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @".\foo\bar"u8, @"foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @"foo\..\foo\bar"u8, @"foo\bar"u8),
+        new(@"{{tmp}}\test"u8, @"FOO\BAR"u8, @"foo\bar"u8), // test UNC paths
+
+        new("."u8, @"\\localhost\c$"u8, @"\\localhost\c$"u8)
+    }.slice();
+    @string ctmp = tempDirCanonical(Ꮡt);
+    {
+        var errΔ2 = os.MkdirAll(strings.ReplaceAll(testPath, tmpˢ, ctmp), 511); if (errΔ2 != default!) {
+            Ꮡt.Fatal(errΔ2);
+        }
+    }
+    var (cwd, err) = os.Getwd();
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    Ꮡt.Chdir("."u8); // Ensure cwd is restored after the test.
+    @string tmpVol = filepath.VolumeName(ctmp);
+    if (len(tmpVol) != 2) {
+        Ꮡt.Fatalf("unexpected temp volume name %q"u8, tmpVol);
+    }
+    @string tmpNoVol = ctmp[(int)(len(tmpVol))..];
+    var replacer = strings.NewReplacer(tmpˢ, ctmp, tmpvolˢ, tmpVol, tmpnovolˢ, tmpNoVol);
+    foreach (var (_, test) in testsDir) {
+        @string wd = replacer.Replace(test.wd);
+        @string arg = replacer.Replace(test.arg);
+        @string want = replacer.Replace(test.want);
+        if (test.wd == "."u8){
+            var errΔ3 = os.Chdir(cwd);
+            if (errΔ3 != default!) {
+                Ꮡt.Error(errΔ3);
+                continue;
+            }
+        } else {
+            var errΔ4 = os.Chdir(wd);
+            if (errΔ4 != default!) {
+                Ꮡt.Error(errΔ4);
+                continue;
+            }
+        }
+        if (arg != ""u8) {
+            arg = filepath.Clean(arg);
+        }
+        var (got, errΔ5) = filepath_internal_test_package.ToNorm(arg, filepath_internal_test_package.NormBase);
+        if (errΔ5 != default!){
+            Ꮡt.Errorf("toNorm(%s) failed: %v (wd=%s)\n"u8, arg, errΔ5, wd);
+        } else 
+        if (got != want) {
+            Ꮡt.Errorf("toNorm(%s) returns %s, but %s expected (wd=%s)\n"u8, arg, got, want, wd);
+        }
+    }
 }
 
 public static void TestUNC(ж<testing.T> Ꮡt) {
@@ -704,7 +694,7 @@ public static void TestNTNamespaceSymlink(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestIssue52476_tests {
+[GoType("dyn")] internal partial struct TestIssue52476_tests {
     internal @string lhs, rhs;
     internal @string want;
 }
@@ -731,7 +721,7 @@ public static void TestIssue52476(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestAbsWindows_type {
+[GoType("dyn")] internal partial struct TestAbsWindows_type {
     internal @string path;
     internal @string want;
 }

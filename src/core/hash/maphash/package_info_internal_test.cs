@@ -13,6 +13,9 @@ using static go.hash.maphash_package;
 using static go.hash.maphash_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6120616e793b206220616e797d", "TestComparable_v1ᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6120737472696e673b206220737472696e677d", "TestComparable_v1")]
+[assembly: GoDynamicTypeLift("7374727563747b6920696e743b20752075696e743b206220626f6f6c3b206620666c6f617436343b2070202a696e743b206120616e797d", "TestComparable_v")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -32,8 +35,8 @@ using static go.hash.maphash_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/maphash/maphash_test.go", "maphash_test.cs", "AA0cgoKCgpSCuIKCgoKCgpSCuIKCgoKUgpSChIKCgqaCgoKmgoKCqIKCgoKUlIKClKiCgoKogIKmgIL4goKCgoKCgoKUgoKUgriEkoKCgoKUguiCgoKEgoKEgpaCgoKEgriigoKCgoKCgoK4ooKCgoKCgoKCgriigoKCgoKCgoKCuKKCgoKCgoKCgoKCAA0QgoKChKKCgoKCqKKCgoKokoKCgsqCgoKC")]
-[assembly: go.GoPositionMap("hash/maphash/smhasher_test.go", "smhasher_test.cs", "ABxCsoKCgoKCgoKCgoKCgoKCgu6CgoKCpIKCgoLKggAHEIKkgqSCpIKkgoKCgqSCgoSCgoKmhIKCgoKCpqiSgoKCgpSokoKCgoKCgoKCgoKCgsqokoKCgpSCgoKU6JKClIKUgoKClKSilpaCgoKCuoKCgoKCgoKmzJKClIKCgoKCgoKCgoKCgoKClJS6koKUgpSCgoKCgoKCgoKkooKCqLKCgpSCgoK8ooKUgpSCgoKCgoKkooKCpKKCgpSCgoKCggAQIoKkgqSCpIKkgqSCqJKClIKUgoKCgoKCpKKCgqiElIKWgoKCloKCggAIFIKUlIKCgoKCgoKCgt6SgqSCgpSClISCgoKCgoKmlAAICpKClIKCgoKkooKCgoKCgoKCgoKCgoKCgsrokoKUgoKCgoKClA==")]
+[assembly: go.GoPositionMap("hash/maphash/maphash_test.go", "maphash_test.cs", "ABMmgoKCgpSCuIKCgoKCgpSCuIKCgoKUgpSChIKCgqaCgoKmgoKCqIKCgoKUlIKClKiCgoKogIKmgIL4goKCgoKCgoKUgoKUgriEkoKCgoKUguiCgoKEgoKEgpaCgoKEgriigoKCgoKCgoK4ooKCgoKCgoKCgriigoKCgoKCgoKCuKKCgoKCgoKCgoKCuKKCggAXBoKCgoKCgoKCgoKCAAAQiIKClIKUgoKCgoKCgoKCgoKCpoKCgtyC1qKSsoKUgoKClIKCgoIABhCSgpSUgoLmgoKCgoKCgoKCgoIAABCIgoKUgpSCgoKCgoKCpoKCkpKCgoKC6qKSsoKUgpKSgoKCgoKUgoKCgoKC+qKCgoKCgoKUgoCCtgAIBoKCkoKEgoKChIIADAiCgpSClJKCkoKUgpaagpSCAA0QgoKChKKCgoKCqKKCgoKokoKCgsqCgoKCyoKCgoIADQqCAAASgoKCgoKCgoKC", "55-60:1;61-66:2;67-72:3;283-299:1;370-393:1;399-409:1;438-441:1;450-453:2;468-475:1;477-483:2;485-491:3;497-499:1;504-509:1")]
+[assembly: go.GoPositionMap("hash/maphash/smhasher_test.go", "smhasher_test.cs", "ABxCsoKCgoKCgoKCgoKCgoKCgu6CgoKCpIKCgoLKggAHEIKkgqSCpIKkgoKCgqSCgoKEgoKCpoSCgoKCgqaokoKCgoKUqJKCgoKCgoKCgoKCgoLKqJKCgoKUgoKClOiSgpSClIKCgpSkopaWgoKCgrqCgoKCgoKCpsySgpSCgoKCgoKCgoKCgoKCgpSUupKClIKUgoKCgoKCgoKCpKKCgoKosoKClIKCgryigpSClIKCgoKCgqSigoKCpKKCgpSCgoKCggAQIoKkgqSCpIKkgqSCqJKClIKUgoKCgoKCpKKCgoKohJSCloKCgpaCgoIACBSClJSCgoKCgoKCgoLekoKkgoKUgpSEgoKCgoKCppQACAqSgpSCgoKCpKKCgoKCgoKCgoKCgoKCgoKCyuiSgpSCgoKCgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;
@@ -49,4 +52,24 @@ public static partial class maphash_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

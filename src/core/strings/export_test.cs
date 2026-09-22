@@ -37,7 +37,7 @@ internal static @string PrintTrie(this ж<global::go.strings_package.Replacer> �
         s += r.printNode(t.next, depth + len(t.prefix));
     } else 
     if (t.table != default!) {
-        foreach (var (b, m) in r.mapping) {
+        foreach (var (b, m) in r.mapping.ΔRangeSnapshot()) {
             if ((nint)m != r.tableSize && t.table[m] != nil) {
                 s += Repeat("."u8, depth) + ((@string)new byte[]{(byte)b}.slice());
                 s += r.printNode(t.table[m], depth + 1);

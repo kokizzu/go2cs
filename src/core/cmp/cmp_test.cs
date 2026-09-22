@@ -14,42 +14,6 @@ using @unsafe = unsafe_package;
 
 partial class cmp_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 internal static ж<float64> Ꮡnegzero = new StandardBox<float64>(Δmath.Copysign(0D, -1D));
 internal static ref float64 negzero => ref Ꮡnegzero.Value;
 
@@ -173,7 +137,7 @@ public static void TestSort(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestOr_cases {
+[GoType("dyn")] internal partial struct TestOr_cases {
     internal slice<nint> @in;
     internal nint want;
 }
@@ -211,7 +175,7 @@ public static void ExampleOr() {
     fmt.Println(cmp.Or(userInput1, userInput2, defaultˢ));
 }
 
-[GoType("dyn")] partial struct ExampleOr_sort_Order {
+[GoType("dyn")] internal partial struct ExampleOr_sort_Order {
     public @string Product;
     public @string Customer;
     public float64 Price;
