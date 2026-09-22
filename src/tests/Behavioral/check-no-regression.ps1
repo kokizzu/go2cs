@@ -25,8 +25,9 @@
     not to keep regenerated output).
 
 .PARAMETER SelfTest
-    Exercise the tool preflight (a missing git, go or dotnet refuses by name, exit 2, before any build
-    or transpile) against child runs of this script under a stubbed PATH. Builds and transpiles nothing.
+    Exercise the tool preflight (a missing git or go refuses by name, exit 2, before any build or
+    transpile; a missing dotnet does not) against child runs of this script under a stubbed PATH.
+    Builds and transpiles nothing.
 
 .EXAMPLE
     ./check-no-regression.ps1
@@ -71,10 +72,14 @@ $ErrorActionPreference = "Stop"
 # So every tool the run needs is RESOLVED FIRST, before the solution-integrity preflight (which
 # silently skips its casing check without git) and before any build or transpile, and a missing one
 # REFUSES by name with `exit 2`. `go` is on the list for the same reason as git: `& go build` under
-# a PATH without go dies by the same exception, with the same stale code. `dotnet` is on it by the
-# coordinator's ruling (the same ledger line): a battery shell that cannot resolve it is not the shell
-# this gate's verdict is quoted from.
-$RequiredTools = @('git', 'go', 'dotnet')
+# a PATH without go dies by the same exception, with the same stale code.
+#
+# ⚠ A REQUIRED TOOL IS ONE THIS SCRIPT ACTUALLY INVOKES (COORD ruling, 2026-09-22), and `dotnet` is
+# deliberately NOT one: this gate never calls it -- the converter spawns `dotnet` only under `-tests`
+# (its test-host publish), and check-solution-integrity.ps1 is no-MSBuild by construction. Requiring
+# it would refuse a host with no .NET that can run this gate in full. The first cut of this preflight
+# listed it; the self-test's no-dotnet arm is what keeps it off.
+$RequiredTools = @('git', 'go')
 
 function Get-UnresolvedTools {
     param([string[]] $Names)
@@ -86,13 +91,15 @@ function Get-UnresolvedTools {
 # CNR_RC=0 did -- the assertion reads the child's real exit code, not a value this process computes.
 # PATH is replaced for the child with a directory of STUB tools (git, go, dotnet) minus the one under
 # test, plus the system directory, so nothing real is reachable. Two properties make it cheap and safe:
-#   - arms 1-3 and the CONTROL run -AliasDriftCheckOnly, which skips the build and the transpile by
-#     construction; the refusal arms exit before the solution-integrity preflight, and the control
-#     runs it (static, about a second) and then reads the stub git's empty status.
-#   - arm 4 runs the NORMAL mode, and its stub `go` records that it was called and FAILS, so a script
-#     that got past the preflight dies at `go build` -- never at the transpile -- and the record says so.
-# The base this guard was cut against fails arms 1-4 (arm 1 with rc 0, the ledger's false green
-# reproduced without a transpile); the control passes on both, which is what shows the arms can pass.
+#   - every arm but one runs -AliasDriftCheckOnly, which skips the build and the transpile by
+#     construction; the refusal arms exit before the solution-integrity preflight, and the passing
+#     arms run it (static, about a second) and then read the stub git's empty status.
+#   - the NORMAL-mode arm's stub `go` records that it was called and FAILS, so a script that got past
+#     the preflight dies at `go build` -- never at the transpile -- and the record says so.
+# Two arms must PASS the preflight: the no-dotnet arm (dotnet is not required -- a refusal there is a
+# host this gate could have measured, turned away) and the all-present CONTROL. The base this guard was
+# cut against fails the three refusal arms (the git one with rc 0, the ledger's false green reproduced
+# without a transpile); a preflight that re-requires dotnet fails the no-dotnet arm.
 function Test-ToolPreflightContract {
     $isWin = ($env:OS -eq 'Windows_NT')
     $stubRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cnr-selftest-" + [guid]::NewGuid().ToString('N'))
@@ -129,9 +136,9 @@ function Test-ToolPreflightContract {
 
     $arms = @(
         @{ n = 'git absent (drift-check mode)';    tools = @('go', 'dotnet');        mode = '-AliasDriftCheckOnly'; refuse = 'git' }
-        @{ n = 'dotnet absent (drift-check mode)'; tools = @('git', 'go');           mode = '-AliasDriftCheckOnly'; refuse = 'dotnet' }
         @{ n = 'go absent (drift-check mode)';     tools = @('git', 'dotnet');       mode = '-AliasDriftCheckOnly'; refuse = 'go' }
         @{ n = 'git absent (NORMAL mode)';         tools = @('go', 'dotnet');        mode = '';                     refuse = 'git' }
+        @{ n = 'dotnet absent: NOT required';      tools = @('git', 'go');           mode = '-AliasDriftCheckOnly'; refuse = '' }
         @{ n = 'CONTROL: all three present';       tools = @('git', 'go', 'dotnet'); mode = '-AliasDriftCheckOnly'; refuse = '' }
     )
 
@@ -187,7 +194,7 @@ function Test-ToolPreflightContract {
 }
 
 if ($SelfTest) {
-    if (Test-ToolPreflightContract) { Write-Host '==> SELF-TEST PASSED: the tool preflight refuses by name, exit 2, before any build or transpile.' -ForegroundColor Green; exit 0 }
+    if (Test-ToolPreflightContract) { Write-Host '==> SELF-TEST PASSED: the tool preflight refuses a missing git or go by name, exit 2, before any build or transpile, and does not require dotnet.' -ForegroundColor Green; exit 0 }
     Write-Host '==> SELF-TEST FAILED: see the arm list above.' -ForegroundColor Red
     exit 1
 }
