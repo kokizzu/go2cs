@@ -29,6 +29,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace go;
 
@@ -77,13 +78,43 @@ public static partial class embed_package
     /// <c>[]T</c> for a named byte type, which <c>embed/internal/embedtest</c>'s <c>TestAliases</c>
     /// exercises through <c>[]T</c>, <c>[]uint8</c> and <c>[]EmbedUint8</c>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ THE REINTERPRET IS THE MECHANISM, not an optimization over a conversion. This read
+    /// <c>(T)Convert.ChangeType(raw[i], typeof(T))</c>, which is a VALUE conversion through
+    /// <see cref="IConvertible"/> — and a Go named byte type converts to a C# struct that implements
+    /// no such thing, so it threw <c>InvalidCastException: Invalid cast from 'System.Byte' to
+    /// '…embedtest_internal_test_package+T'</c> the first time a corpus row reached it. The doc
+    /// above named that exact case while the code could not express it: the fault was mine, at the
+    /// only line that had to know what a Go named byte type IS.
+    /// </para>
+    /// <para>
+    /// A named byte type has the layout of a byte and no conversion to perform, so the bytes are
+    /// REINTERPRETED rather than converted. <c>sizeof(T)</c> is asserted and anything else refused
+    /// LOUDLY: the constraint <c>unmanaged</c> admits every blittable struct, and silently
+    /// reinterpreting a four-byte element over a one-byte source would read past the buffer. Go
+    /// itself permits only a byte-sized element here, so the refusal can never fire on a valid
+    /// directive — it fires on a converter that resolved the element type wrongly, which is the one
+    /// caller this method has.
+    /// </para>
+    /// </remarks>
     public static slice<T> ΔEmbedBytes<T>(Assembly assembly, @string prefix, @string name) where T : unmanaged
     {
+        // ⚠ Unsafe.SizeOf<T>() and NOT `sizeof(T)`: this package compiles with
+        // <AllowUnsafeBlocks>false</AllowUnsafeBlocks> (embed.csproj), so the sizeof OPERATOR over a
+        // generic unmanaged T needs an unsafe context this file may not open. Both helpers here are
+        // ordinary managed calls; flipping the package's unsafe switch to satisfy one line would be
+        // a corpus change for a reinterpretation that does not need one.
+        int elementSize = Unsafe.SizeOf<T>();
+
+        if (elementSize != 1)
+            throw new InvalidOperationException($"go:embed resource \"{prefix}{name}\" cannot be read as a slice of \"{typeof(T)}\": a Go byte-slice embed has a ONE-byte element type and this one is {elementSize} bytes");
+
         byte[] raw = ΔEmbedRaw(assembly, prefix, name);
         slice<T> result = new(raw.Length);
 
         for (nint i = 0; i < raw.Length; i++)
-            result[i] = (T)Convert.ChangeType(raw[i], typeof(T));
+            result[i] = Unsafe.BitCast<byte, T>(raw[i]);
 
         return result;
     }
