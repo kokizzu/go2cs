@@ -2398,6 +2398,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// asynctimerchan=1. time/time_impl.cs holds the body beside its consumer.
 		"syncTimer": goosAny,
 	},
+	"internal/testenv": {
+		// CPUProfilingBroken (COORD ruling 2026-09-22) answers true on the managed host: the runtime has
+		// no CPU sampler, the case Go's own plan9 arm answers true for ("Profiling unimplemented"). The
+		// Windows setters are hand-owned in that shape (runtime/windows/cpuprof_windows_impl.cs), so a
+		// CPU profile starts, stops and carries ZERO samples. Left converted, it answered false on
+		// windows, so runtime/pprof's testCPUProfile doubled its duration (5 s, 10, 20, ...) until the
+		// package deadline, and each CPU test ate most of what was left (315 / 155 / 35 s measured).
+		// Answering true gives those tests Go's own 10-second deadline and ends each one in Go's own
+		// Skipf naming golang.org/issue/13841. internal/testenv/testenv_impl.cs holds the body.
+		"CPUProfilingBroken": goosAny,
+	},
 }
 
 // isManualType reports whether the named type (raw Go name) is hand-converted in this package.
