@@ -15,12 +15,6 @@ using static go.encoding.xml_package;
 
 partial class xml_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 [GoType] internal partial struct toks {
     internal bool earlyEOF;
     internal slice<ΔToken> t;
@@ -675,6 +669,43 @@ public static void TestAllScalars(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string itemBˢ = @"<item b=']]>'/>"u8;
+internal static readonly object wrongStartElementˢ = (@string)"Wrong start element"u8;
+internal static readonly object wrongEndElementˢ = (@string)"Wrong end element"u8;
+
+public static void TestIssue68387(ж<testing.T> Ꮡt) {
+    @string data = itemBˢ;
+    var dec = NewDecoder(new xml_test_package.strings_ReaderжReader(strings.NewReader(data)));
+    ΔToken tok1 = default!;
+    ΔToken tok2 = default!;
+    ΔToken tok3 = default!;
+    error err = default!;
+    {
+        (tok1, err) = dec.RawToken(); if (err != default!) {
+            Ꮡt.Fatalf("RawToken() failed: %v"u8, err);
+        }
+    }
+    {
+        (tok2, err) = dec.RawToken(); if (err != default!) {
+            Ꮡt.Fatalf("RawToken() failed: %v"u8, err);
+        }
+    }
+    {
+        (tok3, err) = dec.RawToken(); if (!AreEqual(err, io.EOF) || tok3 != default!) {
+            Ꮡt.Fatalf("Missed EOF"u8);
+        }
+    }
+    var s = new StartElement(new Name(""u8, "item"u8), new global::go.encoding.xml_package.Attr[]{new Attr(new Name(""u8, "b"u8), "]]>"u8)}.slice());
+    if (!reflect.DeepEqual(tok1._<StartElement>(), s)) {
+        Ꮡt.Error(wrongStartElementˢ);
+    }
+    var e = new EndElement(new Name(""u8, "item"u8));
+    if (tok2._<EndElement>() != e) {
+        Ꮡt.Error(wrongEndElementˢ);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string itemFieldAAbcdFieldAItemˢ = @"<item><FieldA>abcd</FieldA></item>"u8;
 internal static readonly object expectingAbcdˢ = (@string)"Expecting abcd"u8;
 
@@ -713,12 +744,12 @@ public static void TestUnquotedAttrs(ж<testing.T> Ꮡt) {
 }
 
 public static void TestValuelessAttrs(ж<testing.T> Ꮡt) {
-    var tests = new array<@string>[]{
+    var tests = GoReflect.WithElemDims(new array<@string>[]{
         new @string[]{"<p nowrap>"u8, "p"u8, "nowrap"u8}.array(),
         new @string[]{"<p nowrap >"u8, "p"u8, "nowrap"u8}.array(),
         new @string[]{"<input checked/>"u8, "input"u8, "checked"u8}.array(),
         new @string[]{"<input checked />"u8, "input"u8, "checked"u8}.array()
-    }.slice();
+    }.slice(), 3);
     foreach (var (_, vᴛ1) in tests) {
         var test = vᴛ1.Clone();
 
@@ -1010,7 +1041,7 @@ public static void TestEscapeTextInvalidChar(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[]byte")] internal partial struct TestIssue5880_T;
+[GoLocalName("T")] [GoType("[]byte")] internal partial struct TestIssue5880_T;
 
 public static void TestIssue5880(ж<testing.T> Ꮡt) {
     var (data, err) = Marshal(new TestIssue5880_T(new byte[]{192, 168, 0, 1}.slice()));

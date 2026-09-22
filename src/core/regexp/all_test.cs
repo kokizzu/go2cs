@@ -440,7 +440,7 @@ public static void TestQuoteMeta(ж<testing.T> Ꮡt) {
 public static void TestLiteralPrefix(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    foreach (var (_, tc) in append(metaTests, literalPrefixTests.ꓸꓸꓸ)) {
+    foreach (var (_, tc) in appendꓸꓸꓸ(metaTests, literalPrefixTests)) {
         // Literal method needs to scan the pattern.
         var re = MustCompile(tc.pattern);
         var (str, complete) = re.LiteralPrefix();
@@ -819,7 +819,7 @@ public static void BenchmarkAnchoredLiteralLongNonMatch(ж<testing.B> Ꮡb) {
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
     for (nint i = 0; i < 15; i++) {
-        x = append(x, x.ꓸꓸꓸ);
+        x = appendꓸꓸꓸ(x, x);
     }
     var re = MustCompile(zbcDEˢ);
     b.StartTimer();
@@ -849,7 +849,7 @@ public static void BenchmarkAnchoredLongMatch(ж<testing.B> Ꮡb) {
     b.StopTimer();
     var x = slice<byte>("abcdefghijklmnopqrstuvwxyz"u8);
     for (nint i = 0; i < 15; i++) {
-        x = append(x, x.ꓸꓸꓸ);
+        x = appendꓸꓸꓸ(x, x);
     }
     var re = MustCompile(bcDEˢ);
     b.StartTimer();
@@ -1106,6 +1106,22 @@ public static void TestUnmarshalText(ж<testing.T> Ꮡt) {
         {
             var errΔ1 = unmarshaled.UnmarshalText(marshaled); if (errΔ1 != default!) {
                 Ꮡt.Errorf("regexp %#q failed to unmarshal: %s"u8, re.OrTypedNil(), errΔ1);
+                continue;
+            }
+        }
+        if (unmarshaled.String() != goodRe[i]) {
+            Ꮡt.Errorf("UnmarshalText returned unexpected value: %s"u8, unmarshaled.String());
+        }
+        var buf = new slice<byte>(4, 32);
+        (var marshalAppend, err) = re.AppendText(buf);
+        if (err != default!) {
+            Ꮡt.Errorf("regexp %#q failed to marshal: %s"u8, re.OrTypedNil(), err);
+            continue;
+        }
+        marshalAppend = marshalAppend[4..];
+        {
+            var errΔ2 = unmarshaled.UnmarshalText(marshalAppend); if (errΔ2 != default!) {
+                Ꮡt.Errorf("regexp %#q failed to unmarshal: %s"u8, re.OrTypedNil(), errΔ2);
                 continue;
             }
         }

@@ -26,6 +26,10 @@ using go;
 using static global::go.net.http.fcgi_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6465736320737472696e673b2072656354797065206e65742f687474702f666367692e726563547970653b2072657149642075696e7431363b20636f6e74656e74205b5d627974653b20726177205b5d627974657d", "streamTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e707574205b5d627974653b20656e7656617220737472696e673b20657870656374656456616c20737472696e673b20657870656374656446696c74657265644f757420626f6f6c7d", "envVarTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e707574205b5d627974653b20657272206572726f727d", "cleanUpTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b73697a652075696e7433323b206279746573205b5d627974657d", "sizeTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -42,6 +46,7 @@ using static global::go.net.http.fcgi_internal_test_package;
 [assembly: GoImplement<rwNopCloser, io_package.ReadWriteCloser>]
 [assembly: GoImplement<rwNopCloser, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<rwNopCloser, io_package.Writer>(Promoted = true)]
+[assembly: GoImplement<signalingNopWriteCloser, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<signalingNopWriteCloser, io_package.ReadWriteCloser>(Pointer = true)]
 [assembly: GoImplement<writeOnlyConn, io_package.ReadWriteCloser>(Pointer = true)]
 // </InterfaceImplementations>
@@ -57,7 +62,7 @@ using static global::go.net.http.fcgi_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/fcgi/fcgi_test.go", "fcgi_test.cs", "AB44goKCgoKUgoKUggAkRoCkgoKCgoKCgoCCgqSUgoKUgoKUgoKUgoKCgIKCpICCgqSCAAoSgoLWgqaCpoKChIKCgoKWhoCCyIIACBSKgoSCgoIANWaCpoKs0rKCgoKCuoKCppSUAAgSgqiSAAcQgoIAK1qysoKCgoKogoCCtqSUggAMCIIAFDKykoKCgoKCqIKClIKCgIIACxaCpoKC2sKEgqK4gpSUooKWgoSYgpSEgoI=")]
+[assembly: go.GoPositionMap("net/http/fcgi/fcgi_test.go", "fcgi_test.cs", "AB44goKCgoKUgoKUggAkRoCkgoKCgoKCgoCCgqSUgoKUgoKUgoKUgoKCgIKCpICCgqSCAAoSgoLWgqaCpoKChIKCgoKWhoCCyIIACBSKgoSCgoIANWaCpoKs0rKCgoKCuoKCppSUAAgSgqiSAAcQgoIAK1qysoKCgoKogoCCtqSUggAMCIIAFDKykoKCgoKCqIKClIKCgIIADxaCpoKC2sKEgqK4gpSUooKWgoSYgpSEgoI=", "245-256:1;335-347:1;380-399:1;386-393:1.1;423-432:1;433-436:2;441-447:3")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -73,4 +78,27 @@ public static partial class fcgi_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.net.http.fcgi_package));
+    }
 }

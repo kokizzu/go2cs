@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `debug/buildinfo` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**197 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**211 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/debug/buildinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/buildinfo).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 6 of the matched tests identically.
 
@@ -17,6 +19,7 @@ Both runtimes skip 6 of the matched tests identically.
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `Test117` | pass | pass |
 | `TestIssue54968` | pass | pass |
 | `TestIssue54968/start_at_1` | pass | pass |
 | `TestIssue54968/start_at_10` | pass | pass |
@@ -192,6 +195,7 @@ Both runtimes skip 6 of the matched tests identically.
 | `TestIssue54968/start_at_97` | pass | pass |
 | `TestIssue54968/start_at_98` | pass | pass |
 | `TestIssue54968/start_at_99` | pass | pass |
+| `TestNotGo` | pass | pass |
 | `TestReadFile` | pass | pass |
 | `TestReadFile/aix_ppc64` | skip | skip |
 | `TestReadFile/darwin_amd64` | skip | skip |
@@ -205,6 +209,7 @@ Both runtimes skip 6 of the matched tests identically.
 | `TestReadFile/windows_amd64/exe/empty` | pass | pass |
 | `TestReadFile/windows_amd64/exe/invalid_gopath` | pass | pass |
 | `TestReadFile/windows_amd64/exe/invalid_modules` | pass | pass |
+| `TestReadFile/windows_amd64/exe/invalid_str_len` | pass | pass |
 | `TestReadFile/windows_amd64/exe/valid_gopath` | pass | pass |
 | `TestReadFile/windows_amd64/exe/valid_modules` | pass | pass |
 | `TestReadFile/windows_amd64/pie` | pass | pass |
@@ -212,8 +217,19 @@ Both runtimes skip 6 of the matched tests identically.
 | `TestReadFile/windows_amd64/pie/empty` | pass | pass |
 | `TestReadFile/windows_amd64/pie/invalid_gopath` | pass | pass |
 | `TestReadFile/windows_amd64/pie/invalid_modules` | pass | pass |
+| `TestReadFile/windows_amd64/pie/invalid_str_len` | pass | pass |
 | `TestReadFile/windows_amd64/pie/valid_gopath` | pass | pass |
 | `TestReadFile/windows_amd64/pie/valid_modules` | pass | pass |
+| `TestSearchMagic` | pass | pass |
+| `TestSearchMagic/beginning` | pass | pass |
+| `TestSearchMagic/header_across_chunk` | pass | pass |
+| `TestSearchMagic/misaligned` | pass | pass |
+| `TestSearchMagic/misaligned_across_chunk` | pass | pass |
+| `TestSearchMagic/missing` | pass | pass |
+| `TestSearchMagic/offset` | pass | pass |
+| `TestSearchMagic/second_chunk` | pass | pass |
+| `TestSearchMagic/second_chunk_short` | pass | pass |
+| `TestSearchMagic/too_short` | pass | pass |
 
 ## Excluded declarations
 
@@ -224,3 +240,4 @@ has not implemented, or a platform behavior it provably cannot reproduce. Each i
 the capability it needs.
 
 - FuzzIssue57002 (fuzz): fuzz execution is deferred to Phase 4D
+- FuzzRead (fuzz): fuzz execution is deferred to Phase 4D
