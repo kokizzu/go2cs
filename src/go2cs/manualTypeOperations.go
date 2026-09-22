@@ -252,6 +252,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"reentersyscall":    goosAny,
 		"entersyscallblock": goosAny,
 		"exitsyscall":       goosAny,
+		// usleep on WINDOWS (COORD ruling 2026-09-22): Go's body waits on a high-resolution waitable
+		// timer (or a ms-grained WaitForSingleObject) through stdcall6/stdcall2 -> asmcgocall, which has
+		// no managed body, so every runtime.usleep threw -- the runtime row's host died on one inside
+		// TestRuntimeLockMetricsAndProfile/runtime.lock/sample-1, and TestNetpollBreak reaches the same
+		// path. runtime/windows/usleep_windows_impl.cs sleeps the same microseconds without the OS call.
+		// Windows alone: linux already hand-owns its usleep (mem_linux_impl.cs) and darwin's converts.
+		"usleep": goosWindows,
 		// addrRanges.init / add / cloneInto (increment 7 of the runtime row, W2a, 2026-09-05): the three
 		// writers that build a notInHeapSlice header FIELD BY FIELD over the managed a.ranges --
 		// `ranges := (*notInHeapSlice)(unsafe.Pointer(&a.ranges)); ranges.len = …; ranges.cap = …;
