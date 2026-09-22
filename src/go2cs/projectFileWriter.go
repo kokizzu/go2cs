@@ -159,6 +159,23 @@ func declaredAssemblyName(contents string) string {
 // a public rtype is reachable by every C# consumer of the corpus, where Go grants external packages
 // nothing — and Go exportedness here is carried by the NAME's case, not by C# accessibility, so
 // widening the C# surface buys nothing Go asked for. One named friend assembly is the narrow grant.
+// insertProjectItemGroup places a rendered ItemGroup after the project's first PropertyGroup, the
+// same anchor insertFriendAssemblyAccess uses and for the same reason: it is the one landmark every
+// csproj the converter emits carries exactly once.
+func insertProjectItemGroup(projectFileContents, itemGroup string) string {
+	const anchor = "</PropertyGroup>"
+
+	idx := strings.Index(projectFileContents, anchor)
+
+	if idx < 0 {
+		return projectFileContents
+	}
+
+	insertAt := idx + len(anchor)
+
+	return projectFileContents[:insertAt] + itemGroup + projectFileContents[insertAt:]
+}
+
 func insertFriendAssemblyAccess(projectFileContents string) string {
 	const anchor = "</PropertyGroup>"
 	const friendItemGroup = "\r\n\r\n  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->\r\n  <ItemGroup>\r\n    <InternalsVisibleTo Include=\"$(AssemblyName).tests\" />\r\n    <!-- reflect.StructOf mints synthesized structs into this fixed-name dynamic assembly; a field type that is internal here cannot be loaded from there without the grant. -->\r\n    <InternalsVisibleTo Include=\"go2cs.SynthesizedStructs\" />\r\n  </ItemGroup>"
@@ -519,6 +536,21 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	// re-mint can never drop a declared reference), never stale by accident (nothing is guessed),
 	// and general to any `_impl.cs` companion in any converted package — not just the four
 	// hand-owned-by-consequence ones the metadata un-freeze made visible.
+	// The package's //go:embed payloads, as EmbeddedResource items with their deterministic
+	// LogicalNames. Inserted here rather than through a template marker because the Include path is
+	// relative to the project FILE, which is not known where the contents are composed. Empty for
+	// every package that declares no directive, which is all but one of the corpus's production
+	// packages (internal/trace/traceviewer) — see embedDirective.go.
+	if targets := currentEmbedTargets(); len(targets) > 0 {
+		if err := stageEmbedPayloads(targets, filepath.Dir(projectFileName)); err != nil {
+			return err
+		}
+	}
+
+	if embedItems := embedResourceItemGroup(currentEmbedTargets()); embedItems != "" {
+		newContents = []byte(insertProjectItemGroup(string(newContents), embedItems))
+	}
+
 	newContents = preserveHandOwnReferences(projectFileName, newContents)
 
 	// Check if project file needs to be written

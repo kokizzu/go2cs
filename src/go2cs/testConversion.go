@@ -28,6 +28,7 @@ import (
 	"regexp"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -975,6 +976,14 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	testAdapterResolveNames = nil
 	emittedAdapterPairAnchors = nil
 
+	// The //go:embed registry is reset HERE, per PACKAGE — never in resetPackageState, which runs
+	// per VARIANT. Both halves' targets must be in hand when the ONE tests csproj is written, and
+	// with the reset one level too low embed/internal/embedtest's project carried FIVE
+	// EmbeddedResource items (the external half's alone) while every file its internal half's three
+	// embed.FS variables name was simply absent from the assembly. Same reason
+	// whiteboxBridgeTypeNames is reset at this level and not at that one.
+	resetEmbedTargets()
+
 	// A model change between runs (or a recompile fallback) must not leave a stale bridge anchor
 	// on disk: it is merge-preserving, and a superseded record set would silently resurrect.
 	// The models that need it re-seed it below; everything else keeps the directory clean.
@@ -1120,6 +1129,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		if err := os.WriteFile(testInfoPath, productionInfo, 0644); err != nil {
 			return result, fmt.Errorf("seed test package metadata: %w", err)
 		}
+
+		// The production half's directives are registered for THIS assembly's resource items: its
+		// `.cs` files are compile items here, so its field initializers run here and look their
+		// resources up here. Entries only — the initializers were rendered in the production pass.
+		registerProductionEmbedTargets(production)
 
 		// The production sources recompile into the test assembly, so their imports are test
 		// project references too. Under the reference model the production ASSEMBLY carries its
@@ -4340,6 +4354,21 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" ExcludeFromSingleFile=\"true\" />", escapeXMLAttributeValue(slashed)))
 	}
 
+	// The //go:embed payloads of BOTH halves, as EmbeddedResource items. They join the fixture
+	// group rather than opening one of their own: an MSBuild ItemGroup is untyped, and one group is
+	// one place to look. Note the deliberate contrast with the <None> items directly above — a
+	// fixture must stay LOOSE because a test opens it by relative path, while an embedded payload
+	// must be IN the assembly, which is what //go:embed promises and what survives a single-file
+	// publish. Same directory, opposite requirements, so an embedded file that is also a fixture
+	// legitimately appears as both items.
+	if targets := currentEmbedTargets(); len(targets) > 0 {
+		if err := stageEmbedPayloads(targets, filepath.Dir(projectFile)); err != nil {
+			return err
+		}
+	}
+
+	fixtureItems.WriteString(embedResourceItemLines(currentEmbedTargets()))
+
 	var referenceItems strings.Builder
 	refs := references.Keys()
 	sort.Strings(refs)
@@ -6074,6 +6103,19 @@ func testInputDigest(inputPath, outputPath string, options Options, revision str
 		inputs = append(inputs, "output:"+filepath.Base(path))
 	}
 
+	// //go:embed PAYLOADS are conversion inputs too, and not covered by the fixture walk: a
+	// payload need not live under `testdata` at all — crypto/internal/fips140test embeds
+	// `acvp_capabilities.json` from the package root, and internal/trace/traceviewer embeds
+	// `static/`. Without them, editing an embedded file would leave a prior comparison looking
+	// valid while the emission still carried yesterday's bytes. Absolute paths are folded to the
+	// same input-relative form the fixtures use, and a payload that IS a fixture dedupes with it
+	// because both spell the identical tagged path.
+	for _, payload := range embedPayloadPaths(currentEmbedTargets()) {
+		if rel, err := filepath.Rel(inputPath, payload); err == nil && !strings.HasPrefix(rel, "..") {
+			inputs = append(inputs, "source:"+filepath.ToSlash(rel))
+		}
+	}
+
 	// TEST-file companions (`*_impl_test.cs`) are conversion inputs exactly as the production
 	// `*_impl.cs` companions above are: editing one must invalidate a prior comparison.
 	testCompanions, err := filepath.Glob(filepath.Join(outputPath, "*_impl_test.cs"))
@@ -6085,6 +6127,13 @@ func testInputDigest(inputPath, outputPath string, options Options, revision str
 	}
 
 	sort.Strings(inputs)
+
+	// A file can now be reached twice — an embedded payload that also lives under `testdata` is
+	// both a fixture and a payload, and embedtest is exactly that. Hashing it twice would still be
+	// deterministic, but the digest would then depend on HOW a file was reached rather than on what
+	// it contains; dedupe so it depends only on the set.
+	inputs = slices.Compact(inputs)
+
 	for _, taggedPath := range inputs {
 		tag, rel, _ := strings.Cut(taggedPath, ":")
 		root := inputPath
