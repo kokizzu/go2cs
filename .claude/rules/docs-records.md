@@ -139,6 +139,21 @@ paths:
   JSON escaping and so is indistinguishable from a network prefix. The account-name class, the only real leak, read clean everywhere.
   The strict instrument earned its placement by refusing the very post that first quoted the three shapes literally. The red arm proving
   a tree gate covers a PENDING entry is a line appended and not committed. -->
+- **A CONVERTED GO TEST SOURCE takes `converted`, not `entry`** (`coord-identifier-census.sh converted <file>...`,
+  2026-09-22). `entry` stays the gate for messages, docs and scripts; for the TRACKED tree the gate of record is
+  repoguard's `TestNoFleetIdentifiersInTrackedFiles`, which already admits this class by file. In `converted` the
+  literal-shaped arms the definition marks `[CONVERTED-CONTEXT]` are REPORTED with their counts and cannot refuse,
+  every other arm refuses exactly as in `entry`, and a path that is not a converted test artifact under `src/core/`
+  (or a `docs/validation/current/` proof page) is refused INTO `entry` with rc 2 — the downgrade is justified by a
+  property of the INPUT, so the caller does not get to assert it. <!-- MEASURED 2026-09-22 on two lanes' H10 re-bank
+  shards: 13 refusals on one and 25 on the other, every value found verbatim in the same package's own *_test.go under the pinned
+  GOROOT (a dnsName «ipv4» in a certificate test, NIST policy-test names, a base64 position map matching the quad arm, and a
+  loopback-name-and-port literal matching host_ctx). Both lanes were running repoguard by hand and explaining the count in prose per shard — STRICT's rationale is
+  that a false refusal costs its writer one rewrite of THEIR OWN post, and that is false of a file the lane did not author, exactly as
+  it was false of the evidence record that moved the doc-constant admit into strict. The mode is STRICTER than the guard it defers to:
+  the guard skips the whole structural pass for a *_test.cs (fleetIsUpstreamFixture) and keeps its denied-token pass; this keeps every
+  structural arm but the marked two. Live reading at 9e12c3e7d: src/core/net/netip/netip_test.cs reads REFUSED(1) 195 hits under entry
+  and CLEAN under converted with `ipv4 occ=210 would-have-refused=195`. -->
 - **Re-guard a scrub commit AFTER its rebase**, so the claim holds for the exact tree pushed.
 - **To run master's guard against another branch's tree, place the guard's package at a NEW UNTRACKED path inside the
   clone** — its root resolver still finds the clone root. Never copy master's converter tree OVER the branch's: that

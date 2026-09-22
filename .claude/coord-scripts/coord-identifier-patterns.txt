@@ -48,6 +48,26 @@
 #     unclassified total is a number, never a finding.
 #   Every other arm is identical in both modes.
 #
+# CONVERTED -- THE THIRD CONSUMER MODE (2026-09-22), AND THE ONLY OTHER PLACE A MODE MOVES AN ARM.
+#   A CONVERTED GO TEST SOURCE is not a lane's prose. Its literals are Go's own test data, carried
+#   across verbatim by the converter, and a lane can no more rewrite them than it can rewrite an
+#   evidence record -- which is the argument that moved ipv4_doc into STRICT, applied to the other
+#   half of the same class. MEASURED the day this was added, on two lanes' H10 re-bank shards: 13
+#   refusals on one and 25 on the other, and every value was found verbatim in the same package's own
+#   *_test.go under the pinned GOROOT (a dnsName «ipv4» in crypto/x509, NIST policy-test names, a
+#   base64 position map matching the quad arm, and a loopback-name-and-port literal matching host_ctx).
+#   In that mode, over files the consumer has FIRST ESTABLISHED are such a source, the arms marked
+#   [CONVERTED-CONTEXT] in their NOTE are read as `context`: reported with their count, never
+#   refusing. NOTHING ELSE MOVES -- the profile, home, share and run-time token arms refuse exactly as
+#   in entry, because a real identifier BAKED INTO AN EMISSION is the one thing of this class that
+#   reaches a converted file, and it is why the Go guard keeps its denied-token pass running over the
+#   very fixtures whose structural pass it skips (fleetIsUpstreamFixture).
+#   THE GATE OF RECORD for the tracked tree is still that Go guard. This mode is the PRE-POST reading
+#   for a converted source, and it is STRICTER than the guard by construction: the guard skips the
+#   whole structural pass for a *_test.cs, and this mode keeps every structural arm but the marked
+#   two. A unc_ hit in a converted source is therefore either the escape the unc_escape admit already
+#   recognises IN BOTH MODES, or it refuses and is read against the guard.
+#
 # CASE: every ERE here is written in LOWER CASE and is matched against a lower-cased copy of the
 # input, so every arm is case-insensitive by construction. Spans are taken from the ORIGINAL text.
 # (Lower-casing both sides, rather than passing a case-insensitivity flag, also sidesteps the GNU
@@ -97,7 +117,7 @@ unc_slash	(^|[[:space:]"'`(\[=,])//[a-z][a-z0-9._-]+/[a-z0-9._$-]+	refuse	NO GO-
 # WHAT IT MISSES, STATED: a real «host» written as bare prose, with no assignment context, no path
 # around it, and a name neither the hash list nor this box can supply. Nothing here closes that, and
 # a consumer must not claim it does.
-host_ctx	(host|hostname|computername)[[:space:]]*[=:][a-z0-9][a-z0-9._-]*	refuse	NO GO-GUARD COUNTERPART. Admit set: nickname_fleet, on the value, and a nickname-PREFIXED value is admitted too. NOTE THE TWO NARROWINGS, BOTH MEASURED on docs/phase4/MAILBOX.md and not guessed. (1) NO WHITESPACE after the separator: the draft arm allowed it and read 25 hits over 61k lines, and all nineteen distinct firings were an ORDINARY PROSE COLON -- "the host: a ...", "server = the ..." -- nine of them with a value of one to three characters. A guard whose steady state is dozens of false positives is a guard nobody leaves switched on. What survives is the ASSIGNMENT shape a pasted env dump or config line actually has. (2) `machine` and `server` DROPPED from the keyword list: `machine` fired on nothing at all and every one of `server`'s eight firings was prose. STATED RESIDUAL of narrowing (1): a spaced YAML-style `hostname: box` is no longer covered, and is covered only by the run-time literal arms and by the hashed rows.
+host_ctx	(host|hostname|computername)[[:space:]]*[=:][a-z0-9][a-z0-9._-]*	refuse	[CONVERTED-CONTEXT] NO GO-GUARD COUNTERPART. Admit set: nickname_fleet, on the value, and a nickname-PREFIXED value is admitted too. NOTE THE TWO NARROWINGS, BOTH MEASURED on docs/phase4/MAILBOX.md and not guessed. (1) NO WHITESPACE after the separator: the draft arm allowed it and read 25 hits over 61k lines, and all nineteen distinct firings were an ORDINARY PROSE COLON -- "the host: a ...", "server = the ..." -- nine of them with a value of one to three characters. A guard whose steady state is dozens of false positives is a guard nobody leaves switched on. What survives is the ASSIGNMENT shape a pasted env dump or config line actually has. (2) `machine` and `server` DROPPED from the keyword list: `machine` fired on nothing at all and every one of `server`'s eight firings was prose. STATED RESIDUAL of narrowing (1): a spaced YAML-style `hostname: box` is no longer covered, and is covered only by the run-time literal arms and by the hashed rows.
 # ------------------------------------------------------------------------------------------------
 # IPv4 (class 4) -- CONTEXT DECIDES, RANGE NEVER DOES, AND ONLY IN DELTA MODE
 # This fleet lives on ONE private LAN, so a 10/8 or 192.168/16 quad is EXACTLY the identifier the
@@ -138,7 +158,7 @@ host_ctx	(host|hostname|computername)[[:space:]]*[=:][a-z0-9][a-z0-9._-]*	refuse
 # RULE 5 IS THE ONE STRICT MODE DOES NOT BACKSTOP, because rule 5 runs in strict mode too: a real
 # address spelled in exactly that shape clears both gates. That residual is taken knowingly, it is
 # bounded to the one shape, and it is the whole of what this widening costs.
-ipv4	(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}	refuse	NO GO-GUARD COUNTERPART. The candidate matcher: a dotted quad, octets 0-255. In STRICT mode the only exclusion is rule 5, the release_literal admit; in DELTA mode rules 1-5 decide, and anything they leave is a hit.
+ipv4	(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}	refuse	[CONVERTED-CONTEXT] NO GO-GUARD COUNTERPART. The candidate matcher: a dotted quad, octets 0-255. In STRICT mode the only exclusion is rule 5, the release_literal admit; in DELTA mode rules 1-5 decide, and anything they leave is a hit. In CONVERTED mode the arm still runs and still counts, and its surviving occurrences are REPORTED rather than refused: a quad in a converted Go test source is Go's own test data, and the 24 of one lane's 25 measured refusals that were this arm were every one of them found verbatim in the package's own *_test.go.
 ipv4_arm_re	(^|[^0-9.a-z_])[a-z_]*=?(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])([^0-9.]|$)	context	C2's arm, carried verbatim so the fleet has ONE copy of it and no tool re-derives it. Reported for comparison, and NOT the candidate matcher -- see change (i) above. RESPELLED 2026-09-15 22:15 for mawk 1.3.4 (C1 4aa7745fa): the interval-repeated group before the trailing alternation is expanded into three explicit octet groups and 1[0-9]{2} into 1[0-9][0-9]; semantics identical to the C2 arm as posted.
 ipv4_prefix_ex	^([^0-9a-z_]?([v][0-9]|version=[0-9])|-[0-9])	context	[CONSULTED-ONLY] C2's exemption, carried verbatim. CONSULTED by ipv4 as rule 1, IN DELTA MODE ONLY, read against the reconstructed prefix-plus-quad.
 ipv4_doc	(127\.0\.0\.1|0\.0\.0\.0|255\.255\.255\.255)	context	[CONSULTED-ONLY] CONSULTED by ipv4 as rule 3, IN BOTH MODES since 2026-09-20 (COORD fc4edcd8c) -- it is a SHAPE admit read anchored whole on the quad's own characters, so it cannot be arranged by the sentence a lane writes, which is rule 5's own test for what STRICT may admit; an evidence record is not the lane's prose and cannot be rewritten to satisfy a context rule. Loopback, unspecified, broadcast: documentation constants by declaration, not addresses. In STRICT mode they are hits like any other quad. Reported so a zero is still looking.
