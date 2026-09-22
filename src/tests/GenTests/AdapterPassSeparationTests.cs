@@ -102,14 +102,26 @@ public class AdapterPassSeparationTests
     // records in one group over the name `SHA3жHash`.
     //
     // The PRODUCTION record carries the facet exactly as the recompile seed stamps it; the test-half
-    // record does not. `{0}` is the facet text, so every arm below is the same fixture with one axis
-    // moved and nothing else.
-    private const string SeparationSourceFormat =
+    // record does not. The two placeholders are the facet text, so every arm below is the same
+    // fixture with one axis moved and nothing else.
+    //
+    // ⚠ SUBSTITUTED BY Replace, NEVER BY string.Format, and the distinction cost three arms. This is
+    // C# SOURCE: it is full of braces, and string.Format reads every one of them as a format
+    // specifier. Three of the four arms threw FormatException at offset 286 — the `{` opening
+    // `partial class sha3_package` — before asserting anything at all, so they reported nothing
+    // while looking like tests (the fourth, AnUnfacetedRecordIsUnmovedByTheFacetRule, uses
+    // NoCollisionSource and needs no substitution, which is why one arm passed and hid it).
+    // Escaping every brace as {{ }} would work and would also make the fixture unreadable as the C#
+    // it is; a placeholder no C# token can contain cannot have the problem at all.
+    private const string ProductionFacetPlaceholder = "«PRODUCTION-FACET»";
+    private const string TestFacetPlaceholder = "«TEST-FACET»";
+
+    private const string SeparationSourceTemplate =
         """
         using go;
 
-        [assembly: GoImplement<global::go.sha3_package.SHA3, global::go.hash_package.Hash>(Pointer = true{0})]
-        [assembly: GoImplement<global::go.sha3_package.SHA3, global::go.fips140_package.Hash>(Pointer = true{1})]
+        [assembly: GoImplement<global::go.sha3_package.SHA3, global::go.hash_package.Hash>(Pointer = true«PRODUCTION-FACET»)]
+        [assembly: GoImplement<global::go.sha3_package.SHA3, global::go.fips140_package.Hash>(Pointer = true«TEST-FACET»)]
 
         namespace go;
 
@@ -224,8 +236,11 @@ public class AdapterPassSeparationTests
 
     private static (string Production, string Test) SeparatedNames(string productionFacet, string testFacet, out Compilation updated)
     {
-        (Dictionary<string, string> adapters, Compilation compilation) =
-            RunImplementGenerator(string.Format(SeparationSourceFormat, productionFacet, testFacet));
+        string source = SeparationSourceTemplate
+            .Replace(ProductionFacetPlaceholder, productionFacet)
+            .Replace(TestFacetPlaceholder, testFacet);
+
+        (Dictionary<string, string> adapters, Compilation compilation) = RunImplementGenerator(source);
 
         updated = compilation;
 
