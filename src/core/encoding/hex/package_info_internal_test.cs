@@ -12,6 +12,7 @@ using static go.encoding.hex_package;
 using static go.encoding.hex_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e673b20657272206572726f727d", "errTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -32,7 +33,7 @@ using static go.encoding.hex_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/hex/hex_test.go", "hex_test.cs", "AB08goKCgoKUgpSCgoLKpoKCgoKCpJSCgoKkyoKCgoLKgoKCgoKUggAXKoKCgoKCyoKCgoIADAqCgoKChIKCgoCCgqaAgoKmgoKCgIKmgoLcgoKCgpSClILKgoKCloKCgoKCgoKUgpaCgvqCgoSCgoKChIKCuIKChIKEgoK4goKCloKCAAkWgoKChJKCgtyigoKEkoKC3IKCgoKCgtyCgoSSgoI=")]
+[assembly: go.GoPositionMap("encoding/hex/hex_test.go", "hex_test.cs", "AB08goKCgoKUgpSCgoLKpoKCgoKCpJSCgoKkyoKCgoLKgoKCgoKUggAXKoKCgoKCyoKCgoIADAqCgoKChIKCgoCCgqaAgoKmgoKCgIKmgoLcgoKCgpSClILKgoKCloKCgoKCgoKUgpaCgvqCgoSCgoKChIKCuIKChIKEgoK4goKCloKCAAwWgoKChJKCgtyigoKEkoKC3IKCgoKCgtyCgoSSgoI=", "255-260:1;269-274:1;281-286:1;294-299:1")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -48,4 +49,18 @@ public static partial class hex_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

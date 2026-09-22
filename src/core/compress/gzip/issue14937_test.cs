@@ -21,7 +21,6 @@ partial class gzip_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object skippingTestOnNonBuilderˢ = (@string)"skipping test on non-builder"u8;
-internal static readonly object skippingNoGorootˢ = (@string)"skipping; no GOROOT available"u8;
 internal static readonly object errorEvaluatingGorootˢ = (@string)"error evaluating GOROOT: "u8;
 internal static readonly object errorCollectingListOfGzˢ = (@string)"error collecting list of .gz files in GOROOT: "u8;
 internal static readonly object expectedToFindSomeGzˢ = (@string)"expected to find some .gz files under GOROOT"u8;
@@ -42,9 +41,7 @@ public static void TestGZIPFilesHaveZeroMTimes(ж<testing.T> Ꮡt) {
     if (testenv.Builder() == ""u8) {
         Ꮡt.Skip(skippingTestOnNonBuilderˢ);
     }
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(skippingNoGorootˢ);
-    }
+    testenv.MustHaveSource(new gzip_test_package.testing_TжTB(Ꮡt));
     var (goroot, err) = filepath.EvalSymlinks(runtime.GOROOT());
     if (err != default!) {
         Ꮡt.Fatal(errorEvaluatingGorootˢ, err);

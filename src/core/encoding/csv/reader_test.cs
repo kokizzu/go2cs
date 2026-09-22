@@ -7,6 +7,7 @@ using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
@@ -485,7 +486,7 @@ public static void TestRead(ж<testing.T> Ꮡt) {
                     break;
                 }
                 {
-                    var (got, want) = (rec, ttʗ1.Output[recNum]); if (!reflect.DeepEqual(got, want)) {
+                    var (got, want) = (rec, ttʗ1.Output[recNum]); if (!slices.Equal<slice<@string>, @string>(got, want)) {
                         tΔ1.Errorf("Read vs ReadAll mismatch;\ngot %q\nwant %q"u8, got, want);
                     }
                 }
@@ -526,7 +527,7 @@ internal static error errorWithPosition(error err, nint recNum, slice<slice<arra
     if (recNum >= len(positions)) {
         throw panic(fmt.Errorf("no positions found for error at record %d"u8, recNum));
     }
-    (var errPos, ok) = errPositions[recNum, ꟷ];
+    (var errPos, ok) = errPositions[recNum, () => new array<nint>(2), ꟷ];
     if (!ok) {
         throw panic(fmt.Errorf("no error position found for error at record %d"u8, recNum));
     }
@@ -563,13 +564,13 @@ internal static (slice<slice<array<nint>>>, map<nint, array<nint>>, @string) mak
         }
         case (rune)'§': {
             if (len(positions) == 0) {
-                positions = append(positions, new array<nint>[]{}.slice());
+                positions = append(positions, GoReflect.WithElemDims(new array<nint>[]{}.slice(), 2));
             }
             positions[len(positions) - 1] = append(positions[len(positions) - 1], new nint[]{line, col}.array());
             break;
         }
         case (rune)'¶': {
-            positions = append(positions, new array<nint>[]{}.slice());
+            positions = append(positions, GoReflect.WithElemDims(new array<nint>[]{}.slice(), 2));
             recNum++;
             break;
         }

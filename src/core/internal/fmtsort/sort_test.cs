@@ -20,54 +20,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class fmtsort_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸfmtsort() {
-    builtin.initPackage(typeof(go.@internal.fmtsort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 internal static slice<slice<reflectꓸValue>> compareTests;
 internal static void initᴛcompareTests() { compareTests = new slice<reflectꓸValue>[]{
     ct(reflect.TypeOf((nint)0), (nint)(-1), (nint)(0), (nint)(1)),
@@ -88,7 +40,7 @@ internal static void initᴛcompareTests() { compareTests = new slice<reflectꓸ
     ct(reflect.TypeOf((complex128)(1D.i())), -1D + -1D.i(), -1D + 0D.i(), -1D + 1D.i(), -1D.i(), 0D.i(), 1D.i(), 1D + -1D.i(), 1D + 0D.i(), 1D + 1D.i()),
     ct(reflect.TypeOf(false), false, true),
     ct(reflect.TypeOf(Ꮡints.at<nint>(0)), Ꮡints.at<nint>(0), Ꮡints.at<nint>(1), Ꮡints.at<nint>(2)),
-    ct(reflect.TypeOf(new @unsafe.Pointer(Ꮡints.at<nint>(0))), new @unsafe.Pointer(Ꮡints.at<nint>(0)), new @unsafe.Pointer(Ꮡints.at<nint>(1)), new @unsafe.Pointer(Ꮡints.at<nint>(2))),
+    ct(reflect.TypeOf(@unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(0))), @unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(0)), @unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(1)), @unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(2))),
     ct(reflect.TypeOf(chans[0]), chans[0], chans[1], chans[2]),
     ct(reflect.TypeOf(new toy(nil)), new toy(0, 1), new toy(0, 2), new toy(1, -1), new toy(1, 1)),
     ct(reflect.TypeOf(new nint[]{}.array(2)), new nint[]{1, 1}.array(), new nint[]{1, 2}.array(), new nint[]{2, 0}.array()),
@@ -240,7 +192,7 @@ internal static @string sprintKey(reflectꓸValue key) {
         if (exprᴛ1 == "unsafe.Pointer"u8) {
             @unsafe.Pointer ptr = key.Interface()._<@unsafe.Pointer>();
             foreach (var (i, _) in ints) {
-                if (ptr == new @unsafe.Pointer(Ꮡints.at<nint>(i))) {
+                if (ptr == @unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(i))) {
                     return fmt.Sprintf("UNSAFEPTR%d"u8, i);
                 }
             }
@@ -290,7 +242,7 @@ internal static map<ж<nint>, @string> pointerMap() {
 internal static map<@unsafe.Pointer, @string> unsafePointerMap() {
     var m = new map<@unsafe.Pointer, @string>();
     for (nint i = 2; i >= 0; i--) {
-        m[new @unsafe.Pointer(Ꮡints.at<nint>(i))] = fmt.Sprint(i);
+        m[@unsafe.Pointer.FromPinnedBox(Ꮡints.at<nint>(i))] = fmt.Sprint(i);
     }
     return m;
 }
@@ -317,7 +269,7 @@ public static void TestOrder(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestInterface_type {
+[GoType("dyn")] internal partial struct TestInterface_type {
     internal nint x, y;
 }
 

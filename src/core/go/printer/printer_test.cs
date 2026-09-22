@@ -10,14 +10,14 @@ using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
-using diff = global::go.@internal.diff_package;
+using diff = @internal.diff_package;
 using io = io_package;
 using os = os_package;
 using filepath = path.filepath_package;
 using testing = testing_package;
 using time = time_package;
+using @internal;
 using fs = global::go.io.fs_package;
-using global::go.@internal;
 using global::go.go;
 using path;
 using static global::go.go.printer_package;
@@ -124,7 +124,7 @@ internal static void runcheck(ж<testing.T> Ꮡt, @string source, @string golden
     }
     // formatted source and golden must be the same
     {
-        var errΔ2 = checkEqual(source, golden, res, gld); if (errΔ2 != default!) {
+        var errΔ2 = checkEqual(fmt.Sprintf("format(%v)"u8, source), golden, res, gld); if (errΔ2 != default!) {
             Ꮡt.Error(errΔ2);
             return;
         }

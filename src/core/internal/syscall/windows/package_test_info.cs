@@ -38,7 +38,8 @@ using static global::go.@internal.syscall.windows_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/windows/version_windows_test.go", "version_windows_test.cs", "ACUcooKAgqSWgoKClIKC")]
+[assembly: go.GoPositionMap("internal/syscall/windows/at_windows_test.go", "at_windows_test.cs", "ABUegoSCgoKClIQACx6CgoKCgpSCgoKClII=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/version_windows_test.go", "version_windows_test.cs", "AA0cooKAgqSWgoKClIKC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;
@@ -53,7 +54,25 @@ public static partial class windows_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestOpen_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
     // Go runs every `init` in the package under test - the production files' included -
     // before the first test. The production package is a REFERENCED assembly here, whose
     // module constructor .NET would not run until something in it is touched, so that

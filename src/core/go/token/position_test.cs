@@ -5,7 +5,7 @@ namespace go.go;
 
 using fmt = fmt_package;
 using rand = math.rand_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using sync = sync_package;
 using testing = testing_package;
 using math;
@@ -138,7 +138,7 @@ public static void TestPositions(ж<testing.T> Ꮡt) {
         if (f.LineCount() != len(test.lines)) {
             Ꮡt.Errorf("%s, SetLines: got line count %d; want %d"u8, f.Name(), f.LineCount(), len(test.lines));
         }
-        if (!reflect.DeepEqual(f.Lines(), test.lines)) {
+        if (!slices.Equal<slice<nint>, nint>(f.Lines(), test.lines)) {
             Ꮡt.Errorf("%s, Lines after SetLines(v): got %v; want %v"u8, f.Name(), f.Lines(), test.lines);
         }
         verifyPositions(Ꮡt, fset, f, test.lines);
@@ -506,7 +506,7 @@ public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
             foreach (var (_, info) in testʗ1.infos) {
                 f.AddLineColumnInfo(info.Offset, info.Filename, info.Line, info.Column);
             }
-            if (!reflect.DeepEqual((~f).infos, testʗ1.want)) {
+            if (!slices.Equal<slice<global::go.go.token_package.lineInfo>, global::go.go.token_package.lineInfo>((~f).infos, testʗ1.want)) {
                 tΔ1.Errorf("\ngot %+v, \nwant %+v"u8, (~f).infos, testʗ1.want);
             }
         });

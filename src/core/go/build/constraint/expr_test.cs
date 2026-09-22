@@ -4,7 +4,9 @@
 namespace go.go.build;
 
 using fmt = fmt_package;
+using maps = maps_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using static global::go.go.build.constraint_package;
@@ -238,7 +240,7 @@ public static void TestExprEval(ж<testing.T> Ꮡt) {
                 return tag == "yes"u8;
             };
             var ok = x.Eval(hasTag);
-            if (ok != ttʗ1.ok || !reflect.DeepEqual(tags, wantTags)) {
+            if (ok != ttʗ1.ok || !maps.Equal<map<@string, bool>, map<@string, bool>, @string, bool>(tags, wantTags)) {
                 tΔ1.Errorf("Eval(%#q):\nhave ok=%v, tags=%v\nwant ok=%v, tags=%v"u8,
                     ttʗ1.@in, ok, tags, ttʗ1.ok, wantTags);
             }
@@ -372,7 +374,7 @@ public static void TestPlusBuildLines(ж<testing.T> Ꮡt) {
             foreach (var (_, line) in ttʗ1.@out) {
                 want = append(want, "// +build "u8 + line);
             }
-            if (!reflect.DeepEqual(lines, want)) {
+            if (!slices.Equal<slice<@string>, @string>(lines, want)) {
                 tΔ1.Errorf("PlusBuildLines(%q):\nhave %q\nwant %q"u8, ttʗ1.@in, lines, want);
             }
         });

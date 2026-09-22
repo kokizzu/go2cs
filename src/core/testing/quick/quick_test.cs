@@ -373,7 +373,7 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     var f = (nint x) => false;
-    var err = Check(f, nil);
+    var err = Check((f).OrTypedNilFunc(), nil);
     if (err == default!) {
         Ꮡt.Errorf("Check didn't return an error"u8);
     }
@@ -427,12 +427,12 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
 // Issues 8818 and 11148.
 public static void TestRecursive(ж<testing.T> Ꮡt) {
     var f = (TestRecursive_R r) => true;
-    Check(f, nil);
+    Check((f).OrTypedNilFunc(), nil);
 }
 
 public static void TestEmptyStruct(ж<testing.T> Ꮡt) {
     var f = (EmptyStruct _) => true;
-    Check(f, nil);
+    Check((f).OrTypedNilFunc(), nil);
 }
 
 [GoType] public partial struct A {
@@ -445,7 +445,7 @@ public static void TestEmptyStruct(ж<testing.T> Ꮡt) {
 
 public static void TestMutuallyRecursive(ж<testing.T> Ꮡt) {
     var f = (A a) => true;
-    Check(f, nil);
+    Check((f).OrTypedNilFunc(), nil);
 }
 
 [GoType("dyn")] [GoLocalName("Q")] internal partial struct TestNonZeroSliceAndMap_Q {
@@ -458,7 +458,7 @@ public static void TestMutuallyRecursive(ж<testing.T> Ꮡt) {
 // zero value for these.
 public static void TestNonZeroSliceAndMap(ж<testing.T> Ꮡt) {
     var f = (TestNonZeroSliceAndMap_Q q) => q.M != default! && q.S != default!;
-    var err = Check(f, nil);
+    var err = Check((f).OrTypedNilFunc(), nil);
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
@@ -477,7 +477,7 @@ public static void TestInt64(ж<testing.T> Ꮡt) {
         return true;
     };
     var cfg = Ꮡ(new Config(MaxCount: 10000));
-    Check(f, cfg);
+    Check((f).OrTypedNilFunc(), cfg);
     if (((uint64)lo >> (int)(62)) == 0 || ((uint64)hi >> (int)(62)) == 0) {
         Ꮡt.Errorf("int64 returned range %#016x,%#016x; does not look like full range"u8, lo, hi);
     }

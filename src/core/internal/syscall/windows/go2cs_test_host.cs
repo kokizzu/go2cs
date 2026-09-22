@@ -9,6 +9,8 @@ internal static class Go2CsTestHost
     {
         TestRegistry registry = new("internal/syscall/windows", new string[]
         {
+            "at_windows.go",
+            "at_windows_test.go",
             "exec_windows_test.go",
             "memory_windows.go",
             "mksyscall.go",
@@ -16,6 +18,7 @@ internal static class Go2CsTestHost
             "psapi_windows.go",
             "reparse_windows.go",
             "security_windows.go",
+            "string_windows.go",
             "symlink_windows.go",
             "syscall_windows.go",
             "types_windows.go",
@@ -27,6 +30,7 @@ internal static class Go2CsTestHost
             "registry",
             "sysdll",
         });
+        registry.Add("TestOpen", windows_test_package.TestOpen, "at_windows_test.go", 15);
         registry.Add("TestRunAtLowIntegrity", windows_test_package.TestRunAtLowIntegrity, "exec_windows_test.go", 19);
         registry.Add("TestSupportUnixSocket", windows_test_package.TestSupportUnixSocket, "version_windows_test.go", 14);
         return TestHost.Run(registry, args);
