@@ -1078,13 +1078,23 @@ Assert-Equal 'test-project identity: every tracked tests.csproj is accounted for
 Assert-Equal 'test-project identity: the named sides add up' $testProjects.Count `
     ($rosterPackages.Count + $excludedWithArtifacts.Count + $candidatesWithArtifacts.Count)
 
-# ---- 2b3. an EXCLUDED package never advertises a validated Tests badge (ruled 2026-09-22) ---------
-# An exclusion row says the package's suite is NOT validated, for a bar-class reason. Its converted
-# README is the page a reader lands on, and a green "Tests N/N validated" there says the opposite
-# (crypto/internal/fips140deps carried exactly that, linking a 1.23.12.3 snapshot, at the batch-7
-# stamp). The badge vocabulary measured over every README that day: `N/N_validated` (brightgreen),
-# `not_yet_validated` (orange), `none_to_validate` (lightgrey) -- only the first is a claim of
-# validation, so only the first is refused here.
+# ---- 2b3. a validated Tests badge sits on EXACTLY the roster rows that have a README (ruled 2026-09-22)
+# A package's converted README is the page a reader lands on, so its Tests badge is a claim about the
+# roster, and it must agree with the roster in BOTH directions:
+#   - a banked row whose README carries no validated badge understates a validation (at the batch-7
+#     stamp crypto/internal/fips140/aes, /ecdsa and /nistec were banked and still showed orange
+#     not_yet_validated -- a badge that did not regenerate with its row);
+#   - a validated badge on a package that is NOT a roster row claims a validation the roster does not
+#     hold (crypto/internal/fips140deps, an EXCLUSION row, showed a green 1/1 linking a 1.23.12.3
+#     snapshot that same day).
+# The badge vocabulary measured over every README that day: `N/N_validated` (brightgreen),
+# `not_yet_validated` (orange), `none_to_validate` (lightgrey) -- only the first claims validation.
+#
+# OUTSIDE THE CHECK BY CONSTRUCTION, named rather than failed: a banked row with no README at all has
+# no badge to disagree with. At the stamp those were four test-only packages:
+# crypto/internal/fips140test, embed/internal/embedtest, go/ast/internal/tests,
+# internal/coverage/test. The README set is the TRACKED one (from git, like 2b2), so a lane's
+# untracked scratch README cannot red it.
 function Test-ReadmeAdvertisesValidated {
     param([string] $Text)
     return [regex]::IsMatch($Text, 'img\.shields\.io/badge/Tests-\d+%2F\d+_validated-')
@@ -1097,15 +1107,59 @@ Assert-Equal 'badge: not_yet_validated is not a validation claim' $false `
 Assert-Equal 'badge: none_to_validate is not a validation claim' $false `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](x)')
 
-$excludedReadmesRead = 0
-foreach ($pkg in @($ledgerPackages | Sort-Object)) {
-    $readme = Join-Path (Join-Path $PSScriptRoot 'core') ($pkg + '/README.md')
-    if (-not (Test-Path -LiteralPath $readme)) { continue }
-    $excludedReadmesRead++
-    Assert-Equal "an excluded package does not advertise a validated Tests badge: $pkg" $false `
-        (Test-ReadmeAdvertisesValidated ([System.IO.File]::ReadAllText($readme)))
+function Get-BadgeRosterViolations {
+    param([string[]] $WithReadme, [string[]] $Validated, [string[]] $Banked, [string[]] $Excluded)
+
+    $violations = New-Object System.Collections.Generic.List[string]
+    $validatedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Validated)) { [void]$validatedSet.Add($p) }
+    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
+    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
+
+    foreach ($p in @($WithReadme | Sort-Object)) {
+        if ($bankedSet.Contains($p) -and -not $validatedSet.Contains($p)) {
+            [void]$violations.Add("banked row's README carries no validated Tests badge: $p")
+        }
+    }
+    foreach ($p in @($Validated | Sort-Object)) {
+        if (-not $bankedSet.Contains($p)) {
+            $what = if ($excludedSet.Contains($p)) { 'an EXCLUSION row' } else { 'a non-row' }
+            [void]$violations.Add("validated Tests badge on $($what): $p")
+        }
+    }
+    return $violations.ToArray()
 }
-Write-Host ('  excluded packages with a README checked for a validated badge: {0} of {1}' -f $excludedReadmesRead, $ledgerPackages.Count)
+
+# The set rule's contract, both directions, against fixtures.
+Assert-Equal 'badge vs roster: agreement reports nothing' 0 `
+    @(Get-BadgeRosterViolations -WithReadme @('ex/row', 'ex/cand') -Validated @('ex/row') -Banked @('ex/row', 'ex/noreadme') -Excluded @()).Count
+Assert-Equal 'badge vs roster: a banked row without the badge is named' "banked row's README carries no validated Tests badge: ex/row" `
+    (@(Get-BadgeRosterViolations -WithReadme @('ex/row') -Validated @() -Banked @('ex/row') -Excluded @()) -join '; ')
+Assert-Equal 'badge vs roster: an exclusion row with the badge is named as one' 'validated Tests badge on an EXCLUSION row: ex/gone' `
+    (@(Get-BadgeRosterViolations -WithReadme @('ex/gone') -Validated @('ex/gone') -Banked @() -Excluded @('ex/gone')) -join '; ')
+Assert-Equal 'badge vs roster: a non-row with the badge is named' 'validated Tests badge on a non-row: ex/cand' `
+    (@(Get-BadgeRosterViolations -WithReadme @('ex/cand') -Validated @('ex/cand') -Banked @() -Excluded @()) -join '; ')
+
+$readmePackages = @($trackedCore |
+    Where-Object { $_ -like 'src/core/*/README.md' } |
+    ForEach-Object { $_.Substring('src/core/'.Length, $_.LastIndexOf('/') - 'src/core/'.Length) } |
+    Sort-Object -Unique)
+$validatedPackages = @($readmePackages | Where-Object {
+        Test-ReadmeAdvertisesValidated ([System.IO.File]::ReadAllText((Join-Path (Join-Path $PSScriptRoot 'core') ($_ + '/README.md')))) })
+$badgeViolations = @(Get-BadgeRosterViolations -WithReadme $readmePackages -Validated $validatedPackages `
+    -Banked $rosterPackages -Excluded $ledgerPackages)
+$rowsWithoutReadme = @($rosterPackages | Where-Object { $readmePackages -notcontains $_ } | Sort-Object)
+
+Write-Host ''
+Write-Host 'README Tests badges vs the roster:' -ForegroundColor Cyan
+Write-Host ('  {0} tracked READMEs, {1} validated badges, {2} banked rows with a README' -f `
+    $readmePackages.Count, $validatedPackages.Count, ($rosterPackages.Count - $rowsWithoutReadme.Count))
+Write-Host ('  banked rows with NO README (outside the check): {0}' -f ($rowsWithoutReadme -join ', '))
+
+Assert-Equal 'badge vs roster: the vacuity guard (a zero means the README walk read nothing)' $true ($readmePackages.Count -gt 0)
+Assert-Equal 'badge vs roster: every README Tests badge agrees with the roster' '' ($badgeViolations -join '; ')
 
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
