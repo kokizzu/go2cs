@@ -56,7 +56,7 @@ func TestTransitivelyReachedCollidingNameIsRenamed(t *testing.T) {
 	const packageNS = RootNamespace + ".crypto.@internal"
 
 	setShadowState(t, packageNS, nil)
-	computeImportAliasRenames(nil, hpke, packageNS, "", "")
+	computeImportAliasRenames(nil, hpke, packageNS, "", "", false)
 
 	if got, ok := packageImportAliasRenames["fips140"]; !ok || got != ShadowVarMarker+"fips140" {
 		t.Fatalf("fips140 is reached only through hkdf and collides with go.crypto.@internal.fips140: want %q, got %q (renamed=%v)",
@@ -93,7 +93,7 @@ func TestTransitivelyReachedNonCollidingNameStaysBare(t *testing.T) {
 	const packageNS = RootNamespace + ".crypto.@internal"
 
 	setShadowState(t, packageNS, nil)
-	computeImportAliasRenames(nil, hpke, packageNS, "", "")
+	computeImportAliasRenames(nil, hpke, packageNS, "", "", false)
 
 	if got, ok := packageImportAliasRenames["errors"]; ok {
 		t.Fatalf("errors has no go.crypto.@internal.errors child: want no rename, got %q", got)
@@ -157,7 +157,7 @@ func TestTypeReachedCollidingPackageRendersRenamedQualifier(t *testing.T) {
 	const packageNS = RootNamespace + ".example.red9"
 
 	setShadowState(t, packageNS, nil)
-	computeImportAliasRenames(nil, production.Types, packageNS, "", "")
+	computeImportAliasRenames(nil, production.Types, packageNS, "", "", false)
 
 	visitor := &Visitor{info: production.TypesInfo, pkg: production.Types, newline: "\n", referencedForeignPackages: HashSet[string]{}, importQueue: HashSet[string]{}}
 	scope := production.Types.Scope()

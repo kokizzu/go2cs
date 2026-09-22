@@ -198,6 +198,7 @@
     <None Include="$(MSBuildThisFileDirectory)packageInfoWriter.go" />
     <None Include="$(MSBuildThisFileDirectory)packageInitFacts.go" />
     <None Include="$(MSBuildThisFileDirectory)packageStateOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)perUnitAliasRenames_test.go" />
     <None Include="$(MSBuildThisFileDirectory)platformEmit.go" />
     <None Include="$(MSBuildThisFileDirectory)platformHandOwn.go" />
     <None Include="$(MSBuildThisFileDirectory)platformHandOwn_test.go" />

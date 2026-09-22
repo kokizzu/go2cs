@@ -152,7 +152,7 @@ func TestImportAliasRenameReadsBothClosures(t *testing.T) {
 
 		setShadowState(t, RootNamespace, nil)
 
-		computeImportAliasRenames(nil, pkg, RootNamespace, corpusRoot, goos)
+		computeImportAliasRenames(nil, pkg, RootNamespace, corpusRoot, goos, false)
 
 		alias, renamed := packageImportAliasRenames[qualifier]
 
@@ -304,7 +304,7 @@ func TestImportAliasRenameIsTwoSided(t *testing.T) {
 	pkg.SetImports([]*types.Package{encoding, runtime})
 
 	setShadowState(t, RootNamespace, nil)
-	computeImportAliasRenames(nil, pkg, RootNamespace, "", "")
+	computeImportAliasRenames(nil, pkg, RootNamespace, "", "", false)
 
 	if got, ok := packageImportAliasRenames["encoding"]; !ok || got != ShadowVarMarker+"encoding" {
 		t.Fatalf("encoding/json contributes go.encoding: want %q, got %q (renamed=%v)",
