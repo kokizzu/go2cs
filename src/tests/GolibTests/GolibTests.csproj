@@ -95,6 +95,10 @@
          ordinary run and a filtered `dotnet test` answers "No test matches" with EXIT 0. -->
     <Compile Remove="WindowsLocalGroupDecisionTests.cs" />
 
+    <!-- The CPU-profiler setters it guards are hand-owned in runtime's windows/ folder alone
+         (cpuprof_windows_impl.cs); the linux and darwin setters stay converted and signal-based. -->
+    <Compile Remove="RuntimeCPUProfilerWindowsTests.cs" />
+
     <!-- The net-database transcription guard drives the converted syscall package's netdb seams
          (transcribeHostent / Protoent / Servent and the two copy cores), which its L3 windows/
          folder declares. Same reason and same form as the three above; the syscall reference this
@@ -190,6 +194,12 @@
          claim is that runtime.ReadMemStats and runtime/debug.ReadGCStats read ONE snapshot, so the
          guard has to hold BOTH of them against each other — which needs both packages bound. -->
     <ProjectReference Include="..\..\core\runtime\debug\runtime.debug.csproj" />
+
+    <!-- RuntimeCPUProfilerWindowsTests: StartCPUProfile / StopCPUProfile are the observable the Windows
+         CPU-profiler hand-own exists for (the "cpu profiling already in use" leak), so the guard binds
+         runtime/pprof itself rather than a model of it. -->
+    <ProjectReference Include="..\..\core\runtime\pprof\runtime.pprof.csproj" />
+    <ProjectReference Include="..\..\core\internal\profile\internal.profile.csproj" />
 
     <!-- MulUnbalancedDiscriminatorTests: the §5.4 discriminator drives math/big's nat.mul through
          Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
