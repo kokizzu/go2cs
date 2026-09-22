@@ -95,10 +95,15 @@ func TestGlobalQualifyRootedForcesGlobalUnderRootShadow(t *testing.T) {
 }
 
 // Blocker A(a): the shadow gate is computed from the import closure of the package being
-// converted. Under -tests the PRODUCTION sources are recompiled into the test assembly, so the
-// gate has to see the union of the production and _test.go closures — computeImportAliasRenames
-// folds siblingClosureImportPaths in for exactly that reason. Without the union the production
-// half emitted bare `go.` prefixes into an assembly that does contain `go.go`.
+// converted. Where the PRODUCTION sources are recompiled into the test assembly
+// (testProjectRecompile), the gate has to see the union of the production and _test.go closures —
+// computeImportAliasRenames folds siblingClosureImportPaths in for exactly that reason. Without the
+// union the production half emitted bare `go.` prefixes into an assembly that does contain `go.go`.
+//
+// This is the CAPABILITY test: the fold registers the shadow when the caller asks for the union.
+// WHICH unit asks is the caller's decision and is covered by TestProductionUnitExcludesSiblingClosure
+// — under either reference model the production `.cs` compiles into the production assembly alone,
+// so it must NOT see the union.
 func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	previous := siblingClosureImportPaths
 	t.Cleanup(func() { siblingClosureImportPaths = previous })
@@ -115,7 +120,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 
 	// Production-only closure: no go/* package, so no shadow.
 	siblingClosureImportPaths = nil
-	computeImportAliasRenames(nil, production, packageNamespace, "", "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "", true)
 
 	if rootNamespaceShadowed() {
 		t.Fatal("production-only closure reported a go.go root shadow")
@@ -125,7 +130,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	setShadowState(t, "go.math.rand", nil)
 	packageQualifiedNamespaces = map[string]bool{}
 	siblingClosureImportPaths = []string{"go/format"}
-	computeImportAliasRenames(nil, production, packageNamespace, "", "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "", true)
 
 	if !rootNamespaceShadowed() {
 		t.Fatal("sibling test closure importing go/format did not register the go.go root shadow")

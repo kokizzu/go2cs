@@ -65,7 +65,7 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 
 	performEscapeAnalysis(markedFiles, fset, packageTypes, info)
 	collectAddressedGlobals(markedFiles, packageTypes, info)
-	computeImportAliasRenames(markedFiles, packageTypes, packageNamespace, options.go2csPath, goosOfTarget(options.targetPlatform))
+	computeImportAliasRenames(markedFiles, packageTypes, packageNamespace, options.go2csPath, goosOfTarget(options.targetPlatform), false)
 	preloadImportedTypeAliases(markedFiles, options)
 
 	var autoFileNames []string
