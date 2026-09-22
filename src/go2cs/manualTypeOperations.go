@@ -136,6 +136,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
 		"AnyOverlap": goosAny,
 	},
+	"crypto/internal/fips140/check": {
+		// init HMACs the module's text/rodata through Linkinfo, a `go:fipsinfo` symbol the GO LINKER
+		// synthesizes (cmd/link/internal/ld/fips.go): the hash is a property of the Go build's layout,
+		// and a CLR assembly carries no fips140 module sections. Converted, Linkinfo is zero-valued, so
+		// under GODEBUG=fips140=on the initializer panicked `fips140: no verification checksum found` --
+		// 44 of crypto/internal/fips140test's 52 divergences (the re-exec'd children of TestCASTPasses,
+		// TestCASTFailures, TestConditionals). Displaced onto an init that keeps Go's Enabled/Supported/
+		// debug/Verified shape and computes no checksum (COORD ruling 2026-09-22).
+		// Registered here rather than whole-file marked: check has exactly one non-test Go file, and a
+		// marker would hand-own it BY CONSEQUENCE and freeze its csproj, package_info and README.
+		// crypto/internal/fips140/check/check_impl.cs holds the [GoInit] body.
+		"init": goosAny,
+	},
 	"crypto/internal/fips140/nistec": {
 		// init aliases the EMBEDDED P-256 generator table into a typed view — Go 1.24 replaced a
 		// runtime-computed table with `p256PrecomputedEmbed` and takes it for free with

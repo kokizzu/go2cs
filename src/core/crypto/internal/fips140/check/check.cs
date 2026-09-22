@@ -58,52 +58,6 @@ internal static readonly @string fipsMagic = ((@string)(new byte[]{0x20, 0x47, 0
 
 internal static array<byte> zeroSum = new(32);
 
-[GoInit] internal static void init() {
-    if (!fips140.Enabled) {
-        return;
-    }
-    {
-        var err = fips140.Supported(); if (err != default!) {
-            throw panic("fips140: " + err.Error());
-        }
-    }
-    if (Linkinfo.Magic[0] != 0xff || ((sstring)(Linkinfo.Magic[1..])) != fipsMagic || Linkinfo.Sum == zeroSum) {
-        throw panic("fips140: no verification checksum found");
-    }
-    var h = hmac.New<fips140.Hash>(widen<ж<sha256.Digest>, fips140.Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0)), new slice<byte>(32));
-    var w = ((io.Writer)new hmac_HMACжWriter(h));
-    /*
-		// Uncomment for debugging.
-		// Commented (as opposed to a const bool flag)
-		// to avoid import "os" in default builds.
-		f, err := os.Create("fipscheck.o")
-		if err != nil {
-			panic(err)
-		}
-		w = io.MultiWriter(h, f)
-	*/
-    w.Write(slice<byte>("go fips object v1\n"u8));
-    array<byte> nbuf = new(8);
-    foreach (var (_, sect) in Linkinfo.Sects.ΔRangeSnapshot()) {
-        var n = (uintptr)sect.End - (uintptr)sect.Start;
-        byteorder.BEPutUint64(nbuf[..], (uint64)n);
-        w.Write(nbuf[..]);
-        w.Write(@unsafe.Slice((ж<byte>)(uintptr)(sect.Start), n));
-    }
-    var sum = h.Sum(default!);
-    if (new array<byte>(sum, 32) != Linkinfo.Sum) {
-        throw panic("fips140: verification mismatch");
-    }
-    // "The temporary value(s) generated during the integrity test of the
-    // module’s software or firmware shall [05.10] be zeroised from the module
-    // upon completion of the integrity test"
-    clear(sum);
-    clear(nbuf[..]);
-    h.Reset();
-    if (godebug.Value("#fips140"u8) == "debug"u8) {
-        println((@string)"fips140: verified code+data"u8);
-    }
-    Verified = true;
-}
+// go2cs generated this placeholder — func init is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 } // end check_package
