@@ -226,6 +226,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// pointer-slot view is recorded for a second reaching site, not built here.
 		"persistentalloc1":  goosAny,
 		"inPersistentAlloc": goosAny,
+		// The entersyscall FAMILY (COORD ruling 2026-09-22): entersyscall, reentersyscall,
+		// entersyscallblock and exitsyscall hand a P to the scheduler across a system call and record
+		// the caller's PC/SP/FP for tracebacks. The managed host has no P or M to hand off, and
+		// entersyscall's `reentersyscall(sys.GetCallerPC(), sys.GetCallerSP(), getcallerfp())` reads
+		// two compiler intrinsics whose contract cannot be met here (they STAY throwing, by name). Left
+		// converted, the runtime row's test host died on the first Entersyscall (TestPreemptionAfterSyscall's
+		// goroutines). runtime/syscall_managed_impl.cs holds bodies that move only the goroutine's status
+		// (_Grunning <-> _Gsyscall) and leave syscallpc/syscallsp/syscallbp zero. The bodies live in the
+		// per-GOOS proc.cs of all three targets, hence goosAny.
+		"entersyscall":      goosAny,
+		"reentersyscall":    goosAny,
+		"entersyscallblock": goosAny,
+		"exitsyscall":       goosAny,
 		// addrRanges.init / add / cloneInto (increment 7 of the runtime row, W2a, 2026-09-05): the three
 		// writers that build a notInHeapSlice header FIELD BY FIELD over the managed a.ranges --
 		// `ranges := (*notInHeapSlice)(unsafe.Pointer(&a.ranges)); ranges.len = …; ranges.cap = …;
