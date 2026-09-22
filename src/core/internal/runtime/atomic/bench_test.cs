@@ -51,6 +51,26 @@ public static void BenchmarkAtomicStore(ж<testing.B> Ꮡb) {
     }
 }
 
+public static void BenchmarkAtomicLoad8(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    ref var x = ref heap(new uint8(), out var Ꮡx);
+    sink = Ꮡx;
+    for (nint i = 0; i < b.N; i++) {
+        atomic.Load8(Ꮡx);
+    }
+}
+
+public static void BenchmarkAtomicStore8(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    ref var x = ref heap(new uint8(), out var Ꮡx);
+    sink = Ꮡx;
+    for (nint i = 0; i < b.N; i++) {
+        atomic.Store8(Ꮡx, 0);
+    }
+}
+
 public static void BenchmarkAnd8(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 

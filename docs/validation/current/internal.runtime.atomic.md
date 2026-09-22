@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/runtime/atomic` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-27 · converter `5624f984f`*
+*Validated 2026-09-22 · converter `09bae2c46`*
 
-**15 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**16 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/runtime/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/runtime/atomic).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 
@@ -32,6 +34,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestUnaligned64` | skip | skip |
 | `TestXadduintptr` | pass | pass |
 | `TestXadduintptrOnUint64` | pass | pass |
+| `TestXchg8` | pass | pass |
 
 ## Excluded declarations
 
@@ -51,8 +54,10 @@ the capability it needs.
 - BenchmarkAndParallel (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAtomicLoad (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAtomicLoad64 (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAtomicLoad8 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAtomicStore (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAtomicStore64 (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAtomicStore8 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCas (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkCas64 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkOr (benchmark): benchmark execution is deferred to Phase 4D
@@ -67,3 +72,5 @@ the capability it needs.
 - BenchmarkXadd64 (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkXchg (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkXchg64 (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkXchg8 (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkXchg8Parallel (benchmark): benchmark execution is deferred to Phase 4D
