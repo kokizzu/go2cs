@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -56,14 +59,46 @@ public class ImpersonatedAssemblyLoadTests
         return caught;
     }
 
+    // The host's TRANSITIVE closure, walked from the DLL FILES by metadata alone -- reading an image's
+    // assembly-reference table binds nothing, so the walk cannot itself load a candidate. The DIRECT
+    // references alone were measured insufficient: in a full GolibTests run earlier tests have already
+    // bound them, and the arm went NotExecuted (a vacuous skip in exactly the gate that matters). Only
+    // images shipped beside the tests are candidates; framework references resolve elsewhere and are
+    // not walked.
     private static AssemblyName[] UnloadedClosureMembers(Assembly root)
     {
-        string[] loaded = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name!).ToArray();
-        return root.GetReferencedAssemblies()
-            .Where(n => n.Name is { } name && name.StartsWith("go.", StringComparison.Ordinal) == false &&
-                        !name.StartsWith("System", StringComparison.Ordinal) && !name.StartsWith("Microsoft", StringComparison.Ordinal) &&
-                        !loaded.Contains(name, StringComparer.OrdinalIgnoreCase))
-            .ToArray();
+        HashSet<string> loaded = new(AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name!), StringComparer.OrdinalIgnoreCase);
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+        List<AssemblyName> unloaded = [];
+        Stack<string> pending = new();
+        pending.Push(root.Location);
+
+        while (pending.Count > 0)
+        {
+            using FileStream stream = File.OpenRead(pending.Pop());
+            using PEReader pe = new(stream);
+
+            if (!pe.HasMetadata)
+                continue;
+
+            MetadataReader metadata = pe.GetMetadataReader();
+
+            foreach (AssemblyReferenceHandle handle in metadata.AssemblyReferences)
+            {
+                string name = metadata.GetString(metadata.GetAssemblyReference(handle).Name);
+                string image = Path.Combine(AppContext.BaseDirectory, name + ".dll");
+
+                if (!seen.Add(name) || !File.Exists(image))
+                    continue;
+
+                if (!loaded.Contains(name))
+                    unloaded.Add(new AssemblyName(name));
+
+                pending.Push(image);
+            }
+        }
+
+        return [.. unloaded];
     }
 
     [TestMethod]
