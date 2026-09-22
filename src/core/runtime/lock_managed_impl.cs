@@ -65,6 +65,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using go.golib;
+using go.@internal.runtime;   // atomic.Int64's Add is an extension method over ж<Int64>
 
 partial class runtime_package {
 
@@ -165,11 +166,49 @@ public static void GoRuntimeLockProbeUnlock(int which) => unlock2(s_lockProbes[w
 public static void GoRuntimeLockProbeReset(int which) => Interlocked.Exchange(ref s_lockProbes[which].Value.key.Value, 0);
 public static int GoRuntimeLocksHeldByCurrentThread() => t_heldCount;
 
-internal static bool mutexContended(ж<mutex> Ꮡl) {
-    // No waiter chain exists in the managed model, so contention beyond the held bit is not
-    // observable (consumed only by lock-profiling paths, which are not modeled).
-    return false;
+// ---- contention: WHO IS WAITING, without a waiter chain (COORD ruling 2026-09-22) ----
+//
+// The managed model has no waiter queue, but it does have waiters: a lock2 on its slow path is a
+// real M waiting for the lock, spinning instead of sleeping. Go's mutexContended answers exactly
+// "is some M waiting", and answering a constant false was a LIE a test acts on:
+// TestRuntimeLockMetricsAndProfile/runtime.lock holds mus[n] in
+// `for needContention == n { if MutexContended(mu) { ...; break } }`, so with contention never
+// visible the holder spun forever while its partner spun in lock2 -- a live-lock that ran the
+// runtime row to its 30 m deadline. The waiter count lives BESIDE the key, in a table keyed by the
+// box (box equality is canonical: two boxes over one mutex compare equal), so the key protocol
+// {0, keyLocked, keyAbandoned} and every converted reader of it are untouched, and the uncontended
+// fast path pays nothing.
+//
+// The same slow path feeds /sync/mutex/wait/total:seconds: Go charges a runtime-lock wait to
+// sched.totalRuntimeLockWaitTime (through mLockProfile, sampled 1 in gTrackingPeriod and scaled by
+// it); the managed lock charges every contended wait at its measured length, the same quantity
+// without the sampling. The mutex PROFILE half (mLockProfile's stack sample into the mutex bucket)
+// stays NOT MODELED, as this file's header says.
+// LAZY, not a static-readonly initializer: runtime_package is partial across many files, a field
+// initializer's order against another file's static init is unspecified, and lock2 is reached from
+// static initialization -- a contended lock2 there must not meet a null table.
+private static System.Collections.Concurrent.ConcurrentDictionary<ж<mutex>, int>? s_lockWaitersField;
+
+private static System.Collections.Concurrent.ConcurrentDictionary<ж<mutex>, int> s_lockWaiters =>
+    s_lockWaitersField ?? Interlocked.CompareExchange(ref s_lockWaitersField, new(), null) ?? s_lockWaitersField!;
+
+private static void addLockWaiter(ж<mutex> Ꮡl) => s_lockWaiters.AddOrUpdate(Ꮡl, 1, static (_, n) => n + 1);
+
+private static void removeLockWaiter(ж<mutex> Ꮡl) {
+    System.Collections.Concurrent.ConcurrentDictionary<ж<mutex>, int> waiters = s_lockWaiters;
+    while (waiters.TryGetValue(Ꮡl, out int n)) {
+        if (n <= 1 ? waiters.TryRemove(new KeyValuePair<ж<mutex>, int>(Ꮡl, n)) : waiters.TryUpdate(Ꮡl, n - 1, n)) {
+            return;
+        }
+    }
 }
+
+internal static bool mutexContended(ж<mutex> Ꮡl) {
+    return s_lockWaitersField is { } waiters && waiters.TryGetValue(Ꮡl, out int n) && n > 0;
+}
+
+public static bool GoRuntimeLockProbeContended(int which) => mutexContended(s_lockProbes[which]);
+public static long GoTotalMutexWaitTimeNanos() => totalMutexWaitTimeNanos();
 
 internal static void lock2(ж<mutex> Ꮡl) {
     ref var l = ref Ꮡl.Value;
@@ -184,16 +223,28 @@ internal static void lock2(ж<mutex> Ꮡl) {
     }
 
     SpinWait spinner = default;
+    int64 waitStart = nanotime();
 
-    while (true) {
-        nuint k = Volatile.Read(ref l.key.Value);
-        if (k == keyAbandoned) {
-            throw abandonedLockPanic(Ꮡl);   // the holder died: one poll, by name, never a deadline
+    addLockWaiter(Ꮡl);
+    try {
+        while (true) {
+            nuint k = Volatile.Read(ref l.key.Value);
+            if (k == keyAbandoned) {
+                throw abandonedLockPanic(Ꮡl);   // the holder died: one poll, by name, never a deadline
+            }
+            if (k == 0 && Interlocked.CompareExchange(ref l.key.Value, keyLocked, 0) == 0) {
+                break;
+            }
+            spinner.SpinOnce();
         }
-        if (k == 0 && Interlocked.CompareExchange(ref l.key.Value, keyLocked, 0) == 0) {
-            break;
-        }
-        spinner.SpinOnce();
+    }
+    finally {
+        removeLockWaiter(Ꮡl);
+    }
+
+    int64 waited = nanotime() - waitStart;
+    if (waited > 0 && Ꮡsched is not null && !Ꮡsched.IsNilPointer) {
+        Ꮡsched.of(schedt.ᏑtotalRuntimeLockWaitTime).Add(waited);
     }
     pushHeld(Ꮡl);
 }

@@ -80,6 +80,9 @@
          Same reasoning, and same '!= \'\' and != windows' form, as the line above. -->
     <Compile Remove="TokenDoorWiredTests.cs" />
 
+    <!-- runtime's managed Windows usleep (and its GoUsleep seam) live in runtime's windows/ folder. -->
+    <Compile Remove="RuntimeUsleepWindowsTests.cs" />
+
     <!-- syscall.Pointer (`type Pointer *struct{}`) is declared only in syscall's windows/ folder. -->
     <Compile Remove="NamedPointerTokenCarrierTests.cs" />
 

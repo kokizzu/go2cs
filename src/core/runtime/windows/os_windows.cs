@@ -1095,26 +1095,7 @@ internal static void usleep_no_g(uint32 us) {
     stdcall_no_g(_WaitForSingleObject, len(args), (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡargs.at<uintptr>(0))));
 }
 
-//go:nosplit
-internal static void usleep(uint32 us) {
-    systemstack(() => {
-        uintptr h = default!;
-        uintptr timeout = default!;
-        // If the high-res timer is available and its handle has been allocated for this m, use it.
-        // Otherwise fall back to the low-res one, which doesn't need a handle.
-        if (haveHighResTimer && (~(~getg()).m).highResTimer != 0){
-            h = getg().Value.m.Value.highResTimer;
-            ref var dt = ref heap<int64>(out var Ꮡdt);
-            dt = -10 * (int64)us; // relative sleep (negative), 100ns units
-            stdcall6(_SetWaitableTimer, h, (uintptr)Ꮡdt, 0, 0, 0, 0);
-            timeout = _INFINITE;
-        } else {
-            h = _INVALID_HANDLE_VALUE;
-            timeout = (uintptr)us / 1000; // ms units
-        }
-        stdcall2(_WaitForSingleObject, h, timeout);
-    });
-}
+// go2cs generated this placeholder — func usleep is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static uintptr ctrlHandler(uint32 _type) {
     uint32 s = default!;
