@@ -931,7 +931,10 @@ function Invoke-SweepRow {
 # past 90m, and the hash/maphash minimum headroom this table already carries. The Windows walls stay
 # tiny (92 s on the i9 below): this floor is owed to the Linux host alone, and a floor costs a fast
 # host nothing.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/fips140/mlkem' = '30m'; 'crypto/mlkem' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '150m'; 'net' = '120m'; 'net/http' = '60m' }
+# crypto/tls: raised 30m -> 60m 2026-09-23 (H10 step 5): the banked raised-wall row (R, 3ec2c9ff39,
+# GOFLAGS=-timeout=40m) walled 1,761 s = 0.98x of 30m; 60m puts it at 0.49x; AZ1's standard-wall
+# full-host row (fad839a224) walled 467 s.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/fips140/mlkem' = '30m'; 'crypto/mlkem' = '30m'; 'time' = '40m'; 'crypto/tls' = '60m'; 'sync/atomic' = '150m'; 'net' = '120m'; 'net/http' = '60m' }
 # 'net' joined 2026-09-02 at 40m (RAISED to 120m by the Go 1.24.13 re-check below): at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
@@ -980,7 +983,7 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 #   crypto/internal/fips140/mlkem  30m    15 s (i9, PASS 10)                      0.01        RE-KEYED
 #   crypto/mlkem                   30m    27 s (i9, PASS 8)                       0.02        RE-KEYED
 #   time                           40m    592 s (i7, DIVERGED 178)                0.25        holds
-#   crypto/tls                     30m    885 s (G-LAPTOP, PASS 1340)             0.49        holds
+#   crypto/tls                     30m    885 s (G-LAPTOP, PASS 1340)             0.49        holds (RAISED -> 60m 2026-09-23 on the raised-wall bank row, 1,761 s = 0.98x; above)
 #   sync/atomic                    90m    92 s (i9, PASS 108)                     0.02        holds (Linux: RAISED -> 150m 2026-09-23, above)
 #   net                            40m    3,792 s (i9, NOVERDICT, hand-stopped)   1.58        RAISED -> 120m
 #   net/http                       60m    328 s (G-LAPTOP, DIVERGED 1387)         0.09        holds
