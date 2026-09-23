@@ -2111,6 +2111,18 @@ var linknameForwardTargets = map[string]bool{
 	// that named cause instead of the stub's "linkname whose push did not arrive". No new project
 	// reference: runtime/pprof already imports runtime.
 	"runtime.blockevent": true,
+	// runtime's vDSO getrandom entry, NEW at Go 1.24 and pulled by internal/syscall/unix's GetRandom
+	// (getrandom.go:15, `//go:linkname vgetrandom runtime.vgetrandom`), authorized by the one-arg
+	// handle in BOTH runtime definitions (vgetrandom_linux.go:91, vgetrandom_unsupported.go:11). Left
+	// a throwing stub it took down crypto/rand on linux and everything downstream of it -- 25 rows of
+	// the go1.24.13 Linux leg, crypto/x509 and hash/maphash at static init. The implementation is
+	// ORDINARY CONVERTED Go: on linux, vgetrandom_linux.go:93-95 answers (-1, false) while
+	// vgetrandomAlloc.stateSize is 0, and only osinit's vgetrandomInit can set it -- osinit has no
+	// caller in the converted runtime (no vDSO exists to find), so the forwarder reaches exactly Go's
+	// own no-vDSO answer and GetRandom takes the getrandom syscall, as Go does on any such host.
+	// Elsewhere vgetrandom_unsupported.go answers (-1, false) outright. No new project reference:
+	// internal/syscall/unix already references runtime.
+	"runtime.vgetrandom": true,
 }
 
 // linknameForwardDefinitions names the DEFINITION of a linknameForwardTargets row whose symbol is not
