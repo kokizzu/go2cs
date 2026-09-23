@@ -539,30 +539,6 @@ public static void ParallelOn64Bit(ж<testing.T> Ꮡt) {
     Ꮡt.Parallel();
 }
 
-// CPUProfilingBroken returns true if CPU profiling has known issues on this
-// platform.
-public static bool CPUProfilingBroken() {
-    var exprᴛ1 = Δruntime.GOOS;
-    if (exprᴛ1 == "plan9"u8) {
-        return true;
-    }
-    if (exprᴛ1 == "aix"u8) {
-        return true;
-    }
-    if (exprᴛ1 == "ios"u8 || exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "illumos"u8 || exprᴛ1 == "solaris"u8) {
-        return true;
-    }
-    if (exprᴛ1 == "openbsd"u8) {
-        if (Δruntime.GOARCH == "arm"u8 || Δruntime.GOARCH == "arm64"u8) {
-            // Profiling unimplemented.
-            // See https://golang.org/issue/45170.
-            // See https://golang.org/issue/13841.
-            // See https://golang.org/issue/13841.
-            return true;
-        }
-    }
-
-    return false;
-}
+// go2cs generated this placeholder — func CPUProfilingBroken is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 } // end testenv_package

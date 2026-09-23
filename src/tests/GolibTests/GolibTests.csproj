@@ -210,6 +210,9 @@
     <ProjectReference Include="..\..\core\runtime\pprof\runtime.pprof.csproj" />
     <ProjectReference Include="..\..\core\internal\profile\internal.profile.csproj" />
 
+    <!-- TestenvCPUProfilingBrokenTests: the hand-owned answer runtime/pprof's CPU tests consult. -->
+    <ProjectReference Include="..\..\core\internal\testenv\internal.testenv.csproj" />
+
     <!-- MulUnbalancedDiscriminatorTests: the §5.4 discriminator drives math/big's nat.mul through
          Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
          package to reach a measurement no other harness can take. -->
