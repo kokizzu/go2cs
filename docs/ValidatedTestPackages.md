@@ -134,7 +134,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **219 / 230 testable packages validated — 95.2%**
 >
-> **57,199 matching test verdicts · 282 disclosed** *(updated 2026-09-23 — maintained as part of the
+> **57,203 matching test verdicts · 283 disclosed** *(updated 2026-09-23 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 230 of the 346
 > packages `go list std` reports at go1.24.13 whose test files surviving the corpus axis —
 > windows/amd64, `-tags purego,math_big_pure_go` — declare a `Test` function. The 230 are enumerated,
