@@ -20,10 +20,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -667,6 +669,59 @@ func TestSeedCensusRootMirrorsRepositoryLayout(t *testing.T) {
 	// project references it composes would resolve against nothing.
 	if !isGo2CSRoot(filepath.Join(stage, "src")) {
 		t.Error("seeded staging root is not recognized as a go2cs root")
+	}
+}
+
+// The seed must carry everything the README's two REPOSITORY badges read, or a staged regen strips
+// them corpus-wide while every .cs compares clean. The stamp both badges carry is resolved from the
+// write-once snapshot directories docs/validation/<stamp>/ (publishedPackageVersion, since
+// 8fa5cc2e7d), which sit BESIDE current/ -- and a current-only seed held none. Found by the H10
+// close's three-target -stdlib regen: 337 READMEs lost both the Tests and the Source·C# badge
+// (archive/tar among them). The fixture is that tree's shape at the close: version.props names the
+// unpublished 1.24.13.0, and the newest recorded release is 1.23.12.3.
+//
+// TWO-SIDED: the badges composed in the SOURCE tree are the control (the fixture really does compose
+// both, naming 1.23.12.3), and the staged root must compose the same two lines byte for byte. RED at
+// 47e088d3d7: the staged lines are both "".
+func TestSeedCensusRootCarriesThePublishedStampTheBadgesRead(t *testing.T) {
+	const dotID = "archive.tar"
+
+	root, projectPath := badgeTree(t, dotID, "1.23.12.3")
+	tree := filepath.Dir(root)
+
+	mustWriteFile(t, filepath.Join(tree, "docs", validationDocsDirName, "1.23.12.3", dotID+".md"), "snapshot page")
+	mustWriteFile(t, filepath.Join(root, versionPropsFileName),
+		"<Project>\r\n  <PropertyGroup>\r\n    <GoStdLibVersion>1.24.13</GoStdLibVersion>\r\n    <GoBuildNumber>0</GoBuildNumber>\r\n  </PropertyGroup>\r\n</Project>\r\n")
+	mustWriteFile(t, filepath.Join(projectPath, dotID+testProjectFileSuffix), "<Project />")
+	addProofPage(t, root, dotID, 98, 0)
+
+	wantTests := validationBadge("98%2F98_validated", "brightgreen",
+		fmt.Sprintf("%s/%s/1.23.12.3/%s.html", validationSiteURL, validationDocsDirName, dotID))
+
+	if got := readmeValidationBadgeLine(projectPath, dotID, ""); got != wantTests {
+		t.Fatalf("control: the source tree's Tests badge\n got: %q\nwant: %q", got, wantTests)
+	}
+
+	wantSource := readmeCSharpSourceBadgeLine(projectPath)
+
+	if !strings.Contains(wantSource, "/tree/"+releaseTagPrefix+"1.23.12.3/src/core/archive/tar") {
+		t.Fatalf("control: the source tree's Source·C# badge does not pin the published stamp: %q", wantSource)
+	}
+
+	stage := filepath.Join(t.TempDir(), "linux-amd64")
+
+	if _, err := seedCensusRoot(root, stage); err != nil {
+		t.Fatalf("seedCensusRoot: %v", err)
+	}
+
+	stagedProject := filepath.Join(stage, "src", "core", "archive", "tar")
+
+	if got := readmeValidationBadgeLine(stagedProject, dotID, ""); got != wantTests {
+		t.Errorf("the staged root's Tests badge differs from the source tree's\n got: %q\nwant: %q", got, wantTests)
+	}
+
+	if got := readmeCSharpSourceBadgeLine(stagedProject); got != wantSource {
+		t.Errorf("the staged root's Source·C# badge differs from the source tree's\n got: %q\nwant: %q", got, wantSource)
 	}
 }
 
