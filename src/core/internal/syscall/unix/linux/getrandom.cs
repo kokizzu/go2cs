@@ -13,7 +13,10 @@ partial class unix_package {
 
 //go:linkname vgetrandom runtime.vgetrandom
 //go:noescape
-internal static partial (nint ret, bool supported) vgetrandom(slice<byte> p, uint32 flags);
+internal static (nint ret, bool supported) vgetrandom(slice<byte> p, uint32 flags) {
+    var (ᴛ1, ᴛ2) = go.runtime_package.vgetrandom(p, flags);
+    return (ᴛ1, ᴛ2);
+}
 
 internal static ж<atomic.Bool> ᏑgetrandomUnsupported = new StandardBox<atomic.Bool>(default(atomic.Bool));
 internal static ref atomic.Bool getrandomUnsupported => ref ᏑgetrandomUnsupported.Value;

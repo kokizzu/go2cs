@@ -90,7 +90,7 @@ internal static void vgetrandomDestroy(ref m mp) {
 // This is exported for use in internal/syscall/unix as well as x/sys/unix.
 //
 //go:linkname vgetrandom
-internal static (nint ret, bool supported) vgetrandom(slice<byte> Δp, uint32 flags) {
+public static (nint ret, bool supported) vgetrandom(slice<byte> Δp, uint32 flags) {
     if (vgetrandomAlloc.stateSize == 0) {
         return (-1, false);
     }

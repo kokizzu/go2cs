@@ -56,6 +56,10 @@
          the windows flavour they are 22 strict CS0103 and they took train 29 red at the union gate. -->
     <Compile Remove="RuntimeMemoryFamilyTests.cs" />
     <Compile Remove="RuntimeBootstrapConstantsTests.cs" />
+
+    <!-- GetRandom (and its runtime.vgetrandom pull) is declared by getrandom.go, whose build tags
+         select only the linux flavour of internal/syscall/unix. -->
+    <Compile Remove="LinuxGetRandomTests.cs" />
   </ItemGroup>
 
   <!-- The netapi32 ptrout gate is the mirror image: it drives windows-flavor-only syscall surface
@@ -260,6 +264,12 @@
          synthetic mirror compiled inside this project could not reproduce it at all. Same
          MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag/alias above. -->
     <ProjectReference Include="..\..\core\crypto\internal\fips140\ecdsa\crypto.internal.fips140.ecdsa.csproj" />
+    <!-- LinuxGetRandomTests: runtime.vgetrandom's forward row, driven through the REAL converted
+         internal/syscall/unix.GetRandom and crypto/rand.Read, the calls the go1.24.13 Linux leg's 25
+         vgetrandom rows died under. Both packages compile on every flavour, so the references are
+         unconditional and only the gate FILE is (the os/user precedent above). -->
+    <ProjectReference Include="..\..\core\internal\syscall\unix\internal.syscall.unix.csproj" />
+    <ProjectReference Include="..\..\core\crypto\rand\crypto.rand.csproj" />
   </ItemGroup>
 
 </Project>
