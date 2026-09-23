@@ -9,9 +9,12 @@
     },
     {
       "name": "TestPipeAllocations",
-      "class": "alloc-count-semantics",
+      "class": "deferred",
       "signature": "too many allocations for Pipe() call: ",
-      "reason": "count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, not mallocs"
+      "reason": "count-bound AllocsPerRun assert: the managed Pipe allocates per call what Go keeps off the heap",
+      "want": "<= 4 per call",
+      "reading": "6 per call (Release, tiered JIT off)",
+      "plan": "docs/phase4/DESIGN-example-plan.md: the per-call allocations fold into the pipe's own state"
     }
   ]
 }
