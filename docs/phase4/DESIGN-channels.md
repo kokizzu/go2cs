@@ -306,3 +306,139 @@ residue to B′.)*
 
 **Gate:** the channel behavioral tests and the golib channel suite, then io's row before and after at
 Release with tiering off.
+
+## 7. REC-G design, 2026-09-23 (R) -- the single-object core is buildable: one counted object per channel
+
+**Status:** DESIGN, docs only. R owns it after the synctest arc (COORD, 2026-09-23). No code;
+`channel.cs` is untouched. Read at `fc6269b0bf` (`claude/version-go1.24.13`, `channel.cs` last
+touched at `c3d8bb388b`) and against the arc's `channel.cs` at `7984c46149`
+(`claude/r-s4-synctest-pulls`). Nothing above this block is rewritten.
+
+**The answer to §6: REFUTED.** The sentence at `channel.cs:363-368`, "the .NET shape needs four
+objects to hold the same state", is false. The three extra objects are a layout choice, and a
+layout that holds the same state in the core instance alone keeps every property §3 relies on. Go's
+`hchan` holds `recvq waitq`, `sendq waitq` and `lock mutex` inside the struct (go1.24.13
+`runtime/chan.go`), and `makechan` of an unbuffered channel is one `mallocgc(hchanSize, ...)`. After
+this design an unbuffered channel costs golib one counted object too.
+
+### 7.1 The layout
+
+- **The lock is the core itself.** `Monitor.Enter(this)` replaces `Monitor.Enter(SyncRoot)`, and
+  the `SyncRoot` field goes. A thin lock lives in the object header and allocates nothing on the
+  managed heap. Contention, or a lock on an object whose header already holds a hash code, inflates
+  it to a SyncBlock. A SyncBlock is runtime-native memory: not a GC object, not counted by
+  `AllocationCounter`, not seen by `GC.GetAllocatedBytesForCurrentThread`. `System.Threading.Lock`
+  is refused: it is an object, so it would be the same second allocation under a new name.
+- **The two queues are inline head/tail pairs on the core.** `m_recvHead`, `m_recvTail`,
+  `m_sendHead` and `m_sendTail` are fields of `ChanCore`, as `waitq{first, last}` are fields of
+  `hchan`. The operations `Enqueue`, `Remove`, `DequeueForWake` and `IsEmpty` become `ChanCore`
+  methods that select the pair.
+- **The pair is selected by the waiter's own `IsSend`.** Measured at the tree: all four enqueue
+  sites put a send waiter on `Sendq` and a receive waiter on `Recvq`, with no exceptions
+  (`channel.cs:462`, `:547`, `:868`, `:872`). A waiter's queue is therefore fixed by `IsSend`.
+- **The waiter's back-reference.** `Waiter.Queue` (a `WaiterQueue?`, `channel.cs:234`) becomes
+  `ChanCore? QueuedOn`. `Enqueue` sets it; `Remove` and `DequeueForWake` clear it. `Remove`'s no-op
+  test becomes `waiter.QueuedOn != this`, with the pair chosen by `waiter.IsSend`. The one outside
+  caller, select's loser unregistration (`waiter.Queue?.Remove(waiter)`, `channel.cs:896`), becomes
+  `waiter.QueuedOn?.Remove(waiter)`.
+- **Two alternatives are refused.** A `WaiterQueue` *struct* held as a field would work only
+  through `ref`; one by-value copy (`var q = core.Recvq;`) would enqueue onto a copy and lose a
+  waiter silently, with no compile error. The inline fields cannot be copied. A layout that makes a
+  channel value copyable is refused by §6; this one keeps `ChanCore` a class, and `channel<T>`
+  stays a struct holding a reference to it, as today.
+
+### 7.2 §6's two preconditions, checked at the tree
+
+1. **Nothing else locks on the core.** Census at `fc6269b0bf`:
+   - every lock and `Monitor` call on channel state is in `channel.cs`, on `SyncRoot`: 19 use sites
+     beside the declaration and the constructor comment (20 at the arc tip);
+   - `LockAll`/`UnlockAll` (`:1038`, `:1044`) go through the same field;
+   - no `Monitor.Wait`, `Pulse` or `TryEnter` is used on it;
+   - no file outside `channel.cs` names `SyncRoot` on a core.
+
+   After the change, the core is the lock and nothing else holds it.
+2. **The core is not reachable from user code.**
+   - `ChanCore` is `internal` to golib, and `channel<T>.m_core` is `private` (`:1056`).
+   - The two other holders are both internal: `SelectOp.Core` (`:164`) and `SelectPending`'s
+     frames (`:757`). `GoReflect.Select.cs:27` states that the reflect bridge adds no public route.
+   - golib's `InternalsVisibleTo` grants (`ж.cs:14-16`: `unsafe`, `GolibTests`, `runtime`) and
+     the synthesized-structs grant name no file that touches a core.
+
+   Converted Go has no lock-on-object construct at all.
+
+**One layout dependency, already neutralized.** `time_impl.cs:519-539` records that sleep.cs's
+`cp` argument is a punned read of `ChanCore<Time>`'s fields. It is discarded (`_ = cp`) precisely so
+that a field change cannot flip it. Removing three reference fields is such a change and is safe
+for that reason.
+
+### 7.3 What the change does NOT touch
+
+- **Single-fire.** The claim CAS (`SelectState.TryClaim`) and the claim-before-touch discipline in
+  `DequeueForWake` are unchanged.
+- **FIFO order.** Wake order is unchanged: head-first, as `waitq.dequeue` is.
+- **Lock order.** The select lock order is by `Id` (the §3 total order) and unchanged.
+- **Commit order.** The arc's rule (park under the lock, unlock, then wait, readying before the
+  release) is unchanged.
+- **The lock is still never held across a park.**
+
+The adversarial review §5 asked for on the park and claim paths re-runs over the changed queue
+code, per §6.
+
+### 7.4 Costs and residuals, named and not staged here
+
+- **SyncBlock inflation (a cost, not a count).** `channel<T>.GetHashCode` and
+  `PointerOrderToken` hash the core (`RuntimeHelpers.GetHashCode(m_core)`, `:1207` and `:1705`). A
+  channel that is hashed (a map key, `%p`) and later locked inflates its header to a SyncBlock
+  once. Today that happens to `SyncRoot` only under contention; after the change it also happens on
+  the first lock of a hashed channel. It does not change the count.
+- **Buffered channels of pointer-free `T`.**
+  - The count: golib charges the buffer as its own counted array (`m_buf`, `:407`). Go puts it in
+    the same malloc as the `hchan` when the element has no pointers
+    (`mallocgc(hchanSize+mem, nil, true)`), and in a second malloc when it does. After REC-G such
+    a channel counts 2 against Go's 1.
+  - Why no stage: a .NET class cannot hold a length chosen at run time inline, since
+    `InlineArray` fixes the length at compile time.
+  - Impact: none on this block's members, which are all unbuffered.
+- **One blocked operation is Waiter + SemaphoreSlim, counted 2** (`:460`, `:545`, `:850`, `:862`).
+  Go uses one pooled sudog. That is a per-operation cost, not a per-channel one, and it is outside
+  REC-G.
+
+### 7.5 Members and predictions (UNMEASURED, stated to be scored)
+
+- **io `TestPipeAllocations`: 14 -> 5**, as §6 predicts. The three unbuffered channels drop from
+  4 to 1 each (-9). The `PipeWriter` box and the field-ref view are untouched. The want is 4, so
+  the row still fails, by the view.
+- **context `TestAllocs`: unchanged, still failing** (9 against 8 in the
+  `WithTimeout(bg, 5*time.Millisecond)` case at `7984c46149`). That case calls `cancel()` before
+  `Done()`, and `cancelCtx.cancel` stores the shared `closedchan`, so it makes no channel and
+  REC-G does not reach it. The `1*time.Nanosecond` case does make one (`Done()` before cancel), so
+  its count drops by 3; it already passes (limit 12).
+- **The population, not classed.** In the go1.24.13 GOROOT, 25 `_test.go` files mention both
+  `AllocsPerRun` and a channel-making call: `make(chan`, `io.Pipe`, `.Done()`, `NewTimer`, or
+  `time.After(`. The predicate is over-inclusive, because a mention is not a channel made inside the
+  measured closure. Reading each closure is the implementation seat's first step, before any
+  prediction beyond io and context.
+
+### 7.6 Sequencing, arms and gates for the implementation seat (for COORD to cut)
+
+- **Base.** The implementation lands on post-hop master AFTER the synctest arc's train. The arc
+  rewrites the same types: `Waiter.Parker`, `Wake`'s ready-before-release, `ChanCore.Bubble`,
+  `RefuseOutsideBubble`, and `HandoffCrossesBubble` at `7984c46149`. A seat cut beside it would
+  conflict on every park and claim path.
+- **Red-first arms (GolibTests).**
+  - **The count:** one `make(chan T)` of an unbuffered channel counts exactly 1. Today's 4 is the
+    red.
+  - **Loser unregistration on a shared core:** a select with two cases on the same channel (a
+    send and a receive; two receives), where exactly one fires and the loser is gone from the
+    right queue. Planted red: `Remove` choosing the pair by anything but `IsSend`.
+  - **A second unregistration is a no-op:** planted red, `Remove` without the `QueuedOn` test.
+  - **The lock census as a guard:** no lock or `Monitor` call in golib or its friend assemblies
+    targets a core except `ChanCore`'s own. Controlled by a planted foreign lock.
+  - **The existing park/claim contention-stress arms,** with ten repeats.
+- **Gates.**
+  - §6's: the channel behavioral tests, the golib channel suite, and io's row before and after, at
+    Release with tiering off.
+  - For a golib concurrency change: the FULL behavioral suite, all of GolibTests, and the stdlib
+    build.
+  - Rows equal to the roster: `sync`, `iter`, `context`, `time`, and `net/http` (the arc's
+    re-entry row).
