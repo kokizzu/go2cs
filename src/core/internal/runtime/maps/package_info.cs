@@ -89,8 +89,8 @@ public static partial class maps_package
     internal partial struct groupsReference {}
     internal partial struct probeSeq {}
     [GoLocalName("stringStruct")] internal partial struct stringPtr_stringStruct {}
-    internal partial struct table {}
     public partial struct Iter {}
+    public partial struct table {}
     public partial struct ΔMap {}
     // </TypeAccessibility>
 

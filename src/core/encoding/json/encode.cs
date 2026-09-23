@@ -1168,7 +1168,7 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> encoder;
 }
 
-[GoType] partial interface isZeroer {
+[GoType] public partial interface isZeroer {
     bool IsZero();
 }
 

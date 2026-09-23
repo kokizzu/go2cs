@@ -77,10 +77,10 @@ public static partial class strconv_package
     // via declarations below.
 
     // <TypeAccessibility>
-    [GoValueClone("d")] internal partial struct @decimal {}
     internal partial struct decimalSlice {}
     internal partial struct floatInfo {}
     internal partial struct leftCheat {}
+    [GoValueClone("d")] public partial struct @decimal {}
     public partial struct NumError {}
     // </TypeAccessibility>
 

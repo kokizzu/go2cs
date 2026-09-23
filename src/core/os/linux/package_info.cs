@@ -142,7 +142,6 @@ public static partial class os_package
     internal partial struct noReadFrom {}
     internal partial struct noWriteTo {}
     internal partial struct processMode {}
-    internal partial struct processStatus {}
     internal partial struct rawConn {}
     internal partial struct readdirMode {}
     internal partial struct root {}
@@ -156,6 +155,7 @@ public static partial class os_package
     public partial struct ProcessState {}
     public partial struct Root {}
     public partial struct SyscallError {}
+    public partial struct processStatus {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

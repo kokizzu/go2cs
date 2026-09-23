@@ -88,7 +88,6 @@ public static partial class json_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface isZeroer {}
     internal partial struct arrayEncoder {}
     internal partial struct condAddrEncoder {}
     internal partial struct decodeState {}
@@ -110,6 +109,7 @@ public static partial class json_package
     internal partial struct unquotedValue {}
     public partial interface Marshaler {}
     public partial interface Unmarshaler {}
+    public partial interface isZeroer {}
     public partial struct Decoder {}
     public partial struct Delim {}
     public partial struct Encoder {}

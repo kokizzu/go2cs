@@ -158,6 +158,13 @@ src/core/**/testdata/*.base64 -text
 # Marking the whole testdata tree also stops a validated-package sweep from
 # reporting these fixtures as modified on every run.
 src/core/**/testdata/** -text
+# Every //go:embed payload OUTSIDE testdata/ that a converted csproj names as an
+# <EmbeddedResource Include>, derived from every tracked and every emitted csproj at the
+# H10 close (2026-09-23). Go embeds these bytes with LF; under core.autocrlf=true an
+# unpinned text payload checks out CRLF and the embedded resource is no longer Go's.
+src/core/internal/trace/traceviewer/static/** -text
+src/core/embed/internal/embedtest/concurrency.txt -text
+src/core/crypto/internal/fips140test/acvp_capabilities.json -text
 
 # The converter EMBEDS these templates at compile time (embeddedTemplates.go) and
 # assumes CRLF: writePackageInfoFile splits the package_info skeleton on "\r\n", so

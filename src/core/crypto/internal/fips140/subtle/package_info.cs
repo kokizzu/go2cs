@@ -52,7 +52,6 @@ using static go.crypto.@internal.fips140.subtle_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("crypto/internal/fips140/subtle/constant_time.go", "constant_time.cs", "AAcWwoKWhIKWqqCmkqiSrLKCloKCgryigoI=")]
 [assembly: go.GoPositionMap("crypto/internal/fips140/subtle/xor.go", "xor.cs", "AAoiAAgCgoKUgpSClII=")]
-[assembly: go.GoPositionMap("crypto/internal/fips140/subtle/xor_generic.go", "xor_generic.cs", "ABMslIKChIKCgpSCgoKUqJKqooKmlKaigoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.fips140;

@@ -71,13 +71,13 @@ public static partial class mlkem_package
     [GoValueClone("s")] internal partial struct decryptionKey1024 {}
     [GoValueClone("t", "a")] internal partial struct encryptionKey {}
     [GoValueClone("t", "a")] internal partial struct encryptionKey1024 {}
-    internal partial struct fieldElement {}
     internal partial struct nttElement {}
     internal partial struct ringElement {}
     [GoValueClone("d", "z", "ρ", "h")] public partial struct DecapsulationKey1024 {}
     [GoValueClone("d", "z", "ρ", "h")] public partial struct DecapsulationKey768 {}
     [GoValueClone("ρ", "h")] public partial struct EncapsulationKey1024 {}
     [GoValueClone("ρ", "h")] public partial struct EncapsulationKey768 {}
+    public partial struct fieldElement {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

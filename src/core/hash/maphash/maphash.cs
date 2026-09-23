@@ -305,7 +305,7 @@ public static uint64 Comparable<T>(ΔSeed seed, T v) {
 //
 // Implemented as a compiler intrinsic.
 internal static void escapeForHash<T>(T v) {
-    throw panic("intrinsic");
+    // Go COMPILER INTRINSIC: the gc compiler replaces every call, so the written `panic("intrinsic")` body is unreachable by construction and has no CLR counterpart.
 }
 
 // WriteComparable adds x to the data hashed by h.

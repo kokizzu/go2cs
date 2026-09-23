@@ -87,7 +87,7 @@ internal const bool debugLog = false;
     }
 }
 
-[GoRecv] internal static void Print(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm) {
+[GoRecv] public static void Print(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
     print((@string)"""

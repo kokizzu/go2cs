@@ -11,7 +11,7 @@ using go.crypto.@internal.fips140deps;
 
 partial class mlkem_package {
 
-[GoType("num:uint16")] partial struct fieldElement;
+[GoType("num:uint16")] public partial struct fieldElement;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string unreducedFieldElementˢ = "unreduced field element"u8;

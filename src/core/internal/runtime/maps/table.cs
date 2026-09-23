@@ -32,7 +32,7 @@ internal static uint16 _ᴛ1ʗ = (uint16)maxTableCapacity;
 // prefix) is used to select the table to use for a specific key. Using
 // multiple tables enables incremental growth by growing only one table at a
 // time.
-[GoType] partial struct table {
+[GoType] public partial struct table {
     // The number of filled slots (i.e. the number of elements in the table).
     internal uint16 used;
     // The total number of slots (always 2^N). Equal to
@@ -127,13 +127,13 @@ internal static ж<table> newTable(ж<abi.SwissMapType> Ꮡtyp, uint64 capacity,
     t.growthLeft = growthLeft;
 }
 
-[GoRecv] internal static uint64 Used(this ref table t) {
+[GoRecv] public static uint64 Used(this ref table t) {
     return (uint64)t.used;
 }
 
 // Get performs a lookup of the key that key points to. It returns a pointer to
 // the element, or false if the key doesn't exist.
-[GoRecv] internal static (@unsafe.Pointer, bool) Get(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, @unsafe.Pointer key) {
+[GoRecv] public static (@unsafe.Pointer, bool) Get(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, @unsafe.Pointer key) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
 
@@ -253,7 +253,7 @@ internal static ж<table> newTable(ж<abi.SwissMapType> Ꮡtyp, uint64 capacity,
 // the new table.
 //
 // hash must be the hash of key.
-internal static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, uintptr hash, @unsafe.Pointer key) {
+public static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, uintptr hash, @unsafe.Pointer key) {
     ref var t = ref Ꮡt.DerefOrNull();
     ref var typ = ref Ꮡtyp.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
@@ -390,7 +390,7 @@ internal static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.Swis
     }
 }
 
-[GoRecv] internal static void Delete(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, uintptr hash, @unsafe.Pointer key) {
+[GoRecv] public static void Delete(this ref table t, ж<abi.SwissMapType> Ꮡtyp, ж<ΔMap> Ꮡm, uintptr hash, @unsafe.Pointer key) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
     ref var m = ref Ꮡm.DerefOrNull();
 
@@ -465,7 +465,7 @@ internal static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.Swis
 }
 
 // Clear deletes all entries from the map resulting in an empty map.
-[GoRecv] internal static void Clear(this ref table t, ж<abi.SwissMapType> Ꮡtyp) {
+[GoRecv] public static void Clear(this ref table t, ж<abi.SwissMapType> Ꮡtyp) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
     for (var i = (uint64)0; i <= t.groups.lengthMask; i++) {

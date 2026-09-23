@@ -278,7 +278,7 @@ internal static void kemKeyGen(ж<DecapsulationKey768> Ꮡdk, [GoArrayDims(32)] 
         // t = A ◦ s + e
         t.Value[i] = e[i].Clone();
         foreach (var (j, _) in s.Value) {
-            t.Value[i] = polyAdd(t.Value[i], nttMul(A.Value[i * (nint)k + j], s.Value[j]));
+            t.Value[i] = polyAdd<nttElement>(t.Value[i], nttMul(A.Value[i * (nint)k + j], s.Value[j]));
         }
     }
     var H = sha3.New256();
@@ -415,7 +415,7 @@ internal static slice<byte> pkeEncrypt([GoArrayDims(1088)] ж<array<byte>> Ꮡcc
         u[i] = e1[i].Clone();
         foreach (var (j, _) in r) {
             // Note that i and j are inverted, as we need the transposed of A.
-            u[i] = polyAdd(u[i], inverseNTT(nttMul(ex.a[j * (nint)k + i], r[j])));
+            u[i] = polyAdd<ringElement>(u[i], inverseNTT(nttMul(ex.a[j * (nint)k + i], r[j])));
         }
     }
     var μ = ringDecodeAndDecompress1(ref (Ꮡm).DerefOrNull());

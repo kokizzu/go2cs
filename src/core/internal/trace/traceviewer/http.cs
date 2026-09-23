@@ -433,7 +433,7 @@ function onTraceViewerImportFail() {
 """u8;
 
 //go:embed static/trace_viewer_full.html static/webcomponents.min.js
-internal static embed.FS staticContent;
+internal static embed.FS staticContent = go.embed_package.ΔEmbedFS(typeof(traceviewer_package).Assembly, "go.embed/internal/trace/traceviewer/", ["static/", "static/trace_viewer_full.html", "static/webcomponents.min.js"]);
 
 public static httpꓸHandler StaticHandler() {
     return http.FileServer(http.FS(new embed_FSᴠFS(staticContent)));

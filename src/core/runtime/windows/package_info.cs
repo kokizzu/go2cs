@@ -463,7 +463,6 @@ public static partial class runtime_package
     [GoLocalName("readState")] internal partial struct printDebugLogImpl_readState {}
     internal partial struct profAtomic {}
     internal partial struct profBuf {}
-    internal partial struct profBufReadMode {}
     internal partial struct profIndex {}
     internal partial struct profᴛ1 {}
     internal partial struct ptabEntry {}
@@ -614,6 +613,7 @@ public static partial class runtime_package
     public partial struct Pinner {}
     [GoValueClone("Stack0")] public partial struct StackRecord {}
     public partial struct TypeAssertionError {}
+    public partial struct profBufReadMode {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
