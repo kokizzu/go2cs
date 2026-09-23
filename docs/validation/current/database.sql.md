@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `database/sql` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
 **140 matched · 2 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/database/sql`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/database/sql).
@@ -162,15 +162,19 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/database/sql/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestGrabConnAllocs` | `alloc-profile` | want-zero AllocsPerRun assert: four golib-counted objects per run where Go allocates none — the interior field pointers the emission mints to reach c.done, c.releaseConnOnce and c.closemu (Go's &c.field is an address, not an allocation) plus the display class the sync.Once closure needs on every call, even though the cached releaseConnCache method value it installs is built once |
-| `TestRawBytesAllocs` | `alloc-profile` | want-zero AllocsPerRun assert: fifteen golib-counted objects per run where Go allocates none — each convertAssign round materializes the managed backing for the formatted value and boxes the any-typed source, where Go's escape analysis proves the temporaries non-escaping and appends into the pre-sized RawBytes in place |
+| `TestGrabConnAllocs` | `alloc-count-semantics` | want-zero AllocsPerRun assert: four golib-counted objects per run where Go allocates none — the interior field pointers the emission mints to reach c.done, c.releaseConnOnce and c.closemu (Go's &c.field is an address, not an allocation) plus the display class the sync.Once closure needs on every call, even though the cached releaseConnCache method value it installs is built once. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off; claude/coord-h10-readings ac9f8251ee): alloc-profile -> alloc-count-semantics. The run's own unit note is BYTES -- 96 B/run, 96,000 bytes over 1,000 runs, golib's counter charging none of it (the test printed `Conn.grabConn allocated 96 objects; want 0`) -- so at this tree golib charges NONE of the objects this reason names; which change moved the interior field pointers off golib's charged sites is not attributed here. What remains is outside the counter, so no object count exists to compare with the want: the ladder's incomparable-unit arm. Nothing to retire and no plan. The relabel census's RULING OWED for this entry (a deferred-with-floor proposal) is superseded by the unit. |
+| `TestRawBytesAllocs` | `deferred` | want-zero AllocsPerRun assert: fifteen golib-counted objects per run where Go allocates none — each convertAssign round materializes the managed backing for the formatted value and boxes the any-typed source, where Go's escape analysis proves the temporaries non-escaping and appends into the pre-sized RawBytes in place. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O5): alloc-profile -> deferred. 28 per run = two per call over fourteen cases. The census's floor (any-boxing) is withdrawn: boxing is uncounted. Between b6026b9246 (where 15 was recorded) and bb54ff0920 -- 3,134 commits (1,152 first-parent), counted by COORD on a full clone, the go1.24.13 reconvert among them; C1's earlier 734 was an artifact of a SHALLOW clone and is withdrawn -- this path's emission changed at formatBits' append form (itoa.cs) and the time.Time arm (convert.cs:326); neither is shown to be the cause. |
 
 ## Excluded declarations
 

@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `strings` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
 **69 matched · 4 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings).
@@ -93,17 +93,21 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestBuilderAllocs` | `alloc-count-semantics` | exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree — see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md |
-| `TestBuilderGrow` | `alloc-count-semantics` | exact-count AllocsPerRun asserts (want 1 per growLen>0 leg, want 0 for growLen=0): the byte-derived shim can never agree on a nonzero count, and the growLen=0 leg's addressed Builder heap-boxes per run where Go's escape analysis stack-allocates |
-| `TestBuilderGrowSizeclasses` | `alloc-count-semantics` | count-bound AllocsPerRun assert (want <= 1): the byte-derived shim reports allocated bytes, so the managed Builder path can never satisfy the count bound |
-| `TestIndexRune` | `alloc-profile` | want-zero AllocsPerRun assert: IndexRune's Index(s, string(r)) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring); the index-semantics legs all pass |
+| `TestBuilderAllocs` | `deferred` | exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree — see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-count-semantics -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: the test is Go's own issue-23382 check that copyCheck does not force the Builder to escape, and the converted `var b Builder` is a ж<Builder> (copyCheck stores the address, src/core/strings/builder.cs:26-35) beside the buffer -- the reading of 2. The alloc-count-semantics premise (a byte-derived shim) is retired by the same note. RE-SIGNED 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O4): the attribution above (a ж<Builder> box beside the buffer) is CORRECTED -- the two counted objects are the box and String()'s ElemRefBox; the buffer is uncounted. The zh-box plan is dropped. The strings.Builder box sits at the identity-keyed boundary -- copyCheck stores and compares the Builder's own address (strings/builder.cs:26-40) -- which the zh-box vetoes exclude (X1/X2, DESIGN-zh-box-reduction.md:162-165; XM-6, DESIGN-zh-box-b-prime.md:583-585; DESIGN-zh-box-three-capabilities.md §6), so zh-box is NOT its plan. |
+| `TestBuilderGrow` | `deferred` | exact-count AllocsPerRun asserts (want 1 per growLen>0 leg, want 0 for growLen=0): the byte-derived shim can never agree on a nonzero count, and the growLen=0 leg's addressed Builder heap-boxes per run where Go's escape analysis stack-allocates. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O4): alloc-count-semantics -> deferred. The byte-derived-shim premise is retired: every failing leg reads COUNT. The strings.Builder box sits at the identity-keyed boundary -- copyCheck stores and compares the Builder's own address (strings/builder.cs:26-40) -- which the zh-box vetoes exclude (X1/X2, DESIGN-zh-box-reduction.md:162-165; XM-6, DESIGN-zh-box-b-prime.md:583-585; DESIGN-zh-box-three-capabilities.md §6), so zh-box is NOT its plan. |
+| `TestBuilderGrowSizeclasses` | `deferred` | count-bound AllocsPerRun assert (want <= 1): the byte-derived shim reports allocated bytes, so the managed Builder path can never satisfy the count bound. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O4): alloc-count-semantics -> deferred. The byte-derived-shim premise is retired: the reading is COUNT. 3 per run = the ж<Builder> box + the ElemRefBox + the append regrow; the byte[18] MakeNoZero allocates is uncounted. The strings.Builder box sits at the identity-keyed boundary -- copyCheck stores and compares the Builder's own address (strings/builder.cs:26-40) -- which the zh-box vetoes exclude (X1/X2, DESIGN-zh-box-reduction.md:162-165; XM-6, DESIGN-zh-box-b-prime.md:583-585; DESIGN-zh-box-three-capabilities.md §6), so zh-box is NOT its plan. |
+| `TestIndexRune` | `deferred` | want-zero AllocsPerRun assert: IndexRune's Index(s, string(r)) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring); the index-semantics legs all pass. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: string(r) for a lookup, which Go builds in runtime.intstring's 4-byte stack buffer. |
 
 ## Excluded declarations
 

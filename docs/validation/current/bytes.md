@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `bytes` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
 **83 matched · 6 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/bytes).
@@ -109,19 +109,23 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestGrow` | `alloc-profile` | want-zero AllocsPerRun assert: the converted Buffer.Grow/Write path allocates in the managed slice model where Go's pre-grown buffer writes allocation-free |
-| `TestIndex` | `alloc-profile` | want-zero AllocsPerRun assert: the converted Index search allocates in the managed runtime where Go's compiler stack-allocates its working state |
-| `TestIndexRune` | `alloc-profile` | want-zero AllocsPerRun assert: string(r) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring) |
-| `TestLastIndex` | `alloc-profile` | want-zero AllocsPerRun assert: the converted LastIndex search allocates in the managed runtime where Go's compiler stack-allocates its working state |
-| `TestNewBufferShallow` | `alloc-profile` | want-zero AllocsPerRun assert: the addressed Buffer copy heap-boxes per run in the managed model (ref var through the heap) where Go's escape analysis keeps the shallow copy on the stack |
-| `TestWriteAppend` | `alloc-profile` | want-zero AllocsPerRun assert: the converted AvailableBuffer/AppendInt/Write loop allocates in the managed slice model where Go's sufficiently-sized buffer appends allocation-free |
+| `TestGrow` | `deferred` | want-zero AllocsPerRun assert: the converted Buffer.Grow/Write path allocates in the managed slice model where Go's pre-grown buffer writes allocation-free. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O3): alloc-profile -> deferred. REASON CORRECTED: Go's Buffer also allocates, once per doubling, and passes by truncation (buffer_test.go:549-568; go1.24.13 testing/allocs.go:40-44); the host floors the same sub-one quotient to 1 (testing.cs:755). The reason's 'Go's pre-grown buffer writes allocation-free' is not what Go measures. |
+| `TestIndex` | `deferred` | want-zero AllocsPerRun assert: the converted Index search allocates in the managed runtime where Go's compiler stack-allocates its working state. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: Read at src/core/internal/bytealg/bytealg.cs:82 and :90: IndexRabinKarp compares `s[..n].ToGoString() == sep.ToGoString()`, Go's `string(s[:n]) == string(sep)`, which Go compares without allocating; each side mints an @string copy, which is the reading of 2. |
+| `TestIndexRune` | `deferred` | want-zero AllocsPerRun assert: string(r) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring). RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: string(r) for a lookup, which Go builds in runtime.intstring's 4-byte stack buffer. |
+| `TestLastIndex` | `deferred` | want-zero AllocsPerRun assert: the converted LastIndex search allocates in the managed runtime where Go's compiler stack-allocates its working state. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: Read at src/core/internal/bytealg/bytealg.cs:110: LastIndexRabinKarp's `s[last..].ToGoString() == sep.ToGoString()` comparison, two @string copies where Go allocates none -- the reading of 2. |
+| `TestNewBufferShallow` | `deferred` | want-zero AllocsPerRun assert: the addressed Buffer copy heap-boxes per run in the managed model (ref var through the heap) where Go's escape analysis keeps the shallow copy on the stack. RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: the addressed Buffer copy heap-boxes per run, the ж-box-per-address-take family. |
+| `TestWriteAppend` | `deferred` | want-zero AllocsPerRun assert: the converted AvailableBuffer/AppendInt/Write loop allocates in the managed slice model where Go's sufficiently-sized buffer appends allocation-free. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. Read at strconv/itoa.cs:89: the counted object per call is formatBits' local 65-byte array, not a slice-model site as this reason supposes. |
 
 ## Excluded declarations
 

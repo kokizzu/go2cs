@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `log` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
 **8 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log).
@@ -29,14 +29,18 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/log/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestDiscard` | `alloc-profile` | at-most-one AllocsPerRun assert over l.Printf("%s", <102400-byte string>): Go's single allocation is the variadic []any, and its `func(b []byte) []byte` closure over format/v does not escape Output, so Go's escape analysis keeps the closure off the heap entirely. The converted call must heap-allocate what Go stack-allocates — the params array, the display class the C# compiler emits for the same closure, and its delegate — measured 3 golib-site allocations per run against Go's 1, and that figure is a LOWER BOUND (go2cs's counter covers golib's sites, not compiler-emitted or BCL allocations). Same shape as bufio's TestReadStringAllocs: the count is comparable, it is WHERE the allocations live that differs |
+| `TestDiscard` | `deferred` | at-most-one AllocsPerRun assert over l.Printf("%s", <102400-byte string>): Go's single allocation is the variadic []any, and its `func(b []byte) []byte` closure over format/v does not escape Output, so Go's escape analysis keeps the closure off the heap entirely. The converted call must heap-allocate what Go stack-allocates — the params array, the display class the C# compiler emits for the same closure, and its delegate — measured 3 golib-site allocations per run against Go's 1, and that figure is a LOWER BOUND (go2cs's counter covers golib's sites, not compiler-emitted or BCL allocations). Same shape as bufio's TestReadStringAllocs: the count is comparable, it is WHERE the allocations live that differs. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O5): alloc-profile -> deferred. Read at bb54ff0920: the two counted objects are the Printf params copy (log.cs:289) and the format literal; `Ꮡl.of(Logger.ᏑisDiscard)` (log.cs:226) is cached per (box, accessor) (golib/ж.cs:206-210) and costs nothing. The closure's display class and delegate this reason names are uncounted. |
 
 ## Excluded declarations
 

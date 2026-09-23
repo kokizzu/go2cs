@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `unicode/utf16` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
 **8 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16).
@@ -29,14 +29,18 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf16/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestAllocationsDecode` | `alloc-profile` | want-zero AllocsPerRun assert: Decode returns a []rune that the managed runtime heap-allocates where Go's escape analysis stack-allocates the non-escaping result (the test is guarded by testenv.SkipIfOptimizationOff precisely because the zero-alloc outcome depends on the optimizer); a malloc-counting shim would fail identically. TestDecode proves the decoded output is correct — only the allocation profile diverges |
+| `TestAllocationsDecode` | `deferred` | want-zero AllocsPerRun assert: Decode returns a []rune that the managed runtime heap-allocates where Go's escape analysis stack-allocates the non-escaping result (the test is guarded by testenv.SkipIfOptimizationOff precisely because the zero-alloc outcome depends on the optimizer); a malloc-counting shim would fail identically. TestDecode proves the decoded output is correct — only the allocation profile diverges. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O5): alloc-profile -> deferred. Legs 2-4's unit is unrecorded because the host notes only a test's first nonzero call; each mints Decode's counted make on every run, so they are COUNT by construction. |
 
 ## Excluded declarations
 
