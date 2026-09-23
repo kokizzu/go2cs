@@ -11,27 +11,6 @@
       "plan": "PARTIAL FORM (as fmt's): candidate sites binary.cs:554/560, reflect/value_impl.cs:811 and golib/GoReflect.FieldAccess.cs:564; the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A). Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed."
     },
     {
-      "name": "TestSizeAllocs/complex64",
-      "class": "alloc-profile",
-      "platforms": ["linux", "darwin"],
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids; the interned descriptor read behind it is allocation-free but the boxing alone fails the want-zero"
-    },
-    {
-      "name": "TestSizeAllocs/complex128",
-      "class": "alloc-profile",
-      "platforms": ["linux", "darwin"],
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids"
-    },
-    {
-      "name": "TestSizeAllocs/binary.Struct",
-      "class": "alloc-profile",
-      "platforms": ["linux", "darwin"],
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the struct argument per call, and the cached-struct-size lookup constructs a boxed reflect.Value — CLR heap allocations Go's non-escaping eface and pointer-word Value avoid"
-    },
-    {
       "name": "TestSizeAllocs/*binary.Struct",
       "class": "deferred",
       "signature": "Expected no allocations, got ",
