@@ -1716,6 +1716,122 @@ Write-Host ('rows against their own page at go{0}: {1} checked, {2} still link a
 Assert-Equal 'own-page arm: every roster row is classified (checked + older + unread)' $rows.Count ($ownPageChecked + $ownPageOlder + $ownPageUnread)
 Assert-Equal 'own-page arm: at least one row links a page generated at the pin (a zero means it checked nothing)' $true ($ownPageChecked -gt 0)
 
+# ---- 2g. no LEGACY alloc-profile label survives in a row banked at the pin (ruled 2026-09-23) -----
+# The H10 relabel (ledger 2026-09-23 03:37, X(1)-X(8) and O1-O5) retires the bare `alloc-profile`
+# label: every allocation disclosure resolves to `deferred`, `structural` or `alloc-count-semantics`
+# (docs/ConversionStrategies-Reference.md, "deferred and structural"). The loader still ACCEPTS the
+# legacy label, so a row that has not re-swept keeps comparing; this arm is what makes the retirement
+# hold for the rows that HAVE re-banked at the hop.
+#
+# WHICH ROWS: 2f's predicate -- a roster row whose FIRST [proof] page was generated at the Go pin read
+# from src/version.props' GoStdLibVersion -- so the arm moves with the next hop instead of naming this
+# one. A row whose own page is older than the pin is not gated here and is counted, as in 2f.
+# WHICH ENTRIES: those IN SCOPE on the platform that page was banked on (the headline's `goos/arch`).
+# An entry scoped away from that platform describes another leg's absorption -- encoding/binary's
+# three value subtests and math/big TestNewIntAllocs are [linux, darwin] and are labelled or retired
+# from the Linux leg (X(6)) -- and a Windows page cannot have re-measured it.
+#
+# Authored UNEXECUTED by C1 (a lane with no PowerShell), 2026-09-23. The i7 makes it red-first in
+# batch 8d by plant: flip one in-scope entry of a pin-banked row back to alloc-profile, confirm this
+# arm names that row and entry, then restore byte-identical. PREDICTED at the relabel's manifests
+# (claude/c1-alloc-relabel): refused 0, unless `net` has banked at the pin before its two entries are
+# labelled -- then it names exactly those two, which is X(6)'s close condition, not a defect here.
+# reflect's 42 alloc-profile entries are not gated while reflect has no roster row; they will be
+# refused here the day reflect banks at the pin, which is when they relabel (ledger 16:39). And while
+# every row's headline page is a Windows page, the [linux, darwin]-scoped entries are never in scope
+# here, so the Linux leg's obligation to label or retire them needs a gate of its own.
+function Test-EntryInPlatformScope {
+    param($Platforms, [string] $Goos)
+
+    # Absent or empty means every platform: the loader's rule, which 2c's fixture arms pin.
+    if ($null -eq $Platforms) { return $true }
+    $list = @($Platforms)
+    if ($list.Count -eq 0) { return $true }
+
+    # Ordinal, like 2c, because the Go loader compares exactly.
+    return ($list -ccontains $Goos)
+}
+
+function Get-LegacyAllocLabels {
+    param($Entries, [string] $Goos)
+
+    $names = New-Object System.Collections.Generic.List[string]
+    foreach ($entry in @($Entries)) {
+        if ($null -eq $entry) { continue }
+        if ([string]$entry.class -cne 'alloc-profile') { continue }
+        if (-not (Test-EntryInPlatformScope -Platforms $entry.platforms -Goos $Goos)) { continue }
+        [void]$names.Add([string]$entry.name)
+    }
+
+    return $names.ToArray()
+}
+
+# The predicate's contract, against fixtures, both ways: at the relabel's manifests the tree refuses
+# nothing, so the loop below fires no refusal and a broken predicate would read exactly like a clean one.
+$legacyFixture = @(
+    [PSCustomObject]@{ name = 'TestUnscoped'; class = 'alloc-profile' },
+    [PSCustomObject]@{ name = 'TestEmptyScope'; class = 'alloc-profile'; platforms = @() },
+    [PSCustomObject]@{ name = 'TestWindowsOnly'; class = 'alloc-profile'; platforms = @('windows') },
+    [PSCustomObject]@{ name = 'TestLinuxDarwin'; class = 'alloc-profile'; platforms = @('linux', 'darwin') },
+    [PSCustomObject]@{ name = 'TestDeferred'; class = 'deferred' },
+    [PSCustomObject]@{ name = 'TestCountSemantics'; class = 'alloc-count-semantics' }
+)
+$legacyOnWindows = @(Get-LegacyAllocLabels -Entries $legacyFixture -Goos 'windows')
+Assert-Equal 'legacy label: unscoped, empty-scoped and windows-scoped alloc-profile entries are refused on a windows page' 3 $legacyOnWindows.Count
+Assert-Equal 'legacy label: the refusal NAMES the entry' $true ($legacyOnWindows -ccontains 'TestUnscoped')
+Assert-Equal 'legacy label: an entry scoped away from the page platform is not refused' $false ($legacyOnWindows -ccontains 'TestLinuxDarwin')
+Assert-Equal 'legacy label: a live label is never refused' $false (($legacyOnWindows -ccontains 'TestDeferred') -or ($legacyOnWindows -ccontains 'TestCountSemantics'))
+$legacyOnLinux = @(Get-LegacyAllocLabels -Entries $legacyFixture -Goos 'linux')
+Assert-Equal 'legacy label: on a linux page the linux-scoped entry IS refused and the windows-only one is not' $true `
+    (($legacyOnLinux.Count -eq 3) -and ($legacyOnLinux -ccontains 'TestLinuxDarwin') -and -not ($legacyOnLinux -ccontains 'TestWindowsOnly'))
+
+$legacyRowsRead = 0
+$legacyRowsOlder = 0
+$legacyEntriesRead = 0
+$legacyRefused = 0
+
+foreach ($line in $lines) {
+    if ($line -notmatch $RosterRowPattern) { continue }
+    $legacyPkg = $Matches[1]
+
+    # A row with no [proof] link, a missing page or an unparseable headline is failed by name in 2f;
+    # it is skipped here rather than failed twice.
+    $link = [regex]::Match($line, '\[proof\]\((?:validation/)?(current/[^)\s]+)\)')
+    if (-not $link.Success) { continue }
+    $pagePath = Join-Path $pagesRoot $link.Groups[1].Value
+    if (-not (Test-Path -LiteralPath $pagePath)) { continue }
+    $pageText = [System.IO.File]::ReadAllText($pagePath)
+    $headline = Get-ProofPageHeadline $pageText
+    if ($null -eq $headline) { continue }
+    if ($headline.GoVersion -ne $goPin) { $legacyRowsOlder++; continue }
+
+    $goosMatch = [regex]::Match($pageText, '(?m)^\*\*[\d,]+ matched .*? Go \S+?, `([a-z0-9]+)/')
+    Assert-Equal "legacy label: the pin-banked page of $legacyPkg names its platform" $true $goosMatch.Success
+    if (-not $goosMatch.Success) { continue }
+    $pageGoos = $goosMatch.Groups[1].Value
+    $legacyRowsRead++
+
+    # A row with no manifest carries no label to refuse; 2b owns whether it should have one.
+    $manifest = Join-Path $coreRoot ($legacyPkg + '/go2cs_test_disclosures.json')
+    if (-not (Test-Path -LiteralPath $manifest)) { continue }
+    $parsed = $null
+    try { $parsed = [System.IO.File]::ReadAllText($manifest) | ConvertFrom-Json }
+    catch { continue }   # 2c fails an unparseable manifest by name
+
+    $legacyEntries = @($parsed.disclosures)
+    $legacyEntriesRead += $legacyEntries.Count
+    foreach ($legacyName in @(Get-LegacyAllocLabels -Entries $legacyEntries -Goos $pageGoos)) {
+        $legacyRefused++
+        Assert-Equal "legacy label: $legacyPkg/$legacyName is banked at go$goPin on $pageGoos and still carries alloc-profile (relabel it deferred, structural or alloc-count-semantics)" $true $false
+    }
+}
+
+# Printed UNCONDITIONALLY, like 2f: a gate whose reach is never shown cannot be told apart from one
+# that reached nothing.
+Write-Host ('legacy alloc-profile in rows banked at go{0}: {1} rows read ({2} entries), {3} rows older than the pin (not gated), {4} refused' -f $goPin, $legacyRowsRead, $legacyEntriesRead, $legacyRowsOlder, $legacyRefused) -ForegroundColor Cyan
+Assert-Equal 'legacy-label arm: it read at least one row banked at the pin (a zero means it checked nothing)' $true ($legacyRowsRead -gt 0)
+Assert-Equal 'legacy-label arm: it read at least one manifest entry (a zero means the manifests were never opened)' $true ($legacyEntriesRead -gt 0)
+
 # ---- 3. the RENDERED table's column integrity -----------------------------------------------------
 # Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a
 # reader, which nothing else does -- and the two can disagree silently.

@@ -461,3 +461,57 @@ flipped flag → dedicated signal + compile-break guard (§3); **B4** GoManualCo
 exclusions (§4.2, with corpus counts); Tier A′ for named string types (§2′); binding + operator-form
 + empty-literal evidence closed by measurement (§1, §2). The panic row resolved itself via r10-sync's
 golib normalization (§3). Full lens reports in the session task output; corpus counts therein.
+
+---
+
+## 8. Dated amendment, 2026-09-23 (C1, from the H10 relabel reads) -- three literal classes that allocate per call
+
+Written so the entries whose counted objects include a per-call literal cite a record, as the H10
+relabel ruling's plan bar requires (ledger 2026-09-23 03:37, X(1)). Read at `bb54ff0920`. Owner: C1.
+Full design: phase-4D kickoff. Nothing above this block is rewritten.
+
+**This block REOPENS owner-accepted decisions, and the owner's ruling is its precondition.** Arms A and
+B would change decision 3 (§6, :430), decision 5 (:435-436), §4.2's degenerate-slug and format-position
+rows (:203-204), §4.3's naming rule (:221-222) and the user-approved §4.10 amendment (:392). None of
+them lands until the owner rules; COORD surfaces the question. Arm C reopens nothing (below).
+*(Fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, items 7 and 8 and COORD's
+ruling 3: the first version of this block said it did not reopen §6's decisions; it does.)*
+
+**Arm A -- the degenerate-slug literal.** §4.10's floor keeps a literal whose slug is two characters or
+fewer inline (`minHoistSlugLength = 3`, src/go2cs/hoistedLiteralOperations.go:94-103), where §3's
+Tier-B rendering `(@string)"n"u8` materialises it through `new @string(value)`
+(src/core/golib/string.cs:460-463, a counted `CopyOf`) on EVERY evaluation. log/slog's call-site keys
+pay it: the explicit `(@string)"n"u8`, `"s"u8`, `"d"u8` casts in the `...any` packs
+(src/core/log/slog/logger_test.cs:319-320, :332-333, :359-361), and the `"a"u8`..`"f"u8` keys of the
+LogAttrs calls, which are IMPLICIT span-to-`@string` conversions at the `@string` parameter -- the same
+operator, string.cs:460-463 (:377, :391, :400, :410-411, :421-423). *Stage:* hoist a degenerate-slug
+literal evaluated inside a function body under a positional name (the design's `strˢN` form, today only
+a collision ordinal among healthy slugs), with the literal in a comment beside the hoisted field.
+*Removes:* one counted object per evaluation. *Predictions (UNMEASURED):* log/slog 2_pairs 10 -> 8,
+2_pairs_disabled_inline 4 -> 2, 9_kvs 27 -> 18, attrs1 7 -> 6, attrs3 12 -> 9, attrs3_disabled 9 -> 6,
+attrs6 21 -> 15, attrs9 28 -> 19.
+
+**Arm B -- the format-position literal.** A literal in a formatting call's format position is excluded
+STRUCTURALLY, independent of its slug (hoistedLiteralOperations.go:590-592; §4.2's format-position row,
+:203; decision 5, :435-436). log TestDiscard's `"%s"u8` passed to `Printf` (src/core/log/log_test.cs:239)
+is one: the entry's only excess, since log.cs:289's params copy is Go's own allocation. *Stage:* lift
+the format-position exclusion for a literal evaluated per call inside a function body, hoisting it like
+arm A. *Removes:* one counted object per evaluation. *Prediction (UNMEASURED):* log TestDiscard 2 -> 1
+(want at most 1).
+
+**Arm C -- the function-local CONST.** Tier C skips every CONST spec (hoistedLiteralOperations.go:478-487)
+on the premise that a const is "emitted as the constant's own `static readonly` field". That holds at
+PACKAGE level (compare strconv's `static readonly fnParseFloat`, atof.cs:609) but not inside a function,
+where `const fnAtoi = "Atoi"` is emitted as a local `@string fnAtoi = "Atoi"u8;` (strconv/atoi.cs:255)
+and materialised on every call. *Stage:* narrow the CONST exclusion to package-level specs, so a
+function-local const hoists under its OWN name -- no naming decision is reopened. *Removes:* one counted
+object per const per call. *Members:* strconv TestAllocationsFromBytes/Atoi (`fnAtoi`), /ParseInt
+(`fnParseInt` at :214 and, through ParseUint, `fnParseUint` at :75) and /ParseUint (`fnParseUint`).
+*Predictions (UNMEASURED), after DESIGN-string-byte-window.md §7's stages 2 and 3:* Atoi 1 -> 0, ParseInt
+2 -> 0, ParseUint 1 -> 0.
+
+**Refusals (all arms):** a literal in a constant context outside a function (nothing is materialised);
+a literal whose `u8` span is consumed as a span (no `@string` is minted); a literal evaluated once.
+
+**Gate:** each arm's two-seeded corpus reconvert hunk count, then its members' rows before and after at
+Release with tiering off.

@@ -264,3 +264,45 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
 Coordinator recommendation: bless as specified; Unit 1 as one gated commit implemented by a
 top-tier agent (or the coordinator) with adversarial review on the park/claim paths; Unit 2
 immediately after as its own gated commit.
+
+## 6. Dated stub, 2026-09-23 (C1, REC-G of the H10 relabel ruling) -- a single-object channel core
+
+Ruled at ledger 2026-09-23 03:37 (X(2) REC-G, O4). **Owner: R, after its S-arc. Full design: phase-4D
+kickoff.** Nothing above this block is rewritten; read at `bb54ff0920`.
+
+**The claim to refute or prove.** golib's channel core charges FOUR counted objects per channel
+(src/core/golib/channel.cs:363-368): the core instance plus the three its field initializers allocate
+(`SyncRoot`, `Recvq`, `Sendq`), because "the .NET shape needs four objects to hold the same state".
+Go's `makechan` allocates the `hchan` with its lock and both wait queues inside one struct. A
+single-object core -- the lock and both queue heads held as value fields of the core itself -- either
+refutes that sentence or proves it; this stub asks for the answer, not a particular layout.
+
+**The stage that REMOVES the counted allocations:** the single-object core, if the answer is that it
+can be built. *Removes:* three counted objects per channel created. *Preconditions:* the park/claim
+paths of section 3 keep their single-fire and fairness properties with the queues as value fields (the
+adversarial review that section 5 asked for on those paths re-runs); a `Monitor`-style lock over the
+core object itself replaces `SyncRoot` only if nothing else locks on the core.
+
+**Refusals:** any layout that makes a channel value copyable (a channel is a reference in Go); any
+lock whose object is reachable from user code.
+
+**Members:** io TestPipeAllocations (want at most 4). Its 14 per run read at src/core/io/pipe.cs:245-253
+as one `PipeWriter` box, three channels at four objects each, and one field-ref view
+(`pw.of(PipeWriter.Ꮡr)`, :253, the first view minted for a new box).
+
+**Prediction (UNMEASURED):** io TestPipeAllocations 14 -> 5 = Go's own 4 + 1 view. Go's `io.Pipe`
+allocates four objects itself -- the `PipeWriter` (with its embedded `PipeReader` and `pipe`) and the
+three channels (go1.24.13 io/pipe.go) -- so the `PipeWriter` box is Go's own allocation, not an excess,
+and zh-box B′ has nothing to take here (B′ does not reach a returned interior pointer either). The one
+object above Go's four is the field-ref VIEW `pw.of(PipeWriter.Ꮡr)` (io/pipe.cs:253), the `*PipeReader`
+Pipe returns, which points INTO the `PipeWriter`'s storage. **No record removes it today:** under `ж<T>`,
+a pointer is a reference to an object, so a pointer to a field of another box needs a view object of
+its own; a representation in which such a pointer is a value (owner plus field offset) would remove it,
+and no record proposes one. So 5 against the want of 4 is stated here as the prediction, NOT as a floor
+-- a floor would need a proof on some basis other than "Go keeps it off the heap", which
+ConversionStrategies-Reference.md:21461-21464 forbids, and none is offered. *(Restated 2026-09-23 per
+COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, item 11: the first version called 5 a floor and gave the
+residue to B′.)*
+
+**Gate:** the channel behavioral tests and the golib channel suite, then io's row before and after at
+Release with tiering off.

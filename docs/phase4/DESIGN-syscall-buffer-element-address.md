@@ -64,3 +64,40 @@ The converter suite with the predicate's guard (a `_pN` wrapper lowered; a store
 - **Q49 landed** (`08b232e9b`): the funnel set section 2's predicate admits a take into is, at master, Go's four `//go:uintptrkeepalive` declarations plus the Windows `Syscall9/12/15/18/N` funnels, over `syscall`, `internal/runtime/syscall` and `crypto/x509/internal/macos` (`syscallKeepAliveAnalysis.go` at master is byte-identical to the branch read for the draft). The `_pN` idiom's only consumer is a conversion feeding that set by construction of `mksyscall`, so the 4 / 20 / 14 and the census's 41 / 26 / 28 stand as measured; the keep-alive census guard's landed arm is the shape the sibling arm in section 2 follows.
 - **GA landed** (`27c3129e0`): `Ꮡ(buf, 0)` is one `ElemRefBox` at master as read on the seat (segment 32 = 64 B / 1); the row's before-arm is **376.25 / 4** and the prediction in section 3 stands: after B **184.25 / 2 -> 64.25 / 1**, before B 376.25 / 4 -> 256.25 / 3, falsifiers as written.
 - Nothing above this block is rewritten.
+
+## 6. Dated amendment, 2026-09-23 (C1, REC-E of the H10 relabel ruling) -- an element take the CALLEE rebuilds into a window
+
+Ruled at ledger 2026-09-23 03:37 (X(2) REC-E, O5). Nothing above this block is rewritten; read at
+`bb54ff0920`. **Owner: C1. Full design: phase-4D kickoff.** *(Owner line and UNMEASURED added
+2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, item 10.)*
+
+**The site.** Section 2 admits an element take whose every consumer is a syscall funnel. crypto/rsa's
+hot path is the same take with a different consumer: bigmod's `montgomeryMul` calls
+`addMulVVW1024(&T[i], &a[0], d)` twice per limb iteration, four element takes in all (emitted at
+src/core/crypto/internal/fips140/bigmod/nat.cs:892 and :894), and the callee does nothing with either
+pointer but rebuild the window it came from -- `addMulVVW(unsafe.Slice(z, 1024/_W), unsafe.Slice(x,
+1024/_W), y)` (crypto/internal/fips140/bigmod/nat_noasm.go:11-13; emitted at nat_noasm.cs:11-13). Go
+pays nothing for `&T[i]`; the emission mints one counted `ElemRefBox` per take.
+
+**The stage that REMOVES the counted allocation.** Classify a pointer parameter whose EVERY use in the
+callee is the base of `unsafe.Slice(p, n)` as window-consuming; at a call site passing `&s[i]` to it,
+pass the window `s[i:]` instead to a slice-taking form of the callee, which uses `x[:n]` where the
+original rebuilt it. *Removes:* one `ElemRefBox` per admitted take -- four per limb iteration here.
+*Preconditions:* the callee is in the converted corpus (not a hand-owned or assembly body); the
+classification is interprocedural and cached per callee; a take whose window is shorter than `n` panics
+on the managed side where Go's would read past the slice, which is a strictly safer outcome and is
+stated as such.
+
+**Refusals:** a pointer parameter used for anything but that one rebuild (dereferenced, stored,
+compared, arithmetic'd, passed on); a callee reached through an interface or a func value; a take
+whose slice is native-backed.
+
+**Prediction (UNMEASURED):** crypto/rsa TestAllocations (174,351 per run, budget 10) falls by the
+element-take share; the share is not decomposed here. The run's byte average, about 71 B per counted object against
+a 64 B `ElemRefBox`, is consistent with element takes dominating, and that is an inference until the
+kickoff measures it. rsa's other families are REC-B (`T` at nat.cs:888 and `NewNat`) and the zh-box
+arc; its entry names all three.
+
+**Gate:** the classification is controlled both ways -- `addMulVVW1024` must classify window-consuming,
+and a sibling that dereferences its pointer must not -- and crypto/rsa's row reads before and after at
+Release with tiering off.
