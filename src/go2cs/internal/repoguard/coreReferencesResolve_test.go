@@ -63,6 +63,12 @@ var coreReferenceFileExtensions = []string{".csproj", ".projitems", ".props", ".
 // THE CLOSE CONDITION: at H10's close this table is SWEPT TO ZERO. A row still standing then names a
 // BANKED ROSTER ROW THAT WAS NEVER RE-RUN AT 1.24.13 -- read it that way, not as guard debt.
 //
+// THE CLOSE CONDITION WAS MET at the 1.23 -> 1.24 hop's H10 close (2026-09-23): the guard read
+// "declared 8 · measured 0 · retired 8" before the sweep, every row's tests csproj having been
+// re-emitted at 1.24.13 (net/http's, the last, by its close reading), so all eight rows are deleted
+// and the table is empty. It stays declared and empty: the gating arm still fails any NEW absent
+// reference by name.
+//
 // ONE ARM GATES, ONE ARM LOGS (ruled 2026-09-22, after the second re-table in a week). The set may
 // never GROW: a measured-absent reference missing from this table FAILS the guard by name, and that
 // arm alone enforces "only shrinks" -- no baseline file, the committed table IS the baseline. The set
@@ -70,16 +76,7 @@ var coreReferenceFileExtensions = []string{".csproj", ".projitems", ".props", ".
 // rule this replaces -- "delete the row in the same commit that changed the project file" -- cannot
 // hold on this fleet: the leg that re-emits a csproj runs the pipeline and does not know this guard
 // exists, which is what forced both re-tables.
-var staleCoreReferences = []string{
-	"crypto/tls/crypto.tls.tests.csproj -> crypto/internal/mlkem768",
-	"crypto/tls/crypto.tls.tests.csproj -> runtime/internal/math",
-	"fmt/fmt.tests.csproj -> runtime/internal/math",
-	"internal/trace/internal.trace.tests.csproj -> runtime/internal/math",
-	"math/rand/math.rand.tests.csproj -> runtime/internal/math",
-	"mime/multipart/mime.multipart.tests.csproj -> runtime/internal/math",
-	"net/http/net.http.tests.csproj -> runtime/internal/math",
-	"time/time.tests.csproj -> runtime/internal/math",
-}
+var staleCoreReferences = []string{}
 
 type coreReferenceScan struct {
 	projectFiles int
