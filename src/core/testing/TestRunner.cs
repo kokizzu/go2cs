@@ -108,8 +108,16 @@ public sealed class TestRunner
 
             foreach (RegisteredTest test in tests)
             {
+                // A test may lower the process's descriptor limit and leave it lowered, as Go's is free
+                // to (syscall's TestPrlimitFileLimit): the next test starts from the run's own limit,
+                // because the CLR cannot start a thread inside Go's 43 (HostDescriptorLimit.cs).
+                HostDescriptorLimit.RLimit? descriptorLimit = HostDescriptorLimit.Snapshot();
+
                 TestExecution execution = Start(test.Name, test.Action, null, test.Source, test.Line);
                 WaitForSerialBoundary(execution, parallel.Add);
+
+                if (HostDescriptorLimit.Restore(descriptorLimit) is int errno)
+                    Console.Error.WriteLine($"go2cs test host: restoring RLIMIT_NOFILE after {test.Name} was refused (errno {errno}); later tests run under the lowered limit");
             }
 
             foreach (TestExecution execution in parallel)
