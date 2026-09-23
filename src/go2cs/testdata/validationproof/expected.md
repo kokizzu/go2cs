@@ -27,16 +27,20 @@ Both runtimes skip 1 of the matched tests identically.
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/fixture/pkg/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
+
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
 
 | Test | Class | Pinned reason |
 |:--|:--|:--|
 | `TestGamma` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestGamma/sub` | `alloc-count-semantics` | exact-count AllocsPerRun assert (want 1): the managed shim is byte-derived, so a nonzero count assert can never agree |
-| `TestPipeAllocations` | `alloc-count-semantics` | count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, not mallocs |
+| `TestPipeAllocations` | `deferred` | count-bound AllocsPerRun assert: the managed Pipe allocates per call what Go keeps off the heap |
 
 ## Excluded declarations
 
