@@ -264,3 +264,36 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
 Coordinator recommendation: bless as specified; Unit 1 as one gated commit implemented by a
 top-tier agent (or the coordinator) with adversarial review on the park/claim paths; Unit 2
 immediately after as its own gated commit.
+
+## 6. Dated stub, 2026-09-23 (C1, REC-G of the H10 relabel ruling) -- a single-object channel core
+
+Ruled at ledger 2026-09-23 03:37 (X(2) REC-G, O4). **Owner: R, after its S-arc. Full design: phase-4D
+kickoff.** Nothing above this block is rewritten; read at `bb54ff0920`.
+
+**The claim to refute or prove.** golib's channel core charges FOUR counted objects per channel
+(src/core/golib/channel.cs:363-368): the core instance plus the three its field initializers allocate
+(`SyncRoot`, `Recvq`, `Sendq`), because "the .NET shape needs four objects to hold the same state".
+Go's `makechan` allocates the `hchan` with its lock and both wait queues inside one struct. A
+single-object core -- the lock and both queue heads held as value fields of the core itself -- either
+refutes that sentence or proves it; this stub asks for the answer, not a particular layout.
+
+**The stage that REMOVES the counted allocations:** the single-object core, if the answer is that it
+can be built. *Removes:* three counted objects per channel created. *Preconditions:* the park/claim
+paths of section 3 keep their single-fire and fairness properties with the queues as value fields (the
+adversarial review that section 5 asked for on those paths re-runs); a `Monitor`-style lock over the
+core object itself replaces `SyncRoot` only if nothing else locks on the core.
+
+**Refusals:** any layout that makes a channel value copyable (a channel is a reference in Go); any
+lock whose object is reachable from user code.
+
+**Members:** io TestPipeAllocations (want at most 4). Its 14 per run read at src/core/io/pipe.cs:245-253
+as one `PipeWriter` box, three channels at four objects each, and one field-ref view
+(`pw.of(PipeWriter.Ꮡr)`, :253, the first view minted for a new box).
+
+**Prediction:** io TestPipeAllocations 14 -> 5 (1 box + 3 single-object channels + 1 view). **Floor
+claim, in prose only:** 5 exceeds the want of 4, so the single-object core alone does not pass the
+row; the residue is the box and the view, which are zh-box B′'s. A floor field is not written while the
+claim is unmeasured.
+
+**Gate:** the channel behavioral tests and the golib channel suite, then io's row before and after at
+Release with tiering off.

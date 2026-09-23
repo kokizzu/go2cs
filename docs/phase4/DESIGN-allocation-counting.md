@@ -247,3 +247,55 @@ far more expensive than the `ж` box the 11 % was measured against.
 The benchmark defeats .NET 9's stack-allocation optimization deliberately: with a literal `16` the
 `make` loop measured 0.187 ns/op because the backing array was never heap-allocated at all. The size
 is a non-const static for that reason.
+
+## 9. Dated block, 2026-09-23 (C1, REC-F of the H10 relabel ruling) -- five instrument seats, all POST-HOP
+
+Ruled at ledger 2026-09-23 03:37 (X(2) REC-F, X(5), O3, O4). **Owner: C1 for (i)-(ii), authored
+unexecuted with an i7 red-first control/head pair before merge and G reviewing as the testing row's
+owner; (iii)-(v) at the phase-4D kickoff.** Nothing above this block is rewritten; line numbers are
+read at `bb54ff0920` (src/core/testing/testing.cs, the `AllocsPerRun` body).
+
+**(i) The COUNT arm's integer quotient, with a residue guard.** On the COUNT arm Go's integer quotient
+is the Go-true figure (go1.24.13 testing/allocs.go:40-44), and `Math.Max(1L, counted / runs)`
+(testing.cs:755) was inherited from the byte shim (section 6 above). The one reading it misreports
+among the reading run's 145 unit notes is bytes TestGrow: 14 counted over 100 runs, which Go truncates
+to 0 and the host floors to 1. Plain truncation would open the FIRST false-pass path for a want-0
+assert: today a want-0 pass needs zero bytes (testing.cs:743), and afterwards `0 < counted < runs` plus
+uncounted objects every run would report 0. It would also make verdicts non-monotone at the COUNT/BYTES
+seam (testing.cs:750): section 6's "no test that passed on bytes can fail on the count" stops holding.
+So the seat lands only with a **residue guard**: a truncated zero is reported only when the uncounted
+byte residue per run, `(allocated - counted x 24 B) / runs`, is provably below one CLR object (24 B);
+otherwise the floor stands. *Retires:* bytes TestGrow (Go's own `Buffer` allocates per doubling and
+passes by truncation, buffer_test.go:549-568), ordered against the Linux leg -- scoped `[linux,
+darwin]` at the Windows bank, deleted only when Linux reads it passing on a post-seat tree. Canary: the
+io row's 1,024 counted over 1,000 runs (138,000 B) stays at 1 under truncation, a 24-object margin.
+
+**(ii) A unit line on every nonzero call.** `NoteMeasurementUnitOnce` (TestExecution.cs:457-466) records
+only a test's first nonzero call, so a test whose failing call is not its first has no recorded unit
+(context TestAllocs, testing TestAllocsPerRun, slog attrs1 and TestTextHandlerAlloc among the reading
+run's). Add a short per-call unit line and keep the long note's prefixes byte-identical, so every
+extractor that parses today's note keeps working; the reading-run extractor is amended to parse the new
+lines.
+
+**(iii) `MakeNoZero` counting, with a size class kept local to bytealg.** The hand-owned
+`bytealg.MakeNoZero` allocates `new byte[n]` (src/core/internal/bytealg/bytealg_impl.cs:24), which the
+counter does not see, and does not round the capacity up to a size class as Go's runtime does
+(`roundupsize`, src/core/runtime/slice.cs:408). Counting it is the load-bearing half: strings.Builder's
+buffer -- Go's ONE allocation in TestBuilderAllocs and bufio TestReadStringAllocs -- becomes visible.
+The size-class table stays local to bytealg to avoid a runtime import cycle. *Removes:*
+TestBuilderGrowSizeclasses' regrow (Grow(18) rounds to 24 in Go, so 19 bytes fit). *Re-pins* the
+strings and bufio readings in the same batch.
+
+**(iv) `NewArray(0)` -> `Array.Empty<T>()`.** A zero-length `array<T>` costs a counted object
+(AllocationCounter.cs:164-170, `NewArray`) where a zero-length `CopyOf` does not (:207-213). log/slog's
+`Value` carries `array<Action> _ = new(0)` (log/slog/value.cs:24), and every explicit constructor runs
+that initializer, so every `Value` costs one counted object (F4). An empty array of any element type is
+indistinguishable from any other, so the shared empty instance is Go-true. *Prediction:* slog
+TestAnyLevelAlloc COUNT 1 -> BYTES 24 (the boxed `ΔLevel`, uncounted, remains), which moves it from
+the COUNT arm to the BYTES arm -- a relabel trigger ruled when it happens (X(4)).
+
+**(v) A sweep-side reading comparator.** Nothing compares a `deferred` entry's `reading` with the run
+today: the loader only checks the field is present (testConversion.go:7586) and so does
+check-roster-format's 2c arm. The comparator reads each entry's recorded per-run figure (every reading
+LEADS with it) against the run's own unit note and flags a move AWAY from the want. Until it lands,
+COORD compares them by hand at every sweep read (X(5)).

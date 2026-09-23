@@ -305,3 +305,16 @@ my own retracted sizing sentence. **It fixes the class's boundary at R's measure
 at the symptom that named it, states the population that IS measured with its scope, names the one
 that is not, and makes building that census the first gate.**
 
+
+---
+
+## 8. Dated cross-reference, 2026-09-23 (C1, from the H10 relabel ruling, ledger 2026-09-23 03:37 X(2), O1)
+
+**(D) does not reach the allocation face.** This record's recommendation (D), section 3, scopes (C) to
+the structs the corpus passes to the kernel or views over native memory. The fixed-array ALLOCATION
+family -- a `[N]T` field, copy or literal that costs a counted object per evaluation (md5/sha digests,
+`chunkedReader.buf`, `slog.Record.front`) -- is none of those, so (D) retires none of its entries, and
+the record is PROPOSED (its status line) in any case. That family's plan is
+`DESIGN-array-value-storage.md` (REC-A). **Q74-5 is shared**: REC-A's inline representation meets the
+same window question (`array<T>`'s `m_low`/`m_length` for `(*[N]T)(s)`), and whichever record answers
+it first answers it for both. Nothing above is rewritten.

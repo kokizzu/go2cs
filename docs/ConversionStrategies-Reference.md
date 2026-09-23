@@ -21479,8 +21479,12 @@ met by family rather than by a bespoke design per entry.
 **The three fields, and why each is required.** `want` is the assertion's own bound, readable without
 opening the test. `reading` is the measured current value **with the configuration named**, because a
 reading taken at another configuration is not comparable (Release with tiering off is the measurement
-of record) and one with no tree named cannot be re-checked — the sweep prints it beside the want, so a
-reading moving **away** from the want fails the row exactly as a matched verdict flipping would.
+of record) and one with no tree named cannot be re-checked. **Nothing compares it with the run yet**
+(present tense, dated 2026-09-23, ledger 03:37 X(5)): the loader and check-roster-format's 2c arm only
+check that the field is present, so until the sweep-side comparator of
+[`DESIGN-allocation-counting.md`](phase4/DESIGN-allocation-counting.md) §9 (v) lands, COORD compares
+each deferred entry's unit note against its `reading` by hand at every sweep read, and a reading moving
+**away** from the want is a finding. Every `reading` therefore LEADS with its per-run figure.
 `plan` is the design record and increment that closes it.
 
 **Which instrument's number goes in `reading`.** The converted host's own `AllocsPerRun` value, not a
@@ -21505,6 +21509,19 @@ reducible), a floor with no proof, a floor that does not exceed its want (nothin
 entry is simply structural), and a floor beside a want that does not LEAD with its number — refusing
 an uncheckable pairing beats guessing which number in a sentence was meant. `floor: 0` means absent,
 which is sound because a legal floor is always at least 1.
+
+**The R3 shape: Go's whole budget lies outside the counted population (ruled 2026-09-23, ledger 03:37
+X(4) and O2).** Some asserts budget a NONZERO number of allocations that Go spends entirely on objects
+golib's counter never charges -- `log/slog`'s `2 pairs` wants exactly 2, and in Go those are the two
+`any` conversions of its non-constant arguments, which the managed side performs as uncounted CLR boxes
+(`9 kvs`'s 10 is the same shape plus one `Record.back` slice, which both sides count). Such an entry is
+`deferred` on its COUNTED SURPLUS (every counted object is excess, because Go's budget sits outside the
+count) and carries a **pre-declared end label of `alloc-count-semantics`**: when the plan has removed
+the surplus, the count reads zero while bytes are nonzero, the host takes the BYTES arm, and the entry
+relabels to the incomparable-unit class rather than retiring. That end label is declared ONLY for this
+shape; no want-0 COUNT entry pre-declares one (a flip to BYTES there is a relabel trigger ruled when it
+happens), and whether a want-0 BYTES entry with a nameable uncounted residue belongs in
+`alloc-count-semantics` is an open post-hop question.
 
 **And a THIRD label stays, for a different reason.** `alloc-count-semantics` (8 entries) names an
 assertion whose UNIT cannot be measured on the host — `reflect`'s `TestChanAlloc` wants 1 where our

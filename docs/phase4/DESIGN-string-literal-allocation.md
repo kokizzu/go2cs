@@ -461,3 +461,41 @@ flipped flag → dedicated signal + compile-break guard (§3); **B4** GoManualCo
 exclusions (§4.2, with corpus counts); Tier A′ for named string types (§2′); binding + operator-form
 + empty-literal evidence closed by measurement (§1, §2). The panic row resolved itself via r10-sync's
 golib normalization (§3). Full lens reports in the session task output; corpus counts therein.
+
+---
+
+## 8. Dated amendment, 2026-09-23 (C1, from the H10 relabel reads) -- what the degenerate-slug floor costs
+
+Written so the entries whose counted objects include an un-hoisted literal cite a record, as the H10
+relabel ruling's plan bar requires (ledger 2026-09-23 03:37, X(1)). Read at `bb54ff0920`. Nothing
+above this block is rewritten; this adds a stage, it does not reopen section 6's decisions. Owner: C1.
+Full design: phase-4D kickoff.
+
+**The site.** §4.10's floor keeps a literal whose slug is two characters or fewer inline
+(`minHoistSlugLength = 3`, src/go2cs/hoistedLiteralOperations.go:94-103), where §3's Tier-B rendering
+`(@string)"n"u8` materialises it through `new @string(value)` (src/core/golib/string.cs:460-463, a
+counted `CopyOf`) on EVERY evaluation. The floor was a readability decision; its allocation cost was
+not priced then. Two measured members pay it per call:
+
+- log/slog TestAlloc/*: the call-site keys `(@string)"n"u8`, `"s"u8`, `"d"u8` and `"a"u8`..`"f"u8`
+  (src/core/log/slog/logger_test.cs:319-320, :332-333, :358-360, :377, :391, :401, :410-412,
+  :421-423) -- one counted object per key per call, 9 of 9_kvs's 27 and of attrs9's 28;
+- log TestDiscard: the format literal `"%s"u8` passed to `Printf` (src/core/log/log_test.cs:239).
+
+**The stage that REMOVES the counted allocation:** hoist a degenerate-slug literal under a positional
+name (the design's `strˢN` form, which today exists only as a collision ordinal among healthy slugs,
+hoistedLiteralOperations.go:94-103) when it is evaluated inside a function
+body, and keep it inline, as today, where it is evaluated once. *Removes:* one counted object per
+evaluation. *Precondition:* §4.10's readability argument is re-weighed against the measured cost -- the
+inline form stays for a literal the reader needs to see at its use, and the hoist names the literal in
+a comment beside it.
+
+**Refusals:** a literal in a constant context (no materialisation today); a literal whose `u8` span is
+consumed as a span (no `@string` is minted).
+
+**Predictions:** log/slog 2_pairs 10 -> 8, 2_pairs_disabled_inline 4 -> 2, 9_kvs 27 -> 18, attrs1 7 -> 6,
+attrs3 12 -> 9, attrs3_disabled 9 -> 6, attrs6 21 -> 15, attrs9 28 -> 19; log TestDiscard 2 -> 1 (want at
+most 1).
+
+**Gate:** the two-seeded corpus reconvert's hunk count for the rename, then the members' rows before
+and after at Release with tiering off.
