@@ -8,7 +8,7 @@ using fmt = fmt_package;
 using io = io_package;
 using log = log_package;
 using static global::go.net.http_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
@@ -149,7 +149,7 @@ internal static void testServerIssue5953(ж<testing.T> Ꮡt, testMode mode) {
     }
     var got = (~resp).Header[contentTypeˢ];
     var want = new @string[]{""u8}.slice();
-    if (!reflect.DeepEqual(got, want)) {
+    if (!slices.Equal<slice<@string>, @string>(got, want)) {
         Ꮡt.Errorf("Content-Type = %q; want %q"u8, got, want);
     }
     (~resp).Body.Close();

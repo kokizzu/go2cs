@@ -102,6 +102,7 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="alpn_test.cs" />
+    <Compile Include="async_test.cs" />
     <Compile Include="client_test.cs" />
     <Compile Include="clientserver_test.cs" />
     <Compile Include="cookie_test.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="http_test.cs" />
     <Compile Include="main_test.cs" />
     <Compile Include="mapping_test.cs" />
+    <Compile Include="netconn_test.cs" />
     <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
@@ -142,6 +144,7 @@
 
   <ItemGroup>
     <None Include="alpn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="async_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="client.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="client_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="clientserver_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
@@ -169,6 +172,7 @@
     <None Include="mapping.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="mapping_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="method.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netconn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="omithttp2.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="pattern.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <None Include="pattern_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
@@ -233,6 +237,10 @@
     <ProjectReference Include="$(go2csPath)core/hash/hash.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/nettrace/internal.nettrace.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/race/internal.race.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/maps/internal.runtime.maps.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/synctest/internal.synctest.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
@@ -250,6 +258,7 @@
     <ProjectReference Include="$(go2csPath)core/net/http/internal/net.http.internal.csproj" />
     <ProjectReference Include="$(go2csPath)core/net/http/internal/testcert/net.http.internal.testcert.csproj" />
     <ProjectReference Include="$(go2csPath)core/net/net.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/netip/net.netip.csproj" />
     <ProjectReference Include="$(go2csPath)core/net/textproto/net.textproto.csproj" />
     <ProjectReference Include="$(go2csPath)core/net/url/net.url.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/exec/os.exec.csproj" />
@@ -259,7 +268,6 @@
     <ProjectReference Include="$(go2csPath)core/path/path.csproj" />
     <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
     <ProjectReference Include="$(go2csPath)core/regexp/regexp.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />

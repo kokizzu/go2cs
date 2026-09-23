@@ -402,18 +402,18 @@ internal static void testClientRedirectsContext(ж<testing.T> Ꮡt, testMode mod
     var ts = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
         Redirect(w, r, "/"u8, StatusTemporaryRedirect);
     }))).Value.ts;
-    var (ctx, cancel) = context.WithCancel(context.Background());
+    var (ctx, cancel) = context_package.WithCancel(context_package.Background());
     var c = ts.Client();
     var cancelʗ1 = cancel;
     c.Value.CheckRedirect = error (ж<Δhttp.Request> reqΔ1, slice<ж<Δhttp.Request>> via) => {
         cancelʗ1();
-        var selᴛ1 = reqΔ1.Context().Done();
-        var selᴛ2 = time.After((time.Duration)(5000000000L));
-        switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-        case 0 when selᴛ1.ꟷᐳ(out _): {
+        var selᴛ2 = reqΔ1.Context().Done();
+        var selᴛ3 = time.After((time.Duration)(5000000000L));
+        switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+        case 0 when selᴛ2.ꟷᐳ(out _): {
             return default!;
         }
-        case 1 when selᴛ2.ꟷᐳ(out _): {
+        case 1 when selᴛ3.ꟷᐳ(out _): {
             return errors.New(redirectedRequestSˢ);
         }}
         return default!;
@@ -424,8 +424,8 @@ internal static void testClientRedirectsContext(ж<testing.T> Ꮡt, testMode mod
     if (!ok) {
         Ꮡt.Fatalf("got error %T; want *url.Error"u8, err);
     }
-    if (!AreEqual((~ue).Err, context.Canceled)) {
-        Ꮡt.Errorf("url.Error.Err = %v; want %v"u8, (~ue).Err, context.Canceled);
+    if (!AreEqual((~ue).Err, context_package.Canceled)) {
+        Ꮡt.Errorf("url.Error.Err = %v; want %v"u8, (~ue).Err, context_package.Canceled);
     }
 }
 
@@ -464,7 +464,7 @@ public static void TestPostRedirects(ж<testing.T> Ꮡt) {
         @"POST /?code=307&next=303,308,302 ""c307"""u8,
         @"POST /?code=303&next=308,302 ""c307"""u8,
         @"GET /?code=308&next=302 """""u8,
-        @"GET /?code=302 ""c307"""u8,
+        @"GET /?code=302 """""u8,
         @"GET / """""u8,
         @"POST /?code=308&next=302,301 ""c308"""u8,
         @"POST /?code=302&next=301 ""c308"""u8,
@@ -498,7 +498,7 @@ public static void TestDeleteRedirects(ж<testing.T> Ꮡt) {
         @"DELETE /?code=301&next=302,308 ""c301"""u8,
         @"GET /?code=302&next=308 """""u8,
         @"GET /?code=308 """""u8,
-        @"GET / ""c301"""u8,
+        @"GET / """""u8,
         @"DELETE /?code=302&next=302 ""c302"""u8,
         @"GET /?code=302 """""u8,
         @"GET / """""u8,
@@ -507,7 +507,7 @@ public static void TestDeleteRedirects(ж<testing.T> Ꮡt) {
         @"DELETE /?code=307&next=301,308,303,302,304 ""c307"""u8,
         @"DELETE /?code=301&next=308,303,302,304 ""c307"""u8,
         @"GET /?code=308&next=303,302,304 """""u8,
-        @"GET /?code=303&next=302,304 ""c307"""u8,
+        @"GET /?code=303&next=302,304 """""u8,
         @"GET /?code=302&next=304 """""u8,
         @"GET /?code=304 """""u8,
         @"DELETE /?code=308&next=307 ""c308"""u8,
@@ -529,7 +529,7 @@ internal static readonly @string codeˢ = "code"u8;
 internal static readonly @string nextˢ = "next"u8;
 
 [GoType("dyn")] internal partial struct testRedirectsByMethod_log {
-    public partial ref sync_package.Mutex Mutex { get; }
+    public partial ref global::go.sync_package.Mutex Mutex { get; }
     public partial ref bytes_package.Buffer Buffer { get; }
 }
 
@@ -796,33 +796,35 @@ public static void TestClientSendsCookieFromJar(ж<testing.T> Ꮡt) {
 
 public static void SetCookies(this ж<TestJar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var j = ref Ꮡj.DerefOrNull();
         ref var u = ref Ꮡu.DerefOrNull();
 
         j.m.Lock();
-        defer(Ꮡj.of(TestJar.Ꮡm).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (j.perURL == default!) {
             j.perURL = new map<@string, slice<ж<httpꓸCookie>>>();
         }
         j.perURL[u.Host] = cookies;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡj.DerefOrNull().m.Unlock(); ᒐ.Run(); }
 }
 
 public static slice<ж<httpꓸCookie>> Cookies(this ж<TestJar> Ꮡj, ж<url.URL> Ꮡu) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var j = ref Ꮡj.DerefOrNull();
         ref var u = ref Ꮡu.DerefOrNull();
 
         j.m.Lock();
-        defer(Ꮡj.of(TestJar.Ꮡm).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return j.perURL[u.Host];
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡj.DerefOrNull().m.Unlock(); ᒐ.Run(); }
 }
 
 public static void TestRedirectCookiesJar(ж<testing.T> Ꮡt) {
@@ -931,16 +933,17 @@ public static slice<ж<httpꓸCookie>> Cookies(this ж<RecordingJar> Ꮡj, ж<ur
 
 internal static void logf(this ж<RecordingJar> Ꮡj, @string format, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         var args = argsʗp.slice();
 
         ref var j = ref Ꮡj.DerefOrNull();
         j.mu.Lock();
-        defer(Ꮡj.of(RecordingJar.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         fmt.Fprintf(new http_test_package.bytes_BufferжWriter(Ꮡj.of(RecordingJar.Ꮡlog)), format, args.ꓸꓸꓸ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡj.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 public static void TestStreamingGet(ж<testing.T> Ꮡt) {
@@ -965,7 +968,7 @@ internal static void testStreamingGet(ж<testing.T> Ꮡt, testMode mode) {
     array<byte> buf = new(10);
     foreach (var (_, str) in new @string[]{"i"u8, "am"u8, "also"u8, "known"u8, "as"u8, "comet"u8}.slice()) {
         say.ᐸꟷ(str);
-        var (n, errΔ1) = io.ReadFull((~res).Body, buf[0..(int)(len(str))]);
+        var (n, errΔ1) = io.ReadFull((~res).Body, buf[..(int)(len(str))]);
         if (errΔ1 != default!) {
             Ꮡt.Fatalf("ReadFull on %q: %v"u8, str, errΔ1);
         }
@@ -1587,7 +1590,7 @@ internal static void testClientTimeout(ж<testing.T> Ꮡt, testMode mode) {
         if (!ne.Timeout()) {
             Ꮡt.Errorf("net.Error.Timeout = false; want true"u8);
         }
-        if (!errors.Is(err, context.DeadlineExceeded)) {
+        if (!errors.Is(err, context_package.DeadlineExceeded)) {
             Ꮡt.Errorf("ReadAll error = %q; expected some context.DeadlineExceeded"u8, err);
         }
         {
@@ -1651,7 +1654,7 @@ internal static void testClientTimeout_Headers(ж<testing.T> Ꮡt, testMode mode
         if (!ne.Timeout()) {
             Ꮡt.Error(netErrorTimeoutFalseWantˢ);
         }
-        if (!errors.Is(err, context.DeadlineExceeded)) {
+        if (!errors.Is(err, context_package.DeadlineExceeded)) {
             Ꮡt.Errorf("ReadAll error = %q; expected some context.DeadlineExceeded"u8, err);
         }
         {
@@ -1677,7 +1680,7 @@ internal static void testClientTimeoutCancel(ж<testing.T> Ꮡt, testMode mode) 
     GoFrame ᒐ = default;
     try {
         var testDone = new channel<EmptyStruct>(0);
-        var (ctx, cancel) = context.WithCancel(context.Background());
+        var (ctx, cancel) = context_package.WithCancel(context_package.Background());
         var testDoneʗ1 = testDone;
         var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             w._<Flusher>().Flush();
@@ -1757,9 +1760,9 @@ internal static void testClientRedirectEatsBody(ж<testing.T> Ꮡt, testMode mod
         Ꮡt.Fatal(err);
     }
     @string first = default!;
-    var selᴛ3 = saw;
-    switch (trySelect(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
-    case 0 when selᴛ3.ꟷᐳ(out first): {
+    var selᴛ4 = saw;
+    switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+    case 0 when selᴛ4.ꟷᐳ(out first): {
         break;
     }
     default: {
@@ -1767,9 +1770,9 @@ internal static void testClientRedirectEatsBody(ж<testing.T> Ꮡt, testMode mod
         break;
     }}
     @string second = default!;
-    var selᴛ4 = saw;
-    switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
-    case 0 when selᴛ4.ꟷᐳ(out second): {
+    var selᴛ5 = saw;
+    switch (trySelect(ᐸꟷ(selᴛ5, ꓸꓸꓸ))) {
+    case 0 when selᴛ5.ꟷᐳ(out second): {
         break;
     }
     default: {
@@ -2522,9 +2525,9 @@ internal static void testClientDoCanceledVsTimeout(ж<testing.T> Ꮡt, testMode 
                 context.Context ctx = default!;
                 Action cancel = default!;
                 if (name == "timeout"u8){
-                    (ctx, cancel) = context.WithTimeout(context.Background(), -time.ΔNanosecond);
+                    (ctx, cancel) = context_package.WithTimeout(context_package.Background(), -time.ΔNanosecond);
                 } else {
-                    (ctx, cancel) = context.WithCancel(context.Background());
+                    (ctx, cancel) = context_package.WithCancel(context_package.Background());
                     cancel();
                 }
                 var cancelʗ1 = cancel;
@@ -2536,9 +2539,9 @@ internal static void testClientDoCanceledVsTimeout(ж<testing.T> Ꮡt, testMode 
                 }
                 var ue = err._<ж<urlꓸError>>();
                 bool wantIsTimeout = default!;
-                error wantErr = context.Canceled;
+                error wantErr = context_package.Canceled;
                 if (name == "timeout"u8) {
-                    wantErr = context.DeadlineExceeded;
+                    wantErr = context_package.DeadlineExceeded;
                     wantIsTimeout = true;
                 }
                 {
@@ -2552,7 +2555,7 @@ internal static void testClientDoCanceledVsTimeout(ж<testing.T> Ꮡt, testMode 
                     }
                 }
                 {
-                    var got = errors.Is(err, context.DeadlineExceeded); if (got != wantIsTimeout) {
+                    var got = errors.Is(err, context_package.DeadlineExceeded); if (got != wantIsTimeout) {
                         tΔ1.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v"u8, got, wantIsTimeout);
                     }
                 }
@@ -2712,13 +2715,13 @@ internal static void testProbeZeroLengthBody(ж<testing.T> Ꮡt, testMode mode) 
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }
     });
-    var selᴛ5 = reqc;
-    var selᴛ6 = time.After((time.Duration)(60000000000L));
-    switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
-    case 0 when selᴛ5.ꟷᐳ(out _): {
+    var selᴛ6 = reqc;
+    var selᴛ7 = time.After((time.Duration)(60000000000L));
+    switch (select(ᐸꟷ(selᴛ6, ꓸꓸꓸ), ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+    case 0 when selᴛ6.ꟷᐳ(out _): {
         break;
     }
-    case 1 when selᴛ6.ꟷᐳ(out _): {
+    case 1 when selᴛ7.ꟷᐳ(out _): {
         Ꮡt.Errorf("request not sent after 60s"u8);
         break;
     }}

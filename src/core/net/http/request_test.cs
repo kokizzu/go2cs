@@ -21,6 +21,7 @@ using url = global::go.net.url_package;
 using os = os_package;
 using reflect = reflect_package;
 using regexp = regexp_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using crypto;
@@ -99,12 +100,12 @@ public static void TestParseFormQuery(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var qs = (~req).Form["q"u8]; if (!reflect.DeepEqual(qs, new @string[]{"foo"u8, "bar"u8}.slice())) {
+        var qs = (~req).Form["q"u8]; if (!slices.Equal<slice<@string>, @string>(qs, new @string[]{"foo"u8, "bar"u8}.slice())) {
             Ꮡt.Errorf(@"req.Form[""q""] = %q, want [""foo"", ""bar""]"u8, qs);
         }
     }
     {
-        var both = (~req).Form[bothˢ]; if (!reflect.DeepEqual(both, new @string[]{"y"u8, "x"u8}.slice())) {
+        var both = (~req).Form[bothˢ]; if (!slices.Equal<slice<@string>, @string>(both, new @string[]{"y"u8, "x"u8}.slice())) {
             Ꮡt.Errorf(@"req.Form[""both""] = %q, want [""y"", ""x""]"u8, both);
         }
     }
@@ -114,17 +115,17 @@ public static void TestParseFormQuery(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var orphan = (~req).Form[orphanˢ]; if (!reflect.DeepEqual(orphan, new @string[]{""u8, "nope"u8}.slice())) {
+        var orphan = (~req).Form[orphanˢ]; if (!slices.Equal<slice<@string>, @string>(orphan, new @string[]{""u8, "nope"u8}.slice())) {
             Ꮡt.Errorf(@"req.FormValue(""orphan"") = %q, want """" (from body)"u8, orphan);
         }
     }
     {
-        var empty = (~req).Form[emptyˢ]; if (!reflect.DeepEqual(empty, new @string[]{""u8, "not"u8}.slice())) {
+        var empty = (~req).Form[emptyˢ]; if (!slices.Equal<slice<@string>, @string>(empty, new @string[]{""u8, "not"u8}.slice())) {
             Ꮡt.Errorf(@"req.FormValue(""empty"") = %q, want """" (from body)"u8, empty);
         }
     }
     {
-        var nokey = (~req).Form[""u8]; if (!reflect.DeepEqual(nokey, new @string[]{"nokey"u8}.slice())) {
+        var nokey = (~req).Form[""u8]; if (!slices.Equal<slice<@string>, @string>(nokey, new @string[]{"nokey"u8}.slice())) {
             Ꮡt.Errorf(@"req.FormValue(""nokey"") = %q, want ""nokey"" (from body)"u8, nokey);
         }
     }
@@ -950,7 +951,7 @@ public static void TestRequestWriteBufferedWriter(ж<testing.T> Ꮡt) {
         "User-Agent: "u8 + http_internal_test_package.DefaultUserAgent + "\r\n"u8,
         "\r\n"u8
     }.slice();
-    if (!reflect.DeepEqual(got, want)) {
+    if (!slices.Equal<slice<@string>, @string>(got, want)) {
         Ꮡt.Errorf("Writes = %q\n  Want = %q"u8, got, want);
     }
 }
@@ -975,7 +976,7 @@ public static void TestRequestBadHostHeader(ж<testing.T> Ꮡt) {
         "User-Agent: "u8 + http_internal_test_package.DefaultUserAgent + "\r\n"u8,
         "\r\n"u8
     }.slice();
-    if (!reflect.DeepEqual(got, want)) {
+    if (!slices.Equal<slice<@string>, @string>(got, want)) {
         Ꮡt.Errorf("Writes = %q\n  Want = %q"u8, got, want);
     }
 }
@@ -998,7 +999,7 @@ public static void TestRequestBadUserAgent(ж<testing.T> Ꮡt) {
         "User-Agent: evil  X-Evil: evil\r\n"u8,
         "\r\n"u8
     }.slice();
-    if (!reflect.DeepEqual(got, want)) {
+    if (!slices.Equal<slice<@string>, @string>(got, want)) {
         Ꮡt.Errorf("Writes = %q\n  Want = %q"u8, got, want);
     }
 }
@@ -1246,7 +1247,7 @@ public static void TestWithContextNilURL(ж<testing.T> Ꮡt) {
     }
     // Issue 20601
     req.Value.URL = default!;
-    var reqCopy = req.WithContext(context.Background());
+    var reqCopy = req.WithContext(context_package.Background());
     if ((~reqCopy).URL != nil) {
         Ꮡt.Error(expectedNilUrlInClonedˢ);
     }
@@ -1266,7 +1267,7 @@ public static void TestRequestCloneTransferEncoding(ж<testing.T> Ꮡt) {
     req.Value.TransferEncoding = new @string[]{
         "encoding1"u8
     }.slice();
-    var clonedReq = req.Clone(context.Background());
+    var clonedReq = req.Clone(context_package.Background());
     // modify original after deep copy
     req.Value.TransferEncoding[0] = encoding2ˢ;
     if ((~req).TransferEncoding[0] != "encoding2") {
@@ -1286,7 +1287,7 @@ internal static readonly @string copyˢ = "copy"u8;
 public static void TestRequestClonePathValue(ж<testing.T> Ꮡt) {
     var (req, _) = Δhttp.NewRequest(getˢ2, httpsExampleOrgˢ, default!);
     req.SetPathValue("p1"u8, origˢ);
-    var clonedReq = req.Clone(context.Background());
+    var clonedReq = req.Clone(context_package.Background());
     clonedReq.SetPathValue("p2"u8, copyˢ);
     // Ensure that any modifications to the cloned
     // request do not pollute the original request.

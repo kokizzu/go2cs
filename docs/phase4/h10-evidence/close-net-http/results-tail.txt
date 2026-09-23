@@ -1,0 +1,7 @@
+RESULTS: 438,644 bytes; tail(200)= ...'null,"source":null,"line":null},{"package":"net/http","test":"","action":"fail","elapsed":0,"output":"exit status 1: the process ended before the host completed (os.Exit)","source":null,"line":null}]}'
+RESULTS: timeout marker present = False
+RESULTS: environment = {"dotnetRuntime": ".NET 10.0.11", "culture": "en-AS", "timezone": "UTC", "shuffleSeed": null, "configuration": "Release", "tiered": true}
+RESULTS: last event = {"package": "net/http", "test": "", "action": "fail", "elapsed": 0, "output": "exit status 1: the process ended before the host completed (os.Exit)", "source": null, "line": null}
+RESULTS: package terminal events = [{"package": "net/http", "test": "", "action": "fail", "elapsed": 62.5342669, "output": null, "source": null, "line": null}, {"package": "net/http", "test": "", "action": "fail", "elapsed": 0, "output": "exit status 1: the process ended before the host completed (os.Exit)", "source": null, "line": n
+RESULTS: per-test actions = {"run": 1387, "pass": 1349, "skip": 21, "infrastructure-error": 11, "fail": 6}
+COMPARISON: status=failing matched=False go=1387 cs=1387 disclosed=0 excluded=50 skipped=21 errors=18 env={"configuration": "Release", "tiered": true, "oracleGoVersion": "go version go1.24.13 windows/amd64"}
