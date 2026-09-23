@@ -1740,6 +1740,10 @@ Assert-Equal 'own-page arm: at least one row links a page generated at the pin (
 # refused here the day reflect banks at the pin, which is when they relabel (ledger 16:39). And while
 # every row's headline page is a Windows page, the [linux, darwin]-scoped entries are never in scope
 # here, so the Linux leg's obligation to label or retire them needs a gate of its own.
+# CLOSED 2026-09-23 (G, on COORD's ruling of the Linux leg): all four RETIRED from the Linux reading at
+# bb54ff0920 (claude/g-linux-leg-evidence b84e5d5bfa) -- the three TestSizeAllocs value subtests read
+# pass/pass and TestNewIntAllocs fail/fail (Go fails it too), so none absorbed anything on any platform.
+# They were the corpus's whole [linux, darwin]-scoped alloc-profile population, so no such gate is owed.
 function Test-EntryInPlatformScope {
     param($Platforms, [string] $Goos)
 
