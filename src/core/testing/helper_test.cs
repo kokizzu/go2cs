@@ -48,13 +48,8 @@ public static void TestTBHelper(ж<testing.T> Ꮡt) {
         Ꮡt.Error((@string)"8"u8);
         return;
     }
-    testenv.MustHaveExec(new testing_TжTB(Ꮡt));
     Ꮡt.Parallel();
-    var (exe, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), exe, testRunTestTBHelperˢ);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.Executable(new testing_TжTB(Ꮡt)), testRunTestTBHelperˢ);
     cmd = testenv.CleanCmdEnv(cmd);
     cmd.Value.Env = append((~cmd).Env, "GO_WANT_HELPER_PROCESS=1"u8);
     var (@out, _) = cmd.CombinedOutput();
@@ -73,13 +68,8 @@ public static void TestTBHelperParallel(ж<testing.T> Ꮡt) {
         parallelTestHelper(Ꮡt);
         return;
     }
-    testenv.MustHaveExec(new testing_TжTB(Ꮡt));
     Ꮡt.Parallel();
-    var (exe, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), exe, testRunˢ);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.Executable(new testing_TжTB(Ꮡt)), testRunˢ);
     cmd = testenv.CleanCmdEnv(cmd);
     cmd.Value.Env = append((~cmd).Env, "GO_WANT_HELPER_PROCESS=1"u8);
     var (@out, _) = cmd.CombinedOutput();

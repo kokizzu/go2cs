@@ -44,11 +44,12 @@ using static global::go.testing_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("testing/allocs_test.go", "allocs_test.cs", "ABMgoqKioraCgoCC")]
-[assembly: go.GoPositionMap("testing/flag_test.go", "flag_test.cs", "ABYmooKCloSCgoKCgoKUgoKUgoK4lIIADw6SgoKWgoKkloKClISClKSkpKaC", "29-50:1")]
-[assembly: go.GoPositionMap("testing/helper_test.go", "helper_test.cs", "ACkegoKogoKWgoSCgpaCgoKEAAAmgviCgoKWgoSCgpaCgoKEhIq0gpSCgILIooKUgpSCgoKClA==", "101-103:1;104-106:2")]
+[assembly: go.GoPositionMap("testing/example_loop_test.go", "example_loop_test.cs", "AAsgAAkIgoKoyr6igoKUpoI=")]
+[assembly: go.GoPositionMap("testing/flag_test.go", "flag_test.cs", "ABYmooKCloSCgoKCgoKUgoK4lIIADw6SgoKWgoKkloKClISClKSkpKaC", "29-46:1")]
+[assembly: go.GoPositionMap("testing/helper_test.go", "helper_test.cs", "ACkegoKogoKWhIKCgoQAACaC+IKCgpaEgoKChISKtIKUgoCCyKKClIKUgoKCgpQ=", "89-91:1;92-94:2")]
 [assembly: go.GoPositionMap("testing/helperfuncs_test.go", "helperfuncs_test.cs", "AAockqaCgqaCpoKCpoKCyoL2xoKCgpaCgpSEgoKmgrqCgpSCgrqohILWgoKCgoKCptaCgoKCuKKCgoKAgrbWgoI=", "52-55:1;58-65:2;69-72:3;73-76:4;94-97:1;104-107:1;112-117:1")]
 [assembly: go.GoPositionMap("testing/panic_test.go", "panic_test.cs", "ACQwgoQAgQHiAbKSgoKCgoKCgoCCAAsMgoKCgtaCgpSCgpS2pIKCgqaCgoKCgoKCgriClIKCgoKCgrgACwyihAAOJIKCgoKCgoKAggAJCoKCloKCyoKCloCSgg==", "141-152:1;176-181:1;184-209:2;187-192:2.1;200-205:2.2;252-256:1;253-255:1.1;264-264:1")]
-[assembly: go.GoPositionMap("testing/testing_test.go", "testing_test.cs", "AB02soKWAAUcAAoChIKClJaCgpSC6KKClIKmAA4KgoKCgoKCgoKCggAIBoKCpKSClJSClLSCyoKClIKClIKUgoKClIKUgoKUgpaCgIIADAiiABY8soKAgraWkoKCqIKClIIACQqigoKAgriEAAgGooKCgIK4hAAIBoKEooKCgIK4AAkIgoSCooKCgIK4AA0YkoIAGCKigpSClIKWgpSEgoCCpoKCgpaCggAIDMKEhIKCloKCgoKEqqKCgpKClILmgpSClJaWgoKClIL6koKCloSCAAgIgoKCgpKSgoKUkoKCpoKWzIKCgpSCuoKCgpSC6IKCgoKCppaWgoKClIK6goKClIIACAiCgoKCgqaUloSClIKUgriCgoKCgpKCgpaSkoKClJKCgqiWhIKUgpSC6IKCgoKUloSClIKUguiihIKCloKCgoKEhIKClILogoKElIKUgriigpSC6IKChKaClIL4goKWgoKClJaCgqjWgryCgoKCgoKCggAGEIKCgoKCgoCC7t6CgpSClJSCuKKEgoKogoKogoLegoKCgoKCgIIABxC6goKUgpSUgriigoKUgIKAgoLaloKopqiCkoKCgpKCgqaCggAIBsiCgpI=", "49-54:1;50-52:1.1;66-75:1;67-72:1.1;93-111:1;186-191:1;204-209:1;217-222:1;232-241:1;233-238:1.1;247-258:1;248-257:1.1;249-254:1.1.1;346-349:1;357-359:1;394-405:1;395-399:1.1;400-404:1.2;441-444:1;474-481:1;475-479:1.1;476-478:1.1.1;503-507:1;509-520:2;510-514:2.1;515-519:2.2;540-543:1;628-634:1;636-640:2;654-664:1;657-662:1.1;708-723:1;712-716:1.1;719-721:1.2;794-798:1;809-814:1;811-813:1.1")]
+[assembly: go.GoPositionMap("testing/testing_test.go", "testing_test.cs", "ACA8soKWAAUcAAoChIKClJaCgpSC6KKClIKmAA4KgoKCgoKCgoKCggAIBoKCpKSClJSClLSCyoKClIKClIKUgoKClIKUgoKUgpaCgIIADAiiABY8soKAgraWkoKCqIKClILKooKAgviihILWooSCAAgGgoSihAAJCIKEgqKEAAsKgqaCpoKmgqaCpoKmgqaCpoKmggALBqKCgpSWgoKUgqaWABk2koKUgpaEgoKUgpa4gJLIgqiCgpSCAA0YkoIAGCKigpSClIKWgpSEgoCCpoKCgpaCggAIDKKEhIKCgoKEqqKCgpKClILmgpSClJaWgoKClIL6koKCloSCAAgIgoKCgpKSgoKUkoKCpoKWzIKCgpSCuoKCgpSC6IKCgoKCppaWgoKClIK6goKClIIACAiCgoKCgqaUloSClIKUgriCgoKCgpKCgpaSkoKClJKCgqiWhIKUgpSC6IKCgoKUloSClIKUguiCgoKCgoSEgoKUguiCgoSUgpSC6IKChJSClIK4ooKUgriCgpSC6IKChLiClIIACAiCgpaCgoKUloKCqIKCqNaCvIKCgoKCgoKCAAYQgoKCgoKCgILu3oKClIKUlIK4ooSCgqiCgqiCgt6CgoKCgoKAggAHELqCgpSClJSCuKKCgpSAgoCCgtqWgqimqIKSgoKCkoKCpoKCAAgGyIKCkgAKCoKCgIKmgoKCgIK2goKokoIACQqCgoSCgqiCgoKWgoLogoKogoK6goKCuIKCgriigoI=", "52-57:1;53-55:1.1;69-78:1;70-75:1.1;96-114:1;189-194:1;230-234:1;240-246:1;241-245:1.1;335-365:1;457-460:1;468-470:1;505-516:1;506-510:1.1;511-515:1.2;552-555:1;585-592:1;586-590:1.1;587-589:1.1.1;614-618:1;620-631:2;621-625:2.1;626-630:2.2;651-654:1;756-762:1;764-768:2;770-774:3;788-798:1;791-796:1.1;842-857:1;846-850:1.1;853-855:1.2;928-932:1;943-948:1;945-947:1.1;958-963:1;964-968:2;970-974:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -64,6 +65,7 @@ public static partial class testing_test_package
 
     // <TypeAccessibility>
     internal partial interface testFlagHelper_type {}
+    internal partial struct TestChdir_type {}
     internal partial struct TestMorePanic_testCases {}
     internal partial struct TestPanic_testCases {}
     internal partial struct TestSetenv_tests {}
@@ -78,9 +80,13 @@ public static partial class testing_test_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
     [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
     [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() => builtin.initPackage(typeof(math.rand.rand_package));
     [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
     [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
     [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));

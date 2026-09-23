@@ -638,9 +638,17 @@ public sealed class TestExecution
         // The on-disk LAYOUT does not move: the parent is the directory the numbered children already sat in.
         string parent = Path.Combine(m_runner.RunRoot, ".tmp", TempDirName(Name));
 
+        // ⚠ RE-REGISTERED WHEN THE PARENT IS GONE, which is Go's own `nonExistent` test
+        // (testing.go:1224-1251 at 1.24.13): each call Stats c.tempDir and, if its removal has already
+        // RUN, makes a fresh one and registers its removal again. testing's TestTempDirInCleanup is that
+        // shape -- a user Cleanup calling TempDir, registered BEFORE the test's own TempDir -- so under
+        // last-in-first-out the parent's removal runs first and the cleanup's TempDir recreates beneath
+        // it. With a once-only flag the host created `parent\N` there and registered nothing, leaving it
+        // on disk ("Directory ... from user Cleanup still exists"). RunCleanups already drains cleanups
+        // registered during the cleanup phase, so the re-registered removal runs.
         lock (m_syncRoot)
         {
-            if (!m_tempDirParentRegistered)
+            if (!m_tempDirParentRegistered || !Directory.Exists(parent))
             {
                 m_tempDirParentRegistered = true;
                 Directory.CreateDirectory(parent);
