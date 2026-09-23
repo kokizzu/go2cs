@@ -924,7 +924,14 @@ function Invoke-SweepRow {
 # tail stating `package timeout after 01:00:00` and the comparison truncated at 108 Go rows against
 # 89 C# -- which is a host BUDGET question, never a verdict, so the row's `linux: 108` annotation
 # stands and the floor is what moves. A floor, not an override: a larger -TestTimeout still wins.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/fips140/mlkem' = '30m'; 'crypto/mlkem' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '90m'; 'net' = '120m'; 'net/http' = '60m' }
+# It rose again 90m -> 150m on 2026-09-23 (COORD ruling on G's Linux leg), on the same host and the
+# same budget question: at go1.24.13 the 90m floor killed the Linux row at 5,340 s (89/108 C# rows,
+# on TestValueCompareAndSwapConcurrent), and a re-read at -TestTimeout 150m VALIDATED all 108 in
+# 5,868 s (WSL arm, unprivileged, Release with tiering off). 150m is 1.53x that wall -- the bracket
+# past 90m, and the hash/maphash minimum headroom this table already carries. The Windows walls stay
+# tiny (92 s on the i9 below): this floor is owed to the Linux host alone, and a floor costs a fast
+# host nothing.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/fips140/mlkem' = '30m'; 'crypto/mlkem' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '150m'; 'net' = '120m'; 'net/http' = '60m' }
 # 'net' joined 2026-09-02 at 40m (RAISED to 120m by the Go 1.24.13 re-check below): at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
@@ -974,7 +981,7 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 #   crypto/mlkem                   30m    27 s (i9, PASS 8)                       0.02        RE-KEYED
 #   time                           40m    592 s (i7, DIVERGED 178)                0.25        holds
 #   crypto/tls                     30m    885 s (G-LAPTOP, PASS 1340)             0.49        holds
-#   sync/atomic                    90m    92 s (i9, PASS 108)                     0.02        holds
+#   sync/atomic                    90m    92 s (i9, PASS 108)                     0.02        holds (Linux: RAISED -> 150m 2026-09-23, above)
 #   net                            40m    3,792 s (i9, NOVERDICT, hand-stopped)   1.58        RAISED -> 120m
 #   net/http                       60m    328 s (G-LAPTOP, DIVERGED 1387)         0.09        holds
 #
