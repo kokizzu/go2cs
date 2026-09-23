@@ -12,11 +12,11 @@ internal static class Go2CsTestHost
             "godebug.go",
             "godebug_test.go",
         });
-        registry.Add("TestBisectTestCase", godebug_test_package.TestBisectTestCase, "godebug_test.go", 139);
-        registry.Add("TestCmdBisect", godebug_test_package.TestCmdBisect, "godebug_test.go", 104);
-        registry.Add("TestGet", godebug_test_package.TestGet, "godebug_test.go", 21);
-        registry.Add("TestMetrics", godebug_test_package.TestMetrics, "godebug_test.go", 50);
-        registry.Add("TestPanicNilRace", godebug_test_package.TestPanicNilRace, "godebug_test.go", 77);
+        registry.Add("TestBisectTestCase", godebug_test_package.TestBisectTestCase, "godebug_test.go", 141);
+        registry.Add("TestCmdBisect", godebug_test_package.TestCmdBisect, "godebug_test.go", 103);
+        registry.Add("TestGet", godebug_test_package.TestGet, "godebug_test.go", 20);
+        registry.Add("TestMetrics", godebug_test_package.TestMetrics, "godebug_test.go", 49);
+        registry.Add("TestPanicNilRace", godebug_test_package.TestPanicNilRace, "godebug_test.go", 76);
         return TestHost.Run(registry, args);
     }
 }

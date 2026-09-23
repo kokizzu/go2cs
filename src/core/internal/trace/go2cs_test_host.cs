@@ -96,9 +96,6 @@ internal static class Go2CsTestHost
             "version",
         }, new string[]
         {
-            "testdata/cmd/gotraceeventstats",
-            "testdata/cmd/gotraceraw",
-            "testdata/cmd/gotracevalidate",
             "testdata/generators",
             "testdata/testprog",
         });
@@ -115,19 +112,19 @@ internal static class Go2CsTestHost
         registry.Add("TestSummarizeGoroutinesRegionsTrace", trace_test_package.TestSummarizeGoroutinesRegionsTrace, "summary_test.go", 46);
         registry.Add("TestSummarizeGoroutinesTrace", trace_test_package.TestSummarizeGoroutinesTrace, "summary_test.go", 14);
         registry.Add("TestSummarizeTasksTrace", trace_test_package.TestSummarizeTasksTrace, "summary_test.go", 80);
-        registry.Add("TestTraceAnnotations", trace_test_package.TestTraceAnnotations, "trace_test.go", 23);
-        registry.Add("TestTraceAnnotationsStress", trace_test_package.TestTraceAnnotationsStress, "trace_test.go", 84);
-        registry.Add("TestTraceCPUProfile", trace_test_package.TestTraceCPUProfile, "trace_test.go", 98);
-        registry.Add("TestTraceCgoCallback", trace_test_package.TestTraceCgoCallback, "trace_test.go", 88);
+        registry.Add("TestTraceAnnotations", trace_test_package.TestTraceAnnotations, "trace_test.go", 24);
+        registry.Add("TestTraceAnnotationsStress", trace_test_package.TestTraceAnnotationsStress, "trace_test.go", 85);
+        registry.Add("TestTraceCPUProfile", trace_test_package.TestTraceCPUProfile, "trace_test.go", 99);
+        registry.Add("TestTraceCgoCallback", trace_test_package.TestTraceCgoCallback, "trace_test.go", 89);
         registry.Add("TestTraceFutileWakeup", trace_test_package.TestTraceFutileWakeup, "trace_test.go", 212);
         registry.Add("TestTraceGCStress", trace_test_package.TestTraceGCStress, "trace_test.go", 305);
         registry.Add("TestTraceGOMAXPROCS", trace_test_package.TestTraceGOMAXPROCS, "trace_test.go", 309);
-        registry.Add("TestTraceIterPull", trace_test_package.TestTraceIterPull, "trace_test.go", 534);
-        registry.Add("TestTraceManyStartStop", trace_test_package.TestTraceManyStartStop, "trace_test.go", 521);
+        registry.Add("TestTraceIterPull", trace_test_package.TestTraceIterPull, "trace_test.go", 528);
+        registry.Add("TestTraceManyStartStop", trace_test_package.TestTraceManyStartStop, "trace_test.go", 515);
         registry.Add("TestTraceStacks", trace_test_package.TestTraceStacks, "trace_test.go", 313);
-        registry.Add("TestTraceStress", trace_test_package.TestTraceStress, "trace_test.go", 505);
-        registry.Add("TestTraceStressStartStop", trace_test_package.TestTraceStressStartStop, "trace_test.go", 513);
-        registry.Add("TestTraceWaitOnPipe", trace_test_package.TestTraceWaitOnPipe, "trace_test.go", 525);
+        registry.Add("TestTraceStress", trace_test_package.TestTraceStress, "trace_test.go", 499);
+        registry.Add("TestTraceStressStartStop", trace_test_package.TestTraceStressStartStop, "trace_test.go", 507);
+        registry.Add("TestTraceWaitOnPipe", trace_test_package.TestTraceWaitOnPipe, "trace_test.go", 519);
         return TestHost.Run(registry, args);
     }
 }

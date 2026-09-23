@@ -66,11 +66,11 @@ using static global::go.@internal.trace_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/gc_test.go", "gc_test.cs", "ADUkooKUgoIACAaC3gAHEIQACRyAgqTKgpSCgoIACg7GlJSiqIKCgoIABhCAkoKCgoKCgoKCgvqSgoKClIKCgpSCgoKUgpSmuKKAgqaogoKCgoKClIKUlJKCgpS6poKClIKCgpSUlII=")]
-[assembly: go.GoPositionMap("internal/trace/oldtrace_test.go", "oldtrace_test.cs", "ACMgooKClIKCgoKClKKCgpSUgoKWgoKCgoKClJSAgqaCggAKFpSAgsaCtoKCAAoOgg==")]
-[assembly: go.GoPositionMap("internal/trace/reader_test.go", "reader_test.cs", "AEM4goKClIKCgoKUgoKClMqItIKCgpSCgoKWgqaUpKSkpIKkpKQADBKigoKAgqSUgoKCgpSCgIKklIKUgIK2gILIgoSCgpSCgoKUgoKClIKUgIK25qKEgoKUgoKClJKAgqQ=")]
-[assembly: go.GoPositionMap("internal/trace/summary_test.go", "summary_test.cs", "ABgcgoKsgoSCgoKAgqSAgraClIKUggALCIKCAAwggoKCgoKUgqaCAA4IgoIAABCCgpQAR5ABgoKClIKogoKktqiCgpSCgIKUtoKCuoKUgoLMgpSCgoKClILMlIK4goKCptaigoKUhJSClIKCuIKCgqaWgoKmgpKClIKUlOailIK2gpSCgpSCgqaCgpSClICC2KaUgraClIKClIKCpoKClIKUgILYAAsIooKUgpSClIKUgpSCgqaCgsqCgoKCqIKCmJKCgoKUgpSogoLsgoCClLaCgg==")]
-[assembly: go.GoPositionMap("internal/trace/trace_test.go", "trace_test.cs", "ADYugoIACiCCgpSCgoKUgpSCgpSClIKkgqSCpIKCgriCggAIDILWgoSUpOaipoKCgoKCgoKClIKUgIKkgt6CgoKCgpSCgoKSgpSClIKUgoKCgoKCgpSUgqaCpoKkAAYQgoKCgqiCgoKClIK4goKCqIKCgpQACAqijgAMDIKCgoKUgoKClILKgoKUggAJFIKUgoKUgoKClIKUgpS2gpS2gpS2gpS2lIL6gtaCABAGooIAARYAT54B7siUggASJoKCgpKCgpSAgoKkgpSUgoKUgoKClIKUgoKUgpSCgpSCpKSCpIKkgoKCgriCggAIDIKUpNaClKTWgtaClIKk1oIAEAaCloKEgoKUgoKUgpSClJSUlIzSgpSAgoKUpJaWgqi4goLulMimkpSSgpSUkoKU")]
+[assembly: go.GoPositionMap("internal/trace/gc_test.go", "gc_test.cs", "ABEkooKUgoIACAaC3gAHEIQACRyAgqTKgpSCgoIACg7GlJSiqIKCgoIABhCAkoKCgoKCgoKCgvqSgoKClIKCgpSCgoKUgpSmuKKAgqaogoKCgoKClIKUlJKCgpS6poKClIKCgpSUlII=", "87-118:1;104-104:1.1;119-142:2;154-166:1;167-174:2")]
+[assembly: go.GoPositionMap("internal/trace/oldtrace_test.go", "oldtrace_test.cs", "ABcgooKClIKCgoKClKKCgpSUgoKWgoKCgoKClJSAgqaCggAKFpSAgsaCtoKCAAoOgg==", "28-84:1")]
+[assembly: go.GoPositionMap("internal/trace/reader_test.go", "reader_test.cs", "AB84goKClIKCgoKUgoKClMqItIKCgpSCgoKWgqaUpKSkpIKkpKQADBKigoKAgqSUgoKCgpSCgIKklIKUgIK2gILIgoSCgpSCgoKUgoKClIKUgIK25qKEgoKUgoKClJKAgqQ=", "39-45:1;55-93:1")]
+[assembly: go.GoPositionMap("internal/trace/summary_test.go", "summary_test.cs", "ABgcgoKsgoSCgoKAgqSAgraClIKUggALCIKCAAwggoKCgoKUgqaCAA4IgoIAABCCgpQAR5ABgoKClIKogoKktqiCgpSCgIKUtoKCuoKUgoLMgpSCgoKClILMlIK4goKCptaigoKUhJSClIKCuIKCgqaWgoKmgpKClIKUlOailIK2gpSCgpSCgqaCgpSClICC2KaUgraClIKClIKCpoKClIKUgILYAAsIooKUgpSClIKUgpSCgqaCgsqCgoKCqIKCmJKCgoKUgpSogoLsgoCClLaCgg==", "89-93:1")]
+[assembly: go.GoPositionMap("internal/trace/trace_test.go", "trace_test.cs", "ACYwgoIACiCCgpSCgoKUgpSCgpSClIKkgqSCpIKCgriCggAIDILWgoSUpOaipoKCgoKCgoKClIKUgIKkgt6CgoKCgpSCgoKSgpSClIKUgoKCgoKCgqaCpoKmgqQABhCCgoKCqIKCgoKUgriCgoKogoKClAAICqKOAAwMgoKCgpSCgoKUgsqCgpSCAAkUgpSCgpSCgoKUgpSClLaClLaClLaClLaUgvqC1oIAEAaiggABFgBPngHuyJSCABImgoKClICCtpSCgpSCgoKUgpSCgpSClIKClIKkpIKkgqSCgoKCuIKCAAgMgpSk1oKUpNaC1oKUgqTWgqaCkoSCgpSCgoKUgpSWloKEgJKkooKAkoIAEwqCloKEgoKUgoKUgpSClJSUlIzSgpSAgoKUpJaWgqi4goLulMimkpSSgpSUkoKU", "25-82:1;100-209:1;213-302:1;314-496:1;438-448:1.1;533-552:1;578-644:1;645-647:2;648-653:3;654-659:4")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -92,4 +92,40 @@ public static partial class trace_test_package
     [GoLocalName("evDesc")] internal partial struct TestTraceStacks_evDesc {}
     [GoLocalName("frame")] internal partial struct TestTraceStacks_frame {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() => builtin.initPackage(typeof(go.@internal.trace_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸraw() => builtin.initPackage(typeof(go.@internal.trace.raw_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸtesttrace() => builtin.initPackage(typeof(go.@internal.trace.testtrace_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() => builtin.initPackage(typeof(go.@internal.trace.version_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.trace_package));
+    }
 }

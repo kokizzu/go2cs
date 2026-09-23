@@ -11,18 +11,6 @@ using static go.@internal.trace_package;
 
 partial class trace_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
 public static void TestMUD(ж<testing.T> Ꮡt) {
     // Insert random uniforms and check histogram mass and
     // cumulative sum approximations.
@@ -39,7 +27,7 @@ public static void TestMUD(ж<testing.T> Ꮡt) {
         mass += area;
         // Check total histogram weight.
         var hmass = 0.0D;
-        foreach (var (_, val) in mud.hist) {
+        foreach (var (_, val) in mud.hist.ΔRangeSnapshot()) {
             hmass += val;
         }
         if (!aeq(mass, hmass)) {

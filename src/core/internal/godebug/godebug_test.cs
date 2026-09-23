@@ -9,7 +9,6 @@ using race = go.@internal.race_package;
 using testenv = go.@internal.testenv_package;
 using os = os_package;
 using exec = go.os.exec_package;
-using reflect = reflect_package;
 using metrics = go.runtime.metrics_package;
 using slices = slices_package;
 using strings = strings_package;
@@ -20,66 +19,6 @@ using go.runtime;
 using godebug = go.@internal.godebug_package;
 
 partial class godebug_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸmetrics() {
-    builtin.initPackage(typeof(go.runtime.metrics_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string fooˢ = "#foo"u8;
@@ -203,6 +142,9 @@ public static void TestCmdBisect(ж<testing.T> Ꮡt) {
     }
     slice<@string> want = default!;
     (var src, err) = os.ReadFile(godebugTestGoˢ);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
     foreach (var (i, line) in strings.Split(((@string)src), "\n"u8)) {
         if (strings.Contains(line, "BISECT"u8 + " "u8 + "BUG"u8)) {
             want = append(want, fmt.Sprintf("godebug_test.go:%d"u8, i + 1));
@@ -216,7 +158,7 @@ public static void TestCmdBisect(ж<testing.T> Ꮡt) {
         }
     }
     slices.Sort<slice<@string>, @string>(have);
-    if (!reflect.DeepEqual(have, want)) {
+    if (!slices.Equal<slice<@string>, @string>(have, want)) {
         Ꮡt.Errorf("bad bisect output:\nhave %v\nwant %v\ncomplete output:\n%s"u8, have, want, ((@string)@out));
     }
 }

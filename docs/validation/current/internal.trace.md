@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/trace` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `77c5d1d04`*
+*Validated 2026-09-23 · converter `7ec9e10ed`*
 
-**92 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**92 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 2 of the matched tests identically.
 
