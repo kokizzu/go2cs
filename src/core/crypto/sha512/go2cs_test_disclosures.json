@@ -3,9 +3,12 @@
   "disclosures": [
     {
       "name": "TestAllocations",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "allocs = ",
-      "reason": "want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [8]uint64 state and [128]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface"
+      "reason": "want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [8]uint64 state and [128]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. 106 per run = 88 + 16 + 2. The measured closure mints a source-generated hash.Hash shell for every New* call on every run (sha512_test.cs:947-965; sha512.cs:43/51/59/70): 4 per run, UNCOUNTED (AllocationCounter.cs:50-53), ruled structural on 2026-08-25.",
+      "want": "0 allocations per run",
+      "reading": "106 per run -- 1,060 go2cs-runtime object allocations (166,080 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 119 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `allocs = 106, want 0`",
+      "plan": "docs/phase4/DESIGN-array-value-storage.md (REC-A) for 88 class-4 objects, whose first increment is the @new-then-overwrite at crypto/internal/fips140/sha512/sha512.cs:272-273; docs/phase4/DESIGN-nonescaping-locals.md (REC-B) for 16 class-3b objects and 2 non-escaping slices. END STATE: when the counted families reach 0 the entry reads BYTES on the 4 uncounted shells per run and re-labels structural on the shell proof (BOARD:19149-19153) unless the post-hop re-examination re-rules the shell against its named successor (DESIGN-iface-shell-caching.md:61). No floor."
     }
   ]
 }
