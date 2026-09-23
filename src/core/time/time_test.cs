@@ -22,11 +22,36 @@ using encoding;
 using fs = io.fs_package;
 using go.math;
 using go.testing;
-using io = io_package;
 using static go.time_internal_test_package;
+using Δio = io_package;
 using Δtime = time_package;
 
 partial class time_test_package {
+
+public static void TestInternal(ж<Δtesting.T> Ꮡt) {
+    foreach (var (_, vᴛ1) in time_internal_test_package.InternalTests) {
+        ref var tt = ref heap(new InternalTestsᴛ1(), out var Ꮡtt);
+        tt = vᴛ1;
+
+        var ttʗ1 = tt;
+        Ꮡt.Run(tt.Name, (ж<Δtesting.T> tΔ1) => {
+            ttʗ1.Test(new time_test_package.testing_TжtestingT(tΔ1));
+        });
+    }
+}
+
+public static void TestZeroTime(ж<Δtesting.T> Ꮡt) {
+    Δtime.Time zero = default!;
+    var (year, month, day) = zero.Date();
+    var (hour, min, sec) = zero.Clock();
+    nint nsec = zero.Nanosecond();
+    nint yday = zero.YearDay();
+    timeꓸWeekday wday = zero.Weekday();
+    if (year != 1 || month != January || day != 1 || hour != 0 || min != 0 || sec != 0 || nsec != 0 || yday != 1 || wday != Monday) {
+        Ꮡt.Errorf("zero time = %v %v %v year %v %02d:%02d:%02d.%09d yday %d want Monday Jan 1 year 1 00:00:00.000000000 yday 1"u8,
+            wday, month, day, year, hour, min, sec, nsec, yday);
+    }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object likelyProblemTheTimeZoneˢ = (@string)"Likely problem: the time zone files have not been installed."u8;
@@ -107,7 +132,7 @@ internal static bool same(Δtime.Time t, ж<parsedTime> Ꮡu) {
     return t.Year() == u.Year && t.Month() == u.Month && t.Day() == u.Day && t.Hour() == u.Hour && t.Minute() == u.Minute && t.Second() == u.Second && t.Nanosecond() == u.Nanosecond && t.Weekday() == u.Weekday;
 }
 
-public static void TestSecondsToUTC(ж<Δtesting.T> Ꮡt) {
+public static void TestUnixUTC(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, vᴛ1) in utctests) {
         ref var test = ref heap(new TimeTest(), out var Ꮡtest);
         test = vᴛ1;
@@ -117,17 +142,17 @@ public static void TestSecondsToUTC(ж<Δtesting.T> Ꮡt) {
         var tm = Unix(sec, 0).UTC();
         var newsec = tm.Unix();
         if (newsec != sec) {
-            Ꮡt.Errorf("SecondsToUTC(%d).Seconds() = %d"u8, sec, newsec);
+            Ꮡt.Errorf("Unix(%d, 0).Unix() = %d"u8, sec, newsec);
         }
         if (!same(tm, golden)) {
-            Ꮡt.Errorf("SecondsToUTC(%d):  // %#v"u8, sec, tm);
+            Ꮡt.Errorf("Unix(%d, 0):  // %#v"u8, sec, tm);
             Ꮡt.Errorf("  want=%+v"u8, golden.Value);
             Ꮡt.Errorf("  have=%v"u8, tm.Format(RFC3339 + " MST"));
         }
     }
 }
 
-public static void TestNanosecondsToUTC(ж<Δtesting.T> Ꮡt) {
+public static void TestUnixNanoUTC(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, vᴛ1) in nanoutctests) {
         ref var test = ref heap(new TimeTest(), out var Ꮡtest);
         test = vᴛ1;
@@ -137,17 +162,17 @@ public static void TestNanosecondsToUTC(ж<Δtesting.T> Ꮡt) {
         var tm = Unix(0, nsec).UTC();
         var newnsec = tm.Unix() * 1000000000 + (int64)tm.Nanosecond();
         if (newnsec != nsec) {
-            Ꮡt.Errorf("NanosecondsToUTC(%d).Nanoseconds() = %d"u8, nsec, newnsec);
+            Ꮡt.Errorf("Unix(0, %d).Nanoseconds() = %d"u8, nsec, newnsec);
         }
         if (!same(tm, golden)) {
-            Ꮡt.Errorf("NanosecondsToUTC(%d):"u8, nsec);
+            Ꮡt.Errorf("Unix(0, %d):"u8, nsec);
             Ꮡt.Errorf("  want=%+v"u8, golden.Value);
             Ꮡt.Errorf("  have=%+v"u8, tm.Format(RFC3339 + " MST"));
         }
     }
 }
 
-public static void TestSecondsToLocalTime(ж<Δtesting.T> Ꮡt) {
+public static void TestUnix(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, vᴛ1) in localtests) {
         ref var test = ref heap(new TimeTest(), out var Ꮡtest);
         test = vᴛ1;
@@ -157,17 +182,17 @@ public static void TestSecondsToLocalTime(ж<Δtesting.T> Ꮡt) {
         var tm = Unix(sec, 0);
         var newsec = tm.Unix();
         if (newsec != sec) {
-            Ꮡt.Errorf("SecondsToLocalTime(%d).Seconds() = %d"u8, sec, newsec);
+            Ꮡt.Errorf("Unix(%d, 0).Seconds() = %d"u8, sec, newsec);
         }
         if (!same(tm, golden)) {
-            Ꮡt.Errorf("SecondsToLocalTime(%d):"u8, sec);
+            Ꮡt.Errorf("Unix(%d, 0):"u8, sec);
             Ꮡt.Errorf("  want=%+v"u8, golden.Value);
             Ꮡt.Errorf("  have=%+v"u8, tm.Format(RFC3339 + " MST"));
         }
     }
 }
 
-public static void TestNanosecondsToLocalTime(ж<Δtesting.T> Ꮡt) {
+public static void TestUnixNano(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, vᴛ1) in nanolocaltests) {
         ref var test = ref heap(new TimeTest(), out var Ꮡtest);
         test = vᴛ1;
@@ -177,35 +202,35 @@ public static void TestNanosecondsToLocalTime(ж<Δtesting.T> Ꮡt) {
         var tm = Unix(0, nsec);
         var newnsec = tm.Unix() * 1000000000 + (int64)tm.Nanosecond();
         if (newnsec != nsec) {
-            Ꮡt.Errorf("NanosecondsToLocalTime(%d).Seconds() = %d"u8, nsec, newnsec);
+            Ꮡt.Errorf("Unix(0, %d).Seconds() = %d"u8, nsec, newnsec);
         }
         if (!same(tm, golden)) {
-            Ꮡt.Errorf("NanosecondsToLocalTime(%d):"u8, nsec);
+            Ꮡt.Errorf("Unix(0, %d):"u8, nsec);
             Ꮡt.Errorf("  want=%+v"u8, golden.Value);
             Ꮡt.Errorf("  have=%+v"u8, tm.Format(RFC3339 + " MST"));
         }
     }
 }
 
-public static void TestSecondsToUTCAndBack(ж<Δtesting.T> Ꮡt) {
+public static void TestUnixUTCAndBack(ж<Δtesting.T> Ꮡt) {
     var f = (int64 sec) => Unix(sec, 0).UTC().Unix() == sec;
     var fʗ1 = f;
     var f32 = (int32 sec) => fʗ1((int64)sec);
     var cfg = Ꮡ(new quick.Config(MaxCount: 10000));
     // Try a reasonable date first, then the huge ones.
     {
-        var err = quick.Check(f32, cfg); if (err != default!) {
+        var err = quick.Check((f32).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
     {
-        var err = quick.Check(f, cfg); if (err != default!) {
+        var err = quick.Check((f).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
 }
 
-public static void TestNanosecondsToUTCAndBack(ж<Δtesting.T> Ꮡt) {
+public static void TestUnixNanoUTCAndBack(ж<Δtesting.T> Ꮡt) {
     var f = (int64 nsec) => {
         var tΔ1 = Unix(0, nsec).UTC();
         var ns = tΔ1.Unix() * 1000000000 + (int64)tΔ1.Nanosecond();
@@ -217,12 +242,12 @@ public static void TestNanosecondsToUTCAndBack(ж<Δtesting.T> Ꮡt) {
     // Try a small date first, then the large ones. (The span is only a few hundred years
     // for nanoseconds in an int64.)
     {
-        var err = quick.Check(f32, cfg); if (err != default!) {
+        var err = quick.Check((f32).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
     {
-        var err = quick.Check(f, cfg); if (err != default!) {
+        var err = quick.Check((f).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -235,7 +260,7 @@ public static void TestUnixMilli(ж<Δtesting.T> Ꮡt) {
     };
     var cfg = Ꮡ(new quick.Config(MaxCount: 10000));
     {
-        var err = quick.Check(f, cfg); if (err != default!) {
+        var err = quick.Check((f).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -248,7 +273,7 @@ public static void TestUnixMicro(ж<Δtesting.T> Ꮡt) {
     };
     var cfg = Ꮡ(new quick.Config(MaxCount: 10000));
     {
-        var err = quick.Check(f, cfg); if (err != default!) {
+        var err = quick.Check((f).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -406,7 +431,7 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
         ti >>= (int)(1);
         return testOneʗ1(ti, (int64)tns, (int64)d);
     };
-    quick.Check(f1, cfg);
+    quick.Check((f1).OrTypedNilFunc(), cfg);
     // multiples of Second
     var testOneʗ2 = testOne;
     var f2 = (int64 ti, int32 tns, int32 di) => {
@@ -417,7 +442,7 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
         ti >>= (int)(1); // see comment in f1
         return testOneʗ2(ti, (int64)tns, (int64)d);
     };
-    quick.Check(f2, cfg);
+    quick.Check((f2).OrTypedNilFunc(), cfg);
     // halfway cases
     var testOneʗ3 = testOne;
     var f3 = (int64 tns, int64 di) => {
@@ -433,14 +458,14 @@ public static void TestTruncateRound(ж<Δtesting.T> Ꮡt) {
         }
         return testOneʗ3(0, tns, di);
     };
-    quick.Check(f3, cfg);
+    quick.Check((f3).OrTypedNilFunc(), cfg);
     // full generality
     var testOneʗ4 = testOne;
     var f4 = (int64 ti, int32 tns, int64 di) => {
         ti >>= (int)(1); // see comment in f1
         return testOneʗ4(ti, (int64)tns, di);
     };
-    quick.Check(f4, cfg);
+    quick.Check((f4).OrTypedNilFunc(), cfg);
 }
 
 [GoType] partial struct ISOWeekTest {
@@ -666,6 +691,8 @@ public static void TestDurationString(ж<Δtesting.T> Ꮡt) {
 // Jan -52 7:56:35 2012
 // (Jan-2) 18 7:56:35 2012
 // (Dec+11) 18 7:56:35 2010
+// large number of days
+// negative Unix time
 
 [GoType("dyn")] partial struct dateTestsᴛ1 {
     internal nint year, month, day, hour, min, sec, nsec;
@@ -691,7 +718,9 @@ internal static slice<dateTestsᴛ1> dateTests = new dateTestsᴛ1[]{
     new(2011, 12, -12, 7, 56, 35, 0, ΔLocal, 1321631795),
     new(2012, 1, -43, 7, 56, 35, 0, ΔLocal, 1321631795),
     new(2012, (nint)(January - 2), 18, 7, 56, 35, 0, ΔLocal, 1321631795),
-    new(2010, (nint)(December + 11), 18, 7, 56, 35, 0, ΔLocal, 1321631795)
+    new(2010, (nint)(December + 11), 18, 7, 56, 35, 0, ΔLocal, 1321631795),
+    new(1970, 1, 15297, 7, 56, 35, 0, ΔLocal, 1321631795),
+    new(1970, 1, -25508, 0, 0, 0, 0, ΔLocal, -2203948800L)
 }.slice();
 
 public static void TestDate(ж<Δtesting.T> Ꮡt) {
@@ -731,6 +760,12 @@ public static void TestAddDate(ж<Δtesting.T> Ꮡt) {
                 at.years, at.months, at.days,
                 time, t1);
         }
+    }
+    var t2 = Date(1899, 12, 31, 0, 0, 0, 0, ΔUTC);
+    var days = t2.Unix() / (24 * 60 * 60);
+    var t3 = Unix(0, 0).AddDate(0, 0, (nint)days);
+    if (!t2.Equal(t3)) {
+        Ꮡt.Errorf("Adddate(0, 0, %d) = %v, want %v"u8, days, t3, t2);
     }
 }
 
@@ -901,7 +936,7 @@ public static void TestTimeJSON(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestUnmarshalInvalidTimes_tests {
+[GoType("dyn")] internal partial struct TestUnmarshalInvalidTimes_tests {
     internal @string @in;
     internal @string want;
 }
@@ -935,6 +970,8 @@ public static void TestUnmarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string jsonˢ = "JSON"u8;
 internal static readonly @string textˢ = "Text"u8;
+internal static readonly @string marshalJSONˢ = "MarshalJSON"u8;
+internal static readonly @string appendTextˢ = "AppendText"u8;
 
 public static void TestMarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
     var tests = new notEncodableTimesᴛ1[]{
@@ -966,6 +1003,19 @@ public static void TestMarshalInvalidTimes(ж<Δtesting.T> Ꮡt) {
         }
         case {} when err == default! || err.Error() != want: {
             Ꮡt.Errorf("(%v).MarshalText() error = %v, want %v"u8, tt.time, err, want);
+            break;
+        }}
+
+        var buf = new slice<byte>(0, 64);
+        want = strings.ReplaceAll(tt.want, marshalJSONˢ, appendTextˢ);
+        (b, err) = tt.time.AppendText(buf);
+        switch (ᐧ) {
+        case {} when b != default!: {
+            Ꮡt.Errorf("(%v).AppendText() = %q, want nil"u8, tt.time, b);
+            break;
+        }
+        case {} when err == default! || err.Error() != want: {
+            Ꮡt.Errorf("(%v).AppendText() error = %v, want %v"u8, tt.time, err, want);
             break;
         }}
 
@@ -1437,7 +1487,7 @@ public static void TestDurationAbs(ж<Δtesting.T> Ꮡt) {
 }
 
 // Using Equal since Add don't modify loc using "==" will cause a fail
-//Original caus for this test case bug 15852
+// Original cause for this test case bug 15852
 
 [GoType("dyn")] partial struct defaultLocTestsᴛ1 {
     internal @string name;
@@ -1489,6 +1539,13 @@ internal static slice<defaultLocTestsᴛ1> defaultLocTests = new defaultLocTests
     new("UnixNano"u8, (Δtime.Time t1, Δtime.Time t2) => t1.UnixNano() == t2.UnixNano()),
     new("UnixMilli"u8, (Δtime.Time t1, Δtime.Time t2) => t1.UnixMilli() == t2.UnixMilli()),
     new("UnixMicro"u8, (Δtime.Time t1, Δtime.Time t2) => t1.UnixMicro() == t2.UnixMicro()),
+    new("AppendBinary"u8, (Δtime.Time t1, Δtime.Time t2) => {
+        var buf1 = new slice<byte>(4, 32);
+        var buf2 = new slice<byte>(4, 32);
+        var (a1, b1) = t1.AppendBinary(buf1);
+        var (a2, b2) = t2.AppendBinary(buf2);
+        return bytes.Equal(a1[4..], a2[4..]) && AreEqual(b1, b2);
+    }),
     new("MarshalBinary"u8, (Δtime.Time t1, Δtime.Time t2) => {
         var (a1, b1) = t1.MarshalBinary();
         var (a2, b2) = t2.MarshalBinary();
@@ -1503,6 +1560,14 @@ internal static slice<defaultLocTestsᴛ1> defaultLocTests = new defaultLocTests
         var (a1, b1) = t1.MarshalJSON();
         var (a2, b2) = t2.MarshalJSON();
         return bytes.Equal(a1, a2) && AreEqual(b1, b2);
+    }),
+    new("AppendText"u8, (Δtime.Time t1, Δtime.Time t2) => {
+        nint maxCap = len(RFC3339Nano) + 4;
+        var buf1 = new slice<byte>(4, maxCap);
+        var buf2 = new slice<byte>(4, maxCap);
+        var (a1, b1) = t1.AppendText(buf1);
+        var (a2, b2) = t2.AppendText(buf2);
+        return bytes.Equal(a1[4..], a2[4..]) && AreEqual(b1, b2);
     }),
     new("MarshalText"u8, (Δtime.Time t1, Δtime.Time t2) => {
         var (a1, b1) = t1.MarshalText();
@@ -1614,6 +1679,15 @@ public static void BenchmarkMarshalText(ж<Δtesting.B> Ꮡb) {
     var t = Now();
     for (nint i = 0; i < b.N; i++) {
         t.MarshalText();
+    }
+}
+
+public static void BenchmarkMarshalBinary(ж<Δtesting.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var t = Now();
+    for (nint i = 0; i < b.N; i++) {
+        t.MarshalBinary();
     }
 }
 
@@ -1953,7 +2027,7 @@ public static void TestConcurrentTimerResetStop(ж<Δtesting.T> Ꮡt) {
 internal static readonly @string australiaBrisbaneˢ = "Australia/Brisbane"u8;
 internal static readonly @string fixedTimeˢ = "FIXED_TIME"u8;
 
-[GoType("dyn")] partial struct TestTimeIsDST_tests {
+[GoType("dyn")] internal partial struct TestTimeIsDST_tests {
     internal Δtime.Time time;
     internal bool want;
 }
@@ -1985,7 +2059,7 @@ public static void TestTimeIsDST(ж<Δtesting.T> Ꮡt) {
             [6] = new(Date(2009, 1, 1, 12, 0, 0, 0, tzFixed), false),
             [7] = new(Date(2009, 6, 1, 12, 0, 0, 0, tzFixed), false)
         };
-        foreach (var (i, tt) in tests) {
+        foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
             var got = tt.time.IsDST();
             if (got != tt.want) {
                 Ꮡt.Errorf("#%d:: (%#v).IsDST()=%t, want %t"u8, i, tt.time.Format(RFC3339), got, tt.want);
@@ -2024,7 +2098,7 @@ public static void TestTimeAddSecOverflow(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTimeWithZoneTransition_tests {
+[GoType("dyn")] internal partial struct TestTimeWithZoneTransition_tests {
     internal Δtime.Time give;
     internal Δtime.Time want;
 }
@@ -2060,7 +2134,7 @@ public static void TestTimeWithZoneTransition(ж<Δtesting.T> Ꮡt) {
             [6] = new(Date(1991, September, 15, 0, 50, 0, 0, loc), Date(1991, September, 14, 15, 50, 0, 0, ΔUTC)),
             [7] = new(Date(1991, September, 15, 2, 0, 0, 0, loc), Date(1991, September, 14, 18, 0, 0, 0, ΔUTC))
         };
-        foreach (var (i, tt) in tests) {
+        foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
             if (!tt.give.Equal(tt.want)) {
                 Ꮡt.Errorf("#%d:: %#v is not equal to %#v"u8, i, tt.give.Format(RFC3339), tt.want.Format(RFC3339));
             }
@@ -2070,7 +2144,7 @@ public static void TestTimeWithZoneTransition(ж<Δtesting.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestZoneBounds_realTests {
+[GoType("dyn")] internal partial struct TestZoneBounds_realTests {
     internal Δtime.Time giveTime;
     internal Δtime.Time wantStart;
     internal Δtime.Time wantEnd;
@@ -2147,7 +2221,7 @@ public static void TestZoneBounds(ж<Δtesting.T> Ꮡt) {
             [21] = new(makeLocalTime(2172733199L), makeLocalTime(2152173600L), makeLocalTime(2172733200L)),
             [22] = new(makeLocalTime(2172733200L), makeLocalTime(2172733200L), makeLocalTime(2177452800L))
         };
-        foreach (var (i, tt) in realTests) {
+        foreach (var (i, tt) in realTests.ΔRangeSnapshot()) {
             var (startΔ2, endΔ2) = tt.giveTime.ZoneBounds();
             if (!startΔ2.Equal(tt.wantStart) || !endΔ2.Equal(tt.wantEnd)) {
                 Ꮡt.Errorf("#%d:: ZoneBounds of %v expects right bounds:\n  got start=%v\n  want start=%v\n  got end=%v\n  want end=%v"u8,

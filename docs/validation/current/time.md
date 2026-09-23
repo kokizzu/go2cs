@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `time` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-23 · converter `272122c0a`*
 
-**169 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**178 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/time`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/time).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 2 of the matched tests identically.
 
@@ -75,8 +77,16 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestGoString` | pass | pass |
 | `TestHasMonotonicClock` | pass | pass |
 | `TestISOWeek` | pass | pass |
+| `TestInternal` | pass | pass |
+| `TestInternal/AbsDate` | pass | pass |
+| `TestInternal/AbsDaysSplit` | pass | pass |
+| `TestInternal/AbsYdaySplit` | pass | pass |
+| `TestInternal/DateToAbsDays` | pass | pass |
+| `TestInternal/DaysBefore` | pass | pass |
+| `TestInternal/DaysIn` | pass | pass |
 | `TestInvalidTimeGob` | pass | pass |
 | `TestIssue5745` | pass | pass |
+| `TestLinkname` | pass | pass |
 | `TestLoadFixed` | pass | pass |
 | `TestLoadLocationFromTZData` | pass | pass |
 | `TestLoadLocationFromTZDataSlim` | pass | pass |
@@ -99,9 +109,6 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestMonotonicSub` | pass | pass |
 | `TestMultiWakeupTicker` | pass | pass |
 | `TestMultiWakeupTimer` | pass | pass |
-| `TestNanosecondsToLocalTime` | pass | pass |
-| `TestNanosecondsToUTC` | pass | pass |
-| `TestNanosecondsToUTCAndBack` | pass | pass |
 | `TestNewTickerLtZeroDuration` | pass | pass |
 | `TestNextStdChunk` | pass | pass |
 | `TestNoonIs12PM` | pass | pass |
@@ -129,9 +136,6 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestResetResult/asynctimerchan=1` | pass | pass |
 | `TestResetResult/asynctimerchan=2` | pass | pass |
 | `TestRubyParse` | pass | pass |
-| `TestSecondsToLocalTime` | pass | pass |
-| `TestSecondsToUTC` | pass | pass |
-| `TestSecondsToUTCAndBack` | pass | pass |
 | `TestSleep` | pass | pass |
 | `TestSleepZeroDeadlock` | pass | pass |
 | `TestStd0xParseError` | pass | pass |
@@ -170,14 +174,21 @@ Both runtimes skip 2 of the matched tests identically.
 | `TestTzsetRule` | pass | pass |
 | `TestUSPacificZoneAbbr` | pass | pass |
 | `TestUnderscoreTwoThousand` | pass | pass |
+| `TestUnix` | pass | pass |
 | `TestUnixMicro` | pass | pass |
 | `TestUnixMilli` | pass | pass |
+| `TestUnixNano` | pass | pass |
+| `TestUnixNanoUTC` | pass | pass |
+| `TestUnixNanoUTCAndBack` | pass | pass |
+| `TestUnixUTC` | pass | pass |
+| `TestUnixUTCAndBack` | pass | pass |
 | `TestUnmarshalInvalidTimes` | pass | pass |
 | `TestUnmarshalTextAllocations` | pass | pass |
 | `TestVersion3` | pass | pass |
 | `TestWeekdayString` | pass | pass |
 | `TestYearDay` | pass | pass |
 | `TestZeroMonthString` | pass | pass |
+| `TestZeroTime` | pass | pass |
 | `TestZeroTimer` | pass | pass |
 | `TestZeroTimer/impl=cache` | pass | pass |
 | `TestZeroTimer/impl=chan` | pass | pass |
@@ -208,6 +219,7 @@ the capability it needs.
 - BenchmarkGoString (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkHour (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkISOWeek (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkMarshalBinary (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMarshalJSON (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMarshalText (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkMonth (benchmark): benchmark execution is deferred to Phase 4D
@@ -238,6 +250,7 @@ the capability it needs.
 - ExampleAfter (example): example execution is deferred to Phase 4D
 - ExampleDate (example): example execution is deferred to Phase 4D
 - ExampleDuration (example): example execution is deferred to Phase 4D
+- ExampleDuration_Abs (example): example execution is deferred to Phase 4D
 - ExampleDuration_Hours (example): example execution is deferred to Phase 4D
 - ExampleDuration_Microseconds (example): example execution is deferred to Phase 4D
 - ExampleDuration_Milliseconds (example): example execution is deferred to Phase 4D
@@ -255,6 +268,7 @@ the capability it needs.
 - ExampleParse (example): example execution is deferred to Phase 4D
 - ExampleParseDuration (example): example execution is deferred to Phase 4D
 - ExampleParseInLocation (example): example execution is deferred to Phase 4D
+- ExampleSince (example): example execution is deferred to Phase 4D
 - ExampleSleep (example): example execution is deferred to Phase 4D
 - ExampleTick (example): example execution is deferred to Phase 4D
 - ExampleTime_Add (example): example execution is deferred to Phase 4D
@@ -276,5 +290,6 @@ the capability it needs.
 - ExampleUnix (example): example execution is deferred to Phase 4D
 - ExampleUnixMicro (example): example execution is deferred to Phase 4D
 - ExampleUnixMilli (example): example execution is deferred to Phase 4D
+- ExampleUntil (example): example execution is deferred to Phase 4D
 - FuzzFormatRFC3339 (fuzz): fuzz execution is deferred to Phase 4D
 - FuzzParseRFC3339 (fuzz): fuzz execution is deferred to Phase 4D

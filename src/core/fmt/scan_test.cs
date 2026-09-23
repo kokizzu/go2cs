@@ -22,30 +22,6 @@ using static go.fmt_internal_test_package;
 
 partial class fmt_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
-    builtin.initPackage(typeof(go.testing.iotest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 [GoType] partial struct ScanTest {
     internal @string text;
     internal any @in;
@@ -596,7 +572,7 @@ internal static slice<ScanfMultiTest> multiTests = new ScanfMultiTest[]{
     internal Func<@string, Δio.Reader> f;
 }
 
-[GoType("dyn")] partial struct readers_type {
+[GoType("dyn")] internal partial struct readers_type {
     public io_package.Reader Reader;
 }
 internal static slice<readersᴛ1> readers = new readersᴛ1[]{
@@ -1127,7 +1103,7 @@ public static void TestMultiLine(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestLineByLineFscanf_r {
+[GoType("dyn")] internal partial struct TestLineByLineFscanf_r {
     public io_package.Reader Reader;
 }
 
@@ -1313,7 +1289,7 @@ public static void BenchmarkScanRecursiveInt(ж<Δtesting.B> Ꮡb) {
     }
 }
 
-[GoType("dyn")] partial struct BenchmarkScanRecursiveIntReaderWrapper_buf {
+[GoType("dyn")] internal partial struct BenchmarkScanRecursiveIntReaderWrapper_buf {
     public io_package.Reader Reader;
 }
 
@@ -1390,7 +1366,7 @@ public static void TestHexBytes(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestScanNewlinesAreSpaces_type {
+[GoType("dyn")] internal partial struct TestScanNewlinesAreSpaces_type {
     internal @string name;
     internal @string text;
     internal nint count;
@@ -1416,7 +1392,7 @@ public static void TestScanNewlinesAreSpaces(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestScanlnNewlinesTerminate_type {
+[GoType("dyn")] internal partial struct TestScanlnNewlinesTerminate_type {
     internal @string name;
     internal @string text;
     internal nint count;
@@ -1446,7 +1422,7 @@ public static void TestScanlnNewlinesTerminate(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestScanfNewlineMatchFormat_type {
+[GoType("dyn")] internal partial struct TestScanfNewlineMatchFormat_type {
     internal @string name;
     internal @string text;
     internal @string format;

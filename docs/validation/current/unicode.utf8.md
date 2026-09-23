@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `unicode/utf8` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-23 · converter `272122c0a`*
 
-**14 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**14 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -24,11 +26,23 @@ comparison — it is the evidence behind the `unicode/utf8` row in
 | `TestFullRune` | pass | pass |
 | `TestNegativeRune` | pass | pass |
 | `TestRuneCount` | pass | pass |
+| `TestRuneCountNonASCIIAllocation` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestRuneLen` | pass | pass |
 | `TestRuntimeConversion` | pass | pass |
 | `TestSequencing` | pass | pass |
 | `TestValid` | pass | pass |
 | `TestValidRune` | pass | pass |
+
+## Disclosed divergences
+
+A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/go2cs_test_disclosures.json);
+a disclosed test that fails any *other* way is still a hard mismatch.
+
+| Test | Class | Pinned reason |
+|:--|:--|:--|
+| `TestRuneCountNonASCIIAllocation` | `deferred` | NEW at 1.24: a want-zero AllocsPerRun over `s := []byte("日本語日本語日本語日"); _ = RuneCount(s)`. Go's escape analysis keeps the []byte(const) conversion and RuneCount's slow-path string on the stack, so it asserts zero; the converted path charges 3 per run. DEFERRED, not alloc-count-semantics: the run's own unit note says `counted 30 go2cs-runtime object allocations ... over 10 run(s) ... an allocation COUNT per run` -- Go's own unit, so the counter saw them. The three sites, each read in golib at the 1.24.13 hop: (1) the test's []byte(const) -> slice<byte> from a span -> AllocationCounter.CopyOf; (2) RuneCount's non-ASCII slow path `RuneCountInString((@string)(p[n..]))` -> @string(slice<byte>) -> ToArray -> CopyOf; (3) ranging over that @string -> RuneSpanEnumerator, a class charged by AllocationCounter.Count(). (2) and (3) are LOCAL to RuneCount and removable; (1) is the escape-analysis class no local change removes, hence the floor. |
 
 ## Excluded declarations
 
@@ -39,11 +53,21 @@ has not implemented, or a platform behavior it provably cannot reproduce. Each i
 the capability it needs.
 
 - BenchmarkAppendASCIIRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAppendInvalidRuneMaxPlusOne (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAppendInvalidRuneNegative (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAppendInvalidRuneSurrogate (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkAppendJapaneseRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAppendMaxRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkAppendSpanishRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkDecodeASCIIRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkDecodeJapaneseRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkEncodeASCIIRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkEncodeInvalidRuneMaxPlusOne (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkEncodeInvalidRuneNegative (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkEncodeInvalidRuneSurrogate (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkEncodeJapaneseRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkEncodeMaxRune (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkEncodeSpanishRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkFullRune (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkRuneCountInStringTenASCIIChars (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkRuneCountInStringTenJapaneseChars (benchmark): benchmark execution is deferred to Phase 4D

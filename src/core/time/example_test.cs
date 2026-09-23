@@ -4,6 +4,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using Δmath = math_package;
 using Δtime = time_package;
 using static go.time_internal_test_package;
 
@@ -104,6 +105,36 @@ public static void ExampleParseDuration() {
 // There are 4210 seconds in 1h10m10s.
 // There are 1000 nanoseconds in 1µs.
 // There are 1.00e-06 seconds in 1µs.
+public static void ExampleSince() {
+    var start = Δtime.Now();
+    expensiveCall();
+    var elapsed = Δtime.Since(start);
+    fmt.Printf("The call took %v to run.\n"u8, elapsed);
+}
+
+public static void ExampleUntil() {
+    var futureTime = Δtime.Now().Add((Δtime.Duration)(5000000000L));
+    var durationUntil = Δtime.Until(futureTime);
+    fmt.Printf("Duration until future time: %.0f seconds"u8, Δmath.Ceil(durationUntil.Seconds()));
+}
+
+// Output: Duration until future time: 5 seconds
+public static void ExampleDuration_Abs() {
+    var positiveDuration = (Δtime.Duration)(5000000000L);
+    var negativeDuration = (Δtime.Duration)(-3000000000L);
+    var minInt64CaseDuration = ((Δtime.Duration)Δmath.MinInt64);
+    var absPositive = positiveDuration.Abs();
+    var absNegative = negativeDuration.Abs();
+    var absSpecial = minInt64CaseDuration.Abs() == ((Δtime.Duration)Δmath.MaxInt64);
+    fmt.Printf("Absolute value of positive duration: %v\n"u8, absPositive);
+    fmt.Printf("Absolute value of negative duration: %v\n"u8, absNegative);
+    fmt.Printf("Absolute value of MinInt64 equal to MaxInt64: %t\n"u8, absSpecial);
+}
+
+// Output:
+// Absolute value of positive duration: 5s
+// Absolute value of negative duration: 3s
+// Absolute value of MinInt64 equal to MaxInt64: true
 public static void ExampleDuration_Hours() {
     var (h, _) = Δtime.ParseDuration("4h30m"u8);
     fmt.Printf("I've got %.1f hours of work left."u8, h.Hours());
@@ -334,8 +365,8 @@ internal static readonly @string suppressedPadˢ = "Suppressed pad"u8;
 // default format: 2015-02-25 11:06:39 -0800 PST
 // Unix format: Wed Feb 25 11:06:39 PST 2015
 // Same, in UTC: Wed Feb 25 19:06:39 UTC 2015
-//in Shanghai with seconds: 2015-02-26T03:06:39 +080000
-//in Shanghai with colon seconds: 2015-02-26T03:06:39 +08:00:00
+// in Shanghai with seconds: 2015-02-26T03:06:39 +080000
+// in Shanghai with colon seconds: 2015-02-26T03:06:39 +08:00:00
 //
 // Formats:
 //

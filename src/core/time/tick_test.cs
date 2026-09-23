@@ -13,7 +13,7 @@ using Δtime = time_package;
 
 partial class time_test_package {
 
-[GoType("dyn")] partial struct TestTicker_type {
+[GoType("dyn")] internal partial struct TestTicker_type {
     internal nint count;
     internal Δtime.Duration delta;
 }
@@ -255,8 +255,7 @@ public static void TestLongAdjustTimers(ж<Δtesting.T> Ꮡt) {
         foreach (var i in range(50000)) {
             const nint @try = 20;
             foreach (var _ᴛ3 in range(@try)) {
-                inQ.ᐸꟷ(
-                () => {
+                inQ.ᐸꟷ(() => {
                 });
             }
             foreach (var _ᴛ4 in range(@try)) {
@@ -559,7 +558,7 @@ internal static void testTimerChan(ж<Δtesting.T> Ꮡt, timer tim, /*<-*/channe
             nint c = cap(C); if (l != 0 || c != 0) {
             }
         }
-        //t.Fatalf("len(C), cap(C) = %d, %d, want 0, 0", l, c)
+        // t.Fatalf("len(C), cap(C) = %d, %d, want 0, 0", l, c)
         assertTick();
     } else {
         // Test modify of timer in heap.

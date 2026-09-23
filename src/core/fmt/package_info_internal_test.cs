@@ -13,6 +13,16 @@ using static go.fmt_package;
 using static go.fmt_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "splitErr_type")]
+[assembly: GoDynamicTypeLift("7374727563747b636f756e7420696e743b206465736320737472696e673b20666e2066756e6328297d", "mallocTestᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b20696e205b5d616e793b206f757420737472696e677d", "startestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b20696e20616e793b206f757420737472696e677d", "panictestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b2076616c20616e793b206f757420737472696e677d", "fmtTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b2076616c20666d745f746573742e53453b206f757420737472696e677d", "reorderTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666f726d617420737472696e673b207620616e797d", "eofTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "flagtestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b2076616c20616e793b206f757420737472696e677d", "formatterFlagTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20662066756e6328737472696e672920696f2e5265616465727d", "readersᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -44,4 +54,28 @@ public static partial class fmt_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

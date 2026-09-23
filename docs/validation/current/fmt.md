@@ -6,12 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `fmt` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-23 · converter `272122c0a`*
 
-**63 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**62 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/fmt`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/fmt).
 
-Both runtimes skip 1 of the matched tests identically.
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -24,7 +24,7 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestBlank` | pass | pass |
 | `TestBlankln` | pass | pass |
 | `TestComplexFormatting` | pass | pass |
-| `TestCountMallocs` | skip | skip |
+| `TestCountMallocs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestEOF` | pass | pass |
 | `TestEOFAllTypes` | pass | pass |
 | `TestEOFAtEndOfInput` | pass | pass |
@@ -80,6 +80,17 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestStructPrinter` | pass | pass |
 | `TestUnreadRuneWithBufio` | pass | pass |
 | `TestWidthAndPrecision` | pass | pass |
+
+## Disclosed divergences
+
+A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/fmt/go2cs_test_disclosures.json);
+a disclosed test that fails any *other* way is still a hard mismatch.
+
+| Test | Class | Pinned reason |
+|:--|:--|:--|
+| `TestCountMallocs` | `deferred` | An AllocsPerRun family over 16 Sprintf/Fprintf legs, each bounded by Go's own mallocTest count (0 to 4). 15 of the 16 legs exceed their bound in the converted run; Sprintf("") (no arguments) is the one that passes. DEFERRED, not alloc-count-semantics: the run's unit note reads `counted ... go2cs-runtime object allocations ... an allocation COUNT per run` -- Go's own unit. ONE mechanism is named and read at the 1.24.13 hop, and it is paid by every leg with arguments: the variadic pack. The call site is C# 13 `params Span<any>` (the compiler's stack pack, like Go's non-escaping ...any backing array), and Sprintf/Fprintf's first act, `aʗp.slice()`, copies it to the heap (golib slice.cs `slice<T>(this Span<T>)` -> AllocationCounter.CopyOf) -- one charged array per call where Go allocates none. That it is the no-argument leg that passes is consistent with it. The REST of each leg's surplus is NOT yet attributed (Sprintf("xxx") has no pack and reads 2 against 1), so this entry is deferred on a partially named mechanism and says so. |
 
 ## Excluded declarations
 

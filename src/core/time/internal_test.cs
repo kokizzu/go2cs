@@ -43,8 +43,7 @@ internal static Action /*undo*/ disablePlatformSources() {
 
 public static Action Interrupt = interrupt;
 
-public static Func<global::go.time_package.ΔMonth, nint, nint> DaysIn;
-internal static void initᴛDaysIn() { DaysIn = daysIn; }
+public static Func<global::go.time_package.ΔMonth, nint, nint> DaysIn = daysIn;
 
 internal static void empty(any arg, uintptr seq, int64 delta) {
 }

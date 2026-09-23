@@ -11,36 +11,6 @@ using static go.unicode.utf8_package;
 
 partial class utf8_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 // Validate the constants redefined from unicode.
 [GoInit] internal static void init() {
     if (MaxRune != unicode.MaxRune) {
@@ -205,7 +175,7 @@ public static void TestDecodeRune(ж<testing.T> Ꮡt) {
         }
         (r, size) = DecodeRune(b[0..(int)(len(b) - 1)]);
         if (r != RuneError || size != wantsize) {
-            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b[0..(int)(len(b) - 1)], r, size, (int32)(RuneError), wantsize);
+            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b[..(int)(len(b) - 1)], r, size, (int32)(RuneError), wantsize);
         }
         s = m.str[0..(int)(len(m.str) - 1)];
         (r, size) = DecodeRuneInString(s);
@@ -376,7 +346,7 @@ public static void TestDecodeInvalidSequence(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct testSequence_info {
+[GoType("dyn")] internal partial struct testSequence_info {
     internal nint index;
     internal rune r;
 }
@@ -473,6 +443,17 @@ public static void TestRuneCount(ж<testing.T> Ꮡt) {
             nint @out = RuneCount(slice<byte>(tt.@in)); if (@out != tt.@out) {
                 Ꮡt.Errorf("RuneCount(%q) = %d, want %d"u8, tt.@in, @out, tt.@out);
             }
+        }
+    }
+}
+
+public static void TestRuneCountNonASCIIAllocation(ж<testing.T> Ꮡt) {
+    {
+        var n = testing.AllocsPerRun(10, () => {
+            var s = slice<byte>("日本語日本語日本語日"u8);
+            _ = RuneCount(s);
+        }); if (n > 0D) {
+            Ꮡt.Errorf("unexpected RuneCount allocation, got %v, want 0"u8, n);
         }
     }
 }
@@ -725,7 +706,16 @@ public static void BenchmarkEncodeASCIIRune(ж<testing.B> Ꮡb) {
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
-        EncodeRune(buf, (rune)'a');
+        EncodeRune(buf, (rune)'a'); // 1 byte
+    }
+}
+
+public static void BenchmarkEncodeSpanishRune(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        EncodeRune(buf, (rune)'Ñ'); // 2 bytes
     }
 }
 
@@ -734,7 +724,43 @@ public static void BenchmarkEncodeJapaneseRune(ж<testing.B> Ꮡb) {
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
-        EncodeRune(buf, (rune)'本');
+        EncodeRune(buf, (rune)'本'); // 3 bytes
+    }
+}
+
+public static void BenchmarkEncodeMaxRune(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        EncodeRune(buf, MaxRune); // 4 bytes
+    }
+}
+
+public static void BenchmarkEncodeInvalidRuneMaxPlusOne(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        EncodeRune(buf, MaxRune + 1); // 3 bytes: RuneError
+    }
+}
+
+public static void BenchmarkEncodeInvalidRuneSurrogate(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        EncodeRune(buf, 0xD800); // 3 bytes: RuneError
+    }
+}
+
+public static void BenchmarkEncodeInvalidRuneNegative(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        EncodeRune(buf, -1); // 3 bytes: RuneError
     }
 }
 
@@ -743,7 +769,16 @@ public static void BenchmarkAppendASCIIRune(ж<testing.B> Ꮡb) {
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
-        AppendRune(buf[..0], (rune)'a');
+        AppendRune(buf[..0], (rune)'a'); // 1 byte
+    }
+}
+
+public static void BenchmarkAppendSpanishRune(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        AppendRune(buf[..0], (rune)'Ñ'); // 2 bytes
     }
 }
 
@@ -752,7 +787,43 @@ public static void BenchmarkAppendJapaneseRune(ж<testing.B> Ꮡb) {
 
     var buf = new slice<byte>(UTFMax);
     for (nint i = 0; i < b.N; i++) {
-        AppendRune(buf[..0], (rune)'本');
+        AppendRune(buf[..0], (rune)'本'); // 3 bytes
+    }
+}
+
+public static void BenchmarkAppendMaxRune(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        AppendRune(buf[..0], MaxRune); // 4 bytes
+    }
+}
+
+public static void BenchmarkAppendInvalidRuneMaxPlusOne(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        AppendRune(buf[..0], MaxRune + 1); // 3 bytes: RuneError
+    }
+}
+
+public static void BenchmarkAppendInvalidRuneSurrogate(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        AppendRune(buf[..0], 0xD800); // 3 bytes: RuneError
+    }
+}
+
+public static void BenchmarkAppendInvalidRuneNegative(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    var buf = new slice<byte>(UTFMax);
+    for (nint i = 0; i < b.N; i++) {
+        AppendRune(buf[..0], -1); // 3 bytes: RuneError
     }
 }
 
@@ -778,7 +849,7 @@ public static void BenchmarkDecodeJapaneseRune(ж<testing.B> Ꮡb) {
 // functions to avoid dead code elimination.
 internal static bool boolSink;
 
-[GoType("dyn")] partial struct BenchmarkFullRune_benchmarks {
+[GoType("dyn")] internal partial struct BenchmarkFullRune_benchmarks {
     internal @string name;
     internal slice<byte> data;
 }

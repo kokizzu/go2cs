@@ -18,7 +18,6 @@ global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;
 global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
-global using runtimeꓸError = go.runtime_package.ΔError;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
@@ -29,6 +28,16 @@ using go;
 using static global::go.fmt_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "splitErr_type")]
+[assembly: GoDynamicTypeLift("7374727563747b636f756e7420696e743b206465736320737472696e673b20666e2066756e6328297d", "mallocTestᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b20696e205b5d616e793b206f757420737472696e677d", "startestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b20696e20616e793b206f757420737472696e677d", "panictestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b2076616c20616e793b206f757420737472696e677d", "fmtTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666d7420737472696e673b2076616c20666d745f746573742e53453b206f757420737472696e677d", "reorderTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b666f726d617420737472696e673b207620616e797d", "eofTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "flagtestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b2076616c20616e793b206f757420737472696e677d", "formatterFlagTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20662066756e6328737472696e672920696f2e5265616465727d", "readersᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -61,9 +70,9 @@ using static global::go.fmt_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("fmt/errors_test.go", "errors_test.cs", "ADMcpoSCAD6EAYCCpICCpICSAAkKgoCCpMqA")]
-[assembly: go.GoPositionMap("fmt/fmt_test.go", "fmt_test.cs", "AGVUgoKCgoIAGjSAAA4cgsqCABMiggAKEILugu6CgIIAmQfuDqIACgaigoKCgpKUgrSCtIK0grSCtIK0goKCgqaUgoCmlAAGEKKCgoKCgoKCgpSClIKUgpSCgpSCgoKCgoKCggA8bIKCgoLcgoKCyoKCgvqCgoLKgoKCyoKCkoLKgoKCyoKCgsqCgoLKgoKCyoKCgsqCgoLKgoKCyoKCgsqCgoLKgoKSgsqCgpKCyoKCgoLKgoKSgvqCgoKCgsqigoKCuKKCgoKCuKKCgoKCABMYoqKioqKioqKAooCigKKApoIACgyClLS0tIKCgIIACA6CgoKCpoCCpICCpIIAFyyCgoKCggATCoKMgoKCAAQQgoKCpoKCyoKSgoKUgoKClIKCvKKCgoKmgoL6goKCgpSSgoKUgpSCpoKCgoKClIKCgryigoKCvKKCgoLqkoKCgoKUgoKUgoK4oAAmRoKCgoIACRaSAAcSkgAHEpIAHDCCgoKCAA8aooCCgtrmgpKSgoKUgoKCgrimgoLKgAALBKKGgoKCggBEjAGCgoKCAAwKggAHHIKCggAJGoKCgoKClIK4goKCgoKUguiCgoKCgpSC")]
-[assembly: go.GoPositionMap("fmt/scan_test.go", "scan_test.cs", "AJUBrAGCgoKUgoKUggAMGKKAgqaCgpSCAKYDhAaCgoKCgoKClIKUgoKmgoCCpIKCyoKyksqCspLKgoKCgoKUlIKClIKCpoKAgqSCgvqUgoKCgoKUgsqigoKCgoKClIKUgriCgriigoKCgoKClIKUgoKUgriCgriCgoKCgoKCpJSUgpSCgqaCgoKUgoLKgrKS+oKCgoKClIKUgpSCgpSClIL6kpKCgpSClIKUgoKUgqaCgpSC+IKCgoKCpPiCgoKCpOiCgpKCgqQACRSygoKUAAoKooKCgoKUgpSCgpSCgpSClIK8opKCgpSClIKClIKmgoKUggAcNoKCgIKkgILeooKCgoKClIKUgoKUggAFEKKCgoKClIKCpoLmgoSSgoKUgpSClpKCgpSClIKWkoKClIKk/KKCkoKClIKClIIACxiCgoKCpoKigoKUgpSClIIACxiygoKUgoKCgpSUgqzygoKClIKCgpSUgpSCgoKUpoKCgoKUpoKCkoIABxCCgoKCgoKUgoKClJSCuKKCgoKCgoKCuKKCgoKCgoKC+KKCgoKCgoKCAAsMopKCgpSCgpSCgriChIKClIKCgoSCgpSChIKClIKCgqiCggAJCIKSAAUUgoKClIIACwqCkgAFFoKCgpSClIIADAqCkgAuYIKCgoKUlIKUgpSCAAYSkoKCgpSCpoKCgoKUgpSC")]
+[assembly: go.GoPositionMap("fmt/errors_test.go", "errors_test.cs", "ABscpoSCAD6EAYCCpICCpICSAAkKgoCCpMqA")]
+[assembly: go.GoPositionMap("fmt/fmt_test.go", "fmt_test.cs", "ADpSgoKCgoIAGjSAAA4cgsqCABMigsyAABIegu6C7oKAggDYB8wPogAKBqKCgoKCkpSCtIK0grSCtIK0grSCgoKCppSCgKaUAAYQooKCgoKCgoKClIKUgpSClIKClIKCgoKCgoKCADxsgoKCgsqCgoLKgoKC+oKCgsqCgoLKgoKSgsqCgoLKgoKCyoKCgsqCgoLKgoKCyoKCgsqCgoLKgoKCyoKCgsqCgpKCyoKCkoLKgoKCgsqCgpKC+oKCgoKCyqKCgoK4ooKCgoK4ooKCgoIAGBiioqKioqKiooCigKKAooCAooCAooCigKaCAAkMgpS0tIKCgIIACA6CgoKCpoCCpICCpIIAFyyCgoKCggATCoKMgoKCAAQQgoKCpoKCyoKSgoKUgoKClIKCvKKCgoKmgoL6goKCgpSSgoKUgpSCpoKCgoKClIKCgryigoKCvKKCgoLqkoKCgoKUgoKUgoK4oAAmRoKCgoIACRaSAAcSkgAHEpIAHDCCgoKCAA8aooCCgtrmgpKSgoKUgoKCgrimgoLKgAALBKKGgoKCggBEjAGCgoKCAAwKggAHHIKCggAJGoKCgoKClIK4goKCgoKUguiCgoKCgpSC", "1297-1301:1;1305-1309:1;1313-1317:1;1321-1325:1;1330-1334:1;1338-1342:1;1346-1350:1;1354-1358:1;1362-1366:1;1370-1374:1;1378-1382:1;1386-1390:1;1394-1398:1;1402-1406:1;1411-1415:1;1420-1424:1;1429-1433:1;1438-1442:1;1446-1452:1")]
+[assembly: go.GoPositionMap("fmt/scan_test.go", "scan_test.cs", "AH2sAYKCgpSCgpSCAAwYooCCpoKClIIApgOEBoKCgoKCgoKUgpSCgqaCgIKkgoLKgrKSyoKyksqCgoKCgpSUgoKUgoKmgoCCpIKC+pSCgoKCgpSCyqKCgoKCgoKUgpSCuIKCuKKCgoKCgoKUgpSCgpSCuIKCuIKCgoKCgoKklJSClIKCpoKCgpSCgsqCspL6goKCgoKUgpSClIKClIKUgvqSkoKClIKUgpSCgpSCpoKClIL4goKCgoKk+IKCgoKk6IKCkoKCpAAJFLKCgpQACgqigoKCgpSClIKClIKClIKUgryikoKClIKUgoKUgqaCgpSCABw2goKAgqSAgt6igoKCgoKUgpSCgpSCAAUQooKCgoKUgoKmguaChJKCgpSClIKWkoKClIKUgpaSgoKUgqT8ooKSgoKUgoKUggALGIKCgoKmgqKCgpSClIKUggALGLKCgpSCgoKClJSCrPKCgoKUgoKClJSClIKCgpSmgoKCgpSmgoKSggAHEIKCgoKCgpSCgoKUlIK4ooKCgoKCgoK4ooKCgoKCgoL4ooKCgoKCgoIACwyikoKClIKClIKCuIKEgoKUgoKChIKClIKEgoKUgoKCqIKCAAkIgpIABRSCgoKUggALCoKSAAUWgoKClIKUggAMCoKSAC5ggoKCgpSUgpSClIIABhKSgoKClIKmgoKCgpSClII=", "87-87:1;534-536:1;542-544:1;677-679:1;1068-1071:1;1142-1151:1")]
 [assembly: go.GoPositionMap("fmt/state_test.go", "state_test.cs", "ABUsgqaCpoKmgsqCgoKClIKClIKClAAIBoIACyCCgoI=")]
 [assembly: go.GoPositionMap("fmt/stringer_test.go", "stringer_test.cs", "ACs6gKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKSCggAJCIKCgoKCgoKC")]
 // </GoSourcePositionMaps>
@@ -81,6 +90,18 @@ public static partial class fmt_test_package
 
     // <TypeAccessibility>
     internal partial interface splitErr_type {}
+    internal partial struct BenchmarkScanRecursiveIntReaderWrapper_buf {}
+    internal partial struct TestErrorf_type {}
+    internal partial struct TestFormatString_type {}
+    internal partial struct TestLineByLineFscanf_r {}
+    [GoLocalName("A")] internal partial struct TestNilDoesNotBecomeTyped_A {}
+    [GoLocalName("B")] internal partial struct TestNilDoesNotBecomeTyped_B {}
+    internal partial struct TestParsenum_testCases {}
+    internal partial struct TestScanNewlinesAreSpaces_type {}
+    internal partial struct TestScanfNewlineMatchFormat_type {}
+    internal partial struct TestScanlnNewlinesTerminate_type {}
+    [GoLocalName("T")] internal partial struct TestStructPrinter_T {}
+    internal partial struct TestStructPrinter_type {}
     internal partial struct byteFormatter {}
     internal partial struct byteStringer {}
     internal partial struct eofCounter {}
@@ -91,6 +112,7 @@ public static partial class fmt_test_package
     internal partial struct fmtTestsᴛ1 {}
     internal partial struct formatterFlagTestsᴛ1 {}
     internal partial struct hexBytes {}
+    [GoLocalName("P")] internal partial struct mallocTest_P {}
     internal partial struct mallocTestᴛ1 {}
     internal partial struct panictestsᴛ1 {}
     internal partial struct readers_type {}
@@ -120,7 +142,6 @@ public static partial class fmt_test_package
     internal partial struct writeStringFormatter {}
     public partial struct A {}
     public partial struct B {}
-    public partial struct BenchmarkScanRecursiveIntReaderWrapper_buf {}
     public partial struct C {}
     public partial struct F {}
     public partial struct G {}
@@ -154,18 +175,39 @@ public static partial class fmt_test_package
     public partial struct TU64 {}
     public partial struct TU8 {}
     public partial struct TUI {}
-    public partial struct TestErrorf_type {}
-    public partial struct TestFormatString_type {}
-    public partial struct TestLineByLineFscanf_r {}
-    [GoLocalName("A")] public partial struct TestNilDoesNotBecomeTyped_A {}
-    [GoLocalName("B")] public partial struct TestNilDoesNotBecomeTyped_B {}
-    public partial struct TestParsenum_testCases {}
-    public partial struct TestScanNewlinesAreSpaces_type {}
-    public partial struct TestScanfNewlineMatchFormat_type {}
-    public partial struct TestScanlnNewlinesTerminate_type {}
-    [GoLocalName("T")] public partial struct TestStructPrinter_T {}
-    public partial struct TestStructPrinter_type {}
     public partial struct TwoLines {}
+    public partial struct U {}
     public partial struct Xs {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.fmt_package));
+    }
 }
