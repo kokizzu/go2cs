@@ -804,6 +804,99 @@ func rootQualifyIfAmbiguous(ns string) string {
 	return ns
 }
 
+// qualifyPackageReference is rootQualifyIfAmbiguous for a package reference emitted INTO this
+// file's body, where one more binder applies: the file's own `using <namespace>;` directives.
+//
+// C# looks a simple name up level by level from the file's namespace outward, and at each level it
+// consults that namespace's MEMBERS first and then the using directives declared there. A file-scoped
+// `namespace go.runtime;` whose body carries `using @internal;` therefore finds the converted
+// internal/sync's `go.@internal.sync_package` BEFORE the root `go.sync_package` it meant: runtime/pprof's
+// embedded `sync.Mutex` compiled as internal/sync's Mutex, and net/http's test sources the same way
+// through `using global::go.@internal;` (go1.24 added internal/sync). Nothing reported it -- both types
+// are named Mutex and both lock.
+//
+// Only a SINGLE-SEGMENT class reference is exposed: a using imports a namespace's TYPES, never its
+// nested namespaces, so `text.tabwriter_package` cannot be captured this way. A class the file's own
+// namespace declares is found before any using, and rootQualifyIfAmbiguous already answers the
+// enclosing-namespace shadows. A using-alias TARGET is resolved as if the file had no usings at all,
+// which is why packageUsingAlias and the import alias keep calling rootQualifyIfAmbiguous directly.
+func (v *Visitor) qualifyPackageReference(ns string) string {
+	if qualified := rootQualifyIfAmbiguous(ns); qualified != ns {
+		return qualified
+	}
+
+	firstSeg := ns
+
+	if dot := strings.Index(ns, "."); dot != -1 {
+		firstSeg = ns[:dot]
+	}
+
+	if !strings.HasSuffix(firstSeg, PackageSuffix) || packageQualifiedNamespaces[packageNamespace+"."+firstSeg] {
+		return ns
+	}
+
+	for _, usings := range []HashSet[string]{v.requiredUsings, v.methodNamespaceUsings} {
+		for using := range usings {
+			if namespace, ok := resolveUsingNamespace(using); ok && packageQualifiedNamespaces[namespace+"."+firstSeg] {
+				return rootQualified(ns)
+			}
+		}
+	}
+
+	return ns
+}
+
+// resolveUsingNamespace answers the namespace a file-level `using <namespace>;` entry imports, or
+// false for an entry that is not one (`static …`, `alias = …`) or names no namespace of this
+// compilation's go.* closure (System.*). A relative name binds innermost-first from the file's
+// namespace, exactly as the using directive itself does.
+func resolveUsingNamespace(using string) (string, bool) {
+	if strings.ContainsAny(using, " =") {
+		return "", false
+	}
+
+	if rooted, ok := strings.CutPrefix(using, "global::"); ok {
+		return rooted, packageChildNamespaces[rooted]
+	}
+
+	for prefix := packageNamespace; prefix != ""; {
+		if candidate := prefix + "." + using; packageChildNamespaces[candidate] {
+			return candidate, true
+		}
+
+		dot := strings.LastIndex(prefix, ".")
+
+		if dot == -1 {
+			break
+		}
+
+		prefix = prefix[:dot]
+	}
+
+	return "", false
+}
+
+// collectMethodNamespaceUsings records, before a file's body is visited, every namespace
+// addMethodPackageNamespaceUsing will add to it while the body is visited -- the one `using` source
+// that lands AFTER package references are already emitted (imports are the first declarations of every
+// Go file, so their usings are all in place before any other declaration). A superset is harmless:
+// qualifyPackageReference only spells a reference in full on a hit, which is always correct.
+func (v *Visitor) collectMethodNamespaceUsings(file *ast.File) {
+	v.methodNamespaceUsings = HashSet[string]{}
+
+	ast.Inspect(file, func(node ast.Node) bool {
+		if selectorExpr, ok := node.(*ast.SelectorExpr); ok {
+			if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodVal {
+				if namespace, ok := v.methodPackageNamespace(sel.Obj().Pkg()); ok {
+					v.methodNamespaceUsings.Add(namespace)
+				}
+			}
+		}
+
+		return true
+	})
+}
+
 // packageUsingAlias returns the canonical C# using alias and target namespace for a Go import path,
 // matching visitImportSpec's unaliased-import emission (`using <alias> = <namespace>;`). Used both to
 // decide whether an import already emitted the canonical alias and to synthesize it in visitFile for a

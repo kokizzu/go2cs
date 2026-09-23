@@ -38,8 +38,17 @@ func (v *Visitor) addRequiredUsing(usingName string) {
 // namespace-using derivation in visitImportSpec's unaliased-import branch; a no-op for the current
 // package and for root-namespace (`go`) packages, whose extensions are already visible.
 func (v *Visitor) addMethodPackageNamespaceUsing(pkg *types.Package) {
+	if namespace, ok := v.methodPackageNamespace(pkg); ok {
+		v.addRequiredUsing(namespace)
+	}
+}
+
+// methodPackageNamespace is the `using <namespace>;` addMethodPackageNamespaceUsing emits for a
+// method's defining package, or false when it emits none. Split out so collectMethodNamespaceUsings
+// can know, before a file's body is visited, every namespace the body will import this way.
+func (v *Visitor) methodPackageNamespace(pkg *types.Package) (string, bool) {
 	if pkg == nil || pkg == v.pkg {
-		return
+		return "", false
 	}
 
 	importPath := rootQualifyIfAmbiguous(convertImportPathToNamespace(pkg.Path(), PackageSuffix))
@@ -47,14 +56,16 @@ func (v *Visitor) addMethodPackageNamespaceUsing(pkg *types.Package) {
 	lastDot := strings.LastIndex(importPath, ".")
 
 	if lastDot == -1 {
-		return
+		return "", false
 	}
 
 	namespace := importPath[:lastDot]
 
 	if len(namespace) > 0 && packageNamespace != fmt.Sprintf("%s.%s", RootNamespace, namespace) {
-		v.addRequiredUsing(namespace)
+		return namespace, true
 	}
+
+	return "", false
 }
 
 func (v *Visitor) getPrintedNode(node ast.Node) string {

@@ -114,6 +114,8 @@ func (v *Visitor) visitFile(file *ast.File) {
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)
 
+	v.collectMethodNamespaceUsings(file)
+
 	for _, decl := range file.Decls {
 		v.visitDecl(decl)
 	}
