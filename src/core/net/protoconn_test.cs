@@ -84,7 +84,7 @@ public static void TestTCPConnSpecificMethods(ж<testing.T> Ꮡt) {
         var ch = new channel<error>(1);
         var chʗ1 = ch;
         var handler = (ж<localServer> lsΔ1, global::go.net_package.Listener lnΔ1) => {
-            lsΔ1.transponder((~lsΔ1).Listener, chʗ1);
+            lsΔ1.transponder((~lsΔ1).Listener, chʗ1.WithDirection(GoChanDir.Send));
         };
         var ls = (Ꮡ(new streamListener(Listener: new global::go.net_package.TCPListenerжListener(ln)))).newLocalServer();
         var lsʗ1 = ls;

@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `9930d99ff`*
+*Validated 2026-09-23 · converter `64128bb0b`*
 
-**472 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**476 matched · 3 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 44 of the matched tests identically.
 
@@ -162,6 +164,7 @@ Both runtimes skip 44 of the matched tests identically.
 | `TestHostCacheModification` | pass | pass |
 | `TestIPAddrFamily` | pass | pass |
 | `TestIPAddrScope` | pass | pass |
+| `TestIPAppendTextNoAllocs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestIPConnLocalName` | pass | pass |
 | `TestIPConnRemoteName` | skip | skip |
 | `TestIPConnSpecificMethods` | skip | skip |
@@ -172,6 +175,7 @@ Both runtimes skip 44 of the matched tests identically.
 | `TestIPString` | pass | pass |
 | `TestIPVersion` | pass | pass |
 | `TestIPv4MulticastListener` | pass | pass |
+| `TestIPv4WriteMsgUDPAddrPortTargetAddrIPVersion` | pass | pass |
 | `TestIPv6LinkLocalUnicastTCP` | pass | pass |
 | `TestIPv6LinkLocalUnicastUDP` | pass | pass |
 | `TestIPv6MulticastListener` | skip | skip |
@@ -383,6 +387,9 @@ Both runtimes skip 44 of the matched tests identically.
 | `TestSendfileParts` | pass | pass |
 | `TestSendfilePipe` | skip | skip |
 | `TestSendfileSeeked` | pass | pass |
+| `TestSendfileWithExactLimit` | pass | pass |
+| `TestSendfileWithLargeFile` | pass | pass |
+| `TestSendfileWithLimitLargerThanFile` | pass | pass |
 | `TestSplitHostPort` | pass | pass |
 | `TestSpuriousENOTAVAIL` | pass | pass |
 | `TestTCPBig` | skip | skip |
@@ -494,15 +501,20 @@ Both runtimes skip 44 of the matched tests identically.
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/net/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestAllocs` | `alloc-profile` | zero-alloc assert over the UDP hot path: the test runs WriteMsgUDPAddrPort/ReadMsgUDPAddrPort 1,000 times and requires the steady-state allocation count to be zero, and it is guarded by testenv.SkipIfOptimizationOff precisely because that outcome depends on Go's optimizer. Go reaches zero because escape analysis keeps the 8-byte buffer, the netFD argument shuffle and the AddrPort value stack-resident, and its syscall path writes through a pinned slice header without boxing. The converted path cannot: golib's slice<T> is a struct over a heap T[], every []byte crossing the Conn/PacketConn interface surface is a managed object, and the msghdr marshalling allocates its own buffers per call — so the counter reports ~71 allocations per run (71,000 over 1,000) rather than 0. Structural to the managed runtime, not to net: the CLR publishes no in-process malloc counter, so go2cs's own runtime counter (golib's allocation sites, the structural mirror of runtime.MemStats.Mallocs) is what the host reports, and its counter line is the stable pin |
-| `TestTCPReadWriteAllocs` | `alloc-profile` | the same zero-alloc assert over the TCP hot path: Read/Write on a loopback conn, 1,000 runs, required to allocate nothing. Go's Read/Write reach the netFD with no heap traffic at all; the converted equivalents allocate through the same three structural sites as TestAllocs — slice<T> over a heap T[], the Conn interface surface, and the per-call syscall argument marshalling — reporting ~35 allocations per run (35,000 over 1,000). Lower than TestAllocs because the TCP path marshals no msghdr and carries no address value, which is itself evidence the count tracks the converted call shape rather than any defect in net |
+| `TestAllocs` | `deferred` | zero-alloc assert over the UDP hot path: the test runs WriteMsgUDPAddrPort/ReadMsgUDPAddrPort 1,000 times and requires the steady-state allocation count to be zero, and it is guarded by testenv.SkipIfOptimizationOff precisely because that outcome depends on Go's optimizer. Go reaches zero because escape analysis keeps the 8-byte buffer, the netFD argument shuffle and the AddrPort value stack-resident, and its syscall path writes through a pinned slice header without boxing. The converted path cannot: golib's slice<T> is a struct over a heap T[], every []byte crossing the Conn/PacketConn interface surface is a managed object, and the msghdr marshalling allocates its own buffers per call — so the counter reports ~71 allocations per run (71,000 over 1,000) rather than 0. Structural to the managed runtime, not to net: the CLR publishes no in-process malloc counter, so go2cs's own runtime counter (golib's allocation sites, the structural mirror of runtime.MemStats.Mallocs) is what the host reports, and its counter line is the stable pin. RELABEL 2026-09-23 (C1, as ruled -- COORD's net-reading ruling, 2026-09-23): RULING OWED -> deferred. The shell and marshalling proof above is WITHDRAWN (O2's rule): the reading is COUNT, and golib's counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so the counted objects are golib's. The '~71 allocations per run' above is STALE: the i7 read 35 on this leg. |
+| `TestIPAppendTextNoAllocs` | `deferred` | NEW at go1.24 (net/ip_test.go:285-296): a want-0 AllocsPerRun over IP.AppendText into a fresh 64-byte buffer, for every address in ipStringTests but the invalid one. Go keeps the buffer and the netip value on the stack; the converted path counts the test's make and the net/netip append path IP.AppendText reaches (net/ip.cs:342-343: netip.AddrFromSlice(ip).AppendTo(b)). DEFERRED as ruled (2026-09-22 21:09, and COORD's net-reading ruling 2026-09-23): the reading is COUNT, and it is a REC-B member by X(2). It diverged UNDISCLOSED in the i7 net reading, the row's one divergence; this entry is what lets net bank. The signature is the test's own count-free failure text. |
+| `TestTCPReadWriteAllocs` | `deferred` | the same zero-alloc assert over the TCP hot path: Read/Write on a loopback conn, 1,000 runs, required to allocate nothing. Go's Read/Write reach the netFD with no heap traffic at all; the converted equivalents allocate through the same three structural sites as TestAllocs — slice<T> over a heap T[], the Conn interface surface, and the per-call syscall argument marshalling — reporting ~35 allocations per run (35,000 over 1,000). Lower than TestAllocs because the TCP path marshals no msghdr and carries no address value, which is itself evidence the count tracks the converted call shape rather than any defect in net. RELABEL 2026-09-23 (C1, as ruled -- COORD's net-reading ruling, 2026-09-23): RULING OWED -> deferred. The three 'structural sites' above are WITHDRAWN as a proof (O2's rule): the reading is COUNT and names golib objects, read below. The '~35 allocations per run' above is STALE: the i7 read 2. |
 
 ## Excluded declarations
 
@@ -514,6 +526,7 @@ the capability it needs.
 
 - BenchmarkDNSName (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkIPEqual (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkIPMarshalText (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkIPMaskString (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkIPString (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkInterfaceAddrs (benchmark): benchmark execution is deferred to Phase 4D
@@ -558,7 +571,7 @@ the capability it needs.
 - ExampleIP_Mask (example): example execution is deferred to Phase 4D
 - ExampleIP_String (example): example execution is deferred to Phase 4D
 - ExampleIP_To16 (example): example execution is deferred to Phase 4D
-- ExampleIP_to4 (example): example execution is deferred to Phase 4D
+- ExampleIP_To4 (example): example execution is deferred to Phase 4D
 - ExampleIPv4 (example): example execution is deferred to Phase 4D
 - ExampleIPv4Mask (example): example execution is deferred to Phase 4D
 - ExampleListener (example): example execution is deferred to Phase 4D

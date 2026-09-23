@@ -22,24 +22,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
-    builtin.initPackage(typeof(@internal.poll_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸinternalꓸsocktest() {
-    builtin.initPackage(typeof(net.@internal.socktest_package));
-}
-
 internal static error isValid(this ж<global::go.net_package.OpError> Ꮡe) {
     ref var e = ref Ꮡe.DerefOrNull();
 
@@ -565,10 +547,6 @@ third:
     return fmt.Errorf("unexpected type on 3rd nested level: %T"u8, nestedErr);
 }
 
-[GoType("dyn")] internal partial interface parseWriteError_type {
-    void isAddrinfoErrno();
-}
-
 // parseWriteError parses nestedErr and reports whether it is a valid
 // error value from Write functions.
 // It returns nil when nestedErr is valid.
@@ -603,7 +581,7 @@ second:
         var err = nestedErr;
         return default!;
     }
-    case {} Δerr when Δerr._<parseWriteError_type>(out var err): {
+    case {} Δerr when Δerr._<parseDialError_type>(out var err): {
         return default!;
     }
     case ж<Δos.SyscallError> err: {

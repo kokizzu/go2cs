@@ -11,18 +11,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // someTimeout is used just to test that net.Conn implementations
 // don't explode when their SetFooDeadline methods are called.
 // It isn't actually used for testing timeouts.
@@ -44,7 +32,7 @@ public static void TestConnAndListener(ж<testing.T> Ꮡt) {
                 var ch = new channel<error>(1);
                 var chʗ1 = ch;
                 var handler = (ж<localServer> lsΔ1, global::go.net_package.Listener ln) => {
-                    lsΔ1.transponder(ln, chʗ1);
+                    lsΔ1.transponder(ln, chʗ1.WithDirection(GoChanDir.Send));
                 };
                 {
                     var errΔ1 = ls.buildup(handler); if (errΔ1 != default!) {

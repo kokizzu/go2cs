@@ -19,12 +19,6 @@ using vendor.golang.org.x.net.dns;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸdnsꓸdnsmessage() {
-    builtin.initPackage(typeof(vendor.golang.org.x.net.dns.dnsmessage_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string fooBarˢ = "foo.bar."u8;
 internal static readonly @string barBazˢ = "bar.baz."u8;
@@ -76,7 +70,7 @@ public static void TestResolverDialFunc(ж<testing.T> Ꮡt) {
             tΔ1.Fatal(err);
         }
         {
-            var (got, want) = (sortedIPStrings(ips), new @string[]{"0:200::e00"u8, "1.2.3.4"u8, "1::f"u8, "5.6.7.8"u8}.slice()); if (!reflect.DeepEqual(got, want)) {
+            var (got, want) = (sortedIPStrings(ips), new @string[]{"0:200::e00"u8, "1.2.3.4"u8, "1::f"u8, "5.6.7.8"u8}.slice()); if (!slices.Equal<slice<@string>, @string>(got, want)) {
                 tΔ1.Errorf("LookupIP wrong.\n got: %q\nwant: %q\n"u8, got, want);
             }
         }

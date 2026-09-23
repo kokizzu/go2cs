@@ -11,6 +11,7 @@ using errors = errors_package;
 using fmt = fmt_package;
 using poll = @internal.poll_package;
 using Δio = io_package;
+using rand = math.rand_package;
 using Δos = os_package;
 using Δruntime = runtime_package;
 using strconv = strconv_package;
@@ -22,21 +23,10 @@ using crypto;
 using encoding;
 using fs = go.io.fs_package;
 using hash = hash_package;
+using math;
 using static go.net_package;
 
 partial class net_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
 
 internal static readonly @string newton = "../testdata/Isaac.Newton-Opticks.txt"u8;
 internal static UntypedInt newtonLen => 567198;
@@ -45,7 +35,7 @@ internal static readonly @string newtonSHA256 = "d4a9ac22462b35e7821a4f2706c2110
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object internalPollSendFileˢ = (@string)"internal/poll.SendFile called multiple times, want one call"u8;
 internal static readonly object internalPollSendFileWasˢ = (@string)"internal/poll.SendFile was not called, want it to be"u8;
-internal static readonly object internalPollSendFileDidˢ = (@string)"internal/poll.SendFile did not handle the write, want it to"u8;
+internal static readonly object internalPollSendFileDidˢ = (@string)"internal/poll.SendFile did not handle the write, want it to, error:"u8;
 internal static readonly object internalPollSendFileˢ2 = (@string)"internal.poll.SendFile called with unexpected FD"u8;
 
 // expectSendfile runs f, and verifies that internal/poll.SendFile successfully handles
@@ -69,6 +59,7 @@ internal static void expectSendfile(ж<testing.T> Ꮡt, global::go.net_package.C
         bool called = default!;
         bool gotHandled = default!;
         ref var gotFD = ref heap<ж<poll.FD>>(out var ᏑgotFD);
+        ref var gotErr = ref heap<error>(out var ᏑgotErr);
         poll.TestHookDidSendFile = (ж<poll.FD> dstFD, nint src, int64 written, error err, bool handled) => {
             if (called) {
                 Ꮡt.Error(internalPollSendFileˢ);
@@ -76,6 +67,7 @@ internal static void expectSendfile(ж<testing.T> Ꮡt, global::go.net_package.C
             called = true;
             gotHandled = handled;
             ᏑgotFD.ValueSlot = dstFD;
+            ᏑgotErr.ValueSlot = err;
         };
         f();
         if (!called) {
@@ -83,7 +75,7 @@ internal static void expectSendfile(ж<testing.T> Ꮡt, global::go.net_package.C
             return;
         }
         if (!gotHandled) {
-            Ꮡt.Error(internalPollSendFileDidˢ);
+            Ꮡt.Error(internalPollSendFileDidˢ, gotErr);
             return;
         }
         if ((~wantConn._<ж<global::go.net_package.TCPConn>>()).fd.of(global::go.net_package.netFD.Ꮡpfd) != gotFD) {
@@ -94,10 +86,45 @@ internal static void expectSendfile(ж<testing.T> Ꮡt, global::go.net_package.C
     finally { ᒐ.Run(); }
 }
 
+public static void TestSendfile(ж<testing.T> Ꮡt) {
+    testSendfile(Ꮡt, newton, newtonSHA256, newtonLen, 0);
+}
+
+public static void TestSendfileWithExactLimit(ж<testing.T> Ꮡt) {
+    testSendfile(Ꮡt, newton, newtonSHA256, newtonLen, newtonLen);
+}
+
+public static void TestSendfileWithLimitLargerThanFile(ж<testing.T> Ꮡt) {
+    testSendfile(Ꮡt, newton, newtonSHA256, newtonLen, newtonLen * 2);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object skippingOnNonAmd64AndNonˢ = (@string)"skipping on non-amd64 and non-arm64 platforms"u8;
+internal static readonly object skipItDuringShortTestingˢ = (@string)"Skip it during short testing"u8;
+
+public static void TestSendfileWithLargeFile(ж<testing.T> Ꮡt) {
+    // Some platforms are not capable of handling large files with sendfile
+    // due to limited system resource, so we only run this test on amd64 and
+    // arm64 for the moment.
+    if (Δruntime.GOARCH != "amd64"u8 && Δruntime.GOARCH != "arm64"u8) {
+        Ꮡt.Skip(skippingOnNonAmd64AndNonˢ);
+    }
+    // Also skip it during short testing.
+    if (testing.Short()) {
+        Ꮡt.Skip(skipItDuringShortTestingˢ);
+    }
+    // We're using 1<<31 - 1 as the chunk size for sendfile currently,
+    // make an edge case file that is 1 byte bigger than that.
+    var f = createTempFile(new net_test_package.testing_TжTB(Ꮡt), 2147483648L);
+    // For big file like this, only verify the transmission of the file,
+    // skip the content check.
+    testSendfile(Ꮡt, f.Name(), ""u8, 2147483648L, 0);
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object retrievedDataHashDidNotˢ = (@string)"retrieved data hash did not match"u8;
 
-public static void TestSendfile(ж<testing.T> Ꮡt) {
+internal static void testSendfile(ж<testing.T> Ꮡt, @string filePath, @string fileHash, int64 size, int64 limit) {
     GoFrame ᒐ = default;
     try {
         var ln = newLocalListener(new net_test_package.testing_TжTB(Ꮡt), tcpˢ);
@@ -122,7 +149,7 @@ public static void TestSendfile(ж<testing.T> Ꮡt) {
                     var connʗ2 = connʗ1;
                     defer(() => connʗ2.Close(), ref ᒐ);
                     ref var errΔ2 = ref heap<error>(out var ᏑerrΔ2);
-                    (var f, ᏑerrΔ2.ValueSlot) = Δos.Open(newton);
+                    (var f, ᏑerrΔ2.ValueSlot) = Δos.Open(filePath);
                     if (ᏑerrΔ2.ValueSlot != default!) {
                         errcʗ2.ᐸꟷ(ᏑerrΔ2.ValueSlot);
                         return;
@@ -142,7 +169,14 @@ public static void TestSendfile(ж<testing.T> Ꮡt) {
                         var connʗ3 = connʗ1;
                         var fʗ2 = f;
                         expectSendfile(Ꮡt, connʗ1, () => {
-                            (sbytes, ᏑerrΔ2.ValueSlot) = Δio.Copy(new net_test_package.net_ConnᴠWriter(connʗ3), new net_test_package.os_FileжReader(fʗ2));
+                            if (limit > 0){
+                                (sbytes, ᏑerrΔ2.ValueSlot) = Δio.CopyN(new net_test_package.net_ConnᴠWriter(connʗ3), new net_test_package.os_FileжReader(fʗ2), limit);
+                                if (AreEqual(ᏑerrΔ2.ValueSlot, Δio.EOF) && limit > size) {
+                                    ᏑerrΔ2.ValueSlot = default!;
+                                }
+                            } else {
+                                (sbytes, ᏑerrΔ2.ValueSlot) = Δio.Copy(new net_test_package.net_ConnᴠWriter(connʗ3), new net_test_package.os_FileжReader(fʗ2));
+                            }
                         });
                     }
 
@@ -150,8 +184,8 @@ public static void TestSendfile(ж<testing.T> Ꮡt) {
                         errcʗ2.ᐸꟷ(ᏑerrΔ2.ValueSlot);
                         return;
                     }
-                    if (sbytes != newtonLen) {
-                        errcʗ2.ᐸꟷ(fmt.Errorf("sent %d bytes; expected %d"u8, sbytes, (nint)(newtonLen)));
+                    if (sbytes != size) {
+                        errcʗ2.ᐸꟷ(fmt.Errorf("sent %d bytes; expected %d"u8, sbytes, size));
                         return;
                     }
                 }
@@ -172,13 +206,11 @@ public static void TestSendfile(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Error(err);
         }
-        if (rbytes != newtonLen) {
-            Ꮡt.Errorf("received %d bytes; expected %d"u8, rbytes, (nint)(newtonLen));
+        if (rbytes != size) {
+            Ꮡt.Errorf("received %d bytes; expected %d"u8, rbytes, size);
         }
-        {
-            @string res = hex.EncodeToString(h.Sum(default!)); if (res != newtonSHA256) {
-                Ꮡt.Error(retrievedDataHashDidNotˢ);
-            }
+        if (len(fileHash) > 0 && hex.EncodeToString(h.Sum(default!)) != newtonSHA256) {
+            Ꮡt.Error(retrievedDataHashDidNotˢ);
         }
         foreach (var errΔ3 in errc) {
             Ꮡt.Error(errΔ3);
@@ -673,7 +705,8 @@ internal static void benchmarkSendFile(ж<testing.B> Ꮡb, @string proto) {
             proto: proto,
             chunkSize: size
         );
-        Ꮡb.Run(strconv.Itoa(size), (ж<testing.B> p1) => bench.benchSendFile(p1));
+        var benchʗ1 = bench;
+        Ꮡb.Run(strconv.Itoa(size), (ж<testing.B> p1) => benchʗ1.benchSendFile(p1));
     }
 }
 
@@ -688,7 +721,7 @@ internal static void benchSendFile(this sendFileBench bench, ж<testing.B> Ꮡb)
         ref var b = ref Ꮡb.DerefOrNull();
 
         nint fileSize = b.N * bench.chunkSize;
-        var f = createTempFile(Ꮡb, fileSize);
+        var f = createTempFile(new net_test_package.testing_BжTB(Ꮡb), (int64)fileSize);
         var (client, server) = spawnTestSocketPair(new net_test_package.testing_BжTB(Ꮡb), bench.proto);
         var serverʗ1 = server;
         defer(() => serverʗ1.Close(), ref ᒐ);
@@ -718,32 +751,32 @@ internal static void benchSendFile(this sendFileBench bench, ж<testing.B> Ꮡb)
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sendfileBenchˢ = "sendfile-bench"u8;
 
-internal static ж<Δos.File> createTempFile(ж<testing.B> Ꮡb, nint size) {
-    var (f, err) = Δos.CreateTemp(Ꮡb.TempDir(), sendfileBenchˢ);
+internal static ж<Δos.File> createTempFile(testing.TB tb, int64 size) {
+    var (f, err) = Δos.CreateTemp(tb.TempDir(), sendfileBenchˢ);
     if (err != default!) {
-        Ꮡb.Fatalf("failed to create temporary file: %v"u8, err);
+        tb.Fatalf("failed to create temporary file: %v"u8, err);
     }
     var fʗ1 = f;
-    Ꮡb.Cleanup(() => {
+    tb.Cleanup(() => {
         fʗ1.Close();
     });
-    var data = new slice<byte>(size);
     {
-        var (_, errΔ1) = f.Write(data); if (errΔ1 != default!) {
-            Ꮡb.Fatalf("failed to create and feed the file: %v"u8, errΔ1);
+        var (_, errΔ1) = Δio.CopyN(new Δos.FileжWriter(f), newRandReader(tb), size); if (errΔ1 != default!) {
+            tb.Fatalf("failed to fill the file with random data: %v"u8, errΔ1);
         }
     }
     {
-        var errΔ2 = f.Sync(); if (errΔ2 != default!) {
-            Ꮡb.Fatalf("failed to save the file: %v"u8, errΔ2);
-        }
-    }
-    {
-        var (_, errΔ3) = f.Seek(0, Δio.SeekStart); if (errΔ3 != default!) {
-            Ꮡb.Fatalf("failed to rewind the file: %v"u8, errΔ3);
+        var (_, errΔ2) = f.Seek(0, Δio.SeekStart); if (errΔ2 != default!) {
+            tb.Fatalf("failed to rewind the file: %v"u8, errΔ2);
         }
     }
     return f;
+}
+
+internal static Δio.Reader newRandReader(testing.TB tb) {
+    var seed = time.Now().UnixNano();
+    tb.Logf("Deterministic RNG seed based on timestamp: 0x%x"u8, seed);
+    return new net_test_package.rand_RandжReader(rand.New(rand.NewSource(seed)));
 }
 
 } // end net_internal_test_package

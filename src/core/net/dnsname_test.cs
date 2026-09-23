@@ -61,7 +61,7 @@ internal static void emitDNSNameTest(channel/*<-*/<dnsNameTest> ch) {
 
 public static void TestDNSName(ж<testing.T> Ꮡt) {
     var ch = new channel<dnsNameTest>(0);
-    goǃ(emitDNSNameTest, ch);
+    goǃ(emitDNSNameTest, ch.WithDirection(GoChanDir.Send));
     foreach (var tc in ch) {
         if (isDomainName(tc.name) != tc.result) {
             Ꮡt.Errorf("isDomainName(%q) = %v; want %v"u8, tc.name, !tc.result, tc.result);

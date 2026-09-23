@@ -81,7 +81,7 @@ public static void TestUnixConnLocalWindows(ж<testing.T> Ꮡt) {
                 new(c.of(global::go.net_package.UnixConn.Ꮡconn).LocalAddr(), new global::go.net_package.UnixAddrжΔAddr(Ꮡ(new UnixAddr(Name: laddrΔ1, Net: "unix"u8)))),
                 new(c.of(global::go.net_package.UnixConn.Ꮡconn).RemoteAddr(), new global::go.net_package.UnixAddrжΔAddr(ta))
             }.array();
-            foreach (var (_, ca) in connAddrs) {
+            foreach (var (_, ca) in connAddrs.ΔRangeSnapshot()) {
                 if (!reflect.DeepEqual(ca.got, ca.want)) {
                     Ꮡt.Fatalf("got %#v, expected %#v"u8, ca.got, ca.want);
                 }

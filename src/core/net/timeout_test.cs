@@ -443,7 +443,7 @@ public static void TestReadTimeout(ж<testing.T> Ꮡt) {
                 }
             }
             array<byte> b = new(1);
-            foreach (var (j, xerr) in tt.xerrs) {
+            foreach (var (j, xerr) in tt.xerrs.ΔRangeSnapshot()) {
                 while (ᐧ) {
                     var (n, errΔ4) = c.Read(b[..]);
                     if (xerr != default!) {
@@ -600,7 +600,7 @@ public static void TestReadFromTimeout(ж<testing.T> Ꮡt) {
                 }
             }
             array<byte> b = new(1);
-            foreach (var (j, xerr) in tt.xerrs) {
+            foreach (var (j, xerr) in tt.xerrs.ΔRangeSnapshot()) {
                 while (ᐧ) {
                     var (n, _, errΔ3) = c.ReadFrom(b[..]);
                     if (xerr != default!) {
@@ -660,7 +660,7 @@ public static void TestWriteTimeout(ж<testing.T> Ꮡt) {
                     Ꮡt.Fatalf("#%d: %v"u8, i, errΔ1);
                 }
             }
-            foreach (var (j, xerr) in tt.xerrs) {
+            foreach (var (j, xerr) in tt.xerrs.ΔRangeSnapshot()) {
                 while (ᐧ) {
                     var (n, errΔ2) = c.Write(slice<byte>("WRITE TIMEOUT TEST"u8));
                     if (xerr != default!) {

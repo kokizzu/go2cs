@@ -160,6 +160,7 @@ public static void TestIPConnRemoteName(ж<testing.T> Ꮡt) {
 }
 
 [GoType("dyn")] [GoLocalName("test")] internal partial struct TestDialListenIPArgs_test {
+    [GoArrayDims(2)]
     internal slice<array<@string>> argLists;
     internal bool shouldFail;
 }
@@ -174,7 +175,7 @@ public static void TestDialListenIPArgs(ж<testing.T> Ꮡt) {
 
     var tests = new TestDialListenIPArgs_test[]{
         new(
-            argLists: new array<@string>[]{
+            argLists: GoReflect.WithElemDims(new array<@string>[]{
                 new @string[]{"ip"u8, "127.0.0.1"u8}.array(),
                 new @string[]{"ip:"u8, "127.0.0.1"u8}.array(),
                 new @string[]{"ip::"u8, "127.0.0.1"u8}.array(),
@@ -187,7 +188,7 @@ public static void TestDialListenIPArgs(ж<testing.T> Ꮡt) {
                 new @string[]{"ip6"u8, "::1"u8}.array(),
                 new @string[]{"ip6:"u8, "::1"u8}.array(),
                 new @string[]{"ip6::"u8, "::1"u8}.array()
-            }.slice(),
+            }.slice(), 2),
             shouldFail: true
         )
     }.slice();

@@ -464,7 +464,7 @@ public static void TestIPv6LinkLocalUnicastTCP(ж<testing.T> Ꮡt) {
             var ch = new channel<error>(1);
             var chʗ1 = ch;
             var handler = (ж<localServer> lsΔ1, global::go.net_package.Listener lnΔ1) => {
-                lsΔ1.transponder(lnΔ1, chʗ1);
+                lsΔ1.transponder(lnΔ1, chʗ1.WithDirection(GoChanDir.Send));
             };
             {
                 var errΔ1 = ls.buildup(handler); if (errΔ1 != default!) {

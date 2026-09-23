@@ -14,12 +14,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
-    builtin.initPackage(typeof(@internal.syscall.windows_package));
-}
-
 internal static UntypedInt syscall_TCP_KEEPIDLE => /* windows.TCP_KEEPIDLE */ 3;
 internal static UntypedInt syscall_TCP_KEEPCNT => /* windows.TCP_KEEPCNT */ 16;
 internal static UntypedInt syscall_TCP_KEEPINTVL => /* windows.TCP_KEEPINTVL */ 17;
