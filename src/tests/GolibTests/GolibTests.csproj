@@ -78,6 +78,15 @@
   <ItemGroup Condition="'$(GoTargetOS)' != '' and '$(GoTargetOS)' != 'windows'">
     <Compile Remove="WindowsNetUserInfoTests.cs" />
 
+    <!-- The F1 observer binds internal/syscall/windows' TOKEN_GROUPS.AllGroups, a windows-EXCLUSIVE
+         package (its csproj compiles nothing under another flavour). Unlisted here since it landed
+         on 2026-09-15, it made GolibTests fail CS0234 under GoTargetOS=linux; found 2026-09-23 when
+         the vgetrandom arm first needed the linux flavour to build. The same run found the GetStartupInfo
+         guard (2026-09-22) in the same state: StartupInfo and GetStartupInfo are declared only in
+         syscall's windows/ folder. -->
+    <Compile Remove="WindowsTokenGroupsTranscriptionTests.cs" />
+    <Compile Remove="SyscallGetStartupInfoWindowsTests.cs" />
+
     <!-- The token door lives in syscall/windows/dll_windows.cs, so SyscallN exists only on this
          flavour. Its REFUSAL arms are host-independent (the door throws in managed code before the
          native invoke); its end-to-end arm gates on the running host and reports Inconclusive.
