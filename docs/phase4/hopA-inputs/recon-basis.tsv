@@ -214,3 +214,4 @@ weak	PASS	6	21	0	0	0	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	21
 crypto/internal/fips140/nistec	PASS	44	27	0	0	0	windows/amd64	0dc65a8e8dd8a77d0a5f1b6aba6b70eb11663f5f	27
 runtime/pprof	DIVERGED	155	175	1	1	37	windows/amd64	f545b18d4d5e9767a07d8b3bd428702ec960f037	175
 net/http/pprof	DIVERGED	15	68	1	1	4	windows/amd64	f545b18d4d5e9767a07d8b3bd428702ec960f037	68
+net/http	DIVERGED	1387	376	1	1	17	windows/amd64	47e088d3d72f703d494e9efcd6777d404a4cc947	376
