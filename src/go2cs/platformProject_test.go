@@ -277,6 +277,128 @@ func TestRenderPlatformReferencesIsIdempotent(t *testing.T) {
 	}
 }
 
+// sharedLicenseGroup is the group licenseConvertedProjectFor appends before </Project> -- AFTER the
+// conditioned block, since licensing runs once references are rendered. Every committed L3 project
+// file ends this way.
+const sharedLicenseGroup = "  <ItemGroup>\r\n    <None Include=\"../../LICENSE\" Pack=\"true\" PackagePath=\"\" Condition=\"!Exists('$(MSBuildProjectDirectory)/LICENSE')\" />\r\n  </ItemGroup>\r\n"
+
+func withSharedLicenseGroup(t *testing.T, contents string) string {
+	t.Helper()
+
+	at := strings.LastIndex(contents, platformProjectClose)
+
+	if at < 0 {
+		t.Fatalf("test setup: no %s in the project file", platformProjectClose)
+	}
+
+	return contents[:at] + sharedLicenseGroup + contents[at:]
+}
+
+// Re-rendering replaces the conditioned block and NOTHING after it. The renderer used to cut from the
+// block's header to </Project>, so a merged file lost the shared-LICENSE group licensing had
+// appended after the block -- log/syslog's `<None Include="../../LICENSE" …>` in the H10 close's
+// three-target regen. RED at 47e088d3d7: the group is gone from both renders below.
+func TestRenderPlatformReferencesKeepsWhatFollowsTheBlock(t *testing.T) {
+	licensed := withSharedLicenseGroup(t, mergedOSProjectFile(t))
+
+	shared, ok := parseSharedProjectReferences(licensed)
+
+	if !ok {
+		t.Fatalf("parseSharedProjectReferences could not read the licensed file")
+	}
+
+	deltas, ok := parsePlatformReferenceGroups(licensed)
+
+	if !ok {
+		t.Fatalf("parsePlatformReferenceGroups could not read the licensed file")
+	}
+
+	// The same sets: byte-identical, the block still ahead of the license group.
+	again, err := renderPlatformReferences(licensed, shared, deltas)
+
+	if err != nil {
+		t.Fatalf("renderPlatformReferences: %v", err)
+	}
+
+	if again != licensed {
+		t.Errorf("re-rendering a licensed L3 project file changed it\n--- before ---\n%s\n--- after ---\n%s", licensed, again)
+	}
+
+	// Converged sets drop the block -- and only the block.
+	collapsed, err := renderPlatformReferences(licensed, []string{refErrors, refIO}, nil)
+
+	if err != nil {
+		t.Fatalf("renderPlatformReferences: %v", err)
+	}
+
+	if strings.Contains(collapsed, platformReferenceBlockHeader) {
+		t.Errorf("converged sets left the conditioned block behind")
+	}
+
+	if !strings.Contains(collapsed, sharedLicenseGroup+platformProjectClose) {
+		t.Errorf("dropping the block took the license group with it:\n%s", collapsed)
+	}
+}
+
+// The merge end to end, in log/syslog's shape: every target's staged file is the same L3 file, and
+// linux and darwin add one more NON-reference group (their same-package tests' InternalsVisibleTo),
+// which is what routes the package through the merge at all. The merge keeps the first target's
+// remainder and says so in its note -- and must keep that remainder WHOLE, license group included.
+func TestPlatformMergeKeepsASharedNonReferenceGroup(t *testing.T) {
+	const rawPath = "log/syslog/log.syslog.csproj"
+
+	windows := withSharedLicenseGroup(t, mergedOSProjectFile(t))
+	ivt := "  <ItemGroup>\r\n    <InternalsVisibleTo Include=\"$(AssemblyName).tests\" />\r\n  </ItemGroup>\r\n\r\n"
+	unix := strings.Replace(windows, "  <ItemGroup Condition=\"'$(OutputType)'=='Library'\">", ivt+"  <ItemGroup Condition=\"'$(OutputType)'=='Library'\">", 1)
+
+	if unix == windows {
+		t.Fatalf("test setup: the Library ItemGroup was not found in the rendered template")
+	}
+
+	targets := []string{"windows/amd64", "linux/amd64", "darwin/amd64"}
+	emissions := make([]*platformEmission, 0, len(targets))
+
+	for _, target := range targets {
+		root := t.TempDir()
+		contents := unix
+
+		if target == "windows/amd64" {
+			contents = windows
+		}
+
+		file := filepath.Join(root, "core", filepath.FromSlash(rawPath))
+
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+
+		if err := os.WriteFile(file, []byte(contents), 0644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+
+		emissions = append(emissions, &platformEmission{target: target, root: root, artifacts: map[string]artifactState{rawPath: {}}})
+	}
+
+	merged, note, err := mergePlatformProjectFile(rawPath, targets, emissions)
+
+	if err != nil {
+		t.Fatalf("mergePlatformProjectFile: %v", err)
+	}
+
+	if !strings.Contains(merged, `<None Include="../../LICENSE"`) {
+		t.Errorf("the merge dropped the shared license group every target carries:\n%s", merged)
+	}
+
+	if merged != windows {
+		t.Errorf("the merge did not reproduce the first target's file\n--- want ---\n%s\n--- got ---\n%s", windows, merged)
+	}
+
+	// The InternalsVisibleTo difference is real and outside the references: still reported.
+	if !strings.Contains(note, "disagree outside their reference lists") {
+		t.Errorf("the non-reference difference went unreported: note %q", note)
+	}
+}
+
 // A project file with no conditioned block must be left exactly as the conversion produced it —
 // that is 280 of the 304 packages, and any drift there fails the Windows-identity gate.
 func TestUnconditionedProjectFileIsUntouched(t *testing.T) {

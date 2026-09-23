@@ -321,15 +321,33 @@ func renderPlatformReferences(contents string, shared []string, deltas map[strin
 	rebuilt := contents[:start] + region.String() + contents[start+closeAt:]
 
 	// Drop any block this file already carried before appending the new one, so the rewrite is a
-	// replacement rather than an accumulation.
-	if blockAt := strings.Index(rebuilt, platformReferenceBlockHeader); blockAt >= 0 {
-		endAt := strings.LastIndex(rebuilt, platformProjectClose)
+	// replacement rather than an accumulation -- and drop THE BLOCK ONLY. It used to be cut from its
+	// header to </Project>, which also took everything written after it: the licensing pass appends
+	// the shared-LICENSE <None> group before </Project>, so in every committed L3 project file it
+	// FOLLOWS the block. A single-target reconvert never noticed (it renders a fresh template before
+	// licensing runs), but the multi-target merge renders a STAGED file, and the H10 close's regen
+	// lost log/syslog's `<None Include="../../LICENSE" …>` that way (licensing_test.go guards it).
+	// The replacement goes back where the old block stood, so the file's order is kept too.
+	insertAt := -1
 
-		if endAt < blockAt {
-			return rebuilt, fmt.Errorf("project file's conditioned reference block is not followed by %s", platformProjectClose)
+	for {
+		blockAt := strings.Index(rebuilt, platformReferenceBlockHeader)
+
+		if blockAt < 0 {
+			break
+		}
+
+		endAt, err := platformReferenceBlockEnd(rebuilt, blockAt)
+
+		if err != nil {
+			return rebuilt, err
 		}
 
 		rebuilt = rebuilt[:blockAt] + rebuilt[endAt:]
+
+		if insertAt < 0 {
+			insertAt = blockAt
+		}
 	}
 
 	block := composePlatformReferenceGroups(deltas)
@@ -338,13 +356,52 @@ func renderPlatformReferences(contents string, shared []string, deltas map[strin
 		return rebuilt, nil
 	}
 
-	insertAt := strings.LastIndex(rebuilt, platformProjectClose)
+	if insertAt < 0 {
+		insertAt = strings.LastIndex(rebuilt, platformProjectClose)
+	}
 
 	if insertAt < 0 {
 		return rebuilt, fmt.Errorf("project file has no %s to insert the conditioned reference block before", platformProjectClose)
 	}
 
 	return rebuilt[:insertAt] + block + rebuilt[insertAt:], nil
+}
+
+// platformReferenceBlockEnd returns the offset just past the conditioned block that starts at
+// blockAt: the header, then every conditioned group composePlatformReferenceGroups writes (an empty
+// `… />` or an open group closed by platformReferenceGroupClose), each followed by its blank line.
+// Whatever comes after -- another ItemGroup, or </Project> -- is not part of it.
+func platformReferenceBlockEnd(contents string, blockAt int) (int, error) {
+	groupOpen := "  <ItemGroup Condition=\"'$(" + platformTargetOSProperty + ")'=='"
+	at := blockAt + len(platformReferenceBlockHeader)
+
+	for strings.HasPrefix(contents[at:], groupOpen) {
+		lineEnd := strings.Index(contents[at:], "\r\n")
+
+		if lineEnd < 0 {
+			return 0, fmt.Errorf("project file's conditioned reference group is not terminated")
+		}
+
+		if strings.HasSuffix(contents[at:at+lineEnd], " />") {
+			at += lineEnd + len("\r\n")
+		} else {
+			closeAt := strings.Index(contents[at:], platformReferenceGroupClose)
+
+			if closeAt < 0 {
+				return 0, fmt.Errorf("project file's conditioned reference group is not closed")
+			}
+
+			at += closeAt + len(platformReferenceGroupClose)
+		}
+
+		at += len("\r\n")
+
+		if at > len(contents) || contents[at-len("\r\n"):at] != "\r\n" {
+			return 0, fmt.Errorf("project file's conditioned reference group is not followed by its blank line")
+		}
+	}
+
+	return at, nil
 }
 
 // composePlatformReferenceGroups renders the conditioned <ItemGroup> block, GOOS-sorted for
