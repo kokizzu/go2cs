@@ -626,9 +626,9 @@ function Get-HostConditionalDisclosureVerdict {
 # verdicts. Some capability-bound test blocks run the opposite way: the roster banks the CEILING --
 # every case the capability enables -- and a host lacking the prerequisite never spawns the case
 # matrix at all, so Go's own top-level test collapses to ONE verdict. crypto/tls's TestBogoSuite is
-# the first of these (the BoGo/BoringSSL shim runner): 3,243 sub-verdicts -- 1 parent + 861 pass +
-# 2,381 skip -- collapse to exactly one, both runtimes agreeing, because Go's own oracle collapses
-# identically absent the runner. That collapsed verdict is a FAIL, not a skip, and the disclosed
+# the first of these (the BoGo/BoringSSL shim runner): 3,419 sub-verdicts -- 1 parent + 1,022 pass +
+# 2,396 skip at go1.24.13 (3,243 = 1 + 861 + 2,381 at go1.23.12) -- collapse to exactly one, both
+# runtimes agreeing, because Go's own oracle collapses identically absent the runner. That collapsed verdict is a FAIL, not a skip, and the disclosed
 # count moves with it: see the measured note over Test-CapabilityAbsentDelta in _roster.ps1, which
 # is where the rule and its evidence live. "A lost verdict is never host-conditional" above stays
 # true for every OTHER shortfall: this path engages ONLY for a package registered here, and ONLY
@@ -644,7 +644,7 @@ function Get-HostConditionalDisclosureVerdict {
 # trust this number cold if the suite's own case matrix ever changes. ONE registration serves BOTH
 # shortfall rules on purpose: no package can reach either absorption without being named here.
 $capabilityConditionalBlocks = @{
-    'crypto/tls' = @{ Test = 'TestBogoSuite'; BlockSize = 3243 }
+    'crypto/tls' = @{ Test = 'TestBogoSuite'; BlockSize = 3419 }
 }
 
 # Test-CapabilityAbsentDelta -- the pure decision rule -- lives in _roster.ps1 beside
