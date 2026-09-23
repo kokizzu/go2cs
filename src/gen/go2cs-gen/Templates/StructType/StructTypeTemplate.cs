@@ -1173,6 +1173,18 @@ internal class StructTypeTemplate : TemplateBase
             (isBoxReceiver ? boxMethods : valueMethods).Add(info);
         }
 
+        // ONE Go method, TWO metadata members: a `[GoRecv]` value-receiver method (`this ref T`) is
+        // compiled beside the pointer twin RecvGenerator emits for it (`M(this ж<T>)`,
+        // [GeneratedCode]), and a POINTER embed harvests both lists -- so the count pass saw the name
+        // twice at one depth, read it as ANNIHILATED inside the embed, and emitted no forwarder at all.
+        // net's linux test build: resolvConfTest's promoted tryAcquireSema/releaseSema were CS1929
+        // while init (a box primary with no value form) promoted. A Go type has at most one method per
+        // name, so the value form stands for the method and its twin is dropped here, before either
+        // pass reads the lists. The syntax harvest never sees a twin (it is generated into the OTHER
+        // assembly), which is why only this seam had the fault.
+        HashSet<string> valueMethodNames = new(valueMethods.Select(method => method.Name), StringComparer.Ordinal);
+        boxMethods.RemoveAll(method => valueMethodNames.Contains(method.Name));
+
         return (valueMethods, boxMethods);
     }
 
