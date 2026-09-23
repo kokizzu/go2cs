@@ -1306,9 +1306,10 @@ idc_census() {
         echo "  MODE converted -- a tracked CONVERTED GO TEST SOURCE. The $IDC_DOWNARMS literal-shaped arm(s)"
         echo "    marked [CONVERTED-CONTEXT] are REPORTED with their counts and cannot refuse."
         if [ "${IDC_FIXTURE:-0}" = "1" ]; then
-            echo "    UPSTREAM FIXTURE by the Go gate's own predicate (fleetIsUpstreamFixture): the $IDC_FIXARMS structural"
-            echo "    arm(s) marked [FIXTURE-CONTEXT] are reported too and cannot refuse, as the gate skips its"
-            echo "    structural pass here. The denied-token and run-time arms refuse exactly as in entry."
+            echo "    UPSTREAM FIXTURE by the Go gate's own predicate (fleetIsUpstreamFixture, or fleetEmbedPayloads"
+            echo "    for a //go:embed payload): the $IDC_FIXARMS structural arm(s) marked [FIXTURE-CONTEXT] are reported"
+            echo "    too and cannot refuse, as the gate skips its structural pass here. The denied-token and run-time"
+            echo "    arms refuse exactly as in entry."
         else
             echo "    NOT an upstream fixture by the Go gate's predicate: every other arm refuses exactly as in entry."
         fi
@@ -1371,6 +1372,9 @@ idc_converted_eligible() {
         go2cs_test_host.cs)            return 0 ;;
         *.tests.csproj)                return 0 ;;
     esac
+    # A //go:embed payload is Go's own bytes by the same argument, and its PATH cannot say so -- its
+    # project file does. See idc_is_embed_payload.
+    idc_is_embed_payload "$1" && return 0
     return 3
 }
 
@@ -1400,6 +1404,71 @@ idc_is_upstream_fixture() {
     return 1
 }
 
+# idc_is_embed_payload PATH -- fleetEmbedPayloads, MIRRORED (COORD, H10 close, 2026-09-23). The Go
+# gate admits a //go:embed PAYLOAD the way it admits testdata: Go 1.24's
+# internal/trace/traceviewer/static/trace_viewer_full.html carries a JavaScript regex whose escaped
+# character class reads as a UNC host, and a payload is the one way Go's own bytes reach the corpus
+# outside a testdata directory. The Go side is src/go2cs/internal/repoguard/fleetIdentifierCensus_test.go
+# (fleetEmbedPayloads); every change here moves with it.
+#
+# THE SAME DERIVATION, NOT A PATH LIST: the file is a payload when a project file in one of its own
+# ancestor directories, at or below src/core/, carries the item the converter mints for it --
+#     <EmbeddedResource Include="<path relative to that csproj, XML-escaped>" LogicalName="go.embed/..." />
+# -- which is exactly an Include that resolves INSIDE the csproj's directory. A testdata path is not
+# counted here (the fixture predicate above already admits it), as the Go derivation does not count it.
+#
+# TRACKED, where that can be asked: inside a git work tree, the project file AND the payload must both
+# be tracked, as the Go gate reads only tracked files. Outside one (the self-test's temp tree) there is
+# no index to ask and the files on disk are read.
+#
+# STRICTER THAN THE GO SIDE, stated and allowed (mirror, never widen): a path carrying `.` or `..`
+# segments is never a payload here, and an Include must equal the path byte for byte after unescaping
+# where Go compares it after path.Clean.
+idc_is_embed_payload() {
+    local p="" dir="" rel="" proj="" needle="" found=1
+    p="$(printf '%s' "$1" | tr '\\' '/')"
+    case "$p" in
+        src/core/*|*/src/core/*) : ;;
+        *) return 1 ;;
+    esac
+    case "/$p/" in
+        */./*|*/../*) return 1 ;;
+    esac
+    idc_is_upstream_fixture "$p" && return 1
+    [ -f "$p" ] || return 1
+    idc_is_tracked "$p" || return 1
+    dir="${p%/*}"
+    rel="${p##*/}"
+    while :; do
+        for proj in "$dir"/*.csproj; do
+            [ -f "$proj" ] || continue
+            idc_is_tracked "$proj" || continue
+            # The Include as the emitter writes it: XML-escaped, & first.
+            needle="$(printf '%s' "$rel" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")"
+            needle="<EmbeddedResource Include=\"$needle\" LogicalName=\"go.embed/"
+            if awk -v n="$needle" '{ i = index($0, n); if (i) { r = substr($0, i + length(n)); if (r ~ /^[^"]+" \/>/) { f = 1; exit } } } END { exit f ? 0 : 1 }' "$proj"; then
+                found=0
+                break 2
+            fi
+        done
+        case "$dir" in
+            src/core|*/src/core) break ;;
+        esac
+        rel="${dir##*/}/$rel"
+        dir="${dir%/*}"
+    done
+    return "$found"
+}
+
+# idc_is_tracked PATH -- 0 when PATH is tracked or there is no work tree to ask (see above), 1 when a
+# work tree holds it untracked.
+idc_is_tracked() {
+    local d="" b=""
+    d="${1%/*}"; b="${1##*/}"
+    [ "$(git -C "$d" rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ] || return 0
+    git -C "$d" ls-files --error-unmatch -- "$b" >/dev/null 2>&1
+}
+
 idc_mode_converted() {
     [ "$#" -ge 1 ] || idc_misuse "converted takes one or more converted-test-source files"
     local f="" bad=0 total=0 rc=0
@@ -1407,7 +1476,7 @@ idc_mode_converted() {
         idc_converted_eligible "$f"; rc=$?
         case "$rc" in
             2) echo "REFUSED(2): '$(basename -- "$f")' is not under src/core/ -- converted mode reads only tracked converted test sources; census it with \`entry\`."; bad=1 ;;
-            3) echo "REFUSED(2): '$(basename -- "$f")' is not a converted test artifact (*_test.cs, package_test_info.cs, go2cs_test_host.cs, *.tests.csproj, or docs/validation/current/*.md) -- census it with \`entry\`."; bad=1 ;;
+            3) echo "REFUSED(2): '$(basename -- "$f")' is not a converted test artifact (*_test.cs, package_test_info.cs, go2cs_test_host.cs, *.tests.csproj, docs/validation/current/*.md, or a //go:embed payload its csproj names) -- census it with \`entry\`."; bad=1 ;;
         esac
     done
     # Every path is judged before any is censused: a mode that refused halfway would leave the caller
@@ -1418,7 +1487,7 @@ idc_mode_converted() {
     idc_build_tokens
     for f in "$@"; do
         # PER FILE, because the Go gate decides per path: one run can mix fixtures and pages.
-        if idc_is_upstream_fixture "$f"; then IDC_FIXTURE=1; else IDC_FIXTURE=0; fi
+        if idc_is_upstream_fixture "$f" || idc_is_embed_payload "$f"; then IDC_FIXTURE=1; else IDC_FIXTURE=0; fi
         idc_census "$f" "converted $(basename -- "$f")" "$IDC_TMP/keys.converted" 1
         total=$((total + ${IDC_HITS:-0}))
     done
@@ -1982,6 +2051,60 @@ idc_mode_selftest() {
     out="$d/c3e.out"; "$IDC_SELF" converted "$d/x_test.cs" > "$out" 2>&1; rc=$?
     idc_st_rc      "converted mode REFUSES a path outside src/core"     2 "$rc"
     idc_st_assert_present "  naming that reason"                            "not under src/core/" "$out"
+
+    echo
+    echo "  C3P. //go:embed PAYLOADS -- fleetEmbedPayloads MIRRORED: the csproj says so, and nothing else can"
+    # The shape Go 1.24's traceviewer ships at static/trace_viewer_full.html:6244: a JavaScript regex
+    # whose escaped character class reads as a UNC host. Assembled here so this file carries no hit.
+    local pdir="$d/src/core/tv" regexline=""
+    mkdir -p -- "$pdir/static" "$pdir/sub"
+    regexline="$(printf "const r=new RegExp('addr=(%s%s[%s%sda-fA-F%s%s-]+%s%s])');" "$bs" "$bs" "$bs" "$bs" "$bs" "$bs" "$bs" "$bs")"
+    printf '%s\n' "$regexline" > "$pdir/static/viewer.html"
+    printf '<Project>\r\n  <ItemGroup Label="GoEmbeddedResources">\r\n    <EmbeddedResource Include="static/viewer.html" LogicalName="go.embed/tv/static/viewer.html" />\r\n  </ItemGroup>\r\n</Project>\r\n' > "$pdir/tv.csproj"
+    out="$d/c3p1.out"; "$IDC_SELF" converted "$pdir/static/viewer.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a payload its csproj NAMES is admitted"            0 "$rc"
+    # THE ADMIT DIRECTION, named: the share arm MATCHED and the fixture downgrade disposed of it.
+    idc_st_assert_present "  and the share arm MATCHED and was downgraded" "unc_backslash occ=1 would-have-refused=1" "$out"
+    idc_st_assert_present "  and it says why"                                "UPSTREAM FIXTURE" "$out"
+    out="$d/c3p2.out"; "$IDC_SELF" entry "$pdir/static/viewer.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "  and ENTRY on the SAME FILE still REFUSES"        1 "$rc"
+    # THE SAME BYTES WHERE NO ITEM NAMES THEM: not a payload, so not through the door at all.
+    printf '%s\n' "$regexline" > "$pdir/static/other.html"
+    out="$d/c3p3.out"; "$IDC_SELF" converted "$pdir/static/other.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "the SAME BYTES at an unnamed path are REFUSED"     2 "$rc"
+    idc_st_assert_present "  at the door"                                   "not a converted test artifact" "$out"
+    # An item without the converter's go.embed LogicalName admits nothing.
+    mkdir -p -- "$d/src/core/tw/static"
+    printf '%s\n' "$regexline" > "$d/src/core/tw/static/viewer.html"
+    printf '    <EmbeddedResource Include="static/viewer.html" LogicalName="viewer.html" />\n' > "$d/src/core/tw/tw.csproj"
+    out="$d/c3p4.out"; "$IDC_SELF" converted "$d/src/core/tw/static/viewer.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "an item WITHOUT go.embed/ admits nothing"          2 "$rc"
+    # An item reaching OUT of its own directory admits nothing: a csproj one level DOWN naming ../x.
+    printf '%s\n' "$regexline" > "$pdir/up.html"
+    printf '    <EmbeddedResource Include="../up.html" LogicalName="go.embed/tv/up.html" />\n' > "$pdir/sub/sub.csproj"
+    out="$d/c3p5.out"; "$IDC_SELF" converted "$pdir/up.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "an item reaching outside its directory admits nothing" 2 "$rc"
+    # THE SAME TEETH AS TESTDATA: a denied token in an admitted payload still refuses.
+    printf 'owner %s\n%s\n' "zorbulax" "$regexline" > "$pdir/static/viewer.html"
+    out="$d/c3p6.out"
+    IDC_TEST_TOKENS="zorbulax quennelbee zorbulaxqueen" "$IDC_SELF" converted "$pdir/static/viewer.html" > "$out" 2>&1; rc=$?
+    idc_st_rc      "a DENIED token in an admitted payload REFUSES"     1 "$rc"
+    idc_st_assert_present "  and the TOKEN arm is what refused"             "TOKENFILE" "$out"
+    # TRACKED, where it can be asked: in a work tree, an untracked csproj and payload admit nothing,
+    # and the same two files admit once tracked.
+    local gdir="$d/wt"
+    mkdir -p -- "$gdir/src/core/tv/static"
+    cp -- "$pdir/tv.csproj" "$gdir/src/core/tv/tv.csproj"
+    printf '%s\n' "$regexline" > "$gdir/src/core/tv/static/viewer.html"
+    if git init -q "$gdir" >/dev/null 2>&1; then
+        out="$d/c3p7.out"; "$IDC_SELF" converted "$gdir/src/core/tv/static/viewer.html" > "$out" 2>&1; rc=$?
+        idc_st_rc      "an UNTRACKED payload in a work tree admits nothing" 2 "$rc"
+        git -C "$gdir" add -- src/core/tv/tv.csproj src/core/tv/static/viewer.html >/dev/null 2>&1
+        out="$d/c3p8.out"; "$IDC_SELF" converted "$gdir/src/core/tv/static/viewer.html" > "$out" 2>&1; rc=$?
+        idc_st_rc      "  and the same files admit once TRACKED"         0 "$rc"
+    else
+        printf '  FAIL  %-48s git init failed -- the tracked arm measured nothing\n' "the tracked-payload arm"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1))
+    fi
 
     echo
     echo "  D0. THE RUN-TIME ARMS ARE BOUNDED BY THE DENIED SET -- three bars, one control each"
