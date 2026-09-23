@@ -76,8 +76,59 @@ public static class TestHost
     /// </summary>
     public static DateTime? PackageDeadlineUtc { get; private set; }
 
+    // ⚠ THE MANAGED REFERENCE CLOSURE IS LOADED ONCE, AT START -- the Go-faithful shape of a statically
+    // linked binary (COORD ruling 2026-09-22, option (a)). A Go test binary carries every package it
+    // links from its first instruction; the CLR binds an assembly lazily, on the first JIT that needs
+    // it, on whatever thread and under whatever TOKEN that thread holds then. os/user's
+    // TestImpersonatedSelf/0 is the measured case: it ImpersonateSelf(SecurityAnonymous)s, Go expects
+    // current() to FAIL, and the failure path's syscall.Errno.Error -> itoa.Itoa was the process's FIRST
+    // touch of internal.itoa -- bound under an anonymous token that cannot open the image file, so the
+    // row read FileNotFoundException where Go reads the expected error. The DLL was there all along
+    // (the single-file publish and the loose build directory failed identically).
+    //
+    // MANAGED ASSEMBLIES ONLY: native DLLs stay lazy, because Go loads its Windows DLLs lazily too
+    // (LazyDLL / LazyProc), so a native load under an impersonated token is parity, not a defect.
+    // Assembly.Load binds an image and runs NOTHING -- no type initializer, no module initializer -- so
+    // no package's init order moves. A name that does not resolve (a facade satisfied by type
+    // forwarding, a reference only a trimmed-away path needed) is skipped: the preload changes WHEN a
+    // bind happens, and is never a new place a run can fail.
+    internal static int PreloadManagedReferenceClosure(Assembly? root)
+    {
+        if (root is null)
+            return 0;
+
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase) { root.FullName ?? "" };
+        Stack<Assembly> pending = new();
+        pending.Push(root);
+        int loaded = 0;
+
+        while (pending.Count > 0)
+        {
+            foreach (AssemblyName name in pending.Pop().GetReferencedAssemblies())
+            {
+                if (!seen.Add(name.FullName))
+                    continue;
+
+                try
+                {
+                    pending.Push(Assembly.Load(name));
+                    loaded++;
+                }
+                catch (Exception ex) when (ex is FileNotFoundException or FileLoadException or BadImageFormatException)
+                {
+                }
+            }
+        }
+
+        return loaded;
+    }
+
     public static int Run(TestRegistry registry, string[] args)
     {
+        // Before anything else, so no test -- on any thread, under any token -- is the first to bind an
+        // assembly of this binary's closure. See PreloadManagedReferenceClosure.
+        PreloadManagedReferenceClosure(Assembly.GetEntryAssembly());
+
         // The go2cs runtime allocation counter is off by default, and this is the ONLY thing that
         // turns it on: testing.AllocsPerRun is its only reader, so a converted application that
         // never runs a test must not pay for it. Enabled at the very top of the run rather than
