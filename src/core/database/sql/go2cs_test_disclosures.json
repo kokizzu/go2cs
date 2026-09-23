@@ -3,9 +3,9 @@
   "disclosures": [
     {
       "name": "TestGrabConnAllocs",
-      "class": "alloc-profile",
+      "class": "alloc-count-semantics",
       "signature": "Conn.grabConn allocated ",
-      "reason": "want-zero AllocsPerRun assert: four golib-counted objects per run where Go allocates none — the interior field pointers the emission mints to reach c.done, c.releaseConnOnce and c.closemu (Go's &c.field is an address, not an allocation) plus the display class the sync.Once closure needs on every call, even though the cached releaseConnCache method value it installs is built once"
+      "reason": "want-zero AllocsPerRun assert: four golib-counted objects per run where Go allocates none — the interior field pointers the emission mints to reach c.done, c.releaseConnOnce and c.closemu (Go's &c.field is an address, not an allocation) plus the display class the sync.Once closure needs on every call, even though the cached releaseConnCache method value it installs is built once RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off; claude/coord-h10-readings ac9f8251ee): alloc-profile -> alloc-count-semantics. The run's own unit note is BYTES -- 96 B/run, 96,000 bytes over 1,000 runs, golib's counter charging none of it (the test printed `Conn.grabConn allocated 96 objects; want 0`) -- so at this tree golib charges NONE of the objects this reason names; which change moved the interior field pointers off golib's charged sites is not attributed here. What remains is outside the counter, so no object count exists to compare with the want: the ladder's incomparable-unit arm. Nothing to retire and no plan. The relabel census's RULING OWED for this entry (a deferred-with-floor proposal) is superseded by the unit."
     },
     {
       "name": "TestRawBytesAllocs",

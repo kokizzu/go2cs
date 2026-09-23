@@ -3,9 +3,12 @@
   "disclosures": [
     {
       "name": "TestBuilderAllocs",
-      "class": "alloc-count-semantics",
+      "class": "deferred",
       "signature": "Builder allocs = ",
-      "reason": "exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree — see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md"
+      "reason": "exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree — see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-count-semantics -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: the test is Go's own issue-23382 check that copyCheck does not force the Builder to escape, and the converted `var b Builder` is a ж<Builder> (copyCheck stores the address, src/core/strings/builder.cs:26-35) beside the buffer -- the reading of 2. The alloc-count-semantics premise (a byte-derived shim) is retired by the same note.",
+      "want": "1 allocation per run (want exactly 1: the Builder's buffer)",
+      "reading": "2 per run -- 20,000 go2cs-runtime object allocations (1,920,000 bytes) counted over 10,000 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off -- the i7 reading run, claude/coord-h10-readings ac9f8251ee, docs/phase4/h10-evidence/i7-readings/readings-go1.24.13.tsv; the host's unit note is COUNT, a LOWER BOUND; the test printed `Builder allocs = 2; want 1`",
+      "plan": "the zh-box reduction arc, whose mechanism family is storage Go keeps in the frame that golib places on the heap -- a ж-box minted per address-take, and the heap backing of a non-escaping working buffer (the ruled crypto/rand precedent, ledger 2026-09-22 04:57): docs/phase4/DESIGN-zh-box-reduction.md (the ref-lowering arc) and docs/phase4/DESIGN-zh-box-three-capabilities.md (the increments C0, then I1/I3/I4/I5). This entry's site: the ж<strings.Builder> of a local Builder whose address only copyCheck takes.Retires when a run reads 1 per run with the counter still charging the path; a reading at the want with the counter charging NOTHING is the byte arm (testing.AllocsPerRun's fallback) and would be a false retire."
     },
     {
       "name": "TestBuilderGrow",
@@ -21,9 +24,12 @@
     },
     {
       "name": "TestIndexRune",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: IndexRune's Index(s, string(r)) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring); the index-semantics legs all pass"
+      "reason": "want-zero AllocsPerRun assert: IndexRune's Index(s, string(r)) materializes a byte[] in the managed model where Go uses a 4-byte stack buffer (runtime.intstring); the index-semantics legs all pass RELABEL 2026-09-23 (C1, from the i7 reading run at bb54ff0920, Release with tiering off): alloc-profile -> deferred. The run's own unit note is COUNT, so golib's counter SAW these objects -- the COUNT arm of the 2026-09-05 ladder -- and the site family is one a named plan removes: string(r) for a lookup, which Go builds in runtime.intstring's 4-byte stack buffer.",
+      "want": "0 allocations per run",
+      "reading": "2 per run -- 2,000 go2cs-runtime object allocations (64,000 bytes) counted over 1,000 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off -- the i7 reading run, claude/coord-h10-readings ac9f8251ee, docs/phase4/h10-evidence/i7-readings/readings-go1.24.13.tsv; the host's unit note is COUNT, a LOWER BOUND; the test printed `expected no allocations, got 2.000000`",
+      "plan": "the string-conversion family -- an intermediate buffer Go never allocates for a conversion whose result is not retained: golib's builtin.tmpstring (the zero-copy transient @string the converter already emits for a map-READ key, docs/ConversionStrategies-Reference.md `m[string(b)]`) extended to a string(b) that the callee or comparison does not retain, with docs/phase4/DESIGN-string-byte-window.md as the converter-side recognition record. This entry's site is the family's rune arm: a transient one-rune @string over a stack 4-byte encoding for a string(r) the callee does not retain, the managed counterpart of runtime.intstring's buffer.Retires when a run reads 0 per run with the counter still charging the path; a reading at the want with the counter charging NOTHING is the byte arm (testing.AllocsPerRun's fallback) and would be a false retire."
     }
   ]
 }
