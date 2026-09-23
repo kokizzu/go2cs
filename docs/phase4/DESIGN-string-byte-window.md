@@ -104,14 +104,15 @@ references this record; the record's own increment runs in phase 4D behind B and
 ## 6. Dated amendment, 2026-09-23 (C1, REC-D of the H10 relabel ruling) -- the MIRROR arm
 
 Ruled at ledger 2026-09-23 03:37 (X(2) REC-D, O4, O5). G's acknowledgement is non-gating. Nothing
-above this block is rewritten; read at `bb54ff0920`.
+above this block is rewritten; read at `bb54ff0920`. **Owner: C1. Full design: phase-4D kickoff.**
 
 **The shape.** The mirror of section 2's composite: `unsafe.String(unsafe.SliceData(b), len(b))`,
 where the two `b` are the SAME `[]byte` expression. Go denotes a string over `b`'s own storage and
 allocates nothing. The emission mints an element reference for `SliceData` (`Ꮡ(slice, 0)`,
 unsafe.cs:985, one counted `ElemRefBox`) and then rebuilds the window from it.
 
-**The population: exactly two production sites** at go1.24.13 --
+**The population: exactly two production sites in the converted stdlib** at go1.24.13 (GOROOT has a
+third, cmd/go/internal/modindex/read.go:973, outside the corpus) --
 - `strings.(*Builder).String`, strings/builder.go:41, emitted at src/core/strings/builder.cs:44;
 - `syscall.UTF16ToString`, syscall/syscall_windows.go:84, emitted at
   src/core/syscall/windows/syscall_windows.cs:89.
@@ -133,6 +134,15 @@ leaving the `ж<Builder>` box -- and, because the buffer `bytealg.MakeNoZero` al
 today (bytealg_impl.cs:24), that 1 is the box, not Go's buffer: a pass there rests on the counter's
 coverage boundary, and when REC-F (iii) counts the buffer both read 2 again. strings TestBuilderGrow
 one fewer on every leg; strings TestBuilderGrowSizeclasses 3 -> 2.
+
+**Gates.** The recognition is controlled both ways before any member is read: a composite with a
+DIFFERING length argument and one whose `SliceData` result is stored must both keep today's emission.
+Then the four members' rows -- os (TestUTF16Alloc), strings (TestBuilderAllocs, TestBuilderGrow,
+TestBuilderGrowSizeclasses), bufio (TestReadStringAllocs) -- read before and after at Release with
+tiering off.
+
+*Fixed up 2026-09-23 (COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, item 10 and the §6 note): the
+owner line, the gates paragraph and "in the converted stdlib" added.*
 
 ## 7. Dated amendment, 2026-09-23 (C1, from the H10 relabel) -- the TRANSIENT-conversion arm
 
@@ -158,9 +168,16 @@ one counted object per evaluation.
    operand. *Removes:* two objects per match check.
 2. **A non-retaining callee.** `f(string(b))` where `f` reads its parameter and does not retain it
    (strconv's `Atoi(string(bytes.Number))`; mime `TypeByExtension`'s `(@string)lower` probe at
-   mime/type.cs:140; strings TestBuilderGrow's `(@string)p` at strings/builder_test.cs:146): emit
-   `tmpstring(b)`, whose contract is exactly "not retained". *Precondition:* a callee classification,
-   cached per function, that the parameter is never stored, returned, captured or sent.
+   mime/type.cs:140): emit `tmpstring(b)`, whose contract is exactly "not retained". *Precondition:* a
+   callee classification, cached per function, that the parameter is never stored, returned, captured
+   or sent. **Go parity holds only up to 32 bytes:** for a non-escaping `string(b)` argument Go uses the
+   32-byte stack `tmpBuf` (`slicebytetostring`) and still allocates above it, so beyond 32 bytes this
+   stage allocates less than Go does. Every member's string is shorter.
+5. **A comparison operand the concrete `sstring` elision does not reach.** strings TestBuilderGrow's
+   `b.String() != (@string)p` (strings/builder_test.cs:146) is a comparison operand, not a call argument,
+   so stage 2 does not cover it; the existing elision declines it because `p` is closure-captured.
+   Extend the elision's predicate to an operand consumed entirely inside one comparison expression.
+   *Removes:* one object per leg on growLen>0.
 3. **`range []byte(s)`.** Go walks the string's bytes without a copy; the emission is
    `slice<byte>(s)` (strconv/atoi.cs:267). Range over the string's own byte span.
 4. **The rune arm.** `string(r)` handed to a non-retaining callee (bytes and strings `IndexRune`'s
@@ -171,9 +188,49 @@ one counted object per evaluation.
 non-retaining; a source buffer written between the conversion and the last use of its result.
 
 **Predictions (counted objects per run):** bytes TestIndex 2 -> 0 and TestLastIndex 2 -> 0 (stage 1);
-strconv TestAllocationsFromBytes/Atoi 3 -> 1 (stages 2 and 3; its per-call `"Atoi"u8` local is
-DESIGN-string-literal-allocation.md's), and the other nine legs by one each (stage 2); bytes and strings
-TestIndexRune to 0 (stage 4); mime TestLookupMallocs one fewer (stage 2).
+strconv TestAllocationsFromBytes/Atoi 3 -> 1, /ParseInt 4 -> 2 and /ParseUint 3 -> 1 (stages 2 and 3;
+their per-call function-local consts -- `fnAtoi`, `fnParseInt`, `fnParseUint` -- are
+DESIGN-string-literal-allocation.md §8's const arm, which takes each to 0); /ParseBool, /ParseFloat,
+/ParseComplex, /CanBackquote, /AppendQuote, /AppendQuoteToASCII and /AppendQuoteToGraphic 1 -> 0 (stage
+2); bytes and strings TestIndexRune to 0 (stage 4); mime TestLookupMallocs one fewer (stage 2); strings
+TestBuilderGrow one fewer on each growLen>0 leg (stage 5).
+
+*Fixed up 2026-09-23 (COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, the §7 note and item 8): stage 2's
+32-byte parity, stage 5 for the comparison operand, and every strconv leg named.*
 
 **Gate:** each stage is controlled against a retained result (it must keep the copy), then its members'
 rows read before and after at Release with tiering off.
+
+## 8. Dated amendment, 2026-09-23 (C1, COORD's ACCEPT-WITH-FIXES item 3) -- a STORED StringData whose every reader rebuilds the string
+
+Written because log/slog's F7 had no stage: §2 names slog's `StringData` as outside the idiom, §7
+refuses a stored result, and REC-E refuses a stored pointer. Read at `bb54ff0920`. **Owner: C1. Full
+design: phase-4D kickoff.** Nothing above this block is rewritten.
+
+**The site.** `slog.StringValue` stores a pointer to the string's first byte and its length:
+`new Value(num: (uint64)len(value), any: new stringptr(@unsafe.StringData(value)))`
+(log/slog/value.cs:118). `StringData` mints a counted `ElemRefBox` (`Ꮡ(…, 0)`). Go stores the pointer
+for free. Every READ of a `stringptr` in the package rebuilds the string and nothing else:
+`@unsafe.String(sp, v.num)` (value.cs:348 and :356); the only other use is the type switch in
+`Kind()` (value.cs:90), which reads the dynamic type, not the pointer.
+
+**The stage that REMOVES the counted allocation.** Classify a named pointer type whose EVERY read in
+its package is `unsafe.String(p, n)` (or a type test), and carry the `@string` window itself -- or its
+backing plus an offset -- in place of the `ElemRefBox`; the reader then returns the window directly.
+*Removes:* one counted object per string `Value`. *Preconditions:* the classification covers every read
+of the type in the package (it is unexported, so the package is the whole population); the pointer is
+never dereferenced, compared, converted to `unsafe.Pointer`/`uintptr` or exposed outside the package.
+
+**Refusals:** an exported pointer type; any dereference, comparison or conversion of the pointer; a
+reader that uses a length other than the one stored beside it.
+
+**Members:** log/slog TestAlloc/2_pairs, /9_kvs, /attrs3, /attrs3_disabled, /attrs6, /attrs9,
+TestAttrNoAlloc, TestValueNoAlloc.
+
+**Predictions (counted objects per run, UNMEASURED):** 2_pairs 10 -> 9; 9_kvs 27 -> 24; attrs3 12 -> 11;
+attrs3_disabled 9 -> 8; attrs6 21 -> 19; attrs9 28 -> 25; TestAttrNoAlloc 14 -> 13; TestValueNoAlloc
+15 -> 14.
+
+**Gate:** the classification is controlled both ways (a type with one dereferencing reader must be
+refused), then log/slog's row reads before and after at Release with tiering off; slog's
+TestValueString and TestValueEqual are the behaviour gates.

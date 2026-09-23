@@ -68,7 +68,8 @@ The converter suite with the predicate's guard (a `_pN` wrapper lowered; a store
 ## 6. Dated amendment, 2026-09-23 (C1, REC-E of the H10 relabel ruling) -- an element take the CALLEE rebuilds into a window
 
 Ruled at ledger 2026-09-23 03:37 (X(2) REC-E, O5). Nothing above this block is rewritten; read at
-`bb54ff0920`. Full design: phase-4D kickoff.
+`bb54ff0920`. **Owner: C1. Full design: phase-4D kickoff.** *(Owner line and UNMEASURED added
+2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, item 10.)*
 
 **The site.** Section 2 admits an element take whose every consumer is a syscall funnel. crypto/rsa's
 hot path is the same take with a different consumer: bigmod's `montgomeryMul` calls
@@ -91,8 +92,8 @@ stated as such.
 compared, arithmetic'd, passed on); a callee reached through an interface or a func value; a take
 whose slice is native-backed.
 
-**Prediction:** crypto/rsa TestAllocations (174,351 per run, budget 10) falls by the element-take
-share; the share is not decomposed here. The run's byte average, about 71 B per counted object against
+**Prediction (UNMEASURED):** crypto/rsa TestAllocations (174,351 per run, budget 10) falls by the
+element-take share; the share is not decomposed here. The run's byte average, about 71 B per counted object against
 a 64 B `ElemRefBox`, is consistent with element takes dominating, and that is an inference until the
 kickoff measures it. rsa's other families are REC-B (`T` at nat.cs:888 and `NewNat`) and the zh-box
 arc; its entry names all three.

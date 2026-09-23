@@ -21514,7 +21514,10 @@ which is sound because a legal floor is always at least 1.
 X(4) and O2).** Some asserts budget a NONZERO number of allocations that Go spends entirely on objects
 golib's counter never charges -- `log/slog`'s `2 pairs` wants exactly 2, and in Go those are the two
 `any` conversions of its non-constant arguments, which the managed side performs as uncounted CLR boxes
-(`9 kvs`'s 10 is the same shape plus one `Record.back` slice, which both sides count). Such an entry is
+(`9 kvs` is the EXCEPTION: its 10 includes one `Record.back` slice that both sides count, so once its
+surplus is gone it reads COUNT 1 against an exact 10 and never reaches the BYTES arm; it carries NO
+pre-declared end label, and its relabel is ruled when it arrives -- COORD's ruling, ledger 3942e083ad).
+Such an entry is
 `deferred` on its COUNTED SURPLUS (every counted object is excess, because Go's budget sits outside the
 count) and carries a **pre-declared end label of `alloc-count-semantics`**: when the plan has removed
 the surplus, the count reads zero while bytes are nonzero, the host takes the BYTES arm, and the entry

@@ -5,10 +5,10 @@
       "name": "TestAllocations",
       "class": "deferred",
       "signature": "allocs = ",
-      "reason": "want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [5]uint32 state and [64]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. 7 per run = 6 class-4 + 1 heap<digest> box. New() is outside the measured closure, so no hash.Hash shell is minted per run.",
+      "reason": "want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [5]uint32 state and [64]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. 7 per run = 6 class-4 + 1 heap<digest> box. New() is outside the measured closure, so no hash.Hash shell is minted per run.",
       "want": "0 allocations per run",
       "reading": "7 per run -- 70 go2cs-runtime object allocations (4,800 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 117 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `allocs = 7, want 0`",
-      "plan": "docs/phase4/DESIGN-array-value-storage.md (REC-A) for the six class-4 objects; docs/phase4/DESIGN-zh-box-b-prime.md (B′) for the one heap<digest> box. A want-0 entry retires only at ZERO BYTES (testing.cs:743)."
+      "plan": "docs/phase4/DESIGN-array-value-storage.md (REC-A) copy face for 3 -- the ΔClone's two arrays (sha1.cs:167) and the `.Clone()` (:202); docs/phase4/DESIGN-nonescaping-locals.md (REC-B) for the 3 locals, `tmp` (:180), `digest` (:196) and the block's `w` (sha1block.cs:19), per COORD's ruling 2; docs/phase4/DESIGN-zh-box-b-prime.md (B′) for the heap<digest> box (:166). A want-0 entry retires only at ZERO BYTES (testing.cs:743). (Plan fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad.)"
     }
   ]
 }

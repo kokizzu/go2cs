@@ -6,6 +6,19 @@
 > Nothing is cut against this stub; line numbers are read at `bb54ff0920` and figures are the i7
 > reading run's (`claude/coord-h10-readings` ac9f8251ee, Release with tiering off). Feasibility is
 > UNMEASURED.
+>
+> **Fixed up 2026-09-23** per COORD's ACCEPT-WITH-FIXES (ledger 3942e083ad; list
+> `docs/phase4/briefs/h10-relabel-fixup.md` at claude/coord-handover 83e4f16ea6, items 1 and 5 and the
+> REC-C note): §A2 added for a pack passed as `slice<T>`, copy-source's golib precondition stated, and a
+> members section added.
+
+## Members (by entry name)
+
+log/slog TestAlloc/pairs, /2_pairs, /2_pairs_disabled_inline, /9_kvs, /attrs1, /attrs3,
+/attrs3_disabled, /attrs6, /attrs9 (F1, §A and §A2; attrs6 and attrs9 also F5, §B); slices TestInsert
+(§A, §A2 and §B); slices TestGrow (§B); slices TestConcat's legs 2-4 (§B; the entry stays
+alloc-count-semantics on leg 1); fmt TestCountMallocs (§A, per leg). log TestDiscard is NOT a member:
+§A refuses its pack.
 
 ## §A. The params-span view
 
@@ -32,12 +45,45 @@ generic callee's constraint admits the span form.
 
 **Refusals** (the pack keeps `.slice()`): stored into a field, global or map; returned; appended INTO;
 captured by a closure -- log's `Printf` copies at log.cs:289 and captures the copy at :291-292, so it
-is refused and log TestDiscard is unchanged by this stage; and passed as a `slice<T>` argument.
+is refused and log TestDiscard is unchanged by this stage; and passed as a `slice<T>` argument, unless
+§A2 admits the callee.
+
+*Copy source's own precondition:* golib has no `copy(slice<T>, ReadOnlySpan<T>)` overload today -- every
+`copy` in golib/builtin.cs (:761-1109) takes an `array<T>`, a `slice<T>`, an `ISlice<T>`, a pointer to
+one of those, or a `@string` -- so admitting copy source adds that overload.
+
+## §A2. A pack passed as `slice<T>` to a callee that neither keeps nor mutates it
+
+§A refuses a pack passed as a `slice<T>` argument, and three of the members' copies sit exactly there.
+Two arms admit them, each through a SPAN OVERLOAD of the callee, emitted beside the `slice<T>` form:
+
+- **(a) A read-only, non-retaining callee.** The callee reads its parameter (index, `len`, range, copy
+  source) and never stores, returns, captures or writes through it. log/slog `AddAttrs` hands
+  `attrs[i:]` to `countEmptyGroups` (log/slog/record.cs:124); slices `Insert` hands `v` to the hand-owned
+  `overlaps(v, ...)` (slices/slices.cs:196; slices/slices_impl.cs:36), which gains a `ReadOnlySpan<E>`
+  overload by hand. **The Go-true consequence, gated:** today `v` is a fresh copy, so `overlaps` can never
+  see it alias `s`, and Insert's HARD case (slices/slices.cs:214-229, the branch Go takes when the spread
+  aliases the destination) is unreachable in the converted package. Under the span view `overlaps` sees
+  the caller's own storage, so an aliasing spread now takes the hard case, as it does in Go. The gate is
+  Go's own TestInsertOverlap, which must pass before and after.
+- **(b) A callee that returns only subslices of the pack.** log/slog `Record.Add` loops
+  `(a, args) = argsToAttr(args)` (record.cs:141), and `argsToAttr` returns `args[2..]`, `args[1..]` or nil
+  (record.cs:179-192): the pack never leaves the loop except as a shorter view of itself. The span
+  overload returns the remainder through an `out Span<T>` (or, if C#'s ref-safety rules refuse that form,
+  as an index into the caller's span -- the index-returning rewrite). *Precondition:* every return of the
+  parameter is a subslice of it, and the tuple result is lowered to an `out` parameter.
+
+*Removes:* the pack copy at each admitted callee. *Preconditions:* a callee classification, cached per
+function, for each arm; a generic callee's constraint admits the span form; the callee is in the
+converted corpus or hand-owned (overlaps). *Refusals:* a callee that stores, captures or writes through
+the parameter; a callee reached through an interface or a func value.
 
 **Predictions (counted objects per run):** slices TestInsert 58 -> about 8 (the per-call pack copy at
-slices.cs:161 removed); fmt TestCountMallocs one fewer per leg whose pack is only read or forwarded
-(per-leg figures at the kickoff); log TestDiscard unchanged (refused); log/slog TestAlloc/* two fewer
-per call with a non-empty pack, enabled or disabled (Add/AddAttrs keep theirs).
+slices.cs:161 removed by §A's copy source and §A2 (a)); fmt TestCountMallocs one fewer per leg whose
+pack is only read or forwarded (per-leg figures at the kickoff); log TestDiscard unchanged (refused);
+log/slog TestAlloc/* all three copies per call with a non-empty pack (§A takes the wrapper's and
+`log`/`logAttrs`'s; §A2 (a) takes AddAttrs's, §A2 (b) takes Add's), and the disabled paths' two (§A).
+All UNMEASURED.
 
 ## §B. Append-of-make (extendslice)
 
@@ -48,8 +94,10 @@ objects where Go has one:
 
 - slices.Grow, slices.cs:441 -- `appendꓸꓸꓸ(subslice(s, 0, cap(s)), new slice<E>(n))`;
 - slices.Insert, slices.cs:177 -- `appendꓸꓸꓸ(subslice(s, 0, i), make<S>(n + m - i))`;
-- bytes `growSlice` (bytes/buffer.cs:251 onward), Go's append-make-with-nil pattern;
-- the hash `Sum`/`AppendBinary` appends, e.g. crypto/internal/fips140/sha256/sha256.cs:76;
+- bytes `growSlice` (bytes/buffer.cs:251 onward), Go's append-make-with-nil pattern -- POPULATION ONLY,
+  no member reads it;
+- the hash `Sum`/`AppendBinary` appends, e.g. crypto/internal/fips140/sha256/sha256.cs:76 -- POPULATION
+  ONLY, no member reads it;
 - log/slog `AddAttrs` through slices.Grow (F5).
 
 **The stage that REMOVES the counted allocation:** recognise `append(x, make([]T, n)...)` (and the
@@ -67,6 +115,8 @@ F5's two); slices TestInsert's remaining objects fall by one per growing insert.
 ## Gates
 
 §A's predicate is controlled both ways: a pack that is stored, returned or captured must keep
-`.slice()`, and one only forwarded must take the span. §B's recognition is controlled against a
+`.slice()`, and one only forwarded must take the span. §A2's classification is controlled the same way
+(a callee that writes through its parameter must keep the copy), and slices TestInsertOverlap gates the
+newly reachable hard case. §B's recognition is controlled against a
 `make` bound to a name. Each stage reads its members' rows before and after at Release with tiering
 off. The emission diff of each stage is measured over the whole corpus (two-seeded reconvert).

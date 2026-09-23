@@ -1736,6 +1736,10 @@ Assert-Equal 'own-page arm: at least one row links a page generated at the pin (
 # arm names that row and entry, then restore byte-identical. PREDICTED at the relabel's manifests
 # (claude/c1-alloc-relabel): refused 0, unless `net` has banked at the pin before its two entries are
 # labelled -- then it names exactly those two, which is X(6)'s close condition, not a defect here.
+# reflect's 42 alloc-profile entries are not gated while reflect has no roster row; they will be
+# refused here the day reflect banks at the pin, which is when they relabel (ledger 16:39). And while
+# every row's headline page is a Windows page, the [linux, darwin]-scoped entries are never in scope
+# here, so the Linux leg's obligation to label or retire them needs a gate of its own.
 function Test-EntryInPlatformScope {
     param($Platforms, [string] $Goos)
 

@@ -290,10 +290,19 @@ lock whose object is reachable from user code.
 as one `PipeWriter` box, three channels at four objects each, and one field-ref view
 (`pw.of(PipeWriter.Ꮡr)`, :253, the first view minted for a new box).
 
-**Prediction:** io TestPipeAllocations 14 -> 5 (1 box + 3 single-object channels + 1 view). **Floor
-claim, in prose only:** 5 exceeds the want of 4, so the single-object core alone does not pass the
-row; the residue is the box and the view, which are zh-box B′'s. A floor field is not written while the
-claim is unmeasured.
+**Prediction (UNMEASURED):** io TestPipeAllocations 14 -> 5 = Go's own 4 + 1 view. Go's `io.Pipe`
+allocates four objects itself -- the `PipeWriter` (with its embedded `PipeReader` and `pipe`) and the
+three channels (go1.24.13 io/pipe.go) -- so the `PipeWriter` box is Go's own allocation, not an excess,
+and zh-box B′ has nothing to take here (B′ does not reach a returned interior pointer either). The one
+object above Go's four is the field-ref VIEW `pw.of(PipeWriter.Ꮡr)` (io/pipe.cs:253), the `*PipeReader`
+Pipe returns, which points INTO the `PipeWriter`'s storage. **No record removes it today:** under `ж<T>`,
+a pointer is a reference to an object, so a pointer to a field of another box needs a view object of
+its own; a representation in which such a pointer is a value (owner plus field offset) would remove it,
+and no record proposes one. So 5 against the want of 4 is stated here as the prediction, NOT as a floor
+-- a floor would need a proof on some basis other than "Go keeps it off the heap", which
+ConversionStrategies-Reference.md:21461-21464 forbids, and none is offered. *(Restated 2026-09-23 per
+COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad, item 11: the first version called 5 a floor and gave the
+residue to B′.)*
 
 **Gate:** the channel behavioral tests and the golib channel suite, then io's row before and after at
 Release with tiering off.
