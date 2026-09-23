@@ -5,6 +5,7 @@ namespace go.crypto;
 
 using bufio = bufio_package;
 using bytes = bytes_package;
+using context = context_package;
 using ed25519 = go.crypto.ed25519_package;
 using Δx509 = go.crypto.x509_package;
 using hex = encoding.hex_package;
@@ -26,28 +27,11 @@ using encoding;
 using fs = go.io.fs_package;
 using go.crypto;
 using go.os;
+using hash = hash_package;
 using rsa = go.crypto.rsa_package;
 using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() {
-    builtin.initPackage(typeof(go.crypto.ed25519_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // TLS reference tests run a connection against a reference implementation
 // (OpenSSL) of TLS and record the bytes of the resulting connection. The Go
@@ -71,6 +55,10 @@ internal static ж<@string> bogoFilter = flag.String("bogo-filter"u8, ""u8, "BoG
 internal static ж<@string> bogoLocalDir = flag.String("bogo-local-dir"u8, ""u8, "Local BoGo to use, instead of fetching from source"u8);
 
 internal static void runTestAndUpdateIfNeeded(ж<testing.T> Ꮡt, @string name, Action<ж<testing.T>, bool> run, bool wait) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    // FIPS mode is non-deterministic and so isn't suited for testing against static test transcripts.
+    skipFIPS(Ꮡt);
     var success = Ꮡt.Run(name, (ж<testing.T> tΔ1) => {
         if (!update.Value && !wait) {
             tΔ1.Parallel();
@@ -126,6 +114,30 @@ internal static error checkOpenSSLVersion() {
     internal slice<slice<byte>> flows;
     internal bool reading;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this recordingConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this recordingConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this recordingConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this recordingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this recordingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *recordingConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this recordingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 internal static (nint n, error err) Read(this ж<recordingConn> Ꮡr, slice<byte> b) {
     nint n = default!;
@@ -338,11 +350,12 @@ internal static (nint n, error err) Write(this ж<replayingConn> Ꮡr, slice<byt
 
 internal static error Close(this ж<replayingConn> Ꮡr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
         Ꮡr.of(replayingConn.ᏑMutex).Lock();
-        defer(Ꮡr.of(replayingConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(r.flows) > 0) {
             r.t.Errorf("closed with unfinished flows"u8);
             return fmt.Errorf("unexpected close"u8);
@@ -350,7 +363,7 @@ internal static error Close(this ж<replayingConn> Ꮡr) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡr.of(replayingConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static netꓸAddr LocalAddr(this ref replayingConn r) {
@@ -653,6 +666,14 @@ internal static slice<byte> testRSACertificate = fromHex("3082024b308201b4a00302
 
 internal static slice<byte> testRSACertificateIssuer = fromHex("3082021930820182a003020102020900ca5e4e811a965964300d06092a864886f70d01010b0500301f310b3009060355040a1302476f3110300e06035504031307476f20526f6f74301e170d3136303130313030303030305a170d3235303130313030303030305a301f310b3009060355040a1302476f3110300e06035504031307476f20526f6f7430819f300d06092a864886f70d010101050003818d0030818902818100d667b378bb22f34143b6cd2008236abefaf2852adf3ab05e01329e2c14834f5105df3f3073f99dab5442d45ee5f8f57b0111c8cb682fbb719a86944eebfffef3406206d898b8c1b1887797c9c5006547bb8f00e694b7a063f10839f269f2c34fff7a1f4b21fbcd6bfdfb13ac792d1d11f277b5c5b48600992203059f2a8f8cc50203010001a35d305b300e0603551d0f0101ff040403020204301d0603551d250416301406082b0601050507030106082b06010505070302300f0603551d130101ff040530030101ff30190603551d0e041204104813494d137e1631bba301d5acab6e7b300d06092a864886f70d01010b050003818100c1154b4bab5266221f293766ae4138899bd4c5e36b13cee670ceeaa4cbdf4f6679017e2fe649765af545749fe4249418a56bd38a04b81e261f5ce86b8d5c65413156a50d12449554748c59a30c515bc36a59d38bddf51173e899820b282e40aa78c806526fd184fb6b4cf186ec728edffa585440d2b3225325f7ab580e87dd76"u8);
 
+internal static slice<byte> testRSA2048Certificate = fromHex("30820316308201fea003020102020900e8f09d3fe25beaa6300d06092a864886f70d01010b0500301f310b3009060355040a1302476f3110300e06035504031307476f20526f6f74301e170d3136303130313030303030305a170d3338303130313030303030305a301a310b3009060355040a1302476f310b300906035504031302476f30820122300d06092a864886f70d01010105000382010f003082010a0282010100e0ac47db9ba1b7f98a996c62dc1d248d4ee570544136fe4e911e22fccc0fe2b20982f3c4cdd8f4065c5068c873ca0a768b80dc915edc66541a5f26cdea44e56e411221e2f9927bf4e009fee76dbe0e118dcc13392efd6f42d8eb2fd5bc8f63ac77800c84d3be90c20c321273254b9137ef61f825dad1ec2c5e75aa4be6d3104899bd5ac400da7ab942b4227a3870ae5bb97870aa09a1082fb8e78b944cd7fd1b0c6fb1cce03b5430b12ef9ce2d95e01821766e998df0cc99202a57cf030577bd2dc0ec85a49f203511bb6f0e9f43398ead0958f8d7534c61e81daf4501faaa68d9cbc725b58401900fa48a3e2333b15c88cf0c5cc8f33fb9464f9d5f5768b8f10203010001a35a3058300e0603551d0f0101ff0404030205a0301d0603551d250416301406082b0601050507030106082b06010505070302300c0603551d130101ff0402300030190603551d1104123010820e6578616d706c652e676f6c616e67300d06092a864886f70d01010b050003820101009e83f835e2da08204ee6f8bdca793cf83c7aec175349c1642dfbe9f4d0dcfb1aedb4d0122e16c2ad92e63dd31cce10ca5dd04be48cded0fdc8fea49e891d9d93e778a67d54b619ac167ce7bb0f6000ca00c5677d09df3eb10080134ba32bfe4132d33954dc479cb266288d53d3f43af9c78c0ca59d396498bdc56d4966dc6b7e49081f7f2ae1d704bb9f9effed93c57d3b738da02edff3999e3f1a5dce2b093951947d233d9c6b6a12b4b1611826aa02544980089eebbcf22a1a96bd35a3ddf638578989334a93d5081fab442b4383ba6213b7cdd74110582244a2abd937828b311d8dd69178756db7874293b9810c5c2e833f91d49d283a62caaf359141997f"u8);
+
+internal static slice<byte> testRSA2048CertificateIssuer = fromHex("308203223082020aa003020102020900ca5e4e811a965964300d06092a864886f70d01010b0500301f310b3009060355040a1302476f3110300e06035504031307476f20526f6f74301e170d3136303130313030303030305a170d3235303130313030303030305a301f310b3009060355040a1302476f3110300e06035504031307476f20526f6f7430820122300d06092a864886f70d01010105000382010f003082010a0282010100b308c1720c7054abe66e1be6f8a11246808215a810e8936e47601f7ec1afeb02ad69a5000959d4e08ebc4455ef90b39616f380b8ff2e76f29942d7e009cf010824fe56f69140ac39b761595255ec2aa35155ca2eea884f57b25f8a52f41f56f65b0197cb6c637f9adfa97d8ac27565449f64e67f8b918646ffd630601b0badd8d38aea421fe413ee94f10ea5874c2fd6d8c1b9febaa5ca0ce759993a232c9c48e52230bbf58777b0c30e07e9e0914133730d844b9887b950d5a17c779ac69de2d9c65d26f1ea46c7dd7ac636af6d77df7c9218f78c7b5f08b025867f343ac66cd43a657ac44bfd7e9d07e95a22ff9a0babf72dcffc66eba0a1d90731f67e3bbd0203010001a361305f300e0603551d0f0101ff040403020204301d0603551d250416301406082b0601050507030106082b06010505070302300f0603551d130101ff040530030101ff301d0603551d0e0416041460145a6ce2e8a15b1b68db9a4752ce8684d6ba2d300d06092a864886f70d01010b050003820101001d342fe0b50a25d57a8b13bc14d0abb1eea7431ee752aa423e1306654183e44e9d48bbf592cd32ce77310fdc4e8bbcd724fc43d2723f454bfe605ff90d38d8c6fe60b36c6f4d2d7e4e79bceeb2484f0565274b0d0c4a8562370677624a4c133e332a9e63d4b47544c14e4908ee8685dd0760ae6f4ab089ede2b0cdc595ecefbee7d8be80d57b2d4e4510b6ceda54d1a5980540214191d81cc89a983da43d4043f8efe97a2e231c5153bded520acce87ec8c64a3408f0eb4c742c4a877e8b5b7b7f72497734a41a95994a7a103262ea6d598d03fd5cb0579ed4702424da8893334c58215bc655d49656aedcd02d18676f45d6b9469ae04b89abe9b358391cce99"u8);
+
+internal static ж<ж<rsa.PrivateKey>> ᏑtestRSA2048PrivateKey = new StandardBox<ж<rsa.PrivateKey>>(Δx509.ParsePKCS1PrivateKey(fromHex("308204a40201000282010100e0ac47db9ba1b7f98a996c62dc1d248d4ee570544136fe4e911e22fccc0fe2b20982f3c4cdd8f4065c5068c873ca0a768b80dc915edc66541a5f26cdea44e56e411221e2f9927bf4e009fee76dbe0e118dcc13392efd6f42d8eb2fd5bc8f63ac77800c84d3be90c20c321273254b9137ef61f825dad1ec2c5e75aa4be6d3104899bd5ac400da7ab942b4227a3870ae5bb97870aa09a1082fb8e78b944cd7fd1b0c6fb1cce03b5430b12ef9ce2d95e01821766e998df0cc99202a57cf030577bd2dc0ec85a49f203511bb6f0e9f43398ead0958f8d7534c61e81daf4501faaa68d9cbc725b58401900fa48a3e2333b15c88cf0c5cc8f33fb9464f9d5f5768b8f10203010001028201007aac96efca229b199e1bf79a63256677e1c455792bc2a348b2e409a68ea57dda486740430d4290bb885c3f5a741eb567d4f41f7b2098a726f4df4f88cf899edc7c9b31f584dffedece15a7212642c7dbbdd8d806392a183e1fc30af36169c9bab9e528f0bdcd27ad4c8b6a97849da6452c6809de61848db80c3ba3289e785042cdfd46fbfee5f78adcba2927fcd8cbe9dcaa97190457eaa45d77adbe0db820aff0c8511d837ab5b307bad5f85afd2cc70d9659ec58045d97ced1eb7950670ac559449c0305fddefda1bac88d36629a177f65abad182c6470830b39e7f6dbdef4df813ccaef01d5a42d37213b2b9647e2ff56a63e6b6a4b6e8a1567bbfd77042102818100eb66f205e8507c78f7167dbef3ddf02fde6a67bd15152609e9296576e28c79678177145ae98e0a2fee58fdb3d626fb6beae3e0ae0b76bc47d16fcdeb16f0caca8a0902779979382609705ae84514de480c2fb2ddda3049347cc1bde9f1a359747079ef3dce020a3c186c90e63bc20b5489a40d768b1c1c35c679edc5662e18c702818100f454ffff95b126b55cb13b68a3841600fc0bc69ff4064f7ceb122495fa972fdb05ca2fa1c6e2e84432f81c96875ab12226e8ce92ba808c4f6325f27ce058791f05db96e623687d3cfc198e748a07521a8c7ee9e7e8faf95b0985be82b867a49f7d5d50fac3881d2c39dedfdbca3ebe847b859c9864cf7a543e4688f5a60118870281806cee737ac65950704daeebbb8c701c709a54d4f28baa00b33f6137a1bf0e5033d4963d2620c3e8f4eb2fe51eee2f95d3079c31e1784e96ac093fdaa33a376d3032961ebd27990fa192669abab715041385082196461c6813d0d37ac5a25afbcf452937cb7ae438c63c6b28d651bae6b1550c446aa1cefd42e9388d0df6cdc80b02818100cac172c33504923bb494fad8e5c0a9c5dd63244bfe63f238969632b82700a95cd71c2694d887d9f92656d0da75ae640a1441e392cda3f94bb3da7cb4f6335527d2639c809467946e34423cfe26c0d6786398ba20922d1b1a59f79bd5bc937d8040b75c890c13fb298548977a3c05ff71cf535c54f66b5a77684a7e4363a3cb2702818100a4d782f35d5a07f9c1f8f9c378564b220387d1e481cc856b631de7637d8bb77c851db070122050ac230dc6e45edf4523471c717c1cb86a36b2fd3358fae349d51be54d71d7dbeaa6af668323e2b51933f0b8488aa12723e0f32207068b4aa64ed54bcef4acbbbe35b92802faba7ed45ae52bef8313d9ef4393ccc5cf868ddbf8"u8)).Item1);
+internal static ref ж<rsa.PrivateKey> testRSA2048PrivateKey => ref ᏑtestRSA2048PrivateKey.ValueSlot;
+internal static error _ᴛ12ʗ;
+
 // testRSAPSSCertificate has signatureAlgorithm rsassaPss, but subjectPublicKeyInfo
 // algorithm rsaEncryption, for use with the rsa_pss_rsae_* SignatureSchemes.
 // See also TestRSAPSSKeyError. testRSAPSSCertificate is self-signed.
@@ -667,13 +688,14 @@ internal static slice<byte> testSNICertificate = fromHex("0441883421114c81480804
 internal static slice<byte> testP256Certificate = fromHex("308201693082010ea00302010202105012dc24e1124ade4f3e153326ff27bf300a06082a8648ce3d04030230123110300e060355040a130741636d6520436f301e170d3137303533313232343934375a170d3138303533313232343934375a30123110300e060355040a130741636d6520436f3059301306072a8648ce3d020106082a8648ce3d03010703420004c02c61c9b16283bbcc14956d886d79b358aa614596975f78cece787146abf74c2d5dc578c0992b4f3c631373479ebf3892efe53d21c4f4f1cc9a11c3536b7f75a3463044300e0603551d0f0101ff0404030205a030130603551d25040c300a06082b06010505070301300c0603551d130101ff04023000300f0603551d1104083006820474657374300a06082a8648ce3d0403020349003046022100963712d6226c7b2bef41512d47e1434131aaca3ba585d666c924df71ac0448b3022100f4d05c725064741aef125f243cdbccaa2a5d485927831f221c43023bd5ae471a"u8);
 
 internal static ж<rsa.PrivateKey> testRSAPrivateKey = Δx509.ParsePKCS1PrivateKey(fromHex("3082025b02010002818100db467d932e12270648bc062821ab7ec4b6a25dfe1e5245887a3647a5080d92425bc281c0be97799840fb4f6d14fd2b138bc2a52e67d8d4099ed62238b74a0b74732bc234f1d193e596d9747bf3589f6c613cc0b041d4d92b2b2423775b1c3bbd755dce2054cfa163871d1e24c4f31d1a508baab61443ed97a77562f414c852d702030100010281800b07fbcf48b50f1388db34b016298b8217f2092a7c9a04f77db6775a3d1279b62ee9951f7e371e9de33f015aea80660760b3951dc589a9f925ed7de13e8f520e1ccbc7498ce78e7fab6d59582c2386cc07ed688212a576ff37833bd5943483b5554d15a0b9b4010ed9bf09f207e7e9805f649240ed6c1256ed75ab7cd56d9671024100fded810da442775f5923debae4ac758390a032a16598d62f059bb2e781a9c2f41bfa015c209f966513fe3bf5a58717cbdb385100de914f88d649b7d15309fa49024100dd10978c623463a1802c52f012cfa72ff5d901f25a2292446552c2568b1840e49a312e127217c2186615aae4fb6602a4f6ebf3f3d160f3b3ad04c592f65ae41f02400c69062ca781841a09de41ed7a6d9f54adc5d693a2c6847949d9e1358555c9ac6a8d9e71653ac77beb2d3abaf7bb1183aa14278956575dbebf525d0482fd72d90240560fe1900ba36dae3022115fd952f2399fb28e2975a1c3e3d0b679660bdcb356cc189d611cfdd6d87cd5aea45aa30a2082e8b51e94c2f3dd5d5c6036a8a615ed0240143993d80ece56f877cb80048335701eb0e608cc0c1ca8c2227b52edf8f1ac99c562f2541b5ce81f0515af1c5b4770dba53383964b4b725ff46fdec3d08907df"u8)).Item1;
-internal static error _ᴛ12ʗ;
-
-internal static ж<ecdsa.PrivateKey> testECDSAPrivateKey = Δx509.ParseECPrivateKey(fromHex("3081dc0201010442019883e909ad0ac9ea3d33f9eae661f1785206970f8ca9a91672f1eedca7a8ef12bd6561bb246dda5df4b4d5e7e3a92649bc5d83a0bf92972e00e62067d0c7bd99d7a00706052b81040023a18189038186000400c4a1edbe98f90b4873367ec316561122f23d53c33b4d213dcd6b75e6f6b0dc9adf26c1bcb287f072327cb3642f1c90bcea6823107efee325c0483a69e0286dd33700ef0462dd0da09c706283d881d36431aa9e9731bd96b068c09b23de76643f1a5c7fe9120e5858b65f70dd9bd8ead5d7f5d5ccb9b69f30665b669a20e227e5bffe3b"u8)).Item1;
 internal static error _ᴛ13ʗ;
 
-internal static ж<ecdsa.PrivateKey> testP256PrivateKey = Δx509.ParseECPrivateKey(fromHex("30770201010420012f3b52bc54c36ba3577ad45034e2e8efe1e6999851284cb848725cfe029991a00a06082a8648ce3d030107a14403420004c02c61c9b16283bbcc14956d886d79b358aa614596975f78cece787146abf74c2d5dc578c0992b4f3c631373479ebf3892efe53d21c4f4f1cc9a11c3536b7f75"u8)).Item1;
+internal static ж<ж<ecdsa.PrivateKey>> ᏑtestECDSAPrivateKey = new StandardBox<ж<ecdsa.PrivateKey>>(Δx509.ParseECPrivateKey(fromHex("3081dc0201010442019883e909ad0ac9ea3d33f9eae661f1785206970f8ca9a91672f1eedca7a8ef12bd6561bb246dda5df4b4d5e7e3a92649bc5d83a0bf92972e00e62067d0c7bd99d7a00706052b81040023a18189038186000400c4a1edbe98f90b4873367ec316561122f23d53c33b4d213dcd6b75e6f6b0dc9adf26c1bcb287f072327cb3642f1c90bcea6823107efee325c0483a69e0286dd33700ef0462dd0da09c706283d881d36431aa9e9731bd96b068c09b23de76643f1a5c7fe9120e5858b65f70dd9bd8ead5d7f5d5ccb9b69f30665b669a20e227e5bffe3b"u8)).Item1);
+internal static ref ж<ecdsa.PrivateKey> testECDSAPrivateKey => ref ᏑtestECDSAPrivateKey.ValueSlot;
 internal static error _ᴛ14ʗ;
+
+internal static ж<ecdsa.PrivateKey> testP256PrivateKey = Δx509.ParseECPrivateKey(fromHex("30770201010420012f3b52bc54c36ba3577ad45034e2e8efe1e6999851284cb848725cfe029991a00a06082a8648ce3d030107a14403420004c02c61c9b16283bbcc14956d886d79b358aa614596975f78cece787146abf74c2d5dc578c0992b4f3c631373479ebf3892efe53d21c4f4f1cc9a11c3536b7f75"u8)).Item1;
+internal static error _ᴛ15ʗ;
 
 internal static ed25519.PrivateKey testEd25519PrivateKey = ((ed25519.PrivateKey)fromHex("3a884965e76b3f55e5faf9615458a92354894234de3ec9f684d46d55cebf3dc63fe2152ee6e3ef3f4e854a7577a3649eede0bf842ccc92268ffa6f3483aaec8f"u8));
 
@@ -763,5 +785,156 @@ internal static @string clientEd25519KeyPEM = testingKey("""
 MC4CAQAwBQYDK2VwBCIEINifzf07d9qx3d44e0FSbV4mC/xQxT644RRbpgNpin7I
 -----END TESTING KEY-----
 """u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object expectedErrorFromˢ2 = (@string)"expected error from incomplete handshake, got nil"u8;
+
+public static void TestServerHelloTrailingMessage(ж<testing.T> Ꮡt) {
+    // In TLS 1.3 the change cipher spec message is optional. If a CCS message
+    // is not sent, after reading the ServerHello, the read traffic secret is
+    // set, and all following messages must be encrypted. If the server sends
+    // additional unencrypted messages in a record with the ServerHello, the
+    // client must either fail or ignore the additional messages.
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
+    var sʗ1 = s;
+    goǃ(() => {
+        var ctx = context.Background();
+        var srv = Server(sʗ1, testConfig);
+        var (clientHello, _, err) = srv.readClientHello(ctx);
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        ref var hs = ref heap<global::go.crypto.tls_package.serverHandshakeStateTLS13>(out var Ꮡhs);
+        hs = new serverHandshakeStateTLS13(
+            c: srv,
+            ctx: ctx,
+            clientHello: clientHello
+        );
+        {
+            var errΔ1 = Ꮡhs.processClientHello(); if (errΔ1 != default!) {
+                testFatal(Ꮡt, errΔ1);
+            }
+        }
+        {
+            var errΔ2 = transcriptMsg(new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(hs.clientHello), new tls_test_package.hash_HashᴠtranscriptHash(hs.transcript)); if (errΔ2 != default!) {
+                testFatal(Ꮡt, errΔ2);
+            }
+        }
+        (var record, err) = concatHandshakeMessages(new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(hs.hello), new global::go.crypto.tls_package.encryptedExtensionsMsgжhandshakeMessage(Ꮡ(new encryptedExtensionsMsg(alpnProtocol: "h2"u8))));
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        {
+            var (_, errΔ3) = sʗ1.Write(record); if (errΔ3 != default!) {
+                testFatal(Ꮡt, errΔ3);
+            }
+        }
+        srv.Close();
+    });
+    var cli = Client(c, testConfig);
+    @string expectedErr = tlsHandshakeBufferNotˢ;
+    {
+        var err = cli.Handshake(); if (err == default!){
+            Ꮡt.Fatal(expectedErrorFromˢ2);
+        } else 
+        if (err.Error() != expectedErr) {
+            Ꮡt.Fatalf("expected error %q, got %q"u8, expectedErr, err.Error());
+        }
+    }
+}
+
+public static void TestClientHelloTrailingMessage(ж<testing.T> Ꮡt) {
+    // Same as TestServerHelloTrailingMessage but for the client side.
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
+    var cʗ1 = c;
+    goǃ(() => {
+        var cli = Client(cʗ1, testConfig);
+        var (hello, _, _, err) = cli.makeClientHello();
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        (var record, err) = concatHandshakeMessages(new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(hello), new global::go.crypto.tls_package.certificateMsgTLS13жhandshakeMessage(Ꮡ(new certificateMsgTLS13(nil))));
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        {
+            var (_, errΔ1) = cʗ1.Write(record); if (errΔ1 != default!) {
+                testFatal(Ꮡt, errΔ1);
+            }
+        }
+        cli.Close();
+    });
+    var srv = Server(s, testConfig);
+    @string expectedErr = tlsHandshakeBufferNotˢ;
+    {
+        var err = srv.Handshake(); if (err == default!){
+            Ꮡt.Fatal(expectedErrorFromˢ2);
+        } else 
+        if (err.Error() != expectedErr) {
+            Ꮡt.Fatalf("expected error %q, got %q"u8, expectedErr, err.Error());
+        }
+    }
+}
+
+public static void TestDoubleClientHelloHRR(ж<testing.T> Ꮡt) {
+    // If a client sends two ClientHello messages in a single record, and the
+    // server sends a HRR after reading the first ClientHello, the server must
+    // either fail or ignore the trailing ClientHello.
+    var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
+    var cʗ1 = c;
+    goǃ(() => {
+        var cli = Client(cʗ1, testConfig);
+        var (hello, _, _, err) = cli.makeClientHello();
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        hello.Value.keyShares = default!;
+        (var record, err) = concatHandshakeMessages(new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(hello), new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(hello));
+        if (err != default!) {
+            testFatal(Ꮡt, err);
+        }
+        {
+            var (_, errΔ1) = cʗ1.Write(record); if (errΔ1 != default!) {
+                testFatal(Ꮡt, errΔ1);
+            }
+        }
+        cli.Close();
+    });
+    var srv = Server(s, testConfig);
+    @string expectedErr = tlsHandshakeBufferNotˢ2;
+    {
+        var err = srv.Handshake(); if (err == default!){
+            Ꮡt.Fatal(expectedErrorFromˢ2);
+        } else 
+        if (err.Error() != expectedErr) {
+            Ꮡt.Fatalf("expected error %q, got %q"u8, expectedErr, err.Error());
+        }
+    }
+}
+
+// concatHandshakeMessages marshals and concatenates the given handshake
+// messages into a single record.
+internal static (slice<byte>, error) concatHandshakeMessages(params Span<global::go.crypto.tls_package.handshakeMessage> msgsʗp) {
+    var msgs = msgsʗp.sslice();
+
+    slice<byte> marshalled = default!;
+    foreach (var (_, msg) in msgs) {
+        var (data, err) = msg.marshal();
+        if (err != default!) {
+            return (default!, err);
+        }
+        marshalled = appendꓸꓸꓸ(marshalled, data);
+    }
+    nint m = len(marshalled);
+    var outBuf = new slice<byte>(recordHeaderLen);
+    outBuf[0] = (byte)recordTypeHandshake;
+    nint vers = VersionTLS12;
+    outBuf[1] = (byte)((vers >> (int)(8)));
+    outBuf[2] = (byte)vers;
+    outBuf[3] = (byte)((m >> (int)(8)));
+    outBuf[4] = (byte)m;
+    outBuf = appendꓸꓸꓸ(outBuf, marshalled);
+    return (outBuf, default!);
+}
 
 } // end tls_internal_test_package

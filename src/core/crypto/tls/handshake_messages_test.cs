@@ -21,24 +21,6 @@ using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
-    builtin.initPackage(typeof(go.testing.quick_package));
-}
-
 internal static slice<global::go.crypto.tls_package.handshakeMessage> tests = new global::go.crypto.tls_package.handshakeMessage[]{new global::go.crypto.tls_package.clientHelloMsgжhandshakeMessage(Ꮡ(new clientHelloMsg(nil))), new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(Ꮡ(new serverHelloMsg(nil))), new global::go.crypto.tls_package.finishedMsgжhandshakeMessage(Ꮡ(new finishedMsg(nil))), new global::go.crypto.tls_package.certificateMsgжhandshakeMessage(Ꮡ(new certificateMsg(nil))), new global::go.crypto.tls_package.certificateRequestMsgжhandshakeMessage(Ꮡ(new certificateRequestMsg(nil))), new global::go.crypto.tls_package.certificateVerifyMsgжhandshakeMessage(Ꮡ(new certificateVerifyMsg(
     hasSignatureAlgorithm: true
 ))), new global::go.crypto.tls_package.certificateStatusMsgжhandshakeMessage(Ꮡ(new certificateStatusMsg(nil))), new global::go.crypto.tls_package.clientKeyExchangeMsgжhandshakeMessage(Ꮡ(new clientKeyExchangeMsg(nil))), new global::go.crypto.tls_package.newSessionTicketMsgжhandshakeMessage(Ꮡ(new newSessionTicketMsg(nil))), new global::go.crypto.tls_package.encryptedExtensionsMsgжhandshakeMessage(Ꮡ(new encryptedExtensionsMsg(nil))), new global::go.crypto.tls_package.endOfEarlyDataMsgжhandshakeMessage(Ꮡ(new endOfEarlyDataMsg(nil))), new global::go.crypto.tls_package.keyUpdateMsgжhandshakeMessage(Ꮡ(new keyUpdateMsg(nil))), new global::go.crypto.tls_package.newSessionTicketMsgTLS13жhandshakeMessage(Ꮡ(new newSessionTicketMsgTLS13(nil))), new global::go.crypto.tls_package.certificateRequestMsgTLS13жhandshakeMessage(Ꮡ(new certificateRequestMsgTLS13(nil))), new global::go.crypto.tls_package.certificateMsgTLS13жhandshakeMessage(Ꮡ(new certificateMsgTLS13(nil))), new tls_test_package.tls_SessionStateжhandshakeMessage(Ꮡ(new SessionState(nil)))
@@ -82,6 +64,19 @@ public static void TestMarshalUnmarshal(ж<testing.T> Ꮡt) {
                 {
                     var (mΔ1, okΔ1) = mʗ1._<ж<global::go.crypto.tls_package.SessionState>>(ᐧ); if (okΔ1) {
                         mΔ1.Value.activeCertHandles = default!;
+                    }
+                }
+                {
+                    var (ch, okΔ2) = mʗ1._<ж<global::go.crypto.tls_package.clientHelloMsg>>(ᐧ); if (okΔ2) {
+                        // extensions is special cased, as it is only populated by the
+                        // server-side of a handshake and is not expected to roundtrip
+                        // through marshal + unmarshal.  m ends up with the list of
+                        // extensions necessary to serialize the other fields of
+                        // clientHelloMsg, so check that it is non-empty, then clear it.
+                        if (len((~ch).extensions) == 0) {
+                            tΔ1.Errorf("expected ch.extensions to be populated on unmarshal"u8);
+                        }
+                        ch.Value.extensions = default!;
                     }
                 }
                 // clientHelloMsg and serverHelloMsg, when unmarshalled, store
@@ -237,6 +232,9 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
     if (randΔ1.Intn(10) > 5) {
         m.Value.earlyData = true;
     }
+    if (randΔ1.Intn(10) > 5) {
+        m.Value.encryptedClientHello = randomBytes(randΔ1.Intn(50) + 1, Ꮡrand);
+    }
     return reflect.ValueOf(m.OrTypedNil());
 }
 
@@ -375,7 +373,7 @@ internal static @string randomString(nint n, ж<rand.Rand> Ꮡrand) {
 
 internal static slice<ж<Δx509.Certificate>> sessionTestCerts;
 
-[GoInit] internal static void init() {
+[GoInit] internal static void initΔ1() {
     var (cert, err) = Δx509.ParseCertificate(testRSACertificate);
     if (err != default!) {
         throw panic(err);

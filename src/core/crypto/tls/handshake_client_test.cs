@@ -9,6 +9,7 @@ using ecdsa = go.crypto.ecdsa_package;
 using elliptic = go.crypto.elliptic_package;
 using rand = go.crypto.rand_package;
 using rsa = go.crypto.rsa_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using Δx509 = go.crypto.x509_package;
 using pkix = go.crypto.x509.pkix_package;
 using base64 = encoding.base64_package;
@@ -35,6 +36,7 @@ using encoding;
 using fs = go.io.fs_package;
 using go.@internal;
 using go.crypto;
+using go.crypto.tls.@internal;
 using go.crypto.x509;
 using go.math;
 using go.os;
@@ -43,60 +45,6 @@ using path;
 using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdsa() {
-    builtin.initPackage(typeof(go.crypto.ecdsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() {
-    builtin.initPackage(typeof(go.crypto.elliptic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrsa() {
-    builtin.initPackage(typeof(go.crypto.rsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸpkix() {
-    builtin.initPackage(typeof(go.crypto.x509.pkix_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
 
 [GoType("num:nint")] internal partial struct opensslInputEvent;
 
@@ -263,7 +211,7 @@ internal static (ж<recordingConn> conn, ж<exec.Cmd> child, opensslInput stdin,
             ref var serverInfo = ref heap(new bytes.Buffer(), out var ᏑserverInfo);
             foreach (var (_, ext) in test.extensions) {
                 pem.Encode(new tls_test_package.bytes_BufferжWriter(ᏑserverInfo), Ꮡ(new pem.Block(
-                    Type: fmt.Sprintf("SERVERINFO FOR EXTENSION %d"u8, byteorder.BeUint16(ext)),
+                    Type: fmt.Sprintf("SERVERINFO FOR EXTENSION %d"u8, byteorder.BEUint16(ext)),
                     Bytes: ext
                 )));
             }
@@ -512,7 +460,7 @@ internal static void run(this ж<clientTest> Ꮡtest, ж<testing.T> Ꮡt, bool w
             }
         }
         if (write) {
-            clientConn.Close();
+            client.Close();
             @string path = test.dataPath();
             var (@out, err) = os.OpenFile(path, (nint)((nint)(nint)(os.O_WRONLY | os.O_CREATE) | os.O_TRUNC), 420);
             if (err != default!) {
@@ -967,14 +915,16 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     if (testing.Short()) {
         Ꮡt.Skip(skippingInShortModeˢ2);
     }
+    // Note: using RSA 2048 test certificates because they are compatible with FIPS mode.
+    var testCertificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
     ref var serverConfig = ref heap<ж<global::go.crypto.tls_package.Config>>(out var ᏑserverConfig);
     serverConfig = Ꮡ(new Config(
         MaxVersion: version,
-        CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-        Certificates: (~testConfig).Certificates,
+        CipherSuites: new uint16[]{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}.slice(),
+        Certificates: testCertificates,
         Time: testTime
     ));
-    var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
+    var (issuer, err) = Δx509.ParseCertificate(testRSA2048CertificateIssuer);
     if (err != default!) {
         throw panic(err);
     }
@@ -982,7 +932,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     rootCAs.AddCert(issuer);
     var clientConfig = Ꮡ(new Config(
         MaxVersion: version,
-        CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA}.slice(),
+        CipherSuites: new uint16[]{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}.slice(),
         ClientSessionCache: NewLRUClientSessionCache(32),
         RootCAs: rootCAs,
         ServerName: "example.golang"u8,
@@ -1050,11 +1000,11 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     }
     serverConfig.Value.Time = testTime; // reset the time back
     var key1 = randomKey();
-    serverConfig.SetSessionTicketKeys(new array<byte>[]{key1.Clone()}.slice());
+    serverConfig.SetSessionTicketKeys(GoReflect.WithElemDims(new array<byte>[]{key1.Clone()}.slice(), 32));
     testResumeState(invalidSessionTicketKeyˢ, false);
     testResumeState("ResumeAfterInvalidSessionTicketKey"u8, true);
     var key2 = randomKey();
-    serverConfig.SetSessionTicketKeys(new array<byte>[]{key2.Clone(), key1.Clone()}.slice());
+    serverConfig.SetSessionTicketKeys(GoReflect.WithElemDims(new array<byte>[]{key2.Clone(), key1.Clone()}.slice(), 32));
     ticket = getTicket();
     testResumeState(keyChangeˢ, true);
     if (bytes.Equal(ticket, getTicket())) {
@@ -1097,16 +1047,16 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
     // before the serverConfig is used works.
     serverConfig = Ꮡ(new Config(
         MaxVersion: version,
-        CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-        Certificates: (~testConfig).Certificates,
+        CipherSuites: new uint16[]{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}.slice(),
+        Certificates: testCertificates,
         Time: testTime
     ));
-    serverConfig.SetSessionTicketKeys(new array<byte>[]{key2.Clone()}.slice());
+    serverConfig.SetSessionTicketKeys(GoReflect.WithElemDims(new array<byte>[]{key2.Clone()}.slice(), 32));
     testResumeState(freshConfigˢ, true);
     // In TLS 1.3, cross-cipher suite resumption is allowed as long as the KDF
     // hash matches. Also, Config.CipherSuites does not apply to TLS 1.3.
     if (version != VersionTLS13) {
-        clientConfig.Value.CipherSuites = new uint16[]{TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice();
+        clientConfig.Value.CipherSuites = new uint16[]{TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}.slice();
         testResumeState(differentCipherSuiteˢ, false);
         testResumeState("DifferentCipherSuiteRecovers"u8, true);
     }
@@ -1120,7 +1070,7 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
 
             CurvePreferences: new global::go.crypto.tls_package.CurveID[]{CurveP521, CurveP384, CurveP256}.slice(),
             MaxVersion: version,
-            Certificates: (~testConfig).Certificates,
+            Certificates: testCertificates,
             Time: testTime
         ));
         testResumeState(initialHandshakeˢ, false);
@@ -1128,8 +1078,8 @@ internal static void testResumption(ж<testing.T> Ꮡt, uint16 version) {
         // Reset serverConfig back.
         serverConfig = Ꮡ(new Config(
             MaxVersion: version,
-            CipherSuites: new uint16[]{TLS_RSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_RC4_128_SHA}.slice(),
-            Certificates: (~testConfig).Certificates,
+            CipherSuites: new uint16[]{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}.slice(),
+            Certificates: testCertificates,
             Time: testTime
         ));
     }
@@ -1409,7 +1359,7 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
     goǃ(() => {
         var client = Client(cʗ1, Ꮡ(new Config(
             ServerName: "foo"u8,
-            CipherSuites: new uint16[]{TLS_RSA_WITH_AES_128_GCM_SHA256}.slice(),
+            CipherSuites: new uint16[]{TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}.slice(),
             NextProtos: new @string[]{"http"u8, "something-else"u8}.slice()
         )));
         errChanʗ1.ᐸꟷ(client.Handshake());
@@ -1430,7 +1380,7 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
     var serverHello = Ꮡ(new serverHelloMsg(
         vers: VersionTLS12,
         random: new slice<byte>(32),
-        cipherSuite: TLS_RSA_WITH_AES_128_GCM_SHA256,
+        cipherSuite: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
         alpnProtocol: "how-about-this"u8
     ));
     var serverHelloBytes = mustMarshal(Ꮡt, new global::go.crypto.tls_package.serverHelloMsgжhandshakeMessage(serverHello));
@@ -1445,7 +1395,7 @@ public static void TestServerSelectingUnconfiguredApplicationProtocol(ж<testing
     s.Close();
     {
         var err = ᐸꟷ(errChan); if (!strings.Contains(err.Error(), serverSelectedˢ)) {
-            Ꮡt.Fatalf("Expected error about unconfigured cipher suite but got %q"u8, err);
+            Ꮡt.Fatalf("Expected error about unconfigured ALPN protocol but got %q"u8, err);
         }
     }
 }
@@ -1922,7 +1872,9 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         )
     }.slice();
     foreach (var (_, test) in tests) {
-        var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
+        // Note: using RSA 2048 test certificates because they are compatible with FIPS mode.
+        var testCertificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
+        var (issuer, err) = Δx509.ParseCertificate(testRSA2048CertificateIssuer);
         if (err != default!) {
             throw panic(err);
         }
@@ -1932,7 +1884,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
         ref var clientCalled = ref heap(new nint(), out var ᏑclientCalled);
         var serverConfig = Ꮡ(new Config(
             MaxVersion: version,
-            Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Certificates: testCertificates,
             Time: testTime,
             ClientCAs: rootCAs,
             NextProtos: new @string[]{"protocol1"u8}.slice()
@@ -1945,7 +1897,7 @@ internal static void testVerifyConnection(ж<testing.T> Ꮡt, uint16 version) {
             ClientSessionCache: NewLRUClientSessionCache(32),
             RootCAs: rootCAs,
             ServerName: "example.golang"u8,
-            Certificates: new global::go.crypto.tls_package.Certificate[]{(~testConfig).Certificates[0]}.slice(),
+            Certificates: testCertificates,
             Time: testTime,
             NextProtos: new @string[]{"protocol1"u8}.slice()
         ));
@@ -1995,8 +1947,9 @@ internal static readonly @string gotLenValidatedChains0ˢ = "got len(validatedCh
 }
 
 internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 version) {
+    // Note: using RSA 2048 test certificates because they are compatible with FIPS mode.
     ref var err = ref heap<error>(out var Ꮡerr);
-    (var issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
+    (var issuer, err) = Δx509.ParseCertificate(testRSA2048CertificateIssuer);
     if (err != default!) {
         throw panic(err);
     }
@@ -2289,8 +2242,8 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             configΔ1.Value.Time = testTime;
             configΔ1.Value.MaxVersion = version;
             configΔ1.Value.Certificates = new slice<global::go.crypto.tls_package.Certificate>(1);
-            (~configΔ1).Certificates[0].ΔCertificate = new slice<byte>[]{testRSACertificate}.slice();
-            (~configΔ1).Certificates[0].PrivateKey = testRSAPrivateKey.OrTypedNil();
+            (~configΔ1).Certificates[0].ΔCertificate = new slice<byte>[]{testRSA2048Certificate}.slice();
+            (~configΔ1).Certificates[0].PrivateKey = testRSA2048PrivateKey.OrTypedNil();
             (~configΔ1).Certificates[0].SignedCertificateTimestamps = new slice<byte>[]{slice<byte>("dummy sct 1"u8), slice<byte>("dummy sct 2"u8)}.slice();
             (~configΔ1).Certificates[0].OCSPStaple = slice<byte>("dummy ocsp"u8);
             testʗ1.configureServer(configΔ1, ᏑserverCalled);
@@ -2299,6 +2252,7 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
             doneʗ1.ᐸꟷ(Ꮡerr.ValueSlot);
         });
         var config = testConfig.Clone();
+        config.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
         config.Value.ServerName = exampleGolangˢ;
         config.Value.RootCAs = rootCAs;
         config.Value.Time = testTime;
@@ -2321,6 +2275,34 @@ internal static void testVerifyPeerCertificate(ж<testing.T> Ꮡt, uint16 versio
     // numWrites is the number of writes that have been done.
     internal nint numWrites;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this brokenConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this brokenConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this brokenConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this brokenConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this brokenConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this brokenConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *brokenConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this brokenConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 // brokenConnErr is the error that brokenConn returns once exhausted.
 internal static error brokenConnErr = errors.New("too many writes to brokenConn"u8);
@@ -2364,6 +2346,34 @@ public static void TestFailedWrite(ж<testing.T> Ꮡt) {
     // numWrites is the number of writes that have been done.
     internal nint numWrites;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this writeCountingConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this writeCountingConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this writeCountingConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this writeCountingConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 [GoRecv] internal static (nint, error) Write(this ref writeCountingConn wcc, slice<byte> data) {
     wcc.numWrites++;
@@ -2600,8 +2610,8 @@ internal static void initᴛgetClientCertificateTests() { getClientCertificateTe
                     throw panic("empty AcceptableCAs");
                 }
                 var cert = Ꮡ(new Certificate(
-                    ΔCertificate: new slice<byte>[]{testRSACertificate}.slice(),
-                    PrivateKey: testRSAPrivateKey.OrTypedNil()
+                    ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(),
+                    PrivateKey: testRSA2048PrivateKey.OrTypedNil()
                 ));
                 return (cert, default!);
             };
@@ -2630,12 +2640,16 @@ public static void TestGetClientCertificate(ж<testing.T> Ꮡt) {
 }
 
 internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version) {
-    var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    // Note: using RSA 2048 test certificates because they are compatible with FIPS mode.
+    var (issuer, err) = Δx509.ParseCertificate(testRSA2048CertificateIssuer);
     if (err != default!) {
         throw panic(err);
     }
     foreach (var (i, test) in getClientCertificateTests) {
         var serverConfig = testConfig.Clone();
+        serverConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
         serverConfig.Value.ClientAuth = VerifyClientCertIfGiven;
         serverConfig.Value.RootCAs = Δx509.NewCertPool();
         (~serverConfig).RootCAs.AddCert(issuer);
@@ -2643,8 +2657,14 @@ internal static void testGetClientCertificate(ж<testing.T> Ꮡt, uint16 version
         serverConfig.Value.Time = testTime;
         serverConfig.Value.MaxVersion = version;
         var clientConfig = testConfig.Clone();
+        clientConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
         clientConfig.Value.MaxVersion = version;
         test.setup(clientConfig, serverConfig);
+        // TLS 1.1 isn't available for FIPS required
+        if (fips140tls.Required() && (~clientConfig).MaxVersion == VersionTLS11) {
+            Ꮡt.Logf("skipping test %d for FIPS mode"u8, i);
+            continue;
+        }
         var (c, s) = localPipe(new tls_test_package.testing_TжTB(Ꮡt));
         var done = new channel<testGetClientCertificate_serverResult>(0);
         var doneʗ1 = done;
@@ -2828,15 +2848,19 @@ public static void TestDowngradeCanary(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("client didn't ignore expected TLS 1.2 canary"u8);
         }
     }
-    {
-        var err = testDowngradeCanary(Ꮡt, VersionTLS11, VersionTLS11); if (err != default!) {
-            Ꮡt.Errorf("client unexpectedly reacted to a canary in TLS 1.1"u8);
+    if (!fips140tls.Required()){
+        {
+            var err = testDowngradeCanary(Ꮡt, VersionTLS11, VersionTLS11); if (err != default!) {
+                Ꮡt.Errorf("client unexpectedly reacted to a canary in TLS 1.1"u8);
+            }
         }
-    }
-    {
-        var err = testDowngradeCanary(Ꮡt, VersionTLS10, VersionTLS10); if (err != default!) {
-            Ꮡt.Errorf("client unexpectedly reacted to a canary in TLS 1.0"u8);
+        {
+            var err = testDowngradeCanary(Ꮡt, VersionTLS10, VersionTLS10); if (err != default!) {
+                Ꮡt.Errorf("client unexpectedly reacted to a canary in TLS 1.0"u8);
+            }
         }
+    } else {
+        Ꮡt.Logf("skiping TLS 1.1 and TLS 1.0 downgrade canary checks in FIPS mode"u8);
     }
 }
 
@@ -2852,7 +2876,8 @@ public static void TestResumptionKeepsOCSPAndSCT(ж<testing.T> Ꮡt) {
 internal static void testResumptionKeepsOCSPAndSCT(ж<testing.T> Ꮡt, uint16 ver) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
+    // Note: using RSA 2048 test certificates because they are compatible with FIPS mode.
+    var (issuer, err) = Δx509.ParseCertificate(testRSA2048CertificateIssuer);
     if (err != default!) {
         Ꮡt.Fatalf("failed to parse test issuer"u8);
     }
@@ -2866,6 +2891,7 @@ internal static void testResumptionKeepsOCSPAndSCT(ж<testing.T> Ꮡt, uint16 ve
         Time: testTime
     ));
     var serverConfig = testConfig.Clone();
+    serverConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{new(ΔCertificate: new slice<byte>[]{testRSA2048Certificate}.slice(), PrivateKey: testRSA2048PrivateKey.OrTypedNil())}.slice();
     serverConfig.Value.MaxVersion = ver;
     (~serverConfig).Certificates[0].OCSPStaple = new byte[]{1, 2, 3}.slice();
     (~serverConfig).Certificates[0].SignedCertificateTimestamps = new slice<byte>[]{new byte[]{4, 5, 6}.slice()}.slice();
@@ -3013,12 +3039,16 @@ internal static void testTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt, sli
     var serverConfig = Ꮡ(new Config(
         Certificates: (~testConfig).Certificates,
         GetConfigForClient: (ж<global::go.crypto.tls_package.ClientHelloInfo> chi) => {
-            if (len((~chi).CipherSuites) != len(defaultCipherSuitesTLS13NoAES)){
+            var expectedCiphersuites = defaultCipherSuitesTLS13NoAES;
+            if (fips140tls.Required()) {
+                expectedCiphersuites = defaultCipherSuitesTLS13FIPS;
+            }
+            if (len((~chi).CipherSuites) != len(expectedCiphersuites)){
                 Ꮡt.Errorf("only TLS 1.3 suites should be advertised, got=%x"u8, (~chi).CipherSuites);
             } else {
-                foreach (var (i, _) in defaultCipherSuitesTLS13NoAES) {
+                foreach (var (i, _) in expectedCiphersuites) {
                     {
-                        var (want, got) = (defaultCipherSuitesTLS13NoAES[i], (~chi).CipherSuites[i]); if (want != got) {
+                        var (want, got) = (expectedCiphersuites[i], (~chi).CipherSuites[i]); if (want != got) {
                             Ꮡt.Errorf("cipher at index %d does not match, want=%x, got=%x"u8, i, want, got);
                         }
                     }
@@ -3044,6 +3074,34 @@ internal static void testTLS13OnlyClientHelloCipherSuite(ж<testing.T> Ꮡt, sli
 [GoType] internal partial struct discardConn {
     public net_package.Conn Conn;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this discardConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this discardConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this discardConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this discardConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this discardConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this discardConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *discardConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this discardConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 [GoRecv] internal static (nint, error) Write(this ref discardConn dc, slice<byte> data) {
     return (len(data), default!);

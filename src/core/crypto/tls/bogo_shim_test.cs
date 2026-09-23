@@ -1,6 +1,10 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 namespace go.crypto;
 
 using bytes = bytes_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using Δx509 = go.crypto.x509_package;
 using base64 = encoding.base64_package;
 using json = encoding.json_package;
@@ -13,124 +17,26 @@ using io = io_package;
 using log = log_package;
 using net = net_package;
 using os = os_package;
-using exec = go.os.exec_package;
 using filepath = path.filepath_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
+using cryptobyte = vendor.golang.org.x.crypto.cryptobyte_package;
 using encoding;
+using exec = go.os.exec_package;
 using fs = go.io.fs_package;
 using go.@internal;
 using go.crypto;
+using go.crypto.@internal;
 using go.os;
 using path;
 using static go.crypto.tls_package;
 using time = time_package;
+using vendor.golang.org.x.crypto;
 
 partial class tls_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509() {
-    builtin.initPackage(typeof(go.crypto.x509_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() {
-    builtin.initPackage(typeof(encoding.pem_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
 
 internal static ж<@string> port = flag.String("port"u8, ""u8, ""u8);
 internal static ж<bool> server = flag.Bool("server"u8, false, ""u8);
@@ -167,6 +73,9 @@ internal static ж<bool> _ᴛ5ʗ = flag.Bool("on-resume-expect-reject-early-data
 internal static ж<bool> onResumeExpectECHAccepted = flag.Bool("on-resume-expect-ech-accept"u8, false, ""u8);
 internal static ж<bool> _ᴛ6ʗ = flag.Bool("on-resume-expect-no-ech-name-override"u8, false, ""u8);
 internal static ж<@string> expectedServerName = flag.String("expect-server-name"u8, ""u8, ""u8);
+internal static ж<stringSlice> echServerConfig = flagStringSlice("ech-server-config"u8, ""u8);
+internal static ж<stringSlice> echServerKey = flagStringSlice("ech-server-key"u8, ""u8);
+internal static ж<stringSlice> echServerRetryConfig = flagStringSlice("ech-is-retry-config"u8, ""u8);
 internal static ж<bool> expectSessionMiss = flag.Bool("expect-session-miss"u8, false, ""u8);
 internal static ж<bool> _ᴛ7ʗ = flag.Bool("enable-early-data"u8, false, ""u8);
 internal static ж<bool> _ᴛ8ʗ = flag.Bool("on-resume-expect-accept-early-data"u8, false, ""u8);
@@ -176,6 +85,8 @@ internal static ж<@string> advertiseALPN = flag.String("advertise-alpn"u8, ""u8
 internal static ж<@string> expectALPN = flag.String("expect-alpn"u8, ""u8, ""u8);
 internal static ж<bool> rejectALPN = flag.Bool("reject-alpn"u8, false, ""u8);
 internal static ж<bool> declineALPN = flag.Bool("decline-alpn"u8, false, ""u8);
+internal static ж<@string> expectAdvertisedALPN = flag.String("expect-advertised-alpn"u8, ""u8, ""u8);
+internal static ж<@string> selectALPN = flag.String("select-alpn"u8, ""u8, ""u8);
 internal static ж<@string> hostName = flag.String("host-name"u8, ""u8, ""u8);
 internal static ж<bool> verifyPeer = flag.Bool("verify-peer"u8, false, ""u8);
 internal static ж<bool> _ᴛ10ʗ = flag.Bool("use-custom-verify-callback"u8, false, ""u8);
@@ -188,16 +99,17 @@ internal static ж<stringSlice> flagStringSlice(@string name, @string usage) {
     return f;
 }
 
-internal static @string String(this stringSlice saf) {
+[GoRecv] internal static @string String(this ref stringSlice saf) {
     return strings.Join(saf, ","u8);
 }
 
-internal static error Set(this stringSlice saf, @string s) {
+[GoRecv] internal static error Set(this ref stringSlice saf, @string s) {
     saf = append(saf, s);
     return default!;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object echServerConfigEchServerˢ = (@string)"-ech-server-config, -ech-server-key, and -ech-is-retry-config mismatch"u8;
 internal static readonly @string tcpˢ = "tcp"u8;
 internal static readonly @string localhostˢ = "localhost"u8;
 internal static readonly object unexpectedAlpnProtocolˢ = (@string)"unexpected ALPN protocol"u8;
@@ -219,7 +131,24 @@ internal static void bogoShim() {
             ServerName: "test"u8,
             MinVersion: (uint16)(minVersion.Value),
             MaxVersion: (uint16)(maxVersion.Value),
-            ClientSessionCache: NewLRUClientSessionCache(0)
+            ClientSessionCache: NewLRUClientSessionCache(0),
+            GetConfigForClient: (ж<global::go.crypto.tls_package.ClientHelloInfo> chi) => {
+                if (expectAdvertisedALPN.Value != ""u8) {
+                    var s = ((cryptobyte.String)slice<byte>(expectAdvertisedALPN.Value));
+                    slice<@string> expectedALPNs = default!;
+                    while (!s.Empty()) {
+                        ref var alpn = ref heap<cryptobyte.String>(out var Ꮡalpn);
+                        if (!s.ReadUint8LengthPrefixed(Ꮡalpn)) {
+                            return (default!, fmt.Errorf("unexpected error while parsing arguments for -expect-advertised-alpn"u8));
+                        }
+                        expectedALPNs = append(expectedALPNs, ((@string)(slice<byte>)alpn));
+                    }
+                    if (!slices.Equal<slice<@string>, @string>((~chi).SupportedProtos, expectedALPNs)) {
+                        return (default!, fmt.Errorf("unexpected ALPN: got %q, want %q"u8, (~chi).SupportedProtos, expectedALPNs));
+                    }
+                }
+                return (default!, default!);
+            }
         ));
         if (noTLS1.Value){
             cfg.Value.MinVersion = VersionTLS11;
@@ -258,6 +187,9 @@ internal static void bogoShim() {
         }
         if (declineALPN.Value) {
             cfg.Value.NextProtos = new @string[]{}.slice();
+        }
+        if (selectALPN.Value != ""u8) {
+            cfg.Value.NextProtos = new @string[]{selectALPN.Value}.slice();
         }
         if (hostName.Value != ""u8) {
             cfg.Value.ServerName = hostName.Value;
@@ -306,6 +238,26 @@ internal static void bogoShim() {
                 cfg.Value.CurvePreferences = append((~cfg).CurvePreferences, ((global::go.crypto.tls_package.CurveID)(uint16)id));
             }
         }
+        if (len(echServerConfig.ValueSlot) != 0) {
+            if (len(echServerConfig.ValueSlot) != len(echServerKey.ValueSlot) || len(echServerConfig.ValueSlot) != len(echServerRetryConfig.ValueSlot)) {
+                log.Fatal(echServerConfigEchServerˢ);
+            }
+            foreach (var (i, c) in echServerConfig.ValueSlot) {
+                var (configBytes, err) = base64.StdEncoding.DecodeString(c);
+                if (err != default!) {
+                    log.Fatalf("parse ech-server-config err: %s"u8, err);
+                }
+                (var privBytes, err) = base64.StdEncoding.DecodeString((echServerKey.ValueSlot)[i]);
+                if (err != default!) {
+                    log.Fatalf("parse ech-server-key err: %s"u8, err);
+                }
+                cfg.Value.EncryptedClientHelloKeys = append((~cfg).EncryptedClientHelloKeys, new EncryptedClientHelloKey(
+                    Config: configBytes,
+                    PrivateKey: privBytes,
+                    SendAsRetry: (echServerRetryConfig.ValueSlot)[i] == "1"
+                ));
+            }
+        }
         for (nint i = 0; i < resumeCount.Value + 1; i++) {
             if (i > 0 && (onResumeECHConfigListB64.Value != ""u8)) {
                 var (echConfigList, errΔ1) = base64.StdEncoding.DecodeString(onResumeECHConfigListB64.Value);
@@ -322,7 +274,7 @@ internal static void bogoShim() {
             defer(() => connʗ1.Close(), ref ᒐ);
             // Write the shim ID we were passed as a little endian uint64
             var shimIDBytes = new slice<byte>(8);
-            byteorder.LePutUint64(shimIDBytes, shimID.Value);
+            byteorder.LEPutUint64(shimIDBytes, shimID.Value);
             {
                 var (_, errΔ1) = conn.Write(shimIDBytes); if (errΔ1 != default!) {
                     log.Fatalf("failed to write shim id: %s"u8, errΔ1);
@@ -382,6 +334,9 @@ internal static void bogoShim() {
                 if (expectALPN.Value != ""u8 && cs.NegotiatedProtocol != expectALPN.Value) {
                     log.Fatalf("unexpected protocol negotiated: want %q, got %q"u8, expectALPN.Value, cs.NegotiatedProtocol);
                 }
+                if (selectALPN.Value != ""u8 && cs.NegotiatedProtocol != selectALPN.Value) {
+                    log.Fatalf("unexpected protocol negotiated: want %q, got %q"u8, selectALPN.Value, cs.NegotiatedProtocol);
+                }
                 if (expectVersion.Value != 0 && cs.Version != (uint16)(expectVersion.Value)) {
                     log.Fatalf("expected ssl version %q, got %q"u8, (uint16)(expectVersion.Value), cs.Version);
                 }
@@ -432,29 +387,20 @@ internal static void bogoShim() {
 internal static readonly object skippingInShortModeˢ = (@string)"skipping in short mode"u8;
 internal static readonly object windowsNetworkˢ = (@string)"#66913: windows network connections are flakey on builders"u8;
 internal static readonly @string bogoConfigJsonˢ = "bogo_config.json"u8;
-internal static readonly @string modˢ = "mod"u8;
-internal static readonly @string downloadˢ = "download"u8;
-internal static readonly @string jsonˢ = "-json"u8;
+internal static readonly @string boringsslGooglesourceComˢ = "boringssl.googlesource.com/boringssl.git"u8;
 internal static readonly @string resultsJsonˢ = "results.json"u8;
 internal static readonly @string sslTestRunnerˢ = "ssl/test/runner"u8;
-
-[GoType("dyn")] internal partial struct TestBogoSuite_j {
-    public @string Dir;
-}
 
 public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    testenv.SkipIfShortAndSlow(new tls_test_package.testing_TжTB(Ꮡt));
-    testenv.MustHaveExternalNetwork(new tls_test_package.testing_TжTB(Ꮡt));
-    testenv.MustHaveGoRun(new tls_test_package.testing_TжTB(Ꮡt));
-    testenv.MustHaveExec(new tls_test_package.testing_TжTB(Ꮡt));
     if (testing.Short()) {
         Ꮡt.Skip(skippingInShortModeˢ);
     }
     if (testenv.Builder() != ""u8 && runtime.GOOS == "windows"u8) {
         Ꮡt.Skip(windowsNetworkˢ);
     }
+    skipFIPS(Ꮡt);
     // In order to make Go test caching work as expected, we stat the
     // bogo_config.json file, so that the Go testing hooks know that it is
     // important for this test and will invalidate a cached test result if the
@@ -468,18 +414,8 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     if (bogoLocalDir.Value != ""u8){
         bogoDir = bogoLocalDir.Value;
     } else {
-        @string boringsslModVer = "v0.0.0-20240523173554-273a920f84e8"u8;
-        var (output, errΔ2) = exec.Command("go"u8, modˢ, downloadˢ, jsonˢ, "boringssl.googlesource.com/boringssl.git@" + boringsslModVer).CombinedOutput();
-        if (errΔ2 != default!) {
-            Ꮡt.Fatalf("failed to download boringssl: %s"u8, errΔ2);
-        }
-        ref var j = ref heap(new TestBogoSuite_j(), out var Ꮡj);
-        {
-            var errΔ3 = json.Unmarshal(output, Ꮡj); if (errΔ3 != default!) {
-                Ꮡt.Fatalf("failed to parse 'go mod download' output: %s"u8, errΔ3);
-            }
-        }
-        bogoDir = j.Dir;
+        @string boringsslModVer = "v0.0.0-20241120195446-5cce3fbd23e1"u8;
+        bogoDir = cryptotest.FetchModule(Ꮡt, boringsslGooglesourceComˢ, boringsslModVer);
     }
     var (cwd, err) = os.Getwd();
     if (err != default!) {
@@ -500,11 +436,7 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     if (bogoFilter.Value != ""u8) {
         args = append(args, fmt.Sprintf("-test=%s"u8, bogoFilter.Value));
     }
-    (var goCmd, err) = testenv.GoTool();
-    if (err != default!) {
-        Ꮡt.Fatal(err);
-    }
-    var cmd = exec.Command(goCmd, args.ꓸꓸꓸ);
+    var cmd = testenv.Command(new tls_test_package.testing_TжTB(Ꮡt), testenv.GoToolPath(new tls_test_package.testing_TжTB(Ꮡt)), args.ꓸꓸꓸ);
     var @out = Ꮡ(new strings.Builder(nil));
     cmd.Value.Stderr = new tls_test_package.strings_BuilderжWriter(@out);
     cmd.Value.Dir = filepath.Join(bogoDir, sslTestRunnerˢ);
@@ -523,16 +455,16 @@ public static void TestBogoSuite(ж<testing.T> Ꮡt) {
     }
     ref var results = ref heap(new bogoResults(), out var Ꮡresults);
     {
-        var errΔ4 = json.Unmarshal(resultsJSON, Ꮡresults); if (errΔ4 != default!) {
-            Ꮡt.Fatalf("failed to parse results JSON: %s"u8, errΔ4);
+        var errΔ2 = json.Unmarshal(resultsJSON, Ꮡresults); if (errΔ2 != default!) {
+            Ꮡt.Fatalf("failed to parse results JSON: %s"u8, errΔ2);
         }
     }
     // assertResults contains test results we want to make sure
     // are present in the output. They are only checked if -bogo-filter
     // was not passed.
     var assertResults = new map<@string, @string>{
-        ["CurveTest-Client-Kyber-TLS13"u8] = "PASS"u8,
-        ["CurveTest-Server-Kyber-TLS13"u8] = "PASS"u8
+        ["CurveTest-Client-MLKEM-TLS13"u8] = "PASS"u8,
+        ["CurveTest-Server-MLKEM-TLS13"u8] = "PASS"u8
     };
     foreach (var (name, vᴛ1) in results.Tests) {
         ref var result = ref heap(new bogoResults_Tests(), out var Ꮡresult);

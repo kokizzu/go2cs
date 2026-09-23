@@ -6,9 +6,12 @@ namespace go.crypto;
 using bytes = bytes_package;
 using context = context_package;
 using crypto = crypto_package;
+using ecdh = go.crypto.ecdh_package;
 using ecdsa = go.crypto.ecdsa_package;
 using elliptic = go.crypto.elliptic_package;
+using hpke = go.crypto.@internal.hpke_package;
 using rand = go.crypto.rand_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using Δx509 = go.crypto.x509_package;
 using pkix = go.crypto.x509.pkix_package;
 using asn1 = encoding.asn1_package;
@@ -27,20 +30,18 @@ using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
+using cryptobyte = vendor.golang.org.x.crypto.cryptobyte_package;
 using encoding;
 using go.@internal;
 using go.crypto;
+using go.crypto.@internal;
+using go.crypto.tls.@internal;
 using go.crypto.x509;
 using go.math;
 using static go.crypto.tls_package;
+using vendor.golang.org.x.crypto;
 
 partial class tls_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() {
-    builtin.initPackage(typeof(encoding.asn1_package));
-}
 
 internal static @string rsaCertPEM = """
 -----BEGIN CERTIFICATE-----
@@ -211,6 +212,7 @@ public static void TestX509MixedKeyPair(ж<testing.T> Ꮡt) {
 }
 
 internal static net.Listener newLocalListener(testing.TB t) {
+    t.Helper();
     var (ln, err) = net.Listen(tcpˢ, "127.0.0.1:0"u8);
     if (err != default!) {
         (ln, err) = net.Listen(tcp6ˢ, "[::1]:0"u8);
@@ -219,6 +221,57 @@ internal static net.Listener newLocalListener(testing.TB t) {
         t.Fatal(err);
     }
     return ln;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string fips140tlsˢ = "fips140tls"u8;
+
+internal static void runWithFIPSEnabled(ж<testing.T> Ꮡt, Action<ж<testing.T>> testFunc) {
+    GoFrame ᒐ = default;
+    try {
+        var originalFIPS = fips140tls.Required();
+        defer(() => {
+            if (originalFIPS){
+                fips140tls.Force();
+            } else {
+                fips140tls.TestingOnlyAbandon();
+            }
+        }, ref ᒐ);
+        fips140tls.Force();
+        Ꮡt.Run(fips140tlsˢ, testFunc);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string noFips140tlsˢ = "no-fips140tls"u8;
+
+internal static void runWithFIPSDisabled(ж<testing.T> Ꮡt, Action<ж<testing.T>> testFunc) {
+    GoFrame ᒐ = default;
+    try {
+        var originalFIPS = fips140tls.Required();
+        defer(() => {
+            if (originalFIPS){
+                fips140tls.Force();
+            } else {
+                fips140tls.TestingOnlyAbandon();
+            }
+        }, ref ᒐ);
+        fips140tls.TestingOnlyAbandon();
+        Ꮡt.Run(noFips140tlsˢ, testFunc);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object skippingTestInFipsModeˢ = (@string)"skipping test in FIPS mode"u8;
+
+internal static void skipFIPS(ж<testing.T> Ꮡt) {
+    if (fips140tls.Required()) {
+        Ꮡt.Skip(skippingTestInFipsModeˢ);
+    }
 }
 
 public static void TestDialTimeout(ж<testing.T> Ꮡt) {
@@ -670,6 +723,42 @@ public static void TestVerifyHostname(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string yahooCom443ˢ = "yahoo.com:443"u8;
+internal static readonly object dialErrorˢ = (@string)"Dial error:"u8;
+internal static readonly object secondDialErrorˢ = (@string)"second Dial error:"u8;
+internal static readonly object noConnectionUsedSessionˢ = (@string)"no connection used session resumption"u8;
+
+public static void TestRealResumption(ж<testing.T> Ꮡt) {
+    testenv.MustHaveExternalNetwork(new tls_test_package.testing_TжTB(Ꮡt));
+    var config = Ꮡ(new Config(
+        ServerName: "yahoo.com"u8,
+        ClientSessionCache: NewLRUClientSessionCache(0)
+    ));
+    foreach (var _ᴛ1 in range(10)) {
+        var (conn, err) = Dial(tcpˢ, yahooCom443ˢ, config);
+        if (err != default!) {
+            Ꮡt.Log(dialErrorˢ, err);
+            continue;
+        }
+        // Do a read to consume the NewSessionTicket messages.
+        fmt.Fprintf(new tls_test_package.tls_ConnжWriter(conn), "GET / HTTP/1.1\r\nHost: yahoo.com\r\nConnection: close\r\n\r\n"u8);
+        conn.Read(new slice<byte>(4096));
+        conn.Close();
+        (conn, err) = Dial(tcpˢ, yahooCom443ˢ, config);
+        if (err != default!) {
+            Ꮡt.Log(secondDialErrorˢ, err);
+            continue;
+        }
+        var state = conn.ConnectionState();
+        conn.Close();
+        if (state.DidResume) {
+            return;
+        }
+    }
+    Ꮡt.Fatal(noConnectionUsedSessionˢ);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string connClosedForTestˢ = "conn closed for test"u8;
 
 public static void TestConnCloseBreakingWrite(ж<testing.T> Ꮡt) {
@@ -969,7 +1058,7 @@ public static void TestWarningAlertFlood(ж<testing.T> Ꮡt) {
                 Ꮡt.Fatal(errΔ3);
             }
         }
-        for (nint i = 0; i < maxUselessRecords + 1; i++) {
+        for (nint i = 0; i < (nint)(maxUselessRecords + 1); i++) {
             conn.sendAlert(alertNoRenegotiation);
         }
         {
@@ -1034,7 +1123,7 @@ public static void TestCloneFuncFields(ж<testing.T> Ꮡt) {
     (~c2).UnwrapSession(default!, new ΔConnectionState(nil));
     (~c2).WrapSession(new ΔConnectionState(nil), nil);
     (~c2).EncryptedClientHelloRejectionVerify(new ΔConnectionState(nil));
-    if (called != ((1 << (int)(expectedCount))) - 1) {
+    if (called != (nint)(((1 << (int)(expectedCount))) - 1)) {
         Ꮡt.Fatalf("expected %d calls but saw calls %b"u8, (nint)(expectedCount), called);
     }
 }
@@ -1108,6 +1197,11 @@ public static void TestCloneNonFuncFields(ж<testing.T> Ꮡt) {
             else if (exprᴛ1 == "EncryptedClientHelloConfigList"u8) {
                 f.Set(reflect.ValueOf(new byte[]{(rune)'x'}.slice()));
             }
+            else if (exprᴛ1 == "EncryptedClientHelloKeys"u8) {
+                f.Set(reflect.ValueOf(new global::go.crypto.tls_package.EncryptedClientHelloKey[]{
+                    new(Config: new byte[]{1}.slice(), PrivateKey: new byte[]{1}.slice())
+                }.slice()));
+            }
             else if (exprᴛ1 == "mutex"u8 || exprᴛ1 == "autoSessionTicketKeys"u8 || exprᴛ1 == "sessionTicketKeys"u8) {
                 continue; // these are unexported fields that are handled separately
             }
@@ -1142,6 +1236,30 @@ public static void TestCloneNilConfig(ж<testing.T> Ꮡt) {
     internal Func<slice<byte>, (nint, error)> writeFunc;
     internal Func<error> closeFunc;
 }
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this changeImplConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this changeImplConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this changeImplConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this changeImplConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this changeImplConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *changeImplConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this changeImplConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 [GoRecv] internal static (nint n, error err) Write(this ref changeImplConn w, slice<byte> p) {
     if (w.writeFunc != default!) {
@@ -1245,6 +1363,34 @@ public static void BenchmarkThroughput(ж<testing.B> Ꮡb) {
     public net_package.Conn Conn;
     internal nint bps;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this slowConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this slowConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this slowConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this slowConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this slowConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this slowConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *slowConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this slowConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 [GoRecv] internal static (nint, error) Write(this ref slowConn c, slice<byte> p) {
     if (c.bps == 0) {
@@ -1361,6 +1507,7 @@ public static void TestConnectionStateMarshal(ж<testing.T> Ꮡt) {
 }
 
 public static void TestConnectionState(ж<testing.T> Ꮡt) {
+    skipFIPS(Ꮡt); // Test certificates not FIPS compatible.
     var (issuer, err) = Δx509.ParseCertificate(testRSACertificateIssuer);
     if (err != default!) {
         throw panic(err);
@@ -1504,6 +1651,7 @@ internal static @string testingKey(@string s) {
 public static void TestClientHelloInfo_SupportsCertificate(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
+    skipFIPS(Ꮡt); // Test certificates not FIPS compatible.
     var rsaCert = Ꮡ(new Certificate(
         ΔCertificate: new slice<byte>[]{testRSACertificate}.slice(),
         PrivateKey: testRSAPrivateKey.OrTypedNil()
@@ -1972,6 +2120,7 @@ public static void TestPKCS1OnlyCert(ж<testing.T> Ꮡt) {
 }
 
 public static void TestVerifyCertificates(ж<testing.T> Ꮡt) {
+    skipFIPS(Ꮡt); // Test certificates not FIPS compatible.
     // See https://go.dev/issue/31641.
     Ꮡt.Run(tlSv12ˢ, (ж<testing.T> tΔ1) => {
         testVerifyCertificates(tΔ1, VersionTLS12);
@@ -2128,33 +2277,31 @@ internal static void testVerifyCertificates(ж<testing.T> Ꮡt, uint16 version) 
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string godebugˢ = "GODEBUG"u8;
-internal static readonly @string tlskyber0ˢ = "tlskyber=0"u8;
-internal static readonly @string clientSupportsˢ = "client supports Kyber768Draft00"u8;
-internal static readonly @string clientDoesNotSupportˢ2 = "client does not support Kyber768Draft00"u8;
+internal static readonly @string tlsmlkem0ˢ = "tlsmlkem=0"u8;
+internal static readonly @string clientSupportsˢ = "client supports X25519MLKEM768"u8;
+internal static readonly @string clientDoesNotSupportˢ2 = "client does not support X25519MLKEM768"u8;
 internal static readonly object serverDidNotUseHrrˢ = (@string)"server did not use HRR"u8;
 internal static readonly object clientDidNotUseHrrˢ = (@string)"client did not use HRR"u8;
 internal static readonly object serverUsedHrrˢ = (@string)"server used HRR"u8;
 internal static readonly object clientUsedHrrˢ = (@string)"client used HRR"u8;
 
-[GoType("dyn")] internal partial struct TestHandshakeKyber_type {
+[GoType("dyn")] internal partial struct TestHandshakeMLKEM_type {
     internal @string name;
     internal Action<ж<global::go.crypto.tls_package.Config>> clientConfig;
     internal Action<ж<global::go.crypto.tls_package.Config>> serverConfig;
     internal Action<ж<testing.T>> preparation;
     internal bool expectClientSupport;
-    internal bool expectKyber;
+    internal bool expectMLKEM;
     internal bool expectHRR;
 }
 
-public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
-    if (x25519Kyber768Draft00.String() != "X25519Kyber768Draft00"u8) {
-        Ꮡt.Fatalf("unexpected CurveID string: %v"u8, x25519Kyber768Draft00.String());
-    }
-    slice<TestHandshakeKyber_type> tests = new TestHandshakeKyber_type[]{
+public static void TestHandshakeMLKEM(ж<testing.T> Ꮡt) {
+    skipFIPS(Ꮡt); // No X25519MLKEM768 in FIPS
+    slice<TestHandshakeMLKEM_type> tests = new TestHandshakeMLKEM_type[]{
         new(
             name: "Default"u8,
             expectClientSupport: true,
-            expectKyber: true,
+            expectMLKEM: true,
             expectHRR: false
         ),
         new(
@@ -2170,7 +2317,7 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
                 config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{X25519}.slice();
             },
             expectClientSupport: true,
-            expectKyber: false,
+            expectMLKEM: false,
             expectHRR: false
         ),
         new(
@@ -2179,8 +2326,24 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
                 config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{CurveP256}.slice();
             },
             expectClientSupport: true,
-            expectKyber: false,
+            expectMLKEM: false,
             expectHRR: true
+        ),
+        new(
+            name: "ClientMLKEMOnly"u8,
+            clientConfig: (ж<global::go.crypto.tls_package.Config> config) => {
+                config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{X25519MLKEM768}.slice();
+            },
+            expectClientSupport: true,
+            expectMLKEM: true
+        ),
+        new(
+            name: "ClientSortedCurvePreferences"u8,
+            clientConfig: (ж<global::go.crypto.tls_package.Config> config) => {
+                config.Value.CurvePreferences = new global::go.crypto.tls_package.CurveID[]{CurveP256, X25519MLKEM768}.slice();
+            },
+            expectClientSupport: true,
+            expectMLKEM: true
         ),
         new(
             name: "ClientTLSv12"u8,
@@ -2195,12 +2358,12 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
                 config.Value.MaxVersion = VersionTLS12;
             },
             expectClientSupport: true,
-            expectKyber: false
+            expectMLKEM: false
         ),
         new(
             name: "GODEBUG"u8,
             preparation: (ж<testing.T> tΔ1) => {
-                tΔ1.Setenv(godebugˢ, tlskyber0ˢ);
+                tΔ1.Setenv(godebugˢ, tlsmlkem0ˢ);
             },
             expectClientSupport: false
         )
@@ -2208,7 +2371,7 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
     var baseConfig = testConfig.Clone();
     baseConfig.Value.CurvePreferences = default!;
     foreach (var (_, vᴛ1) in tests) {
-        ref var test = ref heap(new TestHandshakeKyber_type(), out var Ꮡtest);
+        ref var test = ref heap(new TestHandshakeMLKEM_type(), out var Ꮡtest);
         test = vᴛ1;
 
         var baseConfigʗ1 = baseConfig;
@@ -2225,10 +2388,10 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
             }
             var testʗ2 = testʗ1;
             serverConfig.Value.GetConfigForClient = (ж<global::go.crypto.tls_package.Config>, error) (ж<global::go.crypto.tls_package.ClientHelloInfo> hello) => {
-                if (!testʗ2.expectClientSupport && slices.Contains((~hello).SupportedCurves, x25519Kyber768Draft00)){
+                if (!testʗ2.expectClientSupport && slices.Contains((~hello).SupportedCurves, X25519MLKEM768)){
                     return (default!, errors.New(clientSupportsˢ));
                 } else 
-                if (testʗ2.expectClientSupport && !slices.Contains((~hello).SupportedCurves, x25519Kyber768Draft00)) {
+                if (testʗ2.expectClientSupport && !slices.Contains((~hello).SupportedCurves, X25519MLKEM768)) {
                     return (default!, errors.New(clientDoesNotSupportˢ2));
                 }
                 return (default!, default!);
@@ -2241,19 +2404,19 @@ public static void TestHandshakeKyber(ж<testing.T> Ꮡt) {
             if (err != default!) {
                 tΔ2.Fatal(err);
             }
-            if (testʗ1.expectKyber){
-                if (ss.testingOnlyCurveID != x25519Kyber768Draft00) {
-                    tΔ2.Errorf("got CurveID %v (server), expected %v"u8, ss.testingOnlyCurveID, x25519Kyber768Draft00);
+            if (testʗ1.expectMLKEM){
+                if (ss.testingOnlyCurveID != X25519MLKEM768) {
+                    tΔ2.Errorf("got CurveID %v (server), expected %v"u8, ss.testingOnlyCurveID, X25519MLKEM768);
                 }
-                if (cs.testingOnlyCurveID != x25519Kyber768Draft00) {
-                    tΔ2.Errorf("got CurveID %v (client), expected %v"u8, cs.testingOnlyCurveID, x25519Kyber768Draft00);
+                if (cs.testingOnlyCurveID != X25519MLKEM768) {
+                    tΔ2.Errorf("got CurveID %v (client), expected %v"u8, cs.testingOnlyCurveID, X25519MLKEM768);
                 }
             } else {
-                if (ss.testingOnlyCurveID == x25519Kyber768Draft00) {
-                    tΔ2.Errorf("got CurveID %v (server), expected not Kyber"u8, ss.testingOnlyCurveID);
+                if (ss.testingOnlyCurveID == X25519MLKEM768) {
+                    tΔ2.Errorf("got CurveID %v (server), expected not X25519MLKEM768"u8, ss.testingOnlyCurveID);
                 }
-                if (cs.testingOnlyCurveID == x25519Kyber768Draft00) {
-                    tΔ2.Errorf("got CurveID %v (client), expected not Kyber"u8, cs.testingOnlyCurveID);
+                if (cs.testingOnlyCurveID == X25519MLKEM768) {
+                    tΔ2.Errorf("got CurveID %v (client), expected not X25519MLKEM768"u8, cs.testingOnlyCurveID);
                 }
             }
             if (testʗ1.expectHRR){
@@ -2394,8 +2557,127 @@ public static void TestLargeCertMsg(ж<testing.T> Ꮡt) {
     }.slice();
     {
         var (_, _, errΔ1) = testHandshake(Ꮡt, clientConfig, serverConfig); if (errΔ1 != default!) {
-            Ꮡt.Fatalf("unexpected failure :%s"u8, errΔ1);
+            Ꮡt.Fatalf("unexpected failure: %s"u8, errΔ1);
         }
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string secretExampleˢ = "secret.example"u8;
+internal static readonly @string publicExampleˢ = "public.example"u8;
+internal static readonly object serverConnectionStateˢ = (@string)"server ConnectionState shows ECH not accepted"u8;
+internal static readonly object clientConnectionStateˢ = (@string)"client ConnectionState shows ECH not accepted"u8;
+internal static readonly object unexpectNumberOfˢ = (@string)"unexpect number of certificate chains"u8;
+internal static readonly object unexpectNumberOfˢ2 = (@string)"unexpect number of certificates"u8;
+internal static readonly object unexpectedCertificateˢ = (@string)"unexpected certificate"u8;
+
+public static void TestECH(ж<testing.T> Ꮡt) {
+    var (k, err) = ecdsa.GenerateKey(elliptic.P256(), go.crypto.rand_package.Reader);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var tmpl = Ꮡ(new Δx509.Certificate(
+        SerialNumber: big.NewInt(1),
+        DNSNames: new @string[]{"public.example"u8}.slice(),
+        NotBefore: time_package.Now().Add(-time_package.ΔHour),
+        NotAfter: time_package.Now().Add(time_package.ΔHour)
+    ));
+    (var publicCertDER, err) = Δx509.CreateCertificate(go.crypto.rand_package.Reader, tmpl, tmpl, k.Public(), k.OrTypedNil());
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    (var publicCert, err) = Δx509.ParseCertificate(publicCertDER);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    tmpl.Value.DNSNames[0] = secretExampleˢ;
+    (var secretCertDER, err) = Δx509.CreateCertificate(go.crypto.rand_package.Reader, tmpl, tmpl, k.Public(), k.OrTypedNil());
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    (var secretCert, err) = Δx509.ParseCertificate(secretCertDER);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    slice<byte> marshalECHConfig(uint8 id, slice<byte> pubKey, @string publicName, uint8 maxNameLen) {
+        var builderΔ1 = cryptobyte.NewBuilder(default!);
+        builderΔ1.AddUint16(extensionEncryptedClientHello);
+        var pubKeyʗ1 = pubKey;
+        builderΔ1.AddUint16LengthPrefixed((ж<cryptobyte.Builder> builderΔ2) => {
+            builderΔ2.AddUint8(id);
+            builderΔ2.AddUint16(hpke.DHKEM_X25519_HKDF_SHA256); // The only DHKEM we support
+            var pubKeyʗ2 = pubKeyʗ1;
+            builderΔ2.AddUint16LengthPrefixed((ж<cryptobyte.Builder> builderΔ3) => {
+                builderΔ3.AddBytes(pubKeyʗ2);
+            });
+            builderΔ2.AddUint16LengthPrefixed((ж<cryptobyte.Builder> builderΔ4) => {
+                foreach (var (_, aeadID) in sortedSupportedAEADs) {
+                    builderΔ4.AddUint16(hpke.KDF_HKDF_SHA256); // The only KDF we support
+                    builderΔ4.AddUint16(aeadID);
+                }
+            });
+            builderΔ2.AddUint8(maxNameLen);
+            builderΔ2.AddUint8LengthPrefixed((ж<cryptobyte.Builder> builderΔ5) => {
+                builderΔ5.AddBytes(slice<byte>(publicName));
+            });
+            builderΔ2.AddUint16(0); // extensions
+        });
+        return builderΔ1.BytesOrPanic();
+    }
+    (var echKey, err) = ecdh.X25519().GenerateKey(go.crypto.rand_package.Reader);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var echConfig = marshalECHConfig(123, echKey.PublicKey().Bytes(), publicExampleˢ, 32);
+    var builder = cryptobyte.NewBuilder(default!);
+    var echConfigʗ1 = echConfig;
+    builder.AddUint16LengthPrefixed((ж<cryptobyte.Builder> builderΔ6) => {
+        builderΔ6.AddBytes(echConfigʗ1);
+    });
+    var echConfigList = builder.BytesOrPanic();
+    var (clientConfig, serverConfig) = (testConfig.Clone(), testConfig.Clone());
+    clientConfig.Value.InsecureSkipVerify = false;
+    clientConfig.Value.Rand = go.crypto.rand_package.Reader;
+    clientConfig.Value.Time = default!;
+    clientConfig.Value.MinVersion = VersionTLS13;
+    clientConfig.Value.ServerName = secretExampleˢ;
+    clientConfig.Value.RootCAs = Δx509.NewCertPool();
+    (~clientConfig).RootCAs.AddCert(secretCert);
+    (~clientConfig).RootCAs.AddCert(publicCert);
+    clientConfig.Value.EncryptedClientHelloConfigList = echConfigList;
+    serverConfig.Value.InsecureSkipVerify = false;
+    serverConfig.Value.Rand = go.crypto.rand_package.Reader;
+    serverConfig.Value.Time = default!;
+    serverConfig.Value.MinVersion = VersionTLS13;
+    serverConfig.Value.ServerName = publicExampleˢ;
+    serverConfig.Value.Certificates = new global::go.crypto.tls_package.Certificate[]{
+        new(ΔCertificate: new slice<byte>[]{publicCertDER}.slice(), PrivateKey: k.OrTypedNil()),
+        new(ΔCertificate: new slice<byte>[]{secretCertDER}.slice(), PrivateKey: k.OrTypedNil())
+    }.slice();
+    serverConfig.Value.EncryptedClientHelloKeys = new global::go.crypto.tls_package.EncryptedClientHelloKey[]{
+        new(Config: echConfig, PrivateKey: echKey.Bytes(), SendAsRetry: true)
+    }.slice();
+    (var ss, var cs, err) = testHandshake(Ꮡt, clientConfig, serverConfig);
+    if (err != default!) {
+        Ꮡt.Fatalf("unexpected failure: %s"u8, err);
+    }
+    if (!ss.ECHAccepted) {
+        Ꮡt.Fatal(serverConnectionStateˢ);
+    }
+    if (!cs.ECHAccepted) {
+        Ꮡt.Fatal(clientConnectionStateˢ);
+    }
+    if (cs.ServerName != "secret.example"u8 || ss.ServerName != "secret.example"u8) {
+        Ꮡt.Fatalf("unexpected ConnectionState.ServerName, want %q, got server:%q, client: %q"u8, secretExampleˢ, ss.ServerName, cs.ServerName);
+    }
+    if (len(cs.VerifiedChains) != 1) {
+        Ꮡt.Fatal(unexpectNumberOfˢ);
+    }
+    if (len(cs.VerifiedChains[0]) != 1) {
+        Ꮡt.Fatal(unexpectNumberOfˢ2);
+    }
+    if (!cs.VerifiedChains[0][0].Equal(secretCert)) {
+        Ꮡt.Fatal(unexpectedCertificateˢ);
     }
 }
 
