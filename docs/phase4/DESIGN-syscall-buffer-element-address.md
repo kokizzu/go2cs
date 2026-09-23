@@ -101,3 +101,39 @@ arc; its entry names all three.
 **Gate:** the classification is controlled both ways -- `addMulVVW1024` must classify window-consuming,
 and a sibling that dereferences its pointer must not -- and crypto/rsa's row reads before and after at
 Release with tiering off.
+
+## 7. Dated amendment, 2026-09-23 (C1, from COORD's net-reading ruling) -- an element take STORED into an overlapped operation's WSABuf
+
+Written because net's two deferred entries need a record that names a stage for this site, and none
+did: §2 refuses a stored take, and §6 (REC-E) is a take its callee rebuilds. Read at `fc6269b0bf` (the
+batch-8e stamp). **Owner: C1. Full design: phase-4D kickoff.** Nothing above this block is rewritten.
+
+**The site.** Every overlapped socket Read, Write, ReadMsg and WriteMsg on Windows calls
+`operation.InitBuf(buf)`, which stores `Ꮡ(buf, 0)` -- one counted `ElemRefBox` -- in the operation's
+`WSABuf.Buf` (src/core/internal/poll/windows/fd_windows.cs:92-97; InitMsg reaches it at :137). Go stores
+`&buf[0]` for free. The box is not incidental: it is what holds the user buffer's pin for the overlapped
+flight (DESIGN-netpoll-managed-poller.md, the VERIFIED note on `operation.buf.Buf`), because the pin is a
+`GCHandle` owned by that one `ж<byte>` box and released only by its `PinnedBuffer`'s finalizer.
+
+**The stage that REMOVES the counted allocation.** Let the OPERATION hold the pin instead of a box: the
+operation keeps one reusable pin slot (a pinned handle on the slice's backing array plus the element
+offset), re-targeted by each `InitBuf` and released when the flight completes (execIO returns only
+after completion) or at the next `InitBuf`, and `WSABuf.Buf` carries the raw address for the staging
+`stageBuffers` already does. *Removes:* one counted object per overlapped Read, Write, ReadMsg and
+WriteMsg. *Preconditions:* the operation outlives the flight (it is a field of the `FD`, which the
+netpoll record verified); the pin's release is ordered after completion on every path, cancellation
+included; `syscall.WSABuf`'s converted `Buf` field stops being a `ж<byte>`, which touches the
+native-layout class the netpoll record names (§4.3 (1)) and is a hand-owned change; a native-backed
+slice (whose backing is already fixed) takes the address without a pin.
+
+**Refusals:** a buffer whose backing is not a managed array or native memory; an operation reused
+before its previous flight completes.
+
+**Members and predictions (counted objects per run, UNMEASURED):** net TestTCPReadWriteAllocs 2 -> 0
+(one Write, one Read); net TestAllocs's first leg 35 -> 33 (the send's and the receive's InitMsg). The
+byte residue on both is larger than the boxes (TestTCPReadWriteAllocs averages 324 B per counted
+object against a 64 B `ElemRefBox`), so a 0-byte retirement needs the uncounted rest attributed too.
+On Linux the read/write funnel's `&p[0]` is §2's own case, not this one.
+
+**Gate:** the overlapped socket suite (net's TCP and UDP read/write tests) plus a forced compacting
+collection during a pending read, then net's row before and after at Release with tiering off.
