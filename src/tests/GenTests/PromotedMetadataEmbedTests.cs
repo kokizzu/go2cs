@@ -84,6 +84,16 @@ public class PromotedMetadataEmbedTests
 
                 internal static void releaseSema(this ref resolverConfig conf) { }
 
+                // The pointer TWINS RecvGenerator compiles beside every [GoRecv] ref-receiver method in
+                // the real production assembly, spelled as its ReceiverMethodTemplate emits them. They
+                // are part of the metadata the test compilation reads; without them this fixture could
+                // not see a harvest that counts one Go method twice (net's linux CS1929, 2026-09-23).
+                [global::System.CodeDom.Compiler.GeneratedCode("go2cs-gen", "1.0")]
+                internal static bool tryAcquireSema(this ж<resolverConfig> Ꮡconf) => Ꮡconf.Value.tryAcquireSema();
+
+                [global::System.CodeDom.Compiler.GeneratedCode("go2cs-gen", "1.0")]
+                internal static void releaseSema(this ж<resolverConfig> Ꮡconf) => Ꮡconf.Value.releaseSema();
+
                 // A method and a package-level FUNCTION sharing one name — legal in Go
                 // (different scopes: net's LookupHost function vs (*Resolver).LookupHost).
                 // The forwarder for the METHOD must be suppressed, or it shadows every bare
@@ -213,6 +223,29 @@ public class PromotedMetadataEmbedTests
         // CS1501s on LookupHost/LookupIP/… when lookupCustomResolver embeds *Resolver).
         Assert.IsFalse(generated.Contains("lookupColliding"),
             "a forwarder colliding with a package-level function must be suppressed — it shadows the bare function call");
+    }
+
+    [TestMethod]
+    public void PointerTwinOfARefReceiverMethodIsNotASecondMethod()
+    {
+        string generated = GeneratedFor(RunTypeGeneratorOverFriendShape(), "resolvConfTest");
+
+        // A [GoRecv] ref-receiver method reaches the test compilation as TWO metadata members -- the
+        // method and RecvGenerator's pointer twin -- and a pointer embed harvests both. Counted as two
+        // occurrences at one depth they read as a name ANNIHILATED inside the embed, and the forwarder
+        // was withheld: net's linux test build, CS1929 at dnsclient_unix_test.cs:420/:422
+        // (tryAcquireSema/releaseSema), while init -- a box primary with no twin -- promoted.
+        //
+        // RED at the base (1719e3b87f's generator): the ambiguity comment is emitted and
+        // the value forwarder is not.
+        Assert.IsFalse(generated.Contains("AMBIGUOUS inside the embed"),
+            "a method and its RecvGenerator pointer twin are one Go method, never an annihilated pair");
+        StringAssert.Contains(generated, "tryAcquireSema(this ref resolvConfTest target",
+            "the ref-receiver method must promote despite its pointer twin in metadata");
+        StringAssert.Contains(generated, "releaseSema(this ref resolvConfTest target",
+            "the ref-receiver method must promote despite its pointer twin in metadata");
+        StringAssert.Contains(generated, "target.resolverConfig.init()",
+            "the box primary (no twin) keeps promoting as before");
     }
 
     [TestMethod]
