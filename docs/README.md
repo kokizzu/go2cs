@@ -324,12 +324,14 @@ internal static void Main() {
 } // end main_package
 ```
 
-> **NOTE — platforms:** _requires go2cs packages **1.24.13.1 or later**, the release matching the converter's
-> Go 1.24.13 toolchain. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
-> on Linux for programs whose import closure stays within the `fmt`/`os`/`time` class. A closure reaching
-> platform-divergent `syscall` surface (as this example's `x/sys` dependency does) still builds only on
-> Windows — the remaining piece is the Linux side of that `syscall` surface, tracked in the Roadmap's
-> [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress) with the
+> **NOTE — platforms:** _all four steps run on **Windows** (`windows/amd64`) and **Linux** (`linux/amd64`).
+> The conversion records the platform it targets, and the go2cs packages compile and run against that
+> platform's flavor: `win-x64` for a Windows conversion, `linux-x64` for a Linux one. Windows needs go2cs
+> packages **1.24.13.1 or later**, the release matching the converter's Go 1.24.13 toolchain. Linux needs
+> packages **1.24.13.2 or later** AND a converter built from a checkout that includes the 1.24.13.2
+> changes. The output matches `go run`, except that in an interactive terminal the C# build does not yet
+> print `fatih/color`'s colors. Other platforms and architectures are tracked in the Roadmap's
+> [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress), with the
 > operational detail in [PLAN-linux-operation.md](PLAN-linux-operation.md)._
 
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
