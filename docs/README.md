@@ -265,7 +265,7 @@ func main() {
 
 Next, pin the app to a **Go 1.24-compatible** dependency set and confirm it builds as Go.
 
-> **NOTE:** _go2cs is built with **Go 1.24.13**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.24.13**. `fatih/color` v1.19+ and current `golang.org/x/sys` require Go 1.25, which would fail step 2 with_ `package requires newer Go version go1.25`_; pin as shown._
+> **NOTE:** _go2cs is built with **Go 1.24.13**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.24.13**. `fatih/color` v1.19+ and recent `golang.org/x/sys` releases require a newer Go than 1.24, which would fail step 2 with_ `package requires newer Go version`_; pin as shown._
 >
 > _The `GOTOOLCHAIN=local` below is what makes that error appear at all. Left unset, Go **silently downloads and re-execs** whichever newer toolchain a `go`/`toolchain` directive asks for, so the build succeeds against a standard library go2cs has no published packages for. go2cs detects the switch and says so, but pinning the toolchain keeps the whole round-trip on one Go release, which is what you want._
 
@@ -341,15 +341,13 @@ cd csharp/src/example.com/colordemo
 dotnet build example.com.colordemo.slnx -c Debug
 ```
 
-**4 — C#: run the converted app.** Navigate into the default debug build folder — named for the target
-framework — and run demo:
+**4 — C#: run the converted app.** From the same folder:
 ```shell
-cd bin/Debug/net10.0
-dotnet colordemo.dll
+dotnet run -c Debug
 ```
 
-A native launcher is built beside it — `colordemo.exe` on Windows, `./colordemo` on Linux — and runs the
-same program.
+The build output lands under `csharp/.artifacts/bin/`, where a native launcher is built beside the
+assembly — `colordemo.exe` on Windows, `./colordemo` on Linux — and runs the same program.
 
 _Expected output:_
 
@@ -472,7 +470,8 @@ so you can read the exact C# that runs — and re-run the validation yourself. Y
 #    The second argument is the package's home in the converted tree; the converter locates the
 #    runtime and its stdlib dependencies from there — no flags or environment setup required.
 #    (On Windows, Go's source lives under "C:\Program Files\Go\src"; elsewhere use "$(go env GOROOT)/src".)
-go2cs.exe -tests -test-action all \
+#    The first run builds the converted runtime and its dependencies, so it allows 10 minutes.
+go2cs.exe -tests -test-action all -test-timeout 10m \
     "C:\Program Files\Go\src\unicode\utf8" \
     src/core/unicode/utf8
 ```
