@@ -80,7 +80,9 @@
     and refuses it if it already exists, or is not numerically newer than every recorded
     docs\validation\<version>\ snapshot and nuget-* tag, and it refuses by name any relative link the
     frozen roster would carry that cannot be relocated or resolves to no tracked path. Those halves
-    read git (`git tag --list`, `git ls-files`, both read-only), so git must be on PATH.
+    read git (`git tag --list`, `git ls-remote --tags origin`, `git ls-files`, all read-only), so git
+    must be on PATH; an origin that cannot be reached is reported by name and the tag comparison runs
+    on the local tags.
 
 .EXAMPLE
     .\push-nuget.ps1
@@ -411,7 +413,7 @@ function Get-GoValidationIndexRows {
 # release recorded later. The existence half's tree precedent is repoguard's
 # TestPublishedCounterMatchesTheRecordedReleases, which reads the snapshots; this reads the tags too,
 # because a tag minted by a run that died before its freeze is a release name the feed may already
-# hold. `git tag --list` is the only git call, and it is read-only.
+# hold. Its git calls are `git tag --list` and `git ls-remote --tags origin`, both read-only.
 #
 # NUMERIC PER COMPONENT, NEVER LEXICAL. 1.23.12.10 sorts below 1.23.12.9 as a string and 1.24.13.1
 # below 1.24.9.1. The rule is releasestamp.Compare's (src\go2cs\internal\releasestamp\stamp.go: a
@@ -439,11 +441,20 @@ function Compare-GoReleaseStamp {
     return 0
 }
 
+#
+# THE TAGS ARE READ FROM ORIGIN TOO (2026-09-24, ledger 620ba7a2b8). -Tags is the LOCAL list and
+# -RemoteTags origin's (`git ls-remote --tags origin`, read-only); the comparison runs over their UNION.
+# A release tag that exists only on origin -- minted and pushed from another clone, never fetched here
+# -- is invisible to `git tag --list`, and push-nuget checks for its tag LOCALLY before minting, so a
+# local-only read would let this run mint a SECOND nuget-<version> at a different commit for a
+# version the feed may already hold. An origin-only name is labelled 'origin tag' wherever it is
+# reported. The caller prints, by name, when origin could not be read and the union is local only.
 function Get-GoNextReleaseVerification {
     param(
         [Parameter(Mandatory)][string]$VersionPropsText,
         [Parameter(Mandatory)][string]$SnapshotsDir,
-        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Tags
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Tags,
+        [AllowEmptyCollection()][string[]]$RemoteTags = @()
     )
 
     $problems = New-Object System.Collections.Generic.List[string]
@@ -481,15 +492,23 @@ function Get-GoNextReleaseVerification {
         }
     }
 
-    foreach ($tag in @($Tags | Where-Object { $_ } | Sort-Object -Unique)) {
-        if ($tag -notmatch '^nuget-([0-9]+(\.[0-9]+){3})$') {
-            $excluded.Add("tag $tag")
+    # Local tags first, then origin's names that are not local (ordinal), so each name is labelled once.
+    $localTagSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($tag in @($Tags | Where-Object { $_ })) { [void]$localTagSet.Add($tag) }
+    $originOnly = @($RemoteTags | Where-Object { $_ -and -not $localTagSet.Contains($_) } | Sort-Object -Unique)
+    $originOnlyCount = 0
+
+    $tagSources = @(@($localTagSet | Sort-Object) | ForEach-Object { [pscustomobject]@{ Name = $_; Label = 'tag' } }) +
+                  @($originOnly | ForEach-Object { [pscustomobject]@{ Name = $_; Label = 'origin tag' } })
+    foreach ($source in $tagSources) {
+        if ($source.Name -notmatch '^nuget-([0-9]+(\.[0-9]+){3})$') {
+            $excluded.Add("$($source.Label) $($source.Name)")
             continue
         }
         $tagVersion = $Matches[1]
         if (-not $recorded.ContainsKey($tagVersion)) { $recorded[$tagVersion] = New-Object System.Collections.Generic.List[string] }
-        $recorded[$tagVersion].Add('tag')
-        $tagCount++
+        $recorded[$tagVersion].Add($source.Label)
+        if ($source.Label -eq 'tag') { $tagCount++ } else { $originOnlyCount++ }
     }
 
     if ($recorded.Count -eq 0 -and (Test-Path $SnapshotsDir -PathType Container)) {
@@ -501,6 +520,9 @@ function Get-GoNextReleaseVerification {
         foreach ($where in $recorded[$next]) {
             if ($where -eq 'snapshot') {
                 $problems.Add("the next release $next already EXISTS: docs\validation\$next\ is a recorded snapshot. Snapshots are write-once, and version.props' counter must name the LATEST release on its base")
+            }
+            elseif ($where -eq 'origin tag') {
+                $problems.Add("the next release $next already EXISTS: tag nuget-$next is on ORIGIN and not in the local tags. push-nuget checks for its tag locally, so this run would mint a second nuget-$next at another commit for a version the feed may already hold -- fetch the tags and reconcile version.props first")
             }
             else {
                 $problems.Add("the next release $next already EXISTS: tag nuget-$next is minted. push-nuget KEEPS an existing tag rather than re-minting it, so the release would publish under a tag naming another tree")
@@ -522,9 +544,46 @@ function Get-GoNextReleaseVerification {
 
     return [pscustomobject]@{
         Next = $next; Base = $base; Counter = $counter; Newest = $newest; NewestFrom = $newestFrom
-        Snapshots = $snapshotCount; ReleaseTags = $tagCount; Excluded = $excluded.ToArray()
-        Problems = $problems.ToArray()
+        Snapshots = $snapshotCount; ReleaseTags = $tagCount; OriginOnlyTags = $originOnlyCount
+        Excluded = $excluded.ToArray(); Problems = $problems.ToArray()
     }
+}
+
+# Origin's nuget-* tag NAMES, read-only (`git ls-remote --tags origin 'refs/tags/nuget-*'`). Returns
+# the names and, when origin could not be read, the reason -- never an empty list that reads as "origin
+# has none". 'Continue' in this function only: under the script's 'Stop' a stderr line from git would
+# end the pre-flight, and an unreachable origin must be REPORTED and passed over, not fatal.
+# GIT_TERMINAL_PROMPT=0 so a remote that wants credentials fails at once instead of waiting on a
+# console nobody is watching. The peeled `^{}` rows of annotated tags are the same names and dropped.
+function Get-GoOriginReleaseTags {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $ErrorActionPreference = 'Continue'
+    $savedPrompt = $env:GIT_TERMINAL_PROMPT
+    $env:GIT_TERMINAL_PROMPT = '0'
+    try {
+        $stdout = New-Object System.Collections.Generic.List[string]
+        $stderr = New-Object System.Collections.Generic.List[string]
+        & git -C $RepoRoot ls-remote --tags origin 'refs/tags/nuget-*' 2>&1 | ForEach-Object {
+            if ($_ -is [System.Management.Automation.ErrorRecord]) { $stderr.Add($_.ToString()) } else { $stdout.Add("$_") }
+        }
+        $code = $LASTEXITCODE
+    }
+    catch {
+        return [pscustomobject]@{ Names = @(); Problem = "git ls-remote could not run ($($_.Exception.Message))" }
+    }
+    finally {
+        $env:GIT_TERMINAL_PROMPT = $savedPrompt
+    }
+
+    if ($code -ne 0) {
+        $reason = (@($stderr | Where-Object { $_.Trim() }) | Select-Object -First 2) -join ' / '
+        return [pscustomobject]@{ Names = @(); Problem = "git ls-remote --tags origin exited $code ($reason)" }
+    }
+
+    $names = @($stdout | ForEach-Object { if ($_ -match '\srefs/tags/(\S+)$') { $Matches[1] } } |
+               Where-Object { $_ -notlike '*^{}' } | Sort-Object -Unique)
+    return [pscustomobject]@{ Names = $names; Problem = $null }
 }
 
 # THE FROZEN ROSTER'S RELATIVE LINKS. ConvertTo-FrozenRosterText relocates every relative,
@@ -671,13 +730,29 @@ else {
     catch { $tagReadProblem = "git tag --list 'nuget-*' failed ($($_.Exception.Message)), so the tag half of the next release's check read nothing" }
 }
 
-$nextRelease = Get-GoNextReleaseVerification -VersionPropsText $preflightPropsText -SnapshotsDir $snapshotsRoot -Tags $releaseTagNames
+# ...and origin's, beside them (see Get-GoNextReleaseVerification). An unreadable origin is NOT a
+# problem -- a release morning off the network still has its local tags -- but it is printed by name
+# below, every time, so a local-only comparison can never pass for the union.
+$originTags = if ($tagReadProblem) { [pscustomobject]@{ Names = @(); Problem = 'not read (the local tag read failed first)' } }
+              else { Get-GoOriginReleaseTags -RepoRoot $repoRoot }
+
+$nextRelease = Get-GoNextReleaseVerification -VersionPropsText $preflightPropsText -SnapshotsDir $snapshotsRoot `
+                                             -Tags $releaseTagNames -RemoteTags $originTags.Names
 if ($tagReadProblem) { $censusProblems.Add($tagReadProblem) }
 foreach ($problem in $nextRelease.Problems) { $censusProblems.Add($problem) }
 
 $nextVerdict = if ($nextRelease.Problems.Count -or $tagReadProblem) { 'REFUSED' } else { 'unrecorded, and strictly newer than every recorded release' }
-Write-Step ("Next release: {0} (base {1} + counter {2} + 1): {3} -- newest recorded {4} ({5}), across {6} snapshot(s) and {7} release tag(s), compared numerically per component" -f `
-            $nextRelease.Next, $nextRelease.Base, $nextRelease.Counter, $nextVerdict, $nextRelease.Newest, $nextRelease.NewestFrom, $nextRelease.Snapshots, $nextRelease.ReleaseTags)
+Write-Step ("Next release: {0} (base {1} + counter {2} + 1): {3} -- newest recorded {4} ({5}), across {6} snapshot(s), {7} local release tag(s) and {8} on origin only, compared numerically per component" -f `
+            $nextRelease.Next, $nextRelease.Base, $nextRelease.Counter, $nextVerdict, $nextRelease.Newest, $nextRelease.NewestFrom,
+            $nextRelease.Snapshots, $nextRelease.ReleaseTags, $nextRelease.OriginOnlyTags)
+if ($originTags.Problem) {
+    Write-Host ("      origin tags: UNREADABLE -- {0}; the comparison ran on the LOCAL tags only" -f $originTags.Problem) -ForegroundColor Yellow
+}
+else {
+    $originOnlyNames = @($originTags.Names | Where-Object { $releaseTagNames -cnotcontains $_ })
+    Write-Host ("      origin tags: {0} nuget-* tag(s) read by git ls-remote; {1} not in the local tags{2}" -f `
+                $originTags.Names.Count, $originOnlyNames.Count, $(if ($originOnlyNames.Count) { ': ' + ($originOnlyNames -join ', ') } else { '' }))
+}
 if ($nextRelease.Excluded.Count) {
     Write-Host ("      excluded by name, not a release: {0}" -f ($nextRelease.Excluded -join ', '))
 }
