@@ -13,7 +13,9 @@ rewritten, so the proof link for a published package stays the proof as of that 
 
 One directory per published release. The page counts below are exact and cannot go stale: a frozen
 directory is written once and never rewritten, so each number is a permanent statement of how many
-packages were validated when that build shipped.
+proof pages that build shipped with. From 1.24.13.1 on, a snapshot also freezes the pages of excluded
+packages and of import paths a Go release retired, so its page count can exceed the validated count on
+the roster page beside it (1.24.13.1: 232 pages, 218 validated).
 
 | Release | Snapshot | Proof pages | Roster as it stood |
 |:--|:--|--:|:--|
@@ -26,6 +28,7 @@ packages were validated when that build shipped.
 | 1.23.12.1 | [`1.23.12.1/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.1) | 172 | — |
 | 1.23.12.2 | [`1.23.12.2/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.2) | 189 | — |
 | 1.23.12.3 | [`1.23.12.3/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.3) | 204 | [`ValidatedTestPackages.md`](1.23.12.3/ValidatedTestPackages.md) |
+| 1.24.13.1 | [`1.24.13.1/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.24.13.1) | 232 | [`ValidatedTestPackages.md`](1.24.13.1/ValidatedTestPackages.md) |
 
 A snapshot froze the per-package proofs and not the roster PAGE around them until 1.23.12.3, so for
 every release above it the campaign's own "how things stood" view lives only in the signed git tag.
