@@ -413,6 +413,245 @@ function Get-ExclusionLedgerRows {
     return $rows.ToArray()
 }
 
+# ---- THE RELEASE-CENSUS IDENTITIES, one definition for both callers -----------------------------
+# The runbook's H10 close amendment ("THE RELEASE CENSUS, CORRECTED", docs/GoCorpusMigration.md)
+# REFUTED the census as a set EQUALITY -- banked rows, proof pages, validated badges and test
+# projects are not one set, by design (ledger 2026-09-22 16:31, 3469154a95) -- and restated it as
+# NAMED IDENTITIES, every term named:
+#
+#   tracked tests.csproj  =  banked rows + exclusion rows keeping artifacts + rowless candidates keeping artifacts
+#   current proof pages   =  rows by name + relocation anchors by link + exclusion rows by exclusion
+#   validated badges      =  banked rows - banked rows with no README (named)
+#   index rows            =  banked rows
+#
+# check-roster-format.ps1 sections 2b2 and 2b3 held the first and third first; push-nuget.ps1's
+# release pre-flight holds all four, and its frozen-snapshot check holds the second over the
+# snapshot it is about to publish. The functions live HERE, the file both already dot-source, so a
+# release instrument and the roster guard cannot disagree about what "accounted for" means: two
+# copies of one set rule are exactly the pair that drifts, and it would drift in the flattering
+# direction on the one morning it matters.
+#
+# Every function below is PURE over name lists. The callers derive the lists (from git, the working
+# tree or a frozen snapshot); the guard's fixtures drive the same functions with lists that disagree.
+# Names compare ORDINALLY and must arrive in ONE spelling -- check-roster-format passes import paths,
+# push-nuget passes dot-ids (the proof pages' own file names fix that mapping) -- and every violation
+# names the item in the spelling it was given.
+
+<#
+.SYNOPSIS
+    The population of record -- every testable import path of the pinned Go release -- as a SET.
+.DESCRIPTION
+    Moved here unchanged from check-roster-format.ps1 section 2b (ruled 2026-09-22), whose comment
+    states why it trims rather than refuses a CR, so the release census reads the rowless-candidate
+    class through the same reader. REFUSES a comment-only file and a repeated name: both read as a
+    perfectly closed arithmetic over the wrong universe.
+#>
+function Get-PopulationRows {
+    param([Parameter(Mandatory)][string] $Path)
+
+    if (-not (Test-Path $Path)) { throw "Cannot find the population of record at $Path" }
+
+    $names = @([System.IO.File]::ReadAllLines($Path) |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and -not $_.StartsWith('#') })
+
+    if ($names.Count -eq 0) {
+        throw "The population of record at $Path parsed to ZERO rows -- a comment-only file reads as a closed arithmetic over an empty universe"
+    }
+
+    $duplicates = @($names | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
+    if ($duplicates.Count -gt 0) {
+        throw "The population of record repeats $($duplicates.Count) name(s): $($duplicates -join ', ') -- the population is a SET"
+    }
+
+    return $names
+}
+
+<#
+.SYNOPSIS
+    tracked tests.csproj = banked rows + exclusion rows keeping artifacts + rowless candidates.
+.DESCRIPTION
+    Moved here unchanged from check-roster-format.ps1 section 2b2 (ruled 2026-09-22). A candidate is
+    a POPULATION member that is neither a banked row nor an exclusion row -- never derived from the
+    project files, which would make the identity circular. Returns one string per violation, each
+    naming the item: a banked row with no project, or a project that is none of row, exclusion row
+    or candidate.
+#>
+function Get-TestProjectIdentityViolations {
+    param([string[]] $Projects, [string[]] $Banked, [string[]] $Excluded, [string[]] $Population)
+
+    $violations = New-Object System.Collections.Generic.List[string]
+    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
+    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
+    $projectSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Projects)) { [void]$projectSet.Add($p) }
+    $candidateSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Population)) {
+        if (-not $bankedSet.Contains($p) -and -not $excludedSet.Contains($p)) { [void]$candidateSet.Add($p) }
+    }
+
+    foreach ($p in @($Banked | Sort-Object)) {
+        if (-not $projectSet.Contains($p)) { [void]$violations.Add("banked row has no tracked tests.csproj: $p") }
+    }
+    foreach ($p in @($Projects | Sort-Object)) {
+        if (-not ($bankedSet.Contains($p) -or $excludedSet.Contains($p) -or $candidateSet.Contains($p))) {
+            [void]$violations.Add("tracked tests.csproj belongs to no row, exclusion row or population candidate: $p")
+        }
+    }
+    return $violations.ToArray()
+}
+
+<#
+.SYNOPSIS
+    Whether a README's Tests badge CLAIMS validation (`N/N_validated`), in any colour.
+.DESCRIPTION
+    Moved here unchanged from check-roster-format.ps1 section 2b3. `not_yet_validated` (orange) and
+    `none_to_validate` (lightgrey) are the badge's other two forms and claim nothing.
+#>
+function Test-ReadmeAdvertisesValidated {
+    param([string] $Text)
+    return [regex]::IsMatch($Text, 'img\.shields\.io/badge/Tests-\d+%2F\d+_validated-')
+}
+
+<#
+.SYNOPSIS
+    validated badges = banked rows - banked rows with no README, in BOTH directions.
+.DESCRIPTION
+    Moved here unchanged from check-roster-format.ps1 section 2b3 (ruled 2026-09-22). A banked row
+    whose README carries no validated badge understates a validation; a validated badge on a package
+    that is not a banked row claims one the roster does not hold, and an EXCLUSION row is named as
+    one (a green exclusion row is a hand-set-line restore, never a badge). A banked row with no
+    README at all has no badge to disagree with: the CALLER names that class, because this function
+    only sees the READMEs that exist.
+#>
+function Get-BadgeRosterViolations {
+    param([string[]] $WithReadme, [string[]] $Validated, [string[]] $Banked, [string[]] $Excluded)
+
+    $violations = New-Object System.Collections.Generic.List[string]
+    $validatedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Validated)) { [void]$validatedSet.Add($p) }
+    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
+    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
+
+    foreach ($p in @($WithReadme | Sort-Object)) {
+        if ($bankedSet.Contains($p) -and -not $validatedSet.Contains($p)) {
+            [void]$violations.Add("banked row's README carries no validated Tests badge: $p")
+        }
+    }
+    foreach ($p in @($Validated | Sort-Object)) {
+        if (-not $bankedSet.Contains($p)) {
+            $what = if ($excludedSet.Contains($p)) { 'an EXCLUSION row' } else { 'a non-row' }
+            [void]$violations.Add("validated Tests badge on $($what): $p")
+        }
+    }
+    return $violations.ToArray()
+}
+
+# A roster ROW's [proof] link, in the two spellings a roster is ever written in. The LIVING roster
+# links validation/current/<id>.md (relative to docs/; the bare current/<id>.md is admitted too, as
+# docs/phase4/hopA-inputs/regen-validation-index.py admits it); a FROZEN snapshot's copy links its
+# sibling <id>.md, because ConvertTo-FrozenRosterText below rewrites the first into the second. The
+# [^)/\s]+ class keeps the placeholder `[proof](...)` some rows' prose carries -- an ellipsis, not a
+# page -- from matching, and keeps each spelling from reading the other's links.
+$RosterLivingProofLinkPattern = '\[proof\]\((?:validation/)?current/([^)/\s]+)\.md\)'
+$RosterFrozenProofLinkPattern = '\[proof\]\(([^)/\s]+)\.md\)'
+
+<#
+.SYNOPSIS
+    The proof-page ids some ROSTER ROW's [proof] link resolves to -- the "by link" class.
+.DESCRIPTION
+    An H10 "banked by inheritance" row keeps the RETIRED SOURCE's page as provenance, "unmoved and
+    unrenamed", after its own page, so the page's name is the source's import path and not the row's:
+    that page is a RELOCATION ANCHOR, backed by the link rather than by a name. Only lines that ARE
+    roster rows ($RosterRowPattern) are scanned, so a [proof] spelling in the document's prose or in
+    the relocation map's tables admits nothing. A row may carry more than one (fips140test links
+    several); every one counts. -Frozen reads a frozen snapshot's sibling spelling instead.
+.OUTPUTS
+    The page ids (file names without .md), sorted, unique.
+#>
+function Get-RosterRowProofLinks {
+    param([Parameter(Mandatory)][string] $Path, [switch] $Frozen)
+
+    if (-not (Test-Path $Path)) { throw "Cannot find the validated-package table at $Path" }
+
+    $pattern = if ($Frozen) { $RosterFrozenProofLinkPattern } else { $RosterLivingProofLinkPattern }
+    $ids = New-Object 'System.Collections.Generic.SortedSet[string]' ([System.StringComparer]::Ordinal)
+
+    # ReadAllLines for the same encoding reason Get-ValidatedRosterRows states.
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        if ($line -notmatch $RosterRowPattern) { continue }
+        foreach ($match in [regex]::Matches($line, $pattern)) { [void]$ids.Add($match.Groups[1].Value) }
+    }
+
+    return @($ids)
+}
+
+<#
+.SYNOPSIS
+    current proof pages = rows by name + relocation anchors by link + exclusion rows by exclusion.
+.DESCRIPTION
+    Classifies every page into exactly ONE class, first match wins -- a banked row's own page by
+    NAME, then an exclusion row's page by EXCLUSION, then a page some row's [proof] link resolves to
+    by LINK (a relocation anchor) -- so the three counts add to the page count by construction and
+    the identity is re-addable from the output alone. The same three backings
+    docs/phase4/hopA-inputs/regen-validation-index.py admits, which wrote the index this reads beside.
+
+    Three violations, each naming the item, and none of them visible to a count:
+      - a page backed by NOTHING (no row derives it, no exclusion row names it, no row links it) --
+        the orphan a later bank or a stray -tests run leaves behind;
+      - a banked row with no page of its own -- an anchor backs a PAGE, it never excuses a ROW;
+      - a row's [proof] link that resolves to no page -- a link that would dangle, on the living site
+        or inside a frozen snapshot.
+.OUTPUTS
+    PSCustomObject: ByName, ByExclusion, ByLink (string[], sorted), Violations (string[]).
+#>
+function Get-ProofPageIdentity {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Pages,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Banked,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Linked,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Excluded
+    )
+
+    $pageSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Pages)) { [void]$pageSet.Add($p) }
+    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
+    $linkedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Linked)) { [void]$linkedSet.Add($p) }
+    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
+
+    $byName = New-Object System.Collections.Generic.List[string]
+    $byExclusion = New-Object System.Collections.Generic.List[string]
+    $byLink = New-Object System.Collections.Generic.List[string]
+    $violations = New-Object System.Collections.Generic.List[string]
+
+    foreach ($p in @($pageSet | Sort-Object)) {
+        if ($bankedSet.Contains($p)) { [void]$byName.Add($p) }
+        elseif ($excludedSet.Contains($p)) { [void]$byExclusion.Add($p) }
+        elseif ($linkedSet.Contains($p)) { [void]$byLink.Add($p) }
+        else { [void]$violations.Add("proof page backed by nothing (no roster row by name, no exclusion row, no row's [proof] link): $p") }
+    }
+    foreach ($p in @($bankedSet | Sort-Object)) {
+        if (-not $pageSet.Contains($p)) { [void]$violations.Add("banked row has no proof page of its own: $p") }
+    }
+    foreach ($p in @($linkedSet | Sort-Object)) {
+        if (-not $pageSet.Contains($p)) { [void]$violations.Add("a roster row's [proof] link resolves to no page: $p") }
+    }
+
+    return [pscustomobject]@{
+        ByName      = $byName.ToArray()
+        ByExclusion = $byExclusion.ToArray()
+        ByLink      = $byLink.ToArray()
+        Violations  = $violations.ToArray()
+    }
+}
+
 <#
 .SYNOPSIS
     The roster document rewritten as a release's FROZEN snapshot copy of itself.

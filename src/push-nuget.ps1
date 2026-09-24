@@ -75,6 +75,12 @@
     roster-moving sweep, so a release morning cannot discover a stale badge with a signed tag and a
     write-once snapshot already on disk. Mutually exclusive with -Push and -BumpBuild.
 
+    The census is the runbook's NAMED IDENTITIES (tests.csproj, proof pages, green badges and index
+    rows, each term named), and the pre-flight also composes the version the next publish would mint
+    and refuses it if it already exists, or is not numerically newer than every recorded
+    docs\validation\<version>\ snapshot and nuget-* tag. That half reads git (`git tag --list`,
+    read-only), so git must be on PATH.
+
 .EXAMPLE
     .\push-nuget.ps1
     Pack every package to src\artifacts\nupkg (no push, no bump). Inspect the output, then push.
@@ -82,7 +88,8 @@
 .EXAMPLE
     .\push-nuget.ps1 -VerifyOnly
     Verify the tree is releasable -- every green badge's arithmetic against its proof page, every
-    package README's C# Source badge, and the four-number census -- in seconds, changing nothing.
+    package README's C# Source badge, the release census's named identities, and the next release's
+    existence and monotonicity -- in seconds, changing nothing.
 
 .EXAMPLE
     .\push-nuget.ps1 -Push
@@ -262,10 +269,8 @@ function Get-GoSourceBadgeVerification {
     return [pscustomobject]@{ Verified = $verified; Problems = $problems.ToArray() }
 }
 
-# THE FOUR-NUMBER GUARD. The freeze below has STATED this invariant in a comment since the snapshot
-# was introduced -- "it must equal the roster's row count, which must equal the number of green-badge
-# READMEs" -- and nothing has ever compared them. These are four independent derivations of ONE set,
-# the banked packages:
+# THE RELEASE CENSUS, AS NAMED IDENTITIES. Four derivations of the campaign's state are read from the
+# tree, BY NAME:
 #
 #   green badges    src\core\**\README.md carrying a green Tests badge
 #   proof pages     docs\validation\current\*.md
@@ -274,24 +279,53 @@ function Get-GoSourceBadgeVerification {
 #                   that goes stale independently of the table beside it
 #   test projects   src\core\**\*.tests.csproj
 #
-# A disagreement means a package banked without its README being re-emitted (or the reverse), and it
-# is a release defect either way: the green badge is what a package advertises on nuget.org, and the
-# proof snapshot is what it packs as VALIDATION.md. Reported by NAME as well as by count, because
-# "200 against 204" sends the reader on a hunt that four set differences answer outright.
+# plus the three the identities need to NAME their other terms: the roster's exclusion ledger, the
+# population of record for the pinned Go release, and docs\validation\index.md's rows.
+#
+# THIS WAS A SET EQUALITY until 2026-09-23 -- "four independent derivations of ONE set, the banked
+# packages" -- and the H10 close amendment REFUTED that by design (docs\GoCorpusMigration.md, "THE
+# RELEASE CENSUS, CORRECTED"; ledger 2026-09-22 16:31, 3469154a95). Exclusion rows keep their
+# artifacts, rowless candidates keep theirs, relocation anchors keep their source pages, and a
+# test-only package banks with no README at all. At the 1.24.13 close stamp fa18863b94 the equality
+# read 214 / 232 / 218 / 225 and refused 21 packages that are every one of them correct, which left
+# the pre-flight able to say only "red" -- a gate that is always red stops nothing. The census is now
+# the ruled NAMED IDENTITIES, every term named (COORD ruling RN-6, ledger c695b56071):
+#
+#   tests.csproj    =  banked rows + exclusion rows keeping artifacts + rowless candidates keeping artifacts
+#   proof pages     =  rows by name + relocation anchors by a row's [proof] link + exclusion rows by exclusion
+#   green badges    =  banked rows - banked rows with no README
+#   index rows      =  banked rows
+#
+# Anything that fits NO named class is refused BY NAME, and so is a named class whose members do not
+# add up to the count beside it. The functions that hold each identity are _roster.ps1's -- the same
+# ones check-roster-format.ps1 sections 2b2/2b3/2b4 drive with fixtures -- so the release and the
+# roster guard cannot disagree about what "accounted for" means. What a violation must NEVER be fixed
+# by is deleting a page or inventing a badge to make a set close: every term is a fact about the tree.
+#
+# A disagreement is a release defect either way: the green badge is what a package advertises on
+# nuget.org, and the proof snapshot is what it packs as VALIDATION.md. Reported by NAME as well as by
+# count, because "200 against 204" sends the reader on a hunt that a named class answers outright.
 function Get-GoReleaseCensus {
     param(
         [Parameter(Mandatory)][string]$CoreDir,
         [Parameter(Mandatory)][string]$CurrentProofs,
-        [Parameter(Mandatory)][string]$RosterPath
+        [Parameter(Mandatory)][string]$RosterPath,
+        [Parameter(Mandatory)][string]$IndexPath,
+        [Parameter(Mandatory)][string]$PopulationPath
     )
 
+    # ONE walk for both README sets: the green badges, and the READMEs that exist at all, which is
+    # what names the banked rows the green-badge identity subtracts (a test-only package has none).
     $greenIds = New-Object System.Collections.Generic.List[string]
+    $readmeIds = New-Object System.Collections.Generic.List[string]
     foreach ($readme in Get-ChildItem $CoreDir -Filter 'README.md' -Recurse -File) {
         if ($readme.Directory.FullName -eq $CoreDir) { continue }
         if ($readme.FullName -match '[\\/](testdata|bin|obj)[\\/]') { continue }
+        $readmeId = $readme.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.'
+        $readmeIds.Add($readmeId)
         $text = [System.IO.File]::ReadAllText($readme.FullName)
         if ($text -notmatch 'badge/Tests-\d+%2F\d+_validated-brightgreen') { continue }
-        $greenIds.Add(($readme.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.'))
+        $greenIds.Add($readmeId)
     }
 
     $pageIds = New-Object System.Collections.Generic.List[string]
@@ -300,45 +334,328 @@ function Get-GoReleaseCensus {
     }
 
     # The roster's import paths ('net/http') and every other derivation's dot-id ('net.http') are the
-    # same identifier in two spellings; the proof page's own file name is what fixes the mapping.
+    # same identifier in two spellings; the proof page's own file name is what fixes the mapping, so
+    # every list below is converted to the dot-id before any identity compares it.
     $rosterIds = New-Object System.Collections.Generic.List[string]
     foreach ($row in Get-ValidatedRosterRows -Path $RosterPath) { $rosterIds.Add(($row.Package -replace '/', '.')) }
 
-    $testIds = New-Object System.Collections.Generic.List[string]
-    foreach ($proj in Get-ChildItem $CoreDir -Filter '*.tests.csproj' -Recurse -File) {
-        $testIds.Add(($proj.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.'))
-    }
+    $excludedIds = New-Object System.Collections.Generic.List[string]
+    foreach ($row in Get-ExclusionLedgerRows -Path $RosterPath) { $excludedIds.Add(($row.Package -replace '/', '.')) }
+
+    $linkedIds = @(Get-RosterRowProofLinks -Path $RosterPath)
+
+    # Unique, as check-roster-format's 2b2 reads them: a directory is one package however many test
+    # projects it holds.
+    $testIds = @(Get-ChildItem $CoreDir -Filter '*.tests.csproj' -Recurse -File |
+        ForEach-Object { $_.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.' } |
+        Sort-Object -Unique)
+
+    # The two inputs that can be ABSENT without the tree being wrong in any other way are read under a
+    # catch, so a missing one is a NAMED problem beside every other rather than a bare throw that hides
+    # the rest of the census.
+    $inputProblems = New-Object System.Collections.Generic.List[string]
+
+    $populationIds = @()
+    try { $populationIds = @(Get-PopulationRows -Path $PopulationPath | ForEach-Object { $_ -replace '/', '.' }) }
+    catch { $inputProblems.Add("the rowless-candidate class cannot be derived: $($_.Exception.Message)") }
+
+    $indexIds = @()
+    try { $indexIds = @(Get-GoValidationIndexRows -Path $IndexPath | ForEach-Object { $_ -replace '/', '.' }) }
+    catch { $inputProblems.Add("the index-row identity cannot be read: $($_.Exception.Message)") }
 
     return [pscustomobject]@{
         GreenIds = $greenIds.ToArray(); PageIds = $pageIds.ToArray()
-        RosterIds = $rosterIds.ToArray(); TestIds = $testIds.ToArray()
+        RosterIds = $rosterIds.ToArray(); TestIds = $testIds
+        ReadmeIds = $readmeIds.ToArray(); ExcludedIds = $excludedIds.ToArray()
+        LinkedIds = $linkedIds; PopulationIds = $populationIds; IndexIds = $indexIds
+        InputProblems = $inputProblems.ToArray()
+    }
+}
+
+# docs\validation\index.md's CURRENT table, one row per banked package. The header and the row shape
+# are docs\phase4\hopA-inputs\regen-validation-index.py's own (TABLE_HEAD, INDEX_ROW) -- the tool that
+# writes this table -- and the read is SCOPED to that table, so the Frozen snapshots table above it
+# (whose rows open with a version, not a code span) can never be read as package rows. Refuses a
+# missing header and a header with zero rows: a reader that finds nothing reports a clean identity.
+function Get-GoValidationIndexRows {
+    param([Parameter(Mandatory)][string]$Path)
+
+    if (-not (Test-Path $Path)) { throw "no validation index at $Path" }
+
+    $lines = [System.IO.File]::ReadAllLines($Path)
+    $head = [Array]::IndexOf($lines, '| Package | Proof | Converted package |')
+    if ($head -lt 0) { throw "the validation index at $Path carries no CURRENT table header ('| Package | Proof | Converted package |')" }
+
+    $rows = New-Object System.Collections.Generic.List[string]
+    for ($i = $head + 2; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -notmatch '^\| `([^`]+)`') { break }
+        $rows.Add($Matches[1])
+    }
+
+    if ($rows.Count -eq 0) { throw "the validation index at $Path carries its CURRENT table header and ZERO rows" }
+    return $rows.ToArray()
+}
+
+# THE NEXT RELEASE: EXISTENCE PLUS MONOTONICITY, before anything is bumped (H11; COORD ruling RN-9,
+# ledger c695b56071). The version a publish WOULD mint is composed here exactly as the bump below
+# composes it -- version.props' base plus (counter + 1) -- and refused if
+#
+#   it EXISTS      a docs\validation\<version>\ snapshot or a nuget-<version> tag already names it, or
+#   it is not NEWER than every recorded release, snapshot and tag alike.
+#
+# Both halves, because each is blind to what the other sees. Monotonicity alone is TRUE AND
+# INSUFFICIENT: a counter carried across a base bump is perfectly monotonic (0f97dcc8db composed
+# 1.24.13.3, which was never published). Existence alone cannot see a counter that fell behind a
+# release recorded later. The existence half's tree precedent is repoguard's
+# TestPublishedCounterMatchesTheRecordedReleases, which reads the snapshots; this reads the tags too,
+# because a tag minted by a run that died before its freeze is a release name the feed may already
+# hold. `git tag --list` is the only git call, and it is read-only.
+#
+# NUMERIC PER COMPONENT, NEVER LEXICAL. 1.23.12.10 sorts below 1.23.12.9 as a string and 1.24.13.1
+# below 1.24.9.1. The rule is releasestamp.Compare's (src\go2cs\internal\releasestamp\stamp.go: a
+# missing component reads 0), which for the four numeric components a release carries is identical to
+# [System.Version]'s ordering and to NuGetVersion's (PLAN OQ-11). [bigint] per component, so no
+# component width can overflow into a wrong order.
+#
+# What is compared is admitted by SHAPE and everything else is printed EXCLUDED, by name, never
+# parsed and never dropped silently: a snapshot is a directory named like releasestamp.IsStamp
+# (docs\validation\current is the working proof set, not a release), and a release tag is
+# nuget-N.N.N.N (nuget-stdlib-2026-07-14 is not one).
+function Compare-GoReleaseStamp {
+    param([Parameter(Mandatory)][string]$Left, [Parameter(Mandatory)][string]$Right)
+
+    $l = $Left.Split('.')
+    $r = $Right.Split('.')
+
+    for ($i = 0; $i -lt [Math]::Max($l.Count, $r.Count); $i++) {
+        $lv = if ($i -lt $l.Count) { [bigint]::Parse($l[$i]) } else { [bigint]::Zero }
+        $rv = if ($i -lt $r.Count) { [bigint]::Parse($r[$i]) } else { [bigint]::Zero }
+        $order = $lv.CompareTo($rv)
+        if ($order -ne 0) { return [Math]::Sign($order) }
+    }
+
+    return 0
+}
+
+function Get-GoNextReleaseVerification {
+    param(
+        [Parameter(Mandatory)][string]$VersionPropsText,
+        [Parameter(Mandatory)][string]$SnapshotsDir,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Tags
+    )
+
+    $problems = New-Object System.Collections.Generic.List[string]
+    $excluded = New-Object System.Collections.Generic.List[string]
+
+    $base = if ($VersionPropsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $Matches[1].Trim() } else { '' }
+    $counter = if ($VersionPropsText -match '<GoBuildNumber>([^<]+)</GoBuildNumber>') { $Matches[1].Trim() } else { '' }
+
+    if ($base -notmatch '^[0-9]+(\.[0-9]+)*$' -or $counter -notmatch '^[0-9]+$') {
+        $problems.Add("the next release cannot be composed: version.props reads GoStdLibVersion '$base' and GoBuildNumber '$counter'")
+        return [pscustomobject]@{ Next = ''; Base = $base; Counter = $counter; Newest = ''; NewestFrom = ''
+                                  Snapshots = 0; ReleaseTags = 0; Excluded = @(); Problems = $problems.ToArray() }
+    }
+
+    $next = "$base.$([bigint]::Parse($counter) + 1)"
+
+    # version -> where it is recorded ('snapshot', 'tag'); ordinal keys, so 1.24.13.01 and 1.24.13.1
+    # are two NAMES that the numeric comparison below then finds equal.
+    $recorded = New-Object 'System.Collections.Generic.Dictionary[string,System.Collections.Generic.List[string]]' ([System.StringComparer]::Ordinal)
+    $snapshotCount = 0
+    $tagCount = 0
+
+    if (-not (Test-Path $SnapshotsDir -PathType Container)) {
+        $problems.Add("VACUOUS: the snapshot root $SnapshotsDir is not a directory, so no recorded release can be read -- every comparison below would pass on an empty listing")
+    }
+    else {
+        foreach ($dir in Get-ChildItem $SnapshotsDir -Directory) {
+            if ($dir.Name -notmatch '^[0-9]+(\.[0-9]+)+$') {
+                $excluded.Add("docs\validation\$($dir.Name)\")
+                continue
+            }
+            if (-not $recorded.ContainsKey($dir.Name)) { $recorded[$dir.Name] = New-Object System.Collections.Generic.List[string] }
+            $recorded[$dir.Name].Add('snapshot')
+            $snapshotCount++
+        }
+    }
+
+    foreach ($tag in @($Tags | Where-Object { $_ } | Sort-Object -Unique)) {
+        if ($tag -notmatch '^nuget-([0-9]+(\.[0-9]+){3})$') {
+            $excluded.Add("tag $tag")
+            continue
+        }
+        $tagVersion = $Matches[1]
+        if (-not $recorded.ContainsKey($tagVersion)) { $recorded[$tagVersion] = New-Object System.Collections.Generic.List[string] }
+        $recorded[$tagVersion].Add('tag')
+        $tagCount++
+    }
+
+    if ($recorded.Count -eq 0 -and (Test-Path $SnapshotsDir -PathType Container)) {
+        $problems.Add("VACUOUS: no release is recorded at all -- no docs\validation\<version>\ snapshot and no nuget-<version> tag -- which this repository's history contradicts; an instrument reading the wrong place would report every version as new")
+    }
+
+    # EXISTENCE, by exact name.
+    if ($recorded.ContainsKey($next)) {
+        foreach ($where in $recorded[$next]) {
+            if ($where -eq 'snapshot') {
+                $problems.Add("the next release $next already EXISTS: docs\validation\$next\ is a recorded snapshot. Snapshots are write-once, and version.props' counter must name the LATEST release on its base")
+            }
+            else {
+                $problems.Add("the next release $next already EXISTS: tag nuget-$next is minted. push-nuget KEEPS an existing tag rather than re-minting it, so the release would publish under a tag naming another tree")
+            }
+        }
+    }
+
+    # MONOTONICITY, numerically, against every OTHER recorded name (an exact name is existence's).
+    $newest = ''
+    foreach ($version in @($recorded.Keys)) {
+        if (-not $newest -or (Compare-GoReleaseStamp $version $newest) -gt 0) { $newest = $version }
+        if ($version -ceq $next) { continue }
+        if ((Compare-GoReleaseStamp $next $version) -le 0) {
+            $problems.Add("the next release $next is not strictly newer than recorded release $version ($($recorded[$version] -join ' + ')) -- compared numerically per component")
+        }
+    }
+
+    $newestFrom = if ($newest) { $recorded[$newest] -join ' + ' } else { '' }
+
+    return [pscustomobject]@{
+        Next = $next; Base = $base; Counter = $counter; Newest = $newest; NewestFrom = $newestFrom
+        Snapshots = $snapshotCount; ReleaseTags = $tagCount; Excluded = $excluded.ToArray()
+        Problems = $problems.ToArray()
     }
 }
 
 $coreReadmeRoot = Join-Path $src 'core'
 $preflightProofs = Join-Path $repoRoot 'docs\validation\current'
 $rosterPath = Join-Path $repoRoot 'docs\ValidatedTestPackages.md'
+$validationIndexPath = Join-Path $repoRoot 'docs\validation\index.md'
+$snapshotsRoot = Join-Path $repoRoot 'docs\validation'
+
+# The population of record for the Go release version.props pins -- the file check-roster-format.ps1
+# section 2b reads. Composed from the pin rather than spelled with it, so the next hop's release reads
+# ITS population or refuses by name for want of one, instead of silently reading this hop's.
+$preflightPropsText = [System.IO.File]::ReadAllText($versionProps)
+$preflightGoPin = if ($preflightPropsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $Matches[1].Trim() } else { '?' }
+$populationPath = Join-Path $repoRoot "docs\phase4\hopA-inputs\recon-lists\population-go$preflightGoPin.txt"
 
 Write-Step "Pre-flight: verifying badges and the release census BEFORE anything is bumped, tagged or frozen"
 
-$census = Get-GoReleaseCensus -CoreDir $coreReadmeRoot -CurrentProofs $preflightProofs -RosterPath $rosterPath
+$census = Get-GoReleaseCensus -CoreDir $coreReadmeRoot -CurrentProofs $preflightProofs -RosterPath $rosterPath `
+                              -IndexPath $validationIndexPath -PopulationPath $populationPath
 
 # Printed UNCONDITIONALLY, pass or fail: the four numbers are the cheapest statement of where the
 # campaign stands, and a reader who only ever sees them when they disagree cannot tell a healthy run
-# from one whose census never executed.
+# from one whose census never executed. The line's shape is unchanged; the identities that account
+# for the four numbers, by name, follow it.
 Write-Step ("Release census: {0} green badge(s) / {1} proof page(s) / {2} roster row(s) / {3} .tests.csproj" -f `
             $census.GreenIds.Count, $census.PageIds.Count, $census.RosterIds.Count, $census.TestIds.Count)
 
 $censusProblems = New-Object System.Collections.Generic.List[string]
-$allCensusIds = @($census.GreenIds + $census.PageIds + $census.RosterIds + $census.TestIds | Sort-Object -Unique)
+foreach ($problem in $census.InputProblems) { $censusProblems.Add($problem) }
 
-foreach ($censusId in $allCensusIds) {
-    $absent = @()
-    if ($census.GreenIds -notcontains $censusId) { $absent += 'green badge' }
-    if ($census.PageIds -notcontains $censusId) { $absent += 'proof page' }
-    if ($census.RosterIds -notcontains $censusId) { $absent += 'roster row' }
-    if ($census.TestIds -notcontains $censusId) { $absent += '.tests.csproj' }
-    if ($absent.Count) { $censusProblems.Add("$censusId has no $($absent -join ', no ')") }
+# Every set arithmetic below is ordinal and over dot-ids (see Get-GoReleaseCensus).
+function Get-GoOrdinalIntersection([string[]]$Of, [string[]]$With) {
+    $withSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in @($With)) { [void]$withSet.Add($p) }
+    return @(@($Of) | Where-Object { $withSet.Contains($_) } | Sort-Object -Unique)
+}
+
+$bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+foreach ($p in $census.RosterIds) { [void]$bankedSet.Add($p) }
+$excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+foreach ($p in $census.ExcludedIds) { [void]$excludedSet.Add($p) }
+
+# 1. tests.csproj = banked rows + exclusion rows keeping artifacts + rowless candidates keeping them.
+#    Membership is check-roster-format 2b2's function; the two named classes are what it printed.
+$projectViolations = @(Get-TestProjectIdentityViolations -Projects $census.TestIds -Banked $census.RosterIds `
+                                                         -Excluded $census.ExcludedIds -Population $census.PopulationIds)
+$excludedWithArtifacts = Get-GoOrdinalIntersection -Of $census.ExcludedIds -With $census.TestIds
+$candidatesWithArtifacts = Get-GoOrdinalIntersection -With $census.TestIds -Of @($census.PopulationIds |
+    Where-Object { -not $bankedSet.Contains($_) -and -not $excludedSet.Contains($_) })
+foreach ($problem in $projectViolations) { $censusProblems.Add($problem) }
+$projectSum = $census.RosterIds.Count + $excludedWithArtifacts.Count + $candidatesWithArtifacts.Count
+if (-not $projectViolations.Count -and $census.TestIds.Count -ne $projectSum) {
+    $censusProblems.Add("the tests.csproj identity does not add up: $($census.TestIds.Count) project(s) against $($census.RosterIds.Count) banked + $($excludedWithArtifacts.Count) exclusion + $($candidatesWithArtifacts.Count) candidate = $projectSum (a repeated roster row?)")
+}
+
+# 2. proof pages = rows by name + relocation anchors by a row's [proof] link + exclusion rows.
+$pageIdentity = Get-ProofPageIdentity -Pages $census.PageIds -Banked $census.RosterIds `
+                                      -Linked $census.LinkedIds -Excluded $census.ExcludedIds
+foreach ($problem in $pageIdentity.Violations) { $censusProblems.Add($problem) }
+if (-not $pageIdentity.Violations.Count -and $pageIdentity.ByName.Count -ne $census.RosterIds.Count) {
+    $censusProblems.Add("the proof-page identity does not add up: $($pageIdentity.ByName.Count) page(s) by name against $($census.RosterIds.Count) roster row(s) (a repeated roster row?)")
+}
+
+# 3. green badges = banked rows - banked rows with no README. Membership, both directions, is
+#    check-roster-format 2b3's function; the subtracted class is named here, as 2b3 names it.
+$badgeViolations = @(Get-BadgeRosterViolations -WithReadme $census.ReadmeIds -Validated $census.GreenIds `
+                                               -Banked $census.RosterIds -Excluded $census.ExcludedIds)
+$readmeSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+foreach ($p in $census.ReadmeIds) { [void]$readmeSet.Add($p) }
+$rowsWithoutReadme = @($census.RosterIds | Where-Object { -not $readmeSet.Contains($_) } | Sort-Object -Unique)
+foreach ($problem in $badgeViolations) { $censusProblems.Add($problem) }
+if (-not $badgeViolations.Count -and $census.GreenIds.Count -ne ($census.RosterIds.Count - $rowsWithoutReadme.Count)) {
+    $censusProblems.Add("the green-badge identity does not add up: $($census.GreenIds.Count) green badge(s) against $($census.RosterIds.Count) banked - $($rowsWithoutReadme.Count) README-less = $($census.RosterIds.Count - $rowsWithoutReadme.Count)")
+}
+
+# 4. index rows = banked rows, by name in both directions. Skipped only when the index could not be
+#    read at all, which is already a named problem above.
+$indexViolations = New-Object System.Collections.Generic.List[string]
+if ($census.IndexIds.Count) {
+    $indexSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($p in $census.IndexIds) { [void]$indexSet.Add($p) }
+    foreach ($p in @($census.RosterIds | Sort-Object -Unique)) {
+        if (-not $indexSet.Contains($p)) { $indexViolations.Add("banked row has no docs\validation\index.md row: $p") }
+    }
+    foreach ($p in @($census.IndexIds | Sort-Object -Unique)) {
+        if (-not $bankedSet.Contains($p)) { $indexViolations.Add("docs\validation\index.md row names no banked row: $p") }
+    }
+    if (-not $indexViolations.Count -and $census.IndexIds.Count -ne $census.RosterIds.Count) {
+        $indexViolations.Add("the index-row identity does not add up: $($census.IndexIds.Count) index row(s) against $($census.RosterIds.Count) roster row(s) (a repeated row?)")
+    }
+}
+foreach ($problem in $indexViolations) { $censusProblems.Add($problem) }
+
+# Printed UNCONDITIONALLY, like the census line: each identity with its terms, and every class other
+# than the banked rows named in full, so the arithmetic is re-addable from the output alone.
+Write-Step "Named identities (docs\GoCorpusMigration.md, THE RELEASE CENSUS, CORRECTED):"
+Write-Host ("      {0} .tests.csproj = {1} banked row(s) + {2} exclusion row(s) keeping artifacts + {3} rowless candidate(s) keeping artifacts" -f `
+            $census.TestIds.Count, $census.RosterIds.Count, $excludedWithArtifacts.Count, $candidatesWithArtifacts.Count)
+Write-Host ("          exclusion rows keeping artifacts : {0}" -f ($excludedWithArtifacts -join ', '))
+Write-Host ("          rowless candidates               : {0}" -f ($candidatesWithArtifacts -join ', '))
+Write-Host ("      {0} proof page(s) = {1} roster row(s) by name + {2} relocation anchor(s) by a row's [proof] link + {3} exclusion row(s) by exclusion" -f `
+            $census.PageIds.Count, $pageIdentity.ByName.Count, $pageIdentity.ByLink.Count, $pageIdentity.ByExclusion.Count)
+Write-Host ("          relocation anchors               : {0}" -f ($pageIdentity.ByLink -join ', '))
+Write-Host ("          exclusion pages                  : {0}" -f ($pageIdentity.ByExclusion -join ', '))
+Write-Host ("      {0} green badge(s) = {1} banked row(s) - {2} banked row(s) with no README" -f `
+            $census.GreenIds.Count, $census.RosterIds.Count, $rowsWithoutReadme.Count)
+Write-Host ("          banked rows with no README       : {0}" -f ($rowsWithoutReadme -join ', '))
+Write-Host ("      {0} index row(s) = {1} banked row(s)" -f $census.IndexIds.Count, $census.RosterIds.Count)
+
+# THE NEXT RELEASE, existence plus monotonicity (see Get-GoNextReleaseVerification). A tag list that
+# cannot be read is a named problem, never an empty list: an empty list would pass the tag half.
+$releaseTagNames = @()
+$tagReadProblem = $null
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    $tagReadProblem = "git is not available, so the nuget-* tags cannot be read and the next release's existence and monotonicity cannot be checked against them"
+}
+else {
+    try {
+        $releaseTagNames = @(& git -C $repoRoot tag --list 'nuget-*')
+        if ($LASTEXITCODE -ne 0) { $tagReadProblem = "git tag --list 'nuget-*' exited $LASTEXITCODE, so the tag half of the next release's check read nothing" }
+    }
+    catch { $tagReadProblem = "git tag --list 'nuget-*' failed ($($_.Exception.Message)), so the tag half of the next release's check read nothing" }
+}
+
+$nextRelease = Get-GoNextReleaseVerification -VersionPropsText $preflightPropsText -SnapshotsDir $snapshotsRoot -Tags $releaseTagNames
+if ($tagReadProblem) { $censusProblems.Add($tagReadProblem) }
+foreach ($problem in $nextRelease.Problems) { $censusProblems.Add($problem) }
+
+$nextVerdict = if ($nextRelease.Problems.Count -or $tagReadProblem) { 'REFUSED' } else { 'unrecorded, and strictly newer than every recorded release' }
+Write-Step ("Next release: {0} (base {1} + counter {2} + 1): {3} -- newest recorded {4} ({5}), across {6} snapshot(s) and {7} release tag(s), compared numerically per component" -f `
+            $nextRelease.Next, $nextRelease.Base, $nextRelease.Counter, $nextVerdict, $nextRelease.Newest, $nextRelease.NewestFrom, $nextRelease.Snapshots, $nextRelease.ReleaseTags)
+if ($nextRelease.Excluded.Count) {
+    Write-Host ("      excluded by name, not a release: {0}" -f ($nextRelease.Excluded -join ', '))
 }
 
 # NOT $green/$source. PowerShell resolves variable names case-INSENSITIVELY, so `$source = <object>`
@@ -364,7 +681,9 @@ if ($preflightProblems.Count) {
            "$($census.RosterIds.Count) roster row(s) / $($census.TestIds.Count) .tests.csproj. " +
            "A badge whose arithmetic disagrees with its proof page is fixed by RECONVERTING the " +
            "package (the badge is generated from the proof page's totals line by " +
-           "src\go2cs\readmeValidationBadge.go), never by hand-editing the README.")
+           "src\go2cs\readmeValidationBadge.go), never by hand-editing the README. An item no " +
+           "named identity accounts for is fixed by accounting for it BY NAME -- a roster row, an " +
+           "exclusion row or a row's [proof] link -- never by deleting a page or inventing a badge.")
 }
 
 if ($VerifyOnly) {
@@ -818,9 +1137,13 @@ if (-not (Test-Path $currentProofs)) {
                                ($frozenRoster.Unrelocated -join "`n    "))
             }
         }
-        # The count is the phase-5 invariant: it must equal the roster's row count, which must equal the
-        # number of green-badge READMEs. A dry run names the would-be version and the temporary location
-        # so the line cannot be misread as a write into the tree; the release wording is unchanged.
+        # The count is EVERY page under docs\validation\current -- rows' own pages, relocation anchors
+        # and exclusion pages alike (COORD ruling RN-6) -- so no green badge, no roster [proof] link and
+        # no index row can link a page this snapshot lacks, the way 21 green badges link pages absent
+        # from 1.23.12.3. It is NOT the roster's row count and never was by design: the fifth-number
+        # check below holds the named identity that relates the two. A dry run names the would-be
+        # version and the temporary location so the line cannot be misread as a write into the tree;
+        # the release wording is unchanged.
         if ($dryRun) {
             Write-Step "Froze $frozenCount validation proof page(s) for would-be version $wouldBeVersion at $versionProofs (temporary)"
         }
@@ -830,14 +1153,29 @@ if (-not (Test-Path $currentProofs)) {
     }
 
     # THE FIFTH NUMBER, and the only one that is a statement about the SNAPSHOT rather than about the
-    # working tree. The four-number guard above compares four derivations of the banked set as it
-    # stands TODAY; this asks whether the thing about to be published is internally coherent -- does
-    # the roster frozen into this directory have exactly one row per proof page frozen beside it.
+    # working tree. The pre-flight census above holds the named identities over the tree as it stands
+    # TODAY; this asks whether the thing about to be published is internally coherent -- is every page
+    # frozen into this directory accounted for by the roster frozen beside it, and does every row of
+    # that roster have its page here.
+    #
+    # A NAMED IDENTITY, not an equality (COORD ruling RN-6, ledger c695b56071). This compared the
+    # frozen roster's row count with the frozen page count until 2026-09-23, and the two are unequal by
+    # design: the snapshot freezes EVERY current page, and relocation anchors and exclusion pages have
+    # no row of their own. At the 1.24.13 close it would have read 218 rows against 232 pages and
+    # thrown -- after the bump, the signed tag and the write-once snapshot, the exact order defect the
+    # pre-flight exists to prevent. The identity is the pre-flight's page identity, over the frozen
+    # directory, through the same _roster.ps1 function:
+    #
+    #   frozen pages = frozen rows by name + relocation anchors by a frozen row's [proof] link
+    #                  + exclusion rows by the frozen roster's own exclusion ledger
+    #
+    # and a frozen row's [proof] link that resolves to no sibling page is refused by name too -- a link
+    # that would dangle inside the published snapshot.
     #
     # Rows, not the prose header. The roster's own "204 / 215" line is a DATED derivation that goes
-    # stale independently of the table beside it (the same reason the four-number guard parses rows
-    # through _roster.ps1 rather than reading the document's sentences), and check-roster-format.ps1
-    # already holds header-against-rows for the living page.
+    # stale independently of the table beside it (the same reason the census parses rows through
+    # _roster.ps1 rather than reading the document's sentences), and check-roster-format.ps1 already
+    # holds header-against-rows for the living page.
     #
     # OUTSIDE the write-once branch on purpose: a re-run that finds its snapshot already there gets
     # the check too, so a directory frozen by an earlier attempt is verified rather than assumed. A
@@ -845,19 +1183,33 @@ if (-not (Test-Path $currentProofs)) {
     # eight published before this existed are correct as they stand and are never rewritten.
     $frozenRosterPath = Join-Path $versionProofs $frozenRosterName
     if (Test-Path $frozenRosterPath) {
-        $frozenPageCount = @(Get-ChildItem $versionProofs -Filter *.md -File |
-                             Where-Object { $_.Name -ne $frozenRosterName }).Count
-        $frozenRowCount = @(Get-ValidatedRosterRows -Path $frozenRosterPath).Count
+        $frozenPageIds = @(Get-ChildItem $versionProofs -Filter *.md -File |
+                           Where-Object { $_.Name -ne $frozenRosterName } | ForEach-Object { $_.BaseName })
+        $frozenPageCount = $frozenPageIds.Count
+        $frozenRowIds = @(Get-ValidatedRosterRows -Path $frozenRosterPath | ForEach-Object { $_.Package -replace '/', '.' })
+        $frozenRowCount = $frozenRowIds.Count
+        $frozenExcludedIds = @(Get-ExclusionLedgerRows -Path $frozenRosterPath | ForEach-Object { $_.Package -replace '/', '.' })
+        $frozenLinkedIds = @(Get-RosterRowProofLinks -Path $frozenRosterPath -Frozen)
 
-        if ($frozenRowCount -ne $frozenPageCount) {
+        $frozenIdentity = Get-ProofPageIdentity -Pages $frozenPageIds -Banked $frozenRowIds `
+                                                -Linked $frozenLinkedIds -Excluded $frozenExcludedIds
+        $frozenProblems = @($frozenIdentity.Violations)
+        if (-not $frozenProblems.Count -and $frozenIdentity.ByName.Count -ne $frozenRowCount) {
+            $frozenProblems += "$($frozenIdentity.ByName.Count) page(s) by name against $frozenRowCount frozen roster row(s) (a repeated row?)"
+        }
+
+        if ($frozenProblems.Count) {
             throw ("The frozen $fullVersion snapshot is not self-consistent: its roster carries " +
-                   "$frozenRowCount row(s) against $frozenPageCount proof page(s) in the same directory. " +
+                   "$frozenRowCount row(s) against $frozenPageCount proof page(s) in the same directory, and " +
+                   "$($frozenProblems.Count) item(s) fit no named class:`n    " + ($frozenProblems -join "`n    ") + "`n" +
                    "A published snapshot whose roster and proofs disagree advertises rows it cannot " +
                    "show the evidence for -- reconcile docs\ValidatedTestPackages.md with " +
                    "docs\validation\current before publishing.")
         }
 
-        Write-Step "Frozen snapshot self-consistent: $frozenRowCount roster row(s) / $frozenPageCount proof page(s)"
+        Write-Step ("Frozen snapshot self-consistent: $frozenRowCount roster row(s) / $frozenPageCount proof page(s) = " +
+                    "$($frozenIdentity.ByName.Count) by name + $($frozenIdentity.ByLink.Count) relocation anchor(s) by a " +
+                    "row's [proof] link + $($frozenIdentity.ByExclusion.Count) exclusion page(s)")
     }
     else {
         Write-Step "Frozen snapshot $fullVersion carries no roster page (snapshots before 1.23.12.3 did not) -- proof pages only"

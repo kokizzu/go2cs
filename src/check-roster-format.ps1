@@ -866,26 +866,8 @@ if ($implementable -gt 0) {
 # from the wrong instrument. Two guards, two questions.
 $populationPath = Join-Path $repo 'docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt'
 
-function Get-PopulationRows {
-    param([Parameter(Mandatory)][string] $Path)
-
-    if (-not (Test-Path $Path)) { throw "Cannot find the population of record at $Path" }
-
-    $names = @([System.IO.File]::ReadAllLines($Path) |
-        ForEach-Object { $_.Trim() } |
-        Where-Object { $_ -and -not $_.StartsWith('#') })
-
-    if ($names.Count -eq 0) {
-        throw "The population of record at $Path parsed to ZERO rows -- a comment-only file reads as a closed arithmetic over an empty universe"
-    }
-
-    $duplicates = @($names | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
-    if ($duplicates.Count -gt 0) {
-        throw "The population of record repeats $($duplicates.Count) name(s): $($duplicates -join ', ') -- the population is a SET"
-    }
-
-    return $names
-}
+# Get-PopulationRows, the reader, lives in _roster.ps1 (2026-09-23): push-nuget.ps1's release census
+# reads the rowless-candidate class through it too, and one reader is what keeps the two agreeing.
 
 # The arithmetic itself, as a function over its four inputs rather than inline against the real
 # ones. That is what lets the fixture arms below drive it with a POPULATION THAT DISAGREES -- an
@@ -1014,31 +996,9 @@ Assert-Equal 'population of record: the header closes against the enumeration' '
 #     e.g. a package outside N, or one whose row was struck without its artifacts).
 # The TRACKED set comes from git, never the working tree: a build or an unfinished -tests run leaves
 # untracked projects behind, and a guard that counted them would red on the lane's own debris.
-function Get-TestProjectIdentityViolations {
-    param([string[]] $Projects, [string[]] $Banked, [string[]] $Excluded, [string[]] $Population)
-
-    $violations = New-Object System.Collections.Generic.List[string]
-    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
-    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
-    $projectSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Projects)) { [void]$projectSet.Add($p) }
-    $candidateSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Population)) {
-        if (-not $bankedSet.Contains($p) -and -not $excludedSet.Contains($p)) { [void]$candidateSet.Add($p) }
-    }
-
-    foreach ($p in @($Banked | Sort-Object)) {
-        if (-not $projectSet.Contains($p)) { [void]$violations.Add("banked row has no tracked tests.csproj: $p") }
-    }
-    foreach ($p in @($Projects | Sort-Object)) {
-        if (-not ($bankedSet.Contains($p) -or $excludedSet.Contains($p) -or $candidateSet.Contains($p))) {
-            [void]$violations.Add("tracked tests.csproj belongs to no row, exclusion row or population candidate: $p")
-        }
-    }
-    return $violations.ToArray()
-}
+#
+# Get-TestProjectIdentityViolations lives in _roster.ps1 (2026-09-23), shared with push-nuget.ps1's
+# release census, which holds the same identity before a publish; the fixtures below still drive it.
 
 # The function's contract, both directions, against fixtures.
 $idPop = @('ex/row', 'ex/gone', 'ex/cand', 'ex/quiet')
@@ -1095,10 +1055,9 @@ Assert-Equal 'test-project identity: the named sides add up' $testProjects.Count
 # crypto/internal/fips140test, embed/internal/embedtest, go/ast/internal/tests,
 # internal/coverage/test. The README set is the TRACKED one (from git, like 2b2), so a lane's
 # untracked scratch README cannot red it.
-function Test-ReadmeAdvertisesValidated {
-    param([string] $Text)
-    return [regex]::IsMatch($Text, 'img\.shields\.io/badge/Tests-\d+%2F\d+_validated-')
-}
+#
+# Test-ReadmeAdvertisesValidated and Get-BadgeRosterViolations live in _roster.ps1 (2026-09-23),
+# shared with push-nuget.ps1's release census; the fixtures below still drive them.
 
 Assert-Equal 'badge: a validated Tests badge is recognised' $true `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](x)')
@@ -1106,31 +1065,6 @@ Assert-Equal 'badge: not_yet_validated is not a validation claim' $false `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](x)')
 Assert-Equal 'badge: none_to_validate is not a validation claim' $false `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](x)')
-
-function Get-BadgeRosterViolations {
-    param([string[]] $WithReadme, [string[]] $Validated, [string[]] $Banked, [string[]] $Excluded)
-
-    $violations = New-Object System.Collections.Generic.List[string]
-    $validatedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Validated)) { [void]$validatedSet.Add($p) }
-    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
-    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
-
-    foreach ($p in @($WithReadme | Sort-Object)) {
-        if ($bankedSet.Contains($p) -and -not $validatedSet.Contains($p)) {
-            [void]$violations.Add("banked row's README carries no validated Tests badge: $p")
-        }
-    }
-    foreach ($p in @($Validated | Sort-Object)) {
-        if (-not $bankedSet.Contains($p)) {
-            $what = if ($excludedSet.Contains($p)) { 'an EXCLUSION row' } else { 'a non-row' }
-            [void]$violations.Add("validated Tests badge on $($what): $p")
-        }
-    }
-    return $violations.ToArray()
-}
 
 # The set rule's contract, both directions, against fixtures.
 Assert-Equal 'badge vs roster: agreement reports nothing' 0 `
@@ -1160,6 +1094,51 @@ Write-Host ('  banked rows with NO README (outside the check): {0}' -f ($rowsWit
 
 Assert-Equal 'badge vs roster: the vacuity guard (a zero means the README walk read nothing)' $true ($readmePackages.Count -gt 0)
 Assert-Equal 'badge vs roster: every README Tests badge agrees with the roster' '' ($badgeViolations -join '; ')
+
+# ---- 2b4. the PROOF-PAGE identity's contract, against fixtures (2026-09-23, COORD ruling RN-6) ----
+# current proof pages = rows by name + relocation anchors by link + exclusion rows by exclusion (the
+# runbook's H10 close amendment, "THE RELEASE CENSUS, CORRECTED"). push-nuget.ps1's release
+# pre-flight HOLDS it over docs/validation/current, and its fifth-number check holds it over the
+# snapshot the freeze writes; the functions live in _roster.ps1, and this file is where _roster.ps1's
+# contracts are pinned, so the arms are here. No live reading is taken HERE on purpose: the living
+# pages already have two readers (the index tool and the release), and a third reader of one set is
+# the drift the shared functions exist to remove.
+$pageFixture = Get-ProofPageIdentity -Pages @('ex.row', 'ex.gone', 'ex.old') -Banked @('ex.row') `
+    -Linked @('ex.row', 'ex.old') -Excluded @('ex.gone')
+Assert-Equal 'page identity: a closed set reports nothing' '' ($pageFixture.Violations -join '; ')
+Assert-Equal 'page identity: each page in ONE class, name before exclusion before link' 'ex.row|ex.gone|ex.old' `
+    (($pageFixture.ByName -join ',') + '|' + ($pageFixture.ByExclusion -join ',') + '|' + ($pageFixture.ByLink -join ','))
+Assert-Equal 'page identity: an ORPHAN page is named' `
+    "proof page backed by nothing (no roster row by name, no exclusion row, no row's [proof] link): ex.stray" `
+    ((Get-ProofPageIdentity -Pages @('ex.row', 'ex.stray') -Banked @('ex.row') -Linked @('ex.row') -Excluded @()).Violations -join '; ')
+Assert-Equal 'page identity: an anchor never excuses a banked row with no page of its own' `
+    'banked row has no proof page of its own: ex.row' `
+    ((Get-ProofPageIdentity -Pages @('ex.old') -Banked @('ex.row') -Linked @('ex.old') -Excluded @()).Violations -join '; ')
+Assert-Equal "page identity: a row's [proof] link that resolves to no page is named" `
+    "a roster row's [proof] link resolves to no page: ex.gone" `
+    ((Get-ProofPageIdentity -Pages @('ex.row') -Banked @('ex.row') -Linked @('ex.row', 'ex.gone') -Excluded @()).Violations -join '; ')
+
+# The "by link" reader, in both spellings, and ROW lines only: prose and a placeholder admit nothing.
+$ellipsis = [string][char]0x2026
+$linkFixturePath = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-link-fixture-' + [guid]::NewGuid().ToString('n') + '.md')
+try {
+    [System.IO.File]::WriteAllText($linkFixturePath, (@(
+        '| Package | Tests | Disclosed | What it exercises |'
+        '|:--|:--:|:--:|:--|'
+        "| [``ex/row``](https://x/row) | 3 |  | Own page first. $dot [proof](validation/current/ex.row.md) $dot [proof](validation/current/ex.old.md) |"
+        "| [``ex/two``](https://x/two) | 1 |  | Frozen spelling. $dot [proof](ex.two.md) $dot [proof]($ellipsis) |"
+        ''
+        'Prose is not a row: [proof](validation/current/ex.prose.md) and [proof](ex.prose.md).'
+    ) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
+
+    Assert-Equal 'row proof links: the LIVING spelling, from row lines only' 'ex.old,ex.row' `
+        ((Get-RosterRowProofLinks -Path $linkFixturePath) -join ',')
+    Assert-Equal 'row proof links: the FROZEN sibling spelling, from row lines only' 'ex.two' `
+        ((Get-RosterRowProofLinks -Path $linkFixturePath -Frozen) -join ',')
+}
+finally {
+    if (Test-Path $linkFixturePath) { Remove-Item $linkFixturePath -Force }
+}
 
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
