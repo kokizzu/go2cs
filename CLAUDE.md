@@ -65,8 +65,8 @@ Detail: `.claude/rules/corpus.md`.
 ## Current state
 
 Phase 3 complete (2026-07-10): the full converted stdlib compiles clean. Phase 4 (operational
-validation against Go's own test suites) is live via the `-tests` pipeline, and the corpus is mid-hop
-to **Go 1.24.13**. Roster, counts and campaign state are in
+validation against Go's own test suites) is live via the `-tests` pipeline, and the corpus is on
+**Go 1.24.13**. Roster, counts and campaign state are in
 [`docs/ValidatedTestPackages.md`](docs/ValidatedTestPackages.md) and
 [`docs/phase4/BOARD-next-validation-candidates.md`](docs/phase4/BOARD-next-validation-candidates.md).
 **Never quote a count from this file** — it is exactly the kind of fact that goes stale silently.

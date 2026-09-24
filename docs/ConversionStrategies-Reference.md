@@ -295,7 +295,7 @@ MSBuild accepts `/` in every path context on Windows, and normalizes `\` to `/` 
 
 **Consequence to expect when this changes: the sorted reference block can re-order.** References are `sort.Strings`-sorted, and `/` (0x2F) sorts *below* alphanumerics while `\` (0x5C) sorts *above* them, so a pair that differs at a separator boundary swaps. Across the whole 303-project stdlib the flip moved exactly one file's ordering — `net/http`, where `vendor/golang.org/x/net/http2/hpack` had sorted before `vendor/golang.org/x/net/http/httpguts` (`2` < `\`) and now sorts after it (`/` < `2`). Same set, different order; not a content change.
 
-Seven hand-owned `core` files are never re-emitted (`golib`, `testing`, `unsafe`, `internal/godebug`, `internal/concurrent`, `internal/weak`, and `core/Directory.Build.props`), so they carry the form by hand. The one deliberate exception is the shared-project `<Import Project="..\go2cs\go2cs.projitems" Label="Shared" />` in `golib.csproj` and `go2cs-gen.csproj`: that is Visual Studio's own bookkeeping, VS round-trips its exact text, and MSBuild normalizes it on Unix regardless — so it stays backslashed, with a comment saying why.
+The hand-owned `core` files that are never re-emitted — `golib`, `testing`, `unsafe`, `internal/godebug` and `core/Directory.Build.props` among them — carry the form by hand. (At Go 1.23.12 the list also named `internal/concurrent` and `internal/weak`; their Go 1.24 successors `internal/sync` and `weak` convert ordinary files beside the hand-owned one, so both emit their own `.csproj`.) The one deliberate exception is the shared-project `<Import Project="..\go2cs\go2cs.projitems" Label="Shared" />` in `golib.csproj` and `go2cs-gen.csproj`: that is Visual Studio's own bookkeeping, VS round-trips its exact text, and MSBuild normalizes it on Unix regardless — so it stays backslashed, with a comment saying why.
 
 Guarded by `TestEmbeddedCsprojTemplatesUseForwardSlashesOnly` and `TestValidationPackBlockUsesForwardSlashesOnly` (`csprojTemplate_test.go` — both templates are asserted to contain *no* backslash at all, so a future addition is covered without the guard enumerating it) and by `TestEmittedProjectReferenceIsHostIndependent` / `TestEmittedProjectReferenceForModuleCachePath` (`importOperations_test.go`).
 
@@ -584,10 +584,11 @@ ruling is about — golib suppresses it locally, the corpus must not inherit it)
 `CS0649`, `CS1522`. Each is a converter or golib defect wearing a warning's clothes; suppressing them would
 delete the signal rather than fix the emission.
 
-Six `.csproj` are hand-owned and carry the policy by hand rather than by emission — `core/unsafe` and
-`core/testing` (skip-listed packages), `core/internal/godebug`, `core/internal/weak` and
-`core/internal/concurrent` (whose only Go file is fully hand-owned, so `unmarkedFileCount == 0` makes the
-driver `continue` before `writeProjectFile`), and `core/golib`. golib keeps a *shorter*, deliberately
+Hand-owned `.csproj` carry the policy by hand rather than by emission — `core/unsafe` and
+`core/testing` (skip-listed packages), `core/internal/godebug` (whose only Go file is fully hand-owned,
+so `unmarkedFileCount == 0` makes the driver `continue` before `writeProjectFile`), and `core/golib`; at
+Go 1.23.12 `core/internal/weak` and `core/internal/concurrent` were two more, and their Go 1.24
+successors `weak` and `internal/sync` emit their own. golib keeps a *shorter*, deliberately
 different list: it is hand-written, it is the reflection/unsafe core, and its trim and nullable warnings
 are a real to-do list with an owner rather than emission noise.
 
@@ -610,7 +611,7 @@ against `nuget.org`. The link is dead in all three.
 
 The emitter therefore installs its own `Printer.DocLinkURL` (`renderPackageDoc` in `readme.go`, resolver in
 `readmeDocLinks.go`). A standard-library target pins the Go release that produced the conversion —
-`https://pkg.go.dev/io@go1.23.1#Reader` — which is the same rule, and the same honesty doctrine, the Docs
+`https://pkg.go.dev/io@go1.24.13#Reader` — which is the same rule, and the same honesty doctrine, the Docs
 badge beside it already follows.
 
 **Completeness is structural here, not a judgement call, because the grammar is closed.**
@@ -627,11 +628,11 @@ badge beside it already follows.
 
 | `DocLink` fields | Emitted URL |
 |---|---|
-| `ImportPath` | `https://pkg.go.dev/io@go1.23.1` |
-| `ImportPath`, `Name` | `https://pkg.go.dev/io@go1.23.1#Reader` |
-| `ImportPath`, `Recv`, `Name` | `https://pkg.go.dev/io@go1.23.1#Writer.Write` |
-| `Name` | `https://pkg.go.dev/<current>@go1.23.1#Name` |
-| `Recv`, `Name` | `https://pkg.go.dev/<current>@go1.23.1#Recv.Name` |
+| `ImportPath` | `https://pkg.go.dev/io@go1.24.13` |
+| `ImportPath`, `Name` | `https://pkg.go.dev/io@go1.24.13#Reader` |
+| `ImportPath`, `Recv`, `Name` | `https://pkg.go.dev/io@go1.24.13#Writer.Write` |
+| `Name` | `https://pkg.go.dev/<current>@go1.24.13#Name` |
+| `Recv`, `Name` | `https://pkg.go.dev/<current>@go1.24.13#Recv.Name` |
 
 The two same-package forms cannot occur today — the converter leaves `Parser.LookupSym` nil, so `[NewInt]`
 stays literal text rather than becoming a link (which is why the corpus is full of escaped `\[Int]`,
@@ -931,8 +932,8 @@ Computing it in process is possible because `go/packages` is loaded with `LoadAl
 carries **syntax and type information for every dependency**, not only for the package being
 converted (measured on `log/slog`: 66 transitive dependencies, 66 with `TypesInfo`, 65 with `Syntax`
 — the one without is `unsafe`, which the pseudo-package fence already answers). Three shapes make
-that materially better than publishing the fact as a `package_info.cs` record: the three
-**hand-owned-by-consequence** packages (`internal/concurrent`, `internal/godebug`, `internal/weak`)
+that materially better than publishing the fact as a `package_info.cs` record: the
+**hand-owned-by-consequence** packages (`internal/godebug`; at Go 1.23.12 also `internal/concurrent` and `internal/weak`)
 never re-emit a `package_info.cs` at all, so a published record could never appear for them — and
 `internal/godebug` has an `init`; a **hand-owned file** inside a converted package is not visited, so
 its `init` would be invisible to a record scraped from emitted output, while Go's own graph still
@@ -15610,7 +15611,7 @@ copy(b, ab[:])                        // squeeze
 
 — purely managed storage on both sides. A `byte[]` view over a `uint64[]` has no managed spelling (the same fact that made `crypto/subtle`'s `words()` — a `uintptr[]` view over a `byte[]` — hand-owned), so `pointerReinterpretManagedSource` excludes pointer-to-ARRAY targets and the site keeps the raw-address route: `(ж<array<byte>>)(uintptr)(new unsafe.Pointer(Ꮡd.of(state.Ꮡa)))`. That box is fine as an *address*; the defect is what happens when it is **dereferenced**. `~ab` reads an `array<byte>` STRUCT — a backing-store REFERENCE plus bounds — out of the keccak state's own DATA, i.e. fabricates a managed reference, and the first use of it is an `AccessViolationException` inside `slice<byte>`'s constructor that kills the process. **`crypto/tls` reached it on every TLS 1.3 ClientHello** (`mlkem768.NewKeyFromSeed → kemKeyGen → sha3.Sum512`), where it claimed 10 of the package's 17 remaining divergences.
 
-**The emission is not wrong** -- there is no correct alternative, so the site is hand-owned (`src/core/vendor/golang.org/x/crypto/sha3/xor.cs`, `[module: GoManualConversion]`), and the remedy is `crypto/subtle`'s: `MemoryMarshal.AsBytes` over the array's own span is a genuine ALIASING view of the same backing storage, so the absorb's XOR lands in the real state and the squeeze reads it. Go's `cpu.IsBigEndian` branch is left exactly as converted; only the reinterpreting branch changes. (Guarded by `GolibTests.Sha3ReinterpretVectorTests` -- FIPS-202 vectors plus lengths straddling SHA3-256's 136-byte rate and an unaligned sub-slice, checked against the OS SHA-3 implementation; the vendored package has no `_test.go` in GOROOT and is not importable from a behavioral test, and an MSTest tier binding a converted package follows `GenericTests`, which references `core/sort`. Neutering the fix is a RUN control: the auto-converted `xor.cs` does not merely fail the vectors, it KILLS the test host with the AccessViolation above.)
+**The emission is not wrong** -- there is no correct alternative, so the site is hand-owned (`src/core/vendor/golang.org/x/crypto/sha3/xor.cs`, `[module: GoManualConversion]`), and the remedy is `crypto/subtle`'s: `MemoryMarshal.AsBytes` over the array's own span is a genuine ALIASING view of the same backing storage, so the absorb's XOR lands in the real state and the squeeze reads it. Go's `cpu.IsBigEndian` branch is left exactly as converted; only the reinterpreting branch changes. (Guarded by `GolibTests.Sha3ReinterpretVectorTests` -- FIPS-202 vectors plus lengths straddling SHA3-256's 136-byte rate and an unaligned sub-slice, checked against the OS SHA-3 implementation; the vendored package has no `_test.go` in GOROOT and is not importable from a behavioral test, and an MSTest tier binding a converted package follows `GenericTests`, which references `core/sort`. Neutering the fix is a RUN control: the auto-converted `xor.cs` does not merely fail the vectors, it KILLS the test host with the AccessViolation above.) *(At Go 1.24.13 `golang.org/x/crypto/sha3` is no longer vendored and this file is gone; the standard library's Keccak lives in `crypto/internal/fips140/sha3`, whose hand-owned `keccakf.cs`/`keccakf_impl.cs` take the reverse view — the `[200]byte` state as `[25]uint64` — by the same `MemoryMarshal.Cast` remedy. The MSTest guard's disposition is recorded at `src/tests/GolibTests/GolibTests.csproj:193-196`.)*
 
 **The same fork one RANK up — a NESTED array view, and why the native-array-view arc does not reach it (`internal/chacha8rand.setup`/`block_generic`, 2026-08-25).** sha3's is a `[200]byte` view of a `[25]uint64`: same rank, different element type. chacha8rand opens one `[32]uint64` allocation as `(*[16][4]uint32)(unsafe.Pointer(buf))` and that again as `(*[16][2]uint64)(unsafe.Pointer(b32))` — different element type **and** different RANK. The failure is the mild end of the fabrication: the buffer is ZEROED at the first call, so the `array<array<uint32>>` struct read out of it has a null backing, i.e. **length zero**, and the first index panics `index out of range [0] with length 0` rather than access-violating. `TestBlockGeneric` is the whole of the package's 1-of-4 gap, and the panic site — golib's `array<T>.get_Item` — is the same one `html`'s map-miss produced from a completely unrelated root, which is worth stating plainly: **`get_Item` is the DETECTOR of an unshaped array, never the defect**; two correlated crashes at one golib line were two different producers.
 
@@ -18215,6 +18216,10 @@ fail / C# fail reads as an ordinary *agreed failure*, so the row leaves the disc
 passing on a quieter host. Nothing in a go2cs branch can move either reading: the baseline is
 `go test -json` over GOROOT's own sources, where the BoGo shim is Go's own test binary.
 
+> *At go1.24.13 (after this ruling):* the BoGo fan-out is 3,419 rows (1 parent + 1,022 pass + 2,396
+> skip), `crypto/tls` banks 4759 + 1, and `TestBogoSuite` agrees pass/pass on its proof page, so the
+> annotated entry discloses nothing there. The figures in this entry are its date's.
+
 The ruling **refused** the broad remedy — accepting agreement-on-failure as satisfying a disclosure
 *in general*, which would make every pin self-satisfying the moment its baseline broke for any
 environmental reason, quietly decaying *Go passes, C# provably cannot* into *C# fails* — and adopted
@@ -18834,7 +18839,7 @@ Same platform caveat as runtime's `lock_sema` entries. No behavioral guard is ex
 
 **The testing shim's compile-only benchmark surface and `CoverMode` (`core/testing/testing.cs`).** Capability-excluded test and benchmark declarations still **compile** — exclusion gates the run registry, not emission — so every member their bodies reference must exist even though the code never executes (a broken emission inside an excluded test blocks the whole package build; see the strings/bytes blocker map, B6). The `B` surface (`N`, `Run`, `ReportAllocs`, `SetBytes`, `ResetTimer`, `StartTimer`, `StopTimer`, `Errorf`, `Fatal`, `Fatalf`) is therefore compile-only: safe non-throwing no-ops, with the params-taking members carrying explicit `ж<B>` overloads exactly as `T`'s do (ref-like `params` Spans are outside the RecvGenerator's synthesis). `testing.CoverMode()` returns `""` — not a stub-lie but Go's exact coverage-off value: the sole caller across the strings/bytes suites (strings' TestIndexRune) branches on `CoverMode() == ""` and so takes the same path as an uncovered `go test` run. Guarded by `TestingRuntimeTests.BenchmarkCompileSurfaceIsNoOpAndCoverModeReportsCoverageOff`, which compile-references every member through both receiver shapes and asserts the coverage-off semantic — removing any member fails the suite at build.
 
-**The same rule extends to `testing.F` (2026-07-20).** A `Fuzz*` declaration is classified disclosed-unsupported in the manifest exactly as a benchmark is (`testConversion.go` already emitted the `fuzz`/"deferred to Phase 4D" entry), but its converted body still compiles into the test assembly — and `F` simply did not exist, so math/big's `func FuzzExpMont(f *testing.F)` (nat_test.go) failed the whole package build with CS0426 *the type name 'F' does not exist in the type 'testing_package'*. `F` now mirrors `B`: a compile-only struct whose members are safe non-throwing no-ops, with explicit `ж<F>` overloads on the params-taking members. Its member set is Go 1.23's full public surface for `*testing.F` — the `TB` members it inherits from the embedded `common`, plus its own `Add` and `Fuzz` — declared complete under the same anti-drift rule as `TB` above rather than trimmed to today's callers. `Fuzz` takes a **`System.Delegate`**: a Go fuzz target's signature is arbitrary (`*testing.T` followed by the fuzzed argument types), and the converted body is an explicitly-typed lambda, so C# infers its natural `Action<…>` and converts — no per-arity overload set is needed. Nothing is invoked and no seed corpus is retained, because there is no fuzzing engine to consume either. This is not math/big-specific: roughly seventeen stdlib packages ship fuzz targets (archive/tar, archive/zip, compress/gzip, encoding/csv, encoding/json, html, image/{gif,jpeg,png}, net/netip, time, syscall, …), every one of which would hit the identical build blocker.
+**The same rule extends to `testing.F` (2026-07-20).** A `Fuzz*` declaration is classified disclosed-unsupported in the manifest exactly as a benchmark is (`testConversion.go` already emitted the `fuzz`/"deferred to Phase 4D" entry), but its converted body still compiles into the test assembly — and `F` simply did not exist, so math/big's `func FuzzExpMont(f *testing.F)` (nat_test.go) failed the whole package build with CS0426 *the type name 'F' does not exist in the type 'testing_package'*. `F` now mirrors `B`: a compile-only struct whose members are safe non-throwing no-ops, with explicit `ж<F>` overloads on the params-taking members. Its member set is Go 1.23's full public surface for `*testing.F` — the `TB` members it inherits from the embedded `common`, plus its own `Add` and `Fuzz` — declared complete under the same anti-drift rule as `TB` above rather than trimmed to today's callers. `Fuzz` takes a **`System.Delegate`**: a Go fuzz target's signature is arbitrary (`*testing.T` followed by the fuzzed argument types), and the converted body is an explicitly-typed lambda, so C# infers its natural `Action<…>` and converts — no per-arity overload set is needed. Nothing is invoked and no seed corpus is retained, because there is no fuzzing engine to consume either. This is not math/big-specific: roughly seventeen stdlib packages ship fuzz targets (archive/tar, archive/zip, compress/gzip, encoding/csv, encoding/json, html, image/{gif,jpeg,png}, net/netip, time, syscall, …), every one of which would hit the identical build blocker. At Go 1.24.13 the set follows 1.24's surface: `Chdir` and `Context`, which Go 1.24 added to `TB` and `F` inherits from `common`, joined it (`src/core/testing/testing.cs:589-591`).
 
 ### Realizing an asm-backed arch layer with managed hardware intrinsics
 
@@ -19255,6 +19260,16 @@ not merely skip the records — it would EMPTY a section the `-stdlib` emission 
 
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
+> **At Go 1.24.13 (dated amendment; the section below is the Go 1.23 surface it was written against).**
+> The package moved to `internal/sync`, and the hand-own is now
+> [`src/core/internal/sync/hashtriemap.cs`](../src/core/internal/sync/hashtriemap.cs), whose header
+> records the 1.24.13 surface: `NewHashTrieMap` is gone and the zero map is seeded by `init`/`initSlow`
+> on first touch (still from `abi.TypeOf(m).MapType()`'s `Hasher`); `V` widened to `any`, so
+> `CompareAndSwap` and `CompareAndDelete` panic up front for a non-comparable `V`; `keyEqual` is gone;
+> seven methods were added (`Clear`, `CompareAndSwap`, `Delete`, `LoadAndDelete`, `Range`, `Store`,
+> `Swap`); and `internal/sync` is no longer fully hand-owned, because `mutex.go` and `runtime.go`
+> convert. At 1.24 the same map also backs every `sync.Map` by default (`goexperiment.synchashtriemap`).
+
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —
 so this one type sits in front of `unique`'s entire suite, `net`'s last package-initializer root and
 `encoding/gob`'s `TestNetIP`. Go 1.23's implementation is a lock-free hash-trie, and **every bit of its
@@ -19477,6 +19492,12 @@ The .NET runtime breaks the invariant before user code runs: at startup on Linux
 Guarded by the `StdoutCloseEofBarrier` behavioral test, deliberately deadlock-shaped rather than timed: the child closes stdout and then blocks on stdin until the parent — who must first see the EOF — writes the release byte. A regression deadlocks both sides into the harness run-timeout instead of flaking on a threshold. The residual is documented in the golib file: `println` routes through `Console.Error`, whose on-demand duplicate of fd 2 would hold a *stderr* pipe the same way; no measured row needs stderr-close EOF propagation yet.
 
 ### `internal/weak.Pointer` — the CLR already has weak references, so the runtime handle becomes one
+
+> **At Go 1.24.13 (dated amendment; the section below is the Go 1.23 `internal/weak` it was written
+> against).** The package is the public `weak`, and `Strong` became `Value`; the hand-own is
+> [`src/core/weak/pointer.cs`](../src/core/weak/pointer.cs), on the same `WeakReference` design. It is
+> no longer its package's only Go file (`doc.go` converts), so `weak` re-emits its `.csproj`,
+> `package_info.cs` and `README.md`, and the layer beneath it is `internal/sync.HashTrieMap`.
 
 `internal/weak` is `unique`'s liveness model, one layer below `internal/concurrent.HashTrieMap` and in
 front of the same consumers. The package's entire body is two `//go:linkname` declarations, and both
@@ -21526,7 +21547,7 @@ shape; no want-0 COUNT entry pre-declares one (a flip to BYTES there is a relabe
 happens), and whether a want-0 BYTES entry with a nameable uncounted residue belongs in
 `alloc-count-semantics` is an open post-hop question.
 
-**And a THIRD label stays, for a different reason.** `alloc-count-semantics` (8 entries) names an
+**And a THIRD label stays, for a different reason.** `alloc-count-semantics` (8 entries at this ruling; 5 at go1.24.13) names an
 assertion whose UNIT cannot be measured on the host — `reflect`'s `TestChanAlloc` wants 1 where our
 counter is silent and the figure is bytes. That is not a bigger number, it is a different unit, so it
 is neither deferrable nor structural. The three live labels are therefore `deferred` (measurable, can

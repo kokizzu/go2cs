@@ -5,6 +5,10 @@ library that compiles, passes its upstream tests, and has working C# implementat
 assembly-backed declarations. Sequenced **green the loop first**, then compile, validate, and complete
 the full conversion.
 
+> **Status (<release date>): the corpus is on Go 1.24.13**, published as `1.24.13.1`. The hop re-derived
+> every roster row from Go 1.24.13's own test sources; the [roster](ValidatedTestPackages.md)'s header
+> carries the current figures. The dated status below records the Phase-3 milestone.
+>
 > **Status (2026-07-10): Phases 0–3 done — the full standard library compiles.** All **302** packages of
 > the auto-conversion (Go 1.23.1) build clean as .NET assemblies (commit `51ba5d9cf`,
 > tag `stdlib-green-2026-07-10`) — the Phase-3 milestone. **Compiling, not yet operational:** Phase 4 will
@@ -102,7 +106,7 @@ more). So "green the loop" means **green `fmt`'s closure**, bottom-up.
   | 18 | CS1003 | syntax error, X expected | open (syntax cluster) |
   | 18 | CS0051 | inconsistent accessibility (param type less accessible) | open |
   | — | CS0103 | missing package-level lookup tables (e.g. `ntz8tab`/`pop8tab` in math/bits) | open |
-- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.12) →
+- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.24.13) →
   re-transpile → `dotnet build`. (For behavioral tests the harness runs this loop itself — see
   [`/CLAUDE.md`](../CLAUDE.md) "Test-harness mechanics".)
 - **Retarget detail:** the stdlib converter writes to **`<go2cspath>/core/<pkg>`** (hardcoded `core` subdir).
@@ -848,7 +852,7 @@ every NuGet package, and knowing which is which explains what works where:
 1. **The runtime library (`go.lib`) selects its platform at RUN time**, like any cross-platform
    .NET library — where it needs the OS (console fd writes, synchronization primitives, timers) it
    branches per-OS, so these paths are operational on Windows, Linux and macOS today.
-2. **Platform-neutral converted packages** (~270 of ~305) contain no platform-varying code at all —
+2. **Platform-neutral converted packages** (~305 of ~340) contain no platform-varying code at all —
    their IL behaves identically on any OS .NET supports. This is why `fmt`-class programs — the
    Tour of Go, for instance — run correctly on Linux from today's packages.
 3. **Platform-varying converted packages** (the 37) select their platform at BUILD time, faithful

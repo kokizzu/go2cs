@@ -295,6 +295,7 @@
     **by consequence** and are never re-emitted, a fact CLAUDE.md still records in the singular
     against `internal/godebug` when it holds for `internal/concurrent` and `internal/weak` too.
     Only the panic went away; the mechanism behind it did not.
+    *(2026-09-24, Go 1.24.13: `internal/concurrent` and `internal/weak` no longer exist; their successors `internal/sync` and `weak` convert ordinary files beside the hand-owned one, so the class is re-derived rather than restated here.)*
 22. **The four items the warning-suppression arc deliberately did not take.** r46b landed the
     configuration half of [`phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md)
     and stopped there on purpose; §5 and §7 of that doc carry the full detail, this is only the

@@ -647,7 +647,7 @@ Reading a `-tests` result, mass-empty signatures and the census/launch traps now
      of the converter fail (`go.mod requires go >= 1.24.13`), CNR throws, and the wrapper reported CHANGED 0
      — route #6's shape, caught only by the exit 1. **A CNR wrapper asserts the VERDICT LINE (`==> NO
      REGRESSION` or `==> CHANGED`) and the measurable count; a zero from an absent list is not a reading.**
-     Under the two-pin pairing `GOTOOLCHAIN` stays UNSET (auto) on the 1.23.12 pin so the converter build
+     Under the two-pin pairing `GOTOOLCHAIN` stays UNSET (auto) while the corpus pin trails the converter's go.mod (1.23.12 during the 1.24.13 hop; closed at go1.24.13, where both read 1.24.13) so the converter build
      can switch UP through the module graph. -->
 
 ## The false-green routes
@@ -796,7 +796,7 @@ toolchain change any more.**
 environment re-exported to the corpus release and the toolchain rule on `auto`, Go switches ONLY the
 converter's own build to the newer directive and leaves every corpus module at the corpus release. Gate
 it with an AFTER-GUARD that re-reads the BINARY's release; NOT MEASURED beats a count nobody can stand
-behind. **`GOTOOLCHAIN` stays UNSET (auto) on the 1.23.12 pin** so that switch can happen: at
+behind. **`GOTOOLCHAIN` stays UNSET (auto) while the corpus pin trails the converter's `go.mod`** (a hop's two-pin window; at go1.24.13 both read 1.24.13 and the window is closed) so that switch can happen: at
 `GOTOOLCHAIN=local` CNR's OWN `go build` of the converter fails `go.mod requires go >= 1.24.13` and
 throws, which a wrapper then reports as "CHANGED 0". **The behavioral runner is green by a DIFFERENT route than CNR**: its predicate reads the
 toolchain version at the RUNNER's cwd, which has no module file above it and answers the CORPUS release

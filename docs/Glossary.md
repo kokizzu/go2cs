@@ -54,9 +54,9 @@ those act at compile/run time where CNR is blind. A gen change additionally requ
 silently tests the *old* generator.
 
 <a id="census"></a>**Census** (`dotnet build src/go2cs-stdlib.slnx` + an own-DLL count script).
-The Phase-3 progress metric: how many of the ~302 auto-converted stdlib projects **emit their own
+The Phase-3 progress metric: how many of the auto-converted stdlib projects **emit their own
 assembly** (`bin/Debug/net10.0/<AssemblyName>.dll` exists after a full solution build). Reported as
-`N / 302`. The metric is **packages-compiling, not error count** — clearing an error family can
+`N / total` (302 at the Phase-3 milestone, Go 1.23.1). The metric is **packages-compiling, not error count** — clearing an error family can
 *raise* the raw error count by unmasking latent errors behind it, and that is progress.
 Each census diff reports **GREENED** (was red, now green) and **REGRESSED** (must be empty —
 the zero-regression invariant).
