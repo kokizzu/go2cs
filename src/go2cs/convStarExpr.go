@@ -16,6 +16,12 @@ import (
 )
 
 func (v *Visitor) convStarExpr(starExpr *ast.StarExpr, context StarExprContext) string {
+	// A value pun READ, `*(*U)(unsafe.Pointer(&x))` over same-size sized numerics, is a bitcast of x's
+	// value (valuePunOperations.go) -- not a reinterpret of a box x would otherwise need.
+	if emission, ok := v.valuePunEmission(starExpr); ok {
+		return emission
+	}
+
 	ident := getIdentifier(starExpr.X)
 	pointerRecv, recvName := v.isPointerReceiver()
 

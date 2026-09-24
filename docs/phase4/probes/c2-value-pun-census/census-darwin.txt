@@ -1,0 +1,16 @@
+prod call math.Float32bits                                                                 12
+prod call math.Float32frombits                                                             14
+prod call math.Float64bits                                                                 46
+prod call math.Float64frombits                                                             46
+prod pun WRITE, numeric, equal size, x's address taken ONLY by puns                        4
+prod pun WRITE, other types, x's address taken ONLY by puns                                9
+prod pun of a non-identifier (&expr)                                                       25
+prod pun read, numeric, UNEQUAL size, x's address taken ONLY by puns                       1
+prod pun read, numeric, equal size, x's address taken ONLY by puns                         12
+prod pun read, other types, x's address taken ONLY by puns                                 30
+prod pun read, other types, x's address taken elsewhere too                                1
+test call math.Float32bits                                                                 11
+test call math.Float32frombits                                                             47
+test call math.Float64bits                                                                 27
+test call math.Float64frombits                                                             41
+test pun read, other types, x's address taken ONLY by puns                                 5

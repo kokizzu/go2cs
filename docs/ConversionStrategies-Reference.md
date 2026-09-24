@@ -15778,6 +15778,60 @@ internal static uintptr int32Hash(uint32 iʗp, uintptr seed) {
 
 Boundaries, each guarded in `syscallFunnelSet_test.go`: a BARE `f(unsafe.Pointer(&x))` argument is not bridged (the Pointer retains its box through the call) and records nothing; a package-level variable's box is a static field and records nothing; an outer CONVERSION (`n := uintptr(noescape(unsafe.Pointer(&i)))`, runtime's `stdcallN` / `mstart0` shape) records nothing, because a stored number is outside the class — a KeepAlive after the store would hold the box exactly as far as the store. The drain is per STATEMENT: a box named inside an `if` condition is kept alive by the first statement after the call (inside the body or after the `if` — a use on any path after the call keeps the local live at it); a `for` INIT/POST clause, emitted inside the C# header where no statement can follow, is refused by name (`rejectForClauseKeepAlive`), as a deferred or spawned call is (the contract is statement-scoped and a `defer` runs at unwind); a function literal converts its body against an EMPTY pending list and restores the enclosing statement's afterwards, so a box the enclosing call named before its literal argument was converted is never drained inside the lambda. `src/syscall-keepalive-census.ps1` walks the converted emission: every captured temp has exactly one KeepAlive (arm 1), hand-own pointer arguments are held across their call (arm 2), and no raw pointer-derived funnel argument remains (arm 3 — RED 104 on the pre-cut darwin emission, which had never been through the funnel path).
 
+### A numeric value pun READ is a bitcast — `*(*uint64)(unsafe.Pointer(&f))` boxes nothing
+
+Go's `math.Float64bits` is one line, `return *(*uint64)(unsafe.Pointer(&f))`, and Go compiles it to a
+register move. The general pointer-reinterpret emission (this section's neighbours) had to treat it like
+any other address-of:
+- `f` was heap-boxed because its address is taken;
+- it was read back through `~Ꮡf.Reinterpret<float64, uint64>()`.
+
+That is **three counted objects per call** where Go has none: the box, its pinnable slot, and the
+reinterpreting field reference. GolibTests' `ValuePunBitcastTests` measures the old body at exactly 3.
+Every caller paid it, including encoding/binary, strconv's float formatting, log/slog's float
+`Value`s and gob.
+
+**A pun that is only READ, between two same-size predeclared sized numerics** (int8…int64, uint8…uint64,
+float32, float64), now renders as golib's value bitcast (`Unsafe.BitCast`). Its `&x` no longer counts as
+address-taken, so `x` stays an ordinary parameter or local when that was its only address use:
+
+```go
+func Float64bits(f float64) uint64 { return *(*uint64)(unsafe.Pointer(&f)) }
+```
+```csharp
+public static uint64 Float64bits(float64 f) {
+    return bitcast<float64, uint64>(f);
+}
+```
+
+**The shapes that keep the aliasing reinterpret, deliberately:**
+- a pun that is WRITTEN, e.g. runtime/minmax.go's `*(*uint32)(unsafe.Pointer(&x)) |= …`, whose write
+  must land in `x`;
+- a pun whose result is addressed;
+- a named type;
+- `int`/`uint`/`uintptr`, whose width is the target's;
+- `bool`, complex and every composite.
+
+A pun read whose `x` is ALSO addressed elsewhere still bitcasts, and its box stays for that other use.
+The recognition is a per-package pre-pass (`valuePunOperations.go`), and escape analysis skips the `&x`
+it consumes. The `//go:cgo_unsafe_args` lift is the precedent for both.
+
+**Stdlib footprint at `fa18863b94`:** all 12 production pun reads, identical on windows, linux and
+darwin:
+- math ×4;
+- runtime's `float64bits`/`float64frombits` and its two histogram infinities;
+- reflect's two float32 register moves;
+- internal/runtime/atomic's `Float64.Load`/`Store`.
+
+That is 5 files plus their position maps (9 per target), each target −49/+29, and the census is in
+`docs/phase4/probes/c2-value-pun-census/`.
+
+**Guarded by:**
+- the `ValuePunBits` behavioral test (an accepted read, an address kept elsewhere, and a write), and
+  `UnsafeOperations`, whose golden moves on its own three pun reads;
+- the converter's `TestValuePunReadRendersAsABitcastWithoutABox`, controlled both ways;
+- GolibTests' `ValuePunBitcastTests`.
+
 ### The pointer-word read — `*(*unsafe.Pointer)(unsafe.Pointer(&x))` emits a CARRYING pointer, never a byte pun
 
 Go's idiom for reading the pointer word stored at some location — `time.syncTimer`'s

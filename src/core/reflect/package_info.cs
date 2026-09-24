@@ -82,7 +82,7 @@ using static go.reflect_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("reflect/abi.go", "abi.cs", "AFW4AYKClIKClIKCgqyygoKClJSu9IKCAA4egriCpoKClAACEgAJBIKSgoIABxCClIKClAAElgEACQKClIKUgpSCgoKU3JQAAhLigpSClILclK7CguwAIEiCgoKCgoKCgoKCgoKCgqaigoKClLgACBKWqIaSgoKCgpSmpoKCgpSCgoKCyqiCqIbsgoKCgpSCgu6CrNKs0qzSlKSkzrKUpKQ=")]
 [assembly: go.GoPositionMap("reflect/badlinkname.go", "badlinkname.cs", "AAw6ABACAAIU9qampqampqampqampqampqampqampqampqampqam")]
-[assembly: go.GoPositionMap("reflect/float32reg_generic.go", "float32reg_generic.cs", "AAogwpKmog==")]
+[assembly: go.GoPositionMap("reflect/float32reg_generic.go", "float32reg_generic.cs", "AAogwoKmgg==")]
 [assembly: go.GoPositionMap("reflect/iter.go", "iter.cs", "AAoWtoKUgqaClIIABRrygoKGppSkpKSkpKSkpKSktIKUgoKCguqCgoLagoKC2oKCgoLagoKC2gACENKCgoampIKUgoKCguqCgoLagoKC2oKCgoLa", "14-28:1;40-45:1;41-43:1.1;74-81:2;83-89:3;91-97:4;99-106:5;108-114:6;126-131:1;127-129:1.1;138-145:2;147-153:3;155-161:4;163-170:5")]
 [assembly: go.GoPositionMap("reflect/makefunc.go", "makefunc.cs", "ABqcAQAPJPKCqIKCpoSWggAMHISmggACEAAPLAAOAqaCyg==")]
 [assembly: go.GoPositionMap("reflect/map_swiss.go", "map_swiss.cs", "ABfEAQAHEoKUgpYACRSEAAkUggAGXtKCgpaCrNKCgpYAG/4D0g==")]

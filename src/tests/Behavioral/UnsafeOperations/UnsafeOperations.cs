@@ -47,16 +47,12 @@ internal static ref Outer gOuter => ref ᏑgOuter.Value;
     internal byte tail;
 }
 
-public static uint64 Float64bits(float64 fʗp) {
-    ref var f = ref heap(fʗp, out var Ꮡf);
-
-    return ~Ꮡf.Reinterpret<float64, uint64>();
+public static uint64 Float64bits(float64 f) {
+    return bitcast<float64, uint64>(f);
 }
 
-public static float64 Float64frombits(uint64 bʗp) {
-    ref var b = ref heap(bʗp, out var Ꮡb);
-
-    return ~Ꮡb.Reinterpret<uint64, float64>();
+public static float64 Float64frombits(uint64 b) {
+    return bitcast<uint64, float64>(b);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -87,11 +83,10 @@ internal static void Main() {
     t1.a = 42;
     var t2 = ~Ꮡt1.Reinterpret<T1, T2>();
     fmt.Println(valueOfT2Aˢ, t2.a);
-    ref var i = ref heap(new int8(), out var Ꮡi);
-    i = -1;
+    int8 i = -1;
     int16 j = (int16)i;
     fmt.Println(i, j);
-    uint8 k = ~Ꮡi.Reinterpret<int8, uint8>();
+    uint8 k = bitcast<int8, uint8>(i);
     fmt.Println(k);
     main_x x = default!;
     uintptr M = /* unsafe.Sizeof(x.c) */ 16;

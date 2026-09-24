@@ -1,0 +1,57 @@
+internal/abi/type.go:179	read	other types	x's address taken ONLY by puns
+internal/runtime/atomic/types.go:438	read	numeric, equal size	x's address taken ONLY by puns
+internal/runtime/atomic/types.go:445	read	numeric, equal size	x's address taken ONLY by puns
+math/unsafe.go:24	read	numeric, equal size	x's address taken ONLY by puns
+math/unsafe.go:30	read	numeric, equal size	x's address taken ONLY by puns
+math/unsafe.go:35	read	numeric, equal size	x's address taken ONLY by puns
+math/unsafe.go:41	read	numeric, equal size	x's address taken ONLY by puns
+reflect/float32reg_generic.go:18	read	numeric, equal size	x's address taken ONLY by puns
+reflect/float32reg_generic.go:22	read	numeric, equal size	x's address taken ONLY by puns
+reflect/map_swiss.go:66	read	other types	x's address taken ONLY by puns
+reflect/type.go:1354	read	other types	x's address taken ONLY by puns
+reflect/type.go:1798	read	other types	x's address taken ONLY by puns
+reflect/type.go:1852	read	other types	x's address taken ONLY by puns
+reflect/type.go:2081	read	other types	x's address taken ONLY by puns
+reflect/type.go:2419	read	other types	x's address taken ONLY by puns
+reflect/type.go:2607	read	other types	x's address taken ONLY by puns
+reflect/value.go:1143	read	other types	x's address taken ONLY by puns
+reflect/value.go:2520	read	other types	x's address taken ONLY by puns
+runtime/cgocall.go:445	WRITE	other types	x's address taken ONLY by puns
+runtime/coro.go:50	read	other types	x's address taken ONLY by puns
+runtime/debugcall.go:128	read	other types	x's address taken ONLY by puns
+runtime/debugcall.go:266	WRITE	other types	x's address taken ONLY by puns
+runtime/debuglog.go:717	read	other types	x's address taken ONLY by puns
+runtime/float.go:47	read	numeric, equal size	x's address taken ONLY by puns
+runtime/float.go:53	read	numeric, equal size	x's address taken ONLY by puns
+runtime/heapdump.go:510	read	numeric, UNEQUAL size	x's address taken ONLY by puns
+runtime/histogram.go:157	read	numeric, equal size	x's address taken ONLY by puns
+runtime/histogram.go:162	read	numeric, equal size	x's address taken ONLY by puns
+runtime/mbitmap.go:594	read	other types	x's address taken ONLY by puns
+runtime/mcleanup.go:100	read	other types	x's address taken ONLY by puns
+runtime/mcleanup.go:81	read	other types	x's address taken ONLY by puns
+runtime/metrics.go:851	read	other types	x's address taken ONLY by puns
+runtime/mfinal.go:212	read	other types	x's address taken ONLY by puns
+runtime/mheap.go:547	read	other types	x's address taken elsewhere too
+runtime/minmax.go:57	WRITE	other types	x's address taken ONLY by puns
+runtime/minmax.go:57	read	other types	x's address taken ONLY by puns
+runtime/minmax.go:59	WRITE	other types	x's address taken ONLY by puns
+runtime/minmax.go:59	read	other types	x's address taken ONLY by puns
+runtime/minmax.go:67	WRITE	other types	x's address taken ONLY by puns
+runtime/minmax.go:67	read	other types	x's address taken ONLY by puns
+runtime/minmax.go:69	WRITE	other types	x's address taken ONLY by puns
+runtime/minmax.go:69	read	other types	x's address taken ONLY by puns
+runtime/mpagealloc_64bit.go:253	read	other types	x's address taken ONLY by puns
+runtime/mpagealloc_64bit.go:86	read	other types	x's address taken ONLY by puns
+runtime/proc.go:7409	read	other types	x's address taken ONLY by puns
+runtime/proc.go:7418	read	other types	x's address taken ONLY by puns
+runtime/runtime1.go:255	WRITE	numeric, equal size	x's address taken ONLY by puns
+runtime/runtime1.go:263	WRITE	numeric, equal size	x's address taken ONLY by puns
+runtime/runtime1.go:271	WRITE	numeric, equal size	x's address taken ONLY by puns
+runtime/runtime1.go:279	WRITE	numeric, equal size	x's address taken ONLY by puns
+runtime/string.go:323	WRITE	other types	x's address taken ONLY by puns
+runtime/string.go:338	WRITE	other types	x's address taken ONLY by puns
+runtime/string.go:355	WRITE	other types	x's address taken ONLY by puns
+runtime/string.go:602	read	other types	x's address taken ONLY by puns
+runtime/stubs.go:401	read	other types	x's address taken ONLY by puns
+runtime/synctest.go:177	read	other types	x's address taken ONLY by puns
+time/sleep.go:45	read	other types	x's address taken ONLY by puns

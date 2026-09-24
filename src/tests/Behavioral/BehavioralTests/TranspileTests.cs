@@ -2053,6 +2053,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
 
     [TestMethod]
+    public void CheckValuePunBits() => CheckTarget("ValuePunBits");
+
+    [TestMethod]
     public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
 
     [TestMethod]
