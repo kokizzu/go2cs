@@ -11,15 +11,15 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ## 📰 NEWS — Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24
 
-**219 of the 230 testable standard-library packages pass their own Go test suites in C#** — 58,319
+**218 of the 230 testable standard-library packages pass their own Go test suites in C#** — 56,974
 matching verdicts against `go test -json`, compared verdict for verdict, with 283 divergences
 disclosed by exact failure signature and nothing else waived. Six of those 230 cannot be validated
 at all — a suite whose whole subject is the raw memory layout a managed runtime deliberately does
 not have, or a comparison that runs cleanly and validates nothing — so the honest denominator is
-**224, putting the roster at 97.8%**.
+**224, putting the roster at 97.3%**.
 Each of the six is listed with its class, mechanism and evidence in the
 [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and any one of them rejoins the
-count the day its evidence changes. On Linux, 188 of the 217 applicable rows validate at their own
+count the day its evidence changes. On Linux, 187 of the 216 applicable rows validate at their own
 Linux counts. A package appears on the [roster](ValidatedTestPackages.md) only when *every* eligible
 test agrees, and every row links a [proof page](validation/index.md) listing Go's verdict beside
 go2cs's, test by test.

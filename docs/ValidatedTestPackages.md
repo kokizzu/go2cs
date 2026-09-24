@@ -132,9 +132,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **219 / 230 testable packages validated — 95.2%**
+> ### Phase 4 progress: **218 / 230 testable packages validated — 94.8%**
 >
-> **58,319 matching test verdicts · 283 disclosed** *(updated 2026-09-23 — maintained as part of the
+> **56,974 matching test verdicts · 283 disclosed** *(updated 2026-09-23 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 230 of the 346
 > packages `go list std` reports at go1.24.13 whose test files surviving the corpus axis —
 > windows/amd64, `-tags purego,math_big_pure_go` — declare a `Test` function. The 230 are enumerated,
@@ -151,7 +151,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > two disagree — and the one figure the table cannot know, the denominator, is checked against the
 > enumerated population file instead, along with every banked and excluded row's membership in it.
 >
-> **Against the implementable set (230 − 6 excluded = 224): 219 / 224 — 97.8%.** Both numbers are
+> **Against the implementable set (230 − 6 excluded = 224): 218 / 224 — 97.3%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > six, each with its class, mechanism and evidence, are in
@@ -164,7 +164,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > record kept in [The 215, derived](#the-215-derived--and-the-thirteen-rows-that-are-not-yet-banked)
 > beneath it.
 >
-> **Linux: 188 of 217 applicable rows validated at their Linux counts** — 49,636 matching verdicts · 163 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 187 of 216 applicable rows validated at their Linux counts** — 49,629 matching verdicts · 163 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
