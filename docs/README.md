@@ -9,34 +9,17 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24
+## 📰 NEWS — The converted standard library moves to Go 1.24.13
 
-**218 of the 230 testable standard-library packages pass their own Go test suites in C#** — 56,974
-matching verdicts against `go test -json`, compared verdict for verdict, with 283 divergences
-disclosed by exact failure signature and nothing else waived. Six of those 230 cannot be validated
-at all — a suite whose whole subject is the raw memory layout a managed runtime deliberately does
-not have, or a comparison that runs cleanly and validates nothing — so the honest denominator is
-**224, putting the roster at 97.3%**.
-Each of the six is listed with its class, mechanism and evidence in the
-[exclusion ledger](ValidatedTestPackages.md#excluded-packages), and any one of them rejoins the
-count the day its evidence changes. On Linux, 187 of the 216 applicable rows validate at their own
-Linux counts. A package appears on the [roster](ValidatedTestPackages.md) only when *every* eligible
-test agrees, and every row links a [proof page](validation/index.md) listing Go's verdict beside
-go2cs's, test by test.
-
-**The package count moved 204 → 203 on 2026-09-22, with the Go 1.24.13 relocation map.** Ten banked
-rows have no package at their banked path at Go 1.24.13 and retired; nine of their successors banked
-by inheritance, carrying those rows' own anchors, and the verdict and disclosure sums are unchanged.
-The per-row arithmetic is in the roster's
-[H10 relocation map](ValidatedTestPackages.md#the-h10-relocation-map). The 2026-09-07 announcement
-linked below records the closed 1.23.12 anchor at its own figures, which is what a record is for.
-
-Those figures are the **Go 1.23.12 anchor** — a closed record rather than a running total. The
-corpus now moves to **Go 1.24.13**, and a version hop re-derives every roster row from the new
-release's own test sources, so the five packages still unbanked here re-validate there on exactly
-the footing of the 204 that banked. The 1.23.12 corpus ships one final NuGet release first, freezing
-its roster, its proof pages and every package README at the record above — see
-[the announcement](NEWS.md#september-7-2026--the-go-12312-record-closes-at-its-anchor-the-corpus-hops-to-go-124).
+go2cs now converts Go 1.24.13's standard library, and **218 of the 230 testable standard-library
+packages (94.8%) pass their own Go 1.24.13 test suites in C#**, compared verdict for verdict against
+`go test -json`, with every difference disclosed. Each row of the
+[validated roster](ValidatedTestPackages.md) links a proof page that lists Go's verdict beside
+go2cs's, test by test. Converted programs can use Go 1.24's new APIs, such as `os.Root`,
+`weak.Pointer` and `crypto/mlkem`, and the converted library ships as **NuGet 1.24.13.1**,
+targeting .NET 10. `net/http` ships in the release but is not yet validated. The
+[full announcement](NEWS.md#september-24-2026--the-converted-standard-library-moves-to-go-12413-and-218-packages-validate-against-it)
+has the details.
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -559,6 +542,7 @@ High level timeline of the project's major turning points.
 | 2026-08-25 | [**Both runtime pins move: .NET 10 + Go 1.23.12**](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself) | `925e48067` · `a2e079259` | 955 project files to `net10.0` with zero emission drift, three OS flavors green; the full roster re-derives from 1.23.12's own test sources — **162/162, 18,598** matching verdicts (+29, exactly the four re-derived rows). |
 | 2026-08-29 | [**Over 90% of the standard library's test suites pass in C#**](NEWS.md#august-29-2026--over-90-of-the-standard-librarys-test-suites-pass-in-c) | `773afa2c2` · `d2da277f5` · `nuget-1.23.12.2` | **189/215** packages, 26,043 matching verdicts, 148 disclosed — **189/208 = 90.9%** against the implementable set; `net` aboard at 472 verdicts, `reflect` executing for the first time; 189 proof pages frozen for the 1.23.12.2 release. |
 | 2026-09-07 | [**Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24**](NEWS.md#september-7-2026--the-go-12312-record-closes-at-its-anchor-the-corpus-hops-to-go-124) | `95daed007` | **204/215** packages, 28,459 matching verdicts, 167 disclosed — **204/209 = 97.6%** against the implementable set, frozen as the Go 1.23.12 anchor; the five rows still unbanked re-validate under Go 1.24.13, where a hop re-derives every row from scratch. |
+| 2026-09-24 | [**The converted standard library moves to Go 1.24.13**](NEWS.md#september-24-2026--the-converted-standard-library-moves-to-go-12413-and-218-packages-validate-against-it) | `<sha>` · `nuget-1.24.13.1` | **218/230** packages, 56,974 matching verdicts, 283 disclosed — **218/224 = 97.3%** against the implementable set; every row re-derived from Go 1.24.13's own test sources; `net/http` not validated at Go 1.24.13, its 17 divergences all under Go 1.24's new `internal/synctest`; published as NuGet 1.24.13.1 (51 new package IDs, 14 ended). |
 
 ## C# to Go?
 

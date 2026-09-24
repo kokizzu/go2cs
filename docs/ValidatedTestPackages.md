@@ -141,11 +141,9 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > name by name, in
 > [`docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt`](phase4/hopA-inputs/recon-lists/population-go1.24.13.txt).)*
 >
-> **The package count moved 204 → 203 on 2026-09-22, by the H10 relocation and nothing else.** Ten
-> banked rows have no package at their banked path at go1.24.13 and retired; nine of their successors
-> banked by inheritance, carrying those rows' own 1.23.12 anchors. The verdict and disclosure sums
-> above are unchanged, which is what an inheritance bank means, and the Linux line below moved with
-> the retired rows' own annotations. The per-row arithmetic is in
+> **Ten rows moved with Go 1.24's import paths.** Ten packages validated at Go 1.23.12 have no package
+> at their old path at go1.24.13; their tests validate under the packages that now hold them, and each
+> of those rows carries its own go1.24.13 counts. The per-row arithmetic is in
 > [The H10 relocation map](#the-h10-relocation-map); every figure in this block is recomputed from
 > the table by [`src/check-roster-format.ps1`](../src/check-roster-format.ps1), which fails when the
 > two disagree — and the one figure the table cannot know, the denominator, is checked against the
@@ -165,6 +163,21 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > beneath it.
 >
 > **Linux: 187 of 216 applicable rows validated at their Linux counts** — 53,048 matching verdicts · 162 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+
+<!-- Superseded 2026-09-24 (H12 C5; the 1.24.13.1 announcement's Piece 5(a), owner-accepted r3 at
+     claude/coord-handover 77f85249fe). From 2026-09-22 until the H10 close re-banked every row at its
+     own go1.24.13 counts, the header paragraph above read as follows (blockquote markers dropped):
+
+     **The package count moved 204 → 203 on 2026-09-22, by the H10 relocation and nothing else.** Ten
+     banked rows have no package at their banked path at go1.24.13 and retired; nine of their successors
+     banked by inheritance, carrying those rows' own 1.23.12 anchors. The verdict and disclosure sums
+     above are unchanged, which is what an inheritance bank means, and the Linux line below moved with
+     the retired rows' own annotations. The per-row arithmetic is in
+     [The H10 relocation map](#the-h10-relocation-map); every figure in this block is recomputed from
+     the table by [`src/check-roster-format.ps1`](../src/check-roster-format.ps1), which fails when the
+     two disagree — and the one figure the table cannot know, the denominator, is checked against the
+     enumerated population file instead, along with every banked and excluded row's membership in it.
+-->
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `path/filepath` offers
