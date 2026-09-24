@@ -94,12 +94,31 @@ function Die([string] $Message) { Write-Host $Message -ForegroundColor Red; exit
 # the signer's verdict, the first time Phase 0 ran. Every sibling call therefore goes through a
 # CHILD PROCESS, whose exit code is a value rather than a fate. (The card PIN cache is
 # unaffected: it lives in the `dotnet nuget sign` process, not in PowerShell.)
+#
+# THE CHILD'S EXIT CODE DECIDES, NEVER A STDERR LINE (2026-09-24, ledger 620ba7a2b8). This ran the
+# child with `2>&1` under the script's $ErrorActionPreference = 'Stop', and under 'Stop' Windows
+# PowerShell turns the FIRST stderr line of a redirected native command into a terminating
+# NativeCommandError. A child that failed by throwing -- which is how push-nuget.ps1 reports every
+# red -- therefore killed THIS script at that line: none of the child's output printed (a red
+# -VerifyOnly showed a truncated throw and no census line, no named problem), and the caller's own
+# failure message never ran (Phase 1's "version.props was already bumped ... delete the tag" recovery
+# text, which is the one line an operator needs after a bump). Measured on the i7 at bccf8d977b.
+#
+# Now: 'Continue' in THIS function's scope only, so a stderr line is an ordinary record; every line,
+# stdout and stderr, is streamed to the console AS IT ARRIVES when -Passthru is given (a Phase-1 pack
+# runs for tens of minutes, and a buffered console looks hung) and collected as text for callers that
+# read it; and the verdict is $LASTEXITCODE alone, which is the child's exit code.
 function Invoke-Sibling {
     param([string] $Script, [string[]] $Arguments, [switch] $Passthru)
-    $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $Script @Arguments 2>&1
+    $ErrorActionPreference = 'Continue'
+    $lines = New-Object System.Collections.Generic.List[string]
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $Script @Arguments 2>&1 | ForEach-Object {
+        $line = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { "$_" }
+        $lines.Add($line)
+        if ($Passthru) { Write-Host $line }
+    }
     $code = $LASTEXITCODE
-    if ($Passthru) { $out | ForEach-Object { Write-Host $_ } }
-    [pscustomobject]@{ Output = $out; ExitCode = $code }
+    [pscustomobject]@{ Output = $lines.ToArray(); ExitCode = $code }
 }
 
 # ---- -VerifyOnly: the tree check, ahead of every publication gate ----------------------------
