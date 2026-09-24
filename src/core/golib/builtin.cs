@@ -367,6 +367,24 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// The read-only twin of the span form above: Go's <c>append(b, s...)</c> with a STRING operand,
+    /// whose spread is a <see cref="ReadOnlySpan{T}"/> because no view of a string's bytes may be
+    /// writable (see <see cref="@string.ToSpan"/>).
+    /// </summary>
+    /// <remarks>
+    /// It has to exist on the concrete <see cref="slice{T}"/>. Without it the only overload taking a
+    /// read-only span is the CONSTRAINED <c>append&lt;S, T&gt;(S, params ReadOnlySpan&lt;T&gt;)</c>, which
+    /// C# binds with <c>S = slice&lt;T&gt;</c>, and its <c>new slice&lt;T&gt;(s)</c> boxes the struct: a 56-byte
+    /// object per call that AllocationCounter never sees. Measured when the string views went read-only:
+    /// strings.Builder.WriteString's <c>append(b.buf, s...)</c> read +56 B/run on TestBuilderAllocs and
+    /// TestBuilderGrowSizeclasses, and bytes' TestWriteAppend +5,600 B/run, all at unchanged counts.
+    /// </remarks>
+    public static slice<T> append<T>(slice<T> slice, params ReadOnlySpan<T> elems)
+    {
+        return go.slice<T>.Append(slice, elems);
+    }
+
+    /// <summary>
     /// Appends a whole slice's elements — Go's <c>append(s, t...)</c> with a slice-typed spread
     /// operand, the spread riding on the NAME (<c>appendꓸꓸꓸ(s, t)</c>, the same glyph the operand
     /// spread and the variadic delegate families already use). The operand arrives AS THE SLICE IT

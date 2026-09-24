@@ -75,6 +75,32 @@ public class StringViewTierTests
         Assert.AreEqual((byte)9, seq.ꓸꓸꓸ[1]);
     }
 
+    [TestMethod]
+    public void AppendingAStringSpreadDoesNotBoxTheSlice()
+    {
+        // Go's append(b, s...) with a string s: the read-only spread must bind the concrete
+        // append<T>(slice<T>, params ReadOnlySpan<T>), not the constrained append<S, T> whose
+        // `new slice<T>(s)` boxes the slice (uncounted, so only BYTES can see it).
+        if (JitOptimizerDisabled(typeof(@string).Assembly) || JitOptimizerDisabled(typeof(StringViewTierTests).Assembly))
+        {
+            Assert.Inconclusive("a JIT-optimizer-disabled (Debug) build measures the frame, not golib: run GolibTests -c Release");
+            return;
+        }
+
+        @string s = new("abc");
+        slice<byte> buf = new(new byte[16], 0, 0, 16);
+        buf = builtin.append(buf, s.ꓸꓸꓸ); // warm
+        buf = new slice<byte>(new byte[4096], 0, 0, 4096);
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 1000; i++)
+            buf = builtin.append(buf, s.ꓸꓸꓸ);
+        long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.AreEqual(3000, (int)buf.Length);
+        Assert.AreEqual(0L, bytes, "append(b, s...) into spare capacity allocates nothing in Go, and nothing here");
+    }
+
     // ---- (b) G8: x + "" and "" + x return x itself -------------------------------------------
 
     [TestMethod]
