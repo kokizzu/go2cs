@@ -39,10 +39,11 @@ each platform's flavour under `runtimes/<rid>/lib/<tfm>/`. NuGet resolves the CO
 whatever the RID is, so before the targets file a Linux consumer compiled against the Windows surface.
 The fixture touches a type only the current platform's `go.syscall` flavour defines (`Rlimit` on
 Linux, `DLLError` on Windows). `test-rid-compile-asset.ps1` restores it from ONE feed into a fresh
-package cache and runs three arms:
+package cache and runs four arms:
 
 - a RID-less build and run;
 - the same with `-r <host rid>`;
+- a framework-dependent `dotnet publish -r <host rid>`, whose PUBLISHED app is then run;
 - a control that proves the arm can fail. On Linux, `-p:GoRidCompileAssets=false` must fail with
   CS0426. On Windows, the reference platform, the control is the no-op proof: the `runtimes/win-x64`
   twin is byte-identical to `lib/`.
@@ -54,4 +55,4 @@ pwsh src/tests/PackageTests/RidCompileAsset/test-rid-compile-asset.ps1 -Version 
 Against a package set that predates the targets file, `-TargetsFile src/core/golib/buildTransitive/go.lib.targets`
 imports the working-tree file explicitly. That is how the gate was read red-first, against the
 published 1.24.13.1: on Linux both build arms FAIL with CS0426 and the control PASSES. With the file,
-all three arms PASS on both platforms.
+all four arms PASS on both platforms.

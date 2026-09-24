@@ -10,6 +10,7 @@
       GREEN      the fixture (which touches a type only this platform's go.syscall flavour defines)
                  builds RID-less and runs.
       RID        the same with an explicit -r <host rid>.
+      PUBLISH    a framework-dependent `dotnet publish -r <host rid>`, then the PUBLISHED app is run.
       CONTROL    the arm can fail. On a platform whose flavour differs from lib/'s reference flavour
                  (linux), turning the swap off (-p:GoRidCompileAssets=false) must fail with CS0426.
                  On the reference platform (windows) there is nothing to swap FROM, so the control is
@@ -95,6 +96,22 @@ Write-Host "RID-selected compile asset gate: go.* $Version from $Source on $rid"
 $verdicts = @()
 $verdicts += Invoke-Arm 'GREEN rid-less' @() $true ''
 $verdicts += Invoke-Arm "RID -r $rid" @('-r', $rid) $true ''
+
+# PUBLISH: users publish, not only run. A framework-dependent publish for the host RID copies the
+# RID-selected runtime asset flat into the output; the published app must start and reach the
+# platform-only type from THAT folder, with no package cache behind it.
+function Invoke-PublishArm {
+    Remove-Item -Recurse -Force (Join-Path $work 'bin'), (Join-Path $work 'obj') -ErrorAction SilentlyContinue
+    $out = Join-Path $work 'publish'
+    $log = & dotnet publish (Join-Path $work 'RidCompileAsset.csproj') -c Release -r $rid --self-contained false -o $out @common 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) { $log | Select-String ' error ' | Select-Object -First 5 | ForEach-Object { Write-Host "    $_" }; return "FAIL (PUBLISH -r $rid): the publish failed" }
+    $run = & dotnet (Join-Path $out 'RidCompileAsset.dll') 2>&1 | ForEach-Object { "$_" }
+    $runCode = $LASTEXITCODE
+    $run | ForEach-Object { Write-Host "    $_" }
+    if ($runCode -ne 0 -or -not ($run -match 'RID-COMPILE-ASSET: ')) { return "FAIL (PUBLISH -r $rid): the published app did not run clean (exit $runCode)" }
+    return "PASS (PUBLISH -r $rid)"
+}
+$verdicts += Invoke-PublishArm
 
 if ($isReferencePlatform) {
     $pkg = Join-Path $env:NUGET_PACKAGES "go.syscall/$Version"

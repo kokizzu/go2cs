@@ -48,6 +48,8 @@
           AfterTargets="ResolvePackageAssets"
           Condition="'$(GoRidCompileAssets)' == 'true' and '$(GoCompileRuntimeIdentifier)' != ''">
     <ItemGroup>
+      <!-- The `go.` literal below is the published package-ID prefix, a question still open with the
+           owner: a rename of the go.* package IDs must update this test too, or the swap silently stops. -->
       <_GoRidCompileCandidate Include="@(ResolvedCompileFileDefinitions)"
                               Condition="$([System.String]::Copy('%(ResolvedCompileFileDefinitions.NuGetPackageId)').StartsWith('go.', System.StringComparison.OrdinalIgnoreCase)) and '%(ResolvedCompileFileDefinitions.PathInPackage)' != ''" />
       <!-- The twin sits beside lib/ in the same package folder: strip PathInPackage off the item's
