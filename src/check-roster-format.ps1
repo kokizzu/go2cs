@@ -1625,10 +1625,22 @@ function Get-NewsFigurePart {
 $bankedPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable'
 $linuxPattern = '(\d+)\s+of\s+the\s+(\d+)\s+applicable\s+rows'
 
+# THE HEADLINE'S OWN PERCENTAGE (owner, 2026-09-24, ledger 1f226c6912). The block may state it in
+# parentheses right after the headline counts -- "218 of the 230 testable standard-library packages
+# (94.8%) pass ..." -- and no pattern read that position, so a stale one would have sat on the front
+# page unwatched. Only a few words (letters, hyphens, spaces and bold asterisks; nothing that ends a
+# clause) may sit between `testable` and the parenthesis, so a percentage later in the block is never
+# read as this one. Its roster side is the HEADER's own figure (`N / M testable packages validated --
+# X%`, parsed as $percentText in section 2, which asserts it follows from the counts); it is never
+# recomputed here. Checked if present, like every figure but the headline counts.
+$bankedPctPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable[A-Za-z\s*-]{0,60}?\(\s*([\d.]+)\s*%\s*\)'
+
 $newsFigures = @(
     @{ Name = 'banked / testable packages'; Required = $true
        Parts = @(@{ Pattern = $bankedPattern; Group = 1; Roster = "$($rows.Count)" }
                  @{ Pattern = $bankedPattern; Group = 2; Roster = "$testable" }) }
+    @{ Name = 'headline testable percentage'; Required = $false
+       Parts = @(@{ Pattern = $bankedPctPattern; Group = 3; Roster = "$percentText" }) }
     @{ Name = 'matching verdicts'; Required = $false
        Parts = @(@{ Pattern = '([\d,]+)\s+matching\s+verdicts'; Group = 1; Roster = "$columnTotal" }) }
     @{ Name = 'disclosed divergences'; Required = $false
