@@ -156,13 +156,26 @@ public static class AllocationCounter
     /// This exists so that counting a backing store is a SUBSTITUTION rather than an insertion: a
     /// golib site cannot allocate through it and forget to charge, and the census stays mechanically
     /// checkable — <c>NoUncountedBackingAllocations</c> greps golib for raw <c>new T[…]</c> backing
-    /// creations and fails on any that did not come through here. A zero length still allocates a
-    /// real (uncached) array object on the CLR, so it is charged like any other; only
-    /// <c>Array.Empty&lt;T&gt;()</c>, written <c>[]</c>, allocates nothing and is charged nothing.
+    /// creations and fails on any that did not come through here.
+    /// <para>
+    /// A ZERO length returns the shared <c>Array.Empty&lt;T&gt;()</c> and is charged nothing (REC-F (iv),
+    /// docs/phase4/DESIGN-allocation-counting.md section 9). Go allocates nothing for a zero-size
+    /// object -- every one shares <c>runtime.zerobase</c> -- and an empty array of an element type is
+    /// indistinguishable from any other, so the shared instance is the Go-true answer as well as the
+    /// cheaper one. It also makes this door agree with <see cref="CopyOf{T}"/>, whose empty case was
+    /// already free. What could tell two empty backings apart was checked: the backing is non-null,
+    /// so a <c>make([]T, 0)</c> is still not nil (<c>slice&lt;T&gt;.IsNil</c> tests null); nothing can
+    /// be written, indexed or pinned in it; and the one identity-keyed table over backings,
+    /// <c>GoReflect.WithElemDims</c>, already substitutes a private zero-length array for this
+    /// singleton before recording dims against it.
+    /// </para>
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T[] NewArray<T>(int length)
     {
+        if (length == 0)
+            return Array.Empty<T>();
+
         if (s_enabled)
             t_count++;
 
@@ -173,6 +186,9 @@ public static class AllocationCounter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T[] NewArray<T>(nint length)
     {
+        if (length == 0)
+            return Array.Empty<T>();
+
         if (s_enabled)
             t_count++;
 
@@ -188,6 +204,9 @@ public static class AllocationCounter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T[] NewArray<T>(ulong length)
     {
+        if (length == 0)
+            return Array.Empty<T>();
+
         if (s_enabled)
             t_count++;
 
