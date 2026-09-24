@@ -297,7 +297,7 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
 }
 
 [GoRecv] internal static @string joinPath(this ref Importer p, params ꓸꓸꓸstring elemʗp) {
-    var elem = elemʗp.slice();
+    var elem = elemʗp.sslice();
 
     {
         var f = p.ctxt.Value.JoinPath; if (f != default!) {

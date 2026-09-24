@@ -378,7 +378,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
 }
 
 [GoRecv] internal static void printf(this ref Handler h, @string format, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     if (h.Logger != nil){
         h.Logger.Printf(format, v.ꓸꓸꓸ);

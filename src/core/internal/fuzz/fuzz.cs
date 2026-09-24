@@ -1100,7 +1100,7 @@ internal static bool shouldPrintDebugInfo() {
 }
 
 [GoRecv] internal static void debugLogf(this ref coordinator c, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     @string t = time.Now().Format("2006-01-02 15:04:05.999999999"u8);
     fmt.Fprintf(c.opts.Log, t + " DEBUG "u8 + format + "\n"u8, args.ꓸꓸꓸ);

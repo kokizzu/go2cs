@@ -10,7 +10,7 @@ partial class main_package {
 }
 
 [GoRecv] internal static void add(this ref sink s, params ꓸꓸꓸbyte bytesʗp) {
-    var bytes = bytesʗp.slice();
+    var bytes = bytesʗp.sslice();
 
     s.buf = appendꓸꓸꓸ(s.buf, bytes);
 }

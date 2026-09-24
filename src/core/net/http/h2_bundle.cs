@@ -4782,7 +4782,7 @@ internal static (ж<hpack.Encoder>, ж<bytes.Buffer>) HeaderEncoder(this ж<http
 }
 
 [GoRecv] internal static void vlogf(this ref http2serverConn sc, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (http2VerboseLogs) {
         sc.logf(format, args.ꓸꓸꓸ);
@@ -4790,7 +4790,7 @@ internal static (ж<hpack.Encoder>, ж<bytes.Buffer>) HeaderEncoder(this ж<http
 }
 
 [GoRecv] internal static void logf(this ref http2serverConn sc, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     {
         var lg = sc.hs.Value.ErrorLog; if (lg != nil){
@@ -4848,7 +4848,7 @@ internal static bool http2isClosedConnError(error err) {
 }
 
 [GoRecv] internal static void condlogf(this ref http2serverConn sc, error err, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (err == default!) {
         return;
@@ -11654,19 +11654,19 @@ internal static error http2errResponseHeaderListSize = errors.New("http2: respon
 internal static error http2errRequestHeaderListSize = errors.New("http2: request header list larger than peer's advertised limit"u8);
 
 [GoRecv] internal static void logf(this ref http2ClientConn cc, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     cc.t.logf(format, args.ꓸꓸꓸ);
 }
 
 [GoRecv] internal static void vlogf(this ref http2ClientConn cc, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     cc.t.vlogf(format, args.ꓸꓸꓸ);
 }
 
 [GoRecv] internal static void vlogf(this ref http2Transport t, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (http2VerboseLogs) {
         t.logf(format, args.ꓸꓸꓸ);
@@ -11674,7 +11674,7 @@ internal static error http2errRequestHeaderListSize = errors.New("http2: request
 }
 
 [GoRecv] internal static void logf(this ref http2Transport t, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     log.Printf(format, args.ꓸꓸꓸ);
 }

@@ -105,7 +105,7 @@ internal static traceEventWriter eventWriter(this traceLocker tl, traceGoStatus 
 
 // event writes out a trace event.
 internal static void @event(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     e.tl.writer().@event(ev, args.ꓸꓸꓸ).end();
 }

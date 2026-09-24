@@ -127,7 +127,7 @@ public static error Hello(this ж<Client> Ꮡc, @string localName) {
 internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
     try {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
 
         ref var c = ref Ꮡc.DerefOrNull();
         var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);

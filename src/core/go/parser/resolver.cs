@@ -81,13 +81,13 @@ internal const nint maxScopeDepth = 1000;
 }
 
 [GoRecv] internal static void trace(this ref resolver r, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     fmt.Println(strings.Repeat(". "u8, r.depth) + r.sprintf(format, args.ꓸꓸꓸ));
 }
 
 [GoRecv] internal static @string sprintf(this ref resolver r, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     foreach (var (i, arg) in args) {
         switch (arg.type()) {

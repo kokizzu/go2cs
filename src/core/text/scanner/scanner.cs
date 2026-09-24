@@ -358,7 +358,7 @@ internal static void error(this ж<Scanner> Ꮡs, @string msg) {
 }
 
 internal static void errorf(this ж<Scanner> Ꮡs, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     Ꮡs.error(fmt.Sprintf(format, args.ꓸꓸꓸ));
 }

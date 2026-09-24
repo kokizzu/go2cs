@@ -40,7 +40,7 @@ partial class fstest_package {
 //		t.Fatal(err)
 //	}
 public static error TestFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
-    var expected = expectedʗp.slice();
+    var expected = expectedʗp.sslice();
 
     {
         var err = testFS(fsys, expected.ꓸꓸꓸ); if (err != default!) {
@@ -117,7 +117,7 @@ internal static error testFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
 
 // errorf adds an error to the list of errors.
 [GoRecv] internal static void errorf(this ref fsTester t, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     t.errors = append(t.errors, fmt.Errorf(format, args.ꓸꓸꓸ));
 }

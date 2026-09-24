@@ -26,7 +26,7 @@ internal static @string slashJoin(params ꓸꓸꓸstring elemʗp) {
 }
 
 [GoRecv] internal static @string join(this ref Context c, params ꓸꓸꓸstring elemʗp) {
-    var elem = elemʗp.slice();
+    var elem = elemʗp.sslice();
 
     if (c.JoinPath != default!) {
         return c.JoinPath(elem.ꓸꓸꓸ);
@@ -42,7 +42,7 @@ internal static void Main() {
         Name: "demo"u8,
         JoinPath: slashJoin,
         Log: (@string format, params ꓸꓸꓸany argsʗp) => {
-            var args = argsʗp.slice();
+            var args = argsʗp.sslice();
             fmt.Printf(format + "\n"u8, args.ꓸꓸꓸ);
         }
     );

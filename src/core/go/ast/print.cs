@@ -137,7 +137,7 @@ internal static slice<byte> indent = slice<byte>(".  "u8);
 
 // printf is a convenience wrapper that takes care of print errors.
 internal static void printf(this ж<printer> Ꮡp, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     {
         var (_, err) = fmt.Fprintf(new printerжWriter(Ꮡp), format, args.ꓸꓸꓸ); if (err != default!) {

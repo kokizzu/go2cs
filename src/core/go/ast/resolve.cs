@@ -23,7 +23,7 @@ partial class ast_package {
 }
 
 [GoRecv] internal static void errorf(this ref pkgBuilder p, tokenꓸPos pos, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     p.error(pos, fmt.Sprintf(format, args.ꓸꓸꓸ));
 }

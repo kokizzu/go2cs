@@ -1171,7 +1171,7 @@ public static void Var(Value value, @string name, @string usage) {
 
 // sprintf formats the message, prints it to output, and returns it.
 [GoRecv] internal static @string sprintf(this ref FlagSet f, @string format, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     @string msg = fmt.Sprintf(format, a.ꓸꓸꓸ);
     fmt.Fprintln(f.Output(), msg);
@@ -1181,7 +1181,7 @@ public static void Var(Value value, @string name, @string usage) {
 // failf prints to standard error a formatted error and usage message and
 // returns the error.
 internal static error failf(this ж<FlagSet> Ꮡf, @string format, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     ref var f = ref Ꮡf.DerefOrNull();
     @string msg = f.sprintf(format, a.ꓸꓸꓸ);

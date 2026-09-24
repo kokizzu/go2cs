@@ -217,7 +217,7 @@ internal delegate stateFn stateFn(ж<lexer> _);
 // errorf returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
 [GoRecv] internal static stateFn errorf(this ref lexer l, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     l.item = new item(itemError, l.start, fmt.Sprintf(format, args.ꓸꓸꓸ), l.startLine);
     l.start = 0;

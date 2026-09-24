@@ -15,7 +15,7 @@ partial class template_package {
 
 // htmlNospaceEscaper escapes for inclusion in unquoted attribute values.
 internal static @string htmlNospaceEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (s == ""u8) {
@@ -29,7 +29,7 @@ internal static @string htmlNospaceEscaper(params ꓸꓸꓸany argsʗp) {
 
 // attrEscaper escapes for inclusion in quoted attribute values.
 internal static @string attrEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (t == contentTypeHTML) {
@@ -40,7 +40,7 @@ internal static @string attrEscaper(params ꓸꓸꓸany argsʗp) {
 
 // rcdataEscaper escapes for inclusion in an RCDATA element body.
 internal static @string rcdataEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (t == contentTypeHTML) {
@@ -51,7 +51,7 @@ internal static @string rcdataEscaper(params ꓸꓸꓸany argsʗp) {
 
 // htmlEscaper escapes for inclusion in HTML text.
 internal static @string htmlEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (t == contentTypeHTML) {
@@ -251,7 +251,7 @@ internal static @string stripTags(@string html) {
 // htmlNameFilter accepts valid parts of an HTML attribute or tag name or
 // a known-safe HTML attribute.
 internal static @string htmlNameFilter(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (t == contentTypeHTMLAttr) {

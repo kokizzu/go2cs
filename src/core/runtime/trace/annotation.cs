@@ -106,7 +106,7 @@ public static void Log(context.Context ctx, @string category, @string message) {
 
 // Logf is like [Log], but the value is formatted using the specified format spec.
 public static void Logf(context.Context ctx, @string category, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (IsEnabled()) {
         // Ideally this should be just Log, but that will

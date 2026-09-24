@@ -66,7 +66,7 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
 // in the error message (types2) or continuation errors identified by a tab-indented error
 // message (go/types).
 [GoRecv] internal static void addf(this ref error_ err, positioner at, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     err.desc = append(err.desc, new errorDesc(at, err.check.sprintf(format, args.ꓸꓸꓸ)));
 }
@@ -245,7 +245,7 @@ internal static void error(this ж<Checker> Ꮡcheck, positioner at, errors.Code
 }
 
 internal static void errorf(this ж<Checker> Ꮡcheck, positioner at, errors.Code code, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var err = Ꮡcheck.newError(code);
     err.addf(at, format, args.ꓸꓸꓸ);
@@ -253,7 +253,7 @@ internal static void errorf(this ж<Checker> Ꮡcheck, positioner at, errors.Cod
 }
 
 internal static void softErrorf(this ж<Checker> Ꮡcheck, positioner at, errors.Code code, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var err = Ꮡcheck.newError(code);
     err.addf(at, format, args.ꓸꓸꓸ);
@@ -262,7 +262,7 @@ internal static void softErrorf(this ж<Checker> Ꮡcheck, positioner at, errors
 }
 
 internal static void versionErrorf(this ж<Checker> Ꮡcheck, positioner at, goVersion v, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     @string msg = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
     var err = Ꮡcheck.newError(UnsupportedFeature);

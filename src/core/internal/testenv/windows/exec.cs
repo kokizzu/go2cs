@@ -170,7 +170,7 @@ private static readonly @string goTestTimeoutScaleˢ = "GO_TEST_TIMEOUT_SCALE"u8
 //   - fails the test if the command does not complete before the test's deadline, and
 //   - sets a Cleanup function that verifies that the test did not leak a subprocess.
 public static ж<exec.Cmd> CommandContext(testing.TB t, context.Context ctx, @string name, params ꓸꓸꓸstring argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     t.Helper();
     MustHaveExec(t);
@@ -259,7 +259,7 @@ public static ж<exec.Cmd> CommandContext(testing.TB t, context.Context ctx, @st
 // Command is like exec.Command, but applies the same changes as
 // testenv.CommandContext (with a default Context).
 public static ж<exec.Cmd> Command(testing.TB t, @string name, params ꓸꓸꓸstring argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     t.Helper();
     return CommandContext(t, context.Background(), name, args.ꓸꓸꓸ);

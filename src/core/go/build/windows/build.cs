@@ -113,7 +113,7 @@ partial class build_package {
 
 // joinPath calls ctxt.JoinPath (if not nil) or else filepath.Join.
 [GoRecv] internal static @string joinPath(this ref Context ctxt, params ꓸꓸꓸstring elemʗp) {
-    var elem = elemʗp.slice();
+    var elem = elemʗp.sslice();
 
     {
         var f = ctxt.JoinPath; if (f != default!) {

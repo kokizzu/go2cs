@@ -36,7 +36,7 @@ internal static readonly @string targetˢ = "Target: "u8;
 // The given arguments are passed directly to the call of the driver.
 [GoRecv] public static error /*err*/ InitFromDriver(this ref GccgoInstallation inst, @string gccgoPath, params ꓸꓸꓸstring argsʗp) {
     error err = default!;
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var argv = appendꓸꓸꓸ(new @string[]{"-###"u8, "-S"u8, "-x"u8, "go"u8, "-"u8}.slice(), args);
     var cmd = exec.Command(gccgoPath, argv.ꓸꓸꓸ);

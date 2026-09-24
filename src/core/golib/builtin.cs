@@ -387,6 +387,19 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// The stack-view twin of the spread above: <c>append(s, v...)</c> where <c>v</c> is a variadic
+    /// pack the converter kept as an <see cref="sslice{T}"/> (REC-C §A, pass-through). The pack's
+    /// elements go across as the span they already are, so nothing is copied to reach here; the
+    /// growth, the in-place arm and the allocation count are <see cref="slice{T}.Append(in slice{T}, ReadOnlySpan{T})"/>'s.
+    /// Without this exact overload the ISlice form above would still bind, through sslice's
+    /// ALLOCATING implicit conversion to slice&lt;T&gt; -- the very copy the view exists to avoid.
+    /// </summary>
+    public static slice<T> appendꓸꓸꓸ<T>(slice<T> slice, in sslice<T> elems)
+    {
+        return go.slice<T>.Append(slice, elems.ToSpan());
+    }
+
+    /// <summary>
     /// Appends runes to the end of a byte slice. If it has sufficient capacity, the destination is
     /// resliced to accommodate the new elements. If it does not, a new underlying array will be
     /// allocated.
@@ -852,6 +865,35 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Copy from a variadic pack the converter kept as a stack view (REC-C §A, copy source):
+    /// <c>copy(dst, v)</c> reads the pack's own storage, which is what Go's copy reads. Go requires
+    /// identical element types, so one type parameter is the whole surface; the span copy has
+    /// memmove semantics, so an overlapping source and destination transfer correctly.
+    /// </summary>
+    public static nint copy<T>(in slice<T> dst, in sslice<T> src)
+    {
+        nint min = Min(dst.Length, src.Length);
+
+        if (min > 0 && !ZeroSizeCopy<T, T>())
+            src.ToSpan()[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
+    }
+
+    /// <summary>
+    /// <see cref="copy{T}(in slice{T}, in sslice{T})"/> for a constrained or named-slice destination.
+    /// </summary>
+    public static nint copy<T>(ISlice<T> dst, in sslice<T> src)
+    {
+        nint min = Min(dst.Length, src.Length);
+
+        if (min > 0 && !ZeroSizeCopy<T, T>())
+            src.ToSpan()[..(int)min].CopyTo(dst.ToSpan());
+
+        return min;
+    }
+
+    /// <summary>
     /// Copies elements from a source slice into a destination slice.
     /// The source and destination may overlap.
     /// </summary>
@@ -1237,6 +1279,14 @@ public static partial class builtin
     public static S appendꓸꓸꓸ<S, T>(S s, ISlice<T> items) where S : ISlice<T>, ISliceWrap<S, T>
     {
         return S.Wrap(go.slice<T>.Append(new slice<T>(s), items));
+    }
+
+    /// <summary>
+    /// The constrained form's stack-view twin; see <see cref="appendꓸꓸꓸ{T}(slice{T}, in sslice{T})"/>.
+    /// </summary>
+    public static S appendꓸꓸꓸ<S, T>(S s, in sslice<T> items) where S : ISlice<T>, ISliceWrap<S, T>
+    {
+        return S.Wrap(go.slice<T>.Append(new slice<T>(s), items.ToSpan()));
     }
 
     /// <summary>

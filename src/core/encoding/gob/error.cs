@@ -23,7 +23,7 @@ partial class gob_package {
 // errorf is like error_ but takes Printf-style arguments to construct an error.
 // It always prefixes the message with "gob: ".
 internal static void errorf(@string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     error_(fmt.Errorf("gob: "u8 + format, args.ꓸꓸꓸ));
 }

@@ -303,7 +303,7 @@ public static error Output(this ж<Logger> Ꮡl, nint calldepth, @string s) {
 
 // Fatal is equivalent to l.Print() followed by a call to [os.Exit](1).
 public static void Fatal(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     Ꮡl.Output(2, fmt.Sprint(v.ꓸꓸꓸ));
     os.Exit(1);
@@ -311,7 +311,7 @@ public static void Fatal(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
 
 // Fatalf is equivalent to l.Printf() followed by a call to [os.Exit](1).
 public static void Fatalf(this ж<Logger> Ꮡl, @string format, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     Ꮡl.Output(2, fmt.Sprintf(format, v.ꓸꓸꓸ));
     os.Exit(1);
@@ -319,7 +319,7 @@ public static void Fatalf(this ж<Logger> Ꮡl, @string format, params ꓸꓸꓸ
 
 // Fatalln is equivalent to l.Println() followed by a call to [os.Exit](1).
 public static void Fatalln(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     Ꮡl.Output(2, fmt.Sprintln(v.ꓸꓸꓸ));
     os.Exit(1);
@@ -327,7 +327,7 @@ public static void Fatalln(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
 
 // Panic is equivalent to l.Print() followed by a call to panic().
 public static void Panic(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprint(v.ꓸꓸꓸ);
     Ꮡl.Output(2, s);
@@ -336,7 +336,7 @@ public static void Panic(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
 
 // Panicf is equivalent to l.Printf() followed by a call to panic().
 public static void Panicf(this ж<Logger> Ꮡl, @string format, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprintf(format, v.ꓸꓸꓸ);
     Ꮡl.Output(2, s);
@@ -345,7 +345,7 @@ public static void Panicf(this ж<Logger> Ꮡl, @string format, params ꓸꓸꓸ
 
 // Panicln is equivalent to l.Println() followed by a call to panic().
 public static void Panicln(this ж<Logger> Ꮡl, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprintln(v.ꓸꓸꓸ);
     Ꮡl.Output(2, s);
@@ -459,7 +459,7 @@ public static Δio.Writer Writer() {
 
 // Fatal is equivalent to [Print] followed by a call to [os.Exit](1).
 public static void Fatal(params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     std.Output(2, fmt.Sprint(v.ꓸꓸꓸ));
     os.Exit(1);
@@ -467,7 +467,7 @@ public static void Fatal(params ꓸꓸꓸany vʗp) {
 
 // Fatalf is equivalent to [Printf] followed by a call to [os.Exit](1).
 public static void Fatalf(@string format, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     std.Output(2, fmt.Sprintf(format, v.ꓸꓸꓸ));
     os.Exit(1);
@@ -475,7 +475,7 @@ public static void Fatalf(@string format, params ꓸꓸꓸany vʗp) {
 
 // Fatalln is equivalent to [Println] followed by a call to [os.Exit](1).
 public static void Fatalln(params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     std.Output(2, fmt.Sprintln(v.ꓸꓸꓸ));
     os.Exit(1);
@@ -483,7 +483,7 @@ public static void Fatalln(params ꓸꓸꓸany vʗp) {
 
 // Panic is equivalent to [Print] followed by a call to panic().
 public static void Panic(params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprint(v.ꓸꓸꓸ);
     std.Output(2, s);
@@ -492,7 +492,7 @@ public static void Panic(params ꓸꓸꓸany vʗp) {
 
 // Panicf is equivalent to [Printf] followed by a call to panic().
 public static void Panicf(@string format, params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprintf(format, v.ꓸꓸꓸ);
     std.Output(2, s);
@@ -501,7 +501,7 @@ public static void Panicf(@string format, params ꓸꓸꓸany vʗp) {
 
 // Panicln is equivalent to [Println] followed by a call to panic().
 public static void Panicln(params ꓸꓸꓸany vʗp) {
-    var v = vʗp.slice();
+    var v = vʗp.sslice();
 
     @string s = fmt.Sprintln(v.ꓸꓸꓸ);
     std.Output(2, s);

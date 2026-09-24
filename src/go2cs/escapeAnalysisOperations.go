@@ -291,9 +291,9 @@ func (v *Visitor) analyzeBodyDeclaredVars(body *ast.BlockStmt) {
 
 // markVariadicSSliceEligible records whether the final variadic parameter may bind directly to its
 // incoming params Span<T> through a stack-only sslice<T>. The proof is deliberately narrow: every
-// use must consume only the slice header within this frame (len/cap, direct range, or element access).
-// Anything that could retain, capture, reassign, grow, box, return, or pass the slice falls back to
-// the existing heap slice<T> prologue.
+// use must consume only the slice header within this frame (len/cap, direct range, element access,
+// copy source, or a pass-through spread -- see ssliceUsesAreSafe). Anything that could retain,
+// capture, reassign, grow, box or return the slice falls back to the existing heap slice<T> prologue.
 func (v *Visitor) markVariadicSSliceEligible(params *ast.FieldList, body *ast.BlockStmt) {
 	if params == nil || body == nil || len(params.List) == 0 {
 		return
@@ -330,6 +330,24 @@ func (v *Visitor) markVariadicSSliceEligible(params *ast.FieldList, body *ast.Bl
 // A use inside a nested function literal rejects the candidate because it would capture a ref struct.
 // Taking an indexed element's address is also rejected: the converter's element-address helpers are
 // heap-slice based, and the resulting pointer may outlive the stack view.
+//
+// Two more uses are admitted (REC-C, docs/phase4/DESIGN-slice-idiom-allocations.md §A), both of which
+// only READ the pack or lend it for the duration of one call, and so cannot let it outlive the frame:
+//
+//   - COPY SOURCE, `copy(dst, v)`: golib's `copy(…, in sslice<T>)` reads the view's storage. Only the
+//     source position; `copy(v, src)` writes through the pack and stays refused.
+//   - PASS-THROUGH, `f(x, v...)` (builtin `append(s, v...)` included): the callee receives a params
+//     Span<T> (or, for append, golib's `appendꓸꓸꓸ(…, in sslice<T>)`), which C# cannot let it retain, and
+//     a callee that keeps the pack copies it in its own prologue exactly as it does today. Go passes
+//     the pack's header here, so the callee now sees the caller's storage as it does in Go, where the
+//     copy the prologue made used to hide it. Refused when the call is a `defer` or `go` statement's:
+//     the arguments of those are captured, and a span cannot be. Only the spread position:
+//     `append(v, …)` grows the pack and stays refused.
+//
+// Measured by the two-seeded -stdlib emission at fa18863b94, the two admit 161 prologues on windows and
+// 158 on linux and darwin (every changed line a `.slice()` -> `.sslice()` swap). log's Printf, whose
+// pack a closure captures (log.go's `l.output(…, func(b []byte) … fmt.Appendf(b, format, v...))`), is
+// still refused by the nested-function rule above.
 func (v *Visitor) ssliceUsesAreSafe(obj types.Object, body *ast.BlockStmt) bool {
 	safeIdents := map[*ast.Ident]bool{}
 	var stack []ast.Node
@@ -353,6 +371,23 @@ func (v *Visitor) ssliceUsesAreSafe(obj types.Object, body *ast.BlockStmt) bool 
 								safeIdents[id] = true
 							}
 						}
+					}
+				}
+
+				// COPY SOURCE: the second argument of the builtin copy.
+				if fn, ok := e.Fun.(*ast.Ident); ok && fn.Name == "copy" && len(e.Args) == 2 {
+					if builtin, ok := v.info.ObjectOf(fn).(*types.Builtin); ok && builtin.Name() == "copy" {
+						if id, ok := e.Args[1].(*ast.Ident); ok && v.info.ObjectOf(id) == obj {
+							safeIdents[id] = true
+						}
+					}
+				}
+
+				// PASS-THROUGH: the pack spread as the final argument of a call that is not deferred
+				// or launched as a goroutine.
+				if e.Ellipsis.IsValid() && len(e.Args) > 0 && !ssliceCallIsDeferredOrGo(e, stack) {
+					if id, ok := e.Args[len(e.Args)-1].(*ast.Ident); ok && v.info.ObjectOf(id) == obj {
+						safeIdents[id] = true
 					}
 				}
 			}
@@ -401,6 +436,23 @@ func (v *Visitor) ssliceUsesAreSafe(obj types.Object, body *ast.BlockStmt) bool 
 	})
 
 	return allSafe
+}
+
+// ssliceCallIsDeferredOrGo reports whether call is the call of a `defer` or `go` statement, the two
+// forms whose arguments are evaluated now and captured for later -- which a stack view cannot be.
+func ssliceCallIsDeferredOrGo(call *ast.CallExpr, stack []ast.Node) bool {
+	if len(stack) == 0 {
+		return false
+	}
+
+	switch parent := stack[len(stack)-1].(type) {
+	case *ast.DeferStmt:
+		return parent.Call == call
+	case *ast.GoStmt:
+		return parent.Call == call
+	}
+
+	return false
 }
 
 // markCaptureModeBoxedParams marks the function's VALUE parameters that need an entry-time heap

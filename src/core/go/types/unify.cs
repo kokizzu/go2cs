@@ -122,7 +122,7 @@ internal static bool unify(this ж<unifier> Ꮡu, ΔType x, ΔType y, unifyMode 
 }
 
 [GoRecv] internal static void tracef(this ref unifier u, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     fmt.Println(strings.Repeat(".  "u8, u.depth) + sprintf(nil, default!, true, format, args.ꓸꓸꓸ));
 }

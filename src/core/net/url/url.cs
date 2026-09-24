@@ -1455,7 +1455,7 @@ internal static bool stringContainsCTLByte(@string s) {
 public static (@string result, error err) JoinPath(@string @base, params ꓸꓸꓸstring elemʗp) {
     @string result = default!;
     error err = default!;
-    var elem = elemʗp.slice();
+    var elem = elemʗp.sslice();
 
     (var url, err) = Parse(@base);
     if (err != default!) {

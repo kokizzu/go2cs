@@ -40,7 +40,7 @@ internal static debugT debug = ((debugT)false);
 [GoType("bool")] partial struct debugT;
 
 internal static void Printf(this debugT d, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (d) {
         log.Printf(format, args.ꓸꓸꓸ);

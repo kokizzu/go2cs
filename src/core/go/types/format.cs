@@ -19,7 +19,7 @@ partial class types_package {
 internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @string> qf, bool tpSubscripts, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     foreach (var (i, vᴛ1) in args) {
         var arg = vᴛ1;
@@ -104,7 +104,7 @@ internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @st
 
 // check may be nil.
 internal static @string sprintf(this ж<Checker> Ꮡcheck, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var check = ref Ꮡcheck.DerefOrNull();
     ж<token.FileSet> fset = default!;
@@ -117,7 +117,7 @@ internal static @string sprintf(this ж<Checker> Ꮡcheck, @string format, param
 }
 
 internal static void trace(this ж<Checker> Ꮡcheck, tokenꓸPos pos, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var check = ref Ꮡcheck.DerefOrNull();
     fmt.Printf("%s:\t%s%s\n"u8,
@@ -128,7 +128,7 @@ internal static void trace(this ж<Checker> Ꮡcheck, tokenꓸPos pos, @string f
 
 // dump is only needed for debugging
 internal static void dump(this ж<Checker> Ꮡcheck, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var check = ref Ꮡcheck.DerefOrNull();
     fmt.Println(sprintf(check.fset, new Func<ж<Package>, @string>(Ꮡcheck.qualifier), true, format, args.ꓸꓸꓸ));

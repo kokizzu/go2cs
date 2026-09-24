@@ -28,7 +28,7 @@ internal static slice<byte> dotcrnl = new byte[]{(rune)'.', (rune)'\r', (rune)'\
 
 // PrintfLine writes the formatted output followed by \r\n.
 [GoRecv] public static error PrintfLine(this ref Writer w, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     w.closeDot();
     fmt.Fprintf(new bufio_WriterжWriter(w.W), format, args.ꓸꓸꓸ);
