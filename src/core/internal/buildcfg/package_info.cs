@@ -60,7 +60,7 @@ using static go.@internal.buildcfg_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/buildcfg/cfg.go", "cfg.cs", "ADpakoKCuIKAgqTWgoCkpKSktILWgoKUpIKUgqqigpSCgpSCgpSCgqqigoKUAAcQgoKClJTWopiClJSEgoKCgpSCgpaUpKSkgriClAAOHoKCgpSClKaymoKUgoKCgpaCgoKWlpSmhKSkptaigqq0gpaCloaWgoSCtpTogoCktILWgoCktILWgoCkpKS0gtaCgKSktIKChoIABxCCgoKUgpTWooKUpMjG1oKmgoKCpoLcgpTaopSkpKSkpKSkpKaClKSCgpSkgoKUpIKCgoKWkoKmpKSkgoKUpIKClKSCgpSClKQ=", "314-316:1")]
+[assembly: go.GoPositionMap("internal/buildcfg/cfg.go", "cfg.cs", "ADpakoKCuIKAgqTWgoCkpKSktILWgoKUpIKUgqqigpSCgpSCgpSCgqqigoKUAAcQgoKClJQACwaimIKUlISCgoKClIKClpSkpKSCuIKUAA4egoKClIKUAAgGspqClIKCgoKWgoKClpaUpoSkpKbWooKqtIKWgpaGloKEgraU6IKApLSC1oKApLSC1oKApKSktILWgoCkpLSCgoaCAAcQgoKClIKU1qKClKTIxtaCpoKCgqaC3IKU2qKUpKSkpKSkpKSmgpSkgoKUpIKClKSCgoKClpKCpqSkpIKClKSCgpSkgoKUgpSk", "314-316:1")]
 [assembly: go.GoPositionMap("internal/buildcfg/exp.go", "exp.cs", "ACBAgoKClAATKtrSlIKmgpSmAAoWAAYQlIKCgoKC7pKCqKKClLiClIKClIKClKiCgqaCgqaClKqirsKCgoKClIKCgoKCgpSCgpS4qqKqog==", "109-112:1")]
 // </GoSourcePositionMaps>
 

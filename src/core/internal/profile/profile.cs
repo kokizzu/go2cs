@@ -288,6 +288,9 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
     return p.CheckValid();
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string labelHeaderᶜ = "                "u8;
+
 // Print dumps a text representation of a profile. Intended mainly
 // for debugging purposes.
 [GoRecv] public static @string String(this ref Profile p) {
@@ -320,7 +323,7 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
             sv = sv + fmt.Sprintf("%d "u8, (~l).ID);
         }
         ss = append(ss, sv);
-        @string labelHeader = "                "u8;
+        @string labelHeader = labelHeaderᶜ;
         if (len((~s).Label) > 0) {
             @string ls = labelHeader;
             foreach (var (k, v) in (~s).Label) {

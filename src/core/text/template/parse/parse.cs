@@ -391,13 +391,16 @@ internal static void parse(this ж<Tree> Ꮡt) {
     }
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string contextᶜ = "define clause"u8;
+
 // parseDefinition parses a {{define}} ...  {{end}} template definition and
 // installs the definition in t.treeSet. The "define" keyword has already
 // been scanned.
 internal static void parseDefinition(this ж<Tree> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    @string context = "define clause"u8;
+    @string context = contextᶜ;
     var name = t.expectOneOf(itemString, itemRawString, context);
     error err = default!;
     (t.Name, err) = strconv.Unquote(name.val);
@@ -793,6 +796,9 @@ internal static Node elseControl(this ж<Tree> Ꮡt) {
     return new elseNodeжNode(Ꮡt.newElse(token.pos, token.line));
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string contextᶜ1 = "block clause"u8;
+
 // Block:
 //
 //	{{block stringValue pipeline}}
@@ -803,7 +809,7 @@ internal static Node elseControl(this ж<Tree> Ꮡt) {
 internal static Node blockControl(this ж<Tree> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    @string context = "block clause"u8;
+    @string context = contextᶜ1;
     var token = t.nextNonSpace();
     @string name = t.parseTemplateName(token, context);
     var pipe = Ꮡt.pipeline(context, itemRightDelim);
@@ -822,6 +828,9 @@ internal static Node blockControl(this ж<Tree> Ꮡt) {
     return new TemplateNodeжNode(Ꮡt.newTemplate(token.pos, token.line, name, pipe));
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string contextᶜ2 = "template clause"u8;
+
 // Template:
 //
 //	{{template stringValue pipeline}}
@@ -831,7 +840,7 @@ internal static Node blockControl(this ж<Tree> Ꮡt) {
 internal static Node templateControl(this ж<Tree> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    @string context = "template clause"u8;
+    @string context = contextᶜ2;
     var token = t.nextNonSpace();
     @string name = t.parseTemplateName(token, context);
     ж<PipeNode> pipe = default!;

@@ -1445,6 +1445,9 @@ public static bool IsGenerated(ж<File> Ꮡfile) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string prefixᶜ = "// Code generated "u8;
+
 internal static (@string, bool) generator(ref File @file) {
     foreach (var (_, group) in @file.Comments) {
         foreach (var (_, comment) in (~group).List) {
@@ -1452,7 +1455,7 @@ internal static (@string, bool) generator(ref File @file) {
                 break; // after package declaration
             }
             // opt: check Contains first to avoid unnecessary array allocation in Split.
-            @string prefix = "// Code generated "u8;
+            @string prefix = prefixᶜ;
             if (strings.Contains((~comment).Text, prefix)) {
                 foreach (var (_, line) in strings.Split((~comment).Text, "\n"u8)) {
                     {

@@ -557,12 +557,15 @@ internal static error readGoInfo(io.Reader f, ref fileInfo info) {
     return default!;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string illegalCharsᶜ = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+
 // isValidImport checks if the import is a valid import using the more strict
 // checks allowed by the implementation restriction in https://go.dev/ref/spec#Import_declarations.
 // It was ported from the function of the same name that was removed from the
 // parser in CL 424855, when the parser stopped doing these checks.
 internal static bool isValidImport(@string s) {
-    @string illegalChars = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+    @string illegalChars = illegalCharsᶜ;
     foreach (var (_, r) in s) {
         if (!unicode.IsGraphic(r) || unicode.IsSpace(r) || strings.ContainsRune(illegalChars, r)) {
             return false;

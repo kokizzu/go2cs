@@ -767,11 +767,14 @@ internal static void cpuinit(@string env) {
 
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string prefixᶜ = "GODEBUG="u8;
+
 // getGodebugEarly extracts the environment variable GODEBUG from the environment on
 // Unix-like operating systems and returns it. This function exists to extract GODEBUG
 // early before much of the runtime is initialized.
 internal static @string getGodebugEarly() {
-    @string prefix = "GODEBUG="u8;
+    @string prefix = prefixᶜ;
     @string env = default!;
     var exprᴛ1 = GOOS;
     if (exprᴛ1 == "aix"u8 || exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8 || exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "freebsd"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8 || exprᴛ1 == "illumos"u8 || exprᴛ1 == "solaris"u8 || exprᴛ1 == "linux"u8) {

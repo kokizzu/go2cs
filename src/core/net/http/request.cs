@@ -986,6 +986,9 @@ public static (ж<Request>, error) NewRequestWithContext(context.Context ctx, @s
     return parseBasicAuth(auth);
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string prefixᶜ = "Basic "u8;
+
 // parseBasicAuth parses an HTTP Basic Authentication string.
 // "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
 //
@@ -1003,7 +1006,7 @@ internal static (@string username, @string password, bool ok) parseBasicAuth(@st
     @string password = default!;
     bool ok = default!;
 
-    @string prefix = "Basic "u8;
+    @string prefix = prefixᶜ;
     // Case insensitive prefix match. See Issue 22736.
     if (builtin.len(auth) < builtin.len(prefix) || !ascii.EqualFold(auth[..(int)(builtin.len(prefix))], prefix)) {
         return ("", "", false);

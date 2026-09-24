@@ -446,9 +446,12 @@ internal static any memstats() {
     Publish("memstats"u8, new FuncᴠVar(new Func(memstats)));
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string hexᶜ = "0123456789abcdef"u8;
+
 // TODO: Use json.appendString instead.
 internal static slice<byte> appendJSONQuote(slice<byte> b, @string s) {
-    @string hex = "0123456789abcdef"u8;
+    @string hex = hexᶜ;
     b = append(b, (byte)((rune)'"'));
     foreach (var (_, r) in s) {
         switch (ᐧ) {

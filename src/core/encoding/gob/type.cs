@@ -733,10 +733,13 @@ internal static typeId bootstrapType(@string name, any e) {
     public ж<gobEncoderType> TextMarshalerT;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string unknownᶜ = "unknown type"u8;
+
 internal static @string @string(this ж<wireType> Ꮡw) {
     ref var w = ref Ꮡw.DerefOrNull();
 
-    @string unknown = "unknown type"u8;
+    @string unknown = unknownᶜ;
     if (Ꮡw == nil) {
         return unknown;
     }

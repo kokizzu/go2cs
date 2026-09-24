@@ -372,13 +372,16 @@ internal static (time.Time ret, error err) parseUTCTime(slice<byte> bytes) {
     return (ret, err);
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string formatStrᶜ = "20060102150405.999999999Z0700"u8;
+
 // parseGeneralizedTime parses the GeneralizedTime from the given byte slice
 // and returns the resulting time.
 internal static (time.Time ret, error err) parseGeneralizedTime(slice<byte> bytes) {
     time.Time ret = default!;
     error err = default!;
 
-    @string formatStr = "20060102150405.999999999Z0700"u8;
+    @string formatStr = formatStrᶜ;
     @string s = ((@string)bytes);
     {
         (ret, err) = time.Parse(formatStr, s); if (err != default!) {

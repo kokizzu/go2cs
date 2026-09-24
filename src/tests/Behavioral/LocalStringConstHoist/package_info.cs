@@ -10,11 +10,10 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using runtimeꓸError = go.runtime_package.ΔError;
 // </ImportedTypeAliases>
 
 using go;
-using static go.@internal.bisect_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -37,7 +36,6 @@ using static go.@internal.bisect_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<parseError, error>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -51,13 +49,15 @@ using static go.@internal.bisect_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/bisect/bisect.go", "bisect.cs", "ALwBggMACAKCloSmgoKCgriCgoKCgsyCgoKCgqiUgqiCgoKClIKClJKCgpS0pIKUpIKkgpSCpIKUpJSUgoKClIKUgpSCtpSCgoK2ABQywqiygpSosoKUqJKCgoKmqqKClKrCgoKClKaokoKCgoKCgqiSgoKCgoKUgoKCgoKUgqyygpSqwoKClIKWlIKWgoKCgoKClIKCqIKCppSClLgACBaigoKCgqqihIKEgoKCgoKCgoKCgoKmgoKCrLLYkoKCgoKClIIABRAACQSCgoKClIK6goKUgqiClJKUgoKApLS06JKmgoKApKQACRCCgqSUgqrCgoKutAAIBLS0tLS0tLS0gsaCxoLGgsaCxoLGgsaCxoLIAAoSgAAIFoKCgqaCgoKUpoKCgoKUpoKCgoKUABEqwoKClIKCgq7CgoKCuoKClII=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABIggoLWgoKClNaCgviChAAOBoKSmNiCgtaCggAIBoKCgoKU1oKCpoKC1oKCAAgGgpKUpNaCgtaCgtaCgoLWgoKCgpTKgoLmgoKCgoKCgoKCgoKCgoKCgoI=", "63-66:1;72-72:1")]
 // </GoSourcePositionMaps>
 
-namespace go.@internal;
+namespace go;
 
-[GoPackage("bisect")]
-public static partial class bisect_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -66,11 +66,9 @@ public static partial class bisect_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct cond {}
-    [GoValueClone("recent")] internal partial struct dedup {}
-    internal partial struct parseError {}
-    public partial interface Writer {}
-    public partial struct Matcher {}
+    internal partial struct localKind_tag {}
+    internal partial struct parser {}
+    public partial struct Kind {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -80,8 +78,6 @@ public static partial class bisect_package
     // item of the project guarantees.
 
     // <ImportInitializers>
-    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
-    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
-    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
     // </ImportInitializers>
 }

@@ -904,6 +904,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLocalShadowsEmbedHopType() => CheckTarget("LocalShadowsEmbedHopType");
 
     [TestMethod]
+    public void CheckLocalStringConstHoist() => CheckTarget("LocalStringConstHoist");
+
+    [TestMethod]
     public void CheckLocalStructFieldAddr() => CheckTarget("LocalStructFieldAddr");
 
     [TestMethod]

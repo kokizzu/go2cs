@@ -2485,6 +2485,58 @@ Package-level big consts were already `static readonly` fields and are unchanged
 by `net/textproto`'s validated `TestCommonHeaders`, whose want-zero assert is what surfaced the cost;
 L11.)
 
+### A function-LOCAL string const hoists to a `static readonly` field under its own name
+
+A local `const fnAtoi = "Atoi"` emitted as a plain local, `@string fnAtoi = "Atoi"u8;`, materialises the
+`u8` span into a fresh `@string` on **every call** of the enclosing function (a counted `CopyOf`,
+string.cs:460), where Go keeps the value in RODATA. strconv's `Atoi`, `ParseInt` and `ParseUint` pay it
+inside their `testing.AllocsPerRun` rows. Tier C's literal hoist deliberately skipped every CONST spec, on
+the premise that a const is already its own `static readonly` field; that holds at package level only.
+A function-local string const therefore hoists exactly like a local big constant (the subsection
+above): one field named after the const, with the `HoistedConstMarker` `ᶜ` and a package-wide ordinal on
+collision, and the local copies it, an `@string` struct copy that allocates nothing. Every reference
+is unchanged:
+
+```go
+// Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
+func Atoi(s string) (int, error) {
+	const fnAtoi = "Atoi"
+
+	sLen := len(s)
+	…
+}
+```
+```csharp
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fnAtoiᶜ = "Atoi"u8;
+
+// Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
+public static (nint, error) Atoi(@string s) {
+    @string fnAtoi = fnAtoiᶜ;
+    nint sLen = len(s);
+    …
+}
+```
+
+(strconv/atoi.cs as reconverted. The field is `internal` in a test-friend assembly, as every converted
+standard-library package is, and `private` otherwise.)
+
+The decision is made in Tier C's pre-pass (`collectLocalConsts`), not at emission, for the init-order
+reason §4.4 gives for hoisted literals: the function joins `packageHoistLitReaders`, so a package-level
+initializer that reaches it moves into the ordered static constructor instead of running as a field
+initializer that could read the hoisted field before its own initializer has run. The pass's
+function-level exclusions apply unchanged:
+- a hand-owned file or function;
+- `func init()`, which runs once;
+- on the `-tests` path, an initializer-reachable function;
+- a production file that a seeded `-tests` pass does not re-emit.
+
+An EMPTY const stays a local, since the empty `@string` costs nothing. A named string type keeps its type
+(`private static readonly Kind kᶜ = "kind-value"u8;`), and a byte-array value keeps its byte-array
+initializer. A package-level const is unchanged. (Arm C of DESIGN-string-literal-allocation.md §8, approved
+2026-09-23; guarded by the `LocalStringConstHoist` behavioral test, whose first line is the relocation's
+output control, and by `TestLocalStringConstHoistsUnderItsOwnName`.)
+
 ### The `&^=` (bit-clear) compound assignment on a narrow type
 C# has no `&^` (AND-NOT) operator, so Go's `a &^= b` expands to `a &= ~b`. The `~` complement always promotes its operand to `int`, and `int` is not implicitly convertible to a narrower or unsigned LHS type (`byte`/`ushort`/`uint`/`ulong`/`uintptr`/`nuint`) — so `flags &= ~b` is CS0266. The complemented value is therefore cast back to the LHS type, inside `unchecked` because for a *constant* operand `~b` folds to a negative `int` constant whose checked narrowing would overflow (CS0221):
 

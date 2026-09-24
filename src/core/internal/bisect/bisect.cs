@@ -531,9 +531,12 @@ public static @string Marker(uint64 id) {
     return ((@string)AppendMarker(default!, id));
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string prefixᶜ = "[bisect-match 0x"u8;
+
 // AppendMarker is like [Marker] but appends the marker to dst.
 public static slice<byte> AppendMarker(slice<byte> dst, uint64 id) {
-    @string prefix = "[bisect-match 0x"u8;
+    @string prefix = prefixᶜ;
     array<byte> buf = new(33); /* len(prefix) + 16 + 1 */
     copy(buf[..], prefix);
     for (nint i = 0; i < 16; i++) {

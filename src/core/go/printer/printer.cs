@@ -627,6 +627,9 @@ internal static void stripCommonPrefix(slice<@string> lines) {
     }
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string linePrefixᶜ = "//line "u8;
+
 internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomment) {
     GoFrame ᒐ = default;
     try {
@@ -635,7 +638,7 @@ internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomm
 
         @string text = comment.Text;
         var pos = p.posFor(comment.Pos());
-        @string linePrefix = "//line "u8;
+        @string linePrefix = linePrefixᶜ;
         if (strings.HasPrefix(text, linePrefix) && (!pos.IsValid() || pos.Column == 1)) {
             // Possibly a //-style line directive.
             // Suspend indentation temporarily to keep line directive valid.

@@ -218,8 +218,11 @@ internal static void printint(int64 v) {
 
 internal static nint minhexdigits = 0; // protected by printlock
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string digᶜ = "0123456789abcdef"u8;
+
 internal static void printhex(uint64 v) {
-    @string dig = "0123456789abcdef"u8;
+    @string dig = digᶜ;
     array<byte> buf = new(100);
     nint i = len(buf);
     for (i--; i > 0; i--) {

@@ -68,11 +68,14 @@ public static UntypedInt IntSize => /* intSize */ 64;
 
 internal static UntypedInt maxUint64 => /* 1<<64 - 1 */ 18446744073709551615;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fnParseUintᶜ = "ParseUint"u8;
+
 // ParseUint is like [ParseInt] but for unsigned numbers.
 //
 // A sign prefix is not permitted.
 public static (uint64, error) ParseUint(@string s, nint @base, nint bitSize) {
-    @string fnParseUint = "ParseUint"u8;
+    @string fnParseUint = fnParseUintᶜ;
     if (s == ""u8) {
         return (0, new NumErrorжerror(syntaxError(fnParseUint, s)));
     }
@@ -183,6 +186,9 @@ public static (uint64, error) ParseUint(@string s, nint @base, nint bitSize) {
     return (n, default!);
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fnParseIntᶜ = "ParseInt"u8;
+
 // ParseInt interprets a string s in the given base (0, 2 to 36) and
 // bit size (0 to 64) and returns the corresponding value i.
 //
@@ -211,7 +217,7 @@ public static (uint64, error) ParseUint(@string s, nint @base, nint bitSize) {
 public static (int64 i, error err) ParseInt(@string s, nint @base, nint bitSize) {
     error err = default!;
 
-    @string fnParseInt = "ParseInt"u8;
+    @string fnParseInt = fnParseIntᶜ;
     if (s == ""u8) {
         return (0, new NumErrorжerror(syntaxError(fnParseInt, s)));
     }
@@ -250,9 +256,12 @@ public static (int64 i, error err) ParseInt(@string s, nint @base, nint bitSize)
     return (n, default!);
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fnAtoiᶜ = "Atoi"u8;
+
 // Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
 public static (nint, error) Atoi(@string s) {
-    @string fnAtoi = "Atoi"u8;
+    @string fnAtoi = fnAtoiᶜ;
     nint sLen = len(s);
     if (intSize == 32 && (0 < sLen && sLen < 10) || intSize == 64 && (0 < sLen && sLen < 19)) {
         // Fast path for small integers that fit int type.

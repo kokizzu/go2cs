@@ -68,7 +68,7 @@ using static go.go.@internal.gcimporter_package;
 
 // <GoSourcePositionMaps>
 [assembly: global::go.GoPositionMap("go/internal/gcimporter/gcimporter.go", "gcimporter.cs", "ABUs8oKCpoKUloCCpIKClJSCgoKClKiAgriSgpSClKaUlIKCgoKUhIKE", "62-67:1")]
-[assembly: global::go.GoPositionMap("go/internal/gcimporter/support.go", "support.cs", "ABAggoK4ogAPIN6CgoKWgpSCqKaCgoKCpoIAEyySgoKUgoKClA==", "64-69:1")]
+[assembly: global::go.GoPositionMap("go/internal/gcimporter/support.go", "support.cs", "ABAggoK4ogAPIN6CgoKWgpSCqKaCgoKCpoIAFiySgoKUgoKClA==", "64-69:1")]
 [assembly: global::go.GoPositionMap("go/internal/gcimporter/ureader.go", "ureader.cs", "ACVUkqriAAwehIKCgpamgoKUgpaEgpaCmJKCgqaGhIIAGzqC3ILcgqqygoKogoKCpqKmooCCpoKCzoTGgoKWtJSCgqqygqbGgIKmgoKmooKUpKSmgIKmhIKEqrKmgoKClKaygoKCgpSWgIKmgoKChIKCpoCCpoKmooCspoKCgoKUpqaCpIKkpKSkpKSkAAJJggAFUIKCgoKCgoKChIKCgpSmpoKCgpSmooKChIKCgoKWgpaCggAIFISmgoSCgoSmgoSCgpamgoSCgoSqsoSCloKEgoKWpqSCgoKChIKEgpaCgqiAgqaChIKEkpaagoKClIKmgoKCpoKCgqaEgoKEhIqAsoKCgoSCloKCloKCpoSCuIKCAAKDAQADjAGmpISCgoCCpoKCloKCgoKCqKimos6CAAUQgoKChIKWgoIADR6CooKopoKCgoSChIKmgKKAooCkgoKuwoKU2LaUgoKCpII=", "100-102:1;481-483:1;635-639:1")]
 // </GoSourcePositionMaps>
 

@@ -88,13 +88,16 @@ internal static ref sync.Once fakeLinesOnce => ref ᏑfakeLinesOnce.Value;
     internal bool derived;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string dotᶜ = "·"u8;
+
 // See cmd/compile/internal/types.SplitVargenSuffix.
 internal static (@string @base, @string suffix) splitVargenSuffix(@string name) {
     nint i = len(name);
     while (i > 0 && name[i - 1] >= (rune)'0' && name[i - 1] <= (rune)'9') {
         i--;
     }
-    @string dot = "·"u8;
+    @string dot = dotᶜ;
     if (i >= len(dot) && name[(int)(i - len(dot))..(int)(i)] == dot) {
         i -= len(dot);
         return (name[..(int)(i)], name[(int)(i)..]);

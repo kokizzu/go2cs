@@ -251,12 +251,15 @@ internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, m
     return default!;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string longNameᶜ = "././@LongLink"u8;
+
 internal static error writeGNUHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
     ref var tw = ref Ꮡtw.DerefOrNull();
     ref var hdr = ref Ꮡhdr.DerefOrNull();
 
     // Use long-link files if Name or Linkname exceeds the field size.
-    @string longName = "././@LongLink"u8;
+    @string longName = longNameᶜ;
     if (len(hdr.Name) > nameSize) {
         @string data = hdr.Name + "\x00"u8;
         {

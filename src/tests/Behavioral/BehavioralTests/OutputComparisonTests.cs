@@ -857,6 +857,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLocalShadowsEmbedHopType() => CheckTarget("LocalShadowsEmbedHopType");
 
     [TestMethod]
+    public void CheckLocalStringConstHoist() => CheckTarget("LocalStringConstHoist");
+
+    [TestMethod]
     public void CheckLocalStructFieldAddr() => CheckTarget("LocalStructFieldAddr");
 
     [TestMethod]

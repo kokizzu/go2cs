@@ -29,6 +29,9 @@ using path;
 
 partial class exportdata_package {
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string markerᶜ = "\n$$\n"u8;
+
 // ReadUnified reads the contents of the unified export data from a reader r
 // that contains the contents of a GC-created archive file.
 //
@@ -86,7 +89,7 @@ public static (slice<byte> data, error err) ReadUnified(ж<bufio.Reader> Ꮡr) {
     }
     n -= hdrlen;
     // size also includes the end of section marker. Remove that many bytes from the end.
-    @string marker = "\n$$\n"u8;
+    @string marker = markerᶜ;
     n -= len(marker);
     if (n < 0) {
         err = fmt.Errorf("invalid size (%d) in the archive file: %d bytes remain without section headers (recompile package)"u8, size, n);

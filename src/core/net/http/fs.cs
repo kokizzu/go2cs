@@ -739,13 +739,16 @@ internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWrit
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httpAttemptingToTraverseˢ = "http: attempting to traverse a non-directory"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string indexPageᶜ = "/index.html"u8;
+
 // name is '/'-separated, not filepath.Separator.
 internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) {
     GoFrame ᒐ = default;
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
-        @string indexPage = "/index.html"u8;
+        @string indexPage = indexPageᶜ;
         // redirect .../index.html to .../
         // can't use Redirect() because that would make the path absolute,
         // which would be a problem running under StripPrefix
@@ -1103,13 +1106,16 @@ internal static textproto.MIMEHeader mimeHeader(this httpRange r, @string conten
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidRangeˢ = "invalid range"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string bᶜ = "bytes="u8;
+
 // parseRange parses a Range header string as per RFC 7233.
 // errNoOverlap is returned if none of the ranges overlap.
 internal static (slice<httpRange>, error) parseRange(@string s, int64 size) {
     if (s == ""u8) {
         return (default!, default!); // header not present
     }
-    @string b = "bytes="u8;
+    @string b = bᶜ;
     if (!strings.HasPrefix(s, b)) {
         return (default!, errors.New(invalidRangeˢ));
     }

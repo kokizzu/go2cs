@@ -76,12 +76,15 @@ internal static void init(this ж<parser> Ꮡp, ж<tokenꓸFile> Ꮡfile, slice<
     p.next();
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string dotsᶜ = ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "u8;
+
 // ----------------------------------------------------------------------------
 // Parsing support
 [GoRecv] internal static void printTrace(this ref parser p, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
-    @string dots = ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "u8;
+    @string dots = dotsᶜ;
     const nint n = /* len(dots) */ 64;
     var pos = p.@file.Position(p.pos);
     fmt.Printf("%5d:%3d: "u8, pos.Line, pos.Column);

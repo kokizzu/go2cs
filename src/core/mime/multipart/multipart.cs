@@ -159,6 +159,9 @@ public static ж<Reader> NewReader(io.Reader r, @string boundary) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string quotedPrintableˢ = "quoted-printable"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string cteᶜ = "Content-Transfer-Encoding"u8;
+
 internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 maxMIMEHeaderSize, int64 maxMIMEHeaders) {
     var bp = Ꮡ(new Part(
         Header: new map<@string, slice<@string>>(),
@@ -172,7 +175,7 @@ internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 
     bp.Value.r = new partReader(bp);
     // rawPart is used to switch between Part.NextPart and Part.NextRawPart.
     if (!rawPart) {
-        @string cte = "Content-Transfer-Encoding"u8;
+        @string cte = cteᶜ;
         if (strings.EqualFold((~bp).Header.Get(cte), quotedPrintableˢ)) {
             (~bp).Header.Del(cte);
             bp.Value.r = new quotedprintable_ReaderжReader(quotedprintable.NewReader((~bp).r));

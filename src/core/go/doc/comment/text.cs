@@ -83,6 +83,9 @@ internal static void writeNL(ж<bytes.Buffer> Ꮡout) {
     @out.WriteByte((rune)'\n');
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fourSpaceᶜ2 = "    "u8;
+
 // block prints the block x to out.
 internal static void block(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, Block x) {
     ref var p = ref Ꮡp.DerefOrNull();
@@ -134,7 +137,7 @@ internal static void block(this ж<textPrinter> Ꮡp, ж<bytes.Buffer> Ꮡout, B
                 @out.WriteString(". "u8);
             }
             foreach (var (iΔ1, blk) in (~item).Content) {
-                @string fourSpace = "    "u8;
+                @string fourSpace = fourSpaceᶜ2;
                 if (iΔ1 > 0) {
                     writeNL(Ꮡout);
                     @out.WriteString(p.prefix);

@@ -1765,6 +1765,9 @@ internal static void valueSpec(this ж<printer> Ꮡp, ж<ast.ValueSpec> Ꮡs, bo
     }
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string illegalCharsᶜ = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+
 internal static ж<ast.BasicLit> sanitizeImportPath(ж<ast.BasicLit> Ꮡlit) {
     ref var lit = ref Ꮡlit.DerefOrNull();
 
@@ -1794,7 +1797,7 @@ internal static ж<ast.BasicLit> sanitizeImportPath(ж<ast.BasicLit> Ꮡlit) {
     if (s == ""u8) {
         return Ꮡlit;
     }
-    @string illegalChars = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+    @string illegalChars = illegalCharsᶜ;
     foreach (var (_, r) in s) {
         if (!unicode.IsGraphic(r) || unicode.IsSpace(r) || strings.ContainsRune(illegalChars, r)) {
             return Ꮡlit;
