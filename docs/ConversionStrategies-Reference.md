@@ -1265,22 +1265,23 @@ converts a module returning a `syscall.Errno` as an `error` with no converted st
 the consumer records nothing and emits no local adapter — it fails on both assertions with the record
 disabled.
 
-**The record is per GOOS** (2026-09-24, the 1.24.13.2 Linux train). A package whose metadata varies by
-platform — layout L3, no flat `package_info.cs` — keeps its reference (windows) flavor in the unqualified
-`##<name>` section and each other flavor in its own `##<name>@<goos>` section; a package with a flat copy
-has one section, whatever per-GOOS copies sit beside it, because the converter reads flat first on disk
-too. `stdLibExportedMetadata(name, goos)` takes the conversion's target GOOS, reads the flavor section when
-one was recorded and falls back to the unqualified one. Until then the record carried only the reference
-flavor, on the premise that a NuGet consumer only ever compiled against `lib/`; go.lib's RID-selected
-compile asset (`buildTransitive/go.lib.targets`) ended that premise, and a Linux conversion of the README's
-`fatih/color` walkthrough imported `syscallꓸHandle = go.syscall_package.ΔHandle` (a windows-only type,
-CS0426) and the windows flavor's Δ-renamed `Sockaddr` (CS0305 against the linux flavor's own).
+**The record is per GOOS.** A package whose metadata varies by platform — layout L3, no flat
+`package_info.cs` — keeps its reference (windows) flavor in the unqualified `##<name>` section and each other
+flavor in its own `##<name>@<goos>` section; a package with a flat copy has one section, whatever per-GOOS
+copies sit beside it, because the converter reads flat first on disk too. `stdLibExportedMetadata(name, goos)`
+takes the conversion's target GOOS, reads the flavor section when one is recorded and falls back to the
+unqualified one. The flavors matter because a NuGet consumer compiles against the flavor go.lib's
+RID-selected compile asset (`buildTransitive/go.lib.targets`) selects: a linux conversion that read the
+windows record would import `syscallꓸHandle = go.syscall_package.ΔHandle` (a windows-only type, CS0426) and
+the windows flavor's Δ-renamed `Sockaddr` (CS0305 against the linux flavor's own).
 
 The two halves must name the SAME platform, so `-recurse=nuget` writes that platform into the output
 root's `Directory.Build.props` as a conditioned `GoCompileRuntimeIdentifier` default (windows → `win-x64`,
 linux → `linux-x64`, otherwise unset), which `go.lib.targets` honors before `$(RuntimeIdentifier)` or the
-build host. Without it the compile flavor followed the machine doing the BUILD, so a linux conversion built
-on windows, or a windows conversion built under WSL, paired one flavor's metadata with another's assembly.
+build host. The compile flavor therefore follows the platform the tree was CONVERTED for, not the machine
+doing the build, so a linux conversion built on windows, or a windows conversion built under WSL, pairs each
+flavor's metadata with its own assembly. The dated account is in
+`docs/phase4/DESIGN-multiplatform-corpus.md` §12's 2026-09-24 amendment.
 Guards: `TestStdLibExportedMetadataSelectsTheTargetFlavor`, `TestStdLibExportedMetadataReadsAFlavorOnlyRecord`,
 `TestStdLibMetadataCollectFlatWins`, `TestRecurseNuGetImportsTheTargetFlavorsAliases` (an emission arm) and
 `TestRecurseNuGetPinsTheCompileRidToTheTarget` (the props emission).
