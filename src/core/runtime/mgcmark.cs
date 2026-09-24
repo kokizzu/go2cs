@@ -7,11 +7,10 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -148,6 +147,8 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
     case {} when i == fixedRootFinalizers: {
         for (var fb = allfin; fb != nil; fb = fb.Value.alllink) {
             var cnt = (uintptr)atomic.Load(fb.of(finblock.Ꮡcnt));
+            // Finalizers that contain cleanups only have fn set. None of the other
+            // fields are necessary.
             scanblock((uintptr)fb.at(finblock.Ꮡfin, 0), cnt * /* unsafe.Sizeof(fb.fin[0]) */ (uintptr)40, Ꮡfinptrmask.at<byte>(0), Ꮡgcw, nil);
         }
         break;
@@ -376,6 +377,11 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
                     scanblock((uintptr)@unsafe.Pointer.FromBox(spw.of(specialWeakHandle.Ꮡhandle)), // The special itself is a root.
  goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, nil);
                 }
+                else if (exprᴛ1 == _KindSpecialCleanup) {
+                    var spc = sp.Reinterpret<special, specialCleanup>();
+                    scanblock((uintptr)@unsafe.Pointer.FromBox(spc.of(specialCleanup.Ꮡfn)), // The special itself is a root.
+ goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), Ꮡgcw, nil);
+                }
 
             }
             unlock(s.of(mspan.Ꮡspeciallock));
@@ -388,90 +394,51 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
 //
 // This must be called with preemption enabled.
 internal static void gcAssistAlloc(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
+    GoFrame ᒐ = default;
+    try {
+        ref var gp = ref Ꮡgp.DerefOrNull();
 
-    // Don't assist in non-preemptible contexts. These are
-    // generally fragile and won't allow the assist to block.
-    if (getg() == (~gp.m).g0) {
-        return;
-    }
-    {
-        var mp = getg().Value.m; if ((~mp).locks > 0 || (~mp).preemptoff != ""u8) {
+        // Don't assist in non-preemptible contexts. These are
+        // generally fragile and won't allow the assist to block.
+        if (getg() == (~gp.m).g0) {
             return;
         }
-    }
-    // This extremely verbose boolean indicates whether we've
-    // entered mark assist from the perspective of the tracer.
-    //
-    // In the tracer, this is just before we call gcAssistAlloc1
-    // *regardless* of whether tracing is enabled. This is because
-    // the tracer allows for tracing to begin (and advance
-    // generations) in the middle of a GC mark phase, so we need to
-    // record some state so that the tracer can pick it up to ensure
-    // a consistent trace result.
-    //
-    // TODO(mknyszek): Hide the details of inMarkAssist in tracer
-    // functions and simplify all the state tracking. This is a lot.
-    var enteredMarkAssistForTracing = false;
-retry:
-    if (ᏑgcCPULimiter.limiting()) {
-        // If the CPU limiter is enabled, intentionally don't
-        // assist to reduce the amount of CPU time spent in the GC.
-        if (enteredMarkAssistForTracing) {
-            var Δtrace = traceAcquire();
-            if (Δtrace.ok()){
-                Δtrace.GCMarkAssistDone();
-                // Set this *after* we trace the end to make sure
-                // that we emit an in-progress event if this is
-                // the first event for the goroutine in the trace
-                // or trace generation. Also, do this between
-                // acquire/release because this is part of the
-                // goroutine's trace state, and it must be atomic
-                // with respect to the tracer.
-                gp.inMarkAssist = false;
-                traceRelease(Δtrace);
-            } else {
-                // This state is tracked even if tracing isn't enabled.
-                // It's only used by the new tracer.
-                // See the comment on enteredMarkAssistForTracing.
-                gp.inMarkAssist = false;
+        {
+            var mp = getg().Value.m; if ((~mp).locks > 0 || (~mp).preemptoff != ""u8) {
+                return;
             }
         }
-        return;
-    }
-    // Compute the amount of scan work we need to do to make the
-    // balance positive. When the required amount of work is low,
-    // we over-assist to build up credit for future allocations
-    // and amortize the cost of assisting.
-    var assistWorkPerByte = ᏑgcController.of(gcControllerState.ᏑassistWorkPerByte).Load();
-    var assistBytesPerWork = ᏑgcController.of(gcControllerState.ᏑassistBytesPerWork).Load();
-    var debtBytes = -gp.gcAssistBytes;
-    var scanWork = (int64)(assistWorkPerByte * (float64)debtBytes);
-    if (scanWork < gcOverAssistWork) {
-        scanWork = gcOverAssistWork;
-        debtBytes = (int64)(assistBytesPerWork * (float64)scanWork);
-    }
-    // Steal as much credit as we can from the background GC's
-    // scan credit. This is racy and may drop the background
-    // credit below 0 if two mutators steal at the same time. This
-    // will just cause steals to fail until credit is accumulated
-    // again, so in the long run it doesn't really matter, but we
-    // do have to handle the negative credit case.
-    var bgScanCredit = ᏑgcController.of(gcControllerState.ᏑbgScanCredit).Load();
-    var stolen = (int64)0;
-    if (bgScanCredit > 0) {
-        if (bgScanCredit < scanWork){
-            stolen = bgScanCredit;
-            gp.gcAssistBytes += 1 + (int64)(assistBytesPerWork * (float64)stolen);
-        } else {
-            stolen = scanWork;
-            gp.gcAssistBytes += debtBytes;
+        {
+            var gpΔ1 = getg(); if ((~gpΔ1).syncGroup != nil) {
+                // Disassociate the G from its synctest bubble while allocating.
+                // This is less elegant than incrementing the group's active count,
+                // but avoids any contamination between GC assist and synctest.
+                var sg = gpΔ1.Value.syncGroup;
+                gpΔ1.Value.syncGroup = default!;
+                var gpʗ1 = gpΔ1;
+                var sgʗ1 = sg;
+                defer(() => {
+                    gpʗ1.Value.syncGroup = sgʗ1;
+                }, ref ᒐ);
+            }
         }
-        ᏑgcController.of(gcControllerState.ᏑbgScanCredit).Add(-stolen);
-        scanWork -= stolen;
-        if (scanWork == 0) {
-            // We were able to steal all of the credit we
-            // needed.
+        // This extremely verbose boolean indicates whether we've
+        // entered mark assist from the perspective of the tracer.
+        //
+        // In the tracer, this is just before we call gcAssistAlloc1
+        // *regardless* of whether tracing is enabled. This is because
+        // the tracer allows for tracing to begin (and advance
+        // generations) in the middle of a GC mark phase, so we need to
+        // record some state so that the tracer can pick it up to ensure
+        // a consistent trace result.
+        //
+        // TODO(mknyszek): Hide the details of inMarkAssist in tracer
+        // functions and simplify all the state tracking. This is a lot.
+        var enteredMarkAssistForTracing = false;
+retry:
+        if (ᏑgcCPULimiter.limiting()) {
+            // If the CPU limiter is enabled, intentionally don't
+            // assist to reduce the amount of CPU time spent in the GC.
             if (enteredMarkAssistForTracing) {
                 var Δtrace = traceAcquire();
                 if (Δtrace.ok()){
@@ -494,83 +461,141 @@ retry:
             }
             return;
         }
-    }
-    if (!enteredMarkAssistForTracing) {
-        var Δtrace = traceAcquire();
-        if (Δtrace.ok()){
-            Δtrace.GCMarkAssistStart();
-            // Set this *after* we trace the start, otherwise we may
-            // emit an in-progress event for an assist we're about to start.
-            gp.inMarkAssist = true;
-            traceRelease(Δtrace);
-        } else {
-            gp.inMarkAssist = true;
+        // Compute the amount of scan work we need to do to make the
+        // balance positive. When the required amount of work is low,
+        // we over-assist to build up credit for future allocations
+        // and amortize the cost of assisting.
+        var assistWorkPerByte = ᏑgcController.of(gcControllerState.ᏑassistWorkPerByte).Load();
+        var assistBytesPerWork = ᏑgcController.of(gcControllerState.ᏑassistBytesPerWork).Load();
+        var debtBytes = -gp.gcAssistBytes;
+        var scanWork = (int64)(assistWorkPerByte * (float64)debtBytes);
+        if (scanWork < gcOverAssistWork) {
+            scanWork = gcOverAssistWork;
+            debtBytes = (int64)(assistBytesPerWork * (float64)scanWork);
         }
-        // In the new tracer, set enter mark assist tracing if we
-        // ever pass this point, because we must manage inMarkAssist
-        // correctly.
-        //
-        // See the comment on enteredMarkAssistForTracing.
-        enteredMarkAssistForTracing = true;
-    }
-    // Perform assist work
-    systemstack(() => {
-        gcAssistAlloc1(Ꮡgp, scanWork);
-    });
-    // The user stack may have moved, so this can't touch
-    // anything on it until it returns from systemstack.
-    var completed = gp.param != nil;
-    gp.param = default!;
-    if (completed) {
-        gcMarkDone();
-    }
-    if (gp.gcAssistBytes < 0) {
-        // We were unable steal enough credit or perform
-        // enough work to pay off the assist debt. We need to
-        // do one of these before letting the mutator allocate
-        // more to prevent over-allocation.
-        //
-        // If this is because we were preempted, reschedule
-        // and try some more.
-        if (gp.preempt) {
-            Gosched();
-            goto retry;
+        // Steal as much credit as we can from the background GC's
+        // scan credit. This is racy and may drop the background
+        // credit below 0 if two mutators steal at the same time. This
+        // will just cause steals to fail until credit is accumulated
+        // again, so in the long run it doesn't really matter, but we
+        // do have to handle the negative credit case.
+        var bgScanCredit = ᏑgcController.of(gcControllerState.ᏑbgScanCredit).Load();
+        var stolen = (int64)0;
+        if (bgScanCredit > 0) {
+            if (bgScanCredit < scanWork){
+                stolen = bgScanCredit;
+                gp.gcAssistBytes += 1 + (int64)(assistBytesPerWork * (float64)stolen);
+            } else {
+                stolen = scanWork;
+                gp.gcAssistBytes += debtBytes;
+            }
+            ᏑgcController.of(gcControllerState.ᏑbgScanCredit).Add(-stolen);
+            scanWork -= stolen;
+            if (scanWork == 0) {
+                // We were able to steal all of the credit we
+                // needed.
+                if (enteredMarkAssistForTracing) {
+                    var Δtrace = traceAcquire();
+                    if (Δtrace.ok()){
+                        Δtrace.GCMarkAssistDone();
+                        // Set this *after* we trace the end to make sure
+                        // that we emit an in-progress event if this is
+                        // the first event for the goroutine in the trace
+                        // or trace generation. Also, do this between
+                        // acquire/release because this is part of the
+                        // goroutine's trace state, and it must be atomic
+                        // with respect to the tracer.
+                        gp.inMarkAssist = false;
+                        traceRelease(Δtrace);
+                    } else {
+                        // This state is tracked even if tracing isn't enabled.
+                        // It's only used by the new tracer.
+                        // See the comment on enteredMarkAssistForTracing.
+                        gp.inMarkAssist = false;
+                    }
+                }
+                return;
+            }
         }
-        // Add this G to an assist queue and park. When the GC
-        // has more background credit, it will satisfy queued
-        // assists before flushing to the global credit pool.
-        //
-        // Note that this does *not* get woken up when more
-        // work is added to the work list. The theory is that
-        // there wasn't enough work to do anyway, so we might
-        // as well let background marking take care of the
-        // work that is available.
-        if (!gcParkAssist()) {
-            goto retry;
-        }
-    }
-    // At this point either background GC has satisfied
-    // this G's assist debt, or the GC cycle is over.
-    if (enteredMarkAssistForTracing) {
-        var Δtrace = traceAcquire();
-        if (Δtrace.ok()){
-            Δtrace.GCMarkAssistDone();
-            // Set this *after* we trace the end to make sure
-            // that we emit an in-progress event if this is
-            // the first event for the goroutine in the trace
-            // or trace generation. Also, do this between
-            // acquire/release because this is part of the
-            // goroutine's trace state, and it must be atomic
-            // with respect to the tracer.
-            gp.inMarkAssist = false;
-            traceRelease(Δtrace);
-        } else {
-            // This state is tracked even if tracing isn't enabled.
-            // It's only used by the new tracer.
+        if (!enteredMarkAssistForTracing) {
+            var Δtrace = traceAcquire();
+            if (Δtrace.ok()){
+                Δtrace.GCMarkAssistStart();
+                // Set this *after* we trace the start, otherwise we may
+                // emit an in-progress event for an assist we're about to start.
+                gp.inMarkAssist = true;
+                traceRelease(Δtrace);
+            } else {
+                gp.inMarkAssist = true;
+            }
+            // In the new tracer, set enter mark assist tracing if we
+            // ever pass this point, because we must manage inMarkAssist
+            // correctly.
+            //
             // See the comment on enteredMarkAssistForTracing.
-            gp.inMarkAssist = false;
+            enteredMarkAssistForTracing = true;
+        }
+        // Perform assist work
+        systemstack(() => {
+            gcAssistAlloc1(Ꮡgp, scanWork);
+        });
+        // The user stack may have moved, so this can't touch
+        // anything on it until it returns from systemstack.
+        var completed = gp.param != nil;
+        gp.param = default!;
+        if (completed) {
+            gcMarkDone();
+        }
+        if (gp.gcAssistBytes < 0) {
+            // We were unable steal enough credit or perform
+            // enough work to pay off the assist debt. We need to
+            // do one of these before letting the mutator allocate
+            // more to prevent over-allocation.
+            //
+            // If this is because we were preempted, reschedule
+            // and try some more.
+            if (gp.preempt) {
+                Gosched();
+                goto retry;
+            }
+            // Add this G to an assist queue and park. When the GC
+            // has more background credit, it will satisfy queued
+            // assists before flushing to the global credit pool.
+            //
+            // Note that this does *not* get woken up when more
+            // work is added to the work list. The theory is that
+            // there wasn't enough work to do anyway, so we might
+            // as well let background marking take care of the
+            // work that is available.
+            if (!gcParkAssist()) {
+                goto retry;
+            }
+        }
+        // At this point either background GC has satisfied
+        // this G's assist debt, or the GC cycle is over.
+        if (enteredMarkAssistForTracing) {
+            var Δtrace = traceAcquire();
+            if (Δtrace.ok()){
+                Δtrace.GCMarkAssistDone();
+                // Set this *after* we trace the end to make sure
+                // that we emit an in-progress event if this is
+                // the first event for the goroutine in the trace
+                // or trace generation. Also, do this between
+                // acquire/release because this is part of the
+                // goroutine's trace state, and it must be atomic
+                // with respect to the tracer.
+                gp.inMarkAssist = false;
+                traceRelease(Δtrace);
+            } else {
+                // This state is tracked even if tracing isn't enabled.
+                // It's only used by the new tracer.
+                // See the comment on enteredMarkAssistForTracing.
+                gp.inMarkAssist = false;
+            }
         }
     }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -910,29 +935,12 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
             println();
             printunlock();
         }
-        var gcdata = r.gcdata();
-        ж<mspan> s = default!;
-        if (r.useGCProg()) {
-            // This path is pretty unlikely, an object large enough
-            // to have a GC program allocated on the stack.
-            // We need some space to unpack the program into a straight
-            // bitmask, which we allocate/free here.
-            // TODO: it would be nice if there were a way to run a GC
-            // program without having to store all its bits. We'd have
-            // to change from a Lempel-Ziv style program to something else.
-            // Or we can forbid putting objects on stacks if they require
-            // a gc program (see issue 27447).
-            s = materializeGCProg(r.ptrdata(), gcdata);
-            gcdata = (ж<byte>)(uintptr)((@unsafe.Pointer)(~s).startAddr);
-        }
+        var (ptrBytes, gcData) = r.gcdata();
         var b = state.stack.lo + (uintptr)(~obj).off;
         if (conservative){
-            scanConservative(b, r.ptrdata(), gcdata, Ꮡgcw, Ꮡstate);
+            scanConservative(b, ptrBytes, gcData, Ꮡgcw, Ꮡstate);
         } else {
-            scanblock(b, r.ptrdata(), gcdata, Ꮡgcw, Ꮡstate);
-        }
-        if (s != nil) {
-            dematerializeGCProg(s);
+            scanblock(b, ptrBytes, gcData, Ꮡgcw, Ꮡstate);
         }
     }
     // Deallocate object buffers.
@@ -1663,6 +1671,10 @@ internal static void gcmarknewobject(ж<mspan> Ꮡspan, uintptr obj) {
     if (useCheckmark) {
         // The world should be stopped so this should not happen.
         @throw(gcmarknewobjectCalledˢ);
+    }
+    if (gcphase == _GCmarktermination) {
+        // Check this here instead of on the hot path.
+        @throw(mallocgcCalledWithˢ);
     }
     // Mark object.
     var objIndex = span.objIndex(obj);

@@ -27,60 +27,6 @@ using go.@internal.trace;
 
 partial class oldtrace_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() {
-    builtin.initPackage(typeof(go.@internal.trace.event_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() {
-    builtin.initPackage(typeof(go.@internal.trace.version_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
 [GoType("num:int64")] partial struct Timestamp;
 
 // Event describes one event in the trace.
@@ -333,6 +279,7 @@ internal static UntypedInt eventsBucketSize => 524288; // 32 MiB of events
     // additionally allows consumers to drop references to parts of the data,
     // freeing memory piecewise.
     internal nint n;
+    [GoArrayDims(524288)]
     internal slice<ж<array<Event>>> buckets;
     internal nint off;
 }
@@ -389,7 +336,7 @@ internal static UntypedInt eventsBucketSize => 524288; // 32 MiB of events
     var (a, b) = l.index(l.off);
     var ptr = l.buckets[a].at<Event>(b);
     l.off++;
-    if (b == eventsBucketSize - 1 || l.off == l.n) {
+    if (b == (nint)(eventsBucketSize - 1) || l.off == l.n) {
         // We've consumed the last event from the bucket, so drop the bucket and
         // allow GC to collect it.
         l.buckets[a] = ж<array<Event>>.NilBoxOfDims(524288L);
@@ -439,10 +386,10 @@ public static Action<Func<ж<Event>, bool>> All(this ж<Events> Ꮡl) {
     // Merge events as long as at least one P has more events
     var gs = new map<uint64, gState>();
     // Note: technically we don't need a priority queue here. We're only ever
-    // interested in the earliest elligible event, which means we just have to
+    // interested in the earliest eligible event, which means we just have to
     // track the smallest element. However, in practice, the priority queue
     // performs better, because for each event we only have to compute its state
-    // transition once, not on each iteration. If it was elligible before, it'll
+    // transition once, not on each iteration. If it was eligible before, it'll
     // already be in the queue. Furthermore, on average, we only have one P to
     // look at in each iteration, because all other Ps are already in the queue.
     ref var frontier = ref heap<orderEventList>(out var Ꮡfrontier);
@@ -862,7 +809,7 @@ internal static readonly @string stringHasInvalidLength0ˢ = "string has invalid
 
 }
 
-// loadBatch loads the next batch for pid and appends its contents to to events.
+// loadBatch loads the next batch for pid and appends its contents to events.
 [GoRecv] internal static (slice<Event>, error) loadBatch(this ref parser p, int32 pid, slice<Event> events) {
     var offsets = p.batchOffsets[pid];
     if (len(offsets) == 0) {

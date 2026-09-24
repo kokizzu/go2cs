@@ -356,7 +356,7 @@ public static void TestValues(ж<testing.T> Ꮡt) {
     check(o4, "o4"u8, ""u8, c2k2ˢ, ""u8);
 }
 
-[GoType("dyn")] partial struct TestAllocs_type {
+[GoType("dyn")] internal partial struct TestAllocs_type {
     internal @string desc;
     internal Action f;
     internal float64 limit;
@@ -557,7 +557,7 @@ internal static readonly @string beforeCancelˢ = "before cancel"u8;
 internal static readonly @string afterTimeoutˢ = "after timeout"u8;
 internal static readonly @string afterCancelˢ = "after cancel"u8;
 
-[GoType("num:nint")] partial struct testLayers_value;
+[GoLocalName("value")] [GoType("num:nint")] internal partial struct testLayers_value;
 
 internal static void testLayers(ж<testing.T> Ꮡt, int64 seed, bool testTimeout) {
     GoFrame ᒐ = default;
@@ -780,7 +780,7 @@ internal static any /*v*/ recoveredValue(Action fn) {
 internal static readonly object deadlineExceededDoesNotˢ2 = (@string)"DeadlineExceeded does not support Timeout interface"u8;
 internal static readonly object wrongValueForTimeoutˢ = (@string)"wrong value for timeout"u8;
 
-[GoType("dyn")] partial interface TestDeadlineExceededSupportsTimeout_type {
+[GoType("dyn")] internal partial interface TestDeadlineExceededSupportsTimeout_type {
     bool Timeout();
 }
 
@@ -794,7 +794,7 @@ public static void TestDeadlineExceededSupportsTimeout(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestCause_type {
+[GoType("dyn")] internal partial struct TestCause_type {
     internal @string name;
     internal Func<context.Context> ctx;
     internal error err;
@@ -1124,8 +1124,20 @@ public static void TestWithoutCancel(ж<testing.T> Ꮡt) {
     internal channel<EmptyStruct> donec;
 }
 
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *customDoneContext's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this customDoneContext recvᴛ) => recvᴛ.Context.Deadline();
+
+// Go method set entry for the promoted 'Context.Err()' - provided ONLY by the embedded
+// interface field in *customDoneContext's method set; see the pointer-only satisfaction record.
+internal static error Err(this customDoneContext recvᴛ) => recvᴛ.Context.Err();
+
+// Go method set entry for the promoted 'Context.Value()' - provided ONLY by the embedded
+// interface field in *customDoneContext's method set; see the pointer-only satisfaction record.
+internal static any Value(this customDoneContext recvᴛ, any key) => recvᴛ.Context.Value(key);
+
 [GoRecv] internal static /*<-*/channel<EmptyStruct> Done(this ref customDoneContext c) {
-    return c.donec;
+    return c.donec.WithDirection(GoChanDir.Recv);
 }
 
 public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) {
@@ -1176,28 +1188,30 @@ public static void TestCustomContextPropagation(ж<testing.T> Ꮡt) {
 
 internal static /*<-*/channel<EmptyStruct> Done(this ж<customCauseContext> Ꮡccc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ccc = ref Ꮡccc.DerefOrNull();
 
-        Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
-        defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock, ref ᒐ);
-        return ccc.done;
+        ccc.mu.Lock();
+        ᒐd1 = true;
+        return ccc.done.WithDirection(GoChanDir.Recv);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡccc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static error Err(this ж<customCauseContext> Ꮡccc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ccc = ref Ꮡccc.DerefOrNull();
 
-        Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
-        defer(Ꮡccc.of(customCauseContext.Ꮡmu).Unlock, ref ᒐ);
+        ccc.mu.Lock();
+        ᒐd1 = true;
         return ccc.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡccc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static any Value(this ref customCauseContext ccc, any key) {
@@ -1207,11 +1221,11 @@ internal static error Err(this ж<customCauseContext> Ꮡccc) {
 internal static void cancel(this ж<customCauseContext> Ꮡccc) {
     ref var ccc = ref Ꮡccc.DerefOrNull();
 
-    Ꮡccc.of(customCauseContext.Ꮡmu).Lock();
+    ccc.mu.Lock();
     ccc.err = Canceled;
     close(ccc.done);
     var cancelChild = ccc.cancelChild;
-    Ꮡccc.of(customCauseContext.Ꮡmu).Unlock();
+    ccc.mu.Unlock();
     if (cancelChild != default!) {
         cancelChild();
     }

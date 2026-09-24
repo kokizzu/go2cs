@@ -58,7 +58,7 @@ using static go.log.slog.@internal.benchmarks_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers.go", "handlers.cs", "ADs8gqaA9NKClIKCgpSCgoKCgpKCgoKClIKC1qKUpKSkpKSkpIKUxMbIoqaCpoIADyCCpoCkooKCpoKmguyAooCkgqaC")]
+[assembly: go.GoPositionMap("log/slog/internal/benchmarks/handlers.go", "handlers.cs", "AB08gqaA9NKClIKCgpSCgoKCgpKCgoKClIKC1qKUpKSkpKSkpIKUxMbIoqaCpoIADyCCpoCkooKCpoKmguyAooCkgqaC", "50-56:1")]
 // </GoSourcePositionMaps>
 
 namespace go.log.slog.@internal;
@@ -77,4 +77,21 @@ public static partial class benchmarks_package
     internal partial struct disabledHandler {}
     internal partial struct fastTextHandler {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslog() => builtin.initPackage(typeof(go.log.slog_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸbuffer() => builtin.initPackage(typeof(go.log.slog.@internal.buffer_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -6,6 +6,8 @@
 // This file implements commonly used type predicates.
 namespace go.go;
 
+using slices = slices_package;
+using unicode = unicode_package;
 using token = global::go.go.token_package;
 
 partial class types_package {
@@ -102,7 +104,7 @@ internal static bool allNumericOrString(ΔType t) {
 internal static bool allBasic(ΔType t, BasicInfo info) {
     {
         var (tpar, _) = Unalias(t)._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
-            return tpar.@is((ж<term> tΔ1) => tΔ1 != nil && isBasic((~tΔ1).typ, info));
+            return tpar.@is((ж<Δterm> tΔ1) => tΔ1 != nil && isBasic((~tΔ1).typ, info));
         }
     }
     return isBasic(t, info);
@@ -207,12 +209,12 @@ internal static bool isGeneric(ΔType t) {
 
 // Comparable reports whether values of type T are comparable.
 public static bool Comparable(ΔType T) {
-    return comparable(T, true, default!, default!);
+    return comparableType(T, true, default!, default!);
 }
 
 // If dynamic is set, non-type parameter interfaces are always comparable.
 // If reportf != nil, it may be used to report why T is not comparable.
-internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, Actionꓸꓸꓸ<@string, any> reportf) {
+internal static bool comparableType(ΔType T, bool dynamic, map<ΔType, bool> seen, Actionꓸꓸꓸ<@string, any> reportf) {
     if (seen[T]) {
         return true;
     }
@@ -234,7 +236,7 @@ internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, 
         foreach (var (_, f) in (~t).fields) {
             // assume invalid types to be comparable
             // to avoid follow-up errors
-            if (!comparable((~f).typ, dynamic, seen, default!)) {
+            if (!comparableType((~f).typ, dynamic, seen, default!)) {
                 if (reportf != default!) {
                     reportf("struct containing %s cannot be compared"u8, (~f).typ);
                 }
@@ -244,7 +246,7 @@ internal static bool comparable(ΔType T, bool dynamic, map<ΔType, bool> seen, 
         return true;
     }
     case ж<Array> t: {
-        if (!comparable((~t).elem, dynamic, seen, default!)) {
+        if (!comparableType((~t).elem, dynamic, seen, default!)) {
             if (reportf != default!) {
                 reportf("%s cannot be compared"u8, t.OrTypedNil());
             }
@@ -285,7 +287,7 @@ internal static bool hasNil(ΔType t) {
         return true;
     }
     case ж<Interface> u: {
-        return !isTypeParam(t) || u.typeSet().underIs((ΔType uΔ1) => uΔ1 != default! && hasNil(uΔ1));
+        return !isTypeParam(t) || underIs(t, (ΔType uΔ1) => uΔ1 != default! && hasNil(uΔ1));
     }}
     return false;
 }
@@ -604,13 +606,8 @@ internal static bool identicalOrigin(ж<Named> Ꮡx, ж<Named> Ꮡy) {
 // Instantiations are identical if their origin and type arguments are
 // identical.
 internal static bool identicalInstance(ΔType xorig, slice<ΔType> xargs, ΔType yorig, slice<ΔType> yargs) {
-    if (len(xargs) != len(yargs)) {
+    if (!slices.EqualFunc<slice<ΔType>, slice<ΔType>, ΔType, ΔType>(xargs, yargs, Identical)) {
         return false;
-    }
-    foreach (var (i, xa) in xargs) {
-        if (!Identical(xa, yargs[i])) {
-            return false;
-        }
     }
     return Identical(xorig, yorig);
 }
@@ -677,6 +674,16 @@ internal static ж<T> clone<T>(ж<T> Ꮡp)
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;
     return Ꮡc;
+}
+
+// isValidName reports whether s is a valid Go identifier.
+internal static bool isValidName(@string s) {
+    foreach (var (i, ch) in s) {
+        if (!(unicode.IsLetter(ch) || ch == (rune)'_' || i > 0 && unicode.IsDigit(ch))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // end types_package

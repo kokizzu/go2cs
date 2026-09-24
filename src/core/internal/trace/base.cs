@@ -17,51 +17,11 @@ using io = io_package;
 
 partial class trace_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() {
-    builtin.initPackage(typeof(go.@internal.trace.event_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸeventꓸgo122() {
-    builtin.initPackage(typeof(go.@internal.trace.@event.go122_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() {
-    builtin.initPackage(typeof(go.@internal.trace.version_package));
-}
-
 // maxArgs is the maximum number of arguments for "plain" events,
 // i.e. anything that could reasonably be represented as a baseEvent.
-//
-// TODO(mknyszek): This is only 6 instead of 5 because GoStatusStack
-// has 5 arguments and needs to smuggle in a 6th. Figure out a way to
-// shrink this in the future.
-internal static UntypedInt maxArgs => 6;
+internal static UntypedInt maxArgs => 5;
 
-[GoType("[5]uint64")] /* [maxArgs - 1]uint64 */
+[GoType("[4]uint64")] /* [maxArgs - 1]uint64 */
 partial struct timedEventArgs;
 
 // baseEvent is the basic unprocessed event. This serves as a common

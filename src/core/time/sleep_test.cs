@@ -32,7 +32,7 @@ internal static ж<Δtime.Timer> newTimerFunc(Δtime.Duration d) {
     var t = AfterFunc(d, () => {
         cʗ1.ᐸꟷ(Now());
     });
-    t.Value.C = c;
+    t.Value.C = c.WithDirection(GoChanDir.Recv);
     return t;
 }
 
@@ -509,7 +509,7 @@ internal static error testAfterQueuing1(Δtime.Duration delta, Func<Δtime.Durat
     var result = new channel<afterResult>(len(slots));
     var t0 = Now();
     foreach (var (_, slot) in slots) {
-        goǃ(await, slot, result, After(((Δtime.Duration)(int64)slot) * delta));
+        goǃ(await, slot, result.WithDirection(GoChanDir.Send), After(((Δtime.Duration)(int64)slot) * delta));
     }
     slice<nint> order = default!;
     slice<Δtime.Time> times = default!;
@@ -1078,7 +1078,7 @@ internal static readonly @string nsOpˢ = "ns/op"u8;
 internal static readonly @string avgLateNsˢ = "avg-late-ns"u8;
 internal static readonly @string maxLateNsˢ = "max-late-ns"u8;
 
-[GoType("dyn")] partial struct BenchmarkParallelTimerLatency_type {
+[GoType("dyn")] internal partial struct BenchmarkParallelTimerLatency_type {
     internal float64 sum;
     internal Δtime.Duration max;
     internal int64 count;
@@ -1160,13 +1160,6 @@ public static void BenchmarkParallelTimerLatency(ж<Δtesting.B> Ꮡb) {
     b.ReportMetric((float64)max.Nanoseconds(), maxLateNsˢ);
 }
 
-[GoType("dyn")] partial struct BenchmarkStaggeredTickerLatency_type {
-    internal float64 sum;
-    internal Δtime.Duration max;
-    internal int64 count;
-    internal array<int64> _ = new(5); // cache line padding
-}
-
 // Benchmark timer latency with staggered wakeup times and varying CPU bound
 // workloads. https://golang.org/issue/38860
 public static void BenchmarkStaggeredTickerLatency(ж<Δtesting.B> Ꮡb) {
@@ -1181,7 +1174,7 @@ public static void BenchmarkStaggeredTickerLatency(ж<Δtesting.B> Ꮡb) {
                 nint tickerCount = gmp * tickersPerP;
                 bΔ1.Run(fmt.Sprintf("tickers-per-P=%d"u8, tickersPerP), (ж<Δtesting.B> bΔ2) => {
                     // allocate memory now to avoid GC interference later.
-                    var stats = new slice<BenchmarkStaggeredTickerLatency_type>(tickerCount);
+                    var stats = new slice<BenchmarkParallelTimerLatency_type>(tickerCount);
                     // Ensure the time to start new threads to service timers
                     // will not pollute the results.
                     warmupScheduler(gmp);

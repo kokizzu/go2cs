@@ -695,9 +695,21 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		t.Error("-tests on testing must be refused through a forward-slash GOROOT spelling too")
 	}
 
-	// The override is what keeps the measurement that produced this guard repeatable.
-	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
-		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", err)
+	// The override is what keeps the measurement that produced this guard repeatable — and this arm
+	// pins the OUTCOME, not merely the absence of an error. noCounterpart is a BARE root: it holds no
+	// csproj, so handOwnHostTestTarget cannot open there and the flag must still yield the full
+	// PRODUCTION conversion the 2026-09-03 census measured.
+	//
+	// Reading only `err` left that unpinned, and the gap was measured 2026-09-20 on the reorder's own
+	// follow-up: with the flag path returning testTargetHandOwnHost instead of testTargetConvertible,
+	// every arm in this file stayed green. A one-token edit could have turned the documented
+	// production census into a tests-only run and no test in the tree would have said so.
+	censusKind, censusErr := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true})
+	if censusErr != nil {
+		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", censusErr)
+	}
+	if censusKind != testTargetConvertible {
+		t.Errorf("kind under -test-allow-handown on a BARE root = %v, want testTargetConvertible (production converts too — that is what the census IS)", censusKind)
 	}
 
 	// Ordinary packages — including every testing SUBpackage — must be untouched by the guard. A
@@ -1475,7 +1487,7 @@ func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	// The anchored member composes from the RECORD's spelling — the generator's foreign
 	// `<pkg>_<Simple>` form — never from the cast site's, whose bare spelling would compose a
 	// class name go2cs-gen does not generate (the encoding/csv `ParseErrorжerror` defect).
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "io_PipeWriter"+PointerPrefix+"Writer" {
 		t.Fatalf("anchored member = %q, want the generator's io_PipeWriter%sWriter", got, PointerPrefix)
 	}
 	if _, ok := emittedAdapterPair(pairs, "Δio.LimitedReader", "io_package.Reader"); ok {
@@ -1487,7 +1499,7 @@ func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	if !ok {
 		t.Fatal("a bare cast spelling of a recorded pair must match on the simple name")
 	}
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "io_PipeWriter"+PointerPrefix+"Writer" {
 		t.Fatalf("bare-spelling anchored member = %q, want io_PipeWriter%sWriter", got, PointerPrefix)
 	}
 }
@@ -1522,7 +1534,7 @@ func TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch(t *testing.T
 	}
 	// The generator's AdapterStructKey sees container == packageClassName for this record and
 	// composes the bare name — the converter's member composition must agree.
-	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "Buffer"+PointerPrefix+"Reader" {
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}, false); got != "Buffer"+PointerPrefix+"Reader" {
 		t.Fatalf("anchored member = %q, want the generator's bare Buffer%sReader", got, PointerPrefix)
 	}
 	// A QUALIFIED cast of the foreign same-simple-name record still resolves to it.
@@ -3002,6 +3014,8 @@ func TestDeclarationKeyedCapabilityEntries(t *testing.T) {
 		"testing_test.TestBenchmarkSubRace":                   {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes", internal: false},
 		"testing_test.TestRunningTests":                       {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
 		"testing_test.TestRunningTestsInCleanup":              {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
+		"testing_test.TestBenchmarkBLoopIterationCorrect":     {capability: "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBLoopPrint's own printed iterations; the host defers benchmark execution, so the child prints none", internal: false},
+		"testing_test.TestBenchmarkBNIterationCorrect":        {capability: "benchmark execution (Phase 4D): re-execs the test binary with -test.bench and counts BenchmarkBNPrint's own printed iterations; the host defers benchmark execution, so the child prints none", internal: false},
 	}
 
 	for key, want := range pinned {
@@ -5276,22 +5290,48 @@ func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
 		t.Error("a marker MENTIONED in a comment must not open the hand-owned-host mode")
 	}
 
-	// NEGATIVE 4 — a SCRATCH root: marker-bearing sources cannot be there because nothing is there.
-	// This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since the
-	// guard was written, and it is the arm that would fail if the csproj clause were dropped.
-	if _, err := requireConvertibleTestTarget(pkgDir, t.TempDir(), options); err == nil {
+	// NEGATIVE 4 — a BARE scratch root: marker-bearing sources cannot be there because nothing is
+	// there. This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since
+	// the guard was written, and it is the arm that would fail if the csproj clause were dropped.
+	//
+	// The KIND is asserted alongside the error for the same reason the flag arm in
+	// TestConvertTestsRefusesHandOwnedAndToolchainPackages now asserts its own: the refusal path
+	// returns the ordinary kind, and an arm that reads only `err` cannot tell which kind came back
+	// with it. Between the two, the bare-root OUTCOME is pinned in both directions — refused without
+	// the flag, converted-as-production with it.
+	scratchKind, scratchErr := requireConvertibleTestTarget(pkgDir, t.TempDir(), options)
+	if scratchErr == nil {
 		t.Error("a scratch output root must still be refused")
 	}
+	if scratchKind != testTargetConvertible {
+		t.Errorf("kind on the bare-root refusal = %v, want testTargetConvertible (the refusal returns the ordinary kind, never the host one)", scratchKind)
+	}
 
-	// The documented census override is unchanged AND still wins over the new mode: it is checked
-	// first, so every behavior -test-allow-handown had before this change it still has, including
-	// the destructive one whose measurement produced the guard.
+	// RE-RULED 2026-09-20: the flag at the counterpart's OWN directory takes the HOST path. What this
+	// arm pinned before — the flag checked first, so production converted straight over a hand-own —
+	// is retired, and it is retired because it was measured that day on the H10 recon leg: a runner
+	// passed the flag for `testing` with the output path set to src/core/testing and the pipeline
+	// wrote 19 auto files over the 10 marker-bearing ones, CS0111 duplicates that failed every later
+	// row in that tree to build.
+	//
+	// The BARE-root census the flag's -help text documents is NOT what changed and is not pinned
+	// here: it is the flag arm in TestConvertTestsRefusesHandOwnedAndToolchainPackages, whose output
+	// path holds no counterpart at all, so handOwnHostTestTarget's csproj clause cannot open there
+	// and the flag still yields the full production conversion.
+	//
+	// That arm and NEGATIVE 4 above are the two readings that catch a regression on the bare-root
+	// shape — but only since both were made to assert the KIND (2026-09-20). Until then each read
+	// only its error, and a flag path returning testTargetHandOwnHost passed all three arms; the
+	// claim that they covered the shape was made here before it was true, and this is the amendment.
+	// A root is not "scratch" by being temporary, either: a root SEEDED from src/core carries the
+	// csproj and the markers, so the host path opens there too. The predicate reads the two paths'
+	// contents, and that is the whole design — see requireConvertibleTestTarget's own comment.
 	kind, err = requireConvertibleTestTarget(pkgDir, handOwn, Options{goRoot: goRoot, testAllowHandOwn: true})
 	if err != nil {
-		t.Fatalf("-test-allow-handown must still permit the deliberate census run, got %v", err)
+		t.Fatalf("-test-allow-handown at a hand-owned counterpart's own directory must be admitted, got %v", err)
 	}
-	if kind != testTargetConvertible {
-		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
+	if kind != testTargetHandOwnHost {
+		t.Errorf("kind under -test-allow-handown at the counterpart's own directory = %v, want testTargetHandOwnHost (the host path wins; production is never emitted over a hand-own)", kind)
 	}
 }
 
@@ -5366,5 +5406,74 @@ func TestHostRowReferencesTheHostExactlyOnce(t *testing.T) {
 
 	if got := countHostRefs("errors"); got != 1 {
 		t.Errorf("an ordinary row must reference testing.csproj exactly once (the fixed entry), got %d", got)
+	}
+}
+
+// TestHandOwnHostBridgedNameTheHostDeclaresIsNotGone pins markHandOwnHostExcludedTestFiles'
+// exemption in BOTH directions. export_test.go (internal) publishes two exported aliases of one
+// unexported constant; an EXTERNAL file reading the name the hand-owned host DECLARES stays
+// compiled, and one reading a name the host does NOT declare is still excluded, its reason naming
+// the symbol. The CONTROL arm runs the same fixture with an empty host set and requires both files
+// excluded -- the exemption, not the fixture, is what admits the first file. MEASURED at 1.24.13:
+// testing_test.go's one `testing.ParallelConflict` (declared by the host's ExportTest.cs, q92) took
+// all 30 of its verdicts out of the row.
+func TestHandOwnHostBridgedNameTheHostDeclaresIsNotGone(t *testing.T) {
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod":         "module example/bridge\n\ngo 1.23\n",
+		"lib.go":         "package bridge\n\nconst conflict = \"conflict\"\n",
+		"export_test.go": "package bridge\n\nconst Declared = conflict\n\nconst Undeclared = conflict\n",
+		"declared_test.go": "package bridge_test\n\nimport (\n\t\"testing\"\n\n\t\"example/bridge\"\n)\n\n" +
+			"func TestDeclared(t *testing.T) {\n\tif bridge.Declared == \"\" {\n\t\tt.Fatal(\"empty\")\n\t}\n}\n",
+		"undeclared_test.go": "package bridge_test\n\nimport (\n\t\"testing\"\n\n\t\"example/bridge\"\n)\n\n" +
+			"func TestUndeclared(t *testing.T) {\n\tif bridge.Undeclared == \"\" {\n\t\tt.Fatal(\"empty\")\n\t}\n}\n",
+	})
+
+	internal, external := loadTestVariantsForDir(t, dir)
+	if internal == nil || external == nil {
+		t.Fatalf("expected both internal and external test variants, got internal=%v external=%v", internal, external)
+	}
+
+	// A host directory shaped like src/core/testing's ExportTest.cs: hand-owned, declaring ONE name.
+	host := t.TempDir()
+	if err := os.WriteFile(filepath.Join(host, "ExportTest.cs"), []byte(
+		"// hand-owned\n[module: go.GoManualConversion]\n\nnamespace go;\n\npublic static partial class bridge_package\n{\n"+
+			"    public static readonly @string Declared = \"conflict\";\n}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	hostDeclared := handOwnHostDeclaredNames(host)
+	if !hostDeclared.Contains("Declared") || hostDeclared.Contains("Undeclared") {
+		t.Fatalf("host-declared names = %v, want Declared only", hostDeclared.Keys())
+	}
+
+	excludedNames := func(result map[string][]string) map[string][]string {
+		names := make(map[string][]string, len(result))
+		for path, bridged := range result {
+			if strings.HasSuffix(path, "_test.go") && !strings.HasSuffix(path, "export_test.go") {
+				names[filepath.Base(path)] = bridged
+			}
+		}
+		return names
+	}
+
+	got := excludedNames(markHandOwnHostExcludedTestFiles(internal, external, map[string]bool{}, hostDeclared))
+	want := map[string][]string{"undeclared_test.go": {"bridge.Undeclared"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("with the host declaring Declared: excluded external files = %v, want %v", got, want)
+	}
+
+	reason := handOwnHostExcludedReason(externalTestSourceKind, got["undeclared_test.go"])
+	if !strings.Contains(reason, "bridge.Undeclared") {
+		t.Fatalf("the exclusion reason must name the bridged symbol, got %q", reason)
+	}
+
+	// CONTROL: nothing declared by the host -- the pre-exemption behaviour, both files out.
+	control := excludedNames(markHandOwnHostExcludedTestFiles(internal, external, map[string]bool{}, NewHashSet[string](nil)))
+	if _, ok := control["declared_test.go"]; !ok {
+		t.Fatalf("control: with no host declaration, declared_test.go must be excluded, got %v", control)
+	}
+	if _, ok := control["undeclared_test.go"]; !ok {
+		t.Fatalf("control: undeclared_test.go must be excluded, got %v", control)
 	}
 }

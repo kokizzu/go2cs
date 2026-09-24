@@ -9,12 +9,11 @@ using goarch = @internal.goarch_package;
 using goos = @internal.goos_package;
 using atomic = @internal.runtime.atomic_package;
 using exithook = @internal.runtime.exithook_package;
+using sys = @internal.runtime.sys_package;
 using stringslite = @internal.stringslite_package;
-using sys = runtime.@internal.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -256,6 +255,17 @@ internal static void Main() {
         if (isarchive || islibrary) {
             // A program compiled with -buildmode=c-archive or c-shared
             // has a main, but it is not executed.
+            if (GOARCH == "wasm"u8) {
+                // On Wasm, pause makes it return to the host.
+                // Unlike cgo callbacks where Ms are created on demand,
+                // on Wasm we have only one M. So we keep this M (and this
+                // G) for callbacks.
+                // Using the caller's SP unwinds this frame and backs to
+                // goexit. The -16 is: 8 for goexit's (fake) return PC,
+                // and pause's epilogue pops 8.
+                pause(sys.GetCallerSP() - 16); // should not return
+                throw panic("unreachable");
+            }
             return;
         }
         var fn = main_main; // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
@@ -321,7 +331,7 @@ internal static readonly @string forcegcPhaseErrorˢ = "forcegc: phase error"u8;
 
 internal static void forcegchelper() {
     forcegc.g = getg();
-    lockInit(ref forcegc.@lock, lockRankForcegc);
+    lockInit(Ꮡforcegc.of(forcegcstate.Ꮡlock), lockRankForcegc);
     while (ᐧ) {
         @lock(Ꮡforcegc.of(forcegcstate.Ꮡlock));
         if (Ꮡforcegc.of(forcegcstate.Ꮡidle).Load()) {
@@ -749,6 +759,11 @@ internal static void cpuinit(@string env) {
     else if (exprᴛ2 == "arm64"u8) {
         arm64HasATOMICS = cpu.ARM64.HasATOMICS;
     }
+    else if (exprᴛ2 == "loong64"u8) {
+        loong64HasLAMCAS = cpu.Loong64.HasLAMCAS;
+        loong64HasLAM_BH = cpu.Loong64.HasLAM_BH;
+        loong64HasLSX = cpu.Loong64.HasLSX;
+    }
 
 }
 
@@ -794,24 +809,25 @@ internal static readonly @string unknownˢ2 = "unknown"u8;
 //
 // The new G calls runtime·main.
 internal static void schedinit() {
-    lockInit(ref sched.@lock, lockRankSched);
-    lockInit(ref sched.sysmonlock, lockRankSysmon);
-    lockInit(ref sched.deferlock, lockRankDefer);
-    lockInit(ref sched.sudoglock, lockRankSudog);
-    lockInit(ref deadlock, lockRankDeadlock);
-    lockInit(ref paniclk, lockRankPanic);
-    lockInit(ref allglock, lockRankAllg);
-    lockInit(ref allpLock, lockRankAllp);
-    lockInit(ref reflectOffs.@lock, lockRankReflectOffs);
-    lockInit(ref finlock, lockRankFin);
-    lockInit(ref cpuprof.@lock, lockRankCpuprof);
+    lockInit(Ꮡsched.of(schedt.Ꮡlock), lockRankSched);
+    lockInit(Ꮡsched.of(schedt.Ꮡsysmonlock), lockRankSysmon);
+    lockInit(Ꮡsched.of(schedt.Ꮡdeferlock), lockRankDefer);
+    lockInit(Ꮡsched.of(schedt.Ꮡsudoglock), lockRankSudog);
+    lockInit(Ꮡdeadlock, lockRankDeadlock);
+    lockInit(Ꮡpaniclk, lockRankPanic);
+    lockInit(Ꮡallglock, lockRankAllg);
+    lockInit(ᏑallpLock, lockRankAllp);
+    lockInit(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock), lockRankReflectOffs);
+    lockInit(Ꮡfinlock, lockRankFin);
+    lockInit(Ꮡcpuprof.of(cpuProfile.Ꮡlock), lockRankCpuprof);
     ᏑallocmLock.init(lockRankAllocmR, lockRankAllocmRInternal, lockRankAllocmW);
     ᏑexecLock.init(lockRankExecR, lockRankExecRInternal, lockRankExecW);
     traceLockInit();
     // Enforce that this lock is always a leaf lock.
     // All of this lock's critical sections should be
     // extremely short.
-    lockInit(ref memstats.heapStats.noPLock, lockRankLeafRank);
+    lockInit(Ꮡmemstats.of(mstats.ᏑheapStats).of(consistentHeapStats.ᏑnoPLock), lockRankLeafRank);
+    lockVerifyMSize();
     // raceinit must be the first call to race detector.
     // In particular, it must be done before mallocinit below calls racemapshadow.
     var gp = getg();
@@ -1238,6 +1254,11 @@ internal static void casgstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval) {
             nextYield = nanotime() + (int64)(yieldDelay / 2);
         }
     }
+    if (gp.syncGroup != nil) {
+        systemstack(() => {
+            Ꮡgp.Value.syncGroup.changegstatus(Ꮡgp, oldval, newval);
+        });
+    }
     if (oldval == _Grunning) {
         // Track every gTrackingPeriod time a goroutine transitions out of running.
         if (casgstatusAlwaysTrack || (uint8)(gp.trackingSeq % (uint8)gTrackingPeriod) == 0) {
@@ -1335,28 +1356,6 @@ internal static void casGToWaitingForSuspendG(ж<g> Ꮡgp, uint32 old, waitReaso
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string copystackBadStatusNotˢ = "copystack: bad status, not Gwaiting or Grunnable"u8;
-
-// casgstatus(gp, oldstatus, Gcopystack), assuming oldstatus is Gwaiting or Grunnable.
-// Returns old status. Cannot call casgstatus directly, because we are racing with an
-// async wakeup that might come in from netpoll. If we see Gwaiting from the readgstatus,
-// it might have become Grunnable by the time we get to the cas. If we called casgstatus,
-// it would loop waiting for the status to go back to Gwaiting, which it never will.
-//
-//go:nosplit
-internal static uint32 casgcopystack(ж<g> Ꮡgp) {
-    while (ᐧ) {
-        var oldstatus = (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan);
-        if (oldstatus != _Gwaiting && oldstatus != _Grunnable) {
-            @throw(copystackBadStatusNotˢ);
-        }
-        if (Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(oldstatus, _Gcopystack)) {
-            return oldstatus;
-        }
-    }
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string badGTransitionˢ = "bad g transition"u8;
 
 // casGToPreemptScan transitions gp from _Grunning to _Gscan|_Gpreempted.
@@ -1372,6 +1371,13 @@ internal static void casGToPreemptScan(ж<g> Ꮡgp, uint32 old, uint32 @new) {
     }
 }
 
+// We never notify gp.syncGroup that the goroutine state has moved
+// from _Grunning to _Gpreempted. We call syncGroup.changegstatus
+// after status changes happen, but doing so here would violate the
+// ordering between the gscan and synctest locks. syncGroup doesn't
+// distinguish between _Grunning and _Gpreempted anyway, so not
+// notifying it is fine.
+
 // casGFromPreempted attempts to transition gp from _Gpreempted to
 // _Gwaiting. If successful, the caller is responsible for
 // re-scheduling gp.
@@ -1382,7 +1388,15 @@ internal static bool casGFromPreempted(ж<g> Ꮡgp, uint32 old, uint32 @new) {
         @throw(badGTransitionˢ);
     }
     gp.waitreason = waitReasonPreempted;
-    return Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Gpreempted, _Gwaiting);
+    if (!Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Gpreempted, _Gwaiting)) {
+        return false;
+    }
+    {
+        var sg = gp.syncGroup; if (sg != nil) {
+            sg.changegstatus(Ꮡgp, _Gpreempted, _Gwaiting);
+        }
+    }
+    return true;
 }
 
 [GoType("num:uint8")] partial struct stwReason;
@@ -1874,7 +1888,7 @@ internal static void mstart0() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string badRuntimeMstartˢ = "bad runtime·mstart"u8;
 
-// The go:noinline is to guarantee the getcallerpc/getcallersp below are safe,
+// The go:noinline is to guarantee the sys.GetCallerPC/sys.GetCallerSP below are safe,
 // so that we can set up g0.sched to return to the call of mstart1 above.
 //
 //go:noinline
@@ -1890,14 +1904,17 @@ internal static void mstart1() {
     // And goexit0 does a gogo that needs to return from mstart1
     // and let mstart0 exit the thread.
     gp.Value.sched.g = new Δguintptr(gp);
-    gp.Value.sched.pc = getcallerpc();
-    gp.Value.sched.sp = getcallersp();
+    gp.Value.sched.pc = sys.GetCallerPC();
+    gp.Value.sched.sp = sys.GetCallerSP();
     asminit();
     minit();
     // Install signal handlers; after minit so that minit can
     // prepare the thread to be able to handle the signals.
     if ((~gp).m == Ꮡm0) {
         mstartm0();
+    }
+    if (debug.dataindependenttiming == 1) {
+        sys.EnableDIT();
     }
     {
         var fn = gp.Value.m.Value.mstartfn; if (fn != default!) {
@@ -1984,6 +2001,8 @@ internal static void mexit(bool osStack) {
         // won't write to it when calling VDSO code.
         mp.Value.gsignal = default!;
     }
+    // Free vgetrandom state.
+    vgetrandomDestroy(ref (mp).DerefOrNull());
     // Remove m from allm.
     @lock(Ꮡsched.of(schedt.Ꮡlock));
     for (var pprev = Ꮡallm; pprev.ValueSlot != nil; pprev = (pprev.ValueSlot).of(m.Ꮡalllink)) {
@@ -2379,7 +2398,7 @@ internal static void needm(bool signal) {
     // Install g (= m->g0) and set the stack bounds
     // to match the current stack.
     setg((~mp).g0);
-    var sp = getcallersp();
+    var sp = sys.GetCallerSP();
     callbackUpdateSystemStack(ref (mp).DerefOrNull(), sp, signal);
     // Should mark we are already in Go now.
     // Otherwise, we may call needm again when we get a signal, before cgocallbackg1,
@@ -4111,8 +4130,18 @@ internal static bool parkunlock_c(ж<g> Ꮡgp, @unsafe.Pointer @lock) {
 
 // park continuation on g0.
 internal static void park_m(ж<g> Ꮡgp) {
+    ref var gp = ref Ꮡgp.DerefOrNull();
+
     var mp = getg().Value.m;
     var Δtrace = traceAcquire();
+    // If g is in a synctest group, we don't want to let the group
+    // become idle until after the waitunlockf (if any) has confirmed
+    // that the park is happening.
+    // We need to record gp.syncGroup here, since waitunlockf can change it.
+    var sg = gp.syncGroup;
+    if (sg != nil) {
+        sg.incActive();
+    }
     if (Δtrace.ok()) {
         // Trace the event before the transition. It may take a
         // stack trace, but we won't own the stack after the
@@ -4134,6 +4163,9 @@ internal static void park_m(ж<g> Ꮡgp) {
             if (!ok) {
                 var traceΔ1 = traceAcquire();
                 casgstatus(Ꮡgp, _Gwaiting, _Grunnable);
+                if (sg != nil) {
+                    sg.decActive();
+                }
                 if (traceΔ1.ok()) {
                     traceΔ1.GoUnpark(Ꮡgp, 2);
                     traceRelease(traceΔ1);
@@ -4141,6 +4173,9 @@ internal static void park_m(ж<g> Ꮡgp) {
                 execute(Ꮡgp, true); // Schedule it back, never returns.
             }
         }
+    }
+    if (sg != nil) {
+        sg.decActive();
     }
     schedule();
 }
@@ -4302,6 +4337,11 @@ internal static void goyield_m(ж<g> Ꮡgp) {
 // Finishes execution of the current goroutine.
 internal static void goexit1() {
     if (raceenabled) {
+        {
+            var gp = getg(); if ((~gp).syncGroup != nil) {
+                racereleasemergeg(ref (gp).DerefOrNull(), (uintptr)(~gp).syncGroup.raceaddr());
+            }
+        }
         racegoend();
     }
     var Δtrace = traceAcquire();
@@ -4319,6 +4359,7 @@ internal static void goexit0(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string runtimeGoexitCalledInAˢ = "runtime.Goexit called in a thread that was not created by the Go runtime"u8;
 internal static readonly @string exitedAGoroutineˢ = "exited a goroutine internally locked to the OS thread"u8;
 
 internal static void gdestroy(ж<g> Ꮡgp) {
@@ -4344,6 +4385,7 @@ internal static void gdestroy(ж<g> Ꮡgp) {
     gp.param = default!;
     gp.labels = default!;
     gp.timer = default!;
+    gp.syncGroup = default!;
     if (gcBlackenEnabled != 0 && gp.gcAssistBytes > 0) {
         // Flush assist credit to the global pool. This gives
         // better information to pacing if the application is
@@ -4361,6 +4403,9 @@ internal static void gdestroy(ж<g> Ꮡgp) {
     }
     if (locked && (~mp).lockedInt != 0) {
         print((@string)"runtime: mp.lockedInt = "u8, (~mp).lockedInt, (@string)"\n"u8);
+        if ((~mp).isextra) {
+            @throw(runtimeGoexitCalledInAˢ);
+        }
         @throw(exitedAGoroutineˢ);
     }
     gfput(pp, Ꮡgp);
@@ -4415,126 +4460,9 @@ internal static void save(uintptr pc, uintptr sp, uintptr bp) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string entersyscallˢ = "entersyscall"u8;
+// go2cs generated this placeholder — func reentersyscall is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The goroutine g is about to enter a system call.
-// Record that it's not using the cpu anymore.
-// This is called only from the go syscall library and cgocall,
-// not from the low-level system calls used by the runtime.
-//
-// Entersyscall cannot split the stack: the save must
-// make g->sched refer to the caller's stack segment, because
-// entersyscall is going to return immediately after.
-//
-// Nothing entersyscall calls can split the stack either.
-// We cannot safely move the stack during an active call to syscall,
-// because we do not know which of the uintptr arguments are
-// really pointers (back into the stack).
-// In practice, this means that we make the fast path run through
-// entersyscall doing no-split things, and the slow path has to use systemstack
-// to run bigger things on the system stack.
-//
-// reentersyscall is the entry point used by cgo callbacks, where explicitly
-// saved SP and PC are restored. This is needed when exitsyscall will be called
-// from a function further up in the call stack than the parent, as g->syscallsp
-// must always point to a valid stack frame. entersyscall below is the normal
-// entry point for syscalls, which obtains the SP and PC from the caller.
-//
-//go:nosplit
-internal static void reentersyscall(uintptr pc, uintptr sp, uintptr bp) {
-    ref var Δtrace = ref heap<traceLocker>(out var Ꮡtrace);
-    Δtrace = traceAcquire();
-    var gp = getg();
-    // Disable preemption because during this function g is in Gsyscall status,
-    // but can have inconsistent g->sched, do not let GC observe it.
-    gp.Value.m.Value.locks++;
-    // Entersyscall must not call any function that might split/grow the stack.
-    // (See details in comment above.)
-    // Catch calls that might, by replacing the stack guard with something that
-    // will trip any stack check and leaving a flag to tell newstack to die.
-    gp.Value.stackguard0 = stackPreempt;
-    gp.Value.throwsplit = true;
-    // Leave SP around for GC and traceback.
-    save(pc, sp, bp);
-    gp.Value.syscallsp = sp;
-    gp.Value.syscallpc = pc;
-    gp.Value.syscallbp = bp;
-    casgstatus(gp, _Grunning, _Gsyscall);
-    if (staticLockRanking) {
-        // When doing static lock ranking casgstatus can call
-        // systemstack which clobbers g.sched.
-        save(pc, sp, bp);
-    }
-    if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
-        var gpʗ1 = gp;
-        systemstack(() => {
-            print((@string)"entersyscall inconsistent sp "u8, ((Δhex)(uint64)(~gpʗ1).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
-            @throw(entersyscallˢ);
-        });
-    }
-    if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
-        var gpʗ2 = gp;
-        systemstack(() => {
-            print((@string)"entersyscall inconsistent bp "u8, ((Δhex)(uint64)(~gpʗ2).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ2).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ2).stack.hi), (@string)"]\n"u8);
-            @throw(entersyscallˢ);
-        });
-    }
-    if (Δtrace.ok()) {
-        var traceʗ1 = Δtrace;
-        systemstack(() => {
-            traceʗ1.GoSysCall();
-            traceRelease(traceʗ1);
-        });
-        // systemstack itself clobbers g.sched.{pc,sp} and we might
-        // need them later when the G is genuinely blocked in a
-        // syscall
-        save(pc, sp, bp);
-    }
-    if (Ꮡsched.of(schedt.Ꮡsysmonwait).Load()) {
-        systemstack(entersyscall_sysmon);
-        save(pc, sp, bp);
-    }
-    if ((~(~(~gp).m).p.ptr()).runSafePointFn != 0) {
-        // runSafePointFn may stack split if run on this stack
-        systemstack(runSafePointFn);
-        save(pc, sp, bp);
-    }
-    gp.Value.m.Value.syscalltick = (~(~gp).m).p.ptr().Value.syscalltick;
-    var pp = (~(~gp).m).p.ptr();
-    pp.Value.m = 0;
-    (~gp).m.of(m.Ꮡoldp).set(pp);
-    gp.Value.m.Value.p = 0;
-    atomic.Store(pp.of(runtime_package.Δp.Ꮡstatus), _Psyscall);
-    if (Ꮡsched.of(schedt.Ꮡgcwaiting).Load()) {
-        systemstack(entersyscall_gcwait);
-        save(pc, sp, bp);
-    }
-    gp.Value.m.Value.locks--;
-}
-
-// Standard syscall entry used by the go syscall library and normal cgo calls.
-//
-// This is exported via linkname to assembly in the syscall package and x/sys.
-//
-// Other packages should not be accessing entersyscall directly,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - gvisor.dev/gvisor
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:nosplit
-//go:linkname entersyscall
-internal static void entersyscall() {
-    // N.B. getcallerfp cannot be written directly as argument in the call
-    // to reentersyscall because it forces spilling the other arguments to
-    // the stack. This results in exceeding the nosplit stack requirements
-    // on some platforms.
-    var fp = getcallerfp();
-    reentersyscall(getcallerpc(), getcallersp(), fp);
-}
+// go2cs generated this placeholder — func entersyscall is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static void entersyscall_sysmon() {
     @lock(Ꮡsched.of(schedt.Ꮡlock));
@@ -4578,66 +4506,8 @@ internal static void entersyscall_gcwait() {
     unlock(Ꮡsched.of(schedt.Ꮡlock));
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string entersyscallblockˢ = "entersyscallblock"u8;
-
 // The same as entersyscall(), but with a hint that the syscall is blocking.
-
-// entersyscallblock should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - gvisor.dev/gvisor
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname entersyscallblock
-//go:nosplit
-internal static void entersyscallblock() {
-    var gp = getg();
-    gp.Value.m.Value.locks++; // see comment in entersyscall
-    gp.Value.throwsplit = true;
-    gp.Value.stackguard0 = stackPreempt; // see comment in entersyscall
-    gp.Value.m.Value.syscalltick = (~(~gp).m).p.ptr().Value.syscalltick;
-    (~(~gp).m).p.ptr().Value.syscalltick++;
-    // Leave SP around for GC and traceback.
-    var pc = getcallerpc();
-    var sp = getcallersp();
-    var bp = getcallerfp();
-    save(pc, sp, bp);
-    gp.Value.syscallsp = gp.Value.sched.sp;
-    gp.Value.syscallpc = gp.Value.sched.pc;
-    gp.Value.syscallbp = gp.Value.sched.bp;
-    if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
-        var sp1 = sp;
-        var sp2 = gp.Value.sched.sp;
-        var sp3 = gp.Value.syscallsp;
-        var gpʗ1 = gp;
-        systemstack(() => {
-            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp1), (@string)" "u8, ((Δhex)(uint64)sp2), (@string)" "u8, ((Δhex)(uint64)sp3), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
-            @throw(entersyscallblockˢ);
-        });
-    }
-    casgstatus(gp, _Grunning, _Gsyscall);
-    if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
-        var gpʗ2 = gp;
-        systemstack(() => {
-            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ2).sched.sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ2).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ2).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ2).stack.hi), (@string)"]\n"u8);
-            @throw(entersyscallblockˢ);
-        });
-    }
-    if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
-        var gpʗ3 = gp;
-        systemstack(() => {
-            print((@string)"entersyscallblock inconsistent bp "u8, ((Δhex)(uint64)bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).sched.bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
-            @throw(entersyscallblockˢ);
-        });
-    }
-    systemstack(entersyscallblock_handoff);
-    // Resave for traceback during blocked call.
-    save(getcallerpc(), getcallersp(), getcallerfp());
-    gp.Value.m.Value.locks--;
-}
+// go2cs generated this placeholder — func entersyscallblock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static void entersyscallblock_handoff() {
     var Δtrace = traceAcquire();
@@ -4648,108 +4518,7 @@ internal static void entersyscallblock_handoff() {
     handoffp(releasep());
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string exitsyscallSyscallFrameˢ = "exitsyscall: syscall frame is no longer valid"u8;
-
-// The goroutine g exited its system call.
-// Arrange for it to run on a cpu again.
-// This is called only from the go syscall library, not
-// from the low-level system calls used by the runtime.
-//
-// Write barriers are not allowed because our P may have been stolen.
-//
-// This is exported via linkname to assembly in the syscall package.
-//
-// exitsyscall should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - gvisor.dev/gvisor
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:nosplit
-//go:nowritebarrierrec
-//go:linkname exitsyscall
-internal static void exitsyscall() {
-    var gp = getg();
-    gp.Value.m.Value.locks++; // see comment in entersyscall
-    if (getcallersp() > (~gp).syscallsp) {
-        @throw(exitsyscallSyscallFrameˢ);
-    }
-    gp.Value.waitsince = 0;
-    var oldp = (~(~gp).m).oldp.ptr();
-    gp.Value.m.Value.oldp = 0;
-    if (exitsyscallfast(oldp)) {
-        // When exitsyscallfast returns success, we have a P so can now use
-        // write barriers
-        if (goroutineProfile.active) {
-            // Make sure that gp has had its stack written out to the goroutine
-            // profile, exactly as it was when the goroutine profiler first
-            // stopped the world.
-            var gpʗ1 = gp;
-            systemstack(() => {
-                tryRecordGoroutineProfileWB(gpʗ1);
-            });
-        }
-        ref var Δtrace = ref heap<traceLocker>(out var Ꮡtrace);
-        Δtrace = traceAcquire();
-        if (Δtrace.ok()) {
-            var lostP = oldp != (~(~gp).m).p.ptr() || (~(~gp).m).syscalltick != (~(~(~gp).m).p.ptr()).syscalltick;
-            var traceʗ1 = Δtrace;
-            systemstack(() => {
-                // Write out syscall exit eagerly.
-                //
-                // It's important that we write this *after* we know whether we
-                // lost our P or not (determined by exitsyscallfast).
-                traceʗ1.GoSysExit(lostP);
-                if (lostP) {
-                    // We lost the P at some point, even though we got it back here.
-                    // Trace that we're starting again, because there was a traceGoSysBlock
-                    // call somewhere in exitsyscallfast (indicating that this goroutine
-                    // had blocked) and we're about to start running again.
-                    traceʗ1.GoStart();
-                }
-            });
-        }
-        // There's a cpu for us, so we can run.
-        (~(~gp).m).p.ptr().Value.syscalltick++;
-        // We need to cas the status and scan before resuming...
-        casgstatus(gp, _Gsyscall, _Grunning);
-        if (Δtrace.ok()) {
-            traceRelease(Δtrace);
-        }
-        // Garbage collector isn't running (since we are),
-        // so okay to clear syscallsp.
-        gp.Value.syscallsp = 0;
-        gp.Value.m.Value.locks--;
-        if ((~gp).preempt){
-            // restore the preemption request in case we've cleared it in newstack
-            gp.Value.stackguard0 = stackPreempt;
-        } else {
-            // otherwise restore the real stackGuard, we've spoiled it in entersyscall/entersyscallblock
-            gp.Value.stackguard0 = (~gp).stack.lo + (uintptr)stackGuard;
-        }
-        gp.Value.throwsplit = false;
-        if (sched.disable.user && !schedEnabled(ref (gp).DerefOrNull())) {
-            // Scheduling of this goroutine is disabled.
-            Gosched();
-        }
-        return;
-    }
-    gp.Value.m.Value.locks--;
-    // Call the scheduler.
-    mcall(exitsyscall0);
-    // Scheduler returned, so we're allowed to run now.
-    // Delete the syscallsp information that we left for
-    // the garbage collector during the system call.
-    // Must wait until now because until gosched returns
-    // we don't know for sure that the garbage collector
-    // is not running.
-    gp.Value.syscallsp = 0;
-    (~(~gp).m).p.ptr().Value.syscalltick++;
-    gp.Value.throwsplit = false;
-}
+// go2cs generated this placeholder — func exitsyscall is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:nosplit
 internal static bool exitsyscallfast(ж<Δp> Ꮡoldp) {
@@ -4890,7 +4659,6 @@ internal static void exitsyscall0(ж<g> Ꮡgp) {
 // syscall_runtime_BeforeFork is for package syscall,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/containerd/containerd
 //   - gvisor.dev/gvisor
 //
 // Do not remove or change the type signature.
@@ -4918,7 +4686,6 @@ internal static void syscall_runtime_BeforeFork() {
 // syscall_runtime_AfterFork is for package syscall,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/containerd/containerd
 //   - gvisor.dev/gvisor
 //
 // Do not remove or change the type signature.
@@ -4949,7 +4716,6 @@ internal static bool inForkedChild;
 // syscall_runtime_AfterForkInChild is for package syscall,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/containerd/containerd
 //   - gvisor.dev/gvisor
 //
 // Do not remove or change the type signature.
@@ -5022,7 +4788,7 @@ internal static ж<g> malg(int32 stacksize) {
 // The compiler turns a go statement into a call to this.
 internal static void newproc(ж<funcval> Ꮡfn) {
     var gp = getg();
-    var pc = getcallerpc();
+    var pc = sys.GetCallerPC();
     var gpʗ1 = gp;
     systemstack(() => {
         var newg = newproc1(Ꮡfn, gpʗ1, pc, false, waitReasonZero);
@@ -5088,7 +4854,8 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
     if (isSystemGoroutine(ref (newg).DerefOrNull(), false)){
         Ꮡsched.of(schedt.Ꮡngsys).Add(1);
     } else {
-        // Only user goroutines inherit pprof labels.
+        // Only user goroutines inherit synctest groups and pprof labels.
+        newg.Value.syncGroup = callergp.syncGroup;
         if ((~mp).curg != nil) {
             newg.Value.labels = mp.Value.curg.Value.labels;
         }
@@ -5114,7 +4881,6 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
         status = _Gwaiting;
         newg.Value.waitreason = waitreason;
     }
-    casgstatus(newg, _Gdead, status);
     if ((~pp).goidcache == (~pp).goidcacheend) {
         // Sched.goidgen is the last allocated id,
         // this batch must be [sched.goidgen+1, sched.goidgen+GoidCacheBatch].
@@ -5124,6 +4890,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
         pp.Value.goidcacheend = (~pp).goidcache + (uint64)_GoidCacheBatch;
     }
     newg.Value.goid = pp.Value.goidcache;
+    casgstatus(newg, _Gdead, status);
     pp.Value.goidcache++;
     newg.of(g.Ꮡtrace).reset();
     if (Δtrace.ok()) {
@@ -5594,7 +5361,7 @@ internal static void init(this ж<Δp> Ꮡpp, int32 id) {
             pp.raceprocctx = raceproccreate();
         }
     }
-    lockInit(ref nonnil(ref pp).timers.mu, lockRankTimers);
+    lockInit(Ꮡpp.of(runtime_package.Δp.Ꮡtimers).of(timers.Ꮡmu), lockRankTimers);
     // This P may get timers when it starts running. Set the mask here
     // since the P may not go through pidleget (notably P 0 on startup).
     timerpMask.set(id);
@@ -5932,7 +5699,9 @@ internal static void checkdead() {
     // For -buildmode=c-shared or -buildmode=c-archive it's OK if
     // there are no running goroutines. The calling program is
     // assumed to be running.
-    if (islibrary || isarchive) {
+    // One exception is Wasm, which is single-threaded. If we are
+    // in Go and all goroutines are blocked, it deadlocks.
+    if ((islibrary || isarchive) && GOARCH != "wasm"u8) {
         return;
     }
     // If we are dying because of a signal caught on an already idle thread,
@@ -7162,19 +6931,9 @@ internal static void sync_atomic_runtime_procUnpin() {
 
 // Active spinning for sync.Mutex.
 //
-// sync_runtime_canSpin should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/livekit/protocol
-//   - github.com/sagernet/gvisor
-//   - gvisor.dev/gvisor
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname sync_runtime_canSpin sync.runtime_canSpin
+//go:linkname internal_sync_runtime_canSpin internal/sync.runtime_canSpin
 //go:nosplit
-internal static bool sync_runtime_canSpin(nint i) {
+internal static bool internal_sync_runtime_canSpin(nint i) {
     // sync.Mutex is cooperative, so we are conservative with spinning.
     // Spin only few times and only if running on a multicore machine and
     // GOMAXPROCS>1 and there is at least one other running P and local runq is empty.
@@ -7191,6 +6950,30 @@ internal static bool sync_runtime_canSpin(nint i) {
     return true;
 }
 
+//go:linkname internal_sync_runtime_doSpin internal/sync.runtime_doSpin
+//go:nosplit
+internal static void internal_sync_runtime_doSpin() {
+    procyield(active_spin_cnt);
+}
+
+// Active spinning for sync.Mutex.
+//
+// sync_runtime_canSpin should be an internal detail,
+// but widely used packages access it using linkname.
+// Notable members of the hall of shame include:
+//   - github.com/livekit/protocol
+//   - github.com/sagernet/gvisor
+//   - gvisor.dev/gvisor
+//
+// Do not remove or change the type signature.
+// See go.dev/issue/67401.
+//
+//go:linkname sync_runtime_canSpin sync.runtime_canSpin
+//go:nosplit
+internal static bool sync_runtime_canSpin(nint i) {
+    return internal_sync_runtime_canSpin(i);
+}
+
 // sync_runtime_doSpin should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -7204,7 +6987,7 @@ internal static bool sync_runtime_canSpin(nint i) {
 //go:linkname sync_runtime_doSpin sync.runtime_doSpin
 //go:nosplit
 internal static void sync_runtime_doSpin() {
-    procyield(active_spin_cnt);
+    internal_sync_runtime_doSpin();
 }
 
 internal static ж<randomOrder> ᏑstealOrder = new StandardBox<randomOrder>(default(randomOrder));

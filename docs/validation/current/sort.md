@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `sort` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**63 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**63 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 
@@ -128,8 +130,10 @@ the capability it needs.
 - ExampleSearch (example): example execution is deferred to Phase 4D
 - ExampleSearchFloat64s (example): example execution is deferred to Phase 4D
 - ExampleSearchInts (example): example execution is deferred to Phase 4D
+- ExampleSearchStrings (example): example execution is deferred to Phase 4D
 - ExampleSearch_descendingOrder (example): example execution is deferred to Phase 4D
 - ExampleSlice (example): example execution is deferred to Phase 4D
+- ExampleSliceIsSorted (example): example execution is deferred to Phase 4D
 - ExampleSliceStable (example): example execution is deferred to Phase 4D
 - ExampleStrings (example): example execution is deferred to Phase 4D
 - Example_sortKeys (example): example execution is deferred to Phase 4D

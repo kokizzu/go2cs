@@ -23,36 +23,6 @@ using @internal;
 
 partial class netip_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunique() {
-    builtin.initPackage(typeof(unique_package));
-}
-
 // Sizes: (64-bit)
 //   net.IP:     24 byte slice header + {4, 16} = 28 to 40 bytes
 //   net.IPAddr: 40 byte slice header + {4, 16} = 44 to 56 bytes + zone length
@@ -146,8 +116,8 @@ public static ΔAddr AddrFrom16([GoArrayDims(16)] array<byte> addr) {
 
     return new ΔAddr(
         addr: new uint128(
-            byteorder.BeUint64(addr[..8]),
-            byteorder.BeUint64(addr[8..])
+            byteorder.BEUint64(addr[..8]),
+            byteorder.BEUint64(addr[8..])
         ),
         z: z6noz
     );
@@ -517,7 +487,9 @@ public static bool Is4(this ΔAddr ip) {
     return ip.z == z4;
 }
 
-// Is4In6 reports whether ip is an IPv4-mapped IPv6 address.
+// Is4In6 reports whether ip is an "IPv4-mapped IPv6 address"
+// as defined by RFC 4291.
+// That is, it reports whether ip is in ::ffff:0:0/96.
 public static bool Is4In6(this ΔAddr ip) {
     return ip.Is6() && ip.addr.hi == 0 && (ip.addr.lo >> (int)(32)) == 0xffff;
 }
@@ -748,8 +720,8 @@ public static (ΔPrefix, error) Prefix(this ΔAddr ip, nint b) {
 public static array<byte> /*a16*/ As16(this ΔAddr ip) {
     array<byte> a16 = new(16);
 
-    byteorder.BePutUint64(a16[..8], ip.addr.hi);
-    byteorder.BePutUint64(a16[8..], ip.addr.lo);
+    byteorder.BEPutUint64(a16[..8], ip.addr.hi);
+    byteorder.BEPutUint64(a16[8..], ip.addr.lo);
     return a16.Clone();
 }
 
@@ -760,7 +732,7 @@ public static array<byte> /*a4*/ As4(this ΔAddr ip) {
     array<byte> a4 = new(4);
 
     if (ip.z == z4 || ip.Is4In6()) {
-        byteorder.BePutUint32(a4[..], (uint32)ip.addr.lo);
+        byteorder.BEPutUint32(a4[..], (uint32)ip.addr.lo);
         return a4.Clone();
     }
     if (ip.z == z0) {
@@ -777,13 +749,13 @@ public static slice<byte> AsSlice(this ΔAddr ip) {
     }
     if (exprᴛ1 == z4) {
         array<byte> ret = new(4);
-        byteorder.BePutUint32(ret[..], (uint32)ip.addr.lo);
+        byteorder.BEPutUint32(ret[..], (uint32)ip.addr.lo);
         return ret[..];
     }
     { /* default: */
         array<byte> ret = new(16);
-        byteorder.BePutUint64(ret[..8], ip.addr.hi);
-        byteorder.BePutUint64(ret[8..], ip.addr.lo);
+        byteorder.BEPutUint64(ret[..8], ip.addr.hi);
+        byteorder.BEPutUint64(ret[8..], ip.addr.lo);
         return ret[..];
     }
 
@@ -1025,30 +997,37 @@ public static @string StringExpanded(this ΔAddr ip) {
     return ((@string)ret);
 }
 
+// AppendText implements the [encoding.TextAppender] interface,
+// It is the same as [Addr.AppendTo].
+public static (slice<byte>, error) AppendText(this ΔAddr ip, slice<byte> b) {
+    return (ip.AppendTo(b), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface,
 // The encoding is the same as returned by [Addr.String], with one exception:
 // If ip is the zero [Addr], the encoding is the empty string.
 public static (slice<byte>, error) MarshalText(this ΔAddr ip) {
+    var buf = new byte[]{}.slice();
     var exprᴛ1 = ip.z;
     if (exprᴛ1 == z0) {
-        return (slice<byte>(""u8), default!);
     }
-    if (exprᴛ1 == z4) {
-        nint max = len("255.255.255.255");
-        var b = new slice<byte>(0, max);
-        return (ip.appendTo4(b), default!);
+    else if (exprᴛ1 == z4) {
+        const nint maxCap = /* len("255.255.255.255") */ 15;
+        buf = new slice<byte>(0, maxCap);
     }
-    { /* default: */
-        if (ip.Is4In6()) {
-            nint maxΔ1 = len("::ffff:255.255.255.255%enp5s0");
-            var bΔ1 = new slice<byte>(0, maxΔ1);
-            return (ip.appendTo4In6(bΔ1), default!);
-        }
-        nint max = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0");
-        var b = new slice<byte>(0, max);
-        return (ip.appendTo6(b), default!);
+    else { /* default: */
+        do {
+            if (ip.Is4In6()) {
+                const nint maxCapΔ1 = /* len("::ffff:255.255.255.255%enp5s0") */ 29;
+                buf = new slice<byte>(0, maxCapΔ1);
+                break;
+            }
+            const nint maxCap = /* len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0") */ 46;
+            buf = new slice<byte>(0, maxCap);
+        } while (false);
     }
 
+    return ip.AppendText(buf);
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -1066,25 +1045,35 @@ public static (slice<byte>, error) MarshalText(this ΔAddr ip) {
     return err;
 }
 
-internal static slice<byte> marshalBinaryWithTrailingBytes(this ΔAddr ip, nint trailingBytes) {
-    slice<byte> b = default!;
+// AppendBinary implements the [encoding.BinaryAppender] interface.
+public static (slice<byte>, error) AppendBinary(this ΔAddr ip, slice<byte> b) {
     var exprᴛ1 = ip.z;
     if (exprᴛ1 == z0) {
-        b = new slice<byte>(trailingBytes);
     }
     else if (exprᴛ1 == z4) {
-        b = new slice<byte>(4 + trailingBytes);
-        byteorder.BePutUint32(b, (uint32)ip.addr.lo);
+        b = byteorder.BEAppendUint32(b, (uint32)ip.addr.lo);
     }
     else { /* default: */
-        @string z = ip.Zone();
-        b = new slice<byte>(16 + len(z) + trailingBytes);
-        byteorder.BePutUint64(b[..8], ip.addr.hi);
-        byteorder.BePutUint64(b[8..], ip.addr.lo);
-        copy(b[16..], z);
+        b = byteorder.BEAppendUint64(b, ip.addr.hi);
+        b = byteorder.BEAppendUint64(b, ip.addr.lo);
+        b = append(b, ip.Zone().ꓸꓸꓸ);
     }
 
-    return b;
+    return (b, default!);
+}
+
+internal static nint marshalBinarySize(this ΔAddr ip) {
+    var exprᴛ1 = ip.z;
+    if (exprᴛ1 == z0) {
+        return 0;
+    }
+    if (exprᴛ1 == z4) {
+        return 4;
+    }
+    { /* default: */
+        return 16 + len(ip.Zone());
+    }
+
 }
 
 // MarshalBinary implements the [encoding.BinaryMarshaler] interface.
@@ -1092,7 +1081,7 @@ internal static slice<byte> marshalBinaryWithTrailingBytes(this ΔAddr ip, nint 
 // the 4-byte form for an IPv4 address,
 // and the 16-byte form with zone appended for an IPv6 address.
 public static (slice<byte>, error) MarshalBinary(this ΔAddr ip) {
-    return (ip.marshalBinaryWithTrailingBytes(0), default!);
+    return ip.AppendBinary(new slice<byte>(0, ip.marshalBinarySize()));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1298,24 +1287,30 @@ public static slice<byte> AppendTo(this AddrPort p, slice<byte> b) {
     return b;
 }
 
+// AppendText implements the [encoding.TextAppender] interface. The
+// encoding is the same as returned by [AddrPort.AppendTo].
+public static (slice<byte>, error) AppendText(this AddrPort p, slice<byte> b) {
+    return (p.AppendTo(b), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface. The
 // encoding is the same as returned by [AddrPort.String], with one exception: if
 // p.Addr() is the zero [Addr], the encoding is the empty string.
 public static (slice<byte>, error) MarshalText(this AddrPort p) {
-    nint max = default!;
+    var buf = new byte[]{}.slice();
     var exprᴛ1 = p.ip.z;
     if (exprᴛ1 == z0) {
     }
     else if (exprᴛ1 == z4) {
-        max = len("255.255.255.255:65535");
+        const nint maxCap = /* len("255.255.255.255:65535") */ 21;
+        buf = new slice<byte>(0, maxCap);
     }
     else { /* default: */
-        max = len("[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0]:65535");
+        const nint maxCap = /* len("[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0]:65535") */ 54;
+        buf = new slice<byte>(0, maxCap);
     }
 
-    var b = new slice<byte>(0, max);
-    b = p.AppendTo(b);
-    return (b, default!);
+    return p.AppendText(buf);
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler
@@ -1331,13 +1326,22 @@ public static (slice<byte>, error) MarshalText(this AddrPort p) {
     return err;
 }
 
+// AppendBinary implements the [encoding.BinaryAppendler] interface.
+// It returns [Addr.AppendBinary] with an additional two bytes appended
+// containing the port in little-endian.
+public static (slice<byte>, error) AppendBinary(this AddrPort p, slice<byte> b) {
+    (b, var err) = p.Addr().AppendBinary(b);
+    if (err != default!) {
+        return (default!, err);
+    }
+    return (byteorder.LEAppendUint16(b, p.Port()), default!);
+}
+
 // MarshalBinary implements the [encoding.BinaryMarshaler] interface.
 // It returns [Addr.MarshalBinary] with an additional two bytes appended
 // containing the port in little-endian.
 public static (slice<byte>, error) MarshalBinary(this AddrPort p) {
-    var b = p.Addr().marshalBinaryWithTrailingBytes(2);
-    byteorder.LePutUint16(b[(int)(len(b) - 2)..], p.Port());
-    return (b, default!);
+    return p.AppendBinary(new slice<byte>(0, p.Addr().marshalBinarySize() + 2));
 }
 
 // UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.
@@ -1351,7 +1355,7 @@ public static (slice<byte>, error) MarshalBinary(this AddrPort p) {
     if (err != default!) {
         return err;
     }
-    p = AddrPortFrom(addr, byteorder.LeUint16(b[(int)(len(b) - 2)..]));
+    p = AddrPortFrom(addr, byteorder.LEUint16(b[(int)(len(b) - 2)..]));
     return default!;
 }
 
@@ -1608,24 +1612,30 @@ public static slice<byte> AppendTo(this ΔPrefix p, slice<byte> b) {
     return b;
 }
 
+// AppendText implements the [encoding.TextAppender] interface.
+// It is the same as [Prefix.AppendTo].
+public static (slice<byte>, error) AppendText(this ΔPrefix p, slice<byte> b) {
+    return (p.AppendTo(b), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface,
 // The encoding is the same as returned by [Prefix.String], with one exception:
 // If p is the zero value, the encoding is the empty string.
 public static (slice<byte>, error) MarshalText(this ΔPrefix p) {
-    nint max = default!;
+    var buf = new byte[]{}.slice();
     var exprᴛ1 = p.ip.z;
     if (exprᴛ1 == z0) {
     }
     else if (exprᴛ1 == z4) {
-        max = len("255.255.255.255/32");
+        const nint maxCap = /* len("255.255.255.255/32") */ 18;
+        buf = new slice<byte>(0, maxCap);
     }
     else { /* default: */
-        max = len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0/128");
+        const nint maxCap = /* len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%enp5s0/128") */ 50;
+        buf = new slice<byte>(0, maxCap);
     }
 
-    var b = new slice<byte>(0, max);
-    b = p.AppendTo(b);
-    return (b, default!);
+    return p.AppendText(buf);
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -1641,13 +1651,23 @@ public static (slice<byte>, error) MarshalText(this ΔPrefix p) {
     return err;
 }
 
+// AppendBinary implements the [encoding.AppendMarshaler] interface.
+// It returns [Addr.AppendBinary] with an additional byte appended
+// containing the prefix bits.
+public static (slice<byte>, error) AppendBinary(this ΔPrefix p, slice<byte> b) {
+    (b, var err) = p.Addr().withoutZone().AppendBinary(b);
+    if (err != default!) {
+        return (default!, err);
+    }
+    return (append(b, (uint8)p.Bits()), default!);
+}
+
 // MarshalBinary implements the [encoding.BinaryMarshaler] interface.
 // It returns [Addr.MarshalBinary] with an additional byte appended
 // containing the prefix bits.
 public static (slice<byte>, error) MarshalBinary(this ΔPrefix p) {
-    var b = p.Addr().withoutZone().marshalBinaryWithTrailingBytes(1);
-    b[len(b) - 1] = (uint8)p.Bits();
-    return (b, default!);
+    // without the zone the max length is 16, plus an additional byte is 17
+    return p.AppendBinary(new slice<byte>(0, p.Addr().withoutZone().marshalBinarySize() + 1));
 }
 
 // UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.

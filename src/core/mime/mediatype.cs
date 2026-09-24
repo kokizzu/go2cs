@@ -5,17 +5,13 @@ namespace go;
 
 using errors = errors_package;
 using fmt = fmt_package;
+using maps = maps_package;
 using slices = slices_package;
 using strings = strings_package;
 using Δunicode = unicode_package;
+using iter = iter_package;
 
 partial class mime_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string utf8ˢ3 = "utf-8''"u8;
@@ -42,12 +38,7 @@ public static @string FormatMediaType(@string t, map<@string, @string> param) {
             Ꮡb.WriteString(strings.ToLower(sub));
         }
     }
-    var attrs = new slice<@string>(0, len(param));
-    foreach (var (a, _) in param) {
-        attrs = append(attrs, a);
-    }
-    slices.Sort<slice<@string>, @string>(attrs);
-    foreach (var (_, attribute) in attrs) {
+    foreach (var (_, attribute) in slices.Sorted(maps.Keys<map<@string, @string>, @string, @string>(param))) {
         @string value = param[attribute];
         Ꮡb.WriteByte((rune)';');
         Ꮡb.WriteByte((rune)' ');

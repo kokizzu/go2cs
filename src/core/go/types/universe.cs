@@ -22,6 +22,7 @@ public static ж<ΔScope> Universe;
 public static ж<Package> Unsafe;
 
 internal static Object universeIota;
+internal static ΔType universeBool;
 internal static ΔType universeByte; // uint8 alias, but has name "byte"
 internal static ΔType universeRune; // int32 alias, but has name "rune"
 internal static ж<TypeName> universeAnyNoAlias;
@@ -263,6 +264,7 @@ public static void DefPredeclaredTestFuncs() {
     defPredeclaredNil();
     defPredeclaredFuncs();
     universeIota = Universe.Lookup("iota"u8);
+    universeBool = Universe.Lookup("bool"u8).Type();
     universeByte = Universe.Lookup("byte"u8).Type();
     universeRune = Universe.Lookup("rune"u8).Type();
     universeError = Universe.Lookup("error"u8).Type();

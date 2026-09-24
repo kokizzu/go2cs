@@ -13,6 +13,7 @@ using static go.html.template_package;
 using static go.html.template_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6120696e743b206220737472696e677d", "Δtype")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -34,13 +35,13 @@ using static go.html.template_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("html/template/clone_test.go", "clone_test.cs", "AEMiopKCgpSSgoKClICSABkIjNKWppKSpoKAgqSAkriSkqaCgIKkgJK4kpKmkqaSgIK2gIK2gIK4goCCpICSuICCuICCpICCuIKAgqSAkviChLiSgoKUgoKCgoKmggAIDJKCkgAIDNKSkpKCpoKC+pKqkqiSkoSC+pKYkrSCgoKygoKAggAICtbGkpKC+IKSkpKClIK6kqiElIKSkoKCAAsMkpKSkoKAgqSAkg==")]
-[assembly: go.GoPositionMap("html/template/content_test.go", "content_test.cs", "ACQcogAMHADdAsYFgpKCgoKCgoCCgqSAkoIACxaC7oLmgoKCkoCCpIKClIKCgIKkgoIACwqSlIKCloKChII=")]
-[assembly: go.GoPositionMap("html/template/css_test.go", "css_test.cs", "ABcaogAKHIKCggAJCqIAFTKCgoIACAqiABw+goKClIKAgtqCkoKAgqSCgIIACQqiAAwegoKCyqIAABQAABiCgpaCgviCADBmgoKC+qKC6KKCuKKCgoK4ooKCguiiguiigg==")]
-[assembly: go.GoPositionMap("html/template/escape_test.go", "escape_test.cs", "ACsolNqCABYGogAQMoQAjgXQCrKigqSClIKAgqSAkqSCgIKkgJKkggAJDKK4AA0gkoKAgoKkgJKCABIKogAJIgBYugGSgoCCtqaCgoKUgoKClISAgoKkgIIACgyiANYBugOCgoKCgpSCgoKUgoKUlIKCpoCCAAoMogDqBN4JgoKCgoKUgoIADAqiAFq8AYKSgoKClIKCgoKCgsqC3IKCgoKUgoL6goKCgoKk6KKCgoKUgoKk+KIACCaCgoKCgoKAggAKDqKSgpKSgpKCgoKklIKCgqQACAqSkoCC7ILewpKygoKCpoKCxIKCgoIACBCyhIKCpAAJCrKUlIKUgoKCgpSClLiCgriCgviikoKCgoIACgqykpSCgoCCooK0goCCpIKAgvqSvJKAgqSSgIKkgIKkkoKUgg==")]
-[assembly: go.GoPositionMap("html/template/exec_test.go", "exec_test.cs", "AG2+AYIADRaigpQACQ6igpQANV6yxgAOHLKmoqaigoKCqJKmgqaCpoKmgoKCpoKCgpTMkoKUqJLWgoKUpoIAnAPmBoKmgqaCpqKokoKUgpKClJTYktiSqJKmooKClKaCpqKClIKClKaCpoKmooIADyCCgoKClIKCgpSUgoKUgoKUgrSCtpLGgoLKggAVFIKCgoKCgoKCgpKUkpSUlJSCgpSCgoKUggAIDJKCgoKClIKCpIKUAAsakoKClIKCgpSCgoL4ggAJGIKCggAUOIIAI0iCgpSClIKClIKCpoKCgpSCguiUABEWlIKCgoKUgoKCqIKCgpSCgoKUgoKmgoLogoKClIKCggCXAYICgoIACiKCgoKClIKCgoKUgoKUggALCoKmgoKUlIKClIKCgqaCgoKClIKCpoKCgoKUgoKCpoKCgqaCgoL8ooKClIKCAAkUgva0goKUgoKUgqaCgpSCgpSCgpSCgriCpoLugrqCyoLKgriigoKU3gAIBoK8goKUkoKWgoCCpICCpoKAgqSAggAOCKIAKFqykpKCgoKUggAJDIKClJKCgoKUgoLo3LiCkoKCgpSCAAwK7gAfSIKSggAHFIKCgpSUgoKUggALDLKUpgAfSoKCgoKUgoKkgpQACQyShpKCgoKUgoKUgqiCgoKCmJKCgoKClIIADB6CgoKClIKCgoKogoKCsoKCgoCCAAgKAAgGgoSSgoCCpJaogoKUgoKUgIIAChSCgoCCpNaCgoKClIKClLiAggAICpKCgqyygoCCpICC")]
-[assembly: go.GoPositionMap("html/template/html_test.go", "html_test.cs", "ABIaogAAFgAAGoKCloKCgviCAA0igoCC2qKC6KKCuKKCuKKC")]
-[assembly: go.GoPositionMap("html/template/js_test.go", "js_test.cs", "ABscogBGlAGCgIKkgIK4gpaCAAkMggAMBqIAL2iCgIKkgriCgoCCAAoKogApXIKCggAJCqIAHkaCgoIACgqiAAAUAAtKgoCCgqqigpaAgoIACgqCAAgagoLKooK4ooLoooIACAiivoIACAiivoK4ooK4ooK4ooK4ooI=")]
+[assembly: go.GoPositionMap("html/template/clone_test.go", "clone_test.cs", "ABkiopKCgpSSgoKClICSABkIjNKWppKSpoKAgqSAkriSkqaCgIKkgJK4kpKmkqaSgIK2gIK2gIK4goCCpICSuICCuICCpICCuIKAgqSAkviChOiSgoKUgoKCgoKmggAIDJKCkgAIDNKSkpKCpoKC+pKqkqiSkoSC+pKYkrSCgoKygoKAggAICtbGkpKC+IKSkpKClIK6ktiElIKSkoKCAAsMkpKSkoKAgqSAkg==", "181-183:1;212-219:1")]
+[assembly: go.GoPositionMap("html/template/content_test.go", "content_test.cs", "AB4cogAMHADdAsYFgpKCgoKCgoCCgqSAkoIACxaC7oLmgoKCkoCCpIKClIKCgIKkgoIACwqSlIKCloKChII=")]
+[assembly: go.GoPositionMap("html/template/css_test.go", "css_test.cs", "ABEaogAKHIKCggAJCqIAFTKCgoIACAqiABw+goKClIKAgtqCkoKAgqSCgIIACQqiAAwegoKCyqIAABQAABiCgpaCgviCADBmgoKC+qKC6KKCuKKCgoK4ooKCguiiguiigg==")]
+[assembly: go.GoPositionMap("html/template/escape_test.go", "escape_test.cs", "ABkolNqCABYGogAQMoQAjgXQCrKigqSClIKAgqSAkqSCgIKkgJKkggAJDKK4AA0gkoKAgoKkgJKCABIKogAJIgBYugGSgoCCtqaCgoKUgoKClISAgoKkgIIACgyiANoBwgOCgoKCgpSCgoKUgoKUlIKCpoCCAAoMogDqBN4JgoKCgoKUgoIADAqiAFq8AYKSgoKClIKCgoKCgsqC3IKCgoKUgoL6goKCgoKk6KKCgoKUgoKk+KIACCaCgoKCgoKAggAKDqKSgpKSgpKCgoKklIKCgqQACAqSkoCC7ILewpKygoKCpoKCxIKCgoIACBCyhIKCpAAJCrKUlIKUgoKCgpSClLiCgriCgviikoKCgoIACgqykpSCgoCCooK0goCCpIKAgvqSvJKAgqSSgIKkgIKkkoKUgg==", "740-764:1;913-920:1;2074-2084:1;2075-2080:1.1")]
+[assembly: go.GoPositionMap("html/template/exec_test.go", "exec_test.cs", "AGG+AYIADRaigpQACQ6igpQANV6yxgAOHLKmoqaigoKCqJKmgqaCpoKmgoKCpoKCgpTMkoKUqJLWgoKUpoIAnAPmBoKmgqaCpqKokoKUgpKClJTYktiSqJKmooKClKaCpqKClIKClKaCpoKmooIADyCCgoKClIKCgpSUgoKUgoKUgrSCtpLGgoLKggAVFIKCgoKCgoKCgpKUkpSUlJSCgpSCgoKUggAIDJKCgoKClIKCpIKUABEakoKClIKCgpSCgoL4ggAJGIKCggAgOIIAI0iCgpSClIKClIKCpoKCgpSCguiUABEWlIKCgoKUgoKCqIKCgpSCgoKUgoKmgoLogoKClIKCggCXAYICgoIACiKCgoKClIKCgoKUgoKUggALCoKmgoKUlIKClIKCgqaCgoKClIKCpoKCgoKUgoKCpoKCgqaCgoL8ooKClIKCAAkUgva0goKUgoKUgqaCgpSCgpSCgpSCgriCpoLugrqCyoLKgriigoKU3gAIBoK8goKUkoKWgoCCpICCpoKAgqSAggAOCKIAKFqykpKCgoKUggAJDIKClJKCgoKUgoLo3LiCkoKCgpSCAAwK7gAfSIKSggAHFIKCgpSUgoKUggALDLKUpgAfSoKCgoKUgoKkgpQACQyShpKCgoKUgoKUgqiCgoKCmJKCgoKClIIAEx6CgoKClIKCgoKogoKCsoKCgoCCAAgKAAgGgoSSgoCCpJaogoKUgoKUgIIAChSCgoCCpNaCgoKClIKClLiAggAICpKCgqyygoCCpICC", "713-718:1;1400-1402:1;1493-1503:1;1593-1595:1;1622-1624:1;1701-1701:1;1749-1757:1;1765-1771:1;1828-1830:1")]
+[assembly: go.GoPositionMap("html/template/html_test.go", "html_test.cs", "AAwaogAAFgAAGoKCloKCgviCAA0igoCC2qKC6KKCuKKCuKKC")]
+[assembly: go.GoPositionMap("html/template/js_test.go", "js_test.cs", "ABUcogBGlAGCgIKkgIK4gpaCAAkMggAMBqIAL2iCgIKkgriCgoCCAAoKogApXIKCggAJCqIAHkaCgoIACgqiAAAUAAtKgoCCgqqigpaAgoIACgqCAAgagoLKooK4ooLoooIACAiivoIACAiivoK4ooK4ooK4ooK4ooI=")]
 [assembly: go.GoPositionMap("html/template/multi_test.go", "multi_test.cs", "ADJYlIKClIKClAAIBoKCgpSCgoKU5oKCgpSCgpSCgoKUAAgGgoSCgoKogoKCgpSWgoKCgpQADBSCgoKU1oKCgpTmgoKClIKClAALFpKCgoKClIIACAaCgoKAgqSAgqSAgvqSggAJCJKCgoKUgoKUgoL4poKAgqSAgqSAggAKCIIACBqChJiCgoKmgoCCgqSCAAkQ2viCgoKClIKCgqaCgoI=")]
 [assembly: go.GoPositionMap("html/template/transition_test.go", "transition_test.cs", "ABIaogARKoKAggANCqSIgoKEgoKSgIKk")]
 [assembly: go.GoPositionMap("html/template/url_test.go", "url_test.cs", "AA4WogANIIKAgqSCAAoKogAAFAALQoKAgoIACwqCAB9KgoCCAAgKooK4ooLoooK4ooLoooK4ooI=")]
@@ -59,4 +60,33 @@ public static partial class template_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸarchiveꓸzip() => builtin.initPackage(typeof(archive.zip_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhtml() => builtin.initPackage(typeof(html_package));
+    [GoInit] internal static void initᴛᴛimportꓸhtmlꓸtemplate() => builtin.initPackage(typeof(go.html.template_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() => builtin.initPackage(typeof(text.template_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() => builtin.initPackage(typeof(text.template.parse_package));
+    // </ImportInitializers>
 }

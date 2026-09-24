@@ -56,11 +56,11 @@ using static go.io.fs_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/fs/format.go", "format.cs", "AA8i4oKCgoSCgoKUgpSCgoKCgoKUgoKEgoSCgpYAAhLigqiChIKCgoKU")]
-[assembly: go.GoPositionMap("io/fs/fs.go", "fs.cs", "ADZqAA0CgpaUqIKCgpSCgpSClABIlAGAooCigKKAooAAMV6CgoKCgoKCpoKClIKCgpSUlKqiqqKokqiSAAkUgKSA5pKC")]
-[assembly: go.GoPositionMap("io/fs/glob.go", "glob.cs", "ABlCAAwCpraigpSAgriAgqSCgIKkloKEgqiCloKCgpSCgoKmqJKUpAAEEPKCgoKWgoKCgpSCpqqigpS2")]
-[assembly: go.GoPositionMap("io/fs/readdir.go", "readdir.cs", "ACs6AAgCgIKmgoKUlIKCloKGAAoQgqaCpoKmgqaCqqKClA==", "46-48:1")]
-[assembly: go.GoPositionMap("io/fs/readfile.go", "readfile.cs", "AB5AAAoCgIKmgoKUlIKAgoKCuIKCgoKUgoKCgpQ=")]
+[assembly: go.GoPositionMap("io/fs/format.go", "format.cs", "AAki4oKCgoSCgoKUgpSCgoKCgoKUgoKEgoSCgpYAAhLigqiChIKCgoKU")]
+[assembly: go.GoPositionMap("io/fs/fs.go", "fs.cs", "ACtsAA0CgpaUqIKCgpSCgpSClABIlAGAooCigKKAooAAMV6CgoKCgoKCpoKClIKCgpSUlKqiqqKokqiSAAkUgKSA5pKC")]
+[assembly: go.GoPositionMap("io/fs/glob.go", "glob.cs", "ABNCAAwCpraigpSAgriAgqSCgIKkloKEgqiCloKCgpSCgoKmqJKUpAAEEPKCgoKWgoKCgpSCpqqigpS2")]
+[assembly: go.GoPositionMap("io/fs/readdir.go", "readdir.cs", "ABk6AAgCgIKmgoKUlIKCloKGAAoQgqaCpoKmgqaCqqKClA==", "46-48:1")]
+[assembly: go.GoPositionMap("io/fs/readfile.go", "readfile.cs", "ABhAAAoCgIKmgoKUlIKAgoKCuIKCgoKUgoKCgpQ=")]
 [assembly: go.GoPositionMap("io/fs/stat.go", "stat.cs", "ABAo4oCCpoKClJI=")]
 [assembly: go.GoPositionMap("io/fs/sub.go", "sub.cs", "ABJEAA4CgpSClICCpAAHEpKClKiSgpSClKiSgIKAgsbWgoKClILWgoKClIKmgoKClIKmlICCpIKWgoKCgoKUlNaigpSSgpQ=")]
 [assembly: go.GoPositionMap("io/fs/walk.go", "walk.cs", "ABaQAZKAgpSUpoKUgoKClKiCgoCCgpS2AAIeAAwCgoKUlIKU")]
@@ -94,4 +94,21 @@ public static partial class fs_package
     public partial struct FileMode {}
     public partial struct PathError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() => builtin.initPackage(typeof(@internal.oserror_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

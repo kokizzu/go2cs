@@ -24,9 +24,15 @@
     After reporting, `git checkout` any changed .cs back to HEAD (use when you only wanted the check,
     not to keep regenerated output).
 
+.PARAMETER SelfTest
+    Exercise the tool preflight (a missing git or go refuses by name, exit 2, before any build or
+    transpile; a missing dotnet does not) against child runs of this script under a stubbed PATH.
+    Builds and transpiles nothing.
+
 .EXAMPLE
     ./check-no-regression.ps1
     ./check-no-regression.ps1 -Revert
+    ./check-no-regression.ps1 -SelfTest
 #>
 [CmdletBinding()]
 param(
@@ -44,10 +50,165 @@ param(
     # guard whose only exercise costs a 25-minute full run is a guard nobody will positive-control,
     # and one that has never been made to fail is not a measurement. Intended use is immediately
     # after a real run has left the tree dirty, once plain and once with -OmitAliasDriftMembers.
-    [switch] $AliasDriftCheckOnly
+    [switch] $AliasDriftCheckOnly,
+
+    # Exercise the TOOL PREFLIGHT below and nothing else: run THIS script as a child with a controlled
+    # PATH, once per missing tool and once with all present, and assert each child's exit code and
+    # output. No arm builds or transpiles anything (see Test-ToolPreflightContract).
+    [switch] $SelfTest
 )
 
 $ErrorActionPreference = "Stop"
+
+# ---- THE TOOL PREFLIGHT ---------------------------------------------------------------------------
+# ⚠⚠ A FALSE GREEN, MEASURED (LEDGER 2026-09-22 09:46, batch 5): with `git` absent from the session's
+# PATH this script transpiled the whole corpus, then died on `$changed = & git ... status` with "The
+# term 'git' is not recognized", and the battery printed CNR_RC=0. The death is an EXCEPTION, not an
+# `exit`, so a caller that invokes this script in-session (`& ./check-no-regression.ps1`) and reads
+# $LASTEXITCODE reads the LAST NATIVE command's code -- the last converter's 0. The verdict this gate
+# exists to print is a `git status`; without git there is nothing to read, and the only honest
+# outcome is a refusal that sets the exit code itself.
+#
+# So every tool the run needs is RESOLVED FIRST, before the solution-integrity preflight (which
+# silently skips its casing check without git) and before any build or transpile, and a missing one
+# REFUSES by name with `exit 2`. `go` is on the list for the same reason as git: `& go build` under
+# a PATH without go dies by the same exception, with the same stale code.
+#
+# ⚠ A REQUIRED TOOL IS ONE THIS SCRIPT ACTUALLY INVOKES (COORD ruling, 2026-09-22), and `dotnet` is
+# deliberately NOT one: this gate never calls it -- the converter spawns `dotnet` only under `-tests`
+# (its test-host publish), and check-solution-integrity.ps1 is no-MSBuild by construction. Requiring
+# it would refuse a host with no .NET that can run this gate in full. The first cut of this preflight
+# listed it; the self-test's no-dotnet arm is what keeps it off.
+$RequiredTools = @('git', 'go')
+
+function Get-UnresolvedTools {
+    param([string[]] $Names)
+    @($Names | Where-Object { -not (Get-Command -Name $_ -CommandType Application -ErrorAction SilentlyContinue) })
+}
+
+# ⚠⚠ THE ARM RUNS THIS VERY FILE AS A CHILD, the way the battery did: `& '<script>'; exit $LASTEXITCODE`
+# inside a fresh session, so a script that DIES rather than EXITS reports the stale code exactly as
+# CNR_RC=0 did -- the assertion reads the child's real exit code, not a value this process computes.
+# PATH is replaced for the child with a directory of STUB tools (git, go, dotnet) minus the one under
+# test, plus the system directory, so nothing real is reachable. Two properties make it cheap and safe:
+#   - every arm but one runs -AliasDriftCheckOnly, which skips the build and the transpile by
+#     construction; the refusal arms exit before the solution-integrity preflight, and the passing
+#     arms run it (static, about a second) and then read the stub git's empty status.
+#   - the NORMAL-mode arm's stub `go` records that it was called and FAILS, so a script that got past
+#     the preflight dies at `go build` -- never at the transpile -- and the record says so.
+# Two arms must PASS the preflight: the no-dotnet arm (dotnet is not required -- a refusal there is a
+# host this gate could have measured, turned away) and the all-present CONTROL. The base this guard was
+# cut against fails the three refusal arms (the git one with rc 0, the ledger's false green reproduced
+# without a transpile); a preflight that re-requires dotnet fails the no-dotnet arm.
+function Test-ToolPreflightContract {
+    $isWin = ($env:OS -eq 'Windows_NT')
+    $stubRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cnr-selftest-" + [guid]::NewGuid().ToString('N'))
+    $marker = Join-Path $stubRoot 'go-was-called.txt'
+    $self = $PSCommandPath
+    # The child runs under THIS edition. By $PSHOME, never by the process path: a pwsh installed as a
+    # dotnet tool runs as dotnet.exe hosting pwsh.dll, so the process path names dotnet (measured).
+    $exeName = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' }
+    $shell = @((Join-Path $PSHOME "$exeName.exe"), (Join-Path $PSHOME $exeName)) |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    if (-not $shell) { Write-Host "    cannot locate '$exeName' under `$PSHOME ($PSHOME) to run the arms" -ForegroundColor Red; return $false }
+    $ok = $true
+
+    # One directory per arm, holding exactly the stubs that arm allows.
+    function New-StubDir([string] $name, [string[]] $tools) {
+        $dir = Join-Path $stubRoot $name
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        foreach ($t in $tools) {
+            # go records the call and FAILS, so no build and therefore no transpile can follow it.
+            $isGo = ($t -eq 'go')
+            if ($isWin) {
+                $body = "@echo off`r`n" + $(if ($isGo) { "echo called>`"%CNR_SELFTEST_MARKER%`"`r`nexit /b 1`r`n" } else { "exit /b 0`r`n" })
+                [System.IO.File]::WriteAllText((Join-Path $dir "$t.cmd"), $body)
+            }
+            else {
+                $path = Join-Path $dir $t
+                $body = "#!/bin/sh`n" + $(if ($isGo) { "echo called > `"`$CNR_SELFTEST_MARKER`"`nexit 1`n" } else { "exit 0`n" })
+                [System.IO.File]::WriteAllText($path, $body)
+                & chmod +x $path
+            }
+        }
+        return $dir
+    }
+
+    $arms = @(
+        @{ n = 'git absent (drift-check mode)';    tools = @('go', 'dotnet');        mode = '-AliasDriftCheckOnly'; refuse = 'git' }
+        @{ n = 'go absent (drift-check mode)';     tools = @('git', 'dotnet');       mode = '-AliasDriftCheckOnly'; refuse = 'go' }
+        @{ n = 'git absent (NORMAL mode)';         tools = @('go', 'dotnet');        mode = '';                     refuse = 'git' }
+        @{ n = 'dotnet absent: NOT required';      tools = @('git', 'go');           mode = '-AliasDriftCheckOnly'; refuse = '' }
+        @{ n = 'CONTROL: all three present';       tools = @('git', 'go', 'dotnet'); mode = '-AliasDriftCheckOnly'; refuse = '' }
+    )
+
+    $savedPath = $env:PATH
+    $savedMarker = $env:CNR_SELFTEST_MARKER
+    Write-Host '==> SELF-TEST: the tool preflight, one child run per arm' -ForegroundColor Cyan
+    try {
+        New-Item -ItemType Directory -Path $stubRoot -Force | Out-Null
+        $i = 0
+        foreach ($arm in $arms) {
+            $i++
+            $dir = New-StubDir "arm$i" $arm.tools
+            Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
+            $sysDir = if ($isWin) { Join-Path $env:SystemRoot 'System32' } else { $null }
+            $env:PATH = (@($dir, $sysDir) | Where-Object { $_ }) -join [System.IO.Path]::PathSeparator
+            $env:CNR_SELFTEST_MARKER = $marker
+
+            $command = "& '" + $self.Replace("'", "''") + "' $($arm.mode); exit `$LASTEXITCODE"
+            $childArgs = @('-NoProfile', '-NonInteractive')
+            if ($isWin) { $childArgs += @('-ExecutionPolicy', 'Bypass') }
+            $prevEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $out = @(& $shell @childArgs -Command $command 2>&1 | ForEach-Object { "$_" })
+                $rc = $LASTEXITCODE
+            } finally { $ErrorActionPreference = $prevEap }
+            $env:PATH = $savedPath
+
+            $refusedLine = @($out | Where-Object { $_ -match '^==> CNR REFUSED: ' })
+            $goCalled = Test-Path -LiteralPath $marker
+            if ($arm.refuse) {
+                $named = ($refusedLine.Count -eq 1) -and ($refusedLine[0] -match ("'" + [regex]::Escape($arm.refuse) + "'"))
+                $pass = ($rc -eq 2) -and $named -and (-not $goCalled)
+                $want = "rc 2, refused naming '$($arm.refuse)', go never called"
+            }
+            else {
+                $reachedEnd = @($out | Where-Object { $_ -match '^==> ALIAS-DRIFT CHECK: OK' }).Count -eq 1
+                $pass = ($rc -eq 0) -and ($refusedLine.Count -eq 0) -and $reachedEnd
+                $want = 'rc 0, NOT refused, ran to the drift-check verdict'
+            }
+            if (-not $pass) { $ok = $false }
+            Write-Host ("    {0,-34} rc={1,-3} refused={2,-5} go-called={3,-5} -> {4}  (want {5})" -f `
+                $arm.n, $rc, ($refusedLine.Count -gt 0), $goCalled, $(if ($pass) { 'ok' } else { 'FAILED' }), $want)
+            if (-not $pass) { $out | Select-Object -Last 6 | ForEach-Object { Write-Host "        | $_" } }
+        }
+    }
+    finally {
+        $env:PATH = $savedPath
+        $env:CNR_SELFTEST_MARKER = $savedMarker
+        Remove-Item -LiteralPath $stubRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    return $ok
+}
+
+if ($SelfTest) {
+    if (Test-ToolPreflightContract) { Write-Host '==> SELF-TEST PASSED: the tool preflight refuses a missing git or go by name, exit 2, before any build or transpile, and does not require dotnet.' -ForegroundColor Green; exit 0 }
+    Write-Host '==> SELF-TEST FAILED: see the arm list above.' -ForegroundColor Red
+    exit 1
+}
+
+$missingTools = @(Get-UnresolvedTools $RequiredTools)
+if ($missingTools.Count -gt 0) {
+    foreach ($t in $missingTools) {
+        Write-Host "==> CNR REFUSED: '$t' cannot be resolved from this PowerShell session's PATH." -ForegroundColor Red
+    }
+    Write-Host "    Nothing was built or transpiled. This gate needs $($RequiredTools -join ', ') on PATH; without them" -ForegroundColor Red
+    Write-Host '    a run can only die mid-way, and a caller reading $LASTEXITCODE after an in-session call would' -ForegroundColor Red
+    Write-Host '    read the LAST converter''s 0 as NO REGRESSION (the 2026-09-22 false green). Fix PATH and re-run.' -ForegroundColor Red
+    exit 2
+}
 
 # Roots, the executable suffix and the separator-agnostic path helpers come from one shared
 # definition so this script, run-behavioral.ps1 and check-solution-integrity.ps1 cannot disagree --

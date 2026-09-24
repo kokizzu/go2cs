@@ -7,6 +7,7 @@ using bytes = bytes_package;
 using io = io_package;
 using mime = mime_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
@@ -125,7 +126,7 @@ internal static bool headerEq(global::go.net.mail_package.Header a, global::go.n
         if (!ok) {
             return false;
         }
-        if (!reflect.DeepEqual(@as, bs)) {
+        if (!slices.Equal<slice<@string>, @string>(@as, bs)) {
             return false;
         }
     }
@@ -430,7 +431,7 @@ public static void TestAddressParsingError(ж<testing.T> Ꮡt) {
         [23] = new("<jdoe@[192.168.0.1>"u8, "unclosed domain-literal"u8),
         [24] = new("<jdoe@[256.0.0.1]>"u8, "invalid IP address in domain-literal"u8)
     };
-    foreach (var (i, tc) in mustErrTestCases) {
+    foreach (var (i, tc) in mustErrTestCases.ΔRangeSnapshot()) {
         var (_, err) = ParseAddress(tc.text);
         if (err == default! || !strings.Contains(err.Error(), tc.wantErrText)) {
             Ꮡt.Errorf(@"mail.ParseAddress(%q) #%d want %q, got %v"u8, tc.text, i, tc.wantErrText, err);
@@ -439,7 +440,7 @@ public static void TestAddressParsingError(ж<testing.T> Ꮡt) {
     var mustErrTestCasesʗ1 = mustErrTestCases;
     Ꮡt.Run(customWordDecoderˢ, (ж<testing.T> tΔ1) => {
         var p = Ꮡ(new AddressParser(WordDecoder: Ꮡ(new mime.WordDecoder(nil))));
-        foreach (var (i, tc) in mustErrTestCasesʗ1) {
+        foreach (var (i, tc) in mustErrTestCasesʗ1.ΔRangeSnapshot()) {
             var (_, err) = p.Parse(tc.text);
             if (err == default! || !strings.Contains(err.Error(), tc.wantErrText)) {
                 tΔ1.Errorf(@"p.Parse(%q) #%d want %q, got %v"u8, tc.text, i, tc.wantErrText, err);

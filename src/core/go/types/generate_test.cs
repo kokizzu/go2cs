@@ -28,12 +28,6 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class types_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸdiff() {
-    builtin.initPackage(typeof(global::go.@internal.diff_package));
-}
-
 internal static ж<@string> filesToWrite = flag.String("write"u8, ""u8, @"go/types files to generate, or ""all"" for all files"u8);
 
 internal static readonly @string srcDir = "/src/cmd/compile/internal/types2/"u8;
@@ -67,7 +61,7 @@ internal static void generate(ж<testing.T> Ꮡt, @string filename, bool write) 
         Ꮡt.Fatal(err);
     }
     // fix package name
-    @file.Value.Name.Value.Name = strings.ReplaceAll((~(~@file).Name).Name, types2ˢ, typesˢ2);
+    @file.Value.Name.Value.Name = strings.ReplaceAll((~(~@file).Name).Name, types2ˢ, typesˢ);
     // rewrite AST as needed
     {
         var action = filemap[filename]; if (action != default!) {
@@ -113,8 +107,10 @@ internal static void generate(ж<testing.T> Ꮡt, @string filename, bool write) 
 // must happen before renaming identifiers
 // must happen before renaming identifiers
 // "initorder.go": fixErrErrorfCall, // disabled for now due to unresolved error_ use implications for gopls
+// must happen before renaming identifiers
 // TODO(gri) needs adjustments for TestObjectString - disabled for now
 // "object_test.go": func(f *ast.File) { renameImportPath(f, `"cmd/compile/internal/types2"->"go/types"`) },
+// must happen before renaming identifiers
 // must happen before renaming identifiers
 internal static map<@string, Action<ж<ast.File>>> filemap = new map<@string, Action<ж<ast.File>>>{
     ["alias.go"u8] = fixTokenPos,
@@ -166,6 +162,15 @@ internal static map<@string, Action<ж<ast.File>>> filemap = new map<@string, Ac
     ["instantiate_test.go"u8] = (ж<ast.File> f) => {
         renameImportPath(f, @"""cmd/compile/internal/types2""->""go/types"""u8);
     },
+    ["literals.go"u8] = (ж<ast.File> f) => {
+        insertImportPath(f, @"""go/token"""u8);
+        renameImportPath(f, @"""cmd/compile/internal/syntax""->""go/ast"""u8);
+        renameSelectorExprs(f,
+            "syntax.IntLit->token.INT"u8, "syntax.FloatLit->token.FLOAT", "syntax.ImagLit->token.IMAG",
+            "syntax.Name->ast.Ident", "key.Value->key.Name", "atyp.Elem->atyp.Elt");
+        renameIdents(f, "syntax->ast"u8);
+        renameSelectors(f, "ElemList->Elts"u8);
+    },
     ["lookup.go"u8] = (ж<ast.File> f) => {
         fixTokenPos(f);
     },
@@ -198,9 +203,15 @@ internal static map<@string, Action<ж<ast.File>>> filemap = new map<@string, Ac
     ["package.go"u8] = default!,
     ["pointer.go"u8] = default!,
     ["predicates.go"u8] = default!,
+    ["recording.go"u8] = (ж<ast.File> f) => {
+        renameImportPath(f, @"""cmd/compile/internal/syntax""->""go/ast"""u8);
+        renameSelectorExprs(f, "syntax.Name->ast.Ident"u8);
+        renameIdents(f, "syntax->ast"u8);
+        fixAtPosCall(f);
+    },
     ["scope.go"u8] = (ж<ast.File> f) => {
         fixTokenPos(f);
-        renameIdents(f, "Squash->squash"u8, "InsertLazy->_InsertLazy");
+        renameIdents(f, "InsertLazy->_InsertLazy"u8);
     },
     ["selection.go"u8] = default!,
     ["sizes.go"u8] = (ж<ast.File> f) => {

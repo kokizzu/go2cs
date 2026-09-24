@@ -175,6 +175,7 @@
 
     <ProjectReference Include="$(go2csPath)core/internal/abi/internal.abi.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/bytealg/internal.bytealg.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/byteorder/internal.byteorder.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/chacha8rand/internal.chacha8rand.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/rtcov/internal.coverage.rtcov.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/cpu/internal.cpu.csproj" />
@@ -185,9 +186,10 @@
     <ProjectReference Include="$(go2csPath)core/internal/profilerecord/internal.profilerecord.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/runtime/atomic/internal.runtime.atomic.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/runtime/exithook/internal.runtime.exithook.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/maps/internal.runtime.maps.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/sys/internal.runtime.sys.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/stringslite/internal.stringslite.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/sys/runtime.internal.sys.csproj" />
     <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
   </ItemGroup>
 

@@ -5,18 +5,13 @@ namespace go.@internal;
 
 using unix = go.@internal.syscall.unix_package;
 using Δruntime = runtime_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using Δsyscall = syscall_package;
 using @unsafe = unsafe_package;
+using go;
 using go.@internal.syscall;
 
 partial class poll_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 internal static UntypedInt spliceNonblock => 0x2;
 internal static UntypedInt maxSpliceSize => /* 1 << 20 */ 1048576;

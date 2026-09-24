@@ -6,12 +6,10 @@ namespace go.go;
 
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
-using typeparams = global::go.go.@internal.typeparams_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
-using global::go.go;
-using global::go.go.@internal;
 using token = global::go.go.token_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
+using global::go.go;
 
 partial class types_package {
 
@@ -21,21 +19,21 @@ internal static readonly @string mapIndexˢ = "map index"u8;
 // If e is a valid function instantiation, indexExpr returns true.
 // In that case x represents the uninstantiated function value and
 // it is the caller's responsibility to instantiate the function.
-internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<typeparams.IndexExpr> Ꮡe) {
+internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<indexedExpr> Ꮡe) {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var x = ref Ꮡx.DerefOrNull();
     ref var e = ref Ꮡe.DerefOrNull();
 
-    Ꮡcheck.exprOrType(Ꮡx, e.X, true);
+    Ꮡcheck.exprOrType(Ꮡx, e.x, true);
     // x may be generic
     var exprᴛ1 = x.mode;
     if (exprᴛ1 == invalid) {
-        Ꮡcheck.use(e.Indices.ꓸꓸꓸ);
+        Ꮡcheck.use(e.indices.ꓸꓸꓸ);
         return false;
     }
     if (exprᴛ1 == typexpr) {
         x.mode = invalid;
-        x.typ = Ꮡcheck.varType(e.Orig);
+        x.typ = Ꮡcheck.varType(e.orig);
         if (isValid(x.typ)) {
             // type instantiation
             // TODO(gri) here we re-evaluate e.X - try to avoid this
@@ -112,7 +110,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
         Ꮡcheck.assignment(Ꮡkey, (~typ).key, mapIndexˢ);
         x.mode = mapindex;
         x.typ = typ.Value.elem;
-        x.expr = e.Orig;
+        x.expr = e.orig;
         return false;
     }
     case ж<Interface> typ: {
@@ -121,13 +119,13 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
             break;
         }
         // TODO(gri) report detailed failure cause for better error messages
-        ref var key = ref heap<ΔType>(out var Ꮡkey);             // key != nil: we must have all maps
+        ref var key = ref heap<ΔType>(out var Ꮡkey);               // key != nil: we must have all maps
         ref var elem = ref heap<ΔType>(out var Ꮡelem);
         var mode = variable; // non-maps result mode
-        if (typ.typeSet().underIs((ΔType u) => {
-            // TODO(gri) factor out closure and use it for non-typeparam cases as well
+        if (underIs(x.typ, // TODO(gri) factor out closure and use it for non-typeparam cases as well
+ (ΔType u) => {
             var l = (int64)(-1); // valid if >= 0
-            ΔType k = default!;             // k is only set for maps
+            ΔType k = default!;               // k is only set for maps
             ΔType eΔ1 = default!;
             switch (u.type()) {
             case ж<Basic> t: {
@@ -200,7 +198,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
                 // ok to continue even if indexing failed - map element type is known
                 x.mode = mapindex;
                 x.typ = elem;
-                x.expr = e.Orig;
+                x.expr = e.orig;
                 return false;
             }
             // no maps
@@ -213,7 +211,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
     if (!valid) {
         // types2 uses the position of '[' for the error
         Ꮡcheck.errorf(new operandжpositioner(Ꮡx), NonIndexableOperand, invalidOp + "cannot index %s", Ꮡx.OrTypedNil());
-        Ꮡcheck.use(e.Indices.ꓸꓸꓸ);
+        Ꮡcheck.use(e.indices.ꓸꓸꓸ);
         x.mode = invalid;
         return false;
     }
@@ -371,18 +369,18 @@ break_L:;
 // singleIndex returns the (single) index from the index expression e.
 // If the index is missing, or if there are multiple indices, an error
 // is reported and the result is nil.
-internal static ast.Expr singleIndex(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡexpr) {
+internal static ast.Expr singleIndex(this ж<Checker> Ꮡcheck, ж<indexedExpr> Ꮡexpr) {
     ref var expr = ref Ꮡexpr.DerefOrNull();
 
-    if (len(expr.Indices) == 0) {
-        Ꮡcheck.errorf(new ast_Exprᴠpositioner(expr.Orig), InvalidSyntaxTree, "index expression %v with 0 indices"u8, Ꮡexpr.OrTypedNil());
+    if (len(expr.indices) == 0) {
+        Ꮡcheck.errorf(new ast_Exprᴠpositioner(expr.orig), InvalidSyntaxTree, "index expression %v with 0 indices"u8, Ꮡexpr.OrTypedNil());
         return default!;
     }
-    if (len(expr.Indices) > 1) {
+    if (len(expr.indices) > 1) {
         // TODO(rFindley) should this get a distinct error code?
-        Ꮡcheck.error(new ast_Exprᴠpositioner(expr.Indices[1]), InvalidIndex, invalidOp + "more than one index");
+        Ꮡcheck.error(new ast_Exprᴠpositioner(expr.indices[1]), InvalidIndex, invalidOp + "more than one index");
     }
-    return expr.Indices[0];
+    return expr.indices[0];
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -450,60 +448,48 @@ internal static bool isValidIndex(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, e
     return true;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string arrayOrSliceLiteralˢ = "array or slice literal"u8;
+// indexedExpr wraps an ast.IndexExpr or ast.IndexListExpr.
+//
+// Orig holds the original ast.Expr from which this indexedExpr was derived.
+//
+// Note: indexedExpr (intentionally) does not wrap ast.Expr, as that leads to
+// accidental misuse such as encountered in golang/go#63933.
+//
+// TODO(rfindley): remove this helper, in favor of just having a helper
+// function that returns indices.
+[GoType] partial struct indexedExpr {
+    internal ast.Expr orig;   // the wrapped expr, which may be distinct from the IndexListExpr below.
+    internal ast.Expr x;   // expression
+    internal tokenꓸPos lbrack;  // position of "["
+    internal slice<ast.Expr> indices; // index expressions
+    internal tokenꓸPos rbrack;  // position of "]"
+}
 
-// indexedElts checks the elements (elts) of an array or slice composite literal
-// against the literal's element type (typ), and the element indices against
-// the literal length if known (length >= 0). It returns the length of the
-// literal (maximum index value + 1).
-internal static int64 indexedElts(this ж<Checker> Ꮡcheck, slice<ast.Expr> elts, ΔType typ, int64 length) {
-    ref var check = ref Ꮡcheck.DerefOrNull();
+[GoRecv] internal static tokenꓸPos Pos(this ref indexedExpr x) {
+    return x.orig.Pos();
+}
 
-    var visited = new map<int64, bool>(len(elts));
-    int64 index = default!;
-    int64 max = default!;
-    foreach (var (_, e) in elts) {
-        // determine and check index
-        var validIndex = false;
-        var eval = e;
-        {
-            var (kv, _) = e._<ж<ast.KeyValueExpr>>(ᐧ); if (kv != nil){
-                {
-                    var (typΔ1, i) = Ꮡcheck.index((~kv).Key, length); if (isValid(typΔ1)) {
-                        if (i >= 0){
-                            index = i;
-                            validIndex = true;
-                        } else {
-                            Ꮡcheck.errorf(new ast_Exprᴠpositioner(e), InvalidLitIndex, "index %s must be integer constant"u8, (~kv).Key);
-                        }
-                    }
-                }
-                eval = kv.Value.Value;
-            } else 
-            if (length >= 0 && index >= length){
-                Ꮡcheck.errorf(new ast_Exprᴠpositioner(e), OversizeArrayLit, "index %d is out of bounds (>= %d)"u8, index, length);
-            } else {
-                validIndex = true;
-            }
-        }
-        // if we have a valid index, check for duplicate entries
-        if (validIndex) {
-            if (visited[index]) {
-                Ꮡcheck.errorf(new ast_Exprᴠpositioner(e), DuplicateLitKey, "duplicate index %d in array or slice literal"u8, index);
-            }
-            visited[index] = true;
-        }
-        index++;
-        if (index > max) {
-            max = index;
-        }
-        // check element against composite literal element type
-        ref var x = ref heap(new operand(), out var Ꮡx);
-        Ꮡcheck.exprWithHint(Ꮡx, eval, typ);
-        Ꮡcheck.assignment(Ꮡx, typ, arrayOrSliceLiteralˢ);
+internal static ж<indexedExpr> unpackIndexedExpr(ast.Node n) {
+    switch (n.type()) {
+    case ж<ast.IndexExpr> e: {
+        return Ꮡ(new indexedExpr(
+            orig: new ast.IndexExprжExpr(e),
+            x: (~e).X,
+            lbrack: (~e).Lbrack,
+            indices: new ast.Expr[]{(~e).Index}.slice(),
+            rbrack: (~e).Rbrack
+        ));
     }
-    return max;
+    case ж<ast.IndexListExpr> e: {
+        return Ꮡ(new indexedExpr(
+            orig: new ast.IndexListExprжExpr(e),
+            x: (~e).X,
+            lbrack: (~e).Lbrack,
+            indices: (~e).Indices,
+            rbrack: (~e).Rbrack
+        ));
+    }}
+    return default!;
 }
 
 } // end types_package

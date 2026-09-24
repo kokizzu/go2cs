@@ -19,60 +19,6 @@ using go.unicode;
 
 partial class sql_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdatabaseꓸsqlꓸdriver() {
-    builtin.initPackage(typeof(go.database.sql.driver_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 internal static error errNilPtr = errors.New("destination pointer is nil"u8); // embedded in descriptive error
 
 internal static @string describeNamedValue(ref driver.NamedValue nv) {
@@ -377,7 +323,7 @@ internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
             if (d == nil) {
                 return errNilPtr;
             }
-            d.ValueSlot = slice<byte>(s.Format(time.RFC3339Nano));
+            d.ValueSlot = s.AppendFormat(new slice<byte>(0, len(time.RFC3339Nano)), time.RFC3339Nano);
             return default!;
         }
         case ж<RawBytes> d: {

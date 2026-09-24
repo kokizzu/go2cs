@@ -5,10 +5,12 @@ namespace go.encoding;
 
 using bytes = bytes_package;
 using hex = go.encoding.hex_package;
+using errors = errors_package;
 using fmt = fmt_package;
 using math = math_package;
 using big = go.math.big_package;
 using reflect = reflect_package;
+using runtime = runtime_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
@@ -1257,6 +1259,41 @@ public static void BenchmarkObjectIdentifierString(ж<testing.B> Ꮡb) {
     var oidPublicKeyRSA = new ObjectIdentifier(new nint[]{1, 2, 840, 113549, 1, 1, 1}.slice());
     for (nint i = 0; i < b.N; i++) {
         _ = oidPublicKeyRSA.String();
+    }
+}
+
+[GoType("dyn")] internal partial struct TestParsingMemoryConsumption_out {
+    public slice<nint> Id;
+    [GoTag(@"asn1:""optional""")]
+    public bool Critical;
+    public slice<byte> Value;
+}
+
+public static void TestParsingMemoryConsumption(ж<testing.T> Ꮡt) {
+    // Craft a syntatically valid, but empty, ~10 MB DER bomb. A successful
+    // unmarshal of this bomb should yield ~280 MB. However, the parsing should
+    // fail due to the empty content; and, in such cases, we want to make sure
+    // that we do not unnecessarily allocate memories.
+    var derBomb = new slice<byte>(10_000_000);
+    foreach (var (i, _) in derBomb) {
+        derBomb[i] = 0x30;
+    }
+    derBomb = appendꓸꓸꓸ(new byte[]{0x30, 0x83, 0x98, 0x96, 0x80}.slice(), derBomb);
+    ref var m = ref heap(new runtime.MemStats(), out var Ꮡm);
+    runtime.GC();
+    runtime.ReadMemStats(Ꮡm);
+    var memBefore = m.TotalAlloc;
+    ref var @out = ref heap<slice<TestParsingMemoryConsumption_out>>(out var Ꮡout);
+    var (_, err) = Unmarshal(derBomb, Ꮡout);
+    if (!errors.As(err, Ꮡ(new SyntaxError(nil)))) {
+        Ꮡt.Fatalf("Incorrect error result: want (%v), but got (%v) instead"u8, Ꮡ(new SyntaxError(nil)), err);
+    }
+    runtime.ReadMemStats(Ꮡm);
+    var memDiff = m.TotalAlloc - memBefore;
+    // Ensure that the memory allocated does not exceed 10<<21 (~20 MB) when
+    // the parsing fails.
+    if (memDiff > ((uint64)10 << (int)(21))) {
+        Ꮡt.Errorf("Too much memory allocated while parsing DER: %v MiB"u8, memDiff / 1024 / 1024);
     }
 }
 

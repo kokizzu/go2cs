@@ -177,31 +177,14 @@
 namespace go.@internal;
 
 using Δruntime = runtime_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using atomic = go.sync.atomic_package;
 using System.Runtime.CompilerServices;
+using go;
 using go.sync;
 using ꓸꓸꓸany = Span<any>;
 
 partial class bisect_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
 
 // New creates and returns a new Matcher implementing the given pattern.
 // The pattern syntax is defined in the package doc comment.

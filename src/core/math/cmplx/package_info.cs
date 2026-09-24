@@ -49,7 +49,7 @@ using static go.math.cmplx_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/cmplx/abs.go", "abs.cs", "ABMakA==")]
+[assembly: go.GoPositionMap("math/cmplx/abs.go", "abs.cs", "AA0akA==")]
 [assembly: go.GoPositionMap("math/cmplx/asin.go", "asin.cs", "AAlmACkCgKSkpJSkpNaUpKTWtIKCgoKCqJKApKSklKSk1pSkpNa0goIAAiIADgKCqJKClIKClAACSgAiAoCkpKSClKS0goKClIKEgoKClIKCqJKCgg==")]
 [assembly: go.GoPositionMap("math/cmplx/conj.go", "conj.cs", "AAcQkA==")]
 [assembly: go.GoPositionMap("math/cmplx/exp.go", "exp.cs", "AAlmACkCgKSUpIKU+ILWgoI=")]
@@ -62,7 +62,7 @@ using static go.math.cmplx_package;
 [assembly: go.GoPositionMap("math/cmplx/rect.go", "rect.cs", "AAkUkoI=")]
 [assembly: go.GoPositionMap("math/cmplx/sin.go", "sin.cs", "AAlqACsCgKSklKTWtIKCAAIiAA4CgKSklKTWtIKCAAIsABMCgKSklKTWtIKCAAIgAA0CgKSklKTWtIKCqJKClIKCgg==")]
 [assembly: go.GoPositionMap("math/cmplx/sqrt.go", "sqrt.cs", "AAl0ADAClIKUgpSklIKCgpSClIKClIKCgpSCgpSCgoKCgpSCgpSClA==")]
-[assembly: go.GoPositionMap("math/cmplx/tan.go", "tan.cs", "ABF8ADECgKSUpKS0goKUgpQAAiAADQKApJSkpLSCgpQAAhYACBIACAKEAAUYgoKClgAJEIKCgowAHDKSgoKUgoKCgpSClIKUgpSClKiSgoKCgoKCgoKCgoKCgoKCgoKCgoKEgoKCgoKCgoKCpqYAAjoAGgKCgpSClA==")]
+[assembly: go.GoPositionMap("math/cmplx/tan.go", "tan.cs", "AAt8ADECgKSUpKS0goKUgpQAAiAADQKApJSkpLSCgpQAAhYACBIACAKEAAUYgoKClgAJEIKCgowAHDKSgoKUgoKCgpSClIKUgpSClKiSgoKCgoKCgoKCgoKCgoKCgoKCgoKEgoKCgoKCgoKCpqYAAjoAGgKCgpSClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.math;
@@ -78,4 +78,15 @@ public static partial class cmplx_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    // </ImportInitializers>
 }

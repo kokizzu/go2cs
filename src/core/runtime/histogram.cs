@@ -4,10 +4,9 @@
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 

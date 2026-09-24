@@ -8,6 +8,7 @@ namespace go.crypto;
 
 partial class x509_package {
     static x509_package() {
+        initᴛanyPolicyOID();
         initᴛsignatureAlgorithmDetails();
         initᴛwindowsExtKeyUsageOIDs();
     }

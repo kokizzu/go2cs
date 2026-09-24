@@ -15,17 +15,6 @@ internal static ref Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)> 
 internal static ж<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>> ᏑpollSplice = new StandardBox<Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)>>(poll.Splice);
 internal static ref Func<ж<poll.FD>, ж<poll.FD>, int64, (int64, bool, error)> pollSplice => ref ᏑpollSplice.ValueSlot;
 
-// wrapSyscallError takes an error and a syscall name. If the error is
-// a syscall.Errno, it wraps it in an os.SyscallError using the syscall name.
-internal static error wrapSyscallError(@string name, error err) {
-    {
-        var (_, ok) = err._<syscall.Errno>(ᐧ); if (ok) {
-            err = NewSyscallError(name, err);
-        }
-    }
-    return err;
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sendfileˢ = "sendfile"u8;
 
@@ -45,7 +34,7 @@ internal static (int64 written, bool handled, error err) writeTo(this ж<File> �
     }
     var pfdʗ1 = pfd;
     var rerr = sc.Read((uintptr fd) => {
-        (written, Ꮡerr.ValueSlot, handled) = poll.SendFile(pfdʗ1, (nint)fd, 9223372036854775807L);
+        (written, Ꮡerr.ValueSlot, handled) = poll.SendFile(pfdʗ1, (nint)fd, 0);
         return true;
     });
     if (err == default!) {
@@ -172,19 +161,6 @@ internal static (ж<poll.FD>, poll.String) getPollFDAndNetwork(any i) {
         return (default!, (@string)"");
     }
     return (irc.PollFD(), irc.Network());
-}
-
-// tryLimitedReader tries to assert the io.Reader to io.LimitedReader, it returns the io.LimitedReader,
-// the underlying io.Reader and the remaining amount of bytes if the assertion succeeds,
-// otherwise it just returns the original io.Reader and the theoretical unlimited remaining amount of bytes.
-internal static (ж<Δio.LimitedReader>, Δio.Reader, int64) tryLimitedReader(Δio.Reader r) {
-    int64 remain = 9223372036854775807L; // by default, copy until EOF
-    var (lr, ok) = r._<ж<Δio.LimitedReader>>(ᐧ);
-    if (!ok) {
-        return (default!, r, remain);
-    }
-    remain = lr.Value.N;
-    return (lr, (~lr).R, remain);
 }
 
 internal static bool isUnixOrTCP(@string network) {

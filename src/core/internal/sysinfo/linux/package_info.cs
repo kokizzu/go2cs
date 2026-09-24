@@ -56,8 +56,8 @@ using static go.@internal.sysinfo_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/sysinfo/cpuinfo_linux.go", "cpuinfo_linux.cs", "AC4eooKClJSCgpbWgoKWgoKCloKCgoKUlKS4gpaC3oKCgqg=")]
-[assembly: go.GoPositionMap("internal/sysinfo/sysinfo.go", "sysinfo.cs", "ABYegIKmgIKm")]
+[assembly: go.GoPositionMap("internal/sysinfo/cpuinfo_linux.go", "cpuinfo_linux.cs", "ABAeooKClJSCgpbWgoKWgoKCloKCgoKUlKS4gpaC3oKCgqg=")]
+[assembly: go.GoPositionMap("internal/sysinfo/sysinfo.go", "sysinfo.cs", "ABEegIKmgIKm")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -73,4 +73,19 @@ public static partial class sysinfo_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    // </ImportInitializers>
 }

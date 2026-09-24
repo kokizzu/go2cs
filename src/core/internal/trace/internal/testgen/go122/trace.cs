@@ -25,78 +25,6 @@ using ꓸꓸꓸuint64 = Span<uint64>;
 
 partial class testkit_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() {
-    builtin.initPackage(typeof(go.@internal.trace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() {
-    builtin.initPackage(typeof(go.@internal.trace.event_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸeventꓸgo122() {
-    builtin.initPackage(typeof(go.@internal.trace.@event.go122_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸraw() {
-    builtin.initPackage(typeof(go.@internal.trace.raw_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() {
-    builtin.initPackage(typeof(go.@internal.trace.version_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtxtar() {
-    builtin.initPackage(typeof(go.@internal.txtar_package));
-}
-
 public static void ΔMain(Action<ж<Trace>> f) {
     GoFrame ᒐ = default;
     try {
@@ -352,7 +280,7 @@ internal static void writeEventsTo(this ж<ΔGeneration> Ꮡg, ж<raw.TextWriter
         }
         b.RawEvent(go122.EvStack, default!, args.ꓸꓸꓸ);
         // Flush the batch if necessary.
-        if (!g.ignoreStackBatchSizeLimit && (~b).size > go122.MaxBatchSize / 2) {
+        if (!g.ignoreStackBatchSizeLimit && (~b).size > (uint64)(go122.MaxBatchSize / 2)) {
             b.writeEventsTo(Ꮡtw);
             b = Ꮡg.newStructuralBatch();
         }
@@ -364,7 +292,7 @@ internal static void writeEventsTo(this ж<ΔGeneration> Ꮡg, ж<raw.TextWriter
     foreach (var (s, id) in g.strings) {
         b.RawEvent(go122.EvString, slice<byte>(s), id);
         // Flush the batch if necessary.
-        if (!g.ignoreStringBatchSizeLimit && (~b).size > go122.MaxBatchSize / 2) {
+        if (!g.ignoreStringBatchSizeLimit && (~b).size > (uint64)(go122.MaxBatchSize / 2)) {
             b.writeEventsTo(Ꮡtw);
             b = Ꮡg.newStructuralBatch();
         }

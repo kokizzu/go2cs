@@ -283,7 +283,7 @@ Content-Disposition: form-data; name="largetext"
     // where we change from rejecting the form as too large to accepting it to vary,
     // but we should see both successes and failures.
     UntypedInt failWhenMaxMemoryLessThan = 128;
-    for (var maxMemory = (int64)0; maxMemory < failWhenMaxMemoryLessThan * 2; maxMemory += 16) {
+    for (var maxMemory = (int64)0; maxMemory < (int64)(failWhenMaxMemoryLessThan * 2); maxMemory += 16) {
         var b = strings.NewReader(testBody);
         var r = NewReader(new multipart_test_package.strings_ReaderжReader(b), boundary);
         var (f, err) = r.ReadForm(maxMemory);

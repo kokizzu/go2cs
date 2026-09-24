@@ -278,6 +278,14 @@ func packageFuncAccess(goIDName string, isFreeFunction bool) string {
 		return "public"
 	}
 
+	// A forward row's DEFINITION under another name (linknameForwardDefinitions: time's
+	// legacyAbsClock for the symbol time.absClock) is what the puller's forwarder calls, so it is
+	// public for the same reason. Go authorizes the pull with the definition's own two-arg directive
+	// rather than a one-arg handle, so this arm reads the registry alone, as the push arm does.
+	if isFreeFunction && linknameForwardDefinitionSources[currentPackagePath+"."+goIDName] {
+		return "public"
+	}
+
 	return getAccess(goIDName)
 }
 
@@ -363,6 +371,77 @@ var linknamePushTargets = map[string]linknamePush{
 	// the row: the residual is the execution tracer (the same capability runtime/trace refuses by name),
 	// CPU profile collection, one skip and the parent shadow of those two.
 	"runtime/pprof.pprof_cyclesPerSecond": {source: "runtime.pprof_cyclesPerSecond", selfSymbolPull: true},
+	// runtime/pprof's CPU-profile reader, pushed by runtime/cpuprof.go
+	// (`//go:linkname runtime_pprof_readProfile runtime/pprof.readProfile`). BARE consumer shape: pprof.go
+	// declares `func readProfile() (data []uint64, tags []unsafe.Pointer, eof bool)` with no directive of
+	// its own. The pushed body is ORDINARY CONVERTED Go: it takes cpuprof.log under cpuprof.lock and does a
+	// blocking profBuf.read, whose wait (notetsleepg) and wake (notewakeup, from log.close) are the hand-owned
+	// managed note core, so a reader blocked on an empty buffer returns eof when StopCPUProfile closes the log.
+	//
+	// Needed WITH the windows CPU-profiler setters (manualConversionFuncs): until they stopped throwing,
+	// StartCPUProfile never reached `go profileWriter(w)`, so this stub was never called. Once
+	// StartCPUProfile completes, the writer goroutine calls readProfile at once, and the throwing stub would
+	// end the host through golib's unhandled-goroutine door. The forwarder is on the consumer side, across
+	// the runtime/pprof -> runtime edge that already exists (the same zero graph cost as the row above).
+	"runtime/pprof.readProfile": {source: "runtime.runtime_pprof_readProfile", bareDecl: true},
+	// crypto/internal/fips140's service indicator, pushed by runtime/runtime1.go
+	// (`//go:linkname fips_getIndicator crypto/internal/fips140.getIndicator`, and the setter beside it).
+	// SELF-SYMBOL consumer shape, the second and third members of that arm: indicator.go declares
+	// `//go:linkname getIndicator crypto/internal/fips140.getIndicator` above a bodyless
+	// `func getIndicator() uint8`, a two-arg directive naming the consumer's OWN package.
+	//
+	// The pushed bodies are ORDINARY CONVERTED Go over the goroutine's own field --
+	// `(~getg()).fipsIndicator` and `getg().Value.fipsIndicator = indicator` (runtime/<goos>/runtime1.cs) --
+	// and the precondition the os.runtime_args row insists on is already TRUE rather than needing a
+	// companion: getg() is hand-owned (runtime/stubs_impl.cs), a [ThreadStatic] ж<g> minted per thread from
+	// Goroutine.Current, and fipsIndicator is a real field on the emitted g. A goroutine is a dedicated
+	// thread for its life in golib, so Go's per-goroutine indicator is exactly what the thread-static gives,
+	// and a read reaches the box a write set: nothing here can return a confident wrong value.
+	//
+	// No new project reference and no cycle: crypto/internal/fips140 already references runtime, and
+	// runtime references no part of fips140.
+	//
+	// What the stubs were costing (RED 7, COORD 7fad75186, C2's sizing 5ffca1e37): every fips140 service
+	// records its indicator through RecordApproved / RecordNonApproved (83 call lines in 28 files), so the
+	// first aead.Seal of an AES-GCM cipher threw NotImplementedException out of setIndicator and golib's
+	// unhandled-exception door ended the host -- GolibTests' ConvertedGcmOpen stress arm died on its first
+	// Seal, 4 of 4 runs (i9 c0eecf885).
+	"crypto/internal/fips140.getIndicator": {source: "runtime.fips_getIndicator", selfSymbolPull: true},
+	"crypto/internal/fips140.setIndicator": {source: "runtime.fips_setIndicator", selfSymbolPull: true},
+	// crypto/internal/fips140's fatal, pushed by runtime/panic.go (`//go:linkname fips_fatal
+	// crypto/internal/fips140.fatal`), in the same SELF-SYMBOL shape (cast.go). The pushed body is one line,
+	// `fatal(s)`, and runtime.fatal is hand-owned (runtime/panic_impl.cs) with Go's unrecoverable-fatal
+	// semantics, so the forward reaches a body that genuinely terminates as Go's does. Same package edge as
+	// the two indicator rows above.
+	"crypto/internal/fips140.fatal": {source: "runtime.fips_fatal", selfSymbolPull: true},
+	// crypto/internal/sysrand's fatal, pushed by runtime/panic.go (`//go:linkname sysrand_fatal
+	// crypto/internal/sysrand.fatal`). HANDLE consumer shape: rand.go carries its own one-arg
+	// `//go:linkname fatal` above a bodyless `func fatal(string)`, so bareDecl and selfSymbolPull stay false.
+	// The pushed body is `fatal(s)` over the hand-owned runtime.fatal, exactly as fips_fatal. No new
+	// project reference and no cycle: crypto/internal/sysrand already references runtime, and runtime
+	// references no part of sysrand.
+	//
+	// The fatal FAMILY is split by that same cycle test (RED 7 (c), G's split 5bb307d57): internal/sync,
+	// crypto/rand and internal/runtime/maps do NOT reference runtime (and runtime references maps, which
+	// would close a direct cycle), so their fatal cannot be a row here -- they take the golib FatalReport
+	// hand-own, C1's half, with sync/mutex.cs's managed forward as the precedent.
+	"crypto/internal/sysrand.fatal": {source: "runtime.sysrand_fatal"},
+	// crypto/internal/fips140hash's sha3 unwrap, pushed by crypto/sha3 (`//go:linkname fips140hash_sha3Unwrap
+	// crypto/internal/fips140hash.sha3Unwrap`) -- the one member of RED 7's population whose pusher is NOT
+	// runtime (C1 a11683a40, COORD 8907b6847). HANDLE consumer shape: hash.go carries its own one-arg
+	// `//go:linkname sha3Unwrap` above a bodyless `func sha3Unwrap(*sha3.SHA3) *fsha3.Digest`, so bareDecl and
+	// selfSymbolPull stay false; a non-runtime pusher is already a registry shape (the sync. and os. sources above).
+	//
+	// The pushed body is one line of ORDINARY CONVERTED Go -- `return &sha3.s`, emitted `Ꮡsha3.of(SHA3.Ꮡs)`,
+	// the address of the wrapper's embedded fips140 Digest -- so the forward hands back the real digest the
+	// public SHA3 wraps, the same object Go returns; nothing is fabricated.
+	//
+	// No new project reference and no cycle: crypto/internal/fips140hash already references crypto/sha3 (it
+	// imports it for the type), and crypto/sha3 references no part of fips140hash.
+	//
+	// What the stub was costing: fips140hash.Unwrap's sha3 arm (`new sha3_DigestжHash(sha3Unwrap(...))`) threw,
+	// so any fips140 service handed a crypto/sha3 hash -- HKDF, HMAC or PBKDF2 over SHA-3 -- died at the unwrap.
+	"crypto/internal/fips140hash.sha3Unwrap": {source: "crypto/sha3.fips140hash_sha3Unwrap"},
 	// syscall's environment snapshot, pushed by runtime/runtime.go. The pushed body is ordinary
 	// converted Go — `append([]string{}, envs...)` — and `runtime.envs` is genuinely populated in the
 	// managed model by the hand-owned runtime/goenvs_impl.cs module initializer, so the forwarder

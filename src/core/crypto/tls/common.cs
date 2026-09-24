@@ -13,12 +13,14 @@ using elliptic = go.crypto.elliptic_package;
 using rand = go.crypto.rand_package;
 using rsa = go.crypto.rsa_package;
 using sha512 = go.crypto.sha512_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using Δx509 = go.crypto.x509_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using godebug = go.@internal.godebug_package;
 using io = io_package;
 using net = net_package;
+using runtime = runtime_package;
 using slices = slices_package;
 using strings = strings_package;
 using sync = sync_package;
@@ -27,56 +29,10 @@ using time = time_package;
 using container;
 using go.@internal;
 using go.crypto;
+using go.crypto.tls.@internal;
+using math;
 
 partial class tls_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() {
-    builtin.initPackage(typeof(go.crypto.sha512_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 public static UntypedInt VersionTLS10 => 0x0301;
 public static UntypedInt VersionTLS11 => 0x0302;
@@ -220,7 +176,15 @@ public static CurveID CurveP256 => 23;
 public static CurveID CurveP384 => 24;
 public static CurveID CurveP521 => 25;
 public static CurveID X25519 => 29;
-internal static CurveID x25519Kyber768Draft00 => 0x6399;  // X25519Kyber768Draft00
+public static CurveID X25519MLKEM768 => 4588;
+
+internal static bool isTLS13OnlyKeyExchange(CurveID curve) {
+    return curve == X25519MLKEM768;
+}
+
+internal static bool isPQKeyExchange(CurveID curve) {
+    return curve == X25519MLKEM768;
+}
 
 // TLS 1.3 Key Share. See RFC 8446, Section 4.2.8.
 [GoType] partial struct keyShare {
@@ -426,9 +390,12 @@ public static SignatureScheme ECDSAWithSHA1 => 0x0203;
     // in order to support virtual hosting. ServerName is only set if the
     // client is using SNI (see RFC 4366, Section 3.1).
     public @string ServerName;
-    // SupportedCurves lists the elliptic curves supported by the client.
-    // SupportedCurves is set only if the Supported Elliptic Curves
-    // Extension is being used (see RFC 4492, Section 5.1.1).
+    // SupportedCurves lists the key exchange mechanisms supported by the
+    // client. It was renamed to "supported groups" in TLS 1.3, see RFC 8446,
+    // Section 4.2.7 and [CurveID].
+    //
+    // SupportedCurves may be nil in TLS 1.2 and lower if the Supported Elliptic
+    // Curves Extension is not being used (see RFC 4492, Section 5.1.1).
     public slice<CurveID> SupportedCurves;
     // SupportedPoints lists the point formats supported by the client.
     // SupportedPoints is set only if the Supported Point Formats Extension
@@ -450,6 +417,9 @@ public static SignatureScheme ECDSAWithSHA1 => 0x0203;
     // version advertised by the client, so values other than the greatest
     // might be rejected if used.
     public slice<uint16> SupportedVersions;
+    // Extensions lists the IDs of the extensions presented by the client
+    // in the ClientHello.
+    public slice<uint16> Extensions;
     // Conn is the underlying net.Conn for the connection. Do not read
     // from, or write to, this connection; that will cause the TLS
     // connection to fail.
@@ -567,10 +537,13 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // If GetConfigForClient is nil, the Config passed to Server() will be
     // used for all connections.
     //
-    // If SessionTicketKey was explicitly set on the returned Config, or if
-    // SetSessionTicketKeys was called on the returned Config, those keys will
+    // If SessionTicketKey is explicitly set on the returned Config, or if
+    // SetSessionTicketKeys is called on the returned Config, those keys will
     // be used. Otherwise, the original Config keys will be used (and possibly
-    // rotated if they are automatically managed).
+    // rotated if they are automatically managed). WARNING: this allows session
+    // resumtion of connections originally established with the parent (or a
+    // sibling) Config, which may bypass the [Config.VerifyPeerCertificate]
+    // value of the returned Config.
     public Func<ж<ClientHelloInfo>, (ж<Config>, error)> GetConfigForClient;
     // VerifyPeerCertificate, if not nil, is called after normal
     // certificate verification by either a TLS client or server. It
@@ -587,8 +560,10 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // rawCerts may be empty on the server if ClientAuth is RequestClientCert or
     // VerifyClientCertIfGiven.
     //
-    // This callback is not invoked on resumed connections, as certificates are
-    // not re-verified on resumption.
+    // This callback is not invoked on resumed connections. WARNING: this
+    // includes connections resumed across Configs returned by [Config.Clone] or
+    // [Config.GetConfigForClient] and their parents. If that is not intended,
+    // use [Config.VerifyConnection] instead, or set [Config.SessionTicketsDisabled].
     //
     // verifiedChains and its contents should not be modified.
     public Func<slice<slice<byte>>, slice<slice<ж<Δx509.Certificate>>>, error> VerifyPeerCertificate;
@@ -707,14 +682,15 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // By default, the maximum version supported by this package is used,
     // which is currently TLS 1.3.
     public uint16 MaxVersion;
-    // CurvePreferences contains the elliptic curves that will be used in
-    // an ECDHE handshake, in preference order. If empty, the default will
-    // be used. The client will use the first preference as the type for
-    // its key share in TLS 1.3. This may change in the future.
+    // CurvePreferences contains a set of supported key exchange mechanisms.
+    // The name refers to elliptic curves for legacy reasons, see [CurveID].
+    // The order of the list is ignored, and key exchange mechanisms are chosen
+    // from this list using an internal preference order. If empty, the default
+    // will be used.
     //
-    // From Go 1.23, the default includes the X25519Kyber768Draft00 hybrid
+    // From Go 1.24, the default includes the [X25519MLKEM768] hybrid
     // post-quantum key exchange. To disable it, set CurvePreferences explicitly
-    // or use the GODEBUG=tlskyber=0 environment variable.
+    // or use the GODEBUG=tlsmlkem=0 environment variable.
     public slice<CurveID> CurvePreferences;
     // DynamicRecordSizingDisabled disables adaptive sizing of TLS records.
     // When true, the largest possible TLS record size is always used. When
@@ -733,8 +709,10 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     public io.Writer KeyLogWriter;
     // EncryptedClientHelloConfigList is a serialized ECHConfigList. If
     // provided, clients will attempt to connect to servers using Encrypted
-    // Client Hello (ECH) using one of the provided ECHConfigs. Servers
-    // currently ignore this field.
+    // Client Hello (ECH) using one of the provided ECHConfigs.
+    //
+    // Servers do not use this field. In order to configure ECH for servers, see
+    // the EncryptedClientHelloKeys field.
     //
     // If the list contains no valid ECH configs, the handshake will fail
     // and return an error.
@@ -743,7 +721,7 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // be VersionTLS13.
     //
     // When EncryptedClientHelloConfigList is set, the handshake will only
-    // succeed if ECH is sucessfully negotiated. If the server rejects ECH,
+    // succeed if ECH is successfully negotiated. If the server rejects ECH,
     // an ECHRejectionError error will be returned, which may contain a new
     // ECHConfigList that the server suggests using.
     //
@@ -751,9 +729,11 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // encoding described in the final Encrypted Client Hello RFC changes.
     public slice<byte> EncryptedClientHelloConfigList;
     // EncryptedClientHelloRejectionVerify, if not nil, is called when ECH is
-    // rejected, in order to verify the ECH provider certificate in the outer
-    // Client Hello. If it returns a non-nil error, the handshake is aborted and
-    // that error results.
+    // rejected by the remote server, in order to verify the ECH provider
+    // certificate in the outer ClientHello. If it returns a non-nil error, the
+    // handshake is aborted and that error results.
+    //
+    // On the server side this field is not used.
     //
     // Unlike VerifyPeerCertificate and VerifyConnection, normal certificate
     // verification will not be performed before calling
@@ -764,6 +744,19 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // certificate. VerifyPeerCertificate and VerifyConnection are not called
     // when ECH is rejected, even if set, and InsecureSkipVerify is ignored.
     public Func<ΔConnectionState, error> EncryptedClientHelloRejectionVerify;
+    // EncryptedClientHelloKeys are the ECH keys to use when a client
+    // attempts ECH.
+    //
+    // If EncryptedClientHelloKeys is set, MinVersion, if set, must be
+    // VersionTLS13.
+    //
+    // If a client attempts ECH, but it is rejected by the server, the server
+    // will send a list of configs to retry based on the set of
+    // EncryptedClientHelloKeys which have the SendAsRetry field set.
+    //
+    // On the client side, this field is ignored. In order to configure ECH for
+    // clients, see the EncryptedClientHelloConfigList field.
+    public slice<EncryptedClientHelloKey> EncryptedClientHelloKeys;
     // mutex protects sessionTicketKeys and autoSessionTicketKeys.
     internal sync.RWMutex mutex;
     // sessionTicketKeys contains zero or more ticket keys. If set, it means
@@ -775,6 +768,24 @@ public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
     // autoSessionTicketKeys is like sessionTicketKeys but is owned by the
     // auto-rotation logic. See Config.ticketKeys.
     internal slice<ticketKey> autoSessionTicketKeys;
+}
+
+// EncryptedClientHelloKey holds a private key that is associated
+// with a specific ECH config known to a client.
+[GoType] partial struct EncryptedClientHelloKey {
+    // Config should be a marshalled ECHConfig associated with PrivateKey. This
+    // must match the config provided to clients byte-for-byte. The config
+    // should only specify the DHKEM(X25519, HKDF-SHA256) KEM ID (0x0020), the
+    // HKDF-SHA256 KDF ID (0x0001), and a subset of the following AEAD IDs:
+    // AES-128-GCM (0x0000), AES-256-GCM (0x0001), ChaCha20Poly1305 (0x0002).
+    public slice<byte> Config;
+    // PrivateKey should be a marshalled private key. Currently, we expect
+    // this to be the output of [ecdh.PrivateKey.Bytes].
+    public slice<byte> PrivateKey;
+    // SendAsRetry indicates if Config should be sent as part of the list of
+    // retry configs when ECH is requested by the client but rejected by the
+    // server.
+    public bool SendAsRetry;
 }
 
 internal static time.Duration ticketKeyLifetime => /* 7 * 24 * time.Hour */ 604800000000000; // 7 days
@@ -810,8 +821,15 @@ internal static time.Duration ticketKeyRotation => /* 24 * time.Hour */ 86400000
 // ticket, and the lifetime we set for all tickets we send.
 internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour */ 604800000000000;
 
-// Clone returns a shallow clone of c or nil if c is nil. It is safe to clone a [Config] that is
-// being used concurrently by a TLS client or server.
+// Clone returns a shallow clone of c or nil if c is nil. It is safe to clone a
+// [Config] that is being used concurrently by a TLS client or server.
+//
+// The returned Config can share session ticket keys with the original Config,
+// which means connections could be resumed across the two Configs. WARNING:
+// [Config.VerifyPeerCertificate] does not get called on resumed connections,
+// including connections that were originally established on the parent Config.
+// If that is not intended, use [Config.VerifyConnection] instead, or set
+// [Config.SessionTicketsDisabled].
 public static ж<Config> Clone(this ж<Config> Ꮡc) {
     GoFrame ᒐ = default;
     bool ᒐd1 = false;
@@ -854,6 +872,7 @@ public static ж<Config> Clone(this ж<Config> Ꮡc) {
             KeyLogWriter: c.KeyLogWriter,
             EncryptedClientHelloConfigList: c.EncryptedClientHelloConfigList,
             EncryptedClientHelloRejectionVerify: c.EncryptedClientHelloRejectionVerify,
+            EncryptedClientHelloKeys: c.EncryptedClientHelloKeys,
             sessionTicketKeys: c.sessionTicketKeys,
             autoSessionTicketKeys: c.autoSessionTicketKeys
         ));
@@ -1030,12 +1049,12 @@ public static void SetSessionTicketKeys(this ж<Config> Ꮡc, slice<array<byte>>
 
 [GoRecv] internal static slice<uint16> cipherSuites(this ref Config c) {
     if (c.CipherSuites == default!) {
-        if (needFIPS()) {
+        if (fips140tls.Required()) {
             return defaultCipherSuitesFIPS;
         }
         return defaultCipherSuites();
     }
-    if (needFIPS()) {
+    if (fips140tls.Required()) {
         var ΔcipherSuites = slices.Clone<slice<uint16>, uint16>(c.CipherSuites);
         return slices.DeleteFunc(ΔcipherSuites, (uint16 id) => !slices.Contains(defaultCipherSuitesFIPS, id));
     }
@@ -1062,7 +1081,7 @@ internal static slice<uint16> supportedVersions(this ж<Config> Ꮡc, bool isCli
 
     var versions = new slice<uint16>(0, len(ΔsupportedVersions));
     foreach (var (_, v) in ΔsupportedVersions) {
-        if (needFIPS() && !slices.Contains(defaultSupportedVersionsFIPS, v)) {
+        if (fips140tls.Required() && !slices.Contains(defaultSupportedVersionsFIPS, v)) {
             continue;
         }
         if ((Ꮡc == nil || c.MinVersion == 0) && v < VersionTLS12) {
@@ -1110,19 +1129,16 @@ internal static slice<CurveID> curvePreferences(this ж<Config> Ꮡc, uint16 ver
     ref var c = ref Ꮡc.DerefOrNull();
 
     slice<CurveID> curvePreferences = default!;
-    if (Ꮡc != nil && len(c.CurvePreferences) != 0){
-        curvePreferences = slices.Clone<slice<CurveID>, CurveID>(c.CurvePreferences);
-        if (needFIPS()) {
-            return slices.DeleteFunc(curvePreferences, (CurveID cΔ1) => !slices.Contains(defaultCurvePreferencesFIPS, cΔ1));
-        }
-    } else 
-    if (needFIPS()){
+    if (fips140tls.Required()){
         curvePreferences = slices.Clone<slice<CurveID>, CurveID>(defaultCurvePreferencesFIPS);
     } else {
         curvePreferences = defaultCurvePreferences();
     }
+    if (Ꮡc != nil && len(c.CurvePreferences) != 0) {
+        curvePreferences = slices.DeleteFunc(curvePreferences, (CurveID x) => !slices.Contains(Ꮡc.Value.CurvePreferences, x));
+    }
     if (version < VersionTLS13) {
-        return slices.DeleteFunc(curvePreferences, (CurveID cΔ2) => cΔ2 == x25519Kyber768Draft00);
+        curvePreferences = slices.DeleteFunc<slice<CurveID>, CurveID>(curvePreferences, isTLS13OnlyKeyExchange);
     }
     return curvePreferences;
 }
@@ -1633,7 +1649,7 @@ internal static error unexpectedMessageError(any wanted, any got) {
 
 // supportedSignatureAlgorithms returns the supported signature algorithms.
 internal static slice<SignatureScheme> supportedSignatureAlgorithms() {
-    if (!needFIPS()) {
+    if (!fips140tls.Required()) {
         return defaultSupportedSignatureAlgorithms;
     }
     return defaultSupportedSignatureAlgorithmsFIPS;
@@ -1661,6 +1677,99 @@ internal static bool isSupportedSignatureAlgorithm(SignatureScheme sigAlg, slice
 
 [GoRecv] public static error Unwrap(this ref CertificateVerificationError e) {
     return e.Err;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string tlsNoFipsCompatibleˢ = "tls: no FIPS compatible certificate chains found"u8;
+
+// fipsAllowedChains returns chains that are allowed to be used in a TLS connection
+// based on the current fips140tls enforcement setting.
+//
+// If fips140tls is not required, the chains are returned as-is with no processing.
+// Otherwise, the returned chains are filtered to only those allowed by FIPS 140-3.
+// If this results in no chains it returns an error.
+internal static (slice<slice<ж<Δx509.Certificate>>>, error) fipsAllowedChains(slice<slice<ж<Δx509.Certificate>>> chains) {
+    if (!fips140tls.Required()) {
+        return (chains, default!);
+    }
+    var permittedChains = new slice<slice<ж<Δx509.Certificate>>>(0, len(chains));
+    foreach (var (_, chain) in chains) {
+        if (fipsAllowChain(chain)) {
+            permittedChains = append(permittedChains, chain);
+        }
+    }
+    if (len(permittedChains) == 0) {
+        return (default!, errors.New(tlsNoFipsCompatibleˢ));
+    }
+    return (permittedChains, default!);
+}
+
+internal static bool fipsAllowChain(slice<ж<Δx509.Certificate>> chain) {
+    if (len(chain) == 0) {
+        return false;
+    }
+    foreach (var (_, cert) in chain) {
+        if (!fipsAllowCert(ref (cert).DerefOrNull())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+internal static bool fipsAllowCert(ref Δx509.Certificate c) {
+    // The key must be RSA 2048, RSA 3072, RSA 4096,
+    // or ECDSA P-256, P-384, P-521.
+    switch (c.PublicKey.type()) {
+    case ж<rsa.PublicKey> k: {
+        nint size = (~k).N.BitLen();
+        return size == 2048 || size == 3072 || size == 4096;
+    }
+    case ж<ecdsa.PublicKey> k: {
+        return AreEqual((~k).Curve, elliptic.P256()) || AreEqual((~k).Curve, elliptic.P384()) || AreEqual((~k).Curve, elliptic.P521());
+    }}
+    return false;
+}
+
+// anyValidVerifiedChain reports if at least one of the chains in verifiedChains
+// is valid, as indicated by none of the certificates being expired and the root
+// being in opts.Roots (or in the system root pool if opts.Roots is nil). If
+// verifiedChains is empty, it returns false.
+internal static bool anyValidVerifiedChain(slice<slice<ж<Δx509.Certificate>>> verifiedChains, Δx509.VerifyOptions opts) {
+    foreach (var (_, chain) in verifiedChains) {
+        if (len(chain) == 0) {
+            continue;
+        }
+        if (slices.ContainsFunc(chain, (ж<Δx509.Certificate> cert) => opts.CurrentTime.Before((~cert).NotBefore) || opts.CurrentTime.After((~cert).NotAfter))) {
+            continue;
+        }
+        // Since we already validated the chain, we only care that it is rooted
+        // in a CA in opts.Roots. On platforms where we control chain validation
+        // (e.g. not Windows or macOS) this is a simple lookup in the CertPool
+        // internal hash map, which we can simulate by running Verify on the
+        // root. On other platforms, we have to do full verification again,
+        // because EKU handling might differ. We will want to replace this with
+        // CertPool.Contains if/once that is available. See go.dev/issue/77376.
+        if (runtime.GOOS == "windows"u8 || runtime.GOOS == "darwin"u8 || runtime.GOOS == "ios"u8){
+            opts.Intermediates = Δx509.NewCertPool();
+            foreach (var (_, cert) in chain[1..(int)(max(1, len(chain) - 1))]) {
+                opts.Intermediates.AddCert(cert);
+            }
+            var leaf = chain[0];
+            {
+                var (_, err) = leaf.Verify(opts); if (err == default!) {
+                    return true;
+                }
+            }
+        } else {
+            var root = chain[len(chain) - 1];
+            {
+                var (_, err) = root.Verify(opts); if (err == default!) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 } // end tls_package

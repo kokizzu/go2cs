@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `slices` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-28 · converter `177e9eb4e`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**119 matched · 3 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**120 matched · 3 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -103,6 +105,7 @@ comparison — it is the evidence behind the `slices` row in
 | `TestInsertGrowthRate` | pass | pass |
 | `TestInsertOverlap` | pass | pass |
 | `TestInsertPanics` | pass | pass |
+| `TestIssue68488` | pass | pass |
 | `TestMinMax` | pass | pass |
 | `TestMinMax/[0_2_-9]` | pass | pass |
 | `TestMinMax/[1_2]` | pass | pass |
@@ -140,16 +143,20 @@ comparison — it is the evidence behind the `slices` row in
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/slices/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestConcat` | `alloc-count-semantics` | exact-count allocBytes/AllocsPerRun asserts (want 1 allocation per Concat): the managed measurement mixes golib's object counter with byte-derived readings the CLR regime cannot denominate in Go mallocs (measured: want 1, reading 2 for the value cases and 280 for the empty case at the B2 kind-split emission with the slice-shaped spread landed), so no allocation behavior can satisfy the count assert |
-| `TestGrow` | `alloc-count-semantics` | want-zero-then-exactly-one allocation asserts around Grow: the managed regime reads 112 where Go wants 0 (sufficient capacity) and 2 where Go wants 1 (insufficient) — the byte-derived shim and golib's object counter cannot denominate the CLR's behavior in Go malloc units, the established alloc-count-semantics shape |
-| `TestInsert` | `alloc-profile` | an allocation BUDGET assert (want < 25 inserting 50 elements): Go's Insert rotates through two in-place appends whose temporaries escape analysis keeps on the stack, while the managed model heap-boxes each rotation temporary — 242 golib objects at the B2 kind-split emission with the slice-shaped spread landed, a structural stack-vs-heap profile no slimming brings under the budget |
+| `TestConcat` | `alloc-count-semantics` | exact-count allocBytes/AllocsPerRun asserts (want 1 allocation per Concat): the managed measurement mixes golib's object counter with byte-derived readings the CLR regime cannot denominate in Go mallocs (measured: want 1, reading 2 for the value cases and 280 for the empty case at the B2 kind-split emission with the slice-shaped spread landed), so no allocation behavior can satisfy the count assert. AMENDED 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O4): STAYS alloc-count-semantics on leg 1's unit -- `Concat([[]])` reads BYTES 168 B per run (840 bytes over 5 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 101 (claude/coord-h10-readings ac9f8251ee)), the counter charging none of it. Legs 2-4 print 2 against want 1, COUNT by construction: Grow's make plus append (slices.cs:441), the append-of-make idiom of docs/phase4/DESIGN-slice-idiom-allocations.md §B (REC-C, append-of-make), whose recognition predicts them 2 -> 1. The 'byte-derived shim' premise above is stale: the host reports a COUNT whenever golib charged anything. |
+| `TestGrow` | `deferred` | want-zero-then-exactly-one allocation asserts around Grow: the managed regime reads 112 where Go wants 0 (sufficient capacity) and 2 where Go wants 1 (insufficient) — the byte-derived shim and golib's object counter cannot denominate the CLR's behavior in Go malloc units, the established alloc-count-semantics shape. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O4): alloc-count-semantics -> deferred. The byte-derived-shim premise is retired: the reading is COUNT (2 = the make plus the grown array; the 112 this reason quotes for the sufficient leg is gone). |
+| `TestInsert` | `deferred` | an allocation BUDGET assert (want < 25 inserting 50 elements): Go's Insert rotates through two in-place appends whose temporaries escape analysis keeps on the stack, while the managed model heap-boxes each rotation temporary — 242 golib objects at the B2 kind-split emission with the slice-shaped spread landed, a structural stack-vs-heap profile no slimming brings under the budget. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O5): alloc-profile -> deferred. Magnitude is not a structural proof; both families are REC-C's, not zh-box's. |
 
 ## Excluded declarations
 
@@ -170,11 +177,15 @@ the capability it needs.
 - BenchmarkIndex_Large (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkReplace (benchmark): benchmark execution is deferred to Phase 4D
 - BenchmarkSortFuncStruct (benchmark): benchmark execution is deferred to Phase 4D
+- ExampleAll (example): example execution is deferred to Phase 4D
+- ExampleAppendSeq (example): example execution is deferred to Phase 4D
+- ExampleBackward (example): example execution is deferred to Phase 4D
 - ExampleBinarySearch (example): example execution is deferred to Phase 4D
 - ExampleBinarySearchFunc (example): example execution is deferred to Phase 4D
 - ExampleChunk (example): example execution is deferred to Phase 4D
 - ExampleClip (example): example execution is deferred to Phase 4D
 - ExampleClone (example): example execution is deferred to Phase 4D
+- ExampleCollect (example): example execution is deferred to Phase 4D
 - ExampleCompact (example): example execution is deferred to Phase 4D
 - ExampleCompactFunc (example): example execution is deferred to Phase 4D
 - ExampleCompare (example): example execution is deferred to Phase 4D
@@ -203,3 +214,7 @@ the capability it needs.
 - ExampleSortFunc_caseInsensitive (example): example execution is deferred to Phase 4D
 - ExampleSortFunc_multiField (example): example execution is deferred to Phase 4D
 - ExampleSortStableFunc (example): example execution is deferred to Phase 4D
+- ExampleSorted (example): example execution is deferred to Phase 4D
+- ExampleSortedFunc (example): example execution is deferred to Phase 4D
+- ExampleSortedStableFunc (example): example execution is deferred to Phase 4D
+- ExampleValues (example): example execution is deferred to Phase 4D

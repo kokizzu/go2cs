@@ -28,7 +28,7 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
     error err = default!;
     bool handled = default!;
 
-    int64 remain = 9223372036854775807L; // by default, copy until EOF
+    int64 remain = 0;     // 0 indicates sending until EOF
     var (lr, ok) = r._<ж<Δio.LimitedReader>>(ᐧ);
     if (ok) {
         (remain, r) = (lr.Value.N, lr.Value.R);

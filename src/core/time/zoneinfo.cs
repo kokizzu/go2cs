@@ -9,12 +9,6 @@ using syscall = syscall_package;
 
 partial class time_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 //go:generate env ZONEINFO=$GOROOT/lib/time/zoneinfo.zip go run genzabbrs.go -output zoneinfo_abbrs_windows.go
 
 // A Location maps time instants to the zone in use at that time.
@@ -125,10 +119,10 @@ public static ж<ΔLocation> FixedZone(@string name, nint offset) {
     UntypedInt hoursBeforeUTC = 12;
     UntypedInt hoursAfterUTC = 14;
     nint hour = offset / 60 / 60;
-    if (name == ""u8 && -hoursBeforeUTC <= hour && hour <= +hoursAfterUTC && hour * 60 * 60 == offset) {
+    if (name == ""u8 && (nint)(-hoursBeforeUTC) <= hour && hour <= (nint)(+hoursAfterUTC) && hour * 60 * 60 == offset) {
         ᏑunnamedFixedZonesOnce.Do(() => {
             unnamedFixedZones = new slice<ж<ΔLocation>>(hoursBeforeUTC + 1 + hoursAfterUTC);
-            for (nint hr = -hoursBeforeUTC; hr <= +hoursAfterUTC; hr++) {
+            for (nint hr = -hoursBeforeUTC; hr <= (nint)(+hoursAfterUTC); hr++) {
                 unnamedFixedZones[hr + (nint)hoursBeforeUTC] = fixedZone(""u8, hr * 60 * 60);
             }
         });
@@ -342,12 +336,11 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST, 
     if (!ok || len(s) > 0) {
         return ("", 0, 0, 0, false, false);
     }
-    var (year, _, _, yday) = absDate((uint64)(sec + unixToInternal + internalToAbsolute), false);
-    var ysec = (int64)(yday * (nint)secondsPerDay) + sec % (int64)secondsPerDay;
-    // Compute start of year in seconds since Unix epoch.
-    var d = daysSinceEpoch(year);
-    var abs = (int64)(d * (uint64)secondsPerDay);
-    abs += -9223372028715321600L;
+    // Compute start of year in seconds since Unix epoch,
+    // and seconds since then to get to sec.
+    var (year, yday) = ((absSeconds)(uint64)(sec + unixToInternal + internalToAbsolute)).days().yearYday();
+    var ysec = (int64)((yday - 1) * (nint)secondsPerDay) + sec % (int64)secondsPerDay;
+    var ystart = sec - ysec;
     var startSec = (int64)tzruleTime(year, startRule, stdOffset);
     var endSec = (int64)tzruleTime(year, endRule, dstOffset);
     var (dstIsDST, stdIsDST) = (true, false);
@@ -365,12 +358,12 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST, 
     // just the start and end of the year. That suffices for
     // the only caller that cares, which is Date.
     if (ysec < startSec){
-        return (stdName, stdOffset, abs, startSec + abs, stdIsDST, true);
+        return (stdName, stdOffset, ystart, startSec + ystart, stdIsDST, true);
     } else 
     if (ysec >= endSec){
-        return (stdName, stdOffset, endSec + abs, abs + (int64)(365 * secondsPerDay), stdIsDST, true);
+        return (stdName, stdOffset, endSec + ystart, ystart + (int64)(365 * secondsPerDay), stdIsDST, true);
     } else {
-        return (dstName, dstOffset, startSec + abs, endSec + abs, dstIsDST, true);
+        return (dstName, dstOffset, startSec + ystart, endSec + ystart, dstIsDST, true);
     }
 }
 
@@ -602,7 +595,7 @@ internal static nint tzruleTime(nint year, rule r, nint off) {
             }
             d += 7;
         }
-        d += (nint)daysBefore[r.mon - 1];
+        d += (nint)daysBefore(((ΔMonth)r.mon));
         if (isLeap(year) && r.mon > 2) {
             d++;
         }

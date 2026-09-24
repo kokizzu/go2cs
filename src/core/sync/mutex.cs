@@ -46,9 +46,9 @@ partial class sync_package {
 // and no catch runs — which is what Go's throw/fatal do. What changes is the TEXT: Go's
 // `fatal error: <text>`, a blank line and a Go-spelled traceback, in place of a .NET exception dump
 // that merely happened to contain the first line.
-internal static void @throw(@string s) => FatalReport.Fatal(s, userFault: false);
+internal static partial void @throw(@string s) => FatalReport.Fatal(s, userFault: false);
 
-internal static void fatal(@string s) => FatalReport.Fatal(s, userFault: true);
+internal static partial void fatal(@string s) => FatalReport.Fatal(s, userFault: true);
 
 // A Mutex is a mutual exclusion lock.
 // The zero value for a Mutex is an unlocked mutex.

@@ -20,12 +20,6 @@ using Δio = io_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
 internal static ж<socktest.Switch> Ꮡsw = new StandardBox<socktest.Switch>(default(socktest.Switch));
 internal static ref socktest.Switch sw => ref Ꮡsw.Value;
 internal static ж<Δsync.Once> ᏑtestHookUninstaller = new StandardBox<Δsync.Once>(default(Δsync.Once));

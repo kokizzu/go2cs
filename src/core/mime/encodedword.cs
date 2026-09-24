@@ -16,54 +16,6 @@ using go.unicode;
 
 partial class mime_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 [GoType("num:byte")] partial struct WordEncoder;
 
 public static WordEncoder BEncoding => /* WordEncoder('b') */ 98;
@@ -270,7 +222,7 @@ internal static readonly @string upperhex = "0123456789ABCDEF"u8;
 }
 
 // DecodeHeader decodes all encoded-words of the given string. It returns an
-// error if and only if WordDecoder.CharsetReader of d returns an error.
+// error if and only if [WordDecoder.CharsetReader] of d returns an error.
 [GoRecv] public static (@string, error) DecodeHeader(this ref WordDecoder d, @string header) {
     // If there is no encoded-word, returns before creating a buffer.
     nint i = strings.Index(header, "=?"u8);

@@ -7,7 +7,7 @@ using static go.io.fs_package;
 using os = os_package;
 using pathpkg = path_package;
 using filepath = go.path.filepath_package;
-using reflect = reflect_package;
+using slices = slices_package;
 using testing = testing_package;
 using fstest = go.testing.fstest_package;
 using fs = go.io.fs_package;
@@ -16,18 +16,6 @@ using go.path;
 using go.testing;
 
 partial class fs_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
 
 [GoType] partial struct Node {
     internal @string name;
@@ -103,46 +91,27 @@ internal static error mark(fs.DirEntry entry, error err, ж<slice<error>> Ꮡerr
     return default!;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object findingWorkingDirˢ = (@string)"finding working dir:"u8;
-private static readonly object enteringTempDirˢ = (@string)"entering temp dir:"u8;
-
 public static void TestWalkDir(ж<testing.T> Ꮡt) {
-    GoFrame ᒐ = default;
-    try {
-        @string tmpDir = Ꮡt.TempDir();
-        var (origDir, err) = os.Getwd();
-        if (err != default!) {
-            Ꮡt.Fatal(findingWorkingDirˢ, err);
-        }
-        {
-            err = os.Chdir(tmpDir); if (err != default!) {
-                Ꮡt.Fatal(enteringTempDirˢ, err);
-            }
-        }
-        defer(os.Chdir, origDir, ref ᒐ);
-        var fsys = makeTree();
-        ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
-        errors = new slice<error>(0, 10);
-        var clear = true;
-        var markFn = (@string path, fs.DirEntry entry, error errΔ1) => mark(entry, errΔ1, Ꮡerrors, clear);
-        // Expect no errors.
-        err = WalkDir(fsys, "."u8, new Func<@string, fs.DirEntry, error, error>(markFn));
-        if (err != default!) {
-            Ꮡt.Fatalf("no error expected, found: %s"u8, err);
-        }
-        if (len(errors) != 0) {
-            Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
-        }
-        walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {
-            if ((~n).mark != 1) {
-                Ꮡt.Errorf("node %s mark = %d; expected 1"u8, path, (~n).mark);
-            }
-            n.Value.mark = 0;
-        });
+    Ꮡt.Chdir(Ꮡt.TempDir());
+    var fsys = makeTree();
+    ref var errors = ref heap<slice<error>>(out var Ꮡerrors);
+    errors = new slice<error>(0, 10);
+    var clear = true;
+    var markFn = (@string path, fs.DirEntry entry, error errΔ1) => mark(entry, errΔ1, Ꮡerrors, clear);
+    // Expect no errors.
+    var err = WalkDir(fsys, "."u8, new Func<@string, fs.DirEntry, error, error>(markFn));
+    if (err != default!) {
+        Ꮡt.Fatalf("no error expected, found: %s"u8, err);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    if (len(errors) != 0) {
+        Ꮡt.Fatalf("unexpected errors: %s"u8, errors);
+    }
+    walkTree(tree, (~tree).name, (@string path, ж<Node> n) => {
+        if ((~n).mark != 1) {
+            Ꮡt.Errorf("node %s mark = %d; expected 1"u8, path, (~n).mark);
+        }
+        n.Value.mark = 0;
+    });
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -181,7 +150,7 @@ public static void TestIssue51617(ж<testing.T> Ꮡt) {
             Ꮡt.Fatal(err);
         }
         var want = new @string[]{"."u8, "a"u8, "a/bad"u8, "a/next"u8}.slice();
-        if (!reflect.DeepEqual(saw, want)) {
+        if (!slices.Equal<slice<@string>, @string>(saw, want)) {
             Ꮡt.Errorf("got directories %v, want %v"u8, saw, want);
         }
     }

@@ -6,9 +6,9 @@
 //go:build amd64 || arm64 || loong64 || mips64 || mips64le || ppc64 || ppc64le || riscv64 || s390x || wasm
 namespace go;
 
-using math = runtime.@internal.math_package;
+using math = @internal.runtime.math_package;
 using @unsafe = unsafe_package;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 

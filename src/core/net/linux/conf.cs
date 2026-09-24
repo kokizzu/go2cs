@@ -9,67 +9,12 @@ using godebug = @internal.godebug_package;
 using stringslite = @internal.stringslite_package;
 using fs = go.io.fs_package;
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
-using syscall = syscall_package;
 using @internal;
 using go.io;
 
 partial class net_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
-    builtin.initPackage(typeof(@internal.stringslite_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 // The net package's name resolution is rather complicated.
 // There are two main approaches, go and cgo.
@@ -121,7 +66,7 @@ internal static mdnsTest mdnsAssumeDoesNotExist => 2;
 
 internal static ж<Δsync.Once> ᏑconfOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once confOnce => ref ᏑconfOnce.Value; // guards init of confVal via initConfVal
-internal static ж<conf> confVal = Ꮡ(new conf(goos: Δruntime.GOOS));
+internal static ж<conf> confVal = Ꮡ(new conf(goos: runtime.GOOS));
 
 // systemConf returns the machine's network configuration.
 internal static ж<conf> systemConf() {
@@ -149,25 +94,35 @@ internal static void initConfVal() {
                 if ((~confVal).dnsDebugLevel > 1) {
                     println((@string)"go package net: confVal.netCgo ="u8, (~confVal).netCgo, (@string)" netGo ="u8, (~confVal).netGo);
                 }
+                if (dnsMode != "go"u8 && dnsMode != "cgo"u8 && dnsMode != ""u8) {
+                    println((@string)"go package net: GODEBUG=netdns contains an invalid dns mode, ignoring it"u8);
+                }
                 switch (ᐧ) {
-                case {} when (~confVal).netGo: {
-                    if (netGoBuildTag){
-                        println((@string)"go package net: built with netgo build tag; using Go's DNS resolver"u8);
+                case {} when ᐧᐧ: {
+                    if (dnsMode == "cgo"u8){
+                        println((@string)"go package net: ignoring GODEBUG=netdns=cgo as the binary was compiled without support for the cgo resolver"u8);
                     } else {
-                        println((@string)"go package net: GODEBUG setting forcing use of Go's resolver"u8);
+                        println((@string)"go package net: using the Go DNS resolver"u8);
                     }
                     break;
                 }
-                case {} when ᐧᐧ: {
-                    println((@string)"go package net: cgo resolver not supported; using Go's DNS resolver"u8);
-                    break;
-                }
-                case {} when (~confVal).netCgo || (~confVal).preferCgo: {
-                    println((@string)"go package net: using cgo DNS resolver"u8);
+                case {} when netCgoBuildTag: {
+                    if (dnsMode == "go"u8){
+                        println((@string)"go package net: GODEBUG setting forcing use of the Go resolver"u8);
+                    } else {
+                        println((@string)"go package net: using the cgo DNS resolver"u8);
+                    }
                     break;
                 }
                 default: {
-                    println((@string)"go package net: dynamic selection of DNS resolver"u8);
+                    if (dnsMode == "go"u8){
+                        println((@string)"go package net: GODEBUG setting forcing use of the Go resolver"u8);
+                    } else 
+                    if (dnsMode == "cgo"u8){
+                        println((@string)"go package net: GODEBUG setting forcing use of the cgo resolver"u8);
+                    } else {
+                        println((@string)"go package net: dynamic selection of DNS resolver"u8);
+                    }
                     break;
                 }}
 
@@ -187,7 +142,7 @@ internal static void initConfVal() {
             return;
         }
         // The remaining checks are specific to Unix systems.
-        var exprᴛ1 = Δruntime.GOOS;
+        var exprᴛ1 = runtime.GOOS;
         if (exprᴛ1 == "plan9"u8 || exprᴛ1 == "windows"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
             return;
         }
@@ -196,14 +151,14 @@ internal static void initConfVal() {
         // prefer the cgo resolver.
         // Note that LOCALDOMAIN can change behavior merely by being
         // specified with the empty string.
-        var (_, localDomainDefined) = syscall.Getenv(localdomainˢ);
+        var (_, localDomainDefined) = os.LookupEnv(localdomainˢ);
         if (localDomainDefined || os.Getenv(resOptionsˢ) != ""u8 || os.Getenv(hostaliasesˢ) != ""u8) {
             confVal.Value.preferCgo = true;
             return;
         }
         // OpenBSD apparently lets you override the location of resolv.conf
         // with ASR_CONFIG. If we notice that, defer to libc.
-        if (Δruntime.GOOS == "openbsd"u8 && os.Getenv(asrConfigˢ) != ""u8) {
+        if (runtime.GOOS == "openbsd"u8 && os.Getenv(asrConfigˢ) != ""u8) {
             confVal.Value.preferCgo = true;
             return;
         }
@@ -215,7 +170,7 @@ internal static void initConfVal() {
 // goosPrefersCgo reports whether the GOOS value passed in prefers
 // the cgo resolver.
 internal static bool goosPrefersCgo() {
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "windows"u8 || exprᴛ1 == "plan9"u8) {
         return true;
     }
@@ -251,7 +206,7 @@ internal static bool goosPrefersCgo() {
     if (!cgoAvailable) {
         return true;
     }
-    if (Δruntime.GOOS == "plan9"u8) {
+    if (runtime.GOOS == "plan9"u8) {
         // TODO(bradfitz): for now we only permit use of the PreferGo
         // implementation when there's a non-nil Resolver with a
         // non-nil Dialer. This is a sign that the code is trying

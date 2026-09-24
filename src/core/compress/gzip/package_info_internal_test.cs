@@ -29,10 +29,10 @@ using static go.compress.gzip_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/gzip/fuzz_test.go", "fuzz_test.cs", "ABgiooKCgoKClIKClJaCgpSCgpSCgqiCgoKoloKCgoKWhIKAgqaAgqaCgoKUgoKUgIKkgII=")]
-[assembly: go.GoPositionMap("compress/gzip/gunzip_test.go", "gunzip_test.cs", "APoCmAbYhIKUgoKCgpSSgpSCgoKUgoKogoKCgpSClIKCgpSCggAKCvyCgpSCgpSSgqKCgpSUlLQADQyUkqKCpoSCgoKAgqiUgoKCloCCpIKCgpaAgsimgoIACAiCABIugoKCgoKUlIKAgqSC3IKUgoKCuIKC")]
+[assembly: go.GoPositionMap("compress/gzip/fuzz_test.go", "fuzz_test.cs", "ABgiooKCgoKClIKClJaCgpSCgpSCgqiCgoKoloKCgoKWhIKAgqaAgqaCgoKUgoKUgIKkgII=", "56-91:1")]
+[assembly: go.GoPositionMap("compress/gzip/gunzip_test.go", "gunzip_test.cs", "APoCmAbYhIKUgoKCgpSSgpSCgoKUgoKogoKCgpSClIKCgpSCggAKCvyCgpSCgpSSgqKCgpSUlLQADQyUkqKCpoSCgoKAgqiUgoKCloCCpIKCgpaAgsimgoIACAiCABIugoKCgoKUlIKAgqSC3IKUgoKCuIKC", "463-471:1")]
 [assembly: go.GoPositionMap("compress/gzip/gzip_test.go", "gzip_test.cs", "AA8ikoSAgqaCgpSAgqSCgpSClICCAAoMooSCgoKCgoCCpICCpoKClIKClIKUgpSClIKUgpSAgvqSgoKCgoKUgpaCgoCCpIKCAAgMogALHoKEgoKCgoKUgpaCgoKUgoKClIKClICCggAJCoKEgoKCgoSCgpaAgqaCgpaEgoKWgIKmgoKWgIL8koKCgoKCgoSCgpSCgriCgoKCgoKCgoKCggAHEIKAgoKkgqiShKKCgIKmgu6Agg==")]
-[assembly: go.GoPositionMap("compress/gzip/issue14937_test.go", "issue14937_test.cs", "ABw0AAwIgpSCloKClIKCgpSClJSCgpSUgpSCuKKCgoKUkoKCgpSSgg==")]
+[assembly: go.GoPositionMap("compress/gzip/issue14937_test.go", "issue14937_test.cs", "ABs0AAwIgpSEgoKUgoKClIKUlIKClJSClIK4ooKCgpSSgoKClJKC", "40-48:1")]
 // </GoSourcePositionMaps>
 
 namespace go.compress;
@@ -48,4 +48,27 @@ public static partial class gzip_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸflate() => builtin.initPackage(typeof(go.compress.flate_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -16,24 +16,6 @@ using go.image.@internal;
 
 partial class jpeg_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸimage() {
-    builtin.initPackage(typeof(image_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() {
-    builtin.initPackage(typeof(go.image.color_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸimageꓸinternalꓸimageutil() {
-    builtin.initPackage(typeof(go.image.@internal.imageutil_package));
-}
-
 [GoType("@string")] partial struct FormatError;
 
 public static @string Error(this FormatError e) {
@@ -511,7 +493,7 @@ loop:
             break;
         }
         case 1: {
-            if (n < 2 * blockSize) {
+            if (n < (nint)(2 * blockSize)) {
                 goto break_loop;
             }
             n -= 2 * blockSize;

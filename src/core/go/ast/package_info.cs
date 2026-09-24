@@ -176,14 +176,14 @@ using static go.go.ast_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/ast/ast.go", "ast.cs", "AFSKAYCigAAIEICigKSApIKCgpQAAhIACAKClIKCloLGloKklJSClJTI2JaCzIKCgoKmloKW+uqCuoKClIKClIKCpgASJoKClIKUpoKClIKUgpQAChaCgriClKaCgriAgqSosoKCgoKClKYAtAGgA5CigKKAooCigKKCgpSkgKKAooCigKKAooCigKKAooCigKKAooCigKKCkpSkgKKAooCkgKKAooKClKSAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooKClKSAooCigKjCoqKioqKioqKioqKioqKipKKioqKirtCmkKaQ1KKClACbAdoCkKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCkgKKAooKClKSAooCigKKCpICigKKAooKAgqSkgoKUpIKClICCpKSCgpSkgoCCpKSAooCigoCCpKSAooCigKjCoqKioqKioqKioqKioqKioqKiogApXpKClKSAooCkgoKUpoKAgqSClKSAqMKiABpYkKKAooCkgKKCgpSkgoKUqsKiACdUoKiigIKkAA0cgKKAAAIYAAoCgtaCgoKClpKCgoCCgIIACA6okoKCgpQ=")]
-[assembly: global::go.GoPositionMap("go/ast/commentmap.go", "commentmap.cs", "ACIikgAEFIKCgpSUyoCigpKkgKaSgpS0pIIADB4ACxiCpoKCgoKCAAUUooKs0oKCgpSCAAIkAA8CgpaWgoKCgpaChgAJEIKCgpiigqiUgIKCrtIAARK+tgAKBpS0goKUqIKW1MissoCCgqSssoKigIKklKqigoKUgqaCgpaCuIKClNqCgqiCgpTI1oSSgpSCgoKUloKCgoSSgIKUpJSC")]
+[assembly: global::go.GoPositionMap("go/ast/ast.go", "ast.cs", "AEiKAYCigAAIEICigKSApIKCgpQAAhIACAKClIKCloLGloKklJSClJTI2JaCzIKCgoKmloKW+uqCuoKClIKClIKCpgASJoKClIKUpoKClIKUgpQAChaCgriClKaCgriAgqSosoKCgoKClKYAtAG4A5CigKKAooCigKKCgpSkgKKAooCigKKAooCigKKAooCigKKAooCigKKCkpSkgKKAooCkgKKAooKClKSAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooKClKSAooCigKjCoqKioqKioqKioqKioqKipKKioqKirtCmkKaQ1KKClACbAdoCkKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCigKKAooCkgKKAooKClKSAooCigKKCpICigKKAooKAgqSkgoKUpIKClICCpKSCgpSkgoCCpKSAooCigoCCpKSAooCigKjCoqKioqKioqKioqKioqKioqKiogApXpKClKSAooCkgoKUpoKAgqSClKSAqMKiABpYkKKAooCkgKKCgpSkgoKUqsKiACdYwKzCgIKkAA0cgKKAAAIYAAoCgtaCgoKClpKCgoCCgIIACA6okoKCgpQ=")]
+[assembly: global::go.GoPositionMap("go/ast/commentmap.go", "commentmap.cs", "ABAikgAEFIKCgpSUqJKClLSkggAMHgALGIKmgoKCgoIABRSigqzSgoKClIIAAiQADwKClpaCgoKCloKGAAkQgoKCmKKCqJSAgoKu0gABEr62AAoGlLSCgpSogpbUyKyygIKCpKyygqKAgqSUqqKCgpSCpoKCloK4goKU2oKCqIKClMjWhJKClIKCgpSWgoKChJKAgpSklII=", "18-20:1;41-49:1;242-247:1;304-310:1")]
 [assembly: global::go.GoPositionMap("go/ast/filter.go", "filter.cs", "AAsgwgACFPIAAhLiAAQQooKCgoKmrLKUpICC1pSmsoKUgoKCgpSClIKCgpSUgoKUgqaClIKmgoKCgriCgoKUtICCpICCxoKUpqKClIKCgqamgpSkpKSClKSCgqSClKSCgqSUpoKUgoKCgpTGgoKUlNy2poKCgoKCpgACEuKmgpSCpJQAAhgACQKmgoKCgoKmggACGgAKAqaCgoKCpgAKLLKAlJSAgraAgtgABhL4goKCgpKCgoKCgpSCgoKUgqaMwoKCgoKCgoKUgpSCgpS4uJiSgoKCgoKCgqIACRSAgoKAlKamlJTYggAHEoKCgoKCpqqSgoKCgoKAAAcQguyCgqqSgoKCgoK6")]
-[assembly: global::go.GoPositionMap("go/ast/import.go", "import.cs", "ABMgwoKCppaUqIKCgpSCpoKWgoKCgoKC3IKmgoKClKaCgoKUpoKCgpSokoKUAAwauIKogoKogoKCgoKCgpSUgoKCgqaUgpSCuoKCqIKCgoKUlIK2gpSCAAYQgoKCgoKUgoKCgpS6goKClIKmloKCgpSCgoKCgtzMiA==")]
-[assembly: global::go.GoPositionMap("go/ast/print.go", "print.cs", "ACQsopSkAAIYAAkCpsQACRKCgILKgoKUgoTaogAOHrKClIKCgoKUpIKClIKCgriUgoKUAAgUsoCCAAQaAAoCgoKWlKaCgoKCgoKCgpSUpoiCgLKUgsiCgoKCgoKClJSmgIKCpIKCgoKCgoKUlKaCgoKCpoCCgoKCgpSCgsiCpoKWkqaSgrg=")]
-[assembly: global::go.GoPositionMap("go/ast/resolve.go", "resolve.cs", "ABoqgqaipsKClJSCgoCCpLiikoCCgrYABDQADQKClpKClICktILYgrqWpoKogoKCgoKUgoKCgoLegoKolIL+goKCusqUgoKCgoKogpaC")]
+[assembly: global::go.GoPositionMap("go/ast/import.go", "import.cs", "AA0gwoKCppaUqIKCgpSCpoKWgoKCgoKCzIKCgIKC7IKmgoKClKaCgoKUpoKCgpSokoKUAAwauIKogoKogoKCgoKCgpSUgoKCgqaUgpSCuoKCqIKCgoKUlIK2gpSCAAYQgoKCgoKUgoKCgpS6goKClIKmloKCgpSCgoKCgtzMiA==", "186-200:1;238-240:2")]
+[assembly: global::go.GoPositionMap("go/ast/print.go", "print.cs", "ABIsopSkAAIYAAkCpsQACRKCgILKgoKUgoTaogAOHrKClIKCgoKUpIKClIKCgriUgoKUAAgUsoCCAAQaAAoCgoKWlKaCgoKCgoKCgpSUpoiCgLKUgsiCgoKCgoKClJSmgIKCpIKCgoKCgoKUlKaCgoKCpoCCgoKCgpSCgsiCpoKWkqaSgrg=", "54-58:1")]
+[assembly: global::go.GoPositionMap("go/ast/resolve.go", "resolve.cs", "ABQqgqaipsKClJSCgoCCpLiikoCCgrYABDQADQKClpKClICktILYgrqWpoKogoKCgoKUgoKCgoLegoKolIL+goKCusqUgoKCgoKogpaC")]
 [assembly: global::go.GoPositionMap("go/ast/scope.go", "scope.cs", "ABg0koKssq7ygIKkqLKCgoKCgqaCACJIkqyygpSCgtiClKSCgtiCxoLGgsaCgIIACQwAHTaA")]
-[assembly: global::go.GoPositionMap("go/ast/walk.go", "walk.cs", "ABcmooIAAxgACAKAgtzM1oKUgoKUgpSCyAAJDqLIgraClLa2graCtoK2goKUgpSCyIKCyIK2traCtoK4kpS2toKUgpSCyLaCtu4ACAyStraCtraCtra2toLItoKUgoKCyIK2gpSClLaClIK2gpS2toKUgpSClLaClIKUgriSlIKUgoLIgpSCgpSCgsiClIKClIKC/pKUtoKUgpSCgoLKkpSCvLLYpsqCgpSuwgACENKCgoKUlA==")]
+[assembly: global::go.GoPositionMap("go/ast/walk.go", "walk.cs", "ABEmooIAAxgACAKAgtzM1oKUgoKUgpSCyAAJDqLIgraClLa2graCtoK2goKUgpSCyIKCyIK2traCtoK4kpS2toKUgpSCyLaCtu4ACAyStraCtraCtra2toLItoKUgoKCyIK2gpSClLaClIK2gpS2toKUgpSClLaClIKUgriSlIKUgoLIgpSCgpSCgsiClIKClIKC/pKUtoKUgpSCgoLKkpSCvLLYpsqCgpSuwgACENKCgoKUlA==", "381-390:1;383-389:1.1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -198,7 +198,6 @@ public static partial class ast_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct byInterval {}
     internal partial struct cgPos {}
     internal partial struct commentListReader {}
     internal partial struct localError {}
@@ -275,4 +274,24 @@ public static partial class ast_package
     public partial struct UnaryExpr {}
     public partial struct ValueSpec {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() => builtin.initPackage(typeof(global::go.go.scanner_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

@@ -4,12 +4,14 @@
 // Though the debug call function feature is not enabled on
 // ppc64, inserted ppc64 to avoid missing Go declaration error
 // for debugCallPanicked while building runtime.test
-//go:build amd64 || arm64 || ppc64le || ppc64
+//go:build amd64 || arm64 || loong64 || ppc64le || ppc64
 namespace go;
 
 using abi = @internal.abi_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -36,7 +38,7 @@ internal static @string debugCallCheck(uintptr pc) {
         return debugCallSystemStack;
     }
     {
-        var sp = getcallersp(); if (!((~getg()).stack.lo < sp && sp <= (~getg()).stack.hi)) {
+        var sp = sys.GetCallerSP(); if (!((~getg()).stack.lo < sp && sp <= (~getg()).stack.hi)) {
             // Fast syscalls (nanotime) and racecall switch to the
             // g0 stack without switching g. We can't safely make
             // a call in this state. (We can't even safely
@@ -99,7 +101,7 @@ internal static readonly @string inconsistentLockedmˢ = "inconsistent lockedm"u
 //go:nosplit
 internal static void debugCallWrap(uintptr dispatch) {
     uint32 lockedExt = default!;
-    var callerpc = getcallerpc();
+    var callerpc = sys.GetCallerPC();
     var gp = getg();
     // Lock ourselves to the OS thread.
     //

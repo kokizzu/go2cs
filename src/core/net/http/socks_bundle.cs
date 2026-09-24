@@ -58,15 +58,15 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
             var doneʗ2 = done;
             var errChʗ2 = errCh;
             goǃ(() => {
-                var selᴛ86 = ctx.Done();
-                var selᴛ87 = doneʗ2;
-                switch (select(ᐸꟷ(selᴛ86, ꓸꓸꓸ), ᐸꟷ(selᴛ87, ꓸꓸꓸ))) {
-                case 0 when selᴛ86.ꟷᐳ(out _): {
+                var selᴛ89 = ctx.Done();
+                var selᴛ90 = doneʗ2;
+                switch (select(ᐸꟷ(selᴛ89, ꓸꓸꓸ), ᐸꟷ(selᴛ90, ꓸꓸꓸ))) {
+                case 0 when selᴛ89.ꟷᐳ(out _): {
                     c.SetDeadline(socksaLongTimeAgo);
                     errChʗ2.ᐸꟷ(ctx.Err());
                     break;
                 }
-                case 1 when selᴛ87.ꟷᐳ(out _): {
+                case 1 when selᴛ90.ꟷᐳ(out _): {
                     errChʗ2.ᐸꟷ(default!);
                     break;
                 }}

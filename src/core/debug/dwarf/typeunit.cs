@@ -18,7 +18,7 @@ partial class dwarf_package {
     internal partial ref unit unit { get; }
     internal Offset toff; // Offset to signature type within data.
     internal @string name; // Name of .debug_type section.
-    internal ΔType cache; // Cache the type, nil to start.
+    internal ΔType cache;   // Cache the type, nil to start.
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

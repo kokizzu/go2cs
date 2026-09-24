@@ -11,7 +11,7 @@ namespace go;
 
 using itoa = @internal.itoa_package;
 using runtimesyscall = @internal.runtime.syscall_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 using go.sync;
@@ -179,7 +179,7 @@ public static error /*err*/ Faccessat(nint dirfd, @string path, uint32 mode, nin
     // its seccomp policy [1] on any version of Android as of 2022-12-20.
     //
     // [1] https://cs.android.com/android/platform/superproject/+/master:bionic/libc/SECCOMP_BLOCKLIST_APP.TXT;l=4;drc=dbb8670dfdcc677f7e3b9262e93800fa14c4e417
-    if (Δruntime.GOOS != "android"u8) {
+    if (runtime.GOOS != "android"u8) {
         {
             var errΔ1 = faccessat2(dirfd, path, mode, flags); if (!AreEqual(errΔ1, ENOSYS) && !AreEqual(errΔ1, EPERM)) {
                 return errΔ1;
@@ -582,6 +582,10 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrNetl
 }
 
 // go2cs generated this placeholder — func anyToSockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+public static (nint nfd, Sockaddr sa, error err) Accept(nint fd) {
+    return Accept4(fd, 0);
+}
 
 // go2cs generated this placeholder — func Accept4 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
@@ -1182,6 +1186,16 @@ public static error /*err*/ Munmap(slice<byte> b) {
 //sys	Munlock(b []byte) (err error)
 //sys	Mlockall(flags int) (err error)
 //sys	Munlockall() (err error)
+public static error /*err*/ Getrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
+    // prlimit1 is the same as prlimit when newlimit == nil
+    return prlimit1(0, resource, nil, Ꮡrlim);
+}
+
+// setrlimit sets a resource limit.
+// The Setrlimit function is in rlimit.go, and calls this one.
+internal static error /*err*/ setrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
+    return prlimit1(0, resource, Ꮡrlim, nil);
+}
 
 // prlimit changes a resource limit. We use a single definition so that
 // we can tell StartProcess to not restore the original NOFILE limit.

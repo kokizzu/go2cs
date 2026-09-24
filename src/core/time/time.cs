@@ -54,8 +54,8 @@
 // On some systems the monotonic clock will stop if the computer goes to sleep.
 // On such a system, t.Sub(u) may not accurately reflect the actual
 // time that passed between t and u. The same applies to other functions and
-// methods that subtract times, such as [Since], [Until], [Before], [After],
-// [Add], [Sub], [Equal] and [Compare]. In some cases, you may need to strip
+// methods that subtract times, such as [Since], [Until], [Time.Before], [Time.After],
+// [Time.Add], [Time.Equal] and [Time.Compare]. In some cases, you may need to strip
 // the monotonic clock to get accurate results.
 //
 // Because the monotonic clock reading has no meaning outside
@@ -91,7 +91,9 @@
 namespace go;
 
 using errors = errors_package;
+using bits = math.bits_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname
+using math;
 
 partial class time_package {
 
@@ -118,9 +120,9 @@ partial class time_package {
 // these methods does not change the actual instant it represents, only the time
 // zone in which to interpret it.
 //
-// Representations of a Time value saved by the [Time.GobEncode], [Time.MarshalBinary],
-// [Time.MarshalJSON], and [Time.MarshalText] methods store the [Time.Location]'s offset, but not
-// the location name. They therefore lose information about Daylight Saving Time.
+// Representations of a Time value saved by the [Time.GobEncode], [Time.MarshalBinary], [Time.AppendBinary],
+// [Time.MarshalJSON], [Time.MarshalText] and [Time.AppendText] methods store the [Time.Location]'s offset,
+// but not the location name. They therefore lose information about Daylight Saving Time.
 //
 // In addition to the required “wall clock” reading, a Time may contain an optional
 // reading of the current process's monotonic clock, to provide additional precision
@@ -257,6 +259,12 @@ internal static UntypedInt nsecShift => 30;
     return t.ext;
 }
 
+// IsZero reports whether t represents the zero time instant,
+// January 1, year 1, 00:00:00 UTC.
+public static bool IsZero(this Time t) {
+    return t.sec() == 0 && t.nsec() == 0;
+}
+
 // After reports whether the time instant t is after u.
 public static bool After(this Time t, Time u) {
     if ((uint64)((uint64)(t.wall & u.wall) & (uint64)hasMonotonic) != 0) {
@@ -358,7 +366,7 @@ public static @string String(this ΔWeekday d) {
     return "%!Weekday("u8 + ((sstring)(buf[(int)(n)..])) + ")"u8;
 }
 
-// Computations on time.
+// Computations on Times
 //
 // The zero value for a Time is defined to be
 //	January 1, year 1, 00:00:00.000000000 UTC
@@ -404,22 +412,22 @@ public static @string String(this ΔWeekday d) {
 //
 // The calendar runs on an exact 400 year cycle: a 400-year calendar
 // printed for 1970-2369 will apply as well to 2370-2769. Even the days
-// of the week match up. It simplifies the computations to choose the
+// of the week match up. It simplifies date computations to choose the
 // cycle boundaries so that the exceptional years are always delayed as
-// long as possible. That means choosing a year equal to 1 mod 400, so
-// that the first leap year is the 4th year, the first missed leap year
-// is the 100th year, and the missed missed leap year is the 400th year.
-// So we'd prefer instead to print a calendar for 2001-2400 and reuse it
-// for 2401-2800.
+// long as possible: March 1, year 0 is such a day:
+// the first leap day (Feb 29) is four years minus one day away,
+// the first multiple-of-4 year without a Feb 29 is 100 years minus one day away,
+// and the first multiple-of-100 year with a Feb 29 is 400 years minus one day away.
+// March 1 year Y for any Y = 0 mod 400 is also such a day.
 //
 // Finally, it's convenient if the delta between the Unix epoch and
 // long-ago epoch is representable by an int64 constant.
 //
 // These three considerations—choose an epoch as early as possible, that
-// uses a year equal to 1 mod 400, and that is no more than 2⁶³ seconds
-// earlier than 1970—bring us to the year -292277022399. We refer to
-// this year as the absolute zero year, and to times measured as a uint64
-// seconds since this year as absolute times.
+// starts on March 1 of a year equal to 0 mod 400, and that is no more than
+// 2⁶³ seconds earlier than 1970—bring us to the year -292277022400.
+// We refer to this moment as the absolute zero instant, and to times
+// measured as a uint64 seconds since this year as absolute times.
 //
 // Times measured as an int64 seconds since the year 1—the representation
 // used for Time's sec field—are called internal times.
@@ -433,27 +441,318 @@ public static @string String(this ΔWeekday d) {
 // west of UTC, since it is year 0. It doesn't seem tenable to say that
 // printing the zero time correctly isn't supported in half the time
 // zones. By comparison, it's reasonable to mishandle some times in
-// the year -292277022399.
+// the year -292277022400.
 //
 // All this is opaque to clients of the API and can be changed if a
 // better implementation presents itself.
-internal static UntypedInt absoluteZeroYear => -292277022399;
+//
+// The date calculations are implemented using the following clever math from
+// Cassio Neri and Lorenz Schneider, “Euclidean affine functions and their
+// application to calendar algorithms,” SP&E 2023. https://doi.org/10.1002/spe.3172
+//
+// Define a “calendrical division” (f, f°, f*) to be a triple of functions converting
+// one time unit into a whole number of larger units and the remainder and back.
+// For example, in a calendar with no leap years, (d/365, d%365, y*365) is the
+// calendrical division for days into years:
+//
+//	(f)  year := days/365
+//	(f°) yday := days%365
+//	(f*) days := year*365 (+ yday)
+//
+// Note that f* is usually the “easy” function to write: it's the
+// calendrical multiplication that inverts the more complex division.
+//
+// Neri and Schneider prove that when f* takes the form
+//
+//	f*(n) = (a n + b) / c
+//
+// using integer division rounding down with a ≥ c > 0,
+// which they call a Euclidean affine function or EAF, then:
+//
+//	f(n) = (c n + c - b - 1) / a
+//	f°(n) = (c n + c - b - 1) % a / c
+//
+// This gives a fairly direct calculation for any calendrical division for which
+// we can write the calendrical multiplication in EAF form.
+// Because the epoch has been shifted to March 1, all the calendrical
+// multiplications turn out to be possible to write in EAF form.
+// When a date is broken into [century, cyear, amonth, mday],
+// with century, cyear, and mday 0-based,
+// and amonth 3-based (March = 3, ..., January = 13, February = 14),
+// the calendrical multiplications written in EAF form are:
+//
+//	yday = (153 (amonth-3) + 2) / 5 = (153 amonth - 457) / 5
+//	cday = 365 cyear + cyear/4 = 1461 cyear / 4
+//	centurydays = 36524 century + century/4 = 146097 century / 4
+//	days = centurydays + cday + yday + mday.
+//
+// We can only handle one periodic cycle per equation, so the year
+// calculation must be split into [century, cyear], handling both the
+// 100-year cycle and the 400-year cycle.
+//
+// The yday calculation is not obvious but derives from the fact
+// that the March through January calendar repeats the 5-month
+// 153-day cycle 31, 30, 31, 30, 31 (we don't care about February
+// because yday only ever count the days _before_ February 1,
+// since February is the last month).
+//
+// Using the rule for deriving f and f° from f*, these multiplications
+// convert to these divisions:
+//
+//	century := (4 days + 3) / 146097
+//	cdays := (4 days + 3) % 146097 / 4
+//	cyear := (4 cdays + 3) / 1461
+//	ayday := (4 cdays + 3) % 1461 / 4
+//	amonth := (5 ayday + 461) / 153
+//	mday := (5 ayday + 461) % 153 / 5
+//
+// The a in ayday and amonth stands for absolute (March 1-based)
+// to distinguish from the standard yday (January 1-based).
+//
+// After computing these, we can translate from the March 1 calendar
+// to the standard January 1 calendar with branch-free math assuming a
+// branch-free conversion from bool to int 0 or 1, denoted int(b) here:
+//
+//	isJanFeb := int(yday >= marchThruDecember)
+//	month := amonth - isJanFeb*12
+//	year := century*100 + cyear + isJanFeb
+//	isLeap := int(cyear%4 == 0) & (int(cyear != 0) | int(century%4 == 0))
+//	day := 1 + mday
+//	yday := 1 + ayday + 31 + 28 + isLeap&^isJanFeb - 365*isJanFeb
+//
+// isLeap is the standard leap-year rule, but the split year form
+// makes the divisions all reduce to binary masking.
+// Note that day and yday are 1-based, in contrast to mday and ayday.
+
+// To keep the various units separate, we define integer types
+// for each. These are never stored in interfaces nor allocated,
+// so their type information does not appear in Go binaries.
+internal static UntypedInt secondsPerMinute => 60;
+
+internal static UntypedInt secondsPerHour => /* 60 * secondsPerMinute */ 3600;
+
+internal static UntypedInt secondsPerDay => /* 24 * secondsPerHour */ 86400;
+
+internal static UntypedInt secondsPerWeek => /* 7 * secondsPerDay */ 604800;
+
+internal static UntypedInt daysPer400Years => /* 365*400 + 97 */ 146097;
+
+internal static UntypedInt marchThruDecember => /* 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31 */ 306;
+
+internal static UntypedInt absoluteYears => 292277022400;
+
 internal static UntypedInt internalYear => 1;
-internal const int64 absoluteToInternal = /* (absoluteZeroYear - internalYear) * 365.2425 * secondsPerDay */ -9223371966579724800;
-internal const int64 internalToAbsolute = /* -absoluteToInternal */ 9223371966579724800;
+
+internal const int64 absoluteToInternal = /* -(absoluteYears*365.2425 + marchThruDecember) * secondsPerDay */ -9223371966606163200;
+
+internal const int64 internalToAbsolute = /* -absoluteToInternal */ 9223371966606163200;
+
 internal const int64 unixToInternal = /* (1969*365 + 1969/4 - 1969/100 + 1969/400) * secondsPerDay */ 62135596800;
+
 internal const int64 internalToUnix = /* -unixToInternal */ -62135596800;
+
+internal const int64 absoluteToUnix = /* absoluteToInternal + internalToUnix */ -9223372028741760000;
+
+internal const int64 unixToAbsolute = /* unixToInternal + internalToAbsolute */ 9223372028741760000;
+
 internal const int64 wallToInternal = /* (1884*365 + 1884/4 - 1884/100 + 1884/400) * secondsPerDay */ 59453308800;
 
-// IsZero reports whether t represents the zero time instant,
-// January 1, year 1, 00:00:00 UTC.
-public static bool IsZero(this Time t) {
-    return t.sec() == 0 && t.nsec() == 0;
+[GoType("num:uint64")] partial struct absSeconds;
+
+[GoType("num:uint64")] partial struct absDays;
+
+[GoType("num:uint64")] partial struct absCentury;
+
+[GoType("num:nint")] partial struct absCyear;
+
+[GoType("num:nint")] partial struct absYday;
+
+[GoType("num:nint")] partial struct absMonth;
+
+[GoType("num:nint")] partial struct absLeap;
+
+[GoType("num:nint")] partial struct absJanFeb;
+
+// dateToAbsDays takes a standard year/month/day and returns the
+// number of days from the absolute epoch to that day.
+// The days argument can be out of range and in particular can be negative.
+internal static absDays dateToAbsDays(int64 year, ΔMonth month, nint day) {
+    // See “Computations on Times” comment above.
+    var amonth = (uint32)(nint)month;
+    var janFeb = (uint32)0;
+    if (amonth < 3) {
+        janFeb = 1;
+    }
+    amonth += 12 * janFeb;
+    var y = (uint64)year - (uint64)janFeb + (uint64)absoluteYears;
+    // For amonth is in the range [3,14], we want:
+    //
+    //	ayday := (153*amonth - 457) / 5
+    //
+    // (See the “Computations on Times” comment above
+    // as well as Neri and Schneider, section 7.)
+    //
+    // That is equivalent to:
+    //
+    //	ayday := (979*amonth - 2919) >> 5
+    //
+    // and the latter form uses a couple fewer instructions,
+    // so use it, saving a few cycles.
+    // See Neri and Schneider, section 8.3
+    // for more about this optimization.
+    //
+    // (Note that there is no saved division, because the compiler
+    // implements / 5 without division in all cases.)
+    var ayday = ((979 * amonth - 2919) >> (int)(5));
+    var century = y / 100;
+    var cyear = (uint32)(y % 100);
+    var cday = 1461 * cyear / 4;
+    var centurydays = 146097 * century / 4;
+    return ((absDays)(centurydays + (uint64)((int64)(cday + ayday) + (int64)day - 1)));
 }
 
-// abs returns the time t as an absolute time, adjusted by the zone offset.
+// days converts absolute seconds to absolute days.
+internal static absDays days(this absSeconds abs) {
+    return ((absDays)(uint64)(abs / (uint64)secondsPerDay));
+}
+
+// split splits days into century, cyear, ayday.
+internal static (absCentury century, absCyear cyear, absYday ayday) split(this absDays days) {
+    absCentury century = default!;
+    absCyear cyear = default!;
+    absYday ayday = default!;
+
+    // See “Computations on Times” comment above.
+    var d = 4 * (uint64)days + 3;
+    century = ((absCentury)(d / 146097));
+    // This should be
+    //	cday := uint32(d % 146097) / 4
+    //	cd := 4*cday + 3
+    // which is to say
+    //	cday := uint32(d % 146097) >> 2
+    //	cd := cday<<2 + 3
+    // but of course (x>>2<<2)+3 == x|3,
+    // so do that instead.
+    var cd = (uint32)((uint32)(d % 146097) | 3);
+    // For cdays in the range [0,146097] (100 years), we want:
+    //
+    //	cyear := (4 cdays + 3) / 1461
+    //	yday := (4 cdays + 3) % 1461 / 4
+    //
+    // (See the “Computations on Times” comment above
+    // as well as Neri and Schneider, section 7.)
+    //
+    // That is equivalent to:
+    //
+    //	cyear := (2939745 cdays) >> 32
+    //	yday := (2939745 cdays) & 0xFFFFFFFF / 2939745 / 4
+    //
+    // so do that instead, saving a few cycles.
+    // See Neri and Schneider, section 8.3
+    // for more about this optimization.
+    var (hi, lo) = bits.Mul32(2939745, (uint32)cd);
+    cyear = ((absCyear)(nint)hi);
+    ayday = ((absYday)(nint)(lo / 2939745 / 4));
+    return (century, cyear, ayday);
+}
+
+// split splits ayday into absolute month and standard (1-based) day-in-month.
+internal static (absMonth m, nint mday) split(this absYday ayday) {
+    // See “Computations on Times” comment above.
+    //
+    // For yday in the range [0,366],
+    //
+    //	amonth := (5 yday + 461) / 153
+    //	mday := (5 yday + 461) % 153 / 5
+    //
+    // is equivalent to:
+    //
+    //	amonth = (2141 yday + 197913) >> 16
+    //	mday = (2141 yday + 197913) & 0xFFFF / 2141
+    //
+    // so do that instead, saving a few cycles.
+    // See Neri and Schneider, section 8.3.
+    var d = 2141 * (uint32)(nint)ayday + 197913;
+    return (((absMonth)(nint)((d >> (int)(16)))), 1 + (nint)(((uint32)(d & 0xFFFF)) / 2141));
+}
+
+// janFeb returns 1 if the March 1-based ayday is in January or February, 0 otherwise.
+internal static absJanFeb janFeb(this absYday ayday) {
+    // See “Computations on Times” comment above.
+    absJanFeb jf = ((absJanFeb)0);
+    if (ayday >= marchThruDecember) {
+        jf = 1;
+    }
+    return jf;
+}
+
+// month returns the standard Month for (m, janFeb)
+internal static ΔMonth month(this absMonth m, absJanFeb janFeb) {
+    // See “Computations on Times” comment above.
+    return ((ΔMonth)(nint)m) - ((ΔMonth)(nint)janFeb) * 12;
+}
+
+// leap returns 1 if (century, cyear) is a leap year, 0 otherwise.
+internal static absLeap leap(this absCentury century, absCyear cyear) {
+    // See “Computations on Times” comment above.
+    nint y4ok = 0;
+    if (cyear % 4 == 0) {
+        y4ok = 1;
+    }
+    nint y100ok = 0;
+    if (cyear != 0) {
+        y100ok = 1;
+    }
+    nint y400ok = 0;
+    if (century % 4 == 0) {
+        y400ok = 1;
+    }
+    return ((absLeap)((nint)(y4ok & ((nint)(y100ok | y400ok)))));
+}
+
+// year returns the standard year for (century, cyear, janFeb).
+internal static nint year(this absCentury century, absCyear cyear, absJanFeb janFeb) {
+    // See “Computations on Times” comment above.
+    return (nint)((uint64)century * 100 - (uint64)absoluteYears) + (nint)cyear + (nint)janFeb;
+}
+
+// yday returns the standard 1-based yday for (ayday, janFeb, leap).
+internal static nint yday(this absYday ayday, absJanFeb janFeb, absLeap leap) {
+    // See “Computations on Times” comment above.
+    return (nint)ayday + (1 + 31 + 28) + (nint)((nint)leap & ~(nint)janFeb) - 365 * (nint)janFeb;
+}
+
+// date converts days into standard year, month, day.
+internal static (nint year, ΔMonth month, nint day) date(this absDays days) {
+    nint year = default!;
+    ΔMonth month = default!;
+    nint day = default!;
+
+    var (century, cyear, ayday) = days.split();
+    (var amonth, day) = ayday.split();
+    absJanFeb janFeb = ayday.janFeb();
+    year = century.year(cyear, janFeb);
+    month = amonth.month(janFeb);
+    return (year, month, day);
+}
+
+// yearYday converts days into the standard year and 1-based yday.
+internal static (nint year, nint yday) yearYday(this absDays days) {
+    nint year = default!;
+    nint yday = default!;
+
+    var (century, cyear, ayday) = days.split();
+    absJanFeb janFeb = ayday.janFeb();
+    year = century.year(cyear, janFeb);
+    yday = ayday.yday(janFeb, century.leap(cyear));
+    return (year, yday);
+}
+
+// absSec returns the time t as an absolute seconds, adjusted by the zone offset.
 // It is called when computing a presentation property like Month or Hour.
-internal static uint64 abs(this Time t) {
+// We'd rather call it abs, but there are linknames to abs that make that problematic.
+// See timeAbs below.
+internal static absSeconds absSec(this Time t) {
     var l = t.loc;
     // Avoid function calls when possible.
     if (l == nil || l == ᏑlocalLoc) {
@@ -468,7 +767,7 @@ internal static uint64 abs(this Time t) {
             sec += (int64)offset;
         }
     }
-    return (uint64)(sec + (9223372028715321600L));
+    return ((absSeconds)(uint64)(sec + (9223372028741760000L)));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -476,10 +775,10 @@ internal static readonly @string utcˢ = "UTC"u8;
 
 // locabs is a combination of the Zone and abs methods,
 // extracting both return values from a single zone lookup.
-internal static (@string name, nint offset, uint64 abs) locabs(this Time t) {
+internal static (@string name, nint offset, absSeconds abs) locabs(this Time t) {
     @string name = default!;
     nint offset = default!;
-    uint64 abs = default!;
+    absSeconds abs = default!;
 
     var l = t.loc;
     if (l == nil || l == ᏑlocalLoc) {
@@ -498,48 +797,45 @@ internal static (@string name, nint offset, uint64 abs) locabs(this Time t) {
     } else {
         name = utcˢ;
     }
-    abs = (uint64)(sec + (9223372028715321600L));
+    abs = ((absSeconds)(uint64)(sec + (9223372028741760000L)));
     return (name, offset, abs);
 }
 
 // Date returns the year, month, and day in which t occurs.
 public static (nint year, ΔMonth month, nint day) Date(this Time t) {
-    nint year = default!;
-    ΔMonth month = default!;
-    nint day = default!;
-
-    (year, month, day, _) = t.date(true);
-    return (year, month, day);
+    return t.absSec().days().date();
 }
 
 // Year returns the year in which t occurs.
 public static nint Year(this Time t) {
-    var (year, _, _, _) = t.date(false);
-    return year;
+    var (century, cyear, ayday) = t.absSec().days().split();
+    absJanFeb janFeb = ayday.janFeb();
+    return century.year(cyear, janFeb);
 }
 
 // Month returns the month of the year specified by t.
 public static ΔMonth Month(this Time t) {
-    var (_, month, _, _) = t.date(true);
-    return month;
+    var (_, _, ayday) = t.absSec().days().split();
+    var (amonth, _) = ayday.split();
+    return amonth.month(ayday.janFeb());
 }
 
 // Day returns the day of the month specified by t.
 public static nint Day(this Time t) {
-    var (_, _, day, _) = t.date(true);
+    var (_, _, ayday) = t.absSec().days().split();
+    var (_, day) = ayday.split();
     return day;
 }
 
 // Weekday returns the day of the week specified by t.
 public static ΔWeekday Weekday(this Time t) {
-    return absWeekday(t.abs());
+    return t.absSec().days().weekday();
 }
 
-// absWeekday is like Weekday but operates on an absolute time.
-internal static ΔWeekday absWeekday(uint64 abs) {
-    // January 1 of the absolute year, like January 1 of 2001, was a Monday.
-    var sec = (abs + (uint64)((uint64)(nint)Monday * (uint64)secondsPerDay)) % (uint64)secondsPerWeek;
-    return ((ΔWeekday)((nint)sec / (nint)secondsPerDay));
+// weekday returns the day of the week specified by days.
+internal static ΔWeekday weekday(this absDays days) {
+    // March 1 of the absolute year, like March 1 of 2000, was a Wednesday.
+    return ((ΔWeekday)(nint)(((uint64)days + (uint64)(nint)Wednesday) % 7));
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which t occurs.
@@ -558,40 +854,24 @@ public static (nint year, nint week) ISOWeek(this Time t) {
     // 1      2       3         4        5      6        7
     // +3     +2      +1        0        -1     -2       -3
     // the offset to Thursday
-    var abs = t.abs();
-    ΔWeekday d = Thursday - absWeekday(abs);
-    // handle Sunday
-    if (d == 4) {
-        d = -3;
-    }
-    // find the Thursday of the calendar week
-    abs += (uint64)(nint)d * (uint64)secondsPerDay;
-    (year, _, _, var yday) = absDate(abs, false);
-    return (year, yday / 7 + 1);
+    var days = t.absSec().days();
+    var thu = days + ((absDays)(uint64)((nint)(Thursday - ((days - 1).weekday() + 1))));
+    (year, var yday) = thu.yearYday();
+    return (year, (yday - 1) / 7 + 1);
 }
 
 // Clock returns the hour, minute, and second within the day specified by t.
 public static (nint hour, nint min, nint sec) Clock(this Time t) {
-    return absClock(t.abs());
+    return t.absSec().clock();
 }
 
-// absClock is like clock but operates on an absolute time.
-//
-// absClock should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/phuslu/log
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname absClock
-internal static (nint hour, nint min, nint sec) absClock(uint64 abs) {
+// clock returns the hour, minute, and second within the day specified by abs.
+internal static (nint hour, nint min, nint sec) clock(this absSeconds abs) {
     nint hour = default!;
     nint min = default!;
     nint sec = default!;
 
-    sec = (nint)(abs % (uint64)secondsPerDay);
+    sec = (nint)(uint64)(abs % (uint64)secondsPerDay);
     hour = sec / (nint)secondsPerHour;
     sec -= hour * (nint)secondsPerHour;
     min = sec / (nint)secondsPerMinute;
@@ -601,17 +881,17 @@ internal static (nint hour, nint min, nint sec) absClock(uint64 abs) {
 
 // Hour returns the hour within the day specified by t, in the range [0, 23].
 public static nint Hour(this Time t) {
-    return (nint)(t.abs() % (uint64)secondsPerDay) / (nint)secondsPerHour;
+    return (nint)(uint64)(t.absSec() % (uint64)secondsPerDay) / (nint)secondsPerHour;
 }
 
 // Minute returns the minute offset within the hour specified by t, in the range [0, 59].
 public static nint Minute(this Time t) {
-    return (nint)(t.abs() % (uint64)secondsPerHour) / (nint)secondsPerMinute;
+    return (nint)(uint64)(t.absSec() % (uint64)secondsPerHour) / (nint)secondsPerMinute;
 }
 
 // Second returns the second offset within the minute specified by t, in the range [0, 59].
 public static nint Second(this Time t) {
-    return (nint)(t.abs() % (uint64)secondsPerMinute);
+    return (nint)(uint64)(t.absSec() % (uint64)secondsPerMinute);
 }
 
 // Nanosecond returns the nanosecond offset within the second specified by t,
@@ -623,8 +903,8 @@ public static nint Nanosecond(this Time t) {
 // YearDay returns the day of the year specified by t, in the range [1,365] for non-leap years,
 // and [1,366] in leap years.
 public static nint YearDay(this Time t) {
-    var (_, _, _, yday) = t.date(false);
-    return yday + 1;
+    var (_, yday) = t.absSec().days().yearYday();
+    return yday;
 }
 
 [GoType("num:int64")] partial struct Duration;
@@ -674,7 +954,7 @@ internal static nint format(this Duration d, [GoArrayDims(32)] ж<array<byte>> �
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
     // Largest time is 2540400h10m10.000000000s
-    nint w = len(buf);
+    nint w = 32;
     var u = (uint64)(int64)d;
     var neg = d < 0;
     if (neg) {
@@ -880,7 +1160,8 @@ public static Duration Round(this Duration d, Duration m) {
 }
 
 // Abs returns the absolute value of d.
-// As a special case, [math.MinInt64] is converted to [math.MaxInt64].
+// As a special case, Duration([math.MinInt64]) is converted to Duration([math.MaxInt64]),
+// reducing its magnitude by 1 nanosecond.
 public static Duration Abs(this Duration d) {
     switch (ᐧ) {
     case {} when d >= 0: {
@@ -998,159 +1279,67 @@ public static Time AddDate(this Time t, nint years, nint months, nint days) {
     return Date(year + years, month + ((ΔMonth)months), day + days, hour, min, sec, (nint)t.nsec(), t.Location());
 }
 
-internal static UntypedInt secondsPerMinute => 60;
-internal static UntypedInt secondsPerHour => /* 60 * secondsPerMinute */ 3600;
-internal static UntypedInt secondsPerDay => /* 24 * secondsPerHour */ 86400;
-internal static UntypedInt secondsPerWeek => /* 7 * secondsPerDay */ 604800;
-internal static UntypedInt daysPer400Years => /* 365*400 + 97 */ 146097;
-internal static UntypedInt daysPer100Years => /* 365*100 + 24 */ 36524;
-internal static UntypedInt daysPer4Years => /* 365*4 + 1 */ 1461;
-
-// date computes the year, day of year, and when full=true,
-// the month and day in which t occurs.
-internal static (nint year, ΔMonth month, nint day, nint yday) date(this Time t, bool full) {
-    return absDate(t.abs(), full);
+// daysBefore returns the number of days in a non-leap year before month m.
+// daysBefore(December+1) returns 365.
+internal static nint daysBefore(ΔMonth m) {
+    nint adj = 0;
+    if (m >= March) {
+        adj = -2;
+    }
+    // With the -2 adjustment after February,
+    // we need to compute the running sum of:
+    //	0  31  30  31  30  31  30  31  31  30  31  30  31
+    // which is:
+    //	0  31  61  92 122 153 183 214 245 275 306 336 367
+    // This is almost exactly 367/12×(m-1) except for the
+    // occasonal off-by-one suggesting there may be an
+    // integer approximation of the form (a×m + b)/c.
+    // A brute force search over small a, b, c finds that
+    // (214×m - 211) / 7 computes the function perfectly.
+    return (214 * (nint)m - 211) / 7 + adj;
 }
-
-// absDate is like date but operates on an absolute time.
-//
-// absDate should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/phuslu/log
-//   - gitee.com/quant1x/gox
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname absDate
-internal static (nint year, ΔMonth month, nint day, nint yday) absDate(uint64 abs, bool full) {
-    nint year = default!;
-    ΔMonth month = default!;
-    nint day = default!;
-    nint yday = default!;
-
-    // Split into time and day.
-    var d = abs / (uint64)secondsPerDay;
-    // Account for 400 year cycles.
-    var n = d / (uint64)daysPer400Years;
-    var y = 400 * n;
-    d -= (uint64)daysPer400Years * n;
-    // Cut off 100-year cycles.
-    // The last cycle has one extra leap year, so on the last day
-    // of that year, day / daysPer100Years will be 4 instead of 3.
-    // Cut it back down to 3 by subtracting n>>2.
-    n = d / (uint64)daysPer100Years;
-    n -= (n >> (int)(2));
-    y += 100 * n;
-    d -= (uint64)daysPer100Years * n;
-    // Cut off 4-year cycles.
-    // The last cycle has a missing leap year, which does not
-    // affect the computation.
-    n = d / (uint64)daysPer4Years;
-    y += 4 * n;
-    d -= (uint64)daysPer4Years * n;
-    // Cut off years within a 4-year cycle.
-    // The last year is a leap year, so on the last day of that year,
-    // day / 365 will be 4 instead of 3. Cut it back down to 3
-    // by subtracting n>>2.
-    n = d / 365;
-    n -= (n >> (int)(2));
-    y += n;
-    d -= 365 * n;
-    year = (nint)((int64)y + (int64)absoluteZeroYear);
-    yday = (nint)d;
-    if (!full) {
-        return (year, month, day, yday);
-    }
-    day = yday;
-    if (isLeap(year)) {
-        // Leap year
-        switch (ᐧ) {
-        case {} when day > 31 + 29 - 1: {
-            day--;
-            break;
-        }
-        case {} when day == 31 + 29 - 1: {
-            month = February;
-            day = 29;
-            return (year, month, day, yday);
-        }}
-
-    }
-    // After leap day; pretend it wasn't there.
-    // Leap day.
-    // Estimate month on assumption that every month has 31 days.
-    // The estimate may be too low by at most one month, so adjust.
-    month = ((ΔMonth)(day / 31));
-    nint end = (nint)daysBefore[month + 1];
-    nint begin = default!;
-    if (day >= end){
-        month++;
-        begin = end;
-    } else {
-        begin = (nint)daysBefore[month];
-    }
-    month++; // because January is 1
-    day = day - begin + 1;
-    return (year, month, day, yday);
-}
-
-// daysBefore[m] counts the number of days in a non-leap year
-// before month m begins. There is an entry for m=12, counting
-// the number of days before January of next year (365).
-internal static array<int32> daysBefore = new int32[]{
-    0,
-    31,
-    31 + 28,
-    31 + 28 + 31,
-    31 + 28 + 31 + 30,
-    31 + 28 + 31 + 30 + 31,
-    31 + 28 + 31 + 30 + 31 + 30,
-    31 + 28 + 31 + 30 + 31 + 30 + 31,
-    31 + 28 + 31 + 30 + 31 + 30 + 31 + 31,
-    31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
-    31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
-    31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30,
-    31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30 + 31
-}.array();
 
 internal static nint daysIn(ΔMonth m, nint year) {
-    if (m == February && isLeap(year)) {
-        return 29;
+    if (m == February) {
+        if (isLeap(year)) {
+            return 29;
+        }
+        return 28;
     }
-    return (nint)(daysBefore[m] - daysBefore[m - 1]);
-}
-
-// daysSinceEpoch takes a year and returns the number of days from
-// the absolute epoch to the start of that year.
-// This is basically (year - zeroYear) * 365, but accounting for leap days.
-internal static uint64 daysSinceEpoch(nint year) {
-    var y = (uint64)((int64)year - (int64)absoluteZeroYear);
-    // Add in days from 400-year cycles.
-    var n = y / 400;
-    y -= 400 * n;
-    var d = (uint64)daysPer400Years * n;
-    // Add in 100-year cycles.
-    n = y / 100;
-    y -= 100 * n;
-    d += (uint64)daysPer100Years * n;
-    // Add in 4-year cycles.
-    n = y / 4;
-    y -= 4 * n;
-    d += (uint64)daysPer4Years * n;
-    // Add in non-leap years.
-    n = y;
-    d += 365 * n;
-    return d;
+    // With the special case of February eliminated, the pattern is
+    //	31 30 31 30 31 30 31 31 30 31 30 31
+    // Adding m&1 produces the basic alternation;
+    // adding (m>>3)&1 inverts the alternation starting in August.
+    return 30 + (nint)((ΔMonth)((m + (m >> (int)(3))) & 1));
 }
 
 // Provided by package runtime.
+//
+// now returns the current real time, and is superseded by runtimeNow which returns
+// the fake synctest clock when appropriate.
+//
+// now should be an internal detail,
+// but widely used packages access it using linkname.
+// Notable members of the hall of shame include:
+//   - gitee.com/quant1x/gox
+//   - github.com/phuslu/log
+//   - github.com/sethvargo/go-limiter
+//   - github.com/ulule/limiter/v3
+//
+// Do not remove or change the type signature.
+// See go.dev/issue/67401.
 internal static partial (int64 sec, int32 nsec, int64 mono) now();
 
-// runtimeNano returns the current value of the runtime clock in nanoseconds.
+// runtimeNow returns the current time.
+// When called within a synctest.Run bubble, it returns the group's fake clock.
 //
-//go:linkname runtimeNano runtime.nanotime
+//go:linkname runtimeNow
+internal static partial (int64 sec, int32 nsec, int64 mono) runtimeNow();
+
+// runtimeNano returns the current value of the runtime clock in nanoseconds.
+// When called within a synctest.Run bubble, it returns the group's fake clock.
+//
+//go:linkname runtimeNano
 internal static partial int64 runtimeNano();
 
 // Monotonic times are reported as offsets from startNano.
@@ -1166,7 +1355,10 @@ internal static int64 startNano = runtimeNano() - 1;
 
 // Now returns the current local time.
 public static Time Now() {
-    var (sec, nsec, mono) = now();
+    var (sec, nsec, mono) = runtimeNow();
+    if (mono == 0) {
+        return new Time((uint64)nsec, sec + unixToInternal, ΔLocal);
+    }
     mono -= startNano;
     sec += 2682288000L;
     if (((uint64)sec >> (int)(33)) != 0) {
@@ -1291,8 +1483,8 @@ internal const byte timeBinaryVersionV2 = 2;    // For LMT only
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string timeMarshalBinaryˢ = "Time.MarshalBinary: unexpected zone offset"u8;
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-public static (slice<byte>, error) MarshalBinary(this Time t) {
+// AppendBinary implements the [encoding.BinaryAppender] interface.
+public static (slice<byte>, error) AppendBinary(this Time t, slice<byte> b) {
     int16 offsetMin = default!;   // minutes east of UTC. -1 is UTC.
     int8 offsetSec = default!;
     var version = timeBinaryVersionV1;
@@ -1306,13 +1498,13 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
         }
         offset /= 60;
         if (offset < -32768 || offset == -1 || offset > 32767) {
-            return (default!, errors.New(timeMarshalBinaryˢ));
+            return (b, errors.New(timeMarshalBinaryˢ));
         }
         offsetMin = (int16)offset;
     }
     var sec = t.sec();
     var nsec = t.nsec();
-    var enc = new byte[]{
+    b = append(b,
         version, // byte 0 : version
 
         (byte)((sec >> (int)(56))), // bytes 1-8: seconds
@@ -1331,12 +1523,20 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
         (byte)nsec,
         (byte)((offsetMin >> (int)(8))), // bytes 13-14: zone offset in minutes
 
-        (byte)offsetMin
-    }.slice();
+        (byte)offsetMin);
     if (version == timeBinaryVersionV2) {
-        enc = append(enc, (byte)offsetSec);
+        b = append(b, (byte)offsetSec);
     }
-    return (enc, default!);
+    return (b, default!);
+}
+
+// MarshalBinary implements the [encoding.BinaryMarshaler] interface.
+public static (slice<byte>, error) MarshalBinary(this Time t) {
+    var (b, err) = t.AppendBinary(new slice<byte>(0, 16));
+    if (err != default!) {
+        return (default!, err);
+    }
+    return (b, default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1344,7 +1544,7 @@ internal static readonly @string timeUnmarshalBinaryNoˢ = "Time.UnmarshalBinary
 internal static readonly @string timeUnmarshalBinaryˢ = "Time.UnmarshalBinary: unsupported version"u8;
 internal static readonly @string timeUnmarshalBinaryˢ2 = "Time.UnmarshalBinary: invalid length"u8;
 
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+// UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.
 [GoRecv] public static error UnmarshalBinary(this ref Time t, slice<byte> data) {
     var buf = data;
     if (len(buf) == 0) {
@@ -1404,7 +1604,7 @@ public static (slice<byte>, error) GobEncode(this Time t) {
     return t.UnmarshalBinary(data);
 }
 
-// MarshalJSON implements the [json.Marshaler] interface.
+// MarshalJSON implements the [encoding/json.Marshaler] interface.
 // The time is a quoted string in the RFC 3339 format with sub-second precision.
 // If the timestamp cannot be represented as valid RFC 3339
 // (e.g., the year is out of range), then an error is reported.
@@ -1422,7 +1622,7 @@ public static (slice<byte>, error) MarshalJSON(this Time t) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string timeUnmarshalJSONInputIsˢ = "Time.UnmarshalJSON: input is not a JSON string"u8;
 
-// UnmarshalJSON implements the [json.Unmarshaler] interface.
+// UnmarshalJSON implements the [encoding/json.Unmarshaler] interface.
 // The time must be a quoted string in the RFC 3339 format.
 [GoRecv] public static error UnmarshalJSON(this ref Time t, slice<byte> data) {
     if (((sstring)data) == "null"u8) {
@@ -1438,17 +1638,34 @@ internal static readonly @string timeUnmarshalJSONInputIsˢ = "Time.UnmarshalJSO
     return err;
 }
 
-// MarshalText implements the [encoding.TextMarshaler] interface.
-// The time is formatted in RFC 3339 format with sub-second precision.
-// If the timestamp cannot be represented as valid RFC 3339
-// (e.g., the year is out of range), then an error is reported.
-public static (slice<byte>, error) MarshalText(this Time t) {
-    var b = new slice<byte>(0, len(RFC3339Nano));
+internal static (slice<byte>, error) appendTo(this Time t, slice<byte> b, @string errPrefix) {
     (b, var err) = t.appendStrictRFC3339(b);
     if (err != default!) {
-        return (default!, errors.New("Time.MarshalText: "u8 + err.Error()));
+        return (default!, errors.New(errPrefix + err.Error()));
     }
     return (b, default!);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string timeAppendTextˢ = "Time.AppendText: "u8;
+
+// AppendText implements the [encoding.TextAppender] interface.
+// The time is formatted in RFC 3339 format with sub-second precision.
+// If the timestamp cannot be represented as valid RFC 3339
+// (e.g., the year is out of range), then an error is returned.
+public static (slice<byte>, error) AppendText(this Time t, slice<byte> b) {
+    return t.appendTo(b, timeAppendTextˢ);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string timeMarshalTextˢ = "Time.MarshalText: "u8;
+
+// MarshalText implements the [encoding.TextMarshaler] interface. The output
+// matches that of calling the [Time.AppendText] method.
+//
+// See [Time.AppendText] for more information.
+public static (slice<byte>, error) MarshalText(this Time t) {
+    return t.appendTo(new slice<byte>(0, len(RFC3339Nano)), timeMarshalTextˢ);
 }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
@@ -1496,7 +1713,15 @@ public static bool IsDST(this Time t) {
 }
 
 internal static bool isLeap(nint year) {
-    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    // year%4 == 0 && (year%100 != 0 || year%400 == 0)
+    // Bottom 2 bits must be clear.
+    // For multiples of 25, bottom 4 bits must be clear.
+    // Thanks to Cassio Neri for this trick.
+    nint mask = 0xf;
+    if (year % 25 != 0) {
+        mask = 3;
+    }
+    return (nint)(year & mask) == 0;
 }
 
 // norm returns nhi, nlo such that
@@ -1548,19 +1773,8 @@ public static Time Date(nint year, ΔMonth month, nint day, nint hour, nint min,
     (min, sec) = norm(min, sec, 60);
     (hour, min) = norm(hour, min, 60);
     (day, hour) = norm(day, hour, 24);
-    // Compute days since the absolute epoch.
-    var d = daysSinceEpoch(year);
-    // Add in days before this month.
-    d += (uint64)daysBefore[month - 1];
-    if (isLeap(year) && month >= March) {
-        d++; // February 29
-    }
-    // Add in days before today.
-    d += (uint64)(day - 1);
-    // Add in time elapsed today.
-    var abs = d * (uint64)secondsPerDay;
-    abs += (uint64)(hour * (nint)secondsPerHour + min * (nint)secondsPerMinute + sec);
-    var unix = (int64)abs + (-9223372028715321600L);
+    // Convert to absolute time and then Unix time.
+    var unix = (int64)(uint64)dateToAbsDays((int64)year, month, day) * (int64)secondsPerDay + (int64)(hour * (nint)secondsPerHour + min * (nint)secondsPerMinute + sec) + absoluteToUnix;
     // Look for zone offset for expected time, so we can adjust to UTC.
     // The lookup function expects UTC, so first we pass unix in the
     // hope that it will not be too close to a zone transition,
@@ -1710,6 +1924,58 @@ internal static (nint qmod2, Duration r) div(Time t, Duration d) {
         r = d - r;
     }
     return (qmod2, r);
+}
+
+// Regrettable Linkname Compatibility
+//
+// timeAbs, absDate, and absClock mimic old internal details, no longer used.
+// Widely used packages linknamed these to get “faster” time routines.
+// Notable members of the hall of shame include:
+//   - gitee.com/quant1x/gox
+//   - github.com/phuslu/log
+//
+// phuslu hard-coded 'Unix time + 9223372028715321600' [sic]
+// as the input to absDate and absClock, using the old Jan 1-based
+// absolute times.
+// quant1x linknamed the time.Time.abs method and passed the
+// result of that method to absDate and absClock.
+//
+// Keeping both of these working forces us to provide these three
+// routines here, operating on the old Jan 1-based epoch instead
+// of the new March 1-based epoch. And the fact that time.Time.abs
+// was linknamed means that we have to call the current abs method
+// something different (time.Time.absSec, defined above) to make it
+// possible to provide this simulation of the old routines here.
+//
+// None of this code is linked into the binary if not referenced by
+// these linkname-happy packages. In particular, despite its name,
+// time.Time.abs does not appear in the time.Time method table.
+//
+// Do not remove these routines or their linknames, or change the
+// type signature or meaning of arguments.
+
+//go:linkname legacyTimeTimeAbs time.Time.abs
+public static uint64 legacyTimeTimeAbs(Time t) {
+    return (uint64)(t.absSec() - (uint64)(marchThruDecember * secondsPerDay));
+}
+
+//go:linkname legacyAbsClock time.absClock
+public static (nint hour, nint min, nint sec) legacyAbsClock(uint64 abs) {
+    return ((absSeconds)(abs + (uint64)(marchThruDecember * secondsPerDay))).clock();
+}
+
+//go:linkname legacyAbsDate time.absDate
+public static (nint year, ΔMonth month, nint day, nint yday) legacyAbsDate(uint64 abs, bool full) {
+    nint year = default!;
+    ΔMonth month = default!;
+    nint day = default!;
+    nint yday = default!;
+
+    var d = ((absSeconds)(abs + (uint64)(marchThruDecember * secondsPerDay))).days();
+    (year, month, day) = d.date();
+    (_, yday) = d.yearYday();
+    yday--; // yearYday is 1-based, old API was 0-based
+    return (year, month, day, yday);
 }
 
 } // end time_package

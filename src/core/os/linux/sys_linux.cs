@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 
 partial class os_package {
@@ -34,7 +34,7 @@ internal static (@string name, error err) hostname() {
         if (err == default! && len(name) > 0 && len(name) < 64) {
             (name, err) = (name, default!); goto ᒐdone;
         }
-        if (Δruntime.GOOS == "android"u8) {
+        if (runtime.GOOS == "android"u8) {
             if (name != ""u8) {
                 (name, err) = (name, default!); goto ᒐdone;
             }

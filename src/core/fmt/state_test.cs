@@ -54,7 +54,7 @@ internal static testState mkState(nint w, nint p, @string flags) {
     return s;
 }
 
-[GoType("dyn")] partial struct TestFormatString_type {
+[GoType("dyn")] internal partial struct TestFormatString_type {
     internal nint width, prec;
     internal @string flags;
     internal @string result;

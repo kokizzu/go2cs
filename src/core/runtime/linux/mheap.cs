@@ -9,12 +9,11 @@ namespace go;
 using cpu = @internal.cpu_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
 using System.Runtime.InteropServices;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -175,6 +174,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
     internal fixalloc spanalloc; // allocator for span*
     internal fixalloc cachealloc; // allocator for mcache*
     internal fixalloc specialfinalizeralloc; // allocator for specialfinalizer*
+    internal fixalloc specialCleanupAlloc; // allocator for specialcleanup*
     internal fixalloc specialprofilealloc; // allocator for specialprofile*
     internal fixalloc specialReachableAlloc; // allocator for specialReachable
     internal fixalloc specialPinCounterAlloc; // allocator for specialPinCounter
@@ -185,6 +185,11 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
     //
     // Protected by mheap_.lock.
     internal mheap_userArena userArena;
+    // cleanupID is a counter which is incremented each time a cleanup special is added
+    // to a span. It's used to create globally unique identifiers for individual cleanup.
+    // cleanupID is protected by mheap_.lock. It should only be incremented while holding
+    // the lock.
+    internal uint64 cleanupID;
     internal ж<specialfinalizer> unused; // never set, just here to force the specialfinalizer type into DWARF
 }
 
@@ -660,15 +665,16 @@ internal static (ж<heapArena> arena, uintptr pageIdx, uint8 pageMask) pageIndex
 internal static void init(this ж<mheap> Ꮡh) {
     ref var h = ref Ꮡh.DerefOrNull();
 
-    lockInit(ref nonnil(ref h).@lock, lockRankMheap);
-    lockInit(ref nonnil(ref h).speciallock, lockRankMheapSpecial);
+    lockInit(Ꮡh.of(mheap.Ꮡlock), lockRankMheap);
+    lockInit(Ꮡh.of(mheap.Ꮡspeciallock), lockRankMheapSpecial);
     h.spanalloc.init(/* unsafe.Sizeof(mspan{}) */ (uintptr)160, recordspan, (uintptr)@unsafe.Pointer.FromRef(ref h), Ꮡmemstats.of(mstats.Ꮡmspan_sys));
-    h.cachealloc.init(/* unsafe.Sizeof(mcache{}) */ (uintptr)1200, default!, nil, Ꮡmemstats.of(mstats.Ꮡmcache_sys));
-    h.specialfinalizeralloc.init(/* unsafe.Sizeof(specialfinalizer{}) */ (uintptr)48, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
-    h.specialprofilealloc.init(/* unsafe.Sizeof(specialprofile{}) */ (uintptr)24, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
-    h.specialReachableAlloc.init(/* unsafe.Sizeof(specialReachable{}) */ (uintptr)24, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
-    h.specialPinCounterAlloc.init(/* unsafe.Sizeof(specialPinCounter{}) */ (uintptr)24, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
-    h.specialWeakHandleAlloc.init(/* unsafe.Sizeof(specialWeakHandle{}) */ (uintptr)24, default!, nil, Ꮡmemstats.of(mstats.ᏑgcMiscSys));
+    h.cachealloc.init(/* unsafe.Sizeof(mcache{}) */ (uintptr)1208, default!, nil, Ꮡmemstats.of(mstats.Ꮡmcache_sys));
+    h.specialfinalizeralloc.init(/* unsafe.Sizeof(specialfinalizer{}) */ (uintptr)56, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
+    h.specialCleanupAlloc.init(/* unsafe.Sizeof(specialCleanup{}) */ (uintptr)40, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
+    h.specialprofilealloc.init(/* unsafe.Sizeof(specialprofile{}) */ (uintptr)32, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
+    h.specialReachableAlloc.init(/* unsafe.Sizeof(specialReachable{}) */ (uintptr)32, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
+    h.specialPinCounterAlloc.init(/* unsafe.Sizeof(specialPinCounter{}) */ (uintptr)32, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
+    h.specialWeakHandleAlloc.init(/* unsafe.Sizeof(specialWeakHandle{}) */ (uintptr)32, default!, nil, Ꮡmemstats.of(mstats.ᏑgcMiscSys));
     h.arenaHintAlloc.init(/* unsafe.Sizeof(arenaHint{}) */ (uintptr)24, default!, nil, Ꮡmemstats.of(mstats.Ꮡother_sys));
     // Don't zero mspan allocations. Background sweeping can
     // inspect a span concurrently with allocating it, so it's
@@ -1284,7 +1290,7 @@ HaveSpan:
     Ꮡmemstats.of(mstats.ᏑheapStats).release();
     // Trace the span alloc.
     if (traceAllocFreeEnabled()) {
-        var Δtrace = traceTryAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             Δtrace.SpanAlloc(s);
             traceRelease(Δtrace);
@@ -1467,7 +1473,7 @@ internal static void freeSpan(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
     systemstack(() => {
         // Trace the span free.
         if (traceAllocFreeEnabled()) {
-            var Δtrace = traceTryAcquire();
+            var Δtrace = traceAcquire();
             if (Δtrace.ok()) {
                 Δtrace.SpanFree(Ꮡs);
                 traceRelease(Δtrace);
@@ -1507,7 +1513,7 @@ internal static void freeManual(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocTy
 
     // Trace the span free.
     if (traceAllocFreeEnabled()) {
-        var Δtrace = traceTryAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             Δtrace.SpanFree(Ꮡs);
             traceRelease(Δtrace);
@@ -1637,7 +1643,7 @@ internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages)
     span.gcmarkBits = default!;
     span.pinnerBits = default!;
     Ꮡspan.of(mspan.Ꮡstate).set(mSpanDead);
-    lockInit(ref nonnil(ref span).speciallock, lockRankMspanSpecial);
+    lockInit(Ꮡspan.of(mspan.Ꮡspeciallock), lockRankMspanSpecial);
 }
 
 [GoRecv] internal static bool inList(this ref mspan span) {
@@ -1758,11 +1764,12 @@ internal static UntypedInt _KindSpecialWeakHandle => 2;
 internal static UntypedInt _KindSpecialProfile => 3;
 internal static UntypedInt _KindSpecialReachable => 4;
 internal static UntypedInt _KindSpecialPinCounter => 5;
+internal static UntypedInt _KindSpecialCleanup => 6;
 
 [GoType] partial struct special {
     internal sys.NotInHeap _;
     internal ж<special> next; // linked list in span
-    internal uint16 offset;   // span offset of object
+    internal uintptr offset;  // span offset of object
     internal byte kind;     // kind of special
 }
 
@@ -1789,13 +1796,13 @@ internal static void spanHasNoSpecials(ж<mspan> Ꮡs) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string addspecialOnInvalidˢ = "addspecial on invalid pointer"u8;
 
-// Adds the special record s to the list of special records for
+// addspecial adds the special record s to the list of special records for
 // the object p. All fields of s should be filled in except for
 // offset & next, which this routine will fill in.
 // Returns true if the special was successfully added, false otherwise.
 // (The add will fail only if a record with the same p and s->kind
-// already exists.)
-internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
+// already exists unless force is set to true.)
+internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs, bool force) {
     ref var s = ref Ꮡs.DerefOrNull();
 
     var span = spanOfHeap((uintptr)Δp);
@@ -1812,16 +1819,19 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
     @lock(span.of(mspan.Ꮡspeciallock));
     // Find splice point, check for existing record.
     var (iter, exists) = span.specialFindSplicePoint(offset, kind);
-    if (!exists) {
+    if (!exists || force) {
         // Splice in record, fill in offset.
-        s.offset = (uint16)offset;
+        s.offset = offset;
         s.next = iter.ValueSlot;
         iter.ValueSlot = Ꮡs;
         spanHasSpecials(span);
     }
     unlock(span.of(mspan.Ꮡspeciallock));
     releasem(ref (mp).DerefOrNull());
-    return !exists; // already exists
+    // We're converting p to a uintptr and looking it up, and we
+    // don't want it to die and get swept while we're doing so.
+    KeepAlive(Δp);
+    return !exists || force; // already exists or addition was forced
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1907,7 +1917,7 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
     s.Value.nret = nret;
     s.Value.fint = Ꮡfint;
     s.Value.ot = Ꮡot;
-    if (addspecial(Δp, s.of(specialfinalizer.Ꮡspecial))) {
+    if (addspecial(Δp, s.of(specialfinalizer.Ꮡspecial), false)) {
         // This is responsible for maintaining the same
         // GC-related invariants as markrootSpans in any
         // situation where it's possible that markrootSpans
@@ -1946,6 +1956,51 @@ internal static void removefinalizer(@unsafe.Pointer Δp) {
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
 }
 
+// The described object has a cleanup set for it.
+[GoType] partial struct specialCleanup {
+    internal sys.NotInHeap _;
+    internal special special;
+    internal ж<funcval> fn;
+    // Globally unique ID for the cleanup, obtained from mheap_.cleanupID.
+    internal uint64 id;
+}
+
+// addCleanup attaches a cleanup function to the object. Multiple
+// cleanups are allowed on an object, and even the same pointer.
+// A cleanup id is returned which can be used to uniquely identify
+// the cleanup.
+internal static uint64 addCleanup(@unsafe.Pointer Δp, ж<funcval> Ꮡf) {
+    ref var f = ref Ꮡf.DerefOrNull();
+
+    @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
+    var s = (ж<specialCleanup>)(uintptr)(Ꮡmheap_.of(mheap.ᏑspecialCleanupAlloc).alloc());
+    mheap_.cleanupID++;
+    var id = mheap_.cleanupID;
+    unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
+    s.Value.special.kind = _KindSpecialCleanup;
+    s.Value.fn = Ꮡf;
+    s.Value.id = id;
+    var mp = acquirem();
+    addspecial(Δp, s.of(specialCleanup.Ꮡspecial), true);
+    // This is responsible for maintaining the same
+    // GC-related invariants as markrootSpans in any
+    // situation where it's possible that markrootSpans
+    // has already run but mark termination hasn't yet.
+    if (gcphase != _GCoff) {
+        var gcw = (~mp).p.ptr().of(runtime_package.Δp.Ꮡgcw);
+        // Mark the cleanup itself, since the
+        // special isn't part of the GC'd heap.
+        scanblock((uintptr)@unsafe.Pointer.FromBox(s.of(specialCleanup.Ꮡfn)), goarch.PtrSize, Ꮡoneptrmask.at<uint8>(0), gcw, nil);
+    }
+    releasem(ref (mp).DerefOrNull());
+    // Keep f alive. There's a window in this function where it's
+    // only reachable via the special while the special hasn't been
+    // added to the specials list yet. This is similar to a bug
+    // discovered for weak handles, see #70455.
+    KeepAlive(Ꮡf.OrTypedNil());
+    return id;
+}
+
 // The described object has a weak pointer.
 //
 // Weak pointers in the GC have the following invariants:
@@ -1978,12 +2033,12 @@ internal static void removefinalizer(@unsafe.Pointer Δp) {
     internal ж<atomic.Uintptr> handle;
 }
 
-//go:linkname internal_weak_runtime_registerWeakPointer internal/weak.runtime_registerWeakPointer
+//go:linkname internal_weak_runtime_registerWeakPointer weak.runtime_registerWeakPointer
 internal static @unsafe.Pointer internal_weak_runtime_registerWeakPointer(@unsafe.Pointer Δp) {
     return @unsafe.Pointer.FromPinnedBox(getOrAddWeakHandle((@unsafe.Pointer)Δp));
 }
 
-//go:linkname internal_weak_runtime_makeStrongFromWeak internal/weak.runtime_makeStrongFromWeak
+//go:linkname internal_weak_runtime_makeStrongFromWeak weak.runtime_makeStrongFromWeak
 internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe.Pointer u) {
     var handle = (ж<atomic.Uintptr>)(uintptr)(u);
     // Prevent preemption. We want to make sure that another GC cycle can't start
@@ -2086,7 +2141,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     s.Value.special.kind = _KindSpecialWeakHandle;
     s.Value.handle = handle;
     handle.Store((uintptr)Δp);
-    if (addspecial(Δp, s.of(specialWeakHandle.Ꮡspecial))) {
+    if (addspecial(Δp, s.of(specialWeakHandle.Ꮡspecial), false)) {
         // This is responsible for maintaining the same
         // GC-related invariants as markrootSpans in any
         // situation where it's possible that markrootSpans
@@ -2180,7 +2235,7 @@ internal static void setprofilebucket(@unsafe.Pointer Δp, ж<bucket> Ꮡb) {
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     s.Value.special.kind = _KindSpecialProfile;
     s.Value.b = Ꮡb;
-    if (!addspecial(Δp, s.of(specialprofile.Ꮡspecial))) {
+    if (!addspecial(Δp, s.of(specialprofile.Ꮡspecial), false)) {
         @throw(setprofilebucketProfileˢ);
     }
 }
@@ -2268,14 +2323,23 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
         Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).free(@unsafe.Pointer.FromPinnedBox(Ꮡs));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
+    else if (exprᴛ1 == _KindSpecialCleanup) {
+        var sc = Ꮡs.Reinterpret<special, specialCleanup>();
+        queuefinalizer(nil, // The creator frees these.
+ // Cleanups, unlike finalizers, do not resurrect the objects
+ // they're attached to, so we only need to pass the cleanup
+ // function, not the object.
+ (~sc).fn, 0, nil, nil);
+        @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
+        Ꮡmheap_.of(mheap.ᏑspecialCleanupAlloc).free(@unsafe.Pointer.FromPinnedBox(sc));
+        unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
+    }
     else { /* default: */
         @throw(badSpecialKindˢ);
         throw panic("not reached");
     }
 
 }
-
-// The creator frees these.
 
 // gcBits is an alloc/mark bitmap. This is always used as gcBits.x.
 [GoType] [StructLayout(LayoutKind.Explicit, Size = 1)] partial struct gcBits {

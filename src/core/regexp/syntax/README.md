@@ -2,10 +2,10 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-12%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/regexp.syntax.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/regexp/syntax@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/regexp/syntax) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/regexp/syntax)
+[![Tests](https://img.shields.io/badge/Tests-12%2F12_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/regexp.syntax.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/regexp/syntax@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/regexp/syntax) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/regexp/syntax)
 
-Package syntax parses regular expressions into parse trees and compiles parse trees into programs. Most clients of regular expressions will use the facilities of package [regexp](https://pkg.go.dev/regexp@go1.23.12) (such as [regexp.Compile](https://pkg.go.dev/regexp@go1.23.12#Compile) and [regexp.Match](https://pkg.go.dev/regexp@go1.23.12#Match)) instead of this package.
+Package syntax parses regular expressions into parse trees and compiles parse trees into programs. Most clients of regular expressions will use the facilities of package [regexp](https://pkg.go.dev/regexp@go1.24.13) (such as [regexp.Compile](https://pkg.go.dev/regexp@go1.24.13#Compile) and [regexp.Match](https://pkg.go.dev/regexp@go1.24.13#Match)) instead of this package.
 
 ### Syntax
 
@@ -132,7 +132,7 @@ ASCII character classes:
 	[[:word:]]     word characters (== [0-9A-Za-z_])
 	[[:xdigit:]]   hex digit (== [0-9A-Fa-f])
 
-Unicode character classes are those in [unicode.Categories](https://pkg.go.dev/unicode@go1.23.12#Categories) and [unicode.Scripts](https://pkg.go.dev/unicode@go1.23.12#Scripts).
+Unicode character classes are those in [unicode.Categories](https://pkg.go.dev/unicode@go1.24.13#Categories) and [unicode.Scripts](https://pkg.go.dev/unicode@go1.24.13#Scripts).
 
 ---
 

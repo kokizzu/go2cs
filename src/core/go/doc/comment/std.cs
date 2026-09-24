@@ -46,7 +46,8 @@ internal static slice<@string> stdPkgs = new @string[]{
     "time"u8,
     "unicode"u8,
     "unique"u8,
-    "unsafe"u8
+    "unsafe"u8,
+    "weak"u8
 }.slice();
 
 } // end comment_package

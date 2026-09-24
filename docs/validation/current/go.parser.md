@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/parser` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-13 · converter `9f8036b36`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**173 matched · 0 disclosed** — Go 1.23.1, `windows/amd64`, converted package
+**176 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/go/parser`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/parser).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -17,6 +19,7 @@ comparison — it is the evidence behind the `go/parser` row in
 |:--|:--:|:--:|
 | `TestColonEqualsScope` | pass | pass |
 | `TestCommentGroups` | pass | pass |
+| `TestEmptyFileHasValidStartEnd` | pass | pass |
 | `TestErrors` | pass | pass |
 | `TestErrors/chans.go2` | pass | pass |
 | `TestErrors/commas.src` | pass | pass |
@@ -33,6 +36,7 @@ comparison — it is the evidence behind the `go/parser` row in
 | `TestErrors/issue49482.go2` | pass | pass |
 | `TestErrors/issue50427.go2` | pass | pass |
 | `TestErrors/issue64534.src` | pass | pass |
+| `TestErrors/issue69506.go2` | pass | pass |
 | `TestErrors/linalg.go2` | pass | pass |
 | `TestErrors/map.go2` | pass | pass |
 | `TestErrors/metrics.go2` | pass | pass |
@@ -145,6 +149,7 @@ comparison — it is the evidence behind the `go/parser` row in
 | `TestParseExpr` | pass | pass |
 | `TestParseExprFrom` | pass | pass |
 | `TestParseFile` | pass | pass |
+| `TestParseTypeParamsAsParenExpr` | pass | pass |
 | `TestRangePos` | pass | pass |
 | `TestResolution` | pass | pass |
 | `TestResolution/issue45136.src` | pass | pass |

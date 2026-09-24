@@ -52,6 +52,10 @@ internal static UntypedInt s5 => 0x34; // accept 3, size 4
 internal static UntypedInt s6 => 0x04; // accept 0, size 4
 internal static UntypedInt s7 => 0x44; // accept 4, size 4
 
+internal static UntypedInt runeErrorByte0 => /* t3 | (RuneError >> 12) */ 239;
+internal static UntypedInt runeErrorByte1 => /* tx | (RuneError>>6)&maskx */ 191;
+internal static UntypedInt runeErrorByte2 => /* tx | RuneError&maskx */ 189;
+
 //   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 // 0x00-0x0F
 // 0x10-0x1F
@@ -363,32 +367,33 @@ public static nint RuneLen(rune r) {
 // If the rune is out of range, it writes the encoding of [RuneError].
 // It returns the number of bytes written.
 public static nint EncodeRune(slice<byte> p, rune r) {
+    // This function is inlineable for fast handling of ASCII.
+    if ((uint32)r <= rune1Max) {
+        p[0] = (byte)r;
+        return 1;
+    }
+    return encodeRuneNonASCII(p, r);
+}
+
+internal static nint encodeRuneNonASCII(slice<byte> p, rune r) {
     // Negative values are erroneous. Making it unsigned addresses the problem.
     {
         var i = (uint32)r;
-        var matchᴛ1 = false;
-        if (i <= rune1Max) { matchᴛ1 = true;
-            p[0] = (byte)r;
-            return 1;
-        }
-        if (i <= rune2Max) { matchᴛ1 = true;
+        switch (ᐧ) {
+        case {} when i <= rune2Max: {
             _ = p[1]; // eliminate bounds checks
             p[0] = (byte)((byte)t2 | (byte)((r >> (int)(6))));
             p[1] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 2;
         }
-        if ((i > MaxRune) || (surrogateMin <= i && i <= surrogateMax)) { matchᴛ1 = true;
-            r = RuneError;
-            fallthrough = true;
-        }
-        if (fallthrough || !matchᴛ1 && (i <= rune3Max)) {
+        case {} when (i < surrogateMin) || (surrogateMax < i && i <= rune3Max): {
             _ = p[2]; // eliminate bounds checks
             p[0] = (byte)((byte)t3 | (byte)((r >> (int)(12))));
             p[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx));
             p[2] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 3;
         }
-        if (!matchᴛ1) { /* default: */
+        case {} when i > rune3Max && i <= MaxRune: {
             _ = p[3]; // eliminate bounds checks
             p[0] = (byte)((byte)t4 | (byte)((r >> (int)(18))));
             p[1] = (byte)((byte)tx | (byte)((byte)((r >> (int)(12))) & (byte)maskx));
@@ -396,7 +401,13 @@ public static nint EncodeRune(slice<byte> p, rune r) {
             p[3] = (byte)((byte)tx | (byte)((byte)r & (byte)maskx));
             return 4;
         }
-        return default!;
+        default: {
+            _ = p[2]; // eliminate bounds checks
+            p[0] = runeErrorByte0;
+            p[1] = runeErrorByte1;
+            p[2] = runeErrorByte2;
+            return 3;
+        }}
     }
 
 }
@@ -416,21 +427,19 @@ internal static slice<byte> appendRuneNonASCII(slice<byte> p, rune r) {
     // Negative values are erroneous. Making it unsigned addresses the problem.
     {
         var i = (uint32)r;
-        var matchᴛ1 = false;
-        if (i <= rune2Max) { matchᴛ1 = true;
+        switch (ᐧ) {
+        case {} when i <= rune2Max: {
             return append(p, (byte)((byte)t2 | (byte)((r >> (int)(6)))), (byte)((byte)tx | (byte)((byte)r & (byte)maskx)));
         }
-        if ((i > MaxRune) || (surrogateMin <= i && i <= surrogateMax)) { matchᴛ1 = true;
-            r = RuneError;
-            fallthrough = true;
-        }
-        if (fallthrough || !matchᴛ1 && (i <= rune3Max)) {
+        case {} when (i < surrogateMin) || (surrogateMax < i && i <= rune3Max): {
             return append(p, (byte)((byte)t3 | (byte)((r >> (int)(12)))), (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx)), (byte)((byte)tx | (byte)((byte)r & (byte)maskx)));
         }
-        if (!matchᴛ1) { /* default: */
+        case {} when i > rune3Max && i <= MaxRune: {
             return append(p, (byte)((byte)t4 | (byte)((r >> (int)(18)))), (byte)((byte)tx | (byte)((byte)((r >> (int)(12))) & (byte)maskx)), (byte)((byte)tx | (byte)((byte)((r >> (int)(6))) & (byte)maskx)), (byte)((byte)tx | (byte)((byte)r & (byte)maskx)));
         }
-        return default!;
+        default: {
+            return append(p, (byte)(runeErrorByte0), (byte)(runeErrorByte1), (byte)(runeErrorByte2));
+        }}
     }
 
 }
@@ -440,45 +449,13 @@ internal static slice<byte> appendRuneNonASCII(slice<byte> p, rune r) {
 public static nint RuneCount(slice<byte> p) {
     nint np = len(p);
     nint n = default!;
-    for (nint i = 0; i < np; ) {
-        n++;
-        var c = p[i];
-        if (c < RuneSelf) {
-            // ASCII fast path
-            i++;
-            continue;
-        }
-        var x = first[c];
-        if (x == xx) {
-            i++; // invalid.
-            continue;
-        }
-        nint size = (nint)((uint8)(x & 7));
-        if (i + size > np) {
-            i++; // Short or invalid.
-            continue;
-        }
-        var accept = acceptRanges[(x >> (int)(4))];
+    for (; n < np; n++) {
         {
-            var cΔ1 = p[i + 1]; if (cΔ1 < accept.lo || accept.hi < cΔ1){
-                size = 1;
-            } else 
-            if (size == 2){
-            } else 
-            {
-                var cΔ2 = p[i + 2]; if (cΔ2 < locb || hicb < cΔ2){
-                    size = 1;
-                } else 
-                if (size == 3){
-                } else 
-                {
-                    var cΔ3 = p[i + 3]; if (cΔ3 < locb || hicb < cΔ3) {
-                        size = 1;
-                    }
-                }
+            var c = p[n]; if (c >= RuneSelf) {
+                // non-ASCII slow path
+                return n + RuneCountInString(((@string)(p[(int)(n)..])));
             }
         }
-        i += size;
     }
     return n;
 }
@@ -487,45 +464,8 @@ public static nint RuneCount(slice<byte> p) {
 public static nint /*n*/ RuneCountInString(@string s) {
     nint n = default!;
 
-    nint ns = len(s);
-    for (nint i = 0; i < ns; n++) {
-        var c = s[i];
-        if (c < RuneSelf) {
-            // ASCII fast path
-            i++;
-            continue;
-        }
-        var x = first[c];
-        if (x == xx) {
-            i++; // invalid.
-            continue;
-        }
-        nint size = (nint)((uint8)(x & 7));
-        if (i + size > ns) {
-            i++; // Short or invalid.
-            continue;
-        }
-        var accept = acceptRanges[(x >> (int)(4))];
-        {
-            var cΔ1 = s[i + 1]; if (cΔ1 < accept.lo || accept.hi < cΔ1){
-                size = 1;
-            } else 
-            if (size == 2){
-            } else 
-            {
-                var cΔ2 = s[i + 2]; if (cΔ2 < locb || hicb < cΔ2){
-                    size = 1;
-                } else 
-                if (size == 3){
-                } else 
-                {
-                    var cΔ3 = s[i + 3]; if (cΔ3 < locb || hicb < cΔ3) {
-                        size = 1;
-                    }
-                }
-            }
-        }
-        i += size;
+    foreach ((_, _) in s) {
+        n++;
     }
     return n;
 }

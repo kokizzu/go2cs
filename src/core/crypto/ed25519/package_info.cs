@@ -13,6 +13,7 @@
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
+global using ed25519ꓸPublicKey = go.crypto.@internal.fips140.ed25519_package.ΔPublicKey;
 // </ImportedTypeAliases>
 
 using go;
@@ -52,7 +53,7 @@ using static go.crypto.ed25519_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ed25519/ed25519.go", "ed25519.cs", "AF1gwoKClM6SgoKokoKClKyyAAUYAAkCgoKAgqSUgJKkgIKkgoKkgJKkgoKktAAOIJCu0oKWgoCCpoKChK7UgoKmgoCCpoKCgpSEhIKqxoKCAAoggoCCpISCgoKUhIKCgoKUgoKCgoKCloSCgoKClIKCgoKCgoKWhIIAAhDSAAYcAA0ClICSpICCpIKUpICSpIKUpJKUpMiCgIKmgpaCgpaCgoKClIKCgoKCgoKWgoKogoQ=")]
+[assembly: go.GoPositionMap("crypto/ed25519/ed25519.go", "ed25519.cs", "ACZewoKClM6SgoKokoKClKyyAAYYAA4IgoKUgoKAgqSUtJKUpLQADiCQrtKCloKAgqaCgq7UgoKmgoKUlKrGgoKmuIKClIIAAhDSAAUcAA0CgIKkgoKUlLSSlKS0")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -71,4 +72,21 @@ public static partial class ed25519_package
     public partial struct PrivateKey {}
     public partial struct PublicKey {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸed25519() => builtin.initPackage(typeof(go.crypto.@internal.fips140.ed25519_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

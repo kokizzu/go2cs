@@ -15,24 +15,6 @@ using @internal;
 
 partial class crc64_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // The size of a CRC-64 checksum in bytes.
 public static UntypedInt ΔSize => 8;
 
@@ -43,16 +25,12 @@ public static UntypedInt ECMA => 0xC96C5795D7870F42;
 
 [GoType("[256]uint64")] partial struct Table;
 
-internal static ж<sync.Once> Ꮡslicing8TablesBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once slicing8TablesBuildOnce => ref Ꮡslicing8TablesBuildOnce.Value;
 internal static ж<ж<array<Table>>> Ꮡslicing8TableISO = new StandardBox<ж<array<Table>>>(default(ж<array<Table>>));
 internal static ref ж<array<Table>> slicing8TableISO => ref Ꮡslicing8TableISO.ValueSlot;
 internal static ж<ж<array<Table>>> Ꮡslicing8TableECMA = new StandardBox<ж<array<Table>>>(default(ж<array<Table>>));
 internal static ref ж<array<Table>> slicing8TableECMA => ref Ꮡslicing8TableECMA.ValueSlot;
 
-internal static void buildSlicing8TablesOnce() {
-    Ꮡslicing8TablesBuildOnce.Do(buildSlicing8Tables);
-}
+internal static Action buildSlicing8TablesOnce = sync.OnceFunc(buildSlicing8Tables);
 
 internal static void buildSlicing8Tables() {
     slicing8TableISO = makeSlicingBy8Table(ref (makeTable(ISO)).DerefOrNull());
@@ -135,12 +113,15 @@ public static hash.Hash64 New(ж<Table> Ꮡtab) {
 internal static readonly @string magic = "crc\x02"u8;
 internal const nint marshaledSize = /* len(magic) + 8 + 8 */ 20;
 
-[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref digest d, slice<byte> b) {
     b = append(b, magic.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint64(b, tableSum(d.tab));
-    b = byteorder.BeAppendUint64(b, d.crc);
+    b = byteorder.BEAppendUint64(b, tableSum(d.tab));
+    b = byteorder.BEAppendUint64(b, d.crc);
     return (b, default!);
+}
+
+[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
+    return d.AppendBinary(new slice<byte>(0, marshaledSize));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -155,10 +136,10 @@ internal static readonly @string hashCrc64TablesDoNotˢ = "hash/crc64: tables do
     if (len(b) != marshaledSize) {
         return errors.New(hashCrc64InvalidHashˢ2);
     }
-    if (tableSum(d.tab) != byteorder.BeUint64(b[4..])) {
+    if (tableSum(d.tab) != byteorder.BEUint64(b[4..])) {
         return errors.New(hashCrc64TablesDoNotˢ);
     }
-    d.crc = byteorder.BeUint64(b[12..]);
+    d.crc = byteorder.BEUint64(b[12..]);
     return default!;
 }
 
@@ -184,7 +165,7 @@ internal static uint64 update(uint64 crc, ref Table tab, slice<byte> p) {
         }
         // Update using slicing-by-8
         while (len(p) > 8) {
-            crc ^= (uint64)(byteorder.LeUint64(p));
+            crc ^= (uint64)(byteorder.LEUint64(p));
             crc = (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)(helperTable.Value[7][(nint)((uint64)(crc & 0xff))] ^ helperTable.Value[6][(nint)((uint64)(((crc >> (int)(8))) & 0xff))]) ^ helperTable.Value[5][(nint)((uint64)(((crc >> (int)(16))) & 0xff))]) ^ helperTable.Value[4][(nint)((uint64)(((crc >> (int)(24))) & 0xff))]) ^ helperTable.Value[3][(nint)((uint64)(((crc >> (int)(32))) & 0xff))]) ^ helperTable.Value[2][(nint)((uint64)(((crc >> (int)(40))) & 0xff))]) ^ helperTable.Value[1][(nint)((uint64)(((crc >> (int)(48))) & 0xff))]) ^ helperTable.Value[0][(nint)((crc >> (int)(56)))]);
             p = p[8..];
         }
@@ -229,7 +210,7 @@ internal static uint64 tableSum(ж<Table> Ꮡt) {
     var b = a[..0];
     if (Ꮡt != nil) {
         foreach (var (_, x) in t) {
-            b = byteorder.BeAppendUint64(b, x);
+            b = byteorder.BEAppendUint64(b, x);
         }
     }
     return Checksum(b, MakeTable(ISO));

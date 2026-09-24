@@ -11,7 +11,7 @@ namespace go;
 
 partial class strconv_package {
 
-[GoType] partial struct @decimal {
+[GoType] public partial struct @decimal {
     internal array<byte> d = new(800); // digits, big-endian representation
     internal nint nd;      // number of digits used
     internal nint dp;      // decimal point
@@ -19,7 +19,7 @@ partial class strconv_package {
     internal bool trunc;      // discarded nonzero digits beyond d[:nd]
 }
 
-[GoRecv] internal static @string String(this ref @decimal a) {
+[GoRecv] public static @string String(this ref @decimal a) {
     nint n = 10 + a.nd;
     if (a.dp > 0) {
         n += a.dp;
@@ -81,7 +81,7 @@ internal static void trim(ref @decimal a) {
 }
 
 // Assign v to a.
-internal static void Assign(this ж<@decimal> Ꮡa, uint64 v) {
+public static void Assign(this ж<@decimal> Ꮡa, uint64 v) {
     ref var a = ref Ꮡa.DerefOrNull();
 
     array<byte> buf = new(24);
@@ -369,7 +369,7 @@ internal static void leftShift(ref @decimal a, nuint k) {
 }
 
 // Binary shift left (k > 0) or right (k < 0).
-internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
+public static void Shift(this ж<@decimal> Ꮡa, nint k) {
     ref var a = ref Ꮡa.DerefOrNull();
 
     switch (ᐧ) {
@@ -386,7 +386,7 @@ internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
         break;
     }
     case {} when k is < 0: {
-        while (k < -maxShift) {
+        while (k < (nint)(-maxShift)) {
             rightShift(ref (Ꮡa).DerefOrNull(), maxShift);
             k += maxShift;
         }
@@ -417,7 +417,7 @@ internal static bool shouldRoundUp(ref @decimal a, nint nd) {
 // If nd is zero, it means we're rounding
 // just to the left of the digits, as in
 // 0.09 -> 0.1.
-internal static void Round(this ж<@decimal> Ꮡa, nint nd) {
+public static void Round(this ж<@decimal> Ꮡa, nint nd) {
     ref var a = ref Ꮡa.DerefOrNull();
 
     if (nd < 0 || nd >= a.nd) {
@@ -431,7 +431,7 @@ internal static void Round(this ж<@decimal> Ꮡa, nint nd) {
 }
 
 // Round a down to nd digits (or fewer).
-internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
+public static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
     ref var a = ref Ꮡa.DerefOrNull();
 
     if (nd < 0 || nd >= a.nd) {
@@ -442,7 +442,7 @@ internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
 }
 
 // Round a up to nd digits (or fewer).
-[GoRecv] internal static void RoundUp(this ref @decimal a, nint nd) {
+[GoRecv] public static void RoundUp(this ref @decimal a, nint nd) {
     if (nd < 0 || nd >= a.nd) {
         return;
     }
@@ -465,7 +465,7 @@ internal static void RoundDown(this ж<@decimal> Ꮡa, nint nd) {
 
 // Extract integer part, rounded appropriately.
 // No guarantees about overflow.
-internal static uint64 RoundedInteger(this ж<@decimal> Ꮡa) {
+public static uint64 RoundedInteger(this ж<@decimal> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNull();
 
     if (a.dp > 20) {

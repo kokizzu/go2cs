@@ -62,7 +62,7 @@ using static go.log.syslog_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/syslog/syslog.go", "syslog.cs", "AIcB1gHCAAUUAAkCgpaClJQABhCClIKClAAICsKUgpaCgoKmgoKCuIK4qLKo0oKEgoKClNqigqqigqqigqqigqqigqqigqqigqqigqbChIKEgoCCtoCCpNq0goKWgoLKpoK4gqaUgqamgq7CgoKU")]
+[assembly: go.GoPositionMap("log/syslog/syslog.go", "syslog.cs", "AFfWAcIABRQACQKCloKUlAAGEIKUgoKUAAgKwpSCloKCgqaCgoK4griosqjigoSCgoKU2qKCqqKCqqKCqqKCqqKCqqKCqqKCqqKCptKEgoSCgIK2gIKk2rSCgpaCgsqmgriCppSCpqaCrsKCgpQ=")]
 [assembly: go.GoPositionMap("log/syslog/syslog_unix.go", "syslog_unix.cs", "AA8iooKCgoKCgrg=")]
 // </GoSourcePositionMaps>
 
@@ -83,4 +83,21 @@ public static partial class syslog_package
     public partial struct Priority {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

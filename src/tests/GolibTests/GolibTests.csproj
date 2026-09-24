@@ -56,6 +56,14 @@
          the windows flavour they are 22 strict CS0103 and they took train 29 red at the union gate. -->
     <Compile Remove="RuntimeMemoryFamilyTests.cs" />
     <Compile Remove="RuntimeBootstrapConstantsTests.cs" />
+
+    <!-- RLIMIT_NOFILE is 7 and /proc/self/fd exists only on linux; the host restore it guards is
+         exercised by syscall's linux-only TestPrlimitFileLimit. -->
+    <Compile Remove="LinuxDescriptorLimitTests.cs" />
+
+    <!-- GetRandom (and its runtime.vgetrandom pull) is declared by getrandom.go, whose build tags
+         select only the linux flavour of internal/syscall/unix. -->
+    <Compile Remove="LinuxGetRandomTests.cs" />
   </ItemGroup>
 
   <!-- The netapi32 ptrout gate is the mirror image: it drives windows-flavor-only syscall surface
@@ -74,11 +82,65 @@
   <ItemGroup Condition="'$(GoTargetOS)' != '' and '$(GoTargetOS)' != 'windows'">
     <Compile Remove="WindowsNetUserInfoTests.cs" />
 
+    <!-- The F1 observer binds internal/syscall/windows' TOKEN_GROUPS.AllGroups, a windows-EXCLUSIVE
+         package (its csproj compiles nothing under another flavour). Unlisted here since it landed
+         on 2026-09-15, it made GolibTests fail CS0234 under GoTargetOS=linux; found 2026-09-23 when
+         the vgetrandom arm first needed the linux flavour to build. The same run found the GetStartupInfo
+         guard (2026-09-22) in the same state: StartupInfo and GetStartupInfo are declared only in
+         syscall's windows/ folder. -->
+    <Compile Remove="WindowsTokenGroupsTranscriptionTests.cs" />
+    <Compile Remove="SyscallGetStartupInfoWindowsTests.cs" />
+
     <!-- The token door lives in syscall/windows/dll_windows.cs, so SyscallN exists only on this
          flavour. Its REFUSAL arms are host-independent (the door throws in managed code before the
          native invoke); its end-to-end arm gates on the running host and reports Inconclusive.
          Same reasoning, and same '!= \'\' and != windows' form, as the line above. -->
     <Compile Remove="TokenDoorWiredTests.cs" />
+
+    <!-- runtime's managed Windows usleep (and its GoUsleep seam) live in runtime's windows/ folder. -->
+    <Compile Remove="RuntimeUsleepWindowsTests.cs" />
+
+    <!-- runtime's managed Windows sysAllocOS/sysFreeOS (and their seams) live in runtime's windows/ folder. -->
+    <Compile Remove="RuntimeSysAllocWindowsTests.cs" />
+
+    <!-- syscall.Pointer (`type Pointer *struct{}`) is declared only in syscall's windows/ folder. -->
+    <Compile Remove="NamedPointerTokenCarrierTests.cs" />
+
+    <!-- Row 46's owed observer drives os/user's local-group DECISION, which is declared only in that
+         package's L3 windows/ folder (lookup_windows_impl.cs). os/user is NOT windows-exclusive —
+         it has linux/ and darwin/ folders of its own — so unlike the two files above this one would
+         compile against a real assembly on another flavour and fail on the missing member. Same
+         '!= \'\' and != windows' form and the same reason: $(GoTargetOS) is unset in this project and
+         unset means the default windows corpus, so a bare "!= 'windows'" removes it on every
+         ordinary run and a filtered `dotnet test` answers "No test matches" with EXIT 0. -->
+    <Compile Remove="WindowsLocalGroupDecisionTests.cs" />
+
+    <!-- The CPU-profiler setters it guards are hand-owned in runtime's windows/ folder alone
+         (cpuprof_windows_impl.cs); the linux and darwin setters stay converted and signal-based. -->
+    <Compile Remove="RuntimeCPUProfilerWindowsTests.cs" />
+
+    <!-- The net-database transcription guard drives the converted syscall package's netdb seams
+         (transcribeHostent / Protoent / Servent and the two copy cores), which its L3 windows/
+         folder declares. Same reason and same form as the three above; the syscall reference this
+         project already carries needs no change, so only the gate FILE is conditional. -->
+    <Compile Remove="WindowsNetDbTranscriptionTests.cs" />
+
+    <!-- TempDirCleanupOrderTests: ONE of its two arms is windows-only and the file follows that arm.
+         EveryCleanupSucceedsWhenAChdirSitsBetweenTempDirCalls guards an ORDER that is
+         platform-independent (one parent removal registered on the FIRST TempDir call, so a Chdir
+         restore registered between two calls runs BEFORE any child is removed), but the FAILURE it is
+         minted on is not: Windows refuses to delete the directory a process stands in, while Linux
+         unlinks it happily — so on any other $(GoTargetOS) that arm would pass with the defect present
+         and guard nothing, and an arm placed where it cannot go red guards nothing anywhere.
+         ⚠ ITS COMPANION, TwoTempDirCallsShareOneParentAndBothSurviveUntilTheCleanupPhase, asserts a
+         property that DOES hold on every target (two calls share one parent; both survive to the
+         cleanup phase; the parent is removed once). COORD offered to hoist it to the all-targets group
+         so a linux leg runs it (18511341ae). It stays HERE, deliberately: it is the companion the
+         red-first control reads — with the defect restored, arm 1 must FAIL and this arm must still
+         PASS, which is what makes arm 1's red the ORDER rather than the machinery — and that pairing
+         is only observable on the target where arm 1 can fail. Hoisting it would put the two halves of
+         one control in two compile sets. Stated at the line, as COORD asked, either way. -->
+    <Compile Remove="TempDirCleanupOrderTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -99,6 +161,12 @@
     <ProjectReference Include="..\..\core\golib\golib.csproj" />
     <ProjectReference Include="..\..\core\sync\atomic\sync.atomic.csproj" />
 
+    <!-- InternalSyncMutexContentionTests: a CONTENDED internal/sync.Mutex, the path its five runtime
+         hooks (canSpin, doSpin, nanotime, SemacquireMutex, Semrelease) sit on. It is already reachable
+         transitively (fmt -> sync -> internal/sync); the explicit reference names the project the
+         arm calls into, so the arm does not depend on sync continuing to reference it. -->
+    <ProjectReference Include="..\..\core\internal\sync\internal.sync.csproj" />
+
     <!-- The Linux spawn-seam gates (LinuxSpawnSeamTests) drive syscall.StartProcess/Wait4 —
          the converted surface over the posix_spawn hand-own, per the exec-wall design's §5.1
          and OQ-2 measured gates. The gate FILE compiles only under the linux corpus flavor
@@ -115,10 +183,28 @@
          cross-target build. The gate FILE is what is conditional. -->
     <ProjectReference Include="..\..\core\internal\syscall\windows\internal.syscall.windows.csproj" />
 
-    <!-- Sha3ReinterpretVectorTests: the ONLY guard the hand-owned sha3 xor.cs has (no _test.go in
-         GOROOT, not reachable from a behavioral test). Binding a converted package from an MSTest
-         tier follows GenericTests, which references core/sort. -->
-    <ProjectReference Include="..\..\core\vendor\golang.org\x\crypto\sha3\vendor.golang.org.x.crypto.sha3.csproj" />
+    <!-- WindowsLocalGroupDecisionTests drives os/user's readLocalGroupNames, the decision half of
+         listGroupsForUsernameAndDomain that Go's own suite cannot reach here (it needs an account,
+         and at 1.24 the path runs off the current process token). Unconditional, like the two above,
+         but for a different reason: os/user is an L3 package that compiles on EVERY flavour, so the
+         reference resolves on all three and only the gate FILE is conditional. -->
+    <ProjectReference Include="..\..\core\os\user\os.user.csproj" />
+
+    <!-- Sha3ReinterpretVectorTests: RE-POINTED, not retired. The reference this slot carried named
+         vendor/golang.org/x/crypto/sha3, which is GONE at 1.24.13; it was dropped in efb03eab4e with
+         the disposition deferred to a build (COORD 89c281d329). The build is in - i9 d54c47c039 read
+         CS0234 at Sha3ReinterpretVectorTests.cs(6,44), one of GolibTests' three - and the deferred
+         question is settled by measurement rather than by eye:
+           * of the two candidate homes, crypto/internal/fips140/sha3 declares NONE of the three
+             entry points this file uses and crypto/sha3 declares all three;
+           * Sum256 and Sum512 keep their shape ([32]byte / [64]byte -> array<byte>), so those five
+             call sites do not move;
+           * ShakeSum256 does NOT exist at 1.24 in any package - it left with the vendored one - but
+             crypto/sha3.SumSHAKE256(data, length) IS it, with the squeeze RETURNED rather than
+             written into a caller's buffer.
+         So the vector survives the move and the file keeps its purpose: driving the real xorIn and
+         copyOut pair at two rates. -->
+    <ProjectReference Include="..\..\core\crypto\sha3\crypto.sha3.csproj" />
 
     <!-- TestExecutionOutputCapTests: same reason, one tier up. The hand-owned Phase-4 test HOST has
          no _test.go anywhere and no behavioral test can reach it — a converted suite exercises it
@@ -134,6 +220,15 @@
          claim is that runtime.ReadMemStats and runtime/debug.ReadGCStats read ONE snapshot, so the
          guard has to hold BOTH of them against each other — which needs both packages bound. -->
     <ProjectReference Include="..\..\core\runtime\debug\runtime.debug.csproj" />
+
+    <!-- RuntimeCPUProfilerWindowsTests: StartCPUProfile / StopCPUProfile are the observable the Windows
+         CPU-profiler hand-own exists for (the "cpu profiling already in use" leak), so the guard binds
+         runtime/pprof itself rather than a model of it. -->
+    <ProjectReference Include="..\..\core\runtime\pprof\runtime.pprof.csproj" />
+    <ProjectReference Include="..\..\core\internal\profile\internal.profile.csproj" />
+
+    <!-- TestenvCPUProfilingBrokenTests: the hand-owned answer runtime/pprof's CPU tests consult. -->
+    <ProjectReference Include="..\..\core\internal\testenv\internal.testenv.csproj" />
 
     <!-- MulUnbalancedDiscriminatorTests: the §5.4 discriminator drives math/big's nat.mul through
          Int.SetBits/Int.Mul. Same precedent as sha3 above — an MSTest tier binding a converted
@@ -159,12 +254,13 @@
     <ProjectReference Include="..\..\core\reflect\reflect.csproj" />
     <ProjectReference Include="..\..\core\fmt\fmt.csproj" />
 
-    <!-- AliasOverlapTests: crypto/internal/alias is the corpus's memory-ALIASING predicate, and it
+    <!-- AliasOverlapTests: crypto/internal/fips140/alias is the corpus's memory-ALIASING predicate (it
+         moved from crypto/internal/alias at 1.24; the H5 relocation c8d50e014f), and it
          is emitted as four `(uintptr)Ꮡ(…)` address takes over MANAGED storage. Its banked row is a
          single verdict, so the semantic contract is guarded nowhere else, and the guard has to drive
          the REAL converted predicate rather than a model of it — the same
          MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag above. -->
-    <ProjectReference Include="..\..\core\crypto\internal\alias\crypto.internal.alias.csproj" />
+    <ProjectReference Include="..\..\core\crypto\internal\fips140\alias\crypto.internal.fips140.alias.csproj" />
     <!-- AliasOverlapRaceTests (vendored twin): vendor/golang.org/x/crypto/internal/alias is the purego copy
          of the same predicate, reached by chacha20 and chacha20poly1305 through InexactOverlap. -->
     <ProjectReference Include="..\..\core\vendor\golang.org\x\crypto\internal\alias\vendor.golang.org.x.crypto.internal.alias.csproj" />
@@ -172,6 +268,21 @@
          crypto/aes + crypto/cipher (counterCrypt -> aes Encrypt -> alias.InexactOverlap). -->
     <ProjectReference Include="..\..\core\crypto\aes\crypto.aes.csproj" />
     <ProjectReference Include="..\..\core\crypto\cipher\crypto.cipher.csproj" />
+
+    <!-- PublicizedRecvOverloadTests: crypto/internal/fips140/ecdsa carries the subject/control PAIR for
+         RecvGenerator's accessibility rule in ONE package and ONE compilation — hmacDRBG (unexported in
+         Go, PUBLICIZED by the converter because the exported TestingOnlyNewDRBG hands out a box of it)
+         beside PrivateKey (exported in Go). The guard has to bind the REAL generated ж overloads out of
+         the REAL assembly, because the defect it was minted on is cross-ASSEMBLY accessibility: a
+         synthetic mirror compiled inside this project could not reproduce it at all. Same
+         MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag/alias above. -->
+    <ProjectReference Include="..\..\core\crypto\internal\fips140\ecdsa\crypto.internal.fips140.ecdsa.csproj" />
+    <!-- LinuxGetRandomTests: runtime.vgetrandom's forward row, driven through the REAL converted
+         internal/syscall/unix.GetRandom and crypto/rand.Read, the calls the go1.24.13 Linux leg's 25
+         vgetrandom rows died under. Both packages compile on every flavour, so the references are
+         unconditional and only the gate FILE is (the os/user precedent above). -->
+    <ProjectReference Include="..\..\core\internal\syscall\unix\internal.syscall.unix.csproj" />
+    <ProjectReference Include="..\..\core\crypto\rand\crypto.rand.csproj" />
   </ItemGroup>
 
 </Project>

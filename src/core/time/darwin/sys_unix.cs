@@ -5,22 +5,10 @@
 namespace go;
 
 using errors = errors_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 
 partial class time_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 // for testing: whatever interrupts a sleep
 internal static void interrupt() {
@@ -29,7 +17,7 @@ internal static void interrupt() {
     // somewhat defeats the purpose of TestSleep but we are still better off
     // validating that time elapses when the process calls time.Sleep than
     // skipping the test altogether.
-    if (Δruntime.GOOS != "wasip1"u8) {
+    if (runtime.GOOS != "wasip1"u8) {
         syscall.Kill(syscall.Getpid(), syscall.SIGCHLD);
     }
 }

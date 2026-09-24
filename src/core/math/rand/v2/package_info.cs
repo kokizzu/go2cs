@@ -54,11 +54,11 @@ using static go.math.rand.rand_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/rand/v2/chacha8.go", "chacha8.cs", "ABswsoKCqMKCgqiygoKClAADFAAKAoKCgpSCgoKUgoKClNiygoKCgoKUlKaCgpSmgoKUqLKCgoKClA==")]
-[assembly: go.GoPositionMap("math/rand/v2/exp.go", "exp.cs", "ABg88oKCgoKCgpSClII=")]
+[assembly: go.GoPositionMap("math/rand/v2/chacha8.go", "chacha8.cs", "ABUwsoKCqMKCgqiygoKClAADFAAKAoKCgpSCgoKUgoKClNiygoKCgoKUlKaCgpSmgoKUqLKCgoKUqMQ=")]
+[assembly: go.GoPositionMap("math/rand/v2/exp.go", "exp.cs", "ABI88oKCgoKCgpSClII=")]
 [assembly: go.GoPositionMap("math/rand/v2/normal.go", "normal.cs", "ABIugoKUAAIU8oKCgoKClJaUgoKCgqaClJSC")]
-[assembly: go.GoPositionMap("math/rand/v2/pcg.go", "pcg.cs", "AB0wkqiSgqiSgoKCgsySgpSCgqYAAxIADxCCgoKCgoKokgAIGpKCgoKC")]
-[assembly: go.GoPositionMap("math/rand/v2/rand.go", "rand.cs", "ACZQoqiQppCmkKaQppCmkKiigpSqooKUqJKClJIAH0KCgoKCpqqikgAQIoKCgoKCgoKCgoKCgoKmqqKClKqigpTOooKUqqKClKikqKSqooKClJCSrLKCAAcSgoIACxrqgqqgqKCqsKqwqKCooKaQppCqsKqwqrCqsKrSgpQACBSgqKCooKqwAAIUAAgAAAIS8A==")]
+[assembly: go.GoPositionMap("math/rand/v2/pcg.go", "pcg.cs", "ABcwkqiSgqiSgoKCqJLMkoKUgoKmAAMSAA8QgoKCgoKCqJIACBqSgoKCgg==")]
+[assembly: go.GoPositionMap("math/rand/v2/rand.go", "rand.cs", "ACZQoqiQppCmkKaQppCmkKiigpSqooKUqJKClJIAH0KCgoKCpqqikgAQIoKCgoKCgoKCgoKCgoKmqqKClKqigpTOooKUqqKClKikqKSqooKClJCSrLKCAAcSgoIACxrqgqqgqKCqsKqwqKCooKaQppCqsKqwqrCqsKrSgpQACBSgqKCooKqwAAIUAAgAAAIS8A==", "226-226:1")]
 [assembly: go.GoPositionMap("math/rand/v2/zipf.go", "zipf.cs", "ABo2gqaCruKCgpSCgoKCgoKCgoKqwoKUhIKCgoKCgpSCpg==")]
 // </GoSourcePositionMaps>
 
@@ -82,4 +82,16 @@ public static partial class rand_package
     public partial struct Rand {}
     public partial struct Zipf {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    // </ImportInitializers>
 }

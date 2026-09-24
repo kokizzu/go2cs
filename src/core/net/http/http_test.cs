@@ -9,8 +9,8 @@ using testenv = global::go.@internal.testenv_package;
 using fs = global::go.io.fs_package;
 using url = global::go.net.url_package;
 using os = os_package;
-using reflect = reflect_package;
 using regexp = regexp_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using exec = global::go.os.exec_package;
@@ -44,7 +44,7 @@ public static void TestForeachHeaderElement(ж<testing.T> Ꮡt) {
         foreachHeaderElement(tt.@in, (@string v) => {
             Ꮡgot.ValueSlot = append(Ꮡgot.ValueSlot, v);
         });
-        if (!reflect.DeepEqual(got, tt.want)) {
+        if (!slices.Equal<slice<@string>, @string>(got, tt.want)) {
             Ꮡt.Errorf("foreachHeaderElement(%q) = %q; want %q"u8, tt.@in, got, tt.want);
         }
     }
@@ -171,7 +171,6 @@ internal static map<@string, bool> forbiddenStringsFunctions = new map<@string, 
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object sourceCodeNotAvailableˢ = (@string)"source code not available"u8;
 internal static readonly @string stringsBytesAZaZˢ = @"(strings|bytes).([A-Za-z]+)"u8;
 internal static readonly @string testGoˢ = "_test.go"u8;
 
@@ -179,9 +178,7 @@ internal static readonly @string testGoˢ = "_test.go"u8;
 // strings and bytes package functions. HTTP is mostly ASCII based, and doing
 // Unicode-aware case folding or space stripping can introduce vulnerabilities.
 public static void TestNoUnicodeStrings(ж<testing.T> Ꮡt) {
-    if (!testenv.HasSrc()) {
-        Ꮡt.Skip(sourceCodeNotAvailableˢ);
-    }
+    testenv.MustHaveSource(new http_test_package.testing_TжTB(Ꮡt));
     var re = regexp.MustCompile(stringsBytesAZaZˢ);
     {
         var reʗ1 = re;
@@ -211,6 +208,28 @@ public static void TestNoUnicodeStrings(ж<testing.T> Ꮡt) {
         }); if (err != default!) {
             Ꮡt.Fatal(err);
         }
+    }
+}
+
+public static void TestProtocols(ж<testing.T> Ꮡt) {
+    global::go.net.http_package.Protocols p = default!;
+    if (p.HTTP1()) {
+        Ꮡt.Errorf("zero-value protocols: p.HTTP1() = true, want false"u8);
+    }
+    p.SetHTTP1(true);
+    p.SetHTTP2(true);
+    if (!p.HTTP1()) {
+        Ꮡt.Errorf("initialized protocols: p.HTTP1() = false, want true"u8);
+    }
+    if (!p.HTTP2()) {
+        Ꮡt.Errorf("initialized protocols: p.HTTP2() = false, want true"u8);
+    }
+    p.SetHTTP1(false);
+    if (p.HTTP1()) {
+        Ꮡt.Errorf("after unsetting HTTP1: p.HTTP1() = true, want false"u8);
+    }
+    if (!p.HTTP2()) {
+        Ꮡt.Errorf("after unsetting HTTP1: p.HTTP2() = false, want true"u8);
     }
 }
 

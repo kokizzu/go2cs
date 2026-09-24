@@ -18,6 +18,14 @@ using go;
 using static global::go.go.build.constraint_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b20657272206572726f727d", "parseExprErrorTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f6b20626f6f6c3b207461677320737472696e677d", "exprEvalTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f7574205b5d737472696e673b20657272206572726f727d", "plusBuildLinesTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420696e747d", "testsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "lexTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b207820676f2f6275696c642f636f6e73747261696e742e457870723b2065727220737472696e677d", "constraintTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b207820676f2f6275696c642f636f6e73747261696e742e457870727d", "parseExprTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820676f2f6275696c642f636f6e73747261696e742e457870723b206f757420737472696e677d", "exprStringTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -34,7 +42,7 @@ using static global::go.go.build.constraint_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/build/constraint/expr_test.go", "expr_test.cs", "AClQgrKSgoIAGzSCspKCgoKCgpSClIKClJSC3OKCgIKAgoKkuIIAFySCspKCgpSCABQmgrKSgoKUggATJIKykoKClIKCgpSSgpSCggAUMIKykoKCABs2grKSgoKCpJSUgoKUggAXKoKykoKClIKCgqSUlIKClIKClIIADQyCABQqkoKCooKClAAMDoKCAAwakoKCpA==")]
+[assembly: global::go.GoPositionMap("go/build/constraint/expr_test.go", "expr_test.cs", "ACtUgrKSgoIAGzSCspKCgoKCgpSClIKClJSC3OKCgIKAgoKkuIIAFySCspKCgpSCABQmgrKSgoKUggATJIKykoKClIKCgpSSgpSCggAUMIKykoKCABs2grKSgoKCpJSUgoKUggAXKoKykoKClIKCgqSUlIKClIKClIIADQyCABQqkoKCooKClAAMDoKCAAwakoKCpA==", "44-49:1;75-95:1;100-108:1;131-139:1;158-166:1;184-203:1;194-197:1.1;226-231:1;258-275:1;296-321:1;347-358:1;377-384:1")]
 [assembly: global::go.GoPositionMap("go/build/constraint/vers_test.go", "vers_test.cs", "AB04goKCgpSCgoKklII=")]
 // </GoSourcePositionMaps>
 
@@ -51,4 +59,26 @@ public static partial class constraint_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.go.build.constraint_package));
+    }
 }

@@ -19,60 +19,6 @@ using path;
 
 partial class parser_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(global::go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidSourceˢ = "invalid source"u8;
 
@@ -154,7 +100,9 @@ public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @
         if (err != default!) {
             (f, err) = (default!, err); goto ᒐdone;
         }
+        var @file = Ꮡfset.AddFile(filename, -1, len(text));
         ref var p = ref heap(new parser(), out var Ꮡp);
+        var fileʗ1 = @file;
         defer(() => {
             {
                 var e = recover(); if (e != default!) {
@@ -179,11 +127,15 @@ public static (ж<ast.File> f, error err) ParseFile(ж<token.FileSet> Ꮡfset, @
                     Scope: ast.NewScope(nil)
                 ));
             }
+            // Ensure the start/end are consistent,
+            // whether parsing succeeded or not.
+            f.Value.FileStart = ((tokenꓸPos)fileʗ1.Base());
+            f.Value.FileEnd = ((tokenꓸPos)(fileʗ1.Base() + fileʗ1.Size()));
             Ꮡp.Value.errors.Sort();
             Ꮡerr.ValueSlot = Ꮡp.Value.errors.Err();
         }, ref ᒐ);
         // parse source
-        Ꮡp.init(Ꮡfset, filename, text, mode);
+        Ꮡp.init(@file, text, mode);
         f = Ꮡp.parseFile();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -293,7 +245,8 @@ public static (ast.Expr expr, error err) ParseExprFrom(ж<token.FileSet> Ꮡfset
             Ꮡerr.ValueSlot = Ꮡp.Value.errors.Err();
         }, ref ᒐ);
         // parse expr
-        Ꮡp.init(Ꮡfset, filename, text, mode);
+        var @file = Ꮡfset.AddFile(filename, -1, len(text));
+        Ꮡp.init(@file, text, mode);
         expr = Ꮡp.parseRhs();
         // If a semicolon was inserted, consume it;
         // report an error if there's more tokens.

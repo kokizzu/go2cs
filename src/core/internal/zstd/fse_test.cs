@@ -9,18 +9,6 @@ using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // literalPredefinedDistribution is the predefined distribution table
 // for literal lengths. RFC 3.1.1.3.2.2.1.
 internal static slice<int16> literalPredefinedDistribution = new int16[]{
@@ -63,21 +51,21 @@ public static void TestPredefinedTables(ж<testing.T> Ꮡt) {
             name: "literal"u8,
             distribution: literalPredefinedDistribution,
             tableBits: 6,
-            toBaseline: (Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeLiteralBaselineFSE),
+            toBaseline: ((Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeLiteralBaselineFSE)),
             predef: predefinedLiteralTable[..]
         ),
         new(
             name: "offset"u8,
             distribution: offsetPredefinedDistribution,
             tableBits: 5,
-            toBaseline: (Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeOffsetBaselineFSE),
+            toBaseline: ((Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeOffsetBaselineFSE)),
             predef: predefinedOffsetTable[..]
         ),
         new(
             name: "match"u8,
             distribution: matchPredefinedDistribution,
             tableBits: 6,
-            toBaseline: (Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeMatchBaselineFSE),
+            toBaseline: ((Func<ж<global::go.@internal.zstd_package.Reader>, nint, slice<global::go.@internal.zstd_package.fseEntry>, slice<global::go.@internal.zstd_package.fseBaselineEntry>, error>)(global::go.@internal.zstd_package.makeMatchBaselineFSE)),
             predef: predefinedMatchTable[..]
         )
     }.slice();

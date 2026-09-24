@@ -14,6 +14,7 @@ using errors = errors_package;
 using fmt = fmt_package;
 using godebug = @internal.godebug_package;
 using fs = go.io.fs_package;
+using maps = maps_package;
 using math = math_package;
 using path = path_package;
 using reflect = reflect_package;
@@ -24,66 +25,6 @@ using @internal;
 using go.io;
 
 partial class tar_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // BUG: Use of the Uid and Gid fields in Header could overflow on 32-bit
 // architectures. If a large value is encountered when decoding, the result
@@ -98,6 +39,7 @@ public static error ErrInsecurePath = errors.New("archive/tar: insecure file pat
 internal static error errMissData = errors.New("archive/tar: sparse file references non-existent data"u8);
 internal static error errUnrefData = errors.New("archive/tar: sparse file contains unreferenced data"u8);
 internal static error errWriteHole = errors.New("archive/tar: write non-NUL byte in sparse hole"u8);
+internal static error errSparseTooLong = errors.New("archive/tar: sparse map too long"u8);
 
 [GoType("[]@string")] partial struct headerError;
 
@@ -817,24 +759,14 @@ public static (ж<Header>, error) FileInfoHeader(fs.FileInfo fi, @string link) {
             h.Value.Gname = sys.Value.Gname;
             h.Value.AccessTime = sys.Value.AccessTime;
             h.Value.ChangeTime = sys.Value.ChangeTime;
-            if ((~sys).Xattrs != default!) {
-                h.Value.Xattrs = new map<@string, @string>();
-                foreach (var (k, v) in (~sys).Xattrs) {
-                    h.Value.Xattrs[k] = v;
-                }
-            }
+            h.Value.Xattrs = maps.Clone<map<@string, @string>, @string, @string>((~sys).Xattrs);
             if ((~sys).Typeflag == TypeLink) {
                 // hard link
                 h.Value.Typeflag = TypeLink;
                 h.Value.Size = 0;
                 h.Value.Linkname = sys.Value.Linkname;
             }
-            if ((~sys).PAXRecords != default!) {
-                h.Value.PAXRecords = new map<@string, @string>();
-                foreach (var (k, v) in (~sys).PAXRecords) {
-                    h.Value.PAXRecords[k] = v;
-                }
-            }
+            h.Value.PAXRecords = maps.Clone<map<@string, @string>, @string, @string>((~sys).PAXRecords);
         }
     }
     bool doNameLookups = true;

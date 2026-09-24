@@ -40,7 +40,7 @@ public static S Scale<S, E>(S s, E c)
 }
 
 public static void ScaleAndPrint(Point p) {
-    var r = Scale(p, 2);
+    var r = Scale(p, (int32)(2));
     fmt.Println(r.String());
 }
 
@@ -158,17 +158,17 @@ internal static void Main() {
     Point p = default!;
     p = new int32[]{1, 2, 3}.slice();
     ScaleAndPrint(p);
-    fmt.Println(Twice(new Point(new int32[]{3, 4}.slice()), 2).String());
+    fmt.Println(Twice(new Point(new int32[]{3, 4}.slice()), (int32)(2)).String());
     var (dst2, src2) = (new Point(new int32[]{0, 0, 0}.slice()), new Point(new int32[]{7, 8, 9}.slice()));
     var (lo, hi) = CopyClearMinMax<Point, int32>(dst2, src2);
     fmt.Println(dst2.String(), src2.String(), lo, hi);
     var q = new Point(new int32[]{1, 2, 3, 4}.slice());
     var total = SumHalves<Point, int32>(q);
     fmt.Println(q.String(), total);
-    var grown = AppendKeep(new Point(new int32[]{5, 6}.slice()), 7);
+    var grown = AppendKeep(new Point(new int32[]{5, 6}.slice()), (int32)(7));
     fmt.Println(grown.String());
     var pt = new Point(new int32[]{1, 2}.slice());
-    PassSlice(pt, 42);
+    PassSlice(pt, (int32)(42));
     fmt.Println(pt.String());
     var g1 = new Grades(new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2});
     var g2 = new Grades(new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2});

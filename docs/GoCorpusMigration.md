@@ -246,6 +246,25 @@ readings a person makes. It also leaves the **converter tool** version alone: th
 
 **Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
 
+> **AMENDED 2026-09-20 — the build-number reset is now a GUARD ARM, not a step to remember.**
+> `TestPublishedCounterMatchesTheRecordedReleases` in `src/go2cs/internal/repoguard` holds it under
+> the plain `go test ./...` every lane already runs: **no release recorded on the current base → the
+> counter reads 0; releases recorded → the counter names the latest of them, exactly.** It reads
+> `src/version.props` and the write-once snapshot directories under `docs/validation/` (H11.5), so it
+> needs no git, no tag list and no feed query, and it holds on the shallow clones the lanes work from.
+>
+> **Why it exists:** the reset was ruled here and enacted by `migrate-gorelease.ps1`, and it was still
+> MISSED at `claude/version-go1.24.13` `0f97dcc8db` — the base went 1.23.12 → 1.24.13 with the counter
+> carried at 3. Nothing went red: version.props parses, the converter emits, the corpus builds. The
+> measured blast radius was **335 package READMEs linking a `nuget-1.24.13.3` tag with no object behind
+> it and 191 linking a `docs/validation/1.24.13.3/` directory that was never written** — a defect whose
+> only symptom is a reader clicking a badge, which no gate in this repository clicks. A rule enacted by
+> an instrument the executing lane may or may not run is a rule that lives in attention.
+>
+> ⚠ **Resetting the counter is necessary and NOT sufficient.** With the counter at 0 the composed stamp
+> is `<new-base>.0`, equally unpublished; see H12's amendment of the same date for what the badges do
+> instead.
+
 #### Ruling 2026-09-08 — the H2→H5 window: the converter at go1.24.13, the corpus still at 1.23.12
 
 H2 bumps the **corpus** pin; H1 step 2 has already moved the **converter module's** `go` directive, so the
@@ -2222,6 +2241,19 @@ Per banked package:
 percentage — are reported every migration, because they can move in opposite directions when a release
 adds testable packages faster than validation adds rows.
 
+⚠ **AMENDED 2026-09-22 (the unmeasured-rows rule made concrete, coordinator ruling; ledger 14:45 ·
+d5414aa151). "Every roster row re-validates from scratch" has a closing test, and it is taken BY NAME.**
+A page census at the batch-7 tree found 25 of 219 rows linking no 1.24.13 page, and **fourteen of them
+were BANKED rows never measured at 1.24.13 at all**: the recon leg's 13 NOVERDICT rows at the early tree
+0dc65a8e8d (crypto/tls, fmt, internal/coverage/cfile, internal/godebug, internal/runtime/atomic,
+internal/trace, math/rand, mime/multipart, net/http, os/user, syscall, testing, unicode/utf8 — several
+of them casualties of the `testing` row's contamination of one worker's list), plus net, hand-stopped at
+3,792 s. A banked row with no reading at the new release is carry-forward by omission, which this stage
+rules out. **H10 closes only when each such row re-banks at the new release or is demoted to a
+candidate BY NAME, with the header recomputed by the guard** — never by the row keeping its old count.
+The coordinator re-dispatches them with a raised budget; pass 3 (at 8fc439415f) banked three and routed
+the rest by class (ledger 16:03 · c660a17d8c).
+
 **One arithmetic cross-check, free and worth running here:** the count of banked test project files
 must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
 a migration ends with the two unequal the badge census miscounts — loudly, by design.
@@ -2292,6 +2324,44 @@ banks 2,195 verdicts from 5 declarations, so a declaration share routes them to 
 none of them). **204 → 203 banked, 32 → 23 candidates, and the corpus axis is 226** — a figure
 independent of how the derivation comes out.
 
+⚠ **AMENDED 2026-09-22 (H10 closing arithmetic, coordinator ruling). "The corpus axis is 226" is
+FALSE as a statement about the population, and the way it is false is the lesson: 226 is the
+*generator's own axis*, and a generator's axis cannot measure the generator.** `shardmap.py` builds
+its axis as *banked-at-seat + costed* — both read from its own inputs — so it closes by construction
+and can be wrong by any amount. A package that is neither banked nor carries a measured cost is not
+subtracted from that number; it is **invisible to it**, and no reading the map prints can say so.
+The enumerated population at `go1.24.13` on the corpus axis (windows/amd64, `-tags
+purego,math_big_pure_go`) is **230**, derived twice independently and equal both ways, and the four
+members 226 cannot see are `internal/unsafeheader`, `net/http/pprof`, `runtime/pprof` and
+`runtime/trace`. Two of those are exclusion-ledger rows and are correctly not dispatched. The other
+two — **`net/http/pprof` and `runtime/pprof`** — are ordinary population members, in no shard's plan
+and in no unscheduled bucket, and **on the pass-1 map they never run at 1.24.13 at all.**
+
+**The closing identities, as MEASURED at this hop:**
+
+- `212 dispatched + 18 unscheduled = 230`
+- `216 banked + 8 candidates + 6 exclusion rows = 230`
+
+**The procedure this amends, for every hop after this one: a population is an ENUMERATION checked by
+two INDEPENDENT routes, never a count a generator derives from its own inputs.** The enumeration is
+a committed file (`docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt`); the roster guard
+asserts the header's `N` and every banked and excluded row's membership against it, and `shardmap.py`
+now refuses when `dispatched + unscheduled` does not close on it, naming every member on each side.
+The exclusion ledger takes the same rule the population does: an exclusion is subtractable only from
+a set that contains it, which is what struck four E1 rows from the roster's table on the same date.
+
+⚠ **AMENDED 2026-09-22 (the two live members COSTED, coordinator ruling; ledger 16:31 · 3469154a95;
+evidence ledger 11:36 · 553cdcbae3). The closing check above now closes.** The basis
+(`docs/phase4/hopA-inputs/recon-basis.tsv`) carries `runtime/pprof` and `net/http/pprof` as COSTED rows
+from the i9's measured walls — runtime/pprof 175 s, net/http/pprof 68 s, both DIVERGED at f545b18d4d —
+appended from the two result TSVs on `claude/i9-h10-pprof-evidence` 553cdcbae3 with their eleventh column
+(`post_s`) dropped to the basis's ten. `shardmap.py --timings recon-basis.tsv` reads **214 dispatched + 14
+unscheduled = 228 reached + 2 exclusion-ledger rows (internal/unsafeheader, runtime/trace) = 230** and
+exits 0, where it refused before at 212 + 14 = 226 naming the two; they report as candidates (costed,
+not banked). **No plan was regenerated**: the committed `h10-dispatch-plan.tsv` still records the pass-1
+basis digest (`c3715b2332b5f1ef…`; the basis now reads `6089133e6e3f8144…`), which is correct, since a plan
+is the record of the basis it was cut from.
+
 ⚠ **A relocated row's disclosure file does not MOVE.** Measured at this hop: there is no tree on which
 the move is possible — at master the target directories do not exist, and at the version tip the
 source directories are already deleted by the reconvert. **The disclosures retire with the row and are
@@ -2335,6 +2405,18 @@ duplicates — and the **eight** rows from it to the end of that list carry **on
 not eight readings**. The tell is `unicode`, `unicode/utf8` and `unique` failing to BUILD; rows before
 it are unaffected, so the ordering decides how much a list loses. A list that includes it does not
 fail loudly — it produces readings, which is why this is a list-construction rule and not a gate.
+
+⚠ **AMENDED 2026-09-22 (the refusing seat has landed, coordinator ruling; ledger 14:45 · d5414aa151).
+The precondition above is SATISFIED.** The converter's hand-own guard, `requireConvertibleTestTarget`,
+runs a wholly hand-owned host **tests-only** and never emits its production, so the row can no longer
+convert `testing.go` over the host. **`testing` is admissible, and it runs LAST in its list**: the
+ordering half of the rule stays, since a row that did disturb the tree would still take every later
+row with it. Pass 3 dispatched it that way. What remains is a separate converter defect, not this
+hazard: the tests-only mode excluded the EXTERNAL `testing_test.go` whole for one bridged reference —
+1.24's `export_test.go` adds `const ParallelConflict = parallelConflict` — although the hand-owned host
+already declares a public `ParallelConflict` for exactly that binding, so 30 verdicts left the
+comparison. Admitting a bridged name the host declares, while still excluding one it does not, is G's
+seat (ledger 16:05 · 3469154a95).
 
 **THE TSV the plan is emitted from**, as the generator reads it — `--timings <path>`, no default and
 no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
@@ -2455,6 +2537,16 @@ parity-campaign item disclosed as such with the row's bank being its linux readi
 banked. **Hop completion is same-platform by construction.** Two row classes are decided by the
 package and not by scheduling: a package with no Go files under a platform's build constraints
 **cannot be converted there at all** (the converter refuses by name), and its marker reads `n/a`.
+
+⚠ **AMENDED 2026-09-22 (the host rule at the CLOSE, coordinator finding; ledger 16:31 · 3469154a95).
+The rule binds at the close, not only mid-campaign.** A row still DIVERGED on windows when H10 closes is
+re-read on the linux leg at the same tip **before** it is classified or demoted by name: a demotion
+taken without the linux reading decides a platform question on one platform. And a windows pass does
+not refresh the roster's linux evidence: **the header's linux line and its 190 `linux:` annotations are
+1.23.12 evidence until the linux leg re-reads them at the new tip**, so that leg is a GATING item before
+the final figures, not a follow-up. Ruled on C1's linux-annotation sizing (ledger 16:32 · 93cc9e215a):
+the leg runs after batch 8b's STAMP, banks only the annotations with the guard re-deriving the header's
+linux line, and re-reads on linux every row still diverged on windows.
 
 **THE PRECONDITIONS, which H10 above states only in part.** The step names the four overrides and the
 never-the-sweep-wrapper rule; the rest are inherited from earlier stages and are restated here
@@ -2658,6 +2750,24 @@ go2cs -tests -test-action all -test-config Release -test-timeout <floor> \
   Keep `2>&1` — the classifier reads stderr to separate CONVERT from BUILD — lower the error preference
   around that call alone, restore it in a `finally`, and reset the code per row.
 
+⚠ **AMENDED 2026-09-22 (two wrapper rules measured at pass 3, coordinator rulings; ledger 14:52 ·
+158ce37f6c and 16:17 · 3469154a95). Both fixes ride the i7 wrapper instrument seat.**
+
+- **A derived floor never LOWERS an asked `-TestTimeout`: the row runs at `max(asked, floor)`.** "Floors
+  are floors" above says raise and never lower, and the sweep's own `$raisesTheFloor` takes the larger;
+  `src/run-h10-recon.ps1` (blob 158ce37f6c, line 829) let a row's floor REPLACE an asked raise instead —
+  crypto/tls would have run at 30m where 60m was asked, net/http at 60m where 90m was. G's per-run copy
+  took the maximum, ruled correct.
+- **Every row runs with its roster `execution:` pin, exactly as the sweep does** (`_roster.ps1`'s
+  `Get-RosterExecutionArgs`: `release-tiered` → `-test-config Release -test-tiered`, `release-tc0` →
+  `-test-config Release`). The same wrapper passes `-test-config $TestConfig` and an empty extra for every
+  row, so a `release-tiered` row ran at Release+TC0 — and those rows carry the pin precisely because they
+  fail there (`CENSUS-release-tc0-delta.md` §2 and its amendment: internal/godebug, log/slog, net/http).
+  Measured at pass 3: internal/godebug's TestCmdBisect read bisect's source lines one low, and net/http's
+  TestRegisterErr//a lost its registration site ("registered at unknown location"). The position map
+  decodes to Go's lines exactly at both platforms' emission, so neither is a converter defect. **A reading
+  taken without the row's pin is not that row's reading**; both rows are re-read with it.
+
 **THE WORDS are the fixed vocabulary, filled and never placeholdered**: `PASS` banks; `DIVERGED` mints
 or re-signs disclosures, then banks or routes; `CONVERT` and `BUILD` bank nothing and owe a sizing;
 `TIMEOUT` re-dispatches at a raised budget; `NOVERDICT` is recorded by cause. ⚠ **A long wall is not a
@@ -2671,6 +2781,18 @@ that a red row names its own shard. ⚠ **The roster's figures are DERIVED and n
 `src/check-roster-format.ps1` recomputes the header from the table — validated count against row count,
 verdicts against the Tests column, disclosed against the Disclosed column, the percentage following
 from those — so a worker edits rows and the coordinator takes the header from the guard.
+
+⚠ **AMENDED 2026-09-22 (what the Tests cell holds, coordinator correction; ledger 15:42 · 3469154a95).
+The Tests cell is the page's MATCHED count, never matched + disclosed.** Disclosed verdicts have their
+own column, and the header's "matching" figure is the sum of the Tests cells, so a cell that adds them
+counts disclosed verdicts as matching. Batch 7's three new cells did — crypto/internal/fips140test 2267
+for the page's 2260 + 7, crypto/sha3 23 for 18 + 5, internal/runtime/maps 111 for 3 + 108 — overstating
+the header by 120, and four older rows disagreed with their own 1.24.13 pages on Disclosed. **The guard
+enforces it**: `check-roster-format.ps1` section 2f (C1's `claude/c1-own-page-cells` 51a1d30ff9, accepted
+for batch 8b; ledger 15:49) requires, for every row whose FIRST `[proof]` page was generated at the pin
+read from `src/version.props`, Tests == the page's matched and Disclosed == the page's disclosed. Rows
+whose first page is older are counted, never gated. A figure set in a brief is a prediction; the page is
+the reading.
 
 ⚠ **`docs/validation/index.md` IS ONE SHARED FILE EVERY ROW REWRITES, so no lane ref may carry it.**
 Measured on a one-row dry run: re-banking a single row's proof page **removed 25 lines from the shared
@@ -2806,11 +2928,272 @@ and the seeded-root arm are cited from the readings already recorded in this sec
 re-derived. A read and a docs act: this lane has no .NET and no PowerShell, so no figure here was
 produced by running the driver, the format gate or the sweep. -->
 
+#### Amendment 2026-09-23 (COORD) — the CLOSE, in stage: the checklist as this hop executes it, its gates, and three lessons for the next hop
+
+H10's gate says **when** the step closes: every banked row re-banks at the new release or is demoted
+to a candidate BY NAME, the guard derives the header, and both numbers are reported. **It does not
+say how a close is carried out**, and until today this section had no close checklist. At the
+1.23 → 1.24 hop the close was put together from this section's gates, the ledger's rulings and the
+handover record. It runs as two parts with a coordinator checkpoint between them
+(`docs/phase4/briefs/batch8g-and-close-brief.md` and `h10-close-obligations.md` on
+`claude/coord-handover`; ledger 2026-09-23 13:36 · `3ec2c9ff39`). It is written here in stage, while
+the seat runs, so the next hop starts from a checklist rather than a derivation. **The runbook
+leads:** where a brief and this block disagree, the brief stops and quotes both.
+
+```
+  LAST PRE-CLOSE BATCH -> CHECKPOINT -> refs + controls -> the demoted row's close reading -> demotions
+  -> core-refs sweep -> FREEZE -> final seeded REGEN -> post-regen gates -> figures -> index once
+  -> closing checks -> CLOSE STAMP (announced before the push)
+```
+
+1. **The last pre-close batch** banks every row that can still re-bank. At this hop that was batch 8g,
+   stamped at 14:39 · `faaa8fe999`. It banked crypto/tls from a raised-wall run, as the owner ruled,
+   with its test artifacts re-emitted convert-only at the merged tree. It also carried net's and
+   crypto/tls's linux annotations and two deadline floors. *Gate:* the guard is green, and no row
+   carries two Go versions.
+2. **The checkpoint (coordinator).** Before the close seat's prompt is cut, three things are true:
+   - Every ruling the seat consumes is filled. The seat stops on any that is missing.
+   - The host rule is met for each row about to be demoted: either a linux re-read at the same tip,
+     or a ruling that a named earlier reading suffices.
+   - Each close precondition is either carried as a docs-only ref in the seat's base, or named
+     together with the ref that lands it before the close STAMP. The preconditions are: the BOARD
+     finding for the hop's open label questions, any attribution owed "before the close", and this
+     amendment.
+3. **Refs, then controls, before any close edit.**
+   - Merge the docs refs (ALLOWED: `docs/**` only), then run the guard as a control.
+   - In the leg's tree, record three readings: shardmap closes, the core-references guard's
+     `declared · measured · retired` line, and the index tool's self-test plus a dry run.
+   - Run the build controls in a CONTROL worktree, never in the leg's (the preflight-build rule
+     above): the steady-state sweep of one row whose production the regen will move (the control for
+     the overlay's effect), GolibTests, and the full behavioral suite.
+   - Then take the ignored-residue census BEFORE the reading, with its control, and clear it to 0.
+     Build the converter. The census must now show exactly ONE `!!` row, the converter binary.
+4. **The demoted row's close reading.** Read the row once more at the close head:
+   - Go through the recon wrapper, with the row's roster `execution:` pin applied and `-AllowBranch`
+     reported, because the tree is on a branch. A DIVERGED run publishes no page.
+   - Keep the re-emitted TEST artifacts as candidate evidence. That means the ruled set, with Go's
+     `testdata/**` byte-equal to GOROOT's, taken from the row's own directory minus its sub-packages.
+   - Restore every production re-emission, the README and any `docs/validation/**` write, and count
+     each by class.
+   - ⚠ **A `-tests` run can REMOVE a generated test artifact it no longer emits.** Admit that removal
+     by name with `git rm` (the precedent is ledger 2026-09-22 04:14). Any other deletion stops the
+     seat.
+5. **Demotion BY NAME: the mechanics.** *Gate:* until the figures step, the guard's failure set is
+   EXACTLY the header and NEWS figure arms, and every membership arm is green.
+   - **The roster row** is deleted whole. A DATED SUCCESSOR of the closing-identities block goes
+     above the old block, which stays verbatim. The successor carries the candidate table in PLAIN
+     code spans, never the linked-row shape the parser reads as a row. Each candidate's cell names its
+     classes as the close reading worded them, its evidence, the execution pin it carries on re-entry,
+     its previous-release record in the write-once snapshot, and its re-entry path.
+   - **The current proof page** (`docs/validation/current/<row>.md`) is removed with `git rm`. While
+     it exists, the badge writer composes GREEN from it, and the index tool refuses a page that no row
+     names. The previous-release page survives in the write-once snapshot. This is not the relocation
+     rule's "no proof file is moved, renamed or created", which governs relocated rows.
+   - **The README Tests badge** is hand-set to the converter's exact orange form
+     (`readmeValidationBadge.go:455-456`). This is a PREDICTION, and the regen scores it byte for byte.
+   - **A COSTED recon-basis row** is appended. See lesson 1 below.
+   - **A demoted linux ANNOTATION.** Here the windows bank stands but the linux oracle is broken. The
+     annotation is removed by name, and one dated sentence names the oracle's state and any state
+     change between the banked read and the failing read. At this hop: go/internal/srcimporter, whose
+     1.23.12 annotation was derived with cgo ON and whose leg read ran with cgo OFF.
+6. **The core-references table is swept to zero BEFORE the freeze**, because the sweep edits converter
+   test source (floor 4). The guard first reads `declared N · measured 0 · retired N`. After the sweep
+   it reads `declared 0 · measured 0`. A planted stale `ProjectReference` must fail by name.
+7. **The freeze.** The tree is clean, and a census shows zero `!!` rows under `src/core`, `src/gen` and
+   `docs/validation`, proven by a plant. There is one named exception: `go generate .`, run after both
+   conversions have finished.
+8. **The hop's final seeded `-stdlib` reconvert: a deliberate same-release REGEN, measured as a
+   two-seeded pair.** §6 says a seeded full reconvert happens "once per phase — H4a's bundle and H5".
+   This one is a third, ruled on the ledger (2026-09-22 11:10 ruling 2, with 08:18 and 14:49), because
+   converter fixes landed after H5 whose corpus footprint no row ref carries: a row ref stages test
+   artifacts only.
+   - **The two arms.** Arm A is built from the last corpus-wide regen, arm B from the tip. A's base
+     must predate every converter change whose footprint never landed. A later base misfiles those
+     files as committed drift that neither converter reproduces.
+   - **Seeding and running.** Both roots are seeded from ONE `git archive` file, extracted twice before
+     either arm converts. The arms run serially, each backgrounded and awaited. If an arm fails, delete
+     its root and re-seed it from the same archive. Never convert twice into one root. Then run H5's
+     per-arm checks.
+   - **Classify by CONTENT** (CR-stripped, `*.cs.auto` included), never by mtime:
+     - **B-only** is a converter change that never landed. Attribute each to a named first-parent merge.
+     - **A-only** is a change already applied. Count these by merge and never overlay them. ⚠ An EMPTY
+       A-only set means the pair measured nothing, so abort.
+     - **Files the committed tree disagrees with** go through §4 in order. Test a ruled hand-set line
+       before T5 (see below), and plant a T5 before trusting a zero.
+   - **H5c** runs on every flavour. `-Apply` only with zero UNRESOLVED and full flavour agreement.
+   - **The overlay** copies `.cs`, `.csproj` and `README.md`, never `*.cs.auto`, widened as lesson 2
+     says. Then, in order: dispose of the absent-in-stage set (lesson 3); restore T0, T4 and the
+     hand-set lines; adopt `go2cs-stdlib.slnx` after the absent set is disposed of; run
+     `go generate .`; make ONE commit. After the commit, prove the pins by re-checkout (lesson 2).
+   - ⚠ **A HAND-SET LINE UNDER A REGEN.** A regen recomposes every README. A badge the corpus holds
+     orange by hand is re-greened when both badge arms agree. At this hop that is
+     `crypto/internal/fips140deps`, an exclusion row that keeps a `tests.csproj` AND a current page.
+     Restore it after the overlay as a named class. Do not leave it for T5.
+9. **Post-regen gates**, each from a per-run copy, serially:
+   - the converter suite;
+   - CNR, with CHANGED empty, or classified by §4 with zero T5;
+   - the stdlib on all three flavours by H7 as amended;
+   - GolibTests and the full behavioral suite, each EQUAL by name to step 3's control;
+   - `go2cs.slnx`, which is owed after the golib/runtime API changes this hop made, built with
+     `-p:go2csPath=<repo>/src/` whenever the configuration is not Debug (R-B16, below);
+   - the steady-state sweep of every banked row whose production the regen moved, capped. The rest go
+     to §6's full sweep. If the closing box cannot run a row, list it: it is run elsewhere at the close
+     head before the STAMP, or deferred to §6 by a named ruling.
+10. **Figures by the guard, then the index once.** Write the header and the README NEWS exactly as the
+    guard derives them. H10's gate then reports BOTH numbers against the previous anchor, and the
+    linux absolute beside them. At this hop the absolute row count is predicted to rise while both
+    percentages fall. That opposite-direction case is exactly what the gate exists to report.
+    Regenerate the index once, after the last roster edit.
+11. **Closing checks.** Each is printed with its count, and each check that can be planted is planted:
+    - every row's FIRST proof page is at the new release (a planted old first page is named);
+    - every numeric linux annotation equals a new-release linux reading, so the residual set is EMPTY
+      (a planted wrong annotation is named);
+    - shardmap closes;
+    - the release census closes as named identities (below);
+    - the deadline floors hold against their largest walls;
+    - the core-refs table reads 0 / 0;
+    - the deletion set is exactly the ruled deletions, by name;
+    - the identifier census and repoguard pass, with a plant;
+    - the tree is clean;
+    - each close precondition is named with the ref that discharges it.
+
+    Then comes the close STAMP.
+
+**THE HEADER IN A LANE REF is a recorded exception, not a new rule.** "How a row banks" (above) says
+a worker ref never carries the roster header. At this hop's last batch, COORD accepted a bank ref
+that carried guard-derived header and NEWS hunks, and two linux refs that carried the header's linux
+line (ledger 2026-09-23 12:36 · `3ec2c9ff39`; recorded at the 8g STAMP 14:39 · `faaa8fe999`). They
+merged only as carriers, and the guard's own output overwrote every one. The rule stands: a carried
+figure is never trusted, only overwritten.
+
+**THE RELEASE CENSUS, CORRECTED.** The cross-check above reads: "the count of banked test project
+files must equal the roster's row count". **That equality is false by design.** Exclusion rows keep
+their artifacts, rowless candidates keep theirs, and relocation anchors keep their source pages
+(ledger 2026-09-22 16:31 · `3469154a95`: the equality REFUTED, to be restated as a named identity at
+the close). **The check is a NAMED IDENTITY, with every term named:**
+
+```
+  tracked tests.csproj   =  banked rows + exclusion rows keeping artifacts + rowless candidates keeping artifacts
+  current proof pages    =  rows by name + relocation anchors by link + exclusion rows by exclusion
+  validated badges       =  banked rows - banked rows with no README (named); an exclusion row that
+                            composes GREEN is a hand-set-line restore (step 8), never a badge
+  index rows             =  banked rows
+```
+
+A migration that ends with the terms unequal has a miscount somewhere, and the identity names the
+term. The figures belong to the close STAMP that reads them, not to this block.
+
+**THREE LESSONS FOR THE NEXT HOP.** The close's derivation found each of these before any run
+(ledger 13:36), and each is now a step above.
+
+1. **A demoted row needs a COSTED recon-basis row, or shardmap refuses.** The map takes its population
+   from the committed enumeration and the roster. A roster row with no cost in the basis is
+   UNSCHEDULED (`shardmap.py:416-417`). While the row was banked it was counted as reached. Once it is
+   demoted, it is a live population member in NEITHER bucket, and the closing check dies naming it.
+   The fix is to append the row's measured cost from its close reading: columns read by name, cut to
+   the basis's ten, LF only, and no plan regenerated. This follows the 2026-09-22 pprof precedent
+   above. *Red-first:* with the demotion applied and the basis row not yet appended, shardmap must
+   refuse and name the row.
+2. **Production `//go:embed` payloads must be copied by the reconvert, and they must carry a `-text`
+   pin.**
+   - *The copy.* The ruled overlay copies `.cs`, `.csproj` and `README.md` only (H5's overlay
+     amendment). A payload the regen stages would therefore never reach the tree, while the emitted
+     csproj still names it. Widen the overlay by every file an emitted csproj names in
+     `<EmbeddedResource Include>`, derived from the emission.
+   - *The pin.* Under `src/core`, `.gitattributes` pins only `testdata/**`. On a checkout with
+     `core.autocrlf=true`, any other text payload is checked out CRLF where Go embeds LF, so the
+     embedded bytes are not Go's. Pin every non-testdata `EmbeddedResource` payload `-text`, derived
+     from every tracked and every emitted csproj.
+   - *The proof.* PROVE each pin by re-checkout: `rm` the payload, `git checkout HEAD --` it, and
+     compare its sha256 with GOROOT's. The control is the same read with the pin line removed from the
+     working-tree `.gitattributes`, which must yield CR bytes. A payload with no LF cannot red that
+     control; name it.
+   - *At go1.24.13*, the only production `//go:embed` in std is `internal/trace/traceviewer`, with two
+     payloads. The test-side payloads in `embed/internal/embedtest` and
+     `crypto/internal/fips140test` take the same pin.
+3. **A flat file the emitter moves to per-GOOS folders is removed with `git rm`.** When a shared
+   artifact becomes per-target, the emitter deletes the flat copy in its own staging root
+   (`Stale copies removed`, `platformEmit.go:259-295`). The overlay cannot carry a deletion (H5's
+   overlay amendment, step 3). Without the removal, the committed flat copy survives beside the new
+   per-GOOS copies and declares everything twice. So `git rm` it by name in the overlay commit, and
+   only when the overlay adds its per-GOOS copy for ALL THREE targets. Any other absent-in-stage file
+   stops the seat. The instance predicted at this hop is `src/core/os/exec.cs`, from batch 3's
+   measured footprint that was never committed (ledger 2026-09-22 02:36).
+
+**AMENDED 2026-09-24 (C1, the post-close docs seat, on the close STAMP fa18863b94) -- FOUR LESSONS
+FROM THE CLOSE SEAT ITSELF.** The seat stopped three times and each stop was ruled (ledger 2026-09-23
+18:11, 18:39, 21:43). Each lesson is a step for the next hop, with the ref that fixes its cause.
+
+4. **The staging seeder carries the whole `docs/validation` tree (R-B13; fix 781c1c3c31).** The
+   `-stdlib` and `-platform-census` staging roots are seeded by one seeder (`seedCensusRoot`,
+   `platformCensus.go`). The README emitter resolves the published stamp from the snapshot directories
+   under `docs/validation`, so a root seeded with `docs/validation/current` alone reads no stamp and
+   every package README loses BOTH repository badge lines. On a tree without the fix, restore the
+   stripped READMEs from the committed tree as a NAMED class after the overlay; with it, the regen
+   writes them byte-identical. Either way, the check after a regen is that no README lost a badge line.
+5. **Go's own `//go:embed` payloads outside `testdata` are admitted by repoguard from the csproj that
+   embeds them (R-B14; fix de436207c9, merged at the close as f0ada4471e).** A regen can land a Go
+   payload outside `testdata` for the first time (at this hop, `internal/trace/traceviewer`'s
+   `trace_viewer_full.html`, whose JavaScript regex reads as a network path). repoguard admits a payload
+   only when a tracked csproj under `src/core` names it as a converter-minted
+   `<EmbeddedResource ... LogicalName="go.embed/...">`, and still runs its denied-token pass on it; the
+   bash census mirrors it (33f5f11297). A payload the census refuses is a GUARD gap to route, never a
+   hand edit of Go's bytes and never a pathspec exclusion.
+6. **The multi-target csproj merge keeps every group that follows the reference block (R-B15; fix
+   ae813db069).** When the merge re-renders a staged csproj, the renderer replaces the platform
+   reference block by its own extent. Before the fix it cut from the block header to `</Project>` and
+   dropped any group after it; at this hop that was log/syslog's shared-LICENSE `<None>` item, restored
+   as a named class. On a tree without the fix, diff every merged csproj against the committed one for a
+   lost non-reference group; with it, all 22 L3 csprojs round-trip byte-identically.
+7. **A non-Debug build of `go2cs.slnx` is pinned to the tree (R-B16).** Every behavioral csproj sets
+   `go2csPath` to `$(USERPROFILE)/go2cs/` when the configuration is not Debug, even inside the solution,
+   so step 9's `go2cs.slnx` build and §6's row carry `-p:go2csPath=<repo>/src/`. The pinned build is the
+   reading of record; an unpinned one measures the deploy root (`.claude/rules/harness-gates.md`, *Build
+   context and the `$(go2csPath)` root*).
+
+<!-- Provenance of the four lessons, 2026-09-24 (C1, docs only; no gate named here was run to write
+     them). R-B13: ledger 2026-09-23 18:11 (922994cec3) -- the regen's arm B stripped both badges from
+     337 package READMEs; restored as class (v); fix 781c1c3c31 accepted 18:23 for the post-close batch
+     (red-first TestSeedCensusRootCarriesThePublishedStampTheBadgesRead). R-B14: ledger 18:39
+     (1a328f3ee8) -- TestNoFleetIdentifiersInTrackedFiles red on two arms in one payload,
+     src/core/internal/trace/traceviewer/static/trace_viewer_full.html:6244; C2's admit de436207c9
+     accepted 18:56 and merged by the close as f0ada4471e; the census mirror 33f5f11297 is on master.
+     R-B15: ledger 18:39 and 19:01 (ae813db069) -- the renderer, not the merge note; log/syslog restored
+     as class (vi); accepted for the post-close batch. R-B16: ledger 21:43 (mailbox 00133ee238) --
+     15,240 CS0246/CS0234 across 695 behavioral projects unpinned, rc 0 with 925 assemblies pinned; 698
+     of 699 behavioral csprojs carry the Configuration-keyed fallback at fa18863b94. The close STAMP is
+     ledger 22:30 (35d9a46970). -->
+
+<!-- Provenance, 2026-09-23 (COORD, written by a docs-only sub-agent on the i7 at the batch-8g stamp
+     faaa8fe999). The order and the gates are condensed from the close brief's PART B (B1-B12) and from
+     the obligations list's classes (b), (c) and (d), both on claude/coord-handover at eed254e989. Those
+     documents were derived by a read-only workflow (three readers, a drafter and two adversarial
+     checkers, with 36 defects repaired) from this section's gates and every dated amendment, plus the
+     ledger through 12:56 (ledger 13:36 · 3ec2c9ff39). The header exception is recorded at the 8g STAMP
+     (ledger 14:39 · faaa8fe999, obligation c17). The release-census correction is ledger 2026-09-22
+     16:31 · 3469154a95 (obligations b30 and c5). The three lessons are obligations b6, b11/b12 and b15.
+     The hand-set-line and removed-artifact notes are b32 and b33. This is a docs act: no gate named
+     here was run to write it. The code citations were read at faaa8fe999: shardmap.py:416-417 (the
+     UNSCHEDULED set), platformEmit.go:259-295 (the stale-copy removal), readmeValidationBadge.go:436-446
+     (GREEN needs both signals) and :455-456 (the orange form), and .gitattributes (testdata/** is the
+     only -text pin under src/core; git check-attr reads the three payloads text: unspecified). The one-production-embed claim was re-read for this block by a grep of
+     go1.24.13's std sources, outside cmd/, for //go:embed in non-test files. The close's own figures
+     are not written here: step 11 reads them, and the close STAMP records them. -->
+
 ### H11 — Publication and compatibility guards **GATE**
 
 - The published version is the pinned Go release plus the build counter, already set at H2.
-- **Verify version monotonicity with a scripted comparison before the first publish**, never believe
-  it. A non-monotonic sequence on a public feed is not correctable.
+- **Verify EXISTENCE-PLUS-MONOTONICITY with a scripted comparison before the first publish**, never
+  believe it. A non-monotonic sequence on a public feed is not correctable.
+  > **AMENDED 2026-09-20.** This rung read "verify version monotonicity" until today, and that is
+  > TRUE AND INSUFFICIENT: **a counter carried across a base bump is perfectly monotonic.** `0f97dcc8db`
+  > is the proof — 1.23.12.3 → 1.24.13.3 increases, and 1.24.13.3 was never published. Monotonicity
+  > answers "does the sequence go forwards"; it cannot answer "does this release exist". The second
+  > half is the one a hop breaks, and it is the one now held by
+  > `TestPublishedCounterMatchesTheRecordedReleases` (`src/go2cs/internal/repoguard`), which asserts the
+  > counter against the recorded snapshots rather than against its own previous value. The comparison
+  > is NUMERIC per component, never lexical — `1.23.12.10` sorts below `1.23.12.9` as a string, and
+  > H2's per-release counter reaches double digits on the tenth publish of a base.
 - The NuGet compatibility guard follows the migration for free, because it reads the converter
   binary's own runtime version — which H1 rebuilt. That coupling is exactly the H1↔H2 window §2 warns
   about.
@@ -2824,6 +3207,21 @@ produced by running the driver, the format gate or the sweep. -->
 - **Every validation badge on every package README moves** as a matter of course: two of them read the
   toolchain and follow H1, two read `version.props` and follow H2. **State the expected diff size
   before the overlay** so it is not mistaken for drift.
+  > **AMENDED 2026-09-20 — THE UNPUBLISHED LINE, where the expected diff size is ZERO for half of them.**
+  > The two H2-following badges — the **C# Source** badge's tag and the **Tests** badge's proof-page path
+  > — do not target `version.props`'s arithmetic. They target the **published stamp** (H11.5: the
+  > write-once `docs/validation/<stamp>/` snapshot), resolved by `releasestamp.PublishedStamp`:
+  >
+  > | at the overlay | the two H2-following badges |
+  > |---|---|
+  > | the composed `<base>.<counter>` has a snapshot | move to it — the usual case, full diff |
+  > | it does not (the hop, before the new base's first publish) | **do not move** — they keep naming the LAST published release |
+  > | nothing is published at all | are **omitted** — no honest target exists |
+  >
+  > So between H2 and the new base's first publish the expected diff is the H1-following badges ALONE,
+  > and a lane that stated the full four-badge size will read half of it as a missing overlay. The
+  > badges retarget at the publish, not at the pin — which is the only behaviour that leaves a reader
+  > clicking a link that resolves.
 - **The hand-owned READMEs do not follow.** They are hand-edited, and their edits are *derived and
   proved against the converter's own output*, never typed. **Re-run that derivation as a control** at
   every migration.
@@ -2831,6 +3229,12 @@ produced by running the driver, the format gate or the sweep. -->
   on a patch-level migration this is the badge family most likely to actually move.
 - The Go version appears in prose in the top-level docs, the roadmap, the roster and CLAUDE.md's
   architecture row.
+  > **AMENDED 2026-09-20 — "top-level docs" is a NAMING DEFECT in this line, not a file that went
+  > missing.** A lane reading it looks for a root `README.md` and finds none; `git ls-tree master` has
+  > no root README at all, so nothing was lost in any hop. The prose sites this rung means are the ones
+  > under `docs/` plus `CLAUDE.md` — `migrate-gorelease.ps1`'s doc-statement class is the authority on
+  > which, and its census names them. **No file is owed here**; the line wants rewording at the next
+  > pass, which is recorded rather than done so the amendment stays evidence and not a silent edit.
 - **Release-ritual rehearsal**: a dry run exercising the pre-pack signed tag, the write-once proof
   snapshot, both badge retargets, and the recomputed re-verification pass. The frame requires the
   ritual *rehearsed* at the parity gate; whether a given migration also **publishes** is the frame's
@@ -3243,7 +3647,7 @@ frame schedules it **once per ladder** plus coordinator discretion, not once per
 | `check-no-regression.ps1` | **yes**, at H4 and per converter-touching commit. It re-transpiles **unconditionally** and is the authoritative drift instrument — **never add an up-to-date skip to it** |
 | `go2cs-stdlib.slnx`, every buildable target-OS flavor | **yes**, at H7 |
 | master folded into the release branch | **once**, at H7a — sized, predicted, and scored; H6's retired-hand-own step re-run after it as the closing check |
-| `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members |
+| `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members. In any non-Debug configuration pin `-p:go2csPath=<repo>/src/`, or every behavioral project resolves the machine deploy root instead of the tree (R-B16, H10's close amendment) |
 | full behavioral suite (four phases) | **yes**, at H9 and at the parity gate |
 | seeded full reconvert | **once** per phase — H4a's bundle and H5. Never twice into one staging root |
 | multi-target emission + platform census | **yes**, at H8 |

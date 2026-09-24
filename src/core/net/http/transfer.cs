@@ -9,6 +9,7 @@ using errors = errors_package;
 using fmt = fmt_package;
 using godebug = go.@internal.godebug_package;
 using io = io_package;
+using maps = maps_package;
 using httptrace = go.net.http.httptrace_package;
 using @internal = go.net.http.internal_package;
 using ascii = go.net.http.@internal.ascii_package;
@@ -27,12 +28,6 @@ using go.net.http.@internal;
 using vendor.golang.org.x.net.http;
 
 partial class http_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() {
-    builtin.initPackage(typeof(go.net.http.internal_package));
-}
 
 // ErrLineTooLong is returned when reading request or response bodies
 // with malformed chunked encoding.
@@ -232,10 +227,10 @@ internal static void probeRequestBody(this ж<transferWriter> Ꮡt) {
         builtin.close(Ꮡt.Value.ByteReadCh);
     }, Ꮡt.Value.Body);
     var timer = time.NewTimer(200 * time.Millisecond);
-    var selᴛ88 = t.ByteReadCh;
-    var selᴛ89 = (~timer).C;
-    switch (select(ᐸꟷ(selᴛ88, ꓸꓸꓸ), ᐸꟷ(selᴛ89, ꓸꓸꓸ))) {
-    case 0 when selᴛ88.ꟷᐳ(out var rres): {
+    var selᴛ91 = t.ByteReadCh;
+    var selᴛ92 = (~timer).C;
+    switch (select(ᐸꟷ(selᴛ91, ꓸꓸꓸ), ᐸꟷ(selᴛ92, ꓸꓸꓸ))) {
+    case 0 when selᴛ91.ꟷᐳ(out var rres): {
         timer.Stop();
         if (rres.n == 0 && AreEqual(rres.err, io.EOF)){
             // It was empty.
@@ -254,7 +249,7 @@ internal static void probeRequestBody(this ж<transferWriter> Ꮡt) {
         }
         break;
     }
-    case 1 when selᴛ89.ꟷᐳ(out _): {
+    case 1 when selᴛ92.ꟷᐳ(out _): {
         t.Body = io.MultiReader(new finishAsyncByteRead( // Too slow. Don't wait. Read it later, and keep
  // assuming that this is ContentLength == -1
  // (unknown), which means we'll send a
@@ -396,7 +391,7 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
         // nopCloser or readTrackingBody. This is to ensure that we can take advantage of
         // OS-level optimizations in the event that the body is an
         // *os.File.
-        if (t.Body != default!) {
+        if (!t.ResponseToHEAD && t.Body != default!) {
             io.Reader body = t.unwrapBody();
             if (chunked(t.TransferEncoding)){
                 {
@@ -441,7 +436,7 @@ internal static error /*err*/ writeBody(this ж<transferWriter> Ꮡt, io.Writer 
             err = fmt.Errorf("http: ContentLength=%d with Body length %d"u8,
                 t.ContentLength, ncopy); goto ᒐdone;
         }
-        if (chunked(t.TransferEncoding)) {
+        if (!t.ResponseToHEAD && chunked(t.TransferEncoding)) {
             // Write Trailer header
             if (t.Trailer != default!) {
                 {
@@ -1053,9 +1048,7 @@ internal static void mergeSetHeader(ref ΔHeader dst, ΔHeader src) {
         dst = src;
         return;
     }
-    foreach (var (k, vv) in src) {
-        (dst)[k] = vv;
-    }
+    maps.Copy<ΔHeader, ΔHeader, @string, slice<@string>>(dst, src);
 }
 
 // unreadDataSizeLocked returns the number of bytes of unread input.

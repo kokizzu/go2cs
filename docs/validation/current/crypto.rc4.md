@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/rc4` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**2 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**75 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -17,6 +19,79 @@ comparison — it is the evidence behind the `crypto/rc4` row in
 |:--|:--:|:--:|
 | `TestBlock` | pass | pass |
 | `TestGolden` | pass | pass |
+| `TestRC4Stream` | pass | pass |
+| `TestRC4Stream/Aliasing` | pass | pass |
+| `TestRC4Stream/AlterInput` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=0` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=1` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=10` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=15` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=16` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=20` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=3` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=32` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=4` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=4096` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=50` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=5000` | pass | pass |
+| `TestRC4Stream/AlterInput/BuffLength=8` | pass | pass |
+| `TestRC4Stream/BufferOverlap` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=10` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=15` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=16` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=20` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=3` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=32` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=4` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=4096` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=50` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=5000` | pass | pass |
+| `TestRC4Stream/BufferOverlap/BuffLength=8` | pass | pass |
+| `TestRC4Stream/EmptyInput` | pass | pass |
+| `TestRC4Stream/KeepState` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=0` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=1` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=10` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=15` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=16` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=20` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=3` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=32` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=4` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=4096` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=50` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=5000` | pass | pass |
+| `TestRC4Stream/OutOfBoundsWrite/BuffLength=8` | pass | pass |
+| `TestRC4Stream/XORSemantics` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=0` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=1` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=10` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=15` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=16` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=20` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=3` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=32` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=4` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=4096` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=50` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=5000` | pass | pass |
+| `TestRC4Stream/XORSemantics/DirectXOR/BuffLength=8` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=0` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=1` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=10` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=15` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=16` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=20` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=3` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=32` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=4` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=4096` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=50` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=5000` | pass | pass |
+| `TestRC4Stream/XORSemantics/Roundtrip/BuffLength=8` | pass | pass |
 
 ## Excluded declarations
 

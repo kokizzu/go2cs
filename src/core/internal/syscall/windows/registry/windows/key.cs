@@ -28,18 +28,6 @@ using syscall = syscall_package;
 
 partial class registry_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
-
 public static UntypedInt ALL_ACCESS => 0xf003f;
 public static UntypedInt CREATE_LINK => 0x00020;
 public static UntypedInt CREATE_SUB_KEY => 0x00004;
@@ -53,7 +41,7 @@ public static UntypedInt WOW64_32KEY => 0x00200;
 public static UntypedInt WOW64_64KEY => 0x00100;
 public static UntypedInt WRITE => 0x20006;
 
-[GoType("syscall_package.ΔHandle")] partial struct Key;
+[GoType("global::go.syscall_package.ΔHandle")] partial struct Key;
 
 public static Key CLASSES_ROOT => /* Key(syscall.HKEY_CLASSES_ROOT) */ unchecked((Key)(syscallꓸHandle)2147483648);
 public static Key CURRENT_USER => /* Key(syscall.HKEY_CURRENT_USER) */ unchecked((Key)(syscallꓸHandle)2147483649);

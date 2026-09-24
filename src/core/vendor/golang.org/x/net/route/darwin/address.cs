@@ -9,18 +9,6 @@ using syscall = syscall_package;
 
 partial class route_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
-
 // An Addr represents an address associated with packet routing.
 [GoType] partial interface Addr {
     // Family returns an address family.
@@ -189,21 +177,36 @@ internal static (nint, Addr, error) parseKernelLinkAddr(nint _, slice<byte> b) {
 
 // parseInetAddr parses b as an internet address for IPv4 or IPv6.
 internal static (Addr, error) parseInetAddr(nint af, slice<byte> b) {
+    UntypedInt off4 = 4; // offset of in_addr
+    UntypedInt off6 = 8; // offset of in6_addr
     var exprᴛ1 = af;
     if (exprᴛ1 == syscall.AF_INET) {
-        if (len(b) < sizeofSockaddrInet) {
+        if (len(b) < (nint)(off4 + 1) || len(b) < (nint)b[0] || b[0] == 0) {
             return (default!, errInvalidAddr);
         }
+        nint sockAddrLen = (nint)b[0];
         var a = Ꮡ(new Inet4Addr(nil));
-        copy((~a).IP[..], b[4..8]);
+        nint n = off4 + 4;
+        if (sockAddrLen < n) {
+            n = sockAddrLen;
+        }
+        copy((~a).IP[..], b[(int)(off4)..(int)(n)]);
         return (new Inet4AddrжAddr(a), default!);
     }
     if (exprᴛ1 == syscall.AF_INET6) {
-        if (len(b) < sizeofSockaddrInet6) {
+        if (len(b) < (nint)(off6 + 1) || len(b) < (nint)b[0] || b[0] == 0) {
             return (default!, errInvalidAddr);
         }
-        var a = Ꮡ(new Inet6Addr(ZoneID: (nint)nativeEndian.Uint32(b[24..28])));
-        copy((~a).IP[..], b[8..24]);
+        nint sockAddrLen = (nint)b[0];
+        nint n = off6 + 16;
+        if (sockAddrLen < n) {
+            n = sockAddrLen;
+        }
+        var a = Ꮡ(new Inet6Addr(nil));
+        if (sockAddrLen == sizeofSockaddrInet6) {
+            a.Value.ZoneID = (nint)nativeEndian.Uint32(b[24..28]);
+        }
+        copy((~a).IP[..], b[(int)(off6)..(int)(n)]);
         if ((~a).IP[0] == 0xfe && (byte)((~a).IP[1] & 0xc0) == 0x80 || (~a).IP[0] == 0xff && ((byte)((~a).IP[1] & 0x0f) == 0x01 || (byte)((~a).IP[1] & 0x0f) == 0x02)) {
             // KAME based IPv6 protocol stack usually
             // embeds the interface index in the
@@ -430,12 +433,16 @@ internal static (slice<Addr>, error) parseAddrs(nuint attrs, Func<nint, slice<by
                 b = b[(int)(l)..];
             }
             else if (exprᴛ1 == syscall.AF_INET || exprᴛ1 == syscall.AF_INET6) {
-                af = (nint)b[1];
-                var (a, err) = parseInetAddr(af, b);
-                if (err != default!) {
-                    return (default!, err);
+                if (b[0] > 0) {
+                    // #70528: if the sockaddrlen is 0, no address to parse inside,
+                    // skip over the record.
+                    af = (nint)b[1];
+                    var (a, err) = parseInetAddr(af, b);
+                    if (err != default!) {
+                        return (default!, err);
+                    }
+                    @as[(nint)(i)] = a;
                 }
-                @as[(nint)(i)] = a;
                 nint l = roundup((nint)b[0]);
                 if (len(b) < l) {
                     return (default!, errMessageTooShort);

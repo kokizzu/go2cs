@@ -43,6 +43,74 @@ public static class RuntimeErrorPanic
         return new PanicException(TokenArithmeticMessage);
     }
 
+    private const string OrderTokenDereferenceMessage =
+        $"{RuntimeErrorMessage}dereference of a managed pointer with no address "
+        + "(*{0} over 0x{1} — the order token of a reference-bearing pointee at offset 0, Q44 §10.3 "
+        + "arm 2a; a Go-layout byte offset into CLR-laid-out storage cannot be honoured)";
+    /// <summary>
+    /// The REFUSAL, arm 2a: a dereference of a native box whose address is a live box's ORDER
+    /// TOKEN — a number no memory answers to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The SIBLING of <see cref="UnsafePointerArithmeticWithoutAddress"/>, one arm over, and it
+    /// exists because that one cannot fire here BY CONSTRUCTION: <c>IsTokenArithmetic</c> requires
+    /// the number to differ from its allocation base, and at OFFSET 0 the number IS the base. So a
+    /// reference-bearing pointee reinterpreted at offset 0 — Go's
+    /// <c>*(*V)(unsafe.Add(unsafe.Pointer(&amp;in), 0))</c>, which reflect's own <c>setField</c>
+    /// helper performs — reached a native box over a number that is not an address, and the write
+    /// through it took the process down.
+    /// </para>
+    /// <para>
+    /// ⚠ AT THE DEREFERENCE AND NOT AT THE CONVERSION, which is measured rather than preferred:
+    /// refusing the conversion took SEVEN GolibTests red against an empty base, because the native
+    /// box over a token is a deliberate carrier whose address IS the token (the full reading is at
+    /// <c>ж.NativeBox.cs</c>'s <c>OrderTokenRefusal</c>). The failure MODE is the entire point,
+    /// exactly as for the arithmetic twin: the write was an UNCATCHABLE AccessViolation, so a
+    /// package reported nothing at all rather than reporting a failure — measured at reflect's
+    /// TestIsZero, which ended the host after 195 tests had started. A caught panic the harness can
+    /// attribute leaves the model question open and loud instead of fatal.
+    /// </para>
+    /// </remarks>
+    public static PanicException UnsafePointerOrderTokenDereferenced(Type pointee, nuint token)
+    {
+        return new PanicException(string.Format(OrderTokenDereferenceMessage, pointee.Name, token.ToString("x")));
+    }
+
+    private const string NativeArrayViewMessage =
+        $"{RuntimeErrorMessage}cannot view native memory as {{0}}: the address has no managed element "
+        + "storage behind it, and a Go array is a window on a real managed array "
+        + "(see docs/phase4/DESIGN-native-array-view.md)";
+    /// <summary>
+    /// The SAFETY FLOOR: a genuinely-native address converted to a pointer whose pointee is an
+    /// <c>array&lt;E&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>array&lt;E&gt;</c> is a MANAGED struct whose first field is an <c>E[]</c> reference, and a
+    /// native box materializes its value out of the pointed-at bytes — so the composition
+    /// REINTERPRETS whatever lives at that address AS A MANAGED REFERENCE and dereferences it.
+    /// Measured: zeroed memory reads a length of 0, a silent wrong answer; memory filled with 0xAB
+    /// reads a length of -1414812757, the data bytes themselves, returned instead of faulting by
+    /// luck. Refusing BY NAME converts a type-safety hole into a diagnostic that names its own
+    /// cause, at the cost of turning latent-SILENT into latent-LOUD.
+    /// </para>
+    /// <para>
+    /// It is reached only when the address carries NO provenance record — a pinned-managed address
+    /// resolves to its box and never arrives here, which is what keeps Go-legal reinterprets over
+    /// pinned storage working. The message names the shape rather than the site because the site is
+    /// a conversion the reader has to find in the emitted C#; the design document is where the fork
+    /// and its remedy are written down.
+    /// </para>
+    /// </remarks>
+    public static PanicException NativeArrayViewWithoutElementStorage(Type arrayType)
+    {
+        Type[] arguments = arrayType.IsGenericType ? arrayType.GetGenericArguments() : [];
+        string shape = arguments.Length == 1 ? $"array<{arguments[0].Name}>" : arrayType.Name;
+
+        return new PanicException(string.Format(NativeArrayViewMessage, shape));
+    }
+
     private const string IndexOutOfRangeMessage = $"{RuntimeErrorMessage}index out of range [{{0}}] with length {{1}}";
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {

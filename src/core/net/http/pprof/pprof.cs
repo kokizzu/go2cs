@@ -85,7 +85,7 @@ using os = os_package;
 using runtime = runtime_package;
 using pprof = go.runtime.pprof_package;
 using trace = go.runtime.trace_package;
-using sort = sort_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
@@ -94,120 +94,6 @@ using go.net;
 using go.runtime;
 
 partial class pprof_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhtml() {
-    builtin.initPackage(typeof(html_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸprofile() {
-    builtin.initPackage(typeof(go.@internal.profile_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸpprof() {
-    builtin.initPackage(typeof(go.runtime.pprof_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸtrace() {
-    builtin.initPackage(typeof(go.runtime.trace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 [GoInit] internal static void init() {
     @string prefix = ""u8;
@@ -525,6 +411,7 @@ internal static map<@string, @string> profileDescriptions = new map<@string, @st
     ["heap"u8] = "A sampling of memory allocations of live objects. You can specify the gc GET parameter to run GC before taking the heap sample."u8,
     ["mutex"u8] = "Stack traces of holders of contended mutexes"u8,
     ["profile"u8] = "CPU profile. You can specify the duration in the seconds GET parameter. After you get the profile file, use the go tool pprof command to investigate the profile."u8,
+    ["symbol"u8] = "Maps given program counters to function names. Counters can be specified in a GET raw query or POST body, multiple counters are separated by '+'."u8,
     ["threadcreate"u8] = "Stack traces that led to the creation of new OS threads"u8,
     ["trace"u8] = "A trace of execution of the current program. You can specify the duration in the seconds GET parameter. After you get the trace file, use the go tool trace command to investigate the trace."u8
 };
@@ -567,15 +454,14 @@ public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
         ));
     }
     // Adding other profiles exposed from within this package
-    foreach (var (_, p) in new @string[]{"cmdline"u8, "profile"u8, "trace"u8}.slice()) {
+    foreach (var (_, p) in new @string[]{"cmdline"u8, "profile"u8, "symbol"u8, "trace"u8}.slice()) {
         profiles = append(profiles, new profileEntry(
             Name: p,
             Href: p,
             Desc: profileDescriptions[p]
         ));
     }
-    var profilesʗ1 = profiles;
-    sort.Slice(profiles, (nint i, nint j) => profilesʗ1[i].Name < profilesʗ1[j].Name);
+    slices.SortFunc(profiles, (profileEntry a, profileEntry b) => strings.Compare(a.Name, b.Name));
     {
         var err = indexTmplExecute(new http_ResponseWriterᴠWriter(w), profiles); if (err != default!) {
             log.Print(err);

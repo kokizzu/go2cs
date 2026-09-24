@@ -13,12 +13,6 @@ using time = time_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 // The full stack test cases for IPConn have been moved to the
 // following:
 //      golang.org/x/net/ipv4

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using static go.net_package;
@@ -84,7 +84,7 @@ internal static void testStaticHost(ж<testing.T> Ꮡt, @string hostsPath, stati
     var ins = new @string[]{ent.@in, absDomainName(ent.@in), strings.ToLower(ent.@in), strings.ToUpper(ent.@in)}.slice();
     foreach (var (_, @in) in ins) {
         var (addrs, _) = lookupStaticHost(@in);
-        if (!reflect.DeepEqual(addrs, ent.@out)) {
+        if (!slices.Equal<slice<@string>, @string>(addrs, ent.@out)) {
             Ꮡt.Errorf("%s, lookupStaticHost(%s) = %v; want %v"u8, hostsPath, @in, addrs, ent.@out);
         }
     }
@@ -160,7 +160,7 @@ internal static void testStaticAddr(ж<testing.T> Ꮡt, @string hostsPath, stati
     foreach (var (i, _) in ent.@out) {
         ent.@out[i] = absDomainName(ent.@out[i]);
     }
-    if (!reflect.DeepEqual(hosts, ent.@out)) {
+    if (!slices.Equal<slice<@string>, @string>(hosts, ent.@out)) {
         Ꮡt.Errorf("%s, lookupStaticAddr(%s) = %v; want %v"u8, hostsPath, ent.@in, hosts, ent.@out);
     }
 }

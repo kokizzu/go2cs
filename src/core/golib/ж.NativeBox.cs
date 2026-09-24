@@ -38,7 +38,7 @@ namespace go;
 /// what the caller's own frame already rooted.
 /// </para>
 /// </remarks>
-public sealed class NativeBox<T> : ж<T>
+public sealed class NativeBox<T> : ж<T>, INativeRooted
 {
     // The native address this box aliases — never managed storage it owns.
     private readonly nuint m_nativeAddr;
@@ -46,15 +46,22 @@ public sealed class NativeBox<T> : ж<T>
     // §4's source-retention slot — see the class remarks.
     private readonly object? m_retainedSource;
 
+    // Q44 §10.3 ARM 2a: this box's "address" is a live box's ORDER TOKEN and not an address at all.
+    // Set ONLY by the uintptr operator, which is the one place that has the resolved box in hand.
+    // See OrderTokenRefusal below for why it is a field rather than a lookup.
+    private readonly bool m_aliasesAnOrderToken;
+
     // Create a pointer that ALIASES a native address. A zero address is the nil pointer. An
     // address INTO managed storage carries the pin that holds that storage still; a genuinely
     // native one carries none, there being nothing the collector could move.
-    internal NativeBox(nuint nativeAddress, PinnedBuffer? pin = null, object? retainedSource = null)
+    internal NativeBox(nuint nativeAddress, PinnedBuffer? pin = null, object? retainedSource = null,
+                       bool aliasesAnOrderToken = false)
         : base(isNull: nativeAddress == 0)
     {
         m_nativeAddr = nativeAddress;
         m_pin = pin;
         m_retainedSource = retainedSource;
+        m_aliasesAnOrderToken = aliasesAnOrderToken;
 
         // The box only. The memory it aliases is native — never charged, because the CLR heap
         // never received it — and the pin, when there is one, is charged by whoever constructed
@@ -62,14 +69,74 @@ public sealed class NativeBox<T> : ж<T>
         AllocationCounter.Count();
     }
 
-    /// <inheritdoc/>
-    public override unsafe ref T Value => ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+    /// <summary>
+    /// THE ARM 2a REFUSAL, at the DEREFERENCE — where this tree's charter already put the fault.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠ THE CONVERSION IS NOT THE FAULT AND MUST NOT BE, and that is measured rather than
+    /// preferred. A refusal at the <c>uintptr</c> operator took SEVEN GolibTests red against an
+    /// empty base (2026-09-20), because a native box over a token is a deliberate CARRIER: its
+    /// address IS the token, which is how <c>PointerExtensions.Reinterpret</c>'s unpinnable class
+    /// and the boundary wrappers recover the source box. RuntimeHashFamilyTests.cs:182 states the
+    /// ruling the tree already held — "a dereference is the row-level fault the design chose,
+    /// never a number". This is that fault, made CATCHABLE.
+    /// </para>
+    /// <para>
+    /// A FIELD AND NOT A LOOKUP, deliberately. The alternative is asking the token registry on every
+    /// native dereference in the corpus, which is a resolve on a path measured at 264,167 calls in a
+    /// single roster row — the exact shape this tree has twice removed as an instrument that
+    /// perturbs what it measures. The verdict is computed ONCE, by the operator that already
+    /// resolved the number, and rides in the object. An ordinary native pointer pays one branch on a
+    /// readonly field.
+    /// </para>
+    /// <para>
+    /// BOTH accessors, because both are lethal and for different reasons: the WRITE
+    /// (<c>*(*V)(p) = value</c>, reflect's <c>setField</c>) lands on an unmapped page, and the READ
+    /// materializes a <typeparamref name="T"/> out of whatever the token's bytes are — which for a
+    /// reference-bearing <typeparamref name="T"/> fabricates a managed reference, the same
+    /// type-safety hole the native-array-view floor refuses one container over.
+    /// </para>
+    /// </remarks>
+    private PanicException OrderTokenRefusal() =>
+        RuntimeErrorPanic.UnsafePointerOrderTokenDereferenced(typeof(T), m_nativeAddr);
 
     /// <inheritdoc/>
-    public override unsafe ref T ValueSlot => ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+    public override unsafe ref T Value
+    {
+        get
+        {
+            if (m_aliasesAnOrderToken)
+                throw OrderTokenRefusal();
+
+            return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+        }
+    }
+
+    /// <inheritdoc/>
+    public override unsafe ref T ValueSlot
+    {
+        get
+        {
+            if (m_aliasesAnOrderToken)
+                throw OrderTokenRefusal();
+
+            return ref Unsafe.AsRef<T>((void*)m_nativeAddr);
+        }
+    }
+
+    /// <summary>
+    /// Whether this box aliases an ORDER TOKEN rather than an address — Q44 §10.3 arm 2a. Its
+    /// numeric value and identity are unchanged; only a DEREFERENCE is refused.
+    /// </summary>
+    public bool AliasesAnOrderToken => m_aliasesAnOrderToken;
 
     /// <inheritdoc/>
     public override nuint NativeAddress => m_nativeAddr;
+
+    /// <inheritdoc/>
+    // The root of every native chain: a field reference over this box asks here (INativeRooted).
+    bool INativeRooted.IsNativeRooted => true;
 
     /// <inheritdoc/>
     // A native alias is not managed storage at all: its address is m_nativeAddr and both
@@ -102,6 +169,12 @@ public sealed class NativeBox<T> : ж<T>
 
         if (other is NativeBox<T> nb)
             return m_nativeAddr == nb.m_nativeAddr;
+
+        // A field reference rooted in NATIVE memory names a real machine address, and Go's contract for
+        // such a pointer is address identity — `&n.LFNode` over a persistentalloc'd node and the pointer
+        // lfstackUnpack rebuilds from its bits are ONE pointer. See FieldRefBox.NativeSlotAddress.
+        if (other is FieldRefBox<T> fr && fr.NativeSlotAddress is var address and not 0)
+            return m_nativeAddr == address;
 
         return m_isNull && other.IsNilPointer;
     }

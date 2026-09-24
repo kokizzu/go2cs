@@ -49,7 +49,7 @@ using poll = @internal.poll_package;
 using testlog = @internal.testlog_package;
 using Δio = io_package;
 using fs = go.io.fs_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 using @unsafe = unsafe_package;
@@ -394,9 +394,14 @@ public static error Chdir(@string dir) {
             return new fs.PathErrorжerror(Ꮡ(new PathError(Op: "chdir"u8, Path: dir, Err: e)));
         }
     }
-    if (Δruntime.GOOS == "windows"u8) {
+    if (runtime.GOOS == "windows"u8) {
+        var abs = filepathlite.IsAbs(dir);
         ᏑgetwdCache.of(getwdCacheᴛ1.ᏑMutex).Lock();
-        getwdCache.dir = dir;
+        if (abs){
+            getwdCache.dir = dir;
+        } else {
+            getwdCache.dir = ""u8;
+        }
         ᏑgetwdCache.of(getwdCacheᴛ1.ᏑMutex).Unlock();
     }
     {
@@ -422,6 +427,7 @@ public static (ж<File>, error) Open(@string name) {
 // it is truncated. If the file does not exist, it is created with mode 0o666
 // (before umask). If successful, methods on the returned File can
 // be used for I/O; the associated file descriptor has mode O_RDWR.
+// The directory containing the file must already exist.
 // If there is an error, it will be of type *PathError.
 public static (ж<File>, error) Create(@string name) {
     return OpenFile(name, (nint)((nint)(nint)(O_RDWR | O_CREATE) | O_TRUNC), 438);
@@ -430,7 +436,8 @@ public static (ж<File>, error) Create(@string name) {
 // OpenFile is the generalized open call; most users will use Open
 // or Create instead. It opens the named file with specified flag
 // (O_RDONLY etc.). If the file does not exist, and the O_CREATE flag
-// is passed, it is created with mode perm (before umask). If successful,
+// is passed, it is created with mode perm (before umask);
+// the containing directory must exist. If successful,
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 public static (ж<File>, error) OpenFile(@string name, nint flag, FileMode perm) {
@@ -442,6 +449,8 @@ public static (ж<File>, error) OpenFile(@string name, nint flag, FileMode perm)
     f.Value.appendMode = (nint)(flag & O_APPEND) != 0;
     return (f, default!);
 }
+
+internal static error errPathEscapes = errors.New("path escapes from parent"u8);
 
 // openDir opens a file which is assumed to be a directory. As such, it skips
 // the syscalls that make the file descriptor non-blocking as these take time
@@ -457,6 +466,7 @@ internal static ref Func<@string, (FileInfo, error)> lstat => ref Ꮡlstat.Value
 
 // Rename renames (moves) oldpath to newpath.
 // If newpath already exists and is not a directory, Rename replaces it.
+// If newpath already exists and is a directory, Rename returns an error.
 // OS-specific restrictions may apply when oldpath and newpath are in different directories.
 // Even within the same directory, on non-Unix platforms Rename is not an atomic operation.
 // If there is an error, it will be of type *LinkError.
@@ -524,6 +534,7 @@ internal static readonly @string homeˢ2 = "home"u8;
 internal static readonly @string homeIsNotDefinedˢ2 = "$home is not defined"u8;
 internal static readonly @string xdgCacheHomeˢ = "XDG_CACHE_HOME"u8;
 internal static readonly @string neitherXdgCacheHomeNorˢ = "neither $XDG_CACHE_HOME nor $HOME are defined"u8;
+internal static readonly @string pathInXdgCacheHomeIsˢ = "path in $XDG_CACHE_HOME is relative"u8;
 
 // UserCacheDir returns the default root directory to use for user-specific
 // cached data. Users should create their own application-specific subdirectory
@@ -536,11 +547,11 @@ internal static readonly @string neitherXdgCacheHomeNorˢ = "neither $XDG_CACHE_
 // On Windows, it returns %LocalAppData%.
 // On Plan 9, it returns $home/lib/cache.
 //
-// If the location cannot be determined (for example, $HOME is not defined),
-// then it will return an error.
+// If the location cannot be determined (for example, $HOME is not defined) or
+// the path in $XDG_CACHE_HOME is relative, then it will return an error.
 public static (@string, error) UserCacheDir() {
     @string dir = default!;
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "windows"u8) {
         dir = Getenv(localAppDataˢ);
         if (dir == ""u8) {
@@ -563,13 +574,16 @@ public static (@string, error) UserCacheDir() {
     }
     else { /* default: */
         dir = Getenv(xdgCacheHomeˢ);
-        if (dir == ""u8) {
+        if (dir == ""u8){
             // Unix
             dir = Getenv(homeˢ);
             if (dir == ""u8) {
                 return ("", errors.New(neitherXdgCacheHomeNorˢ));
             }
             dir += "/.cache"u8;
+        } else 
+        if (!filepathlite.IsAbs(dir)) {
+            return ("", errors.New(pathInXdgCacheHomeIsˢ));
         }
     }
 
@@ -581,6 +595,7 @@ internal static readonly @string appDataˢ = "AppData"u8;
 internal static readonly @string appDataIsNotDefinedˢ = "%AppData% is not defined"u8;
 internal static readonly @string xdgConfigHomeˢ = "XDG_CONFIG_HOME"u8;
 internal static readonly @string neitherXdgConfigHomeNorˢ = "neither $XDG_CONFIG_HOME nor $HOME are defined"u8;
+internal static readonly @string pathInXdgConfigHomeIsˢ = "path in $XDG_CONFIG_HOME is relative"u8;
 
 // UserConfigDir returns the default root directory to use for user-specific
 // configuration data. Users should create their own application-specific
@@ -593,11 +608,11 @@ internal static readonly @string neitherXdgConfigHomeNorˢ = "neither $XDG_CONFI
 // On Windows, it returns %AppData%.
 // On Plan 9, it returns $home/lib.
 //
-// If the location cannot be determined (for example, $HOME is not defined),
-// then it will return an error.
+// If the location cannot be determined (for example, $HOME is not defined) or
+// the path in $XDG_CONFIG_HOME is relative, then it will return an error.
 public static (@string, error) UserConfigDir() {
     @string dir = default!;
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "windows"u8) {
         dir = Getenv(appDataˢ);
         if (dir == ""u8) {
@@ -620,13 +635,16 @@ public static (@string, error) UserConfigDir() {
     }
     else { /* default: */
         dir = Getenv(xdgConfigHomeˢ);
-        if (dir == ""u8) {
+        if (dir == ""u8){
             // Unix
             dir = Getenv(homeˢ);
             if (dir == ""u8) {
                 return ("", errors.New(neitherXdgConfigHomeNorˢ));
             }
             dir += "/.config"u8;
+        } else 
+        if (!filepathlite.IsAbs(dir)) {
+            return ("", errors.New(pathInXdgConfigHomeIsˢ));
         }
     }
 
@@ -651,7 +669,7 @@ internal static readonly @string sdcardˢ = "/sdcard"u8;
 public static (@string, error) UserHomeDir() {
     @string env = homeˢ;
     @string enverr = homeˢ3;
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "windows"u8) {
         (env, enverr) = (userprofileˢ, userprofileˢ2);
     }
@@ -665,7 +683,7 @@ public static (@string, error) UserHomeDir() {
         }
     }
     // On some geese the home directory is not always defined.
-    var exprᴛ2 = Δruntime.GOOS;
+    var exprᴛ2 = runtime.GOOS;
     if (exprᴛ2 == "android"u8) {
         return (sdcardˢ, default!);
     }
@@ -775,6 +793,8 @@ public static (syscall.RawConn, error) SyscallConn(this ж<File> Ꮡf) {
 // DirFS("prefix"), will be affected by later calls to Chdir. DirFS is therefore not
 // a general substitute for a chroot-style security mechanism when the directory tree
 // contains arbitrary content.
+//
+// Use [Root.FS] to obtain a fs.FS that prevents escapes from the tree via symbolic links.
 //
 // The directory dir must not be "".
 //
@@ -890,41 +910,45 @@ public static (slice<byte>, error) ReadFile(@string name) {
         }
         var fʗ1 = f;
         defer(() => fʗ1.Close(), ref ᒐ);
-        nint size = default!;
-        {
-            var (info, errΔ1) = f.Stat(); if (errΔ1 == default!) {
-                var size64 = info.Size();
-                if ((int64)(nint)size64 == size64) {
-                    size = (nint)size64;
-                }
-            }
-        }
-        size++; // one byte for final read at EOF
-        // If a file claims a small size, read at least 512 bytes.
-        // In particular, files in Linux's /proc claim size 0 but
-        // then do not work right if read in small pieces,
-        // so an initial read of 1 byte would not work correctly.
-        if (size < 512) {
-            size = 512;
-        }
-        var data = new slice<byte>(0, size);
-        while (ᐧ) {
-            var (n, errΔ2) = f.Read(data[(int)(len(data))..(int)(cap(data))]);
-            data = data[..(int)(len(data) + n)];
-            if (errΔ2 != default!) {
-                if (AreEqual(errΔ2, Δio.EOF)) {
-                    errΔ2 = default!;
-                }
-                return (data, errΔ2);
-            }
-            if (len(data) >= cap(data)) {
-                var d = append(data[..(int)(cap(data))], (byte)(0));
-                data = d[..(int)(len(data))];
-            }
-        }
+        return readFileContents(f);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
+}
+
+internal static (slice<byte>, error) readFileContents(ж<File> Ꮡf) {
+    nint size = default!;
+    {
+        var (info, err) = Ꮡf.Stat(); if (err == default!) {
+            var size64 = info.Size();
+            if ((int64)(nint)size64 == size64) {
+                size = (nint)size64;
+            }
+        }
+    }
+    size++; // one byte for final read at EOF
+    // If a file claims a small size, read at least 512 bytes.
+    // In particular, files in Linux's /proc claim size 0 but
+    // then do not work right if read in small pieces,
+    // so an initial read of 1 byte would not work correctly.
+    if (size < 512) {
+        size = 512;
+    }
+    var data = new slice<byte>(0, size);
+    while (ᐧ) {
+        var (n, err) = Ꮡf.Read(data[(int)(len(data))..(int)(cap(data))]);
+        data = data[..(int)(len(data) + n)];
+        if (err != default!) {
+            if (AreEqual(err, Δio.EOF)) {
+                err = default!;
+            }
+            return (data, err);
+        }
+        if (len(data) >= cap(data)) {
+            var d = append(data[..(int)(cap(data))], (byte)(0));
+            data = d[..(int)(len(data))];
+        }
+    }
 }
 
 // WriteFile writes data to the named file, creating it if necessary.

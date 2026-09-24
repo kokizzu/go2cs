@@ -4,6 +4,7 @@
 namespace go.@internal;
 
 using bytes = bytes_package;
+using fmt = fmt_package;
 using testing = testing_package;
 using static global::go.@internal.fuzz_package;
 
@@ -31,12 +32,6 @@ partial class fuzz_internal_test_package {
     nint c = mr.values[mr.counter];
     mr.counter++;
     return (uint32)c % n;
-}
-
-[GoRecv] internal static nint exp2(this ref mockRand mr) {
-    nint c = mr.values[mr.counter];
-    mr.counter++;
-    return c;
 }
 
 [GoRecv] internal static bool @bool(this ref mockRand mr) {
@@ -78,7 +73,7 @@ public static void TestByteSliceMutators(ж<testing.T> Ꮡt) {
         new(
             name: "byteSliceDuplicateBytes"u8,
             mutator: byteSliceDuplicateBytes,
-            input: append(new slice<byte>(0, 13), new byte[]{1, 2, 3, 4}.slice().ꓸꓸꓸ),
+            input: appendꓸꓸꓸ(new slice<byte>(0, 13), new byte[]{1, 2, 3, 4}.slice()),
             expected: new byte[]{1, 1, 2, 3, 4, 2, 3, 4}.slice()
         ),
         new(
@@ -150,7 +145,7 @@ public static void TestByteSliceMutators(ж<testing.T> Ꮡt) {
         new(
             name: "byteSliceInsertConstantBytes"u8,
             mutator: byteSliceInsertConstantBytes,
-            input: append(new slice<byte>(0, 8), new byte[]{1, 2, 3, 4}.slice().ꓸꓸꓸ),
+            input: appendꓸꓸꓸ(new slice<byte>(0, 8), new byte[]{1, 2, 3, 4}.slice()),
             expected: new byte[]{3, 3, 3, 1, 2, 3, 4}.slice()
         ),
         new(
@@ -169,7 +164,7 @@ public static void TestByteSliceMutators(ж<testing.T> Ꮡt) {
             name: "byteSliceSwapBytes"u8,
             mutator: byteSliceSwapBytes,
             randVals: new nint[]{0, 2, 0, 2}.slice(),
-            input: append(new slice<byte>(0, 9), new byte[]{1, 2, 3, 4}.slice().ꓸꓸꓸ),
+            input: appendꓸꓸꓸ(new slice<byte>(0, 9), new byte[]{1, 2, 3, 4}.slice()),
             expected: new byte[]{3, 2, 1, 4}.slice()
         )
     }.slice()) {
@@ -186,6 +181,53 @@ public static void TestByteSliceMutators(ж<testing.T> Ꮡt) {
             var b = tcʗ1.mutator(m, tcʗ1.input);
             if (!bytes.Equal(b, tcʗ1.expected)) {
                 tΔ1.Errorf("got %x, want %x"u8, b, tcʗ1.expected);
+            }
+        });
+    }
+}
+
+[GoType("dyn")] internal partial struct BenchmarkByteSliceMutators_tests {
+    internal @string name;
+    internal Func<ж<global::go.@internal.fuzz_package.mutator>, slice<byte>, slice<byte>> mutator;
+}
+
+public static void BenchmarkByteSliceMutators(ж<testing.B> Ꮡb) {
+    var tests = new BenchmarkByteSliceMutators_tests[]{
+        new("RemoveBytes"u8, byteSliceRemoveBytes),
+        new("InsertRandomBytes"u8, byteSliceInsertRandomBytes),
+        new("DuplicateBytes"u8, byteSliceDuplicateBytes),
+        new("OverwriteBytes"u8, byteSliceOverwriteBytes),
+        new("BitFlip"u8, byteSliceBitFlip),
+        new("XORByte"u8, byteSliceXORByte),
+        new("SwapByte"u8, byteSliceSwapByte),
+        new("ArithmeticUint8"u8, byteSliceArithmeticUint8),
+        new("ArithmeticUint16"u8, byteSliceArithmeticUint16),
+        new("ArithmeticUint32"u8, byteSliceArithmeticUint32),
+        new("ArithmeticUint64"u8, byteSliceArithmeticUint64),
+        new("OverwriteInterestingUint8"u8, byteSliceOverwriteInterestingUint8),
+        new("OverwriteInterestingUint16"u8, byteSliceOverwriteInterestingUint16),
+        new("OverwriteInterestingUint32"u8, byteSliceOverwriteInterestingUint32),
+        new("InsertConstantBytes"u8, byteSliceInsertConstantBytes),
+        new("OverwriteConstantBytes"u8, byteSliceOverwriteConstantBytes),
+        new("ShuffleBytes"u8, byteSliceShuffleBytes),
+        new("SwapBytes"u8, byteSliceSwapBytes)
+    }.array();
+    foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
+        ref var tc = ref heap(new BenchmarkByteSliceMutators_tests(), out var Ꮡtc);
+        tc = vᴛ1;
+
+        var tcʗ1 = tc;
+        Ꮡb.Run(tc.name, (ж<testing.B> bΔ1) => {
+            for (nint sizeᴛ1 = 64; sizeᴛ1 <= 1024; sizeᴛ1 *= 2) {
+                var size = sizeᴛ1;
+                var tcʗ2 = tcʗ1;
+                bΔ1.Run(fmt.Sprintf("%d"u8, size), (ж<testing.B> bΔ2) => {
+                    var m = Ꮡ(new mutator(r: new global::go.@internal.fuzz_package.pcgRandжmutatorRand(newPcgRand())));
+                    var input = new slice<byte>(size);
+                    for (nint i = 0; i < (~bΔ2).N; i++) {
+                        tcʗ2.mutator(m, input);
+                    }
+                });
             }
         });
     }

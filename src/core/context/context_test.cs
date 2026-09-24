@@ -300,9 +300,21 @@ public static void XTestCancelRemoves(testingT t) {
     public global::go.context_package.Context Context;
 }
 
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *myDoneCtx's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this myDoneCtx recvᴛ) => recvᴛ.Context.Deadline();
+
+// Go method set entry for the promoted 'Context.Err()' - provided ONLY by the embedded
+// interface field in *myDoneCtx's method set; see the pointer-only satisfaction record.
+internal static error Err(this myDoneCtx recvᴛ) => recvᴛ.Context.Err();
+
+// Go method set entry for the promoted 'Context.Value()' - provided ONLY by the embedded
+// interface field in *myDoneCtx's method set; see the pointer-only satisfaction record.
+internal static any Value(this myDoneCtx recvᴛ, any key) => recvᴛ.Context.Value(key);
+
 [GoRecv] internal static /*<-*/channel<EmptyStruct> Done(this ref myDoneCtx d) {
     var c = new channel<EmptyStruct>(0);
-    return c;
+    return c.WithDirection(GoChanDir.Recv);
 }
 
 public static void XTestCustomContextGoroutines(testingT t) {

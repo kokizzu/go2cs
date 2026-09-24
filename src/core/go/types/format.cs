@@ -16,7 +16,7 @@ using ꓸꓸꓸany = Span<any>;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly object nilˢ = (@string)"<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @string> qf, bool tpSubscripts, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();

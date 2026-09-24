@@ -7,75 +7,21 @@ namespace go.@internal.coverage;
 // "blob" for a single Go package, created when coverage
 // instrumentation is turned on.
 using bytes = bytes_package;
-using md5 = crypto.md5_package;
 using binary = encoding.binary_package;
 using fmt = fmt_package;
 using hash = hash_package;
+using fnv = go.hash.fnv_package;
 using coverage = go.@internal.coverage_package;
 using stringtab = go.@internal.coverage.stringtab_package;
 using uleb128 = go.@internal.coverage.uleb128_package;
 using io = io_package;
 using os = os_package;
-using crypto;
 using encoding;
 using go.@internal;
 using go.@internal.coverage;
+using go.hash;
 
 partial class encodemeta_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
-    builtin.initPackage(typeof(crypto.md5_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() {
-    builtin.initPackage(typeof(go.@internal.coverage_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸstringtab() {
-    builtin.initPackage(typeof(go.@internal.coverage.stringtab_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
 
 [GoType] partial struct CoverageMetaDataBuilder {
     internal stringtab.Writer stab;
@@ -95,7 +41,7 @@ public static (ж<CoverageMetaDataBuilder>, error) NewCoverageMetaDataBuilder(@s
     }
     var x = Ꮡ(new CoverageMetaDataBuilder(
         tmp: new slice<byte>(0, 256),
-        h: md5.New()
+        h: fnv.New128a()
     ));
     x.of(CoverageMetaDataBuilder.Ꮡstab).InitWriter();
     x.of(CoverageMetaDataBuilder.Ꮡstab).Lookup(""u8);
@@ -253,7 +199,7 @@ public static (array<byte>, error) Emit(this ж<CoverageMetaDataBuilder> Ꮡb, i
 // HashFuncDesc computes an md5 sum of a coverage.FuncDesc and returns
 // a digest for it.
 public static array<byte> HashFuncDesc(ж<coverage.FuncDesc> Ꮡf) {
-    var h = md5.New();
+    var h = fnv.New128a();
     var tmp = new slice<byte>(0, 32);
     hashFuncDesc(h, ref (Ꮡf).DerefOrNull(), tmp);
     array<byte> r = new(16);

@@ -140,7 +140,7 @@ internal static (slice<@string> lits4, slice<@string> lits6, error err) googleLi
         }
     }
     if (ip4 != default!) {
-        foreach (var (i, lit4) in literalAddrs4) {
+        foreach (var (i, lit4) in literalAddrs4.ΔRangeSnapshot()) {
             if (strings.Contains(lit4, "%"u8)) {
                 literalAddrs4[i] = fmt.Sprintf(lit4, ip4[0], ip4[1], ip4[2], ip4[3]);
             }
@@ -148,7 +148,7 @@ internal static (slice<@string> lits4, slice<@string> lits6, error err) googleLi
         lits4 = literalAddrs4[..];
     }
     if (ip6 != default!) {
-        foreach (var (i, lit6) in literalAddrs6) {
+        foreach (var (i, lit6) in literalAddrs6.ΔRangeSnapshot()) {
             if (strings.Contains(lit6, "%"u8)) {
                 literalAddrs6[i] = fmt.Sprintf(lit6, ip6[0], ip6[1], ip6[2], ip6[3], ip6[4], ip6[5], ip6[6], ip6[7], ip6[8], ip6[9], ip6[10], ip6[11], ip6[12], ip6[13], ip6[14], ip6[15]);
             }

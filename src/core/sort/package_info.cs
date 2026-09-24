@@ -60,10 +60,9 @@ using static go.sort_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("sort/search.go", "search.cs", "AAh0ADMGkoKUgpS4AAI2AB0IkoKUgpS4AAIS4r7CvsK4kKaQppA=")]
-[assembly: go.GoPositionMap("sort/slice.go", "slice.cs", "ABgwAAwCgoKCggACGAAJAoKCAAIQ0oKCgoKm")]
-[assembly: go.GoPositionMap("sort/sort.go", "sort.cs", "ACZa4oKClIIAChyCgoKCpoKCABAkkqiSrsKCgoKmAAQQkKKAooCmkMyAAAIQ4KKAppKokMqAooCigKaQrtCswKqwqrCswKqwAAJIACIC")]
-[assembly: go.GoPositionMap("sort/sort_impl_go121.go", "sort_impl_go121.cs", "ABQggKKAooCkgKKAooA=")]
+[assembly: go.GoPositionMap("sort/search.go", "search.cs", "AAh0ADMGkoKUgpS4AAI2AB0IkoKUgpS4AAIS4r7CvsK4kKaQppA=", "124-124:1;132-132:1;140-140:1")]
+[assembly: go.GoPositionMap("sort/slice.go", "slice.cs", "AAwwAAwCgoKCggACGAAJAoKCAAIQ0oKCgoKm")]
+[assembly: go.GoPositionMap("sort/sort.go", "sort.cs", "ACdg4oKClIIAChyCgoKCpoKCABAkkqiSrsKCgoKmAAQQkKKAooCmkMyAAAIQ4KKAppKokMqAooCigKaQrtCswKqwqrCswKqwAAJIACIC")]
 [assembly: go.GoPositionMap("sort/zsortfunc.go", "zsortfunc.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
 [assembly: go.GoPositionMap("sort/zsortinterface.go", "zsortinterface.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
 // </GoSourcePositionMaps>
@@ -89,4 +88,16 @@ public static partial class sort_package
     public partial struct IntSlice {}
     public partial struct StringSlice {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() => builtin.initPackage(typeof(@internal.reflectlite_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    // </ImportInitializers>
 }

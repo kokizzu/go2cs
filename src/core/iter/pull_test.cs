@@ -11,30 +11,6 @@ using iter = iter_package;
 
 partial class iter_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸiter() {
-    builtin.initPackage(typeof(iter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 internal static iter.Seq<nint> count(nint n) {
     return (Func<nint, bool> yield) => {
         foreach (var i in range(n)) {
@@ -238,12 +214,17 @@ internal static iter.Seq2<nint, nint> doDoubleNext2() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object yieldFailedˢ = (@string)"yield failed"u8;
 private static readonly object doubleYieldDidNotFailˢ = (@string)"double yield did not fail"u8;
 
 public static void TestPullDoubleYield(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var (_, stop) = Pull(storeYield());
+        var (next, stop) = Pull(storeYield());
+        next();
+        if (yieldSlot == default!) {
+            Ꮡt.Fatal(yieldFailedˢ);
+        }
         var stopʗ1 = stop;
         defer(() => {
             if (recover() != default!) {
@@ -274,7 +255,11 @@ internal static Func<nint, bool> yieldSlot;
 public static void TestPullDoubleYield2(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        var (_, stop) = Pull2(storeYield2());
+        var (next, stop) = Pull2(storeYield2());
+        next();
+        if (yieldSlot2 == default!) {
+            Ꮡt.Fatal(yieldFailedˢ);
+        }
         var stopʗ1 = stop;
         defer(() => {
             if (recover() != default!) {

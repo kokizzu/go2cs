@@ -296,14 +296,14 @@ public static uint32 Uint32() {
 
 // Uint64N returns, as a uint64, a pseudo-random number in the half-open interval [0,n)
 // from the default Source.
-// It panics if n <= 0.
+// It panics if n == 0.
 public static uint64 Uint64N(uint64 n) {
     return globalRand.Uint64N(n);
 }
 
 // Uint32N returns, as a uint32, a pseudo-random number in the half-open interval [0,n)
 // from the default Source.
-// It panics if n <= 0.
+// It panics if n == 0.
 public static uint32 Uint32N(uint32 n) {
     return globalRand.Uint32N(n);
 }
@@ -353,7 +353,7 @@ public static nint IntN(nint n) {
 
 // UintN returns, as a uint, a pseudo-random number in the half-open interval [0,n)
 // from the default Source.
-// It panics if n <= 0.
+// It panics if n == 0.
 public static nuint UintN(nuint n) {
     return globalRand.UintN(n);
 }

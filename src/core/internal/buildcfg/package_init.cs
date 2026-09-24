@@ -21,6 +21,7 @@ partial class buildcfg_package {
         initᴛGOPPC64();
         initᴛGORISCV64();
         initᴛGOWASM();
+        initᴛGOFIPS140();
         initᴛExperiment();
         initᴛToolTags();
         initᴛFramePointerEnabled();

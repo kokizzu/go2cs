@@ -422,7 +422,7 @@ internal static void wakeupExtra(this ж<profBuf> Ꮡb) {
     }
 }
 
-[GoType("num:nint")] partial struct profBufReadMode;
+[GoType("num:nint")] public partial struct profBufReadMode;
 
 internal static profBufReadMode profBufBlocking => /* iota */ 0;
 internal static profBufReadMode profBufNonBlocking => 1;

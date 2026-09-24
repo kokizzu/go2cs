@@ -368,7 +368,13 @@ public static (ж<TCPConn>, error) DialTCP(@string network, ж<TCPAddr> Ꮡladdr
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: network, Source: Ꮡladdr.opAddr(), Addr: default!, Err: errMissingAddress))));
     }
     var sd = Ꮡ(new sysDialer(network: network, address: Ꮡraddr.String()));
-    var (c, err) = sd.dialTCP(context.Background(), Ꮡladdr, Ꮡraddr);
+    ж<TCPConn> c = default!;
+    error err = default!;
+    if (sd.of(sysDialer.ᏑDialer).MultipathTCP()){
+        (c, err) = sd.dialMPTCP(context.Background(), Ꮡladdr, Ꮡraddr);
+    } else {
+        (c, err) = sd.dialTCP(context.Background(), Ꮡladdr, Ꮡraddr);
+    }
     if (err != default!) {
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: network, Source: Ꮡladdr.opAddr(), Addr: Ꮡraddr.opAddr(), Err: err))));
     }
@@ -505,7 +511,13 @@ public static (ж<TCPListener>, error) ListenTCP(@string network, ж<TCPAddr> �
         Ꮡladdr = Ꮡ(new TCPAddr(nil)); laddr = ref Ꮡladdr.DerefOrNull();
     }
     var sl = Ꮡ(new sysListener(network: network, address: Ꮡladdr.String()));
-    var (ln, err) = sl.listenTCP(context.Background(), Ꮡladdr);
+    ж<TCPListener> ln = default!;
+    error err = default!;
+    if (sl.of(sysListener.ᏑListenConfig).MultipathTCP()){
+        (ln, err) = sl.listenMPTCP(context.Background(), Ꮡladdr);
+    } else {
+        (ln, err) = sl.listenTCP(context.Background(), Ꮡladdr);
+    }
     if (err != default!) {
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: network, Source: default!, Addr: Ꮡladdr.opAddr(), Err: err))));
     }

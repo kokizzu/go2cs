@@ -31,6 +31,8 @@
   <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).tests" />
+    <!-- reflect.StructOf mints synthesized structs into this fixed-name dynamic assembly; a field type that is internal here cannot be loaded from there without the grant. -->
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
   </ItemGroup>
 
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
@@ -175,7 +177,7 @@
     <ProjectReference Include="$(go2csPath)core/runtime/pprof/runtime.pprof.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/trace/runtime.trace.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sort/sort.csproj" />
+    <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />
     <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
     <ProjectReference Include="$(go2csPath)core/time/time.csproj" />

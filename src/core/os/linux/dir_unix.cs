@@ -7,7 +7,7 @@ namespace go;
 using byteorder = @internal.byteorder_package;
 using goarch = @internal.goarch_package;
 using Δio = io_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
@@ -16,24 +16,6 @@ using fs = go.io.fs_package;
 using go.sync;
 
 partial class os_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 // Auxiliary information if the File describes a directory
 [GoType] partial struct dirInfo {
@@ -100,7 +82,7 @@ internal static (slice<@string> names, slice<DirEntry> dirents, slice<FileInfo> 
                 d.Value.bufp = 0;
                 error errno = default!;
                 (d.Value.nbuf, errno) = Ꮡf.of(File.Ꮡpfd).ReadDirent((~d).buf.ValueSlot);
-                Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+                runtime.KeepAlive(Ꮡf.OrTypedNil());
                 if (errno != default!) {
                     (names, dirents, infos, err) = (names, dirents, infos, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readdirent"u8, Path: f.name, Err: errno)))); goto ᒐdone;
                 }
@@ -127,7 +109,8 @@ internal static (slice<@string> names, slice<DirEntry> dirents, slice<FileInfo> 
             // or might expose a remote file system which does not have the concept
             // of inodes. Therefore, we cannot make the assumption that it is safe
             // to skip entries with zero inodes.
-            if (ino == 0 && Δruntime.GOOS != "wasip1"u8) {
+            // Some Linux filesystems (old XFS, FUSE) can return valid files with zero inodes.
+            if (ino == 0 && runtime.GOOS != "linux"u8 && runtime.GOOS != "wasip1"u8) {
                 continue;
             }
             const uint64 namoff = /* uint64(unsafe.Offsetof(syscall.Dirent{}.Name)) */ 19;
@@ -204,13 +187,13 @@ internal static uint64 readIntBE(slice<byte> b, uintptr size) {
         return (uint64)b[0];
     }
     if (exprᴛ1 == 2) {
-        return (uint64)byteorder.BeUint16(b);
+        return (uint64)byteorder.BEUint16(b);
     }
     if (exprᴛ1 == 4) {
-        return (uint64)byteorder.BeUint32(b);
+        return (uint64)byteorder.BEUint32(b);
     }
     if (exprᴛ1 == 8) {
-        return (uint64)byteorder.BeUint64(b);
+        return (uint64)byteorder.BEUint64(b);
     }
     { /* default: */
         throw panic("syscall: readInt with unsupported size");
@@ -224,13 +207,13 @@ internal static uint64 readIntLE(slice<byte> b, uintptr size) {
         return (uint64)b[0];
     }
     if (exprᴛ1 == 2) {
-        return (uint64)byteorder.LeUint16(b);
+        return (uint64)byteorder.LEUint16(b);
     }
     if (exprᴛ1 == 4) {
-        return (uint64)byteorder.LeUint32(b);
+        return (uint64)byteorder.LEUint32(b);
     }
     if (exprᴛ1 == 8) {
-        return (uint64)byteorder.LeUint64(b);
+        return (uint64)byteorder.LEUint64(b);
     }
     { /* default: */
         throw panic("syscall: readInt with unsupported size");

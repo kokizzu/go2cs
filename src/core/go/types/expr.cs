@@ -7,13 +7,10 @@ namespace go.go;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
-using typeparams = global::go.go.@internal.typeparams_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using strings = strings_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
-using global::go.go.@internal;
 using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
@@ -54,7 +51,7 @@ sub-expression trees are left alone except for their roots). This mechanism
 ensures that a client sees the actual (run-time) type an untyped value would
 have. It also permits type-checking of lhs shift operands "as if the shift
 were not present": when updateExprType visits an untyped lhs shift operand
-and assigns it it's final type, that type must be an integer type, and a
+and assigns it its final type, that type must be an integer type, and a
 constant lhs must be representable as an integer.
 
 When an expression gets its final type, either on the way out from rawExpr,
@@ -90,6 +87,22 @@ internal static bool op(this ж<Checker> Ꮡcheck, opPredicates m, ж<operand> �
     return true;
 }
 
+// opPos returns the position of the operator if x is an operation;
+// otherwise it returns the start position of x.
+internal static tokenꓸPos opPos(ast.Expr x) {
+    switch (x.type()) {
+    case null: {
+        return nopos; // don't crash
+    }
+    case ж<ast.BinaryExpr> op: {
+        return (~op).OpPos;
+    }
+    default: {
+        var op = x;
+        return x.Pos();
+    }}
+}
+
 // opName returns the name of the operation if x is an operation
 // that might overflow; otherwise it returns the empty string.
 internal static @string opName(ast.Expr e) {
@@ -121,18 +134,6 @@ internal static array<@string> op2str2 = new golib.SparseArray<@string>{
     [14] = "multiplication"u8,
     [20] = "shift"u8
 }.array(21);
-
-// If typ is a type parameter, underIs returns the result of typ.underIs(f).
-// Otherwise, underIs returns the result of f(under(typ)).
-internal static bool underIs(ΔType typ, Func<ΔType, bool> f) {
-    typ = Unalias(typ);
-    {
-        var (tpar, _) = typ._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
-            return tpar.underIs(f);
-        }
-    }
-    return f(under(typ));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string cannotUseOutsideOfˢ = "cannot use ~ outside of interface or type constraint"u8;
@@ -213,7 +214,7 @@ internal static void unary(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.U
         }
         x.val = constant.UnaryOp(op, x.val, prec);
         x.expr = new ast.UnaryExprжExpr(Ꮡe);
-        Ꮡcheck.overflow(Ꮡx, x.Pos());
+        Ꮡcheck.overflow(Ꮡx, opPos(x.expr));
         return;
     }
     x.mode = value;
@@ -234,6 +235,9 @@ internal static bool isComparison(token.Token op) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string vFoundOldTypeSSNewSˢ = "%v: found old type(%s): %s (new: %s)"u8;
+
 // updateExprType updates the type of x to typ and invokes itself
 // recursively for the operands of x, depending on expression kind.
 // If typ is still an untyped and not the final type, updateExprType
@@ -244,13 +248,6 @@ internal static bool isComparison(token.Token op) {
 // and if x is the (formerly untyped) lhs operand of a non-constant
 // shift, it must be an integer value.
 internal static void updateExprType(this ж<Checker> Ꮡcheck, ast.Expr x, ΔType typ, bool final) {
-    Ꮡcheck.updateExprType0(default!, x, typ, final);
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string vFoundOldTypeSSNewSˢ = "%v: found old type(%s): %s (new: %s)"u8;
-
-internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent, ast.Expr x, ΔType typ, bool final) {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
     var (old, found) = check.untyped[x, ꟷ];
@@ -293,13 +290,13 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
         break;
     }
     case ж<ast.ParenExpr> xΔ1: {
-        Ꮡcheck.updateExprType0(new ast.ParenExprжExpr(xΔ1), // Resulting in an untyped constant (e.g., built-in complex).
+        Ꮡcheck.updateExprType((~xΔ1).X, // Resulting in an untyped constant (e.g., built-in complex).
  // The respective calls take care of calling updateExprType
  // for the arguments if necessary.
  // An identifier denoting a constant, a constant literal,
  // or a qualified identifier (imported untyped constant).
  // No operands to take care of.
- (~xΔ1).X, typ, final);
+ typ, final);
         break;
     }
     case ж<ast.UnaryExpr> xΔ1: {
@@ -311,7 +308,7 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
             // at the end of the type check.
             break;
         }
-        Ꮡcheck.updateExprType0(new ast.UnaryExprжExpr(xΔ1), (~xΔ1).X, typ, final);
+        Ꮡcheck.updateExprType((~xΔ1).X, typ, final);
         break;
     }
     case ж<ast.BinaryExpr> xΔ1: {
@@ -325,11 +322,11 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
             // and the operand types must have final types.
             // The result type depends only on lhs operand.
             // The rhs type was updated when checking the shift.
-            Ꮡcheck.updateExprType0(new ast.BinaryExprжExpr(xΔ1), (~xΔ1).X, typ, final);
+            Ꮡcheck.updateExprType((~xΔ1).X, typ, final);
         } else {
             // The operand types match the result type.
-            Ꮡcheck.updateExprType0(new ast.BinaryExprжExpr(xΔ1), (~xΔ1).X, typ, final);
-            Ꮡcheck.updateExprType0(new ast.BinaryExprжExpr(xΔ1), (~xΔ1).Y, typ, final);
+            Ꮡcheck.updateExprType((~xΔ1).X, typ, final);
+            Ꮡcheck.updateExprType((~xΔ1).Y, typ, final);
         }
         break;
     }
@@ -454,7 +451,7 @@ internal static (ΔType, constant.Value, errors.Code) implicitTypeAndValue(this 
     case ж<Interface> u: {
         if (isTypeParam(target)) {
             // Preserve the type of nil as UntypedNil: see go.dev/issue/13061.
-            if (!u.typeSet().underIs((ΔType uΔ1) => {
+            if (!underIs(target, (ΔType uΔ1) => {
                 if (uΔ1 == default!) {
                     return false;
                 }
@@ -613,9 +610,14 @@ internal static void comparison(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<
             if (!isTypeParam(x.typ)) {
                 errOp = Ꮡy;
             }
-            cause = Ꮡcheck.sprintf("type parameter %s is not comparable with %s"u8, (~errOp).typ, op);
+            cause = Ꮡcheck.sprintf("type parameter %s cannot use operator %s"u8, (~errOp).typ, op);
         } else {
-            cause = Ꮡcheck.sprintf("operator %s not defined on %s"u8, op, Ꮡcheck.kindString((~errOp).typ)); // catch-all
+            // catch-all neither x nor y is a type parameter
+            @string what = compositeKind((~errOp).typ);
+            if (what == ""u8) {
+                what = Ꮡcheck.sprintf("%s"u8, (~errOp).typ);
+            }
+            cause = Ꮡcheck.sprintf("operator %s not defined on %s"u8, op, what);
         }
     }
     if (switchCase){
@@ -633,62 +635,16 @@ internal static @string incomparableCause(this ж<Checker> Ꮡcheck, ΔType typ)
     case ж<Slice> _:
     case ж<ΔSignature> _:
     case ж<Map> _: {
-        return Ꮡcheck.kindString(typ) + " can only be compared to nil"u8;
+        return compositeKind(typ) + " can only be compared to nil"u8;
     }}
 
     // see if we can extract a more specific error
     @string cause = default!;
-    comparable(typ, true, default!, (@string format, params ꓸꓸꓸany argsʗp) => {
+    comparableType(typ, true, default!, (@string format, params ꓸꓸꓸany argsʗp) => {
         var args = argsʗp.slice();
         cause = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
     });
     return cause;
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string arrayˢ = "array"u8;
-internal static readonly @string sliceˢ = "slice"u8;
-internal static readonly @string structˢ = "struct"u8;
-internal static readonly @string pointerˢ = "pointer"u8;
-internal static readonly @string funcˢ = "func"u8;
-internal static readonly @string interfaceˢ = "interface"u8;
-internal static readonly @string mapˢ = "map"u8;
-internal static readonly @string chanˢ = "chan"u8;
-
-// kindString returns the type kind as a string.
-internal static @string kindString(this ж<Checker> Ꮡcheck, ΔType typ) {
-    switch (under(typ).type()) {
-    case ж<Array>: {
-        return arrayˢ;
-    }
-    case ж<Slice>: {
-        return sliceˢ;
-    }
-    case ж<Struct>: {
-        return structˢ;
-    }
-    case ж<Pointer>: {
-        return pointerˢ;
-    }
-    case ж<ΔSignature>: {
-        return funcˢ;
-    }
-    case ж<Interface>: {
-        if (isTypeParam(typ)) {
-            return Ꮡcheck.sprintf("type parameter %s"u8, typ);
-        }
-        return interfaceˢ;
-    }
-    case ж<Map>: {
-        return mapˢ;
-    }
-    case ж<Chan>: {
-        return chanˢ;
-    }
-    default: {
-        return Ꮡcheck.sprintf("%s"u8, typ); // catch-all
-    }}
-
 }
 
 // If e != nil, it must be the shift expression; it may be nil for non-constant shifts.
@@ -789,13 +745,7 @@ internal static void shift(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<opera
             // x is a constant so xval != nil and it must be of Int kind.
             x.val = constant.Shift(xval, op, (nuint)s);
             x.expr = e;
-            tokenꓸPos opPos = x.Pos();
-            {
-                var (b, _) = e._<ж<ast.BinaryExpr>>(ᐧ); if (b != nil) {
-                    opPos = b.Value.OpPos;
-                }
-            }
-            Ꮡcheck.overflow(Ꮡx, opPos);
+            Ꮡcheck.overflow(Ꮡx, opPos(x.expr));
             return;
         }
         // non-constant shift with constant lhs
@@ -1110,46 +1060,8 @@ internal static void nonGeneric(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<o
     }
 }
 
-// langCompat reports an error if the representation of a numeric
-// literal is not compatible with the current language version.
-internal static void langCompat(this ж<Checker> Ꮡcheck, ж<ast.BasicLit> Ꮡlit) {
-    ref var lit = ref Ꮡlit.DerefOrNull();
-
-    @string s = lit.Value;
-    if (len(s) <= 2 || Ꮡcheck.allowVersion(new ast_BasicLitжpositioner(Ꮡlit), go1_13)) {
-        return;
-    }
-    // len(s) > 2
-    if (strings.Contains(s, "_"u8)) {
-        Ꮡcheck.versionErrorf(new ast_BasicLitжpositioner(Ꮡlit), go1_13, "underscore in numeric literal"u8);
-        return;
-    }
-    if (s[0] != (rune)'0') {
-        return;
-    }
-    var radix = s[1];
-    if (radix == (rune)'b' || radix == (rune)'B') {
-        Ꮡcheck.versionErrorf(new ast_BasicLitжpositioner(Ꮡlit), go1_13, "binary literal"u8);
-        return;
-    }
-    if (radix == (rune)'o' || radix == (rune)'O') {
-        Ꮡcheck.versionErrorf(new ast_BasicLitжpositioner(Ꮡlit), go1_13, "0o/0O-style octal literal"u8);
-        return;
-    }
-    if (lit.Kind != token.INT && (radix == (rune)'x' || radix == (rune)'X')) {
-        Ꮡcheck.versionErrorf(new ast_BasicLitжpositioner(Ꮡlit), go1_13, "hexadecimal floating-point literal"u8);
-    }
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidUseOfˢ = "invalid use of '...'"u8;
-internal static readonly @string functionLiteralˢ = "<function literal>"u8;
-internal static readonly @string missingTypeInCompositeˢ = "missing type in composite literal"u8;
-internal static readonly @string invalidRecursiveTypeˢ = "invalid recursive type"u8;
-internal static readonly @string mixtureOfFieldValueAndˢ = "mixture of field:value and value elements in struct literal"u8;
-internal static readonly @string structLiteralˢ = "struct literal"u8;
-internal static readonly @string missingKeyInMapLiteralˢ = "missing key in map literal"u8;
-internal static readonly @string mapLiteralˢ = "map literal"u8;
 internal static readonly @string useOfTypeOutsideTypeˢ = "use of .(type) outside type switch"u8;
 internal static readonly @string noKeyValueExpectedˢ = "no key:value expected"u8;
 
@@ -1182,321 +1094,28 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
         break;
     }
     case ж<ast.BasicLit> eΔ1: {
-        var exprᴛ1 = (~eΔ1).Kind;
-        if (exprᴛ1 == token.INT || exprᴛ1 == token.FLOAT || exprᴛ1 == token.IMAG) {
-            Ꮡcheck.langCompat(eΔ1);
-            // The max. mantissa precision for untyped numeric values
-            // is 512 bits, or 4048 bits for each of the two integer
-            // parts of a fraction for floating-point numbers that are
-            // represented accurately in the go/constant package.
-            // Constant literals that are longer than this many bits
-            // are not meaningful; and excessively long constants may
-            // consume a lot of space and time for a useless conversion.
-            // Cap constant length with a generous upper limit that also
-            // allows for separators between all digits.
-            const nint limit = 10000;
-            if (len((~eΔ1).Value) > limit) {
-                Ꮡcheck.errorf(new ast_BasicLitжpositioner(eΔ1), InvalidConstVal, "excessively long constant: %s... (%d chars)"u8, (~eΔ1).Value[..10], len((~eΔ1).Value));
-                goto ΔError;
-            }
-        }
-
-        x.setConst((~eΔ1).Kind, (~eΔ1).Value);
+        Ꮡcheck.basicLit(Ꮡx, eΔ1);
         if (x.mode == invalid) {
-            // The parser already establishes syntactic correctness.
-            // If we reach here it's because of number under-/overflow.
-            // TODO(gri) setConst (and in turn the go/constant package)
-            // should return an error describing the issue.
-            Ꮡcheck.errorf(new ast_BasicLitжpositioner(eΔ1), InvalidConstVal, "malformed constant: %s"u8, (~eΔ1).Value);
             goto ΔError;
         }
-        Ꮡcheck.overflow(Ꮡx, // Ensure that integer values don't overflow (go.dev/issue/54280).
- eΔ1.Pos());
         break;
     }
     case ж<ast.FuncLit> eΔ1: {
-        {
-            var (sig, ok) = Ꮡcheck.typ(new ast.FuncTypeжExpr((~eΔ1).Type))._<ж<ΔSignature>>(ᐧ); if (ok){
-                // Set the Scope's extent to the complete "func (...) {...}"
-                // so that Scope.Innermost works correctly.
-                sig.Value.scope.Value.pos = eΔ1.Pos();
-                sig.Value.scope.Value.end = eΔ1.End();
-                if (!(~check.conf).IgnoreFuncBodies && (~eΔ1).Body != nil) {
-                    // Anonymous functions are considered part of the
-                    // init expression/func declaration which contains
-                    // them: use existing package-level declaration info.
-                    var decl = check.decl; // capture for use in closure below
-                    var iota = check.iota; // capture for use in closure below (go.dev/issue/22345)
-                    // Don't type-check right away because the function may
-                    // be part of a type definition to which the function
-                    // body refers. Instead, type-check as soon as possible,
-                    // but before the enclosing scope contents changes (go.dev/issue/22992).
-                    var declʗ1 = decl;
-                    var iotaʗ1 = iota;
-                    var sigʗ1 = sig;
-                    check.later(() => {
-                        Ꮡcheck.funcBody(declʗ1, functionLiteralˢ, sigʗ1, (~eΔ1).Body, iotaʗ1);
-                    }).describef(new ast_FuncLitжpositioner(eΔ1), "func literal"u8);
-                }
-                x.mode = value;
-                x.typ = new ΔSignatureжΔType(sig);
-            } else {
-                Ꮡcheck.errorf(new ast_FuncLitжpositioner(eΔ1), InvalidSyntaxTree, "invalid function literal %v"u8, eΔ1.OrTypedNil());
-                goto ΔError;
-            }
+        Ꮡcheck.funcLit(Ꮡx, eΔ1);
+        if (x.mode == invalid) {
+            goto ΔError;
         }
         break;
     }
     case ж<ast.CompositeLit> eΔ1: {
-        ΔType typ = default!;
-        ΔType @base = default!;
-        switch (ᐧ) {
-        case {} when (~eΔ1).Type != default!: {
-            {
-                var (atyp, _) = (~eΔ1).Type._<ж<ast.ArrayType>>(ᐧ); if (atyp != nil && (~atyp).Len != default!) {
-                    // composite literal type present - use it
-                    // [...]T array types may only appear with composite literals.
-                    // Check for them here so we don't have to handle ... in general.
-                    {
-                        var (ellip, _) = (~atyp).Len._<ж<ast.Ellipsis>>(ᐧ); if (ellip != nil && (~ellip).Elt == default!) {
-                            // We have an "open" [...]T array type.
-                            // Create a new ArrayType with unknown length (-1)
-                            // and finish setting it up after analyzing the literal.
-                            typ = new ArrayжΔType(Ꮡ(new Array(len: -1, elem: Ꮡcheck.varType((~atyp).Elt))));
-                            @base = typ;
-                            break;
-                        }
-                    }
-                }
-            }
-            typ = Ꮡcheck.typ((~eΔ1).Type);
-            @base = typ;
-            break;
-        }
-        case {} when hint != default!: {
-            typ = hint;
-            (@base, _) = deref(coreType(typ)); // *T implies &T{}
-            if (@base == default!) {
-                // no composite literal type present - use hint (element type of enclosing type)
-                Ꮡcheck.errorf(new ast_CompositeLitжpositioner(eΔ1), InvalidLit, "invalid composite literal element type %s (no core type)"u8, typ);
-                goto ΔError;
-            }
-            break;
-        }
-        default: {
-            Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), // TODO(gri) provide better error messages depending on context
- UntypedLit, missingTypeInCompositeˢ);
+        Ꮡcheck.compositeLit(Ꮡx, eΔ1, hint);
+        if (x.mode == invalid) {
             goto ΔError;
-            break;
-        }}
-
-        var switchᴛ7 = coreType(@base);
-        switch (switchᴛ7.type()) {
-        case ж<Struct> utyp: {
-            if ((~utyp).fields == default!) {
-                // Prevent crash if the struct referred to is not yet set up.
-                // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
-                goto ΔError;
-            }
-            if (len((~eΔ1).Elts) == 0) {
-                break;
-            }
-            var fields = utyp.Value.fields;
-            {
-                var (_, ok) = (~eΔ1).Elts[0]._<ж<ast.KeyValueExpr>>(ᐧ); if (ok){
-                    // Convention for error messages on invalid struct literals:
-                    // we mention the struct type only if it clarifies the error
-                    // (e.g., a duplicate field error doesn't need the struct type).
-                    // all elements must have keys
-                    var visited = new slice<bool>(len(fields));
-                    foreach (var (_, eΔ2) in (~eΔ1).Elts) {
-                        var (kv, _) = eΔ2._<ж<ast.KeyValueExpr>>(ᐧ);
-                        if (kv == nil) {
-                            Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ2), MixedStructLit, mixtureOfFieldValueAndˢ);
-                            continue;
-                        }
-                        var (key, _) = (~kv).Key._<ж<ast.Ident>>(ᐧ);
-                        // do all possible checks early (before exiting due to errors)
-                        // so we don't drop information on the floor
-                        Ꮡcheck.expr(nil, Ꮡx, (~kv).Value);
-                        if (key == nil) {
-                            Ꮡcheck.errorf(new ast_KeyValueExprжpositioner(kv), InvalidLitField, "invalid field name %s in struct literal"u8, (~kv).Key);
-                            continue;
-                        }
-                        nint i = fieldIndex((~utyp).fields, check.pkg, (~key).Name, false);
-                        if (i < 0) {
-                            Object alt = default!;
-                            {
-                                nint j = fieldIndex(fields, check.pkg, (~key).Name, true); if (j >= 0) {
-                                    alt = new VarжObject(fields[j]);
-                                }
-                            }
-                            @string msg = Ꮡcheck.lookupError(@base, (~key).Name, alt, true);
-                            Ꮡcheck.error(new ast_Exprᴠpositioner((~kv).Key), MissingLitField, msg);
-                            continue;
-                        }
-                        var fld = fields[i];
-                        check.recordUse(key, new VarжObject(fld));
-                        var etyp = fld.Value.typ;
-                        Ꮡcheck.assignment(Ꮡx, etyp, structLiteralˢ);
-                        // 0 <= i < len(fields)
-                        if (visited[i]) {
-                            Ꮡcheck.errorf(new ast_KeyValueExprжpositioner(kv), DuplicateLitField, "duplicate field name %s in struct literal"u8, (~key).Name);
-                            continue;
-                        }
-                        visited[i] = true;
-                    }
-                } else {
-                    // no element must have a key
-                    foreach (var (i, eΔ3) in (~eΔ1).Elts) {
-                        {
-                            var (kv, _) = eΔ3._<ж<ast.KeyValueExpr>>(ᐧ); if (kv != nil) {
-                                Ꮡcheck.error(new ast_KeyValueExprжpositioner(kv), MixedStructLit, mixtureOfFieldValueAndˢ);
-                                continue;
-                            }
-                        }
-                        Ꮡcheck.expr(nil, Ꮡx, eΔ3);
-                        if (i >= len(fields)) {
-                            Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidStructLit, "too many values in struct literal of type %s"u8, @base);
-                            break; // cannot continue
-                        }
-                        // i < len(fields)
-                        var fld = fields[i];
-                        if (!fld.of(Var.Ꮡobject).Exported() && (~fld).pkg != check.pkg) {
-                            Ꮡcheck.errorf(new operandжpositioner(Ꮡx),
-                                UnexportedLitField,
-                                "implicit assignment to unexported field %s in struct literal of type %s"u8, (~fld).name, @base);
-                            continue;
-                        }
-                        var etyp = fld.Value.typ;
-                        Ꮡcheck.assignment(Ꮡx, etyp, structLiteralˢ);
-                    }
-                    if (len((~eΔ1).Elts) < len(fields)) {
-                        Ꮡcheck.errorf(inNode(new ast.CompositeLitжNode(eΔ1), (~eΔ1).Rbrace), InvalidStructLit, "too few values in struct literal of type %s"u8, @base);
-                    }
-                }
-            }
-            break;
         }
-        case ж<Array> utyp: {
-            if ((~utyp).elem == default!) {
-                // ok to continue
-                // Prevent crash if the array referred to is not yet set up. Was go.dev/issue/18643.
-                // This is a stop-gap solution. Should use Checker.objPath to report entire
-                // path starting with earliest declaration in the source. TODO(gri) fix this.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
-                goto ΔError;
-            }
-            var n = Ꮡcheck.indexedElts((~eΔ1).Elts, (~utyp).elem, (~utyp).len);
-            if ((~utyp).len < 0) {
-                // If we have an array of unknown length (usually [...]T arrays, but also
-                // arrays [n]T where n is invalid) set the length now that we know it and
-                // record the type for the array (usually done by check.typ which is not
-                // called for [...]T). We handle [...]T arrays and arrays with invalid
-                // length the same here because it makes sense to "guess" the length for
-                // the latter if we have a composite literal; e.g. for [n]int{1, 2, 3}
-                // where n is invalid for some reason, it seems fair to assume it should
-                // be 3 (see also Checked.arrayLength and go.dev/issue/27346).
-                utyp.Value.len = n;
-                // e.Type is missing if we have a composite literal element
-                // that is itself a composite literal with omitted type. In
-                // that case there is nothing to record (there is no type in
-                // the source at that point).
-                if ((~eΔ1).Type != default!) {
-                    check.recordTypeAndValue((~eΔ1).Type, typexpr, new ArrayжΔType(utyp), default!);
-                }
-            }
-            break;
-        }
-        case ж<Slice> utyp: {
-            if ((~utyp).elem == default!) {
-                // Prevent crash if the slice referred to is not yet set up.
-                // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
-                goto ΔError;
-            }
-            Ꮡcheck.indexedElts((~eΔ1).Elts, (~utyp).elem, -1);
-            break;
-        }
-        case ж<Map> utyp: {
-            if ((~utyp).key == default! || (~utyp).elem == default!) {
-                // Prevent crash if the map referred to is not yet set up.
-                // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
-                goto ΔError;
-            }
-            var keyIsInterface = isNonTypeParamInterface((~utyp).key);
-            var visited = new map<any, slice<ΔType>>(len((~eΔ1).Elts));
-            foreach (var (_, eΔ4) in (~eΔ1).Elts) {
-                // If the map key type is an interface (but not a type parameter),
-                // the type of a constant key must be considered when checking for
-                // duplicates.
-                var (kv, _) = eΔ4._<ж<ast.KeyValueExpr>>(ᐧ);
-                if (kv == nil) {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ4), MissingLitKey, missingKeyInMapLiteralˢ);
-                    continue;
-                }
-                Ꮡcheck.exprWithHint(Ꮡx, (~kv).Key, (~utyp).key);
-                Ꮡcheck.assignment(Ꮡx, (~utyp).key, mapLiteralˢ);
-                if (x.mode == invalid) {
-                    continue;
-                }
-                if (x.mode == constant_) {
-                    var duplicate = false;
-                    var xkey = keyVal(x.val);
-                    if (keyIsInterface){
-                        foreach (var (_, vtyp) in visited[xkey]) {
-                            if (Identical(vtyp, x.typ)) {
-                                duplicate = true;
-                                break;
-                            }
-                        }
-                        visited[xkey] = append(visited[xkey], x.typ);
-                    } else {
-                        (_, duplicate) = visited[xkey, ꟷ];
-                        visited[xkey] = default!;
-                    }
-                    if (duplicate) {
-                        Ꮡcheck.errorf(new operandжpositioner(Ꮡx), DuplicateLitKey, "duplicate key %s in map literal"u8, x.val);
-                        continue;
-                    }
-                }
-                Ꮡcheck.exprWithHint(Ꮡx, (~kv).Value, (~utyp).elem);
-                Ꮡcheck.assignment(Ꮡx, (~utyp).elem, mapLiteralˢ);
-            }
-            break;
-        }
-        default: {
-            var utyp = switchᴛ7;
-            foreach (var (_, vᴛ1) in (~eΔ1).Elts) {
-                var eΔ5 = vᴛ1;
-
-                // when "using" all elements unpack KeyValueExpr
-                // explicitly because check.use doesn't accept them
-                {
-                    var (kv, _) = eΔ5._<ж<ast.KeyValueExpr>>(ᐧ); if (kv != nil) {
-                        // Ideally, we should also "use" kv.Key but we can't know
-                        // if it's an externally defined struct key or not. Going
-                        // forward anyway can lead to other errors. Give up instead.
-                        eΔ5 = kv.Value.Value;
-                    }
-                }
-                Ꮡcheck.use(eΔ5);
-            }
-            if (isValid(utyp)) {
-                // if utyp is invalid, an error was reported before
-                Ꮡcheck.errorf(new ast_CompositeLitжpositioner(eΔ1), InvalidLit, "invalid composite literal type %s"u8, typ);
-                goto ΔError;
-            }
-            break;
-        }}
-        x.mode = value;
-        x.typ = typ;
         break;
     }
     case ж<ast.ParenExpr> eΔ1: {
-        exprKind kind = Ꮡcheck.rawExpr(nil, // type inference doesn't go past parentheses (targe type T = nil)
+        exprKind kind = Ꮡcheck.rawExpr(nil, // type inference doesn't go past parentheses (target type T = nil)
  Ꮡx, (~eΔ1).X, default!, false);
         x.expr = new ast.ParenExprжExpr(eΔ1);
         return kind;
@@ -1508,7 +1127,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
     case ж<ast.IndexExpr> _:
     case ж<ast.IndexListExpr> _: {
         var eΔ1 = e;
-        var ix = typeparams.UnpackIndexExpr(eΔ1);
+        var ix = unpackIndexedExpr(eΔ1);
         if (Ꮡcheck.indexExpr(Ꮡx, ix)) {
             if (!enableReverseTypeInference) {
                 ᏑT = default!; T = ref ᏑT.DerefOrNull();
@@ -1563,11 +1182,11 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
     }
     case ж<ast.StarExpr> eΔ1: {
         Ꮡcheck.exprOrType(Ꮡx, (~eΔ1).X, false);
-        var exprᴛ2 = x.mode;
-        if (exprᴛ2 == invalid) {
+        var exprᴛ1 = x.mode;
+        if (exprᴛ1 == invalid) {
             goto ΔError;
         }
-        else if (exprᴛ2 == typexpr) {
+        else if (exprᴛ1 == typexpr) {
             Ꮡcheck.validVarType((~eΔ1).X, x.typ);
             x.typ = new PointerжΔType(Ꮡ(new Pointer(@base: x.typ)));
         }

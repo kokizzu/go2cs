@@ -4,7 +4,6 @@
 namespace go.go;
 
 using ast = global::go.go.ast_package;
-using importer = global::go.go.importer_package;
 using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
 using testenv = global::go.@internal.testenv_package;
@@ -21,18 +20,6 @@ using types = global::go.go.types_package;
 
 partial class types_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string goTypesˢ = "go/types"u8;
 
@@ -44,7 +31,7 @@ public static void TestSelf(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new Config(Importer: importer.Default());
+    conf = new Config(Importer: defaultImporter(fset));
     (_, err) = Ꮡconf.Check(goTypesˢ, fset, files, nil);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -111,7 +98,7 @@ internal static void runbench(ж<testing.B> Ꮡb, @string path, bool ignoreFuncB
         ref var conf = ref heap<types.Config>(out var Ꮡconf);
         conf = new Config(
             IgnoreFuncBodies: ignoreFuncBodies,
-            Importer: importer.Default()
+            Importer: defaultImporter(fset)
         );
         ж<typesꓸInfo> info = default!;
         if (writeInfo) {

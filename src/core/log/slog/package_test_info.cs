@@ -67,9 +67,9 @@ using static global::go.log.slog_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/example_level_handler_test.go", "example_level_handler_test.cs", "AC8utICCpKqiqLKokqiSqJIABhYACAKCgoI=")]
-[assembly: go.GoPositionMap("log/slog/example_wrap_test.go", "example_wrap_test.cs", "ACwm0oKUgoKC1oKUgqaCgpSUgg==")]
-[assembly: go.GoPositionMap("log/slog/slogtest_test.go", "slogtest_test.cs", "AD4kggAGEJKCgpKCgpSUgILsgoKCgpSCgpSUpoKCgIKkAAIS4oKCgoKCgpSUgoKCgoKClIKCqJSClA==")]
+[assembly: go.GoPositionMap("log/slog/example_level_handler_test.go", "example_level_handler_test.cs", "ABcutICCpKqiqLKokqiSqJIABhYACAKCgoI=")]
+[assembly: go.GoPositionMap("log/slog/example_wrap_test.go", "example_wrap_test.cs", "ABUm0oKUgoKC1oKUgqaCgpSUgg==", "30-41:1")]
+[assembly: go.GoPositionMap("log/slog/slogtest_test.go", "slogtest_test.cs", "ABokggAGEJKCgpKCgpSUgILsgoKCgpSCgpSUpoKCgIKkAAIS4oKCgoKCgpSUgoKCgoKClIKCqJSClA==", "24-24:1;25-25:2;27-40:3;30-36:3.1")]
 // </GoSourcePositionMaps>
 
 namespace go.log;
@@ -84,7 +84,49 @@ public static partial class slog_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestSlogtest_type {}
     public partial struct LevelHandler {}
-    public partial struct TestSlogtest_type {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslog() => builtin.initPackage(typeof(go.log.slog_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸbuffer() => builtin.initPackage(typeof(go.log.slog.@internal.buffer_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸslogtest() => builtin.initPackage(typeof(go.log.slog.@internal.slogtest_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸslogtest() => builtin.initPackage(typeof(go.testing.slogtest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.log.slog_package));
+    }
 }

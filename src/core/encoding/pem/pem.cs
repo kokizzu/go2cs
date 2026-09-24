@@ -17,42 +17,6 @@ using go.encoding;
 
 partial class pem_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(go.encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // A Block represents a PEM encoded structure.
 //
 // The encoded form is:
@@ -74,7 +38,7 @@ partial class pem_package {
 // line bytes. The remainder of the byte array (also not including the new line
 // bytes) is also returned and this will always be smaller than the original
 // argument.
-internal static (slice<byte> line, slice<byte> rest) getLine(slice<byte> data) {
+internal static (slice<byte> line, slice<byte> rest, nint consumed) getLine(slice<byte> data) {
     nint i = bytes.IndexByte(data, (rune)'\n');
     nint j = default!;
     if (i < 0){
@@ -86,7 +50,7 @@ internal static (slice<byte> line, slice<byte> rest) getLine(slice<byte> data) {
             i--;
         }
     }
-    return (bytes.TrimRight(data[0..(int)(i)], " \t"u8), data[(int)(j)..]);
+    return (bytes.TrimRight(data[0..(int)(i)], " \t"u8), data[(int)(j)..], j);
 }
 
 // removeSpacesAndTabs returns a copy of its input with all spaces and tabs
@@ -131,19 +95,34 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
     // pemStart begins with a newline. However, at the very beginning of
     // the byte array, we'll accept the start string without it.
     rest = data;
+    nint endTrailerIndex = 0;
     while (ᐧ) {
-        if (bytes.HasPrefix(rest, pemStart[1..])){
-            rest = rest[(int)(len(pemStart) - 1)..];
-        } else 
-        {
-            var (_, after, ok) = bytes.Cut(rest, pemStart); if (ok){
-                rest = after;
-            } else {
-                return (default!, data);
-            }
+        // If we've already tried parsing a block, skip past the END we already
+        // saw.
+        if (endTrailerIndex < 0 || endTrailerIndex > len(rest)) {
+            return (default!, data);
         }
+        rest = rest[(int)(endTrailerIndex)..];
+        // Find the first END line, and then find the last BEGIN line before
+        // the end line. This lets us skip any repeated BEGIN lines that don't
+        // have a matching END.
+        nint endIndex = bytes.Index(rest, pemEnd);
+        if (endIndex < 0) {
+            return (default!, data);
+        }
+        endTrailerIndex = endIndex + len(pemEnd);
+        nint beginIndex = bytes.LastIndex(rest[..(int)(endIndex)], pemStart[1..]);
+        if (beginIndex < 0 || (beginIndex > 0 && rest[beginIndex - 1] != (rune)'\n')) {
+            continue;
+        }
+        rest = rest[(int)(beginIndex + len(pemStart) - 1)..];
+        endIndex -= beginIndex + len(pemStart) - 1;
+        endTrailerIndex -= beginIndex + len(pemStart) - 1;
         slice<byte> typeLine = default!;
-        (typeLine, rest) = getLine(rest);
+        nint consumed = default!;
+        (typeLine, rest, consumed) = getLine(rest);
+        endIndex -= consumed;
+        endTrailerIndex -= consumed;
         if (!bytes.HasSuffix(typeLine, pemEndOfLine)) {
             continue;
         }
@@ -158,7 +137,7 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
             if (len(rest) == 0) {
                 return (default!, data);
             }
-            var (line, next) = getLine(rest);
+            var (line, next, consumedΔ1) = getLine(rest);
             var (key, val, ok) = bytes.Cut(line, colon);
             if (!ok) {
                 break;
@@ -168,19 +147,12 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
             val = bytes.TrimSpace(val);
             p.Value.Headers[((@string)key)] = ((@string)val);
             rest = next;
+            endIndex -= consumedΔ1;
+            endTrailerIndex -= consumedΔ1;
         }
-        nint endIndex = default!;
-        nint endTrailerIndex = default!;
-        // If there were no headers, the END line might occur
-        // immediately, without a leading newline.
-        if (len((~p).Headers) == 0 && bytes.HasPrefix(rest, pemEnd[1..])){
-            endIndex = 0;
-            endTrailerIndex = len(pemEnd) - 1;
-        } else {
-            endIndex = bytes.Index(rest, pemEnd);
-            endTrailerIndex = endIndex + len(pemEnd);
-        }
-        if (endIndex < 0) {
+        // If there were headers, there must be a newline between the headers
+        // and the END line, so endIndex should be >= 0.
+        if (len((~p).Headers) > 0 && endIndex < 0) {
             continue;
         }
         // After the "-----" of the ending line, there should be the same type
@@ -197,20 +169,23 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
         }
         // The line must end with only whitespace.
         {
-            var (s, _) = getLine(restOfEndLine); if (len(s) != 0) {
+            var (s, _, _) = getLine(restOfEndLine); if (len(s) != 0) {
                 continue;
             }
         }
-        var base64Data = removeSpacesAndTabs(rest[..(int)(endIndex)]);
-        p.Value.Bytes = new slice<byte>(base64.StdEncoding.DecodedLen(len(base64Data)));
-        var (n, err) = base64.StdEncoding.Decode((~p).Bytes, base64Data);
-        if (err != default!) {
-            continue;
+        p.Value.Bytes = new byte[]{}.slice();
+        if (endIndex > 0) {
+            var base64Data = removeSpacesAndTabs(rest[..(int)(endIndex)]);
+            p.Value.Bytes = new slice<byte>(base64.StdEncoding.DecodedLen(len(base64Data)));
+            var (n, err) = base64.StdEncoding.Decode((~p).Bytes, base64Data);
+            if (err != default!) {
+                continue;
+            }
+            p.Value.Bytes = (~p).Bytes[..(int)(n)];
         }
-        p.Value.Bytes = (~p).Bytes[..(int)(n)];
         // the -1 is because we might have only matched pemEnd without the
         // leading newline if the PEM block was empty.
-        (_, rest) = getLine(rest[(int)(endIndex + len(pemEnd) - 1)..]);
+        (_, rest, _) = getLine(rest[(int)(endIndex + len(pemEnd) - 1)..]);
         return (p, rest);
     }
 }

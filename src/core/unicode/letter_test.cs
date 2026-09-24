@@ -641,4 +641,40 @@ public static void TestNegativeRune(ж<testing.T> Ꮡt) {
     }
 }
 
+public static void BenchmarkToUpper(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    for (nint i = 0; i < b.N; i++) {
+        _ = ToUpper((rune)'δ');
+    }
+}
+
+public static void BenchmarkToLower(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    for (nint i = 0; i < b.N; i++) {
+        _ = ToLower((rune)'Δ');
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string upperˢ = "Upper"u8;
+private static readonly @string lowerˢ = "Lower"u8;
+private static readonly @string foldˢ = "Fold"u8;
+private static readonly @string noFoldˢ = "NoFold"u8;
+
+public static void BenchmarkSimpleFold(ж<testing.B> Ꮡb) {
+    void bench(@string name, rune r) {
+        Ꮡb.Run(name, (ж<testing.B> bΔ1) => {
+            for (nint i = 0; i < (~bΔ1).N; i++) {
+                _ = SimpleFold(r);
+            }
+        });
+    }
+    bench(upperˢ, (rune)'Δ');
+    bench(lowerˢ, (rune)'δ');
+    bench(foldˢ, (rune)'\u212A');
+    bench(noFoldˢ, (rune)'習');
+}
+
 } // end unicode_test_package

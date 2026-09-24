@@ -20,21 +20,21 @@ public static void TestSliceReader(ж<testing.T> Ꮡt) {
     var bt = new slice<byte>(4);
     var e32 = (uint32)1030507;
     binary.LittleEndian.PutUint32(bt, e32);
-    b = append(b, bt.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, bt);
     bt = new slice<byte>(8);
     var e64 = (uint64)907050301;
     binary.LittleEndian.PutUint64(bt, e64);
-    b = append(b, bt.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, bt);
     b = appendUleb128(b, (nuint)e32);
     b = appendUleb128(b, (nuint)e64);
     b = appendUleb128(b, 6);
     @string s1 = foobarˢ;
     var s1b = slice<byte>(s1);
-    b = append(b, s1b.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, s1b);
     b = appendUleb128(b, 9);
     @string s2 = bazbasherˢ;
     var s2b = slice<byte>(s2);
-    b = append(b, s2b.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, s2b);
     @string readStr(ж<global::go.@internal.coverage.slicereader_package.Reader> slr) {
         var len = slr.ReadULEB128();
         return slr.ReadString((int64)len);

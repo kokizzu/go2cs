@@ -5,6 +5,7 @@ namespace go.net.http;
 
 using fmt = fmt_package;
 using io = io_package;
+using maps = maps_package;
 using http = go.net.http_package;
 using os = os_package;
 using path = path_package;
@@ -12,57 +13,10 @@ using slices = slices_package;
 using strings = strings_package;
 using time = time_package;
 using go.net;
+using iter = iter_package;
 using url = go.net.url_package;
 
 partial class cgi_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(go.net.http_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string scriptNameˢ = "SCRIPT_NAME"u8;
@@ -115,21 +69,11 @@ internal static void testCGI() {
         return;
     }
     fmt.Printf("test=Hello CGI\r\n"u8);
-    var keys = new slice<@string>(0, len(@params));
-    foreach (var (k, _) in @params) {
-        keys = append(keys, k);
-    }
-    slices.Sort<slice<@string>, @string>(keys);
-    foreach (var (_, key) in keys) {
+    foreach (var (_, key) in slices.Sorted(maps.Keys<url.Values, @string, slice<@string>>(@params))) {
         fmt.Printf("param-%s=%s\r\n"u8, key, @params.Get(key));
     }
     var envs = envMap(os.Environ());
-    keys = new slice<@string>(0, len(envs));
-    foreach (var (k, _) in envs) {
-        keys = append(keys, k);
-    }
-    slices.Sort<slice<@string>, @string>(keys);
-    foreach (var (_, key) in keys) {
+    foreach (var (_, key) in slices.Sorted(maps.Keys<map<@string, @string>, @string, @string>(envs))) {
         fmt.Printf("env-%s=%s\r\n"u8, key, envs[key]);
     }
     var (cwd, _) = os.Getwd();

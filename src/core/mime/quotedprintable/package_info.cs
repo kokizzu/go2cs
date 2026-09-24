@@ -49,7 +49,7 @@ using static go.mime.quotedprintable_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("mime/quotedprintable/reader.go", "reader.cs", "AC4wksqClKSmtKaigpSSgIKkgIKkpoKUpAAGFAANFIKCgpSWgoKCgoKCgoS2gpSmlISUgoKUgpSUtLi0xIKCgpQ=")]
+[assembly: go.GoPositionMap("mime/quotedprintable/reader.go", "reader.cs", "ABYwksqClKSmtKaigpSSgIKkgIKkpoKUpAAGFAANFIKCgpSWgoKCgoKCgoS2gpSmlISUgoKUgpSUtLi0xIKCgpQ=")]
 [assembly: go.GoPositionMap("mime/quotedprintable/writer.go", "writer.cs", "ABYwkqzSgpa0xoKAgqSWgIKkloKWgIKmqqKAgqaokoKUgoKWgpaAgqSAgqSWgoCCuIKClqaCgoCCuIKCgoTMkoKWgoKCgIK4poKChKaCgoKEpoKAgqaCpoI=")]
 // </GoSourcePositionMaps>
 
@@ -68,4 +68,17 @@ public static partial class quotedprintable_package
     public partial struct Reader {}
     [GoValueClone("line")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

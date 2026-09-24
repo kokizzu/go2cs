@@ -9,11 +9,10 @@ using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using profilerecord = @internal.profilerecord_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -36,7 +35,7 @@ internal static bucketType memProfile => /* 1 + iota */ 1;
 internal static bucketType blockProfile => 2;
 internal static bucketType mutexProfile => 3;
 internal static UntypedInt buckHashSize => 179999;
-internal static UntypedInt maxSkip => 5;
+internal static UntypedInt maxSkip => 6;
 internal static UntypedInt maxProfStackDepth => 1024;
 
 [GoType("num:nint")] partial struct bucketType;
@@ -159,7 +158,7 @@ internal static ref atomic.UnsafePointer buckhash => ref Ꮡbuckhash.Value;     
 internal static ж<mProfCycleHolder> ᏑmProfCycle = new StandardBox<mProfCycleHolder>(default(mProfCycleHolder));
 internal static ref mProfCycleHolder mProfCycle => ref ᏑmProfCycle.Value;
 
-[GoType("[179999]@internal.runtime.atomic_package.UnsafePointer")] /* [buckHashSize]@internal.runtime.atomic_package.UnsafePointer */
+[GoType("[179999]global::go.@internal.runtime.atomic_package.UnsafePointer")] /* [buckHashSize]@internal.runtime.atomic_package.UnsafePointer */
 partial struct buckhashArray; // *bucket
 
 internal const uint32 mProfCycleWrap = /* uint32(len(memRecord{}.future)) * (2 << 24) */ 100663296;
@@ -241,7 +240,7 @@ internal static ж<bucket> newBucket(bucketType typ, nint nstk) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string badProfileStackCountˢ = "bad profile stack count"u8;
 
-// stk returns the slice in b holding the stack. The caller can asssume that the
+// stk returns the slice in b holding the stack. The caller can assume that the
 // backing array is immutable.
 internal static slice<uintptr> stk(this ж<bucket> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
@@ -444,7 +443,7 @@ internal static void mProf_Malloc(ref m mp, @unsafe.Pointer Δp, uintptr size) {
     }
     // Only use the part of mp.profStack we need and ignore the extra space
     // reserved for delayed inline expansion with frame pointer unwinding.
-    nint nstk = callers(4, mp.profStack[..(int)(debug.profstackdepth)]);
+    nint nstk = callers(5, mp.profStack[..(int)(debug.profstackdepth)]);
     var index = (ᏑmProfCycle.read() + 2) % (uint32)len(new memRecord(nil).future);
     var b = stkbucket(memProfile, size, mp.profStack[..(int)(nstk)], true);
     var mr = b.mp();
@@ -500,7 +499,7 @@ public static void SetBlockProfileRate(nint rate) {
     atomic.Store64(Ꮡblockprofilerate, (uint64)r);
 }
 
-internal static void blockevent(int64 cycles, nint skip) {
+public static void blockevent(int64 cycles, nint skip) {
     if (cycles <= 0) {
         cycles = 1;
     }
@@ -519,54 +518,7 @@ internal static bool blocksampled(int64 cycles, int64 rate) {
     return true;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string invalidSkipValueˢ = "invalid skip value"u8;
-
-// saveblockevent records a profile event of the type specified by which.
-// cycles is the quantity associated with this event and rate is the sampling rate,
-// used to adjust the cycles value in the manner determined by the profile type.
-// skip is the number of frames to omit from the traceback associated with the event.
-// The traceback will be recorded from the stack of the goroutine associated with the current m.
-// skip should be positive if this event is recorded from the current stack
-// (e.g. when this is not called from a system stack)
-internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketType which) {
-    if (debug.profstackdepth == 0) {
-        // profstackdepth is set to 0 by the user, so mp.profStack is nil and we
-        // can't record a stack trace.
-        return;
-    }
-    if (skip > maxSkip) {
-        print((@string)"requested skip="u8, skip);
-        @throw(invalidSkipValueˢ);
-    }
-    var gp = getg();
-    var mp = acquirem(); // we must not be preempted while accessing profstack
-    nint nstk = default!;
-    if (tracefpunwindoff() || (~gp).m.hasCgoOnStack()){
-        if ((~(~gp).m).curg == nil || (~(~gp).m).curg == gp){
-            nstk = callers(skip, (~mp).profStack);
-        } else {
-            nstk = gcallers((~(~gp).m).curg, skip, (~mp).profStack);
-        }
-    } else {
-        if ((~(~gp).m).curg == nil || (~(~gp).m).curg == gp){
-            if (skip > 0) {
-                // We skip one fewer frame than the provided value for frame
-                // pointer unwinding because the skip value includes the current
-                // frame, whereas the saved frame pointer will give us the
-                // caller's return address first (so, not including
-                // saveblockevent)
-                skip -= 1;
-            }
-            nstk = fpTracebackPartialExpand(skip, (@unsafe.Pointer)getfp(), (~mp).profStack);
-        } else {
-            mp.Value.profStack[0] = gp.Value.m.Value.curg.Value.sched.pc;
-            nstk = 1 + fpTracebackPartialExpand(skip, (@unsafe.Pointer)(~(~(~gp).m).curg).sched.bp, (~mp).profStack[1..]);
-        }
-    }
-    saveBlockEventStack(cycles, rate, (~mp).profStack[..(int)(nstk)], which);
-    releasem(ref (mp).DerefOrNull());
-}
+// go2cs generated this placeholder — func saveblockevent is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // fpTracebackPartialExpand records a call stack obtained starting from fp.
 // This function will skip the given number of frames, properly accounting for
@@ -714,12 +666,13 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
     internal uintptr pending;      // *mutex that experienced contention (to be traceback-ed)
     internal int64 cycles;        // cycles attributable to "pending" (if set), otherwise to "stack"
     internal int64 cyclesLost;        // contention for which we weren't able to record a call stack
+    internal bool haveStack;         // stack and cycles are to be added to the mutex profile
     internal bool disabled;         // attribute all time to "lost"
 }
 
 [GoRecv] internal static void recordLock(this ref mLockProfile prof, int64 cycles, ж<mutex> Ꮡl) {
-    if (cycles <= 0) {
-        return;
+    if (cycles < 0) {
+        cycles = 0;
     }
     if (prof.disabled) {
         // We're experiencing contention while attempting to report contention.
@@ -739,6 +692,9 @@ internal static nint fpTracebackPartialExpand(nint skip, @unsafe.Pointer fp, sli
             // We can only store one call stack for runtime-internal lock contention
             // on this M, and we've already got one. Decide which should stay, and
             // add the other to the report for runtime._LostContendedRuntimeLock.
+            if (cycles == 0) {
+                return;
+            }
             var prevScore = (uint64)cheaprand64() % (uint64)prev;
             var thisScore = (uint64)cheaprand64() % (uint64)cycles;
             if (prevScore > thisScore){
@@ -767,7 +723,7 @@ internal static void recordUnlock(this ж<mLockProfile> Ꮡprof, ж<mutex> Ꮡl)
         Ꮡprof.captureStack();
     }
     {
-        var gp = getg(); if ((~(~gp).m).locks == 1 && (~(~gp).m).mLockProfile.cycles != 0) {
+        var gp = getg(); if ((~(~gp).m).locks == 1 && (~(~gp).m).mLockProfile.haveStack) {
             prof.store();
         }
     }
@@ -795,6 +751,7 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
         skip += 1; // runtime.unlockWithRank.func1
     }
     prof.pending = 0;
+    prof.haveStack = true;
     prof.stack[0] = logicalStackSentinel;
     if (Ꮡdebug.of(debugᴛ1.ᏑruntimeContentionStacks).Load() == 0) {
         prof.stack[1] = abi.FuncPCABIInternal(_LostContendedRuntimeLock) + (uintptr)sys.PCQuantum;
@@ -803,8 +760,8 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
     }
     nint nstk = default!;
     var gp = getg();
-    var sp = getcallersp();
-    var pc = getcallerpc();
+    var sp = sys.GetCallerSP();
+    var pc = sys.GetCallerPC();
     var gpʗ1 = gp;
     systemstack(() => {
         ref var u = ref heap(new unwinder(), out var Ꮡu);
@@ -834,6 +791,7 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
     }
     var (cycles, lost) = (prof.cycles, prof.cyclesLost);
     (prof.cycles, prof.cyclesLost) = (0, 0);
+    prof.haveStack = false;
     var rate = (int64)atomic.Load64(Ꮡmutexprofilerate);
     saveBlockEventStack(cycles, rate, prof.stack[..(int)(nstk)], mutexProfile);
     if (lost > 0) {
@@ -1079,7 +1037,7 @@ internal static void copyMemProfileRecord(ж<MemProfileRecord> Ꮡdst, profilere
     dst.AllocObjects = src.AllocObjects;
     dst.FreeObjects = src.FreeObjects;
     if (raceenabled) {
-        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(MemProfile));
+        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, sys.GetCallerPC(), abi.FuncPCABIInternal(MemProfile));
     }
     if (msanenabled) {
         msanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(MemProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
@@ -1202,7 +1160,7 @@ internal static void copyBlockProfileRecord(ж<BlockProfileRecord> Ꮡdst, profi
     dst.Count = src.Count;
     dst.Cycles = src.Cycles;
     if (raceenabled) {
-        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, getcallerpc(), abi.FuncPCABIInternal(BlockProfile));
+        racewriterangepc(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256, sys.GetCallerPC(), abi.FuncPCABIInternal(BlockProfile));
     }
     if (msanenabled) {
         msanwrite(@unsafe.Pointer.FromBox(Ꮡdst.at(BlockProfileRecord.ᏑStack0, 0)), /* unsafe.Sizeof(dst.Stack0) */ (uintptr)256);
@@ -1359,7 +1317,7 @@ internal static goroutineProfileState goroutineProfileAbsent => /* iota */ 0;
 internal static goroutineProfileState goroutineProfileInProgress => 1;
 internal static goroutineProfileState goroutineProfileSatisfied => 2;
 
-[GoType("@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
+[GoType("global::go.@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
 
 internal static goroutineProfileState Load(this ж<goroutineProfileStateHolder> Ꮡp) {
     return ((goroutineProfileState)(Ꮡp.Reinterpret<goroutineProfileStateHolder, atomic.Uint32>()).Load());
@@ -1407,8 +1365,8 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
         return (n, false);
     }
     // Save current goroutine.
-    var sp = getcallersp();
-    var pc = getcallerpc();
+    var sp = sys.GetCallerSP();
+    var pc = sys.GetCallerPC();
     var ourgʗ1 = ourg;
     var pʗ1 = Δp;
     var pcbufʗ1 = pcbuf;
@@ -1616,8 +1574,8 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsSync(slice<profilere
         ref var lbl = ref heap<slice<@unsafe.Pointer>>(out var Ꮡlbl);
         lbl = labels;
         // Save current goroutine.
-        var sp = getcallersp();
-        var pc = getcallerpc();
+        var sp = sys.GetCallerSP();
+        var pc = sys.GetCallerPC();
         var gpʗ2 = gp;
         var pcbufʗ1 = pcbuf;
         systemstack(() => {

@@ -13,6 +13,7 @@
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
+global using ecdhꓸPublicKey = go.crypto.@internal.fips140.ecdh_package.ΔPublicKey;
 // </ImportedTypeAliases>
 
 using go;
@@ -41,12 +42,7 @@ using static go.crypto.ecdh_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<nistCurve<P256PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P384PointжnistPoint>, ΔCurve>(Pointer = true)]
-[assembly: GoImplement<nistCurve<P521PointжnistPoint>, ΔCurve>(Pointer = true)]
+[assembly: GoImplement<nistCurve, ΔCurve>(Pointer = true)]
 [assembly: GoImplement<x25519Curve, ΔCurve>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -62,9 +58,9 @@ using static go.crypto.ecdh_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AGuWAZaiAAIU8oKClKiCABQ2AAwCgpSolqIAAhTygoKUqIKmooLKgoKU3Kaqog==")]
-[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ADVAosrCgoKClJaCgoKAgu6CzISCgpTowoKUgpSCgoKUlLimgsqm0oKClIKmlIK4lN6SgoKUqqKCzIKUgoKYkoKCqNbUgpS4goKClKaAgramAAsQgpaCgoKUgIKkAAIQ0AAPJtAAESrQ")]
-[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABgy0AAKDIKmgoKCgIKkpoKClNyigpS4goKmgoKUAAgMsoKCgpSmgoSCgoKE4oKCgoSCgoKCgoKChIKCgoKCgoKCgoKCgoSCgoKCloKEgoI=")]
+[assembly: go.GoPositionMap("crypto/ecdh/ecdh.go", "ecdh.cs", "AEKIAZaiAAIU8oKClKiCABI2AA4CgpSolqIAAhTygoKUqIKmgqqi")]
+[assembly: go.GoPositionMap("crypto/ecdh/nist.go", "nist.cs", "ABkwgtaigoKClIKClNyWgpaCgpYACRSCgoKUgoKUgpTWooKCgpSCgpTcloKClAAJFNbGgpS4goKClJSCgpSUpgAJEIKUAAIQ0AAIHAADEtAACBwAAxLQAAgc")]
+[assembly: go.GoPositionMap("crypto/ecdh/x25519.go", "x25519.cs", "ABQ20AAKDILWgoKUgoKAgqTWgoKUgpSCgrjugoKUgpQACAyygoKClKaChIKCgoTigoKChIKCgoKCgoKEgoKCgoKCgoKCgoKChIKCgoKWgoSCgqiSgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -79,11 +75,29 @@ public static partial class ecdh_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface nistPoint<T> {}
-    internal partial struct nistCurve<Point> {}
+    internal partial struct nistCurve {}
     internal partial struct x25519Curve {}
     public partial interface ΔCurve {}
     public partial struct PrivateKey {}
     public partial struct ΔPublicKey {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸecdh() => builtin.initPackage(typeof(go.crypto.@internal.fips140.ecdh_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸedwards25519ꓸfield() => builtin.initPackage(typeof(go.crypto.@internal.fips140.edwards25519.field_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() => builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

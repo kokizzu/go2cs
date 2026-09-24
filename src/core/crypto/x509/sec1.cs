@@ -86,7 +86,7 @@ internal static (slice<byte>, error) marshalECDHPrivateKey(ж<ecdh.PrivateKey> �
     return asn1.Marshal(new ecPrivateKey(
         Version: 1,
         PrivateKey: key.Bytes(),
-        PublicKey: new asn1.BitString(Bytes: Ꮡkey.PublicKey().Bytes())
+        PublicKey: new asn1.BitString(Bytes: key.PublicKey().Bytes())
     ));
 }
 

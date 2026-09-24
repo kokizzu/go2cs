@@ -22,9 +22,9 @@ using os = os_package;
 using exec = global::go.os.exec_package;
 using path = path_package;
 using filepath = global::go.path.filepath_package;
-using reflect = reflect_package;
 using regexp = regexp_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
@@ -644,7 +644,7 @@ internal static void testServeFileContentType(ж<testing.T> Ꮡt, testMode mode)
             Ꮡt.Fatal(err);
         }
         {
-            var h = (~resp).Header[contentTypeˢ]; if (!reflect.DeepEqual(h, want)) {
+            var h = (~resp).Header[contentTypeˢ]; if (!slices.Equal<slice<@string>, @string>(h, want)) {
                 Ꮡt.Errorf("Content-Type mismatch: got %v, want %v"u8, h, want);
             }
         }
@@ -1776,7 +1776,7 @@ public static void TestFileServerCleanPath(ж<testing.T> Ꮡt) {
         var rr = httptest.NewRecorder();
         var (req, _) = NewRequest(getˢ2, "http://foo.localhost"u8 + tt.path, default!);
         FileServer(new fileServerCleanPathDir(Ꮡlog)).ServeHTTP(new http_test_package.httptest_ResponseRecorderжResponseWriter(rr), req);
-        if (!reflect.DeepEqual(log, tt.wantOpen)) {
+        if (!slices.Equal<slice<@string>, @string>(log, tt.wantOpen)) {
             Ꮡt.Logf("For %s: Opens = %q; want %q"u8, tt.path, log, tt.wantOpen);
         }
         if ((~rr).Code != tt.wantCode) {

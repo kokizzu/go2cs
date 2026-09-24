@@ -58,8 +58,8 @@ using static go.net.http.cookiejar_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/cookiejar/jar.go", "jar.cs", "AIQBngHCpoKUABo6kqyyrLKClKiSgpSCgqSmqJKssqjygpSCgpSEgoSCgpaCgoKWgoKigoKClIKUgoKClIKClMyCgIKkgIKklIKW3LKo4oKUgpSCgpSChIKEhIKCgoKUgoKCgIKCtpSCloCCgpSCgqSCgpaCgpT+ooKCgoK4goKCpoKqooKClIKUqJKCloKCgoKmgoKUgqbcgqiSypSqooKWgoKUAAcYAA0ChIKUloKCqIKkgpSCgpSClIKogoKChJSkpKYAChySppYADyKCAAoYzIKWppaClJbuqIKAgqaU3IKW", "214-222:1")]
-[assembly: go.GoPositionMap("net/http/cookiejar/punycode.go", "punycode.cs", "ACdG0oKCgoKCgoKUpoKClIKCgoKmgoKUgoKCgoKUlIKUgoKCgqSUgpSClIKCgoKUgpSmgpSkpKiSgpSUgoKCgpQACBiygpSCgoKCgpSm")]
+[assembly: go.GoPositionMap("net/http/cookiejar/jar.go", "jar.cs", "AEieAcKmgpQAGjqSrLKssoKUqJKClIKCpKaokqyyqPKClIKClISChIKCloKCgpaCgqKCgoKUgpSCgoKUgoKUzIKAgqSAgqSUgpbcsqjygpSClIKClIKEgoSEgoKCgpSCgoKAgoK2lIKWgIKClIKCpIKCloKClP6igoKCgriCgoKmgqqigoKUgpSokoKWgoKCgqaCgpSCptyCqJLKlKqigpaCgpQABxgADQKEgpSWgoKogqSClIKClIKUgqiCgoKElKSkpgAKHJKmlgAPIoIAChjMhKaWgpSW7qiCgIKmlNyClg==", "214-222:1")]
+[assembly: go.GoPositionMap("net/http/cookiejar/punycode.go", "punycode.cs", "ACFG0oKCgoKCgoKUpoKClIKCgoKmgoKUgoKCgoKUlIKUgoKCgqSUgpSClIKCgoKUgpSmgpSkpKiSgpSUgoKCgpQACBiygpSCgoKCgpSm")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -79,4 +79,24 @@ public static partial class cookiejar_package
     public partial struct Jar {}
     public partial struct Options {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸascii() => builtin.initPackage(typeof(go.net.http.@internal.ascii_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

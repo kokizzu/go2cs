@@ -7,24 +7,12 @@ namespace go;
 
 using errorspkg = errors_package;
 using bytealg = @internal.bytealg_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using @unsafe = unsafe_package;
 using @internal;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
 
 // ForkLock is used to synchronize creation of new file descriptors
 // with fork.

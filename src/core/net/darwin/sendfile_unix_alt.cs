@@ -6,10 +6,8 @@ namespace go;
 
 using poll = @internal.poll_package;
 using Δio = io_package;
-using fs = go.io.fs_package;
 using syscall = syscall_package;
 using @internal;
-using go.io;
 
 partial class net_package {
 
@@ -17,13 +15,6 @@ internal const bool supportsSendfile = true;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sendfileˢ = "sendfile"u8;
-
-[GoType("dyn")] internal partial interface sendFile_type :
-    fs.File,
-    Δio.Seeker,
-    syscall.Conn
-{
-}
 
 // sendFile copies the contents of r to c using the sendfile
 // system call to minimize copies.
@@ -37,12 +28,7 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
     error err = default!;
     bool handled = default!;
 
-    // Darwin, FreeBSD, DragonFly and Solaris use 0 as the "until EOF" value.
-    // If you pass in more bytes than the file contains, it will
-    // loop back to the beginning ad nauseam until it's sent
-    // exactly the number of bytes told to. As such, we need to
-    // know exactly how many bytes to send.
-    int64 remain = 0;
+    int64 remain = 0;     // 0 writes the entire file
     var (lr, ok) = r._<ж<Δio.LimitedReader>>(ᐧ);
     if (ok) {
         (remain, r) = (lr.Value.N, lr.Value.R);
@@ -52,28 +38,9 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
     }
     // r might be an *os.File or an os.fileWithoutWriteTo.
     // Type assert to an interface rather than *os.File directly to handle the latter case.
-    (var f, ok) = r._<sendFile_type>(ᐧ);
+    (var f, ok) = r._<syscall.Conn>(ᐧ);
     if (!ok) {
         return (0, default!, false);
-    }
-    if (remain == 0) {
-        var (fi, errΔ1) = f.Stat();
-        if (errΔ1 != default!) {
-            return (0, errΔ1, false);
-        }
-        if ((fs.FileMode)(fi.Mode() & ((fs.FileMode)((fs.FileMode)((fs.FileMode)(fs.ModeSymlink | fs.ModeDevice) | fs.ModeCharDevice) | fs.ModeIrregular))) != 0) {
-            return (0, default!, false);
-        }
-        remain = fi.Size();
-    }
-    // The other quirk with Darwin/FreeBSD/DragonFly/Solaris's sendfile
-    // implementation is that it doesn't use the current position
-    // of the file -- if you pass it offset 0, it starts from
-    // offset 0. There's no way to tell it "start from current
-    // position", so we have to manage that explicitly.
-    (var pos, err) = f.Seek(0, Δio.SeekCurrent);
-    if (err != default!) {
-        return (0, err, false);
     }
     (var sc, err) = f.SyscallConn();
     if (err != default!) {
@@ -81,7 +48,7 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
     }
     ref var werr = ref heap<error>(out var Ꮡwerr);
     err = sc.Read((uintptr fd) => {
-        (written, Ꮡwerr.ValueSlot, handled) = poll.SendFile(Ꮡc.of(netFD.Ꮡpfd), (nint)fd, pos, remain);
+        (written, Ꮡwerr.ValueSlot, handled) = poll.SendFile(Ꮡc.of(netFD.Ꮡpfd), (nint)fd, remain);
         return true;
     });
     if (err == default!) {
@@ -89,10 +56,6 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡc
     }
     if (lr != nil) {
         lr.Value.N = remain - written;
-    }
-    var (_, err1) = f.Seek(written, Δio.SeekCurrent);
-    if (err1 != default! && err == default!) {
-        return (written, err1, handled);
     }
     return (written, wrapSyscallError(sendfileˢ, err), handled);
 }

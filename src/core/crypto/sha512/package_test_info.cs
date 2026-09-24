@@ -16,8 +16,6 @@ using go;
 using static global::go.crypto.sha512_internal_test_package;
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
-[assembly: GoTypeAlias("Size", "const:ΔSize")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -35,7 +33,7 @@ using static global::go.crypto.sha512_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/sha512/sha512_test.go", "sha512_test.cs", "AJUFqAqCgIKCpoKClIKCloCCpAAKCIIAAxCA/ID8gPyA2oKCggAKCoIABRaykoKChISCgoKWgoKWgIKCpoKEgIL+gt6CgoKWgoSCgoKWgILsgoKAgqSCgIKkgoCCpIKAgsiCgoCCAAgKkoKUgoKCgoKCABw6woKAgrjmgoSCgIKCpoKCgpaC+oKClIKSgqKCgpSCAAkIgoKUgpSClIIADA6CgpKCgoKCgqaCgoKCpoKCgoLKgqaCpoI=")]
+[assembly: go.GoPositionMap("crypto/sha512/sha512_test.go", "sha512_test.cs", "AJIFpAqCgIKCpoKClIKCloCCpOiCggAKCIIAAxCA/ID8gPyA2oKCgsqCggAJCIIABRaykoKChISCgoKWgoKClISCgpaCgpaAgoKmgoSAgv6C3oKCgpaChIKCgpaAguyCgoCCpIKAgqSCgIKkgoCCyIKCgIIAHTrCgoCCuOaChIKAgoKmgoKCloLKgoKAgoKEgoKCgpSCgoKClIKCgoKUgoKCgpaCgoKUAAoIgoKCpoKCpoKCpoKCAA0QgoKSgoKCgoKmgoKCgqaCgoKCyoKmgqaC", "681-683:1;695-695:1;701-701:2;707-707:3;713-713:4;727-729:1;745-787:1;873-877:1;905-938:1;944-948:1;945-947:1.1;949-953:2;950-952:2.1;954-958:3;955-957:3.1;959-963:4;960-962:4.1;971-979:1;980-986:2;987-993:3")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -51,4 +49,27 @@ public static partial class sha512_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(go.encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.crypto.sha512_package));
+    }
 }

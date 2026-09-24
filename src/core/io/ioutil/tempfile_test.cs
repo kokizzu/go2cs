@@ -38,7 +38,7 @@ public static void TestTempFile(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestTempFile_pattern_tests {
+[GoType("dyn")] internal partial struct TestTempFile_pattern_tests {
     internal @string pattern, prefix, suffix;
 }
 
@@ -72,7 +72,7 @@ public static void TestTempFile_pattern(ж<testing.T> Ꮡt) {
 // This string is from os.errPatternHasSeparator.
 internal static readonly @string patternHasSeparator = "pattern contains path separator"u8;
 
-[GoType("dyn")] partial struct TestTempFile_BadPattern_tests {
+[GoType("dyn")] internal partial struct TestTempFile_BadPattern_tests {
     internal @string pattern;
     internal bool wantErr;
 }
@@ -135,7 +135,7 @@ public static void TestTempFile_BadPattern(ж<testing.T> Ꮡt) {
 private static readonly @string notExistsˢ2 = "/_not_exists_"u8;
 private static readonly @string xyzˢ = "*xyz"u8;
 
-[GoType("dyn")] partial struct TestTempDir_tests {
+[GoType("dyn")] internal partial struct TestTempDir_tests {
     internal @string pattern;
     internal @string wantPrefix, wantSuffix;
 }
@@ -219,7 +219,7 @@ public static void TestTempDir_BadDir(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestTempDir_BadPattern_tests {
+[GoType("dyn")] internal partial struct TestTempDir_BadPattern_tests {
     internal @string pattern;
     internal bool wantErr;
 }

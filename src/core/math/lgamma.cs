@@ -307,12 +307,12 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         if (x <= 0.9D){
             lgamma = -Log(x);
             switch (ᐧ) {
-            case {} when x >= (Ymin - 1D + 0.27D): {
+            case {} when x >= /* (Ymin - 1 + 0.27) */ 0.7316321449683623D: {
                 y = 1D - x;
                 i = 0;
                 break;
             }
-            case {} when x >= (Ymin - 1D - 0.27D): {
+            case {} when x >= /* (Ymin - 1 - 0.27) */ 0.19163214496836226D: {
                 y = x - /* (Tc - 1) */ 0.46163214496836225D;
                 i = 1;
                 break;
@@ -329,12 +329,12 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
             // 0 < x < 0.2316
             lgamma = 0D;
             switch (ᐧ) {
-            case {} when x >= (Ymin + 0.27D): {
+            case {} when x >= /* (Ymin + 0.27) */ 1.7316321449683623D: {
                 y = 2D - x;
                 i = 0;
                 break;
             }
-            case {} when x >= (Ymin - 0.27D): {
+            case {} when x >= /* (Ymin - 0.27) */ 1.1916321449683622D: {
                 y = x - (float64)Tc;
                 i = 1;
                 break;

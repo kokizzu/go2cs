@@ -23,24 +23,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sockˢ = "sock"u8;
 
@@ -178,11 +160,12 @@ internal static error buildup(this ж<localServer> Ꮡls, Action<ж<localServer>
 
 internal static error teardown(this ж<localServer> Ꮡls) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ls = ref Ꮡls.DerefOrNull();
 
         Ꮡls.of(localServer.Ꮡlnmu).Lock();
-        defer(Ꮡls.of(localServer.Ꮡlnmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (ls.Listener != default!) {
             @string network = ls.Listener.Addr().Network();
             @string address = ls.Listener.Addr().String();
@@ -205,7 +188,7 @@ internal static error teardown(this ж<localServer> Ꮡls) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡls.of(localServer.Ꮡlnmu).Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<localServer> newLocalServer(testing.TB t, @string network) {

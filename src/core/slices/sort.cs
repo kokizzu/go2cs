@@ -205,8 +205,8 @@ internal static sortedHint decreasingHint => 2;
 
 [GoRecv] internal static uint64 Next(this ref xorshift r) {
     r ^= (xorshift)((r << (int)(13)));
-    r ^= (xorshift)((r >> (int)(17)));
-    r ^= (xorshift)((r << (int)(5)));
+    r ^= (xorshift)((r >> (int)(7)));
+    r ^= (xorshift)((r << (int)(17)));
     return (uint64)(r);
 }
 

@@ -21,10 +21,8 @@
 // heap span.
 namespace go;
 
-using abi = @internal.abi_package;
 using atomic = @internal.runtime.atomic_package;
 using @unsafe = unsafe_package;
-using @internal;
 using @internal.runtime;
 
 partial class runtime_package {
@@ -267,7 +265,7 @@ internal static void finishsweep_m() {
 
 internal static void bgsweep(channel<nint> c) {
     Δsweep.g = getg();
-    lockInit(ref Δsweep.@lock, lockRankSweep);
+    lockInit(ᏑΔsweep.of(sweepdata.Ꮡlock), lockRankSweep);
     @lock(ᏑΔsweep.of(sweepdata.Ꮡlock));
     Δsweep.parked = true;
     c.ᐸꟷ(1);
@@ -573,7 +571,7 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
             }
             if (hasFinAndRevived){
                 // Pass 2: queue all finalizers and clear any weak handles. Weak handles are cleared
-                // before finalization as specified by the internal/weak package. See the documentation
+                // before finalization as specified by the weak package. See the documentation
                 // for that package for more details.
                 while (siter.valid() && (uintptr)(~siter.s).offset < endOffset) {
                     // Find the exact byte for which the special was setup
@@ -813,19 +811,6 @@ internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on
             } else {
                 Ꮡmheap_.freeSpan(s);
             }
-            if ((~s).largeType != nil && (abi.TFlag)((~(~s).largeType).TFlag & abi.TFlagUnrolledBitmap) != 0) {
-                // The unrolled GCProg bitmap is allocated separately.
-                // Free the space for the unrolled bitmap.
-                var sʗ2 = s;
-                systemstack(() => {
-                    var sΔ1 = spanOf((uintptr)(~sʗ2).largeType);
-                    Ꮡmheap_.freeManual(sΔ1, spanAllocPtrScalarBits);
-                });
-                // Make sure to zero this pointer without putting the old
-                // value in a write buffer, as the old value might be an
-                // invalid pointer. See arena.go:(*mheap).allocUserArenaChunk.
-                (s.of(mspan.ᏑlargeType).Reinterpret<ж<_type>, uintptr>()).Value = 0;
-            }
             return true;
         }
         // Add a large span directly onto the full+swept list.
@@ -855,7 +840,7 @@ internal static void reportZombies(this ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
     printlock();
-    print((@string)"runtime: marked free object in span "u8, Ꮡs.OrTypedNil(), (@string)", elemsize="u8, s.elemsize, (@string)" freeindex="u8, s.freeindex, (@string)" (bad use of unsafe.Pointer? try -d=checkptr)\n"u8);
+    print((@string)"runtime: marked free object in span "u8, Ꮡs.OrTypedNil(), (@string)", elemsize="u8, s.elemsize, (@string)" freeindex="u8, s.freeindex, (@string)" (bad use of unsafe.Pointer or having race conditions? try -d=checkptr or -race)\n"u8);
     var mbits = s.markBitsForBase();
     var abits = s.allocBitsForIndex(0);
     for (var i = (uintptr)0; i < (uintptr)s.nelems; i++) {

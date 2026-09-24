@@ -51,7 +51,7 @@ using static go.unicode_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("unicode/digit.go", "digit.cs", "AAcQkoKU")]
 [assembly: go.GoPositionMap("unicode/graphic.go", "graphic.cs", "AC1I1oKUAAIQ0oKUqqKCgqaosoKCpqyygqaokoKUqKSokoKUqqKClAACFgAJBIKUpJSokoKU")]
-[assembly: go.GoPositionMap("unicode/letter.go", "letter.cs", "AFe2AZKCgoKClIKmqIKCgoKCgpSClKaokoKCgoKUgqaogoKCgoKClIKUpqiylIKUgoKUpoKUgIKkgoKUqKSClKikgpSokoKUqqKCpoKCgoKCgoIAChaUlIKUpqiSgqiSgoKUlKiSgoKUlKiSgpKUlKiSgoKUqJKCgpSokoKClAALPAASAoKWgqiCgoKCgpSmgsyAgqQ=")]
+[assembly: go.GoPositionMap("unicode/letter.go", "letter.cs", "AFe2AZKCgoKClIKmqIKCgoKCgpSClKaokoKCgoKUgqaogoKCgoKClIKUpqiylIKUgoKUpoKUgIKkgoKUqKSClKikgpSokoKUqrSCgoKCgoKUgpSmqJKCAAoWlKqigpSAgqSokoKokoKClJSokoKClJSokoKSlJSokoKClKiSgoKUqJKCgpQACzwAEgKCloKogoKCgoKUpoLMgIKAgqSk")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -74,4 +74,13 @@ public static partial class unicode_package
     public partial struct SpecialCase {}
     public partial struct d {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

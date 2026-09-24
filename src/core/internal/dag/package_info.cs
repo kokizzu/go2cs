@@ -50,8 +50,8 @@ using static go.@internal.dag_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/dag/alg.go", "alg.cs", "AAcQkoSCgpaCgsyykoSCkoKUgpSClIKUgpSqtIKCgoKC")]
-[assembly: go.GoPositionMap("internal/dag/parse.go", "parse.cs", "AEtygqaCgIKkgoKCpoKmgqaCpqKCgpSGrLKChIKCmJKSlIKCgpSCgoKUgpSCgpSAgpTugoKCzIKCgoK4lN6CgoKCzIKWAAsYgujSgoKUpMS2hIKCgoKCgpSUgpSCgoKClIKUlgAMFpLYsoKCpIKUpKSEgoL+ooKClKSCgqaClIKmgoKUgqaCpIKmgoKUgoKC")]
+[assembly: go.GoPositionMap("internal/dag/alg.go", "alg.cs", "AAcQkoSCgpaCgsyykoSCkoKUgpSClIKUgpSqtIKCgoKC", "29-38:1")]
+[assembly: go.GoPositionMap("internal/dag/parse.go", "parse.cs", "ADlygqaCgIKkgoKCpoKmgqaCpqKCgpSGrLKChIKCmJKSlIKCgpSCgoKUgpSCgpSAgpTugoKCzIKCgoK4lN6CgoKCzIKWAAsYgujSgoKUpMS2hIKCgoKCgpSUgpSCgoKClIKUlgAMFpLYsoKCpIKUpKSEgoL+ooKClKSCgqaClIKmgoKUgqaCpIKmgoKUgoKC", "88-90:1;108-110:1;196-206:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -71,4 +71,16 @@ public static partial class dag_package
     internal partial struct ΔsyntaxError {}
     public partial struct Graph {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

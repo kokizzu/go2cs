@@ -17,36 +17,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class fmt_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸfmtsort() {
-    builtin.initPackage(typeof(@internal.fmtsort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // Strings for use with buffer.WriteString.
 // This is less overhead than using buffer.Write with byte arrays.
 internal static readonly @string commaSpaceString = ", "u8;
@@ -256,14 +226,14 @@ internal static void free(this ж<pp> Ꮡp) {
     return false;
 }
 
-// Implement Write so we can call [Fprintf] on a pp (through [State]), for
+// Write implements [io.Writer] so we can call [Fprintf] on a pp (through [State]), for
 // recursive use in custom verbs.
 [GoRecv] internal static (nint ret, error err) Write(this ref pp p, slice<byte> b) {
     p.buf.write(b);
     return (len(b), default!);
 }
 
-// Implement WriteString so that we can call [io.WriteString]
+// WriteString implements [io.StringWriter] so that we can call [io.WriteString]
 // on a pp (through state), for efficiency.
 [GoRecv] internal static (nint ret, error err) WriteString(this ref pp p, @string s) {
     p.buf.writeString(s);

@@ -5,6 +5,7 @@ namespace go.net;
 
 using errors = errors_package;
 using fmt = fmt_package;
+using godebug = go.@internal.godebug_package;
 using log = log_package;
 using net = net_package;
 using ascii = go.net.http.@internal.ascii_package;
@@ -12,22 +13,13 @@ using textproto = go.net.textproto_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
+using go.@internal;
 using go.net;
 using go.net.http.@internal;
 
 partial class http_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
+internal static ж<godebug.Setting> httpcookiemaxnum = godebug.New("httpcookiemaxnum"u8);
 
 // A Cookie represents an HTTP cookie as sent in the Set-Cookie header of an
 // HTTP response or the Cookie header of an HTTP request.
@@ -64,11 +56,34 @@ internal static error errBlankCookie = errors.New("http: blank cookie"u8);
 internal static error errEqualNotFoundInCookie = errors.New("http: '=' not found in cookie"u8);
 internal static error errInvalidCookieName = errors.New("http: invalid cookie name"u8);
 internal static error errInvalidCookieValue = errors.New("http: invalid cookie value"u8);
+internal static error errCookieNumLimitExceeded = errors.New("http: number of cookies exceeded limit"u8);
+
+internal static UntypedInt defaultCookieMaxNum => 3000;
+
+internal static bool cookieNumWithinMax(nint cookieNum) {
+    var withinDefaultMax = cookieNum <= defaultCookieMaxNum;
+    if (httpcookiemaxnum.Value() == ""u8) {
+        return withinDefaultMax;
+    }
+    {
+        var (customMax, err) = strconv.Atoi(httpcookiemaxnum.Value()); if (err == default!) {
+            var withinCustomMax = customMax == 0 || cookieNum <= customMax;
+            if (withinDefaultMax != withinCustomMax) {
+                httpcookiemaxnum.IncNonDefault();
+            }
+            return withinCustomMax;
+        }
+    }
+    return withinDefaultMax;
+}
 
 // ParseCookie parses a Cookie header value and returns all the cookies
 // which were set in it. Since the same cookie name can appear multiple times
 // the returned Values can contain more than one value for a given key.
 public static (slice<ж<ΔCookie>>, error) ParseCookie(@string line) {
+    if (!cookieNumWithinMax(strings.Count(line, ";"u8) + 1)) {
+        return (default!, errCookieNumLimitExceeded);
+    }
     var parts = strings.Split(textproto.TrimString(line), ";"u8);
     if (builtin.len(parts) == 1 && parts[0] == "") {
         return (default!, errBlankCookie);
@@ -227,9 +242,19 @@ internal static readonly @string setCookieˢ = "Set-Cookie"u8;
 
 // readSetCookies parses all "Set-Cookie" values from
 // the header h and returns the successfully parsed Cookies.
+//
+// If the amount of cookies exceeds CookieNumLimit, and httpcookielimitnum
+// GODEBUG option is not explicitly turned off, this function will silently
+// fail and return an empty slice.
 internal static slice<ж<ΔCookie>> readSetCookies(ΔHeader h) {
     nint cookieCount = builtin.len(h[setCookieˢ]);
     if (cookieCount == 0) {
+        return new ж<ΔCookie>[]{}.slice();
+    }
+    // Cookie limit was unfortunately introduced at a later point in time.
+    // As such, we can only fail by returning an empty slice rather than
+    // explicit error.
+    if (!cookieNumWithinMax(cookieCount)) {
         return new ж<ΔCookie>[]{}.slice();
     }
     var cookies = new slice<ж<ΔCookie>>(0, cookieCount);
@@ -391,10 +416,24 @@ public static error Valid(this ж<ΔCookie> Ꮡc) {
 // readCookies parses all "Cookie" values from the header h and
 // returns the successfully parsed Cookies.
 //
-// if filter isn't empty, only cookies of that name are returned.
+// If filter isn't empty, only cookies of that name are returned.
+//
+// If the amount of cookies exceeds CookieNumLimit, and httpcookielimitnum
+// GODEBUG option is not explicitly turned off, this function will silently
+// fail and return an empty slice.
 internal static slice<ж<ΔCookie>> readCookies(ΔHeader h, @string filter) {
     var lines = h[cookieˢ];
     if (builtin.len(lines) == 0) {
+        return new ж<ΔCookie>[]{}.slice();
+    }
+    // Cookie limit was unfortunately introduced at a later point in time.
+    // As such, we can only fail by returning an empty slice rather than
+    // explicit error.
+    nint cookieCount = 0;
+    foreach (var (_, line) in lines) {
+        cookieCount += strings.Count(line, ";"u8) + 1;
+    }
+    if (!cookieNumWithinMax(cookieCount)) {
         return new ж<ΔCookie>[]{}.slice();
     }
     var cookies = new slice<ж<ΔCookie>>(0, builtin.len(lines) + strings.Count(lines[0], ";"u8));

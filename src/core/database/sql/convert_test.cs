@@ -5,65 +5,19 @@ namespace go.database;
 
 using driver = go.database.sql.driver_package;
 using fmt = fmt_package;
+using asan = @internal.asan_package;
 using reflect = reflect_package;
 using runtime = runtime_package;
 using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
 using time = time_package;
+using @internal;
 using go.database.sql;
 using static go.database.sql_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class sql_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdatabaseꓸsqlꓸdriver() {
-    builtin.initPackage(typeof(go.database.sql.driver_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 internal static time.Time someTime = time.Unix(123, 0);
 
@@ -407,6 +361,7 @@ public static void TestValueConverters(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly @string stringˢ = "string"u8;
 internal static readonly @string fooˢ = "foo"u8;
 
@@ -434,6 +389,9 @@ public static void TestRawBytesAllocs(ж<testing.T> Ꮡt) {
         new("bool"u8, false, "false"u8),
         new("time"u8, time.Unix(2, 5).UTC(), "1970-01-01T00:00:02.000000005Z"u8)
     }.slice();
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     ref var buf = ref heap<global::go.database.sql_package.RawBytes>(out var Ꮡbuf);
     var rows = Ꮡ(new Rows(nil));
     var rowsʗ1 = rows;
@@ -491,7 +449,7 @@ public static void TestRawBytesAllocs(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object userDefinedBytesGotˢ = (@string)"userDefinedBytes got potentially dirty driver memory"u8;
 
-[GoType("[]byte")] internal partial struct TestUserDefinedBytes_userDefinedBytes;
+[GoLocalName("userDefinedBytes")] [GoType("[]byte")] internal partial struct TestUserDefinedBytes_userDefinedBytes;
 
 // https://golang.org/issues/13905
 public static void TestUserDefinedBytes(ж<testing.T> Ꮡt) {

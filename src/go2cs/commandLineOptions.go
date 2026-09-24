@@ -76,6 +76,13 @@ type Options struct {
 	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
 	testProductionName     string        // original package name retained for white-box object routing
 	testExternalVariant    bool          // current variant is the external <name>_test package
+	// testProductionAbsent reports that the package under test is TEST-ONLY -- every one of its Go
+	// files is a `_test.go` -- so the production conversion emitted no `<pkg>_package` class at all
+	// and this variant's emission must name none. DERIVED from the loaded production package in
+	// convertTestVariants; see productionClassEmitted for the predicate and what it deliberately
+	// excludes. Negative sense on purpose: the zero value is "production exists", which is every
+	// ordinary package, so no Options built without knowledge of this field changes behavior.
+	testProductionAbsent bool
 	// testProductionInternalsVisible reports whether the COMPILATION this variant emits into may
 	// name production's INTERNAL declarations. It is a property of the test ASSEMBLY, not of the Go
 	// variant, and testVariantOptions — the one place that knows the model AND the variant — is what

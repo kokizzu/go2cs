@@ -25,9 +25,9 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("TestOpen", xcoff_internal_test_package.TestOpen, "file_test.go", 56);
+        registry.Add("TestOpen", xcoff_internal_test_package.TestOpen, "file_test.go", 57);
         registry.Add("TestOpenArchive", xcoff_internal_test_package.TestOpenArchive, "ar_test.go", 40);
-        registry.Add("TestOpenFailure", xcoff_internal_test_package.TestOpenFailure, "file_test.go", 96);
+        registry.Add("TestOpenFailure", xcoff_internal_test_package.TestOpenFailure, "file_test.go", 97);
         return TestHost.Run(registry, args);
     }
 }

@@ -10,11 +10,6 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
-global using reflectꓸKind = go.reflect_package.ΔKind;
-global using reflectꓸMethod = go.reflect_package.ΔMethod;
-global using reflectꓸType = go.reflect_package.ΔType;
-global using reflectꓸValue = go.reflect_package.ΔValue;
 global using timeꓸLocation = go.time_package.ΔLocation;
 global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
@@ -66,8 +61,8 @@ using static go.testing.fstest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("testing/fstest/mapfs.go", "mapfs.cs", "AEFekoKUgpSewoKCgoKCgoKCpriCgoKCgoKClO6CpoKUgpSIgpQADBaCpoKmgqaC7qSSAAgSgKKAooCigKKAooCigKKApIIACRSApICkgoKUgpSCgqaCyLTEgpSCpoKClIKClAAKFoCigKKCpoKCgpSClIKClII=")]
-[assembly: go.GoPositionMap("testing/fstest/testfs.go", "testfs.cs", "ADBIABICgIKkgoCCkoKCgqaCgpSAgqS2pqKSgoKCgpSClIKCgoKCpoKClJSCgqaClAAKGLKmgoKCgpSCgoKClAAICvSCgoKUgoKCgpiSgpSUgoKUgrSCtIK0goKCgpS6goKCgqiCgoKCqICCypaAgqSSgoKClJaAgqSSgoKCgpSCgoKUgoKUgoKUgoKmloCCgoKClISCgtyCgoKUhIKCqNiSqJKokqiSgIKokoKCgoKCgoKUlLS0tLTGlLqAgriCgoKCgpSmgqaClISCgoKogoKClIKWgoKWgoKUtIK0gsaqooKCgpSCgoKClIKUgpaCgoKUgqaCgqaCgrqCgoKUgoKWgIKCgoKUgoLewoKCgoKUuoKCloKCgoKCgpSClJSCloKWgoKUlgAICNKWgoKCloKCgoKWgILKloCCgoKClKiClIKCgpSEooDIgoKClJaCgoKUkoCC+IKCguqygoKClLqSuIKUgILugIIABhCCgII=")]
+[assembly: go.GoPositionMap("testing/fstest/mapfs.go", "mapfs.cs", "AB1ekoKUgpSewoKCgoKCgoKCpriCgoKCgoKClO6CpoKUgpSIgpQADBaCpoKmgqaC7qSSAAgSgKKAooCigKKAooCigKKApIIACRSApICkgoKUgpSCgqaCyLTEgpSCpoKClIKClAAKFoCigKKCpoKCgpSClIKClII=", "103-105:1")]
+[assembly: go.GoPositionMap("testing/fstest/testfs.go", "testfs.cs", "ABlIABICgIKkgoCCkoKCgqaCgpSAgqS2pqKSgoKCgpSClIKCgoKUlIKCpoKUAAoYsqaCgoKClIKCgoKUAAgK9IKCgpSCgoKCmJKClJSCgpSCtIK0grSCgoKClLqCgoKCqIKCgoKogILKloCCpJKCgoKUloCCpJKCgoKClIKCgpSCgpSCgpSCgqaWgIKCgoKUhIKC3IKCgpSEgoKo2JKokqiSqJKAgqiSgoKCgoKCgpSUtLS0tMaUuoCCuIKCgoKClKaCpoKUhIKCgqiCgoKUgpaCgpaCgpS0grSCxqqigoKClIKCgoKUgpSCloKCgpSCpoKCpoKCuoKCgpSCgpaAgoKCgpSCgt7CgoKCgpS6goKWgoKCgoKClIKUlIKWgpaCgpSWAAgI0paCgoKWgoKCgpaAgsqWgIKCgoKUqIKUgoKClISigMiCgoKUloKCgpSSgIL4goKC6rKCgoKUupK4gpSAgu6AggAGEIKAgg==", "449-457:1;485-490:2;543-543:1;575-581:1")]
 // </GoSourcePositionMaps>
 
 namespace go.testing;
@@ -91,4 +86,23 @@ public static partial class fstest_package
     public partial struct MapFS {}
     public partial struct MapFile {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

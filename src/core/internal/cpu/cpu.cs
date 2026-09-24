@@ -42,6 +42,7 @@ public static uintptr CacheLineSize = CacheLinePadSize;
     public bool HasBMI1;
     public bool HasBMI2;
     public bool HasERMS;
+    public bool HasFSRM;
     public bool HasFMA;
     public bool HasOSXSAVE;
     public bool HasPCLMULQDQ;
@@ -82,10 +83,24 @@ public static ARMᴛ1 ARM;
     public bool HasCRC32;
     public bool HasATOMICS;
     public bool HasCPUID;
+    public bool HasDIT;
     public bool IsNeoverse;
     internal CacheLinePad __;
 }
 public static ARM64ᴛ1 ARM64;
+
+// The booleans in Loong64 contain the correspondingly named cpu feature bit.
+// The struct is padded to avoid false sharing.
+
+[GoType("dyn")] partial struct Loong64ᴛ1 {
+    internal CacheLinePad _;
+    public bool HasLSX; // support 128-bit vector extension
+    public bool HasCRC32; // support CRC instruction
+    public bool HasLAMCAS; // support AMCAS[_DB].{B/H/W/D}
+    public bool HasLAM_BH; // support AM{SWAP/ADD}[_DB].{B/H} instruction
+    internal CacheLinePad __;
+}
+public static Loong64ᴛ1 Loong64;
 
 
 [GoType("dyn")] partial struct MIPS64Xᴛ1 {
@@ -144,6 +159,7 @@ public static S390Xᴛ1 S390X;
 //go:linkname X86
 //go:linkname ARM
 //go:linkname ARM64
+//go:linkname Loong64
 //go:linkname MIPS64X
 //go:linkname PPC64
 //go:linkname S390X

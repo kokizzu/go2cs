@@ -54,7 +54,7 @@ using static go.@internal.coverage.pods_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/pods/pods.go", "pods.cs", "AFtoAA0CgoKCgoKUgoKUgqaqogARXgAhAoKCgoKAgriAgvyCgoKAgoKCgpSAgoKClIKClILqgoKUlIKCgoCCpJTcgoKClJSGpqKCgg==")]
+[assembly: go.GoPositionMap("internal/coverage/pods/pods.go", "pods.cs", "ACtoAA0CgoKCgoKUgoKUgqaqogARXgAhAoKCgoKAgriAgvyCgoKAgoKCgpSAgoKClIKClILqgoKUlIKCgoCCpJTcgoKClJSGpqKCgg==", "170-175:1;189-191:2")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -73,4 +73,21 @@ public static partial class pods_package
     internal partial struct protoPod {}
     public partial struct Pod {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

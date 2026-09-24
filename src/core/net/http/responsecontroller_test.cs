@@ -274,16 +274,16 @@ internal static void testResponseControllerSetPastReadDeadline(ж<testing.T> Ꮡ
                 var pwʗ2 = pwʗ1;
                 defer(() => pwʗ2.Close(), ref ᒐ);
                 pwʗ1.Write(slice<byte>("one"u8));
-                var selᴛ15 = readcʗ2;
-                var selᴛ16 = donecʗ2;
-                switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
-                case 0 when selᴛ15.ꟷᐳ(out _): {
+                var selᴛ32 = readcʗ2;
+                var selᴛ33 = donecʗ2;
+                switch (select(ᐸꟷ(selᴛ32, ꓸꓸꓸ), ᐸꟷ(selᴛ33, ꓸꓸꓸ))) {
+                case 0 when selᴛ32.ꟷᐳ(out _): {
                     break;
                 }
-                case 1 when selᴛ16.ꟷᐳ(out _): {
-                    var selᴛ17 = readcʗ2;
-                    switch (trySelect(ᐸꟷ(selᴛ17, ꓸꓸꓸ))) {
-                    case 0 when selᴛ17.ꟷᐳ(out _): {
+                case 1 when selᴛ33.ꟷᐳ(out _): {
+                    var selᴛ34 = readcʗ2;
+                    switch (trySelect(ᐸꟷ(selᴛ34, ꓸꓸꓸ))) {
+                    case 0 when selᴛ34.ꟷᐳ(out _): {
                         break;
                     }
                     default: {

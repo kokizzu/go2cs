@@ -67,6 +67,23 @@ public class RecvGenerator : ISourceGenerator
             // over a signature the converter's own copy is not (CS0050/CS0051 in the OPPOSITE direction).
             string scope = GetExplicitAccessModifier(methodSyntax) ?? GetScope(identifier);
 
+            // The RECEIVER TYPE's accessibility is read from its SYMBOL, never from the Go export case
+            // of its name — the same shared rule (Common.EffectiveScopeIsPublic) every sibling generator
+            // already routes through (ImplicitConvGenerator, ImplementGenerator.AdapterSidePublic,
+            // StructDeclarationSyntaxExtensions). RecvGenerator was the last name-only reader, and a name
+            // is the wrong oracle for a type the converter PUBLICIZED: an unexported Go type reached
+            // through an exported signature is emitted `public partial struct` (ecdsa's hmacDRBG, handed
+            // out by the exported TestingOnlyNewDRBG), yet the name still reads unexported — so this
+            // ж-overload was narrowed to `internal`, a CONSUMING assembly saw only the `ref T` primary,
+            // and every `box.Method(…)` there was CS1929 (crypto/internal/fips140test's acvp_test, 2
+            // sites; the twin partials TypeGenerator and ImplicitConvGenerator emit for that same type
+            // were already public, so RecvGenerator alone disagreed).
+            // The narrowing itself STAYS: a genuinely internal receiver still forces `internal`, because
+            // a public extension method over `ж<internalT>` is CS0051. Only the ORACLE changes.
+            ITypeSymbol? receiverTypeSymbol = semanticModel.GetDeclaredSymbol(methodSyntax) is IMethodSymbol { Parameters.Length: > 0 } methodSymbol
+                ? methodSymbol.Parameters[0].Type
+                : null;
+
             string[] usingStatements = GetFullyQualifiedUsingStatements(syntaxTree, semanticModel);
 
             foreach (AttributeSyntax attribute in attributes)
@@ -78,12 +95,22 @@ public class RecvGenerator : ISourceGenerator
                 if (method.Parameters.Length == 0 || !method.IsRefRecv)
                     continue;
 
+                // A null symbol (no semantic info for this declaration) falls back to the name rule,
+                // which is exactly the behaviour this read replaces — never a widening by default.
+                string receiverSimpleName = GetSimpleName(method.Parameters[0].type);
+
+                bool receiverTypeIsPublic = receiverTypeSymbol is null
+                    ? GetScope(receiverSimpleName) == "public"
+                    : EffectiveScopeIsPublic(receiverTypeSymbol, receiverSimpleName);
+
                 string generatedSource = new ReceiverMethodTemplate
                 {
                     PackageNamespace = packageNamespace,
                     PackageName = packageName,
                     Scope = scope,
                     Method = method,
+                    ReceiverTypeIsPublic = receiverTypeIsPublic,
+                    NoInlining = HasNoInliningMark(methodSyntax),
                     UsingStatements = usingStatements
                 }
                 .Generate();
@@ -92,5 +119,27 @@ public class RecvGenerator : ISourceGenerator
                 context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{identifier}.{method.Parameters[0].type}.g.cs")), generatedSource);
             }
         }
+    }
+
+    // The converter's frame-preserving mark, read as it is SPELLED in the emission --
+    // `[MethodImpl(MethodImplOptions.NoInlining)]` (computeNoInliningClosure) -- so the forwarder
+    // inherits exactly the functions the converter protected and nothing else.
+    private static bool HasNoInliningMark(MethodDeclarationSyntax methodSyntax)
+    {
+        foreach (AttributeListSyntax list in methodSyntax.AttributeLists)
+        {
+            foreach (AttributeSyntax attribute in list.Attributes)
+            {
+                string name = attribute.Name.ToString();
+
+                if (!name.EndsWith("MethodImpl", StringComparison.Ordinal) && !name.EndsWith("MethodImplAttribute", StringComparison.Ordinal))
+                    continue;
+
+                if (attribute.ArgumentList?.ToString().Contains("NoInlining") == true)
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

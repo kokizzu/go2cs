@@ -10,6 +10,13 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using abiꓸArrayType = go.@internal.abi_package.ΔArrayType;
+global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
+global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
+global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
+global using abiꓸKind = go.@internal.abi_package.ΔKind;
+global using abiꓸName = go.@internal.abi_package.ΔName;
+global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
 // </ImportedTypeAliases>
 
 using go;
@@ -49,7 +56,7 @@ using static go.@internal.race_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/race/norace.go", "norace.cs", "AAwepqampqampqamgA==")]
+[assembly: go.GoPositionMap("internal/race/norace.go", "norace.cs", "AA4gpqampqampqampqampoA=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -65,4 +72,14 @@ public static partial class race_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() => builtin.initPackage(typeof(go.@internal.abi_package));
+    // </ImportInitializers>
 }

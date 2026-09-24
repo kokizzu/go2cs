@@ -79,12 +79,12 @@ internal static void _ᴛ2() {
     _ = x[CurveP384 - 24];
     _ = x[CurveP521 - 25];
     _ = x[X25519 - 29];
-    _ = x[x25519Kyber768Draft00 - 25497];
+    _ = x[X25519MLKEM768 - 4588];
 }
 
 internal static readonly @string _CurveID_name_0 = "CurveP256CurveP384CurveP521"u8;
 internal static readonly @string _CurveID_name_1 = "X25519"u8;
-internal static readonly @string _CurveID_name_2 = "X25519Kyber768Draft00"u8;
+internal static readonly @string _CurveID_name_2 = "X25519MLKEM768"u8;
 
 internal static array<uint8> _CurveID_index_0 = new uint8[]{0, 9, 18, 27}.array();
 
@@ -97,7 +97,7 @@ public static @string String(this CurveID i) {
     case {} when i == 29: {
         return _CurveID_name_1;
     }
-    case {} when i == 25497: {
+    case {} when i == 4588: {
         return _CurveID_name_2;
     }
     default: {

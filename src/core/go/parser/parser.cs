@@ -18,40 +18,14 @@ namespace go.go;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constraint = global::go.go.build.constraint_package;
-using typeparams = global::go.go.@internal.typeparams_package;
 using scanner = global::go.go.scanner_package;
 using token = global::go.go.token_package;
 using strings = strings_package;
 using global::go.go;
-using global::go.go.@internal;
 using global::go.go.build;
 using ꓸꓸꓸany = Span<any>;
 
 partial class parser_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸbuildꓸconstraint() {
-    builtin.initPackage(typeof(global::go.go.build.constraint_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸtypeparams() {
-    builtin.initPackage(typeof(global::go.go.@internal.typeparams_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() {
-    builtin.initPackage(typeof(global::go.go.scanner_package));
-}
 
 // The parser structure holds the parser's internal state.
 [GoType] partial struct parser {
@@ -87,10 +61,11 @@ partial class parser_package {
     internal nint nestLev;
 }
 
-internal static void init(this ж<parser> Ꮡp, ж<token.FileSet> Ꮡfset, @string filename, slice<byte> src, Mode mode) {
+internal static void init(this ж<parser> Ꮡp, ж<tokenꓸFile> Ꮡfile, slice<byte> src, Mode mode) {
     ref var p = ref Ꮡp.DerefOrNull();
+    ref var @file = ref Ꮡfile.DerefOrNull();
 
-    p.@file = Ꮡfset.AddFile(filename, -1, len(src));
+    p.@file = Ꮡfile;
     var eh = (tokenꓸPosition pos, @string msg) => {
         Ꮡp.Value.errors.Add(pos, msg);
     };
@@ -788,7 +763,7 @@ internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<
             }
         }
         // x[P], x[P1, P2], ...
-        return (default!, typeparams.PackIndexExpr(new ast.IdentжExpr(Ꮡx), lbrack, args, rbrack));
+        return (default!, packIndexExpr(new ast.IdentжExpr(Ꮡx), lbrack, args, rbrack));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
@@ -980,7 +955,7 @@ internal static ж<ast.Ellipsis> parseDotsType(this ж<parser> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string paramDeclOrNilˢ = "ParamDeclOrNil"u8;
+internal static readonly @string paramDeclˢ = "ParamDecl"u8;
 
 internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡname, bool typeSetsOK) {
     field f = default!;
@@ -992,7 +967,7 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
         // TODO(rFindley) refactor to be more similar to paramDeclOrNil in the syntax
         // package
         if (p.trace) {
-            defer(un, trace(Ꮡp, paramDeclOrNilˢ), ref ᒐ);
+            defer(un, trace(Ꮡp, paramDeclˢ), ref ᒐ);
         }
         token.Token ptok = p.tok;
         if (Ꮡname != nil){
@@ -1078,7 +1053,8 @@ internal static readonly @string parameterListˢ = "ParameterList"u8;
 internal static readonly @string parameterListˢ2 = "parameter list"u8;
 internal static readonly @string missingTypeConstraintˢ = "missing type constraint"u8;
 internal static readonly @string missingTypeParameterNameˢ = "missing type parameter name"u8;
-internal static readonly @string mixedNamedAndUnnamedˢ = "mixed named and unnamed parameters"u8;
+internal static readonly @string missingParameterTypeˢ = "missing parameter type"u8;
+internal static readonly @string missingParameterNameˢ = "missing parameter name"u8;
 internal static readonly @string nilTypeInUnnamedˢ = "nil type in unnamed parameter list"u8;
 internal static readonly @string nilTypeInNamedParameterˢ = "nil type in named parameter list"u8;
 
@@ -1194,26 +1170,30 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
                 }
             }
             if (errPos.IsValid()) {
+                // Not all parameters are named because named != len(list).
+                // If named == typed, there must be parameters that have no types.
+                // They must be at the end of the parameter list, otherwise types
+                // would have been filled in by the right-to-left sweep above and
+                // there would be no error.
+                // If tparams is set, the parameter list is a type parameter list.
                 @string msg = default!;
-                if (tparams){
-                    // Not all parameters are named because named != len(list).
-                    // If named == typed we must have parameters that have no types,
-                    // and they must be at the end of the parameter list, otherwise
-                    // the types would have been filled in by the right-to-left sweep
-                    // above and we wouldn't have an error. Since we are in a type
-                    // parameter list, the missing types are constraints.
-                    if (named == typed){
-                        errPos = p.pos; // position error at closing ]
+                if (named == typed){
+                    errPos = p.pos; // position error at closing token ) or ]
+                    if (tparams){
                         msg = missingTypeConstraintˢ;
                     } else {
+                        msg = missingParameterTypeˢ;
+                    }
+                } else {
+                    if (tparams){
                         msg = missingTypeParameterNameˢ;
                         // go.dev/issue/60812
                         if (len(list) == 1) {
                             msg += " or invalid array length"u8;
                         }
+                    } else {
+                        msg = missingParameterNameˢ;
                     }
-                } else {
-                    msg = mixedNamedAndUnnamedˢ;
                 }
                 Ꮡp.error(errPos, msg);
             }
@@ -1414,7 +1394,7 @@ internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) {
                                 p.exprLev--;
                             }
                             tokenꓸPos rbrack = Ꮡp.expectClosing(token.RBRACK, typeArgumentListˢ);
-                            typ = typeparams.PackIndexExpr(new ast.IdentжExpr(ident), lbrack, list, rbrack);
+                            typ = packIndexExpr(new ast.IdentжExpr(ident), lbrack, list, rbrack);
                         }
                     }
                     break;
@@ -1675,7 +1655,7 @@ internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) {
                 Rbrack: closing
             )));
         }
-        return typeparams.PackIndexExpr(typ, opening, list, closing);
+        return packIndexExpr(typ, opening, list, closing);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
@@ -2023,7 +2003,7 @@ internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.E
             return new ast.IndexExprжExpr(Ꮡ(new ast.IndexExpr(X: x, Lbrack: lbrack, Index: index[0], Rbrack: rbrack)));
         }
         // instance expression
-        return typeparams.PackIndexExpr(x, lbrack, args, rbrack);
+        return packIndexExpr(x, lbrack, args, rbrack);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
@@ -3424,8 +3404,8 @@ internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup
 //	P*[]int     T/F      P       *[]int
 //	P*E         T        P       *E
 //	P*E         F        nil     P*E
-//	P([]int)    T/F      P       []int
-//	P(E)        T        P       E
+//	P([]int)    T/F      P       ([]int)
+//	P(E)        T        P       (E)
 //	P(E)        F        nil     P(E)
 //	P*E|F|~G    T/F      P       *E|F|~G
 //	P*E|F|G     T        P       *E|F|G
@@ -3463,8 +3443,14 @@ internal static (ж<ast.Ident>, ast.Expr) extractName(ast.Expr x, bool force) {
         {
             var (name, _) = (~xΔ1).Fun._<ж<ast.Ident>>(ᐧ); if (name != nil) {
                 if (len((~xΔ1).Args) == 1 && (~xΔ1).Ellipsis == token.NoPos && (force || isTypeElem((~xΔ1).Args[0]))) {
-                    // x = name "(" x.ArgList[0] ")"
-                    return (name, (~xΔ1).Args[0]);
+                    // x = name (x.Args[0])
+                    // (Note that the cmd/compile/internal/syntax parser does not care
+                    // about syntax tree fidelity and does not preserve parentheses here.)
+                    return (name, new ast.ParenExprжExpr(Ꮡ(new ast.ParenExpr(
+                        Lparen: (~xΔ1).Lparen,
+                        X: (~xΔ1).Args[0],
+                        Rparen: (~xΔ1).Rparen
+                    ))));
                 }
             }
         }
@@ -3701,9 +3687,8 @@ internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) {
             Doc: doc,
             Package: pos,
             Name: ident,
-            Decls: decls,
-            FileStart: ((tokenꓸPos)p.@file.Base()),
-            FileEnd: ((tokenꓸPos)(p.@file.Base() + p.@file.Size())),
+            Decls: decls, // File{Start,End} are set by the defer in the caller.
+
             Imports: p.imports,
             Comments: p.comments,
             GoVersion: p.goVersion
@@ -3719,6 +3704,32 @@ internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) {
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
+}
+
+// packIndexExpr returns an IndexExpr x[expr0] or IndexListExpr x[expr0, ...].
+internal static ast.Expr packIndexExpr(ast.Expr x, tokenꓸPos lbrack, slice<ast.Expr> exprs, tokenꓸPos rbrack) {
+    switch (len(exprs)) {
+    case 0: {
+        throw panic("internal error: packIndexExpr with empty expr slice");
+        break;
+    }
+    case 1: {
+        return new ast.IndexExprжExpr(Ꮡ(new ast.IndexExpr(
+            X: x,
+            Lbrack: lbrack,
+            Index: exprs[0],
+            Rbrack: rbrack
+        )));
+    }
+    default: {
+        return new ast.IndexListExprжExpr(Ꮡ(new ast.IndexListExpr(
+            X: x,
+            Lbrack: lbrack,
+            Indices: exprs,
+            Rbrack: rbrack
+        )));
+    }}
+
 }
 
 } // end parser_package

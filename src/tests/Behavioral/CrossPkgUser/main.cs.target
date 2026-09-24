@@ -355,9 +355,9 @@ internal static void Main() {
 
 [GoType("num:float64")] partial struct localCelsius;
 
-[GoType("CrossPkgLib_package.Celsius")] partial struct reading;
+[GoType("global::go.CrossPkgLib_package.Celsius")] partial struct reading;
 
-[GoType("CrossPkgLib_package.Ticks")] partial struct stamp;
+[GoType("global::go.CrossPkgLib_package.Ticks")] partial struct stamp;
 
 internal static stamp bigStamp => unchecked((stamp)(CrossPkgLib.Ticks)0x80000001);
 

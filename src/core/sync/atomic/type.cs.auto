@@ -295,7 +295,7 @@ public static uintptr /*old*/ And(this ж<Uintptr> Ꮡx, uintptr mask) {
 }
 
 // Or atomically performs a bitwise OR operation on x using the bitmask
-// provided as mask and returns the updated value after the OR operation.
+// provided as mask and returns the old value.
 public static uintptr /*old*/ Or(this ж<Uintptr> Ꮡx, uintptr mask) {
     return OrUintptr(Ꮡx.of(Uintptr.Ꮡv), mask);
 }

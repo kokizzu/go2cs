@@ -27,24 +27,6 @@ using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸformat() {
-    builtin.initPackage(typeof(global::go.go.format_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 internal static ж<bool> update = flag.Bool("update"u8, false, "update golden results for regression test"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -99,7 +81,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                                 Ꮡt.Fatalf("must run -update on 64-bit machine"u8);
                             }
                             p++;
-                            continue;
+                            goto continueᴛ2;
                         }
                         x = (nint)big;
                     } while (false);
@@ -175,6 +157,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                 }
             }
             p++;
+continueᴛ2:;
         }
     }
     if (update.Value) {
@@ -247,7 +230,7 @@ public static void TestUpdateExample(ж<testing.T> Ꮡt) {
 // This lets us update the regressGolden table during go test -update.
 internal static void replace(ж<testing.T> Ꮡt, @string @file, slice<byte> @new) {
     var (first, _, _) = bytes.Cut(@new, slice<byte>("\n"u8));
-    first = append(append(slice<byte>("\n"u8), first.ꓸꓸꓸ), (byte)((rune)'\n'));
+    first = append(appendꓸꓸꓸ(slice<byte>("\n"u8), first), (byte)((rune)'\n'));
     var (data, err) = os.ReadFile(@file);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -260,7 +243,7 @@ internal static void replace(ж<testing.T> Ꮡt, @string @file, slice<byte> @new
     if (j < 0) {
         Ꮡt.Fatalf("cannot find end in %s"u8, @file);
     }
-    data = append(append(data.slice(-1, i + 1, i + 1), @new.ꓸꓸꓸ), data[(int)(i + 1 + j + 1)..].ꓸꓸꓸ);
+    data = appendꓸꓸꓸ(appendꓸꓸꓸ(data.slice(-1, i + 1, i + 1), @new), data[(int)(i + 1 + j + 1)..]);
     (data, err) = format.Source(data);
     if (err != default!) {
         Ꮡt.Fatal(err);

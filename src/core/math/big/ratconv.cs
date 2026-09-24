@@ -321,14 +321,15 @@ internal static (int64 exp, nint @base, error err) scanExponent(io.ByteScanner r
 
 // String returns a string representation of x in the form "a/b" (even if b == 1).
 public static @string String(this ж<ΔRat> Ꮡx) {
-    return ((@string)Ꮡx.marshal());
+    return ((@string)Ꮡx.marshal(default!));
 }
 
-// marshal implements String returning a slice of bytes
-internal static slice<byte> marshal(this ж<ΔRat> Ꮡx) {
+// marshal implements [Rat.String] returning a slice of bytes.
+// It appends the string representation of x in the form "a/b" (even if b == 1) to buf,
+// and returns the extended buffer.
+internal static slice<byte> marshal(this ж<ΔRat> Ꮡx, slice<byte> buf) {
     ref var x = ref Ꮡx.DerefOrNull();
 
-    slice<byte> buf = default!;
     buf = Ꮡx.of(big_package.ΔRat.Ꮡa).Append(buf, 10);
     buf = append(buf, (byte)((rune)'/'));
     if (len(x.b.abs) != 0){

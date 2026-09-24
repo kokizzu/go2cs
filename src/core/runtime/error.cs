@@ -5,7 +5,9 @@ namespace go;
 
 using abi = @internal.abi_package;
 using bytealg = @internal.bytealg_package;
+using sys = @internal.runtime.sys_package;
 using @internal;
+using @internal.runtime;
 using @unsafe = unsafe_package;
 
 partial class runtime_package {
@@ -390,7 +392,7 @@ internal static void printindented(@string s) {
 //
 // It is called from the generated wrapper code.
 internal static void panicwrap() {
-    var pc = getcallerpc();
+    var pc = sys.GetCallerPC();
     @string name = funcNameForPrint(funcname(findfunc(pc)));
     // name is something like "main.(*T).F".
     // We want to extract pkg ("main"), typ ("T"), and meth ("F").

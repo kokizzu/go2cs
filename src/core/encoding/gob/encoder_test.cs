@@ -8,6 +8,7 @@ using cmp = cmp_package;
 using hex = go.encoding.hex_package;
 using fmt = fmt_package;
 using io = io_package;
+using maps = maps_package;
 using math = math_package;
 using reflect = reflect_package;
 using slices = slices_package;
@@ -17,30 +18,6 @@ using go.encoding;
 using static go.encoding.gob_package;
 
 partial class gob_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(go.encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object encoderFailˢ = (@string)"encoder fail:"u8;
@@ -105,7 +82,7 @@ public static void TestEncodeIntSlice(ж<testing.T> Ꮡt) {
         ref var res = ref heap<slice<int8>>(out var Ꮡres);
         res = new slice<int8>(9);
         dec.Decode(Ꮡres);
-        if (!reflect.DeepEqual(s8ʗ1, res)) {
+        if (!slices.Equal<slice<int8>, int8>(s8ʗ1, res)) {
             tΔ1.Fatalf("EncodeIntSlice: expected %v, got %v"u8, s8ʗ1, res);
         }
     });
@@ -118,7 +95,7 @@ public static void TestEncodeIntSlice(ж<testing.T> Ꮡt) {
         ref var res = ref heap<slice<int16>>(out var Ꮡres);
         res = new slice<int16>(9);
         dec.Decode(Ꮡres);
-        if (!reflect.DeepEqual(s16ʗ1, res)) {
+        if (!slices.Equal<slice<int16>, int16>(s16ʗ1, res)) {
             tΔ2.Fatalf("EncodeIntSlice: expected %v, got %v"u8, s16ʗ1, res);
         }
     });
@@ -131,7 +108,7 @@ public static void TestEncodeIntSlice(ж<testing.T> Ꮡt) {
         ref var res = ref heap<slice<int32>>(out var Ꮡres);
         res = new slice<int32>(9);
         dec.Decode(Ꮡres);
-        if (!reflect.DeepEqual(s32ʗ1, res)) {
+        if (!slices.Equal<slice<int32>, int32>(s32ʗ1, res)) {
             tΔ3.Fatalf("EncodeIntSlice: expected %v, got %v"u8, s32ʗ1, res);
         }
     });
@@ -144,7 +121,7 @@ public static void TestEncodeIntSlice(ж<testing.T> Ꮡt) {
         ref var res = ref heap<slice<int64>>(out var Ꮡres);
         res = new slice<int64>(9);
         dec.Decode(Ꮡres);
-        if (!reflect.DeepEqual(s64ʗ1, res)) {
+        if (!slices.Equal<slice<int64>, int64>(s64ʗ1, res)) {
             tΔ4.Fatalf("EncodeIntSlice: expected %v, got %v"u8, s64ʗ1, res);
         }
     });
@@ -445,7 +422,7 @@ public static void TestArray(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("map[@string, TestRecursiveMapType_recursiveMap]")] internal partial struct TestRecursiveMapType_recursiveMap;
+[GoLocalName("recursiveMap")] [GoType("map[@string, TestRecursiveMapType_recursiveMap]")] internal partial struct TestRecursiveMapType_recursiveMap;
 
 public static void TestRecursiveMapType(ж<testing.T> Ꮡt) {
     var r1 = new TestRecursiveMapType_recursiveMap(new map<@string, TestRecursiveMapType_recursiveMap>{["A"u8] = new TestRecursiveMapType_recursiveMap(new map<@string, TestRecursiveMapType_recursiveMap>{["B"u8] = default!, ["C"u8] = default!}), ["D"u8] = default!});
@@ -458,7 +435,7 @@ public static void TestRecursiveMapType(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[]TestRecursiveSliceType_recursiveSlice")] internal partial struct TestRecursiveSliceType_recursiveSlice;
+[GoLocalName("recursiveSlice")] [GoType("[]TestRecursiveSliceType_recursiveSlice")] internal partial struct TestRecursiveSliceType_recursiveSlice;
 
 public static void TestRecursiveSliceType(ж<testing.T> Ꮡt) {
     var r1 = new TestRecursiveSliceType_recursiveSlice(new array<TestRecursiveSliceType_recursiveSlice>(2){[0] = new TestRecursiveSliceType_recursiveSlice(new array<TestRecursiveSliceType_recursiveSlice>(1){[0] = default!}), [1] = default!});
@@ -581,7 +558,7 @@ internal static readonly object forNonStructStructˢ = (@string)"for non-struct/
     public @string A;
 }
 
-[GoType("@string")] internal partial struct TestStructNonStruct_NonStruct;
+[GoLocalName("NonStruct")] [GoType("@string")] internal partial struct TestStructNonStruct_NonStruct;
 
 public static void TestStructNonStruct(ж<testing.T> Ꮡt) {
     ref var s = ref heap<TestStructNonStruct_Struct>(out var Ꮡs);
@@ -826,7 +803,7 @@ public static void TestMapBug1(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(decodeˢ, err);
     }
-    if (!reflect.DeepEqual(@in, @out)) {
+    if (!maps.Equal<Bug1StructMap, Bug1StructMap, @string, Bug1Elem>(@in, @out)) {
         Ꮡt.Errorf("mismatch: %v %v"u8, @in, @out);
     }
 }
@@ -906,7 +883,7 @@ public static void TestSliceReusesMemory(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Fatal(intsDecodeˢ, err);
         }
-        if (!reflect.DeepEqual(x, y)) {
+        if (!slices.Equal<slice<rune>, rune>(x, y)) {
             Ꮡt.Errorf("ints: expected %q got %q\n"u8, x, y);
         }
         if (addr != Ꮡ(y, 0)) {
@@ -1418,7 +1395,7 @@ public static void TestMarshalFloatMap(ж<testing.T> Ꮡt) {
     }
     var got = readMap(@out);
     var want = readMap(@in);
-    if (!reflect.DeepEqual(got, want)) {
+    if (!slices.Equal<slice<TestMarshalFloatMap_mapEntry>, TestMarshalFloatMap_mapEntry>(got, want)) {
         Ꮡt.Fatalf("\nEncode: %v\nDecode: %v"u8, want, got);
     }
 }

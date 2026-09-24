@@ -129,15 +129,16 @@ public static void ResetCachedEnvironment() {
 
 internal static nint NumPendingRequestsForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.reqMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑreqMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return builtin.len(t.reqCanceler);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().reqMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static slice<@string> /*keys*/ IdleConnKeysForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
@@ -161,25 +162,27 @@ internal static slice<@string> /*keys*/ IdleConnKeysForTesting(this ж<global::g
 
 internal static nint IdleConnKeyCountForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.idleMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return builtin.len(t.idleConn);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static slice<@string> IdleConnStrsForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         slice<@string> ret = default!;
         t.idleMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (_, conns) in t.idleConn) {
             foreach (var (_, pc) in conns) {
                 ret = append(ret, (~pc).conn.LocalAddr().String() + "/"u8 + (~pc).conn.RemoteAddr().String());
@@ -189,7 +192,7 @@ internal static slice<@string> IdleConnStrsForTesting(this ж<global::go.net.htt
         return ret;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static slice<@string> IdleConnStrsForTesting_h2(this ж<global::go.net.http_package.Transport> Ꮡt) {
@@ -219,11 +222,12 @@ internal static slice<@string> IdleConnStrsForTesting_h2(this ж<global::go.net.
 
 internal static nint IdleConnCountForTesting(this ж<global::go.net.http_package.Transport> Ꮡt, @string scheme, @string addr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.idleMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var key = new connectMethodKey(""u8, scheme, addr, false);
         @string cacheKey = key.String();
         foreach (var (k, conns) in t.idleConn) {
@@ -234,33 +238,35 @@ internal static nint IdleConnCountForTesting(this ж<global::go.net.http_package
         return 0;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static nint IdleConnWaitMapSizeForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.idleMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return builtin.len(t.idleConnWait);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static bool IsIdleForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.idleMu.Lock();
-        defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return t.closeIdle;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void QueueForIdleConnForTesting(this ж<global::go.net.http_package.Transport> Ꮡt) {
@@ -352,11 +358,12 @@ public static error ExportHttp2ConfigureTransport(ж<global::go.net.http_package
 
 internal static bool ExportAllConnsIdle(this ж<global::go.net.http_package.Server> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (c, _) in s.activeConn) {
             var (st, unixSec) = c.getState();
             if (unixSec == 0 || st != StateIdle) {
@@ -366,17 +373,18 @@ internal static bool ExportAllConnsIdle(this ж<global::go.net.http_package.Serv
         return true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static map<global::go.net.http_package.ConnState, nint> ExportAllConnsByState(this ж<global::go.net.http_package.Server> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         var states = new map<global::go.net.http_package.ConnState, nint>{};
         s.mu.Lock();
-        defer(Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (c, _) in s.activeConn) {
             var (st, _) = c.getState();
             states[st] += 1;
@@ -384,7 +392,7 @@ internal static map<global::go.net.http_package.ConnState, nint> ExportAllConnsB
         return states;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static ж<global::go.net.http_package.Request> WithT(this ref global::go.net.http_package.Request r, ж<testing.T> Ꮡt) {

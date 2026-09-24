@@ -31,8 +31,8 @@ using static global::go.text.template.parse_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/template/parse/lex_test.go", "lex_test.cs", "ADxkgoKClAAIEoIAxQKUBcKCyoKCgoKmpoKClIKClIKUgpSCpqaisoKCgpQAGzqisoKCAAkKogAJEISCuKIAChKEggAqWsKygoKClIKCgoIACBYACQKCgoKCgoI=")]
-[assembly: go.GoPositionMap("text/template/parse/parse_test.go", "parse_test.cs", "AGeyAaKGooKCgpSCgqaCgoKClIKClIKClJSClIKClIK2lIKClIK2lIKClIK2lIKClIK2AK4B4ALCgoCSgoKUgrSCtpKUtIKClJSC+oKokqbCgoCS3LKSgoKCgpSAggAMDPiCgJSChsaCgqimgoIACwrCgoKAkoKCgoKUgoCCABsqooKUgoKCgpSAggAICoKCgpSCgoKClIIAatYBgrKSgoKUggAKDIKqgoKClICSpIKClICSAAgIhJKCgoK4goKUgoKUgoLKooKCgoIACg6ipoKCgpSCAAgIogAAJIKClIKCgpSC")]
+[assembly: go.GoPositionMap("text/template/parse/lex_test.go", "lex_test.cs", "ADBkgoKClAAIEoIAxQKUBcKCyoKCgoKmpoKClIKClIKUgpSCpqaisoKCgpQAGzqisoKCAAkKogAJEISCuKIAChKEggA0bsKygoKClIKCgoIACBYACQKCgoKCgoI=")]
+[assembly: go.GoPositionMap("text/template/parse/parse_test.go", "parse_test.cs", "AFuyAaKGooKCgpSCgqaCgoKClIKClIKClJSClIKClIK2lIKClIK2lIKClIK2lIKClIK2AK4B4ALCgoCSgoKUgrSCtpKUtIKClJSC+oKokqbCgoCS3LKSgoKCgpSAggAMDPiCgJSChsaCgqimgoIACwrCgoKAkoKCgoKUgoCCABsqooKUgoKCgpSAggAICoKCgpSCgoKClIIAatYBgrKSgoKUggAKDIKqgoKClICSpIKClICSAAgIhJKCgoK4goKUgoKUgoLKooKCgoIACg6ipoKCgpSCABkIogAAJIKClIKCgpSC", "339-339:1;379-379:1;387-397:2;406-406:1;413-413:2;434-434:1;601-609:1")]
 // </GoSourcePositionMaps>
 
 namespace go.text.template;
@@ -48,4 +48,24 @@ public static partial class parse_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.text.template.parse_package));
+    }
 }

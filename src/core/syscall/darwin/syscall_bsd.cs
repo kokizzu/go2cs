@@ -9,7 +9,7 @@
 // lines and generates system call stubs.
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 
 partial class syscall_package {

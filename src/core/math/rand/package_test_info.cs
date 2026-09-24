@@ -47,10 +47,10 @@ using static global::go.math.rand_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("math/rand/auto_test.go", "auto_test.cs", "AAsg2LKC3oKCgoKCgoI=")]
-[assembly: go.GoPositionMap("math/rand/default_test.go", "default_test.cs", "ABkoyIKWgoCCgqaEgoKCgoKClIKCgoKUgoKUggAFFOKCgpaCgpaCAAgWloKSooLWgoKyggAICoKSsoIACAyCgqKigtaCgrKCAAgItpKCloKCgpQ=")]
-[assembly: go.GoPositionMap("math/rand/race_test.go", "race_test.cs", "AAwewpiCgoKCooKCgoKCgoKCgoKCgoKClIKClA==")]
-[assembly: go.GoPositionMap("math/rand/rand_test.go", "rand_test.cs", "AC9KgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICCAAgIgpSq1NaUuIKWgoKCgsqCgoKCgpSCmAAIDJaCgqamgqaCgsqCgoKCgpSCuIKCgoKClIKCgoKUgriCgoKCgpSCgoKClIK4lIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggANEoKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIABhKygriCgoLKooKCuKKCgriigoK4ooKCuKKCgriigoK4ooKCuKKCgriigoKCgpSQzMKCgoKC3KKCgoKCuKKCgoKCuKKCgoKCuIKCgoKCooKC6A==")]
-[assembly: go.GoPositionMap("math/rand/regress_test.go", "regress_test.cs", "ABswooKCgoKEgoKCgpSCgoKCgpSCgoKCgoKqgoKUgoKCgpSClLampoKCAAM1AAI8gpaCgoKUgpSCgoKUpJSUlIKClIKmpoI=")]
+[assembly: go.GoPositionMap("math/rand/default_test.go", "default_test.cs", "ABkoyIKWgoCCgqaEgoKCgoKCgoKUgoKUggAFFOKCgpaCgpaCAAgWloKSooLWgoKyggAICoKSsoIACAyCgqKigtaCgrKCAAgItpKCloKCgpQ=", "38-53:1;89-92:1;96-99:2;105-108:3;116-119:4;123-126:5;132-135:6")]
+[assembly: go.GoPositionMap("math/rand/race_test.go", "race_test.cs", "AAwewpiCgoKCooKCgoKCgoKCgoKCgoKClIKClA==", "24-47:1")]
+[assembly: go.GoPositionMap("math/rand/rand_test.go", "rand_test.cs", "AC9KgoKSlM7CgoKClIKCgpSmgoKSgoKUgoKmgoKCgoK4goKCgoKCgpSUAAMQsoKCgpSmloKClpaWqpKCuIKCgoKClIKCgoKCAAYWsoKCgpSmlpKUgoKWlpaqkoK4goKCgoIABRTygqyCgoSCgoKCgoKCgoKCgoKUpsKCrIKChIKCgoKCgoKCgoKCgpSssoKClJSCgqassoKClJSCgqamgoKAgqSAgqSAgsiCgoCCpICCpICCAAgIgpSq1NaUuIKWgoKCgsqCgoKCgpSCmAAIDJaCgqamgqaCgsqCgoKCgpSCuIKCgoKClIKCgoKUgriCgoKCgpSCgoKClIK4lIKSgM7EgoKCgsqCgoKClPiSgoKClJKkgoKoggANEoKUkJKostqCgpSChJKCgqaCgoKClIKokoKCgoIADw6mgoKCgoKCgsqCgoKCgoKCpoKCgoKCgs6ygriCgoLKooKCuKKCgriigoK4ooKCuKKCgriigoK4ooKCuKKCgriigoKCgpSQzMKCgoKC3KKCgoKCuKKCgoKCuKKCgoKCuIKCgoKCooKC6A==", "456-456:1;491-555:1;504-504:1.1;505-505:1.2;506-506:1.3;507-514:1.4;512-512:1.4.1;518-553:1.5;562-571:1;574-583:2;584-592:3;604-608:1;674-674:1;683-687:1;723-728:1")]
+[assembly: go.GoPositionMap("math/rand/regress_test.go", "regress_test.cs", "ABswooKCgoKEgoKCgpSCgoKCgpSCgoKCgoKqgoKUgoKCgpSClLampoKCAAM1AAI8gpaCgoKUgpSCgoKUpJSUlIKClIKmtoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.math;
@@ -65,7 +65,40 @@ public static partial class rand_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestUniformFactorial_tests {}
     internal partial struct statsResults {}
-    public partial struct TestUniformFactorial_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.math.rand_package));
+    }
 }

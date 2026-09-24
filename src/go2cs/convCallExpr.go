@@ -120,6 +120,88 @@ func (v *Visitor) callFunIsUniversePrint(callExpr *ast.CallExpr) bool {
 //
 // Phases 1a-1c and 4 RETURN directly; the rest fall through and contribute to the final rendering.
 // Splitting this along those seams is planned work — the banners exist so that starts from a map.
+// argRendersAsUntypedConst reports whether an argument's EMISSION is an UntypedInt static, which is
+// the question the min/max cast arm below actually asks. Go types an untyped constant to its typed
+// operand at the call; C# does not, so such an argument must carry the cast the arm supplies.
+//
+// ⚠ IT IS NOT "is the argument's go/types type untyped". Beside a typed operand go/types has ALREADY
+// performed Go's conversion, so `maxNameLen - suffixLen` records as `int` there — the very
+// conversion whose absence in the emission is the defect (RED 6, user_windows_test.go:36 → CS1503).
+// The untypedness is read from the constant OBJECTS at the leaves, which is how the identifier form
+// has always read it.
+//
+// Two clauses, both measured against the converter's own emission rather than reasoned about:
+//
+//   - every leaf is an untyped constant, so the folded value is one too; and
+//   - at least one leaf is a NAMED untyped constant, which is what makes the emitted expression
+//     UntypedInt. A pure-literal fold (`20-4`) emits as C# int arithmetic exactly like the bare
+//     literal `8` beside it and needs no cast; sweeping it in would re-spell working sites.
+//
+// A bare *ast.BasicLit is deliberately NOT matched: the arm casts literals only once some other
+// argument has triggered it, which is the pre-existing behaviour this predicate preserves.
+func argRendersAsUntypedConst(info *types.Info, arg ast.Expr) bool {
+	tv, ok := info.Types[arg]
+
+	if !ok || tv.Value == nil {
+		return false
+	}
+
+	return untypedConstLeaves(info, arg) && hasNamedUntypedConstLeaf(info, arg)
+}
+
+// untypedConstLeaves reports whether every leaf of a constant expression is an untyped constant.
+func untypedConstLeaves(info *types.Info, expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.BasicLit:
+		return true
+	case *ast.Ident:
+		return identIsUntypedConst(info, e)
+	case *ast.ParenExpr:
+		return untypedConstLeaves(info, e.X)
+	case *ast.UnaryExpr:
+		return untypedConstLeaves(info, e.X)
+	case *ast.BinaryExpr:
+		return untypedConstLeaves(info, e.X) && untypedConstLeaves(info, e.Y)
+	case *ast.SelectorExpr:
+		return identIsUntypedConst(info, e.Sel)
+	}
+
+	return false
+}
+
+// hasNamedUntypedConstLeaf reports whether a constant expression names at least one untyped
+// constant — the leaf that makes the emitted C# an UntypedInt rather than an int.
+func hasNamedUntypedConstLeaf(info *types.Info, expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.Ident:
+		return identIsUntypedConst(info, e)
+	case *ast.ParenExpr:
+		return hasNamedUntypedConstLeaf(info, e.X)
+	case *ast.UnaryExpr:
+		return hasNamedUntypedConstLeaf(info, e.X)
+	case *ast.BinaryExpr:
+		return hasNamedUntypedConstLeaf(info, e.X) || hasNamedUntypedConstLeaf(info, e.Y)
+	case *ast.SelectorExpr:
+		return identIsUntypedConst(info, e.Sel)
+	}
+
+	return false
+}
+
+// identIsUntypedConst is the original identifier test, unchanged in meaning: the OBJECT is a
+// constant whose declared type is an untyped basic.
+func identIsUntypedConst(info *types.Info, ident *ast.Ident) bool {
+	constObj, ok := info.ObjectOf(ident).(*types.Const)
+
+	if !ok {
+		return false
+	}
+
+	basic, ok := constObj.Type().(*types.Basic)
+
+	return ok && basic.Info()&types.IsUntyped != 0
+}
+
 func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) string {
 	// The //go:cgo_unsafe_args block lift (cgoUnsafeArgsLift.go): the ONE `unsafe.Pointer(&first)` the
 	// current declaration's lift consumes renders as the synthesized block's pinned box. Intercepted
@@ -1428,6 +1510,43 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// A Go conversion between two DIFFERENT struct types whose shared underlying is the EMPTY
+		// struct — unique's handle_test.go:50 `testZeroSize(struct{}{})`, where `type testZeroSize
+		// struct{}` emits as a bare `[GoType] internal partial struct testZeroSize {}` and `struct{}{}`
+		// emits as golib's shared `new EmptyStruct()`. The two are UNRELATED C# structs: a bare
+		// [GoType] with no underlying argument is a struct DEFINITION, not a wrapper, so it declares no
+		// conversion operator for the cast to bind and `((testZeroSize)new EmptyStruct())` is CS0030.
+		//
+		// The composite-underlying hop above cannot serve this: it is restricted to Map/Slice/Array
+		// precisely because a struct underlying has no nameable C# cast target, and the constructor
+		// route below it wants an EXPORTED test-file-declared target over an UNEXPORTED NAMED struct —
+		// this target is unexported and this argument is ANONYMOUS, so neither arm reaches the site.
+		//
+		// A zero-field struct has exactly one value, so the construction IS the conversion: `new T()`
+		// is total here, not an approximation. The shape is already the corpus's own — 200 zero-field
+		// [GoType] structs exist and 15 sites already emit `new X()` over 7 of them (`new sigset()` x8),
+		// in a tree that compiles clean.
+		//
+		// GATED ON AN OPERAND THAT CANNOT CARRY COMPUTATION, because `new T()` DISCARDS the operand's
+		// emission: an empty composite literal, or a pure read (isPureReadExpr — identifiers, selectors
+		// and indexes over them, never a call). `T(f())` therefore does NOT take this arm; it keeps the
+		// cast and fails LOUDLY at compile time rather than silently dropping the call. That direction
+		// is deliberate. Corpus population measured at the pin: `T(struct{}{})` appears 6 times in
+		// GOROOT/src and FIVE are function calls (reflect's `V` is `var V = ValueOf`) or uncompiled
+		// testdata — unique's is the only genuine conversion, and the reverse spelling `struct{}(x)` has
+		// no struct site at all (maphash's `chan struct{}(nil)` is the bare-chan class, already closed).
+		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok {
+			if targetStruct, targetIsStruct := targetNamed.Underlying().(*types.Struct); targetIsStruct && targetStruct.NumFields() == 0 {
+				if argType := v.info.TypeOf(arg); argType != nil && !types.Identical(types.Unalias(argType), targetNamed) {
+					if argStruct, argIsStruct := argType.Underlying().(*types.Struct); argIsStruct && argStruct.NumFields() == 0 {
+						if isEmptyCompositeLit(arg) || isPureReadExpr(arg) {
+							return fmt.Sprintf("new %s()", targetTypeName)
+						}
+					}
+				}
+			}
+		}
+
 		// Determine if we need parentheses around the expression
 		if v.needsParentheses(arg) {
 			if targetIsBasic {
@@ -1482,6 +1601,22 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	if callExpr.Ellipsis.IsValid() {
 		callExprContext.hasSpreadOperator = true
 	}
+
+	// An anonymous struct written as an explicit TYPE ARGUMENT is lifted and published here: every
+	// rendering path for a type-argument position resolves the anonymous struct through the
+	// SIGNATURE-keyed package registry, and a function-scoped lift never reached it. See
+	// liftExplicitAnonStructTypeArgs — `reflect.TypeFor[struct{ f int }]()`, new in Go 1.24's
+	// reflect tests, is the measured shape and it made that whole row unreadable.
+	//
+	// ⚠ The placement claim, corrected 2026-09-20 (C1 `be9a74470` §6). This is NOT the top of
+	// convCallExpr — 69 early returns and ~40 convExpr/getAliasQualifiedTypeName calls precede it —
+	// and the accurate statement is the one that matters: no `*ast.IndexExpr` or `*ast.IndexListExpr`
+	// CALLEE is examined anywhere between this function's start and this line (the only mention in
+	// that span is a forward-pointing comment), and the first `info.Instances` use is later still.
+	// Every early return above is keyed on a callee shape that cannot be a written instantiation, so
+	// this precedes every path that can RENDER a written type argument — which is the property, and
+	// "before anything renders the callee" was a stronger sentence than the code supports.
+	v.liftExplicitAnonStructTypeArgs(callExpr)
 
 	// ---- Phase 3: classify each argument against the callee signature ----
 	//
@@ -1667,6 +1802,57 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// The FUNC-RESULT twin of the slice projection above: a `func() H` parameter whose H is
+			// instantiated with a pointer against a non-self-referential method-set constraint —
+			// crypto/internal/fips140's `hmac.New(sha256.New, key)` against `New[H fips140.Hash](h
+			// func() H, …)`. renderedTypeArgs renders H as the constraint (see funcResultProjection),
+			// so the delegate is widened through the adapter: `widen<ж<sha256.Digest>, fips140.Hash>(
+			// sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0))`. One adapter per invocation over
+			// the same shared box, so Go pointer identity holds; a nil func stays nil (golib widen).
+			if paramHasArg && (replacementArgs == nil || len(replacementArgs[i]) == 0) {
+				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
+					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
+						if ptr, constraint, checkConstraint, ok := v.funcResultProjectionArgChecked(funIdent, instance.TypeArgs, i); ok {
+							elemVar := fmt.Sprintf("elem%s%d", TempVarMarker, i)
+							wrapped := v.convertToProjectedInterfaceType(constraint, checkConstraint, ptr, elemVar)
+
+							if strings.HasPrefix(wrapped, "new ") {
+								if replacementArgs == nil {
+									replacementArgs = make([]string, params.Len())
+								}
+
+								// The Go CONSTRUCTOR idiom — `func(A) (T, error)` — takes golib's
+								// three-argument widen, so the first result is projected and the error
+								// passes through untouched. The niladic `Func<T>` overload cannot
+								// express that delegate position, and emitting it anyway is what
+								// produced crypto/mlkem's CS1526: the lambda matched no overload and
+								// the `new` expression was left without an argument list.
+								paramSig, isFunc := params.At(i).Type().Underlying().(*types.Signature)
+
+								if isFunc && paramSig.Params().Len() == 1 && paramSig.Results().Len() == 2 {
+									replacementArgs[i] = fmt.Sprintf("widen<%s, %s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(paramSig.Params().At(0).Type()),
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint),
+										DynamicCastArgMarker, elemVar, wrapped)
+								} else if isFunc && paramSig.Params().Len() == 0 && paramSig.Results().Len() == 2 {
+									// The NILADIC constructor: `func() (T, error)`. It takes its own
+									// helper rather than an overload of `widen`, because `Func<T>` with
+									// `T=(X, error)` and `Func<(T, error)>` with `T=X` are the same
+									// closed type — mlkem reaches this position through
+									// `generateKey func() (D, error)` and it was CS0407 ×8 while only
+									// the one-argument form existed.
+									replacementArgs[i] = fmt.Sprintf("widenResult<%s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+								} else {
+									replacementArgs[i] = fmt.Sprintf("widen<%s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+								}
+							}
+						}
+					}
+				}
+			}
+
 			// A FUNC-typed parameter of a SELF-REFERENTIAL constraint-proxy instantiation renders
 			// its delegate over the proxy (`Func<P224PointжnistPoint>` for `newPoint func() P`),
 			// so a method-group / func-value argument must be re-wrapped as a lambda — a C#
@@ -1812,6 +1998,97 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// An untyped nil bound to a TYPE-PARAMETER parameter of an INFERRED generic call gives C# nothing
+			// to infer from: go/types infer.go's `slices.Contains(inferred, nil)` (new at 1.24) emitted
+			// `slices.Contains(inferred, default!)` and failed CS0411 x2, because a typeless `default!` names
+			// no E (H7 red 2, COORD 89c281d32). Go infers E from the OTHER arguments; the instantiation go/types
+			// records for the call is that answer, so the nil is cast to the INSTANTIATED parameter type through
+			// the castArgToType plumbing the variadic nil above already uses (and replaces its declared-type
+			// cast, which would name the type parameter itself). An EXPLICIT instantiation (`Grow[S](nil, n)`)
+			// never reaches here: its signature is the instantiated one, whose parameter is no longer a type
+			// parameter, and its emitted type arguments already bind the nil.
+			if paramHasArg {
+				if _, isTypeParam := paramType.(*types.TypeParam); isTypeParam {
+					lastArg := i
+
+					if funcSignature.Variadic() && i == params.Len()-1 {
+						lastArg = len(callExpr.Args) - 1
+					}
+
+					for j := i; j <= lastArg; j++ {
+						if !argIsUntypedNil(callExpr.Args[j], v.info) {
+							continue
+						}
+
+						if instParam := v.instantiatedParamType(callExpr, j); instParam != nil {
+							if callExprContext.castArgToType == nil {
+								callExprContext.castArgToType = make(map[int]string)
+							}
+
+							callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(instParam, false))
+						}
+					}
+				}
+			}
+
+			// An untyped numeric CONSTANT bound to a TYPE-PARAMETER parameter of an INFERRED generic call
+			// is the same defect as the untyped nil above, reached by a different argument kind (RED 12,
+			// COORD 26e86351e). C# infers a generic call's type arguments from its arguments, and a `ref T`
+			// parameter contributes an EXACT bound — so T is pinned by the ref argument and every remaining
+			// argument must then convert to it IMPLICITLY. A bare `1` is a C# `int` literal, and there is no
+			// implicit `int` -> `System.UInt32`, so NO candidate survives fixing and inference itself fails:
+			// net/http's http2setConfigDefaults emitted `http2setDefault(ref …MaxConcurrentStreams, 1, …)`
+			// and failed CS0411 x3 at h2_bundle.cs (869,5) (870,5) (871,5). Go has no such trouble — it
+			// converts the untyped constant to T — so go/types recorded the instantiation, and that
+			// recording is the answer: emit the constant AT ITS RECORDED TYPE.
+			//
+			// Why the three siblings in the same file compile and are left alone: `int32` IS `System.Int32`,
+			// so the literal matches by IDENTITY; `time.Duration` is a `[GoType("num:int64")]` wrapper whose
+			// generated implicit operator composes with the standard `int` -> `int64`; and a call with no
+			// bare literal (line 882, three named UntypedInt constants) never needed anything. The failing
+			// set is exactly the INTERSECTION of an unsigned receiver and an inline constant.
+			//
+			// NARROWED the way the defer path above narrows, and for its stated reason: the cast is applied
+			// only when the instantiated type DIFFERS from the constant's own default type, so a `T` inferred
+			// as `int` keeps today's emission rather than churning the golden. The `exists` guard leaves any
+			// cast an earlier block already chose in place — the variadic-nil and instantiated-nil rules both
+			// write this same map, and neither should be overwritten by this one.
+			if paramHasArg {
+				if _, isTypeParam := paramType.(*types.TypeParam); isTypeParam {
+					// A variadic type parameter receives every trailing argument, so consider all of
+					// them — the loop only iterates the DECLARED parameters.
+					lastArg := i
+
+					if funcSignature.Variadic() && i == params.Len()-1 {
+						lastArg = len(callExpr.Args) - 1
+					}
+
+					for j := i; j <= lastArg; j++ {
+						if !v.isUntypedNumericConstArg(callExpr.Args[j]) {
+							continue
+						}
+
+						instParam := v.instantiatedParamType(callExpr, j)
+
+						if instParam == nil {
+							continue
+						}
+
+						if defaultType := v.untypedNumericConstArgDefaultType(callExpr.Args[j]); defaultType != nil && types.Identical(defaultType, instParam) {
+							continue
+						}
+
+						if callExprContext.castArgToType == nil {
+							callExprContext.castArgToType = make(map[int]string)
+						}
+
+						if _, exists := callExprContext.castArgToType[j]; !exists {
+							callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(instParam, false))
+						}
+					}
+				}
+			}
+
 			// A narrow-integer parameter (int8/uint8/int16/uint16) receiving a binary/unary arithmetic
 			// argument: Go evaluates `a+b`/`^a` at the operand's narrow width (with overflow wrapping),
 			// but C# promotes sub-int integer arithmetic to `int`, so the result needs an explicit cast
@@ -1929,18 +2206,37 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// archive/tar templateV7Plus's stringFormatter args, CS1503). Method groups and
 			// func literals convert natively and are left bare.
 			if paramHasArg {
-				if paramNamed, ok := types.Unalias(paramType).(*types.Named); ok {
+				// A GENERIC named delegate param arrives here UNSUBSTITUTED — getFunctionSignature
+				// reads the callee *types.Func's own type, which for `iter.Pull[V any](seq
+				// Seq[V])` is the declaration, so paramType is `Seq[V]` with V unbound and
+				// nothing concrete to construct. The instantiation go/types already inferred
+				// supplies it (instantiatedParamType): `Seq[time.Time]`, which renders
+				// `iter.Seq<time.Time>` and wraps exactly as a non-generic named delegate does.
+				// Left bare, C# saw only the lambda-typed local and could infer no type argument
+				// for Pull (CS0411), and the untyped `next` result then failed to deconstruct
+				// into the Go-typed pair (CS0029) — internal/synctest's TestIteratorPull, one
+				// root. A callee with no recorded instantiation, or one whose parameter is still
+				// open after substitution (a generic function passing its OWN type parameters
+				// on), fails the unchanged typeContainsTypeParams guard below and keeps the
+				// native conversion.
+				delegateParamType := paramType
+
+				if typeContainsTypeParams(delegateParamType) {
+					if substituted := v.instantiatedParamType(callExpr, i); substituted != nil {
+						delegateParamType = substituted
+					}
+				}
+
+				if paramNamed, ok := types.Unalias(delegateParamType).(*types.Named); ok {
 					if _, isSig := paramNamed.Underlying().(*types.Signature); isSig {
-						if argType := v.getType(callExpr.Args[i], false); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(paramType)) {
+						if argType := v.getType(callExpr.Args[i], false); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(delegateParamType)) {
 							if _, argIsSig := argType.Underlying().(*types.Signature); argIsSig {
-								// A GENERIC named delegate param renders unsubstituted type
-								// params at the call site — leave it to native conversion.
-								if _, isLit := callExpr.Args[i].(*ast.FuncLit); !isLit && !typeContainsTypeParams(paramType) {
+								if _, isLit := callExpr.Args[i].(*ast.FuncLit); !isLit && !typeContainsTypeParams(delegateParamType) {
 									if callExprContext.wrapArgWithNew == nil {
 										callExprContext.wrapArgWithNew = make(map[int]string)
 									}
 
-									callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(paramType)
+									callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(delegateParamType)
 								}
 							}
 						}
@@ -2782,7 +3078,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil &&
 					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
 						v.calleeTypeParamUnsuppliedByCall(callExpr, funIdent) ||
-						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
+						v.calleeReadsDescriptorName(funIdent) ||
+						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs) ||
+						v.calleeTypeParamMixesUntypedAndTypedArgs(callExpr, funIdent)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
 					// erases to empty stays bare.
@@ -3078,11 +3376,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	// Go's min/max builtins type every argument to the call's single result type. An argument that
-	// is a NAMED UNTYPED CONSTANT renders as its UntypedInt (BigInteger) static, which the golib
-	// min/max `params ReadOnlySpan<T>` overloads reject (CS1503 — params-span element binding does
-	// not apply the user-defined implicit conversion): runtime `min(n, maxObletBytes)` (mgcmark.go,
-	// n uintptr) and `min(debug.profstackdepth, maxProfStackDepth)` (runtime1.go, int32). Cast such
-	// an argument to the call's Go-resolved result type: `min(n, (uintptr)(maxObletBytes))`.
+	// renders as an UntypedInt (BigInteger) static — a NAMED UNTYPED CONSTANT, or a FOLDED
+	// EXPRESSION over such constants — is rejected by the golib min/max `params ReadOnlySpan<T>`
+	// overloads (CS1503 — params-span element binding does not apply the user-defined implicit
+	// conversion): runtime `min(n, maxObletBytes)` (mgcmark.go, n uintptr) and
+	// `min(debug.profstackdepth, maxProfStackDepth)` (runtime1.go, int32). Cast such an argument to
+	// the call's Go-resolved result type: `min(n, (uintptr)(maxObletBytes))`.
 	// Literal and typed arguments are left as-is (no churn — the early return fires only when an
 	// untyped-const argument is present).
 	if funcName == "min" || funcName == "max" || funcName == "builtin.min" || funcName == "builtin.max" {
@@ -3090,21 +3389,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if _, isBuiltin := v.info.ObjectOf(funIdent).(*types.Builtin); isBuiltin {
 				if callType := v.info.TypeOf(callExpr); callType != nil {
 					argIsNamedUntypedConst := func(arg ast.Expr) bool {
-						ident := getIdentifier(arg)
-
-						if ident == nil {
-							return false
-						}
-
-						constObj, ok := v.info.ObjectOf(ident).(*types.Const)
-
-						if !ok {
-							return false
-						}
-
-						basic, ok := constObj.Type().(*types.Basic)
-
-						return ok && basic.Info()&types.IsUntyped != 0
+						return argRendersAsUntypedConst(v.info, arg)
 					}
 
 					needsCast := false
@@ -4793,12 +5078,17 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 	// Get the object associated with the function being called
 	var obj types.Object
 	var isPointer bool
+	var parenPeeled bool
 
 	targetExpr := callExpr.Fun
 
 	for targetExpr != nil {
 		switch funExpr := targetExpr.(type) {
 		case *ast.ParenExpr:
+			// Recorded, not just peeled: the bidirectional-channel arm below needs to know which
+			// SPELLING it is looking at, because the parenthesised one already has a working
+			// route and claiming it here would rewrite it (measured — see that arm).
+			parenPeeled = true
 			targetExpr = funExpr.X
 			continue
 		case *ast.IndexExpr:
@@ -4959,6 +5249,30 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// only channel-of-array creation site in the std tree (the D census), so a gate that
 			// admitted directions alone would miss the row it exists for.
 			if chanDirCargoName(targetType) != "" || chanCargoExpr(targetType) != "" {
+				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
+					return true, v.getAliasQualifiedTypeName(targetType, false)
+				}
+			}
+
+			// ⚠⚠ AND THE BIDIRECTIONAL CHANNEL LITERAL, WHICH THE NOTE ABOVE EXEMPTED ON A
+			// PREMISE THAT HELD ONLY FOR THE PARENTHESISED SPELLING. `(chan T)(nil)` does render
+			// as a cast — through the ParenExpr route, not through here — so the exemption read
+			// true for 51 of the corpus's 52 channel-type conversions. The 52nd is written BARE:
+			// `chan struct{}(nil)` (hash/maphash's maphash_test.go:259) has no ParenExpr for that
+			// route to peel, falls through to the regular CALL path, and emits
+			// `channel<EmptyStruct>(default!)` — CS1955, a type invoked like a method.
+			//
+			// The RULE is the discriminator and the parentheses are not — a CallExpr whose callee
+			// is a ChanType is a conversion either way (G's sweep, 52 sites corpus-wide; COORD's
+			// ruling). ⚠ THE CLAIM IS NARROWED TO THE BARE SPELLING ANYWAY, AND THE REASON IS
+			// FOOTPRINT RATHER THAN CLASSIFICATION: MEASURED, claiming the parenthesised form too
+			// rewrites all 51 working sites from `(channel<EmptyStruct>)(default!)` to
+			// `((channel<EmptyStruct>)default!)` — the same meaning, different bytes, and `net`
+			// alone carries it on three GOOS flavours. The existing route emits those correctly
+			// and this one must not churn them to agree with it. Claimed exactly as the map arm
+			// one block up is; UntypedNil's underlying is itself, so the identical-underlying
+			// guard below can never reach this shape.
+			if _, targetIsChan := targetType.Underlying().(*types.Chan); targetIsChan && !parenPeeled {
 				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
 					return true, v.getAliasQualifiedTypeName(targetType, false)
 				}
@@ -5556,6 +5870,92 @@ func (v *Visitor) calleeHasConstraintOnlyTypeParam(funIdent *ast.Ident) bool {
 }
 
 // typeUsesTypeParam reports whether t structurally contains the SPECIFIC type parameter tp.
+// calleeTypeParamMixesUntypedAndTypedArgs reports whether the call hands ONE type parameter both an
+// argument that emits as a golib `Untyped*` wrapper and an argument that emits at a Go type. C# then
+// has two irreconcilable candidates for that parameter and infers nothing (CS0411). Go has no such
+// problem: an untyped constant simply adopts the inferred type.
+//
+// internal/sync is the corpus's instance, and the file carries its own control on ADJACENT lines:
+//
+//	expectNotSwapped(t, s, math.MaxInt, i+j+1)  // UntypedInt meets int -> CS0411
+//	expectNotSwapped(t, s, i+j,        i+j+1)  // both typed        -> infers, compiles
+//
+// Narrow by construction, and the narrowness is what holds the footprint down:
+//   - a type parameter supplied from ONE position only is left alone, because whatever that single
+//     position gives is the inference and there is nothing to conflict with — `expectNotDeleted(t,
+//     key, math.MaxInt)` compiles in this same file and must keep its bare form;
+//   - a call whose arguments are all typed, or all untyped, never fires.
+//
+// The remedy is the chain's EXISTING one — render the type arguments explicitly — which changes no
+// argument text at all and so cannot widen UntypedInt's implicit conversions. Measured before the
+// predicate was written: hand-adding `<@string, nint>` at the four sites builds the row's test
+// project at rc 0 with zero error classes.
+func (v *Visitor) calleeTypeParamMixesUntypedAndTypedArgs(callExpr *ast.CallExpr, funIdent *ast.Ident) bool {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || sig.TypeParams().Len() == 0 {
+		return false
+	}
+
+	params := sig.Params()
+
+	if params.Len() == 0 {
+		return false
+	}
+
+	for i := range sig.TypeParams().Len() {
+		tp := sig.TypeParams().At(i)
+		sawUntyped := false
+		sawTyped := false
+
+		for j, arg := range callExpr.Args {
+			paramIndex := j
+
+			// Every variadic argument binds the final parameter's ELEMENT type.
+			if sig.Variadic() && paramIndex >= params.Len()-1 {
+				paramIndex = params.Len() - 1
+			}
+
+			if paramIndex >= params.Len() {
+				break
+			}
+
+			paramType := params.At(paramIndex).Type()
+
+			if sig.Variadic() && paramIndex == params.Len()-1 {
+				if slice, isSlice := paramType.(*types.Slice); isSlice {
+					paramType = slice.Elem()
+				}
+			}
+
+			if !typeUsesTypeParam(paramType, tp) {
+				continue
+			}
+
+			// containsUntypedNamedConstRef is the wrapper test the `complex` pinning already uses:
+			// go/types reports an argument at its INFERRED type, so TypeOf cannot see untypedness
+			// here — what matters is whether the EMISSION carries an `Untyped*` wrapper.
+			if v.containsUntypedNamedConstRef(arg) {
+				sawUntyped = true
+			} else {
+				sawTyped = true
+			}
+		}
+
+		if sawUntyped && sawTyped {
+			return true
+		}
+	}
+
+	return false
+}
+
 func typeUsesTypeParam(t types.Type, tp *types.TypeParam) bool {
 	switch tt := t.(type) {
 	case *types.TypeParam:
@@ -6272,4 +6672,26 @@ func (v *Visitor) exprHasCallOrReceive(expr ast.Expr) bool {
 	})
 
 	return found
+}
+
+// isEmptyCompositeLit reports whether expr is a composite literal with NO elements — `struct{}{}`,
+// `T{}` — through any parentheses. Distinct from isPureReadExpr, which deliberately admits only
+// literals, identifiers and reads composed of them (a CompositeLit is not one of its cases, and
+// widening it there would change the contract the string-view analysis depends on). Both answer the
+// same question for the empty-struct conversion arm: can this operand be discarded without dropping
+// an evaluation.
+func isEmptyCompositeLit(expr ast.Expr) bool {
+	for {
+		paren, ok := expr.(*ast.ParenExpr)
+
+		if !ok {
+			break
+		}
+
+		expr = paren.X
+	}
+
+	lit, ok := expr.(*ast.CompositeLit)
+
+	return ok && len(lit.Elts) == 0
 }

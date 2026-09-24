@@ -11,67 +11,15 @@ using slicewriter = go.@internal.coverage.slicewriter_package;
 using stringtab = go.@internal.coverage.stringtab_package;
 using uleb128 = go.@internal.coverage.uleb128_package;
 using io = io_package;
+using maps = maps_package;
 using os = os_package;
 using slices = slices_package;
 using encoding;
 using go.@internal;
 using go.@internal.coverage;
+using iter = iter_package;
 
 partial class encodecounter_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() {
-    builtin.initPackage(typeof(go.@internal.coverage_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸslicewriter() {
-    builtin.initPackage(typeof(go.@internal.coverage.slicewriter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸstringtab() {
-    builtin.initPackage(typeof(go.@internal.coverage.stringtab_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // This package contains APIs and helpers for encoding initial portions
 // of the counter data files emitted at runtime when coverage instrumentation
@@ -197,11 +145,7 @@ internal static error writeSegmentPreamble(this ж<CoverageDataWriter> Ꮡcfw, m
         }
     }
     cfw.csh.StrTabLen = (uint32)len(ws.BytesWritten()) - hdrsz;
-    var akeys = new slice<@string>(0, len(args));
-    foreach (var (k, _) in args) {
-        akeys = append(akeys, k);
-    }
-    slices.Sort<slice<@string>, @string>(akeys);
+    var akeys = slices.Sorted(maps.Keys<map<@string, @string>, @string, @string>(args));
     error wrULEB128(nuint v) {
         Ꮡcfw.Value.tmp = Ꮡcfw.Value.tmp[..0];
         Ꮡcfw.Value.tmp = uleb128.AppendUleb128(Ꮡcfw.Value.tmp, v);

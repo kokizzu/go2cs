@@ -16,8 +16,8 @@ internal static class Go2CsTestHost
         });
         registry.Add("TestECDH", ecdh_test_package.TestECDH, "ecdh_test.go", 38);
         registry.Add("TestGenerateKey", ecdh_test_package.TestGenerateKey, "ecdh_test.go", 97);
-        registry.Add("TestLinker", ecdh_test_package.TestLinker, "ecdh_test.go", 442);
-        registry.Add("TestMismatchedCurves", ecdh_test_package.TestMismatchedCurves, "ecdh_test.go", 489);
+        registry.Add("TestLinker", ecdh_test_package.TestLinker, "ecdh_test.go", 443);
+        registry.Add("TestMismatchedCurves", ecdh_test_package.TestMismatchedCurves, "ecdh_test.go", 490);
         registry.Add("TestNewPrivateKey", ecdh_test_package.TestNewPrivateKey, "ecdh_test.go", 282);
         registry.Add("TestNewPublicKey", ecdh_test_package.TestNewPublicKey, "ecdh_test.go", 343);
         registry.Add("TestString", ecdh_test_package.TestString, "ecdh_test.go", 191);

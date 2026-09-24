@@ -7,11 +7,9 @@ using syscall = syscall_package;
 
 partial class unix_package {
 
-// KernelVersion returns major and minor kernel version numbers, parsed from
-// the syscall.Uname's Release field, or 0, 0 if the version can't be obtained
-// or parsed.
-//
-// Currently only implemented for Linux.
+// KernelVersion returns major and minor kernel version numbers
+// parsed from the syscall.Uname's Release field, or (0, 0) if
+// the version can't be obtained or parsed.
 public static (nint major, nint minor) KernelVersion() {
     nint major = default!;
     nint minor = default!;
@@ -25,7 +23,7 @@ public static (nint major, nint minor) KernelVersion() {
     array<nint> values = new(2);
     nint value = default!;
     nint vi = default!;
-    foreach (var (_, c) in uname.Release) {
+    foreach (var (_, c) in uname.Release.ΔRangeSnapshot()) {
         if ((rune)'0' <= c && c <= (rune)'9'){
             value = (value * 10) + (nint)(c - (rune)'0');
         } else {

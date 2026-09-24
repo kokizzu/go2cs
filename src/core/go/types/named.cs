@@ -95,6 +95,17 @@ partial class types_package {
 // in its "lineage".
 
 // A Named represents a named (defined) type.
+//
+// A declaration such as:
+//
+//	type S struct { ... }
+//
+// creates a defined type whose underlying type is a struct,
+// and binds this type to the object S, a [TypeName].
+// Use [Named.Underlying] to access the underlying type.
+// Use [Named.Obj] to obtain the object S.
+//
+// Before type aliases (Go 1.9), the spec called defined types "named types".
 [GoType] partial struct Named {
     internal ж<Checker> check; // non-nil during type-checking; nil otherwise
     internal ж<TypeName> obj; // corresponding declared object for declared types; see above for instantiated types
@@ -106,7 +117,7 @@ partial class types_package {
     internal ж<Δinstance> inst;
     internal sync.Mutex mu;     // guards all fields below
     internal uint32 state_;         // the current state of this type; must only be accessed atomically
-    internal ΔType underlying;         // possibly a *Named during setup; never a *Named once set up completely
+    internal ΔType underlying;           // possibly a *Named during setup; never a *Named once set up completely
     internal ж<TypeParamList> tparams; // type parameters, or nil
     // methods declared for this type (not the method set of this type)
     // Signatures are type-checked lazily.
@@ -439,8 +450,8 @@ internal static ж<Func> expandMethod(this ж<Named> Ꮡt, nint i) {
     } else {
         rtyp = new NamedжΔType(Ꮡt);
     }
-    sig.Value.recv = substVar((~origSig).recv, rtyp);
-    return substFunc(origm, new ΔSignatureжΔType(sig));
+    sig.Value.recv = cloneVar((~origSig).recv, rtyp);
+    return cloneFunc(origm, new ΔSignatureжΔType(sig));
 }
 
 // SetUnderlying sets the underlying type and marks t as complete.

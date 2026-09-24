@@ -7,19 +7,15 @@ using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
 using fs = go.io.fs_package;
+using maps = maps_package;
 using path = path_package;
 using slices = slices_package;
 using strings = strings_package;
 using time = time_package;
 using go.io;
+using iter = iter_package;
 
 partial class tar_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // Writer provides sequential writing of a tar archive.
 // [Writer.WriteHeader] begins a new file with the provided [Header],
@@ -194,15 +190,10 @@ internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, m
     // Write PAX records to the output.
     var isGlobal = hdr.Typeflag == TypeXGlobalHeader;
     if (len(paxHdrs) > 0 || isGlobal) {
-        // Sort keys for deterministic ordering.
-        slice<@string> keys = default!;
-        foreach (var (k, _) in paxHdrs) {
-            keys = append(keys, k);
-        }
-        slices.Sort<slice<@string>, @string>(keys);
         // Write each record to a buffer.
         ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-        foreach (var (_, k) in keys) {
+        // Sort keys for deterministic ordering.
+        foreach (var (_, k) in slices.Sorted(maps.Keys<map<@string, @string>, @string, @string>(paxHdrs))) {
             var (rec, err) = formatPAXRecord(k, paxHdrs[k]);
             if (err != default!) {
                 return err;
@@ -459,7 +450,7 @@ public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
             if (err != default!) {
                 return err;
             }
-            if (d.IsDir()) {
+            if (name == "."u8) {
                 return default!;
             }
             (var info, err) = d.Info();
@@ -467,7 +458,7 @@ public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
                 return err;
             }
             // TODO(#49580): Handle symlinks when fs.ReadLinkFS is available.
-            if (!info.Mode().IsRegular()) {
+            if (!d.IsDir() && !info.Mode().IsRegular()) {
                 return errors.New(tarCannotAddNonRegularˢ);
             }
             (var h, err) = FileInfoHeader(info, ""u8);
@@ -475,10 +466,16 @@ public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
                 return err;
             }
             h.Value.Name = name;
+            if (d.IsDir()) {
+                h.Value.Name += "/"u8;
+            }
             {
                 var errΔ1 = Ꮡtw.WriteHeader(h); if (errΔ1 != default!) {
                     return errΔ1;
                 }
+            }
+            if (d.IsDir()) {
+                return default!;
             }
             (var f, err) = fsys.Open(name);
             if (err != default!) {
@@ -501,7 +498,7 @@ internal static (@string prefix, @string suffix, bool ok) splitUSTARPath(@string
     if (length <= nameSize || !isASCII(name)){
         return ("", "", false);
     } else 
-    if (length > prefixSize + 1){
+    if (length > (nint)(prefixSize + 1)){
         length = prefixSize + 1;
     } else 
     if (name[length - 1] == (rune)'/') {

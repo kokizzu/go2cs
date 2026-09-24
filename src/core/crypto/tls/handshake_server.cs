@@ -9,6 +9,7 @@ using ecdsa = go.crypto.ecdsa_package;
 using ed25519 = go.crypto.ed25519_package;
 using rsa = go.crypto.rsa_package;
 using subtle = go.crypto.subtle_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using Δx509 = go.crypto.x509_package;
 using errors = errors_package;
 using fmt = fmt_package;
@@ -18,6 +19,7 @@ using io = io_package;
 using time = time_package;
 using go.@internal;
 using go.crypto;
+using go.crypto.tls.@internal;
 using go.sync;
 using math;
 
@@ -45,17 +47,19 @@ partial class tls_package {
 internal static error serverHandshake(this ж<Conn> Ꮡc, context.Context ctx) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var (clientHello, err) = Ꮡc.readClientHello(ctx);
+    var (clientHello, ech, err) = Ꮡc.readClientHello(ctx);
     if (err != default!) {
         return err;
     }
     if (c.vers == VersionTLS13) {
-        var hsΔ1 = new serverHandshakeStateTLS13(
+        ref var hsΔ1 = ref heap<serverHandshakeStateTLS13>(out var ᏑhsΔ1);
+        hsΔ1 = new serverHandshakeStateTLS13(
             c: Ꮡc,
             ctx: ctx,
-            clientHello: clientHello
+            clientHello: clientHello,
+            echContext: ech
         );
-        return hsΔ1.handshake();
+        return ᏑhsΔ1.handshake();
     }
     ref var hs = ref heap<serverHandshakeState>(out var Ꮡhs);
     hs = new serverHandshakeState(
@@ -161,20 +165,32 @@ internal static error handshake(this ж<serverHandshakeState> Ꮡhs) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string tlsEncryptedClientHelloˢ = "tls: Encrypted Client Hello cannot be used pre-TLS 1.3"u8;
+
 // readClientHello reads a ClientHello message and selects the protocol version.
-internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, context.Context ctx) {
+internal static (ж<clientHelloMsg>, ж<echServerContext>, error) readClientHello(this ж<Conn> Ꮡc, context.Context ctx) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     // clientHelloMsg is included in the transcript, but we haven't initialized
     // it yet. The respective handshake functions will record it themselves.
     var (msg, err) = Ꮡc.readHandshake(default!);
     if (err != default!) {
-        return (default!, err);
+        return (default!, default!, err);
     }
     var (clientHello, ok) = msg._<ж<clientHelloMsg>>(ᐧ);
     if (!ok) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return (default!, unexpectedMessageError(clientHello.OrTypedNil(), msg));
+        return (default!, default!, unexpectedMessageError(clientHello.OrTypedNil(), msg));
+    }
+    // ECH processing has to be done before we do any other negotiation based on
+    // the contents of the client hello, since we may swap it out completely.
+    ж<echServerContext> ech = default!;
+    if (len((~clientHello).encryptedClientHello) != 0) {
+        (clientHello, ech, err) = Ꮡc.processECHClientHello(clientHello);
+        if (err != default!) {
+            return (default!, default!, err);
+        }
     }
     ж<Config> configForClient = default!;
     var originalConfig = c.config;
@@ -183,7 +199,7 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
         {
             (configForClient, err) = (~c.config).GetConfigForClient(chi); if (err != default!){
                 Ꮡc.sendAlert(alertInternalError);
-                return (default!, err);
+                return (default!, default!, err);
             } else 
             if (configForClient != nil) {
                 c.config = configForClient;
@@ -198,16 +214,27 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
     (c.vers, ok) = c.config.mutualVersion(roleServer, clientVersions);
     if (!ok) {
         Ꮡc.sendAlert(alertProtocolVersion);
-        return (default!, fmt.Errorf("tls: client offered only unsupported versions: %x"u8, clientVersions));
+        return (default!, default!, fmt.Errorf("tls: client offered only unsupported versions: %x"u8, clientVersions));
     }
     c.haveVers = true;
     c.@in.version = c.vers;
     c.@out.version = c.vers;
+    // This check reflects some odd specification implied behavior. Client-facing servers
+    // are supposed to reject hellos with outer ECH and inner ECH that offers 1.2, but
+    // backend servers are allowed to accept hellos with inner ECH that offer 1.2, since
+    // they cannot expect client-facing servers to behave properly. Since we act as both
+    // a client-facing and backend server, we only enforce 1.3 being negotiated if we
+    // saw a hello with outer ECH first. The spec probably should've made this an error,
+    // but it didn't, and this matches the boringssl behavior.
+    if (c.vers != VersionTLS13 && (ech != nil && !(~ech).inner)) {
+        Ꮡc.sendAlert(alertIllegalParameter);
+        return (default!, default!, errors.New(tlsEncryptedClientHelloˢ));
+    }
     if ((~c.config).MinVersion == 0 && c.vers < VersionTLS12) {
         tls10server.Value(); // ensure godebug is initialized
         tls10server.IncNonDefault();
     }
-    return (clientHello, default!);
+    return (clientHello, ech, default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -352,7 +379,7 @@ internal static (@string, error) negotiateALPN(slice<@string> serverProtos, slic
     if (http11fallback) {
         return ("", default!);
     }
-    return ("", fmt.Errorf("tls: client requested unsupported application protocols (%s)"u8, clientProtos));
+    return ("", fmt.Errorf("tls: client requested unsupported application protocols (%q)"u8, clientProtos));
 }
 
 // supportsECDHE returns whether ECDHE key exchanges can be used with this
@@ -410,11 +437,11 @@ internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
         return errors.New(tlsNoCipherSuiteˢ);
     }
     c.Value.cipherSuite = hs.suite.Value.id;
-    if ((~(~c).config).CipherSuites == default! && !needFIPS() && rsaKexCiphers[(~hs.suite).id]) {
+    if ((~(~c).config).CipherSuites == default! && !fips140tls.Required() && rsaKexCiphers[(~hs.suite).id]) {
         tlsrsakex.Value(); // ensure godebug is initialized
         tlsrsakex.IncNonDefault();
     }
-    if ((~(~c).config).CipherSuites == default! && !needFIPS() && tdesCiphers[(~hs.suite).id]) {
+    if ((~(~c).config).CipherSuites == default! && !fips140tls.Required() && tdesCiphers[(~hs.suite).id]) {
         tls3des.Value(); // ensure godebug is initialized
         tls3des.IncNonDefault();
     }
@@ -527,7 +554,12 @@ internal static error checkForResumption(this ж<serverHandshakeState> Ꮡhs) {
     if (sessionHasClientCerts && (~c).config.time().After((~(~sessionState).peerCertificates[0]).NotAfter)) {
         return default!;
     }
-    if (sessionHasClientCerts && (~(~c).config).ClientAuth >= VerifyClientCertIfGiven && len((~sessionState).verifiedChains) == 0) {
+    var opts = new Δx509.VerifyOptions(
+        CurrentTime: (~c).config.time(),
+        Roots: (~(~c).config).ClientCAs,
+        KeyUsages: new Δx509.ExtKeyUsage[]{Δx509.ExtKeyUsageClientAuth}.slice()
+    );
+    if (sessionHasClientCerts && (~(~c).config).ClientAuth >= VerifyClientCertIfGiven && !anyValidVerifiedChain((~sessionState).verifiedChains, opts)) {
         return default!;
     }
     // RFC 7627, Section 5.3
@@ -640,7 +672,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     if (skx != nil) {
         if (len((~skx).key) >= 3 && (~skx).key[0] == 3) {
             /* named curve */
-            c.Value.curveID = ((CurveID)byteorder.BeUint16((~skx).key[1..]));
+            c.Value.curveID = ((CurveID)byteorder.BEUint16((~skx).key[1..]));
         }
         {
             var (_, errΔ5) = hs.c.writeHandshakeRecord(new serverKeyExchangeMsgжhandshakeMessage(skx), new ΔfinishedHashжtranscriptHash(Ꮡhs.of(serverHandshakeState.ᏑfinishedHash))); if (errΔ5 != default!) {
@@ -729,7 +761,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     }
     (var preMasterSecret, err) = keyAgreement.processClientKeyExchange((~c).config, hs.cert, ckx, (~c).vers);
     if (err != default!) {
-        c.sendAlert(alertHandshakeFailure);
+        c.sendAlert(alertIllegalParameter);
         return err;
     }
     if ((~hs.hello).extendedMasterSecret){
@@ -979,7 +1011,11 @@ internal static error processCertsFromClient(this ж<Conn> Ꮡc, Certificate cer
             }
             return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: errΔ1)));
         }
-        c.verifiedChains = chains;
+        (c.verifiedChains, errΔ1) = fipsAllowedChains(chains);
+        if (errΔ1 != default!) {
+            Ꮡc.sendAlert(alertBadCertificate);
+            return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: errΔ1)));
+        }
     }
     c.peerCertificates = certs;
     c.ocspResponse = certificate.OCSPStaple;
@@ -1021,6 +1057,7 @@ internal static ж<ClientHelloInfo> clientHelloInfo(context.Context ctx, ref Con
         SignatureSchemes: clientHello.supportedSignatureAlgorithms,
         SupportedProtos: clientHello.alpnProtocols,
         SupportedVersions: ΔsupportedVersions,
+        Extensions: clientHello.extensions,
         Conn: c.conn,
         config: c.config,
         ctx: ctx

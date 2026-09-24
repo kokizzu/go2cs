@@ -92,10 +92,10 @@
 namespace go;
 
 using goarch = @internal.goarch_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 

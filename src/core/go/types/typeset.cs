@@ -6,10 +6,10 @@
 namespace go.go;
 
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using sort = sort_package;
+using static @internal.types.errors_package;
+using slices = slices_package;
 using strings = strings_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
@@ -28,16 +28,16 @@ partial class types_package {
 // only comparable types are meant; in all other cases comparable is false.
 [GoType] partial struct _TypeSet {
     internal slice<ж<Func>> methods; // all methods of the interface; sorted by unique ID
-    internal Δtermlist terms; // type terms of the type set
+    internal termlist terms; // type terms of the type set
     internal bool comparable;     // invariant: !comparable || terms.isAll()
 }
 
-// IsEmpty reports whether type set s is the empty set.
+// IsEmpty reports whether s is the empty set.
 [GoRecv] internal static bool IsEmpty(this ref _TypeSet s) {
     return s.terms.isEmpty();
 }
 
-// IsAll reports whether type set s is the set of all types (corresponding to the empty interface).
+// IsAll reports whether s is the set of all types (corresponding to the empty interface).
 [GoRecv] internal static bool IsAll(this ref _TypeSet s) {
     return s.IsMethodSet() && len(s.methods) == 0;
 }
@@ -53,7 +53,7 @@ partial class types_package {
         return s.comparable;
     }
     var seenʗ1 = seen;
-    return s.@is((ж<term> t) => t != nil && comparable((~t).typ, false, seenʗ1, default!));
+    return s.@is((ж<Δterm> t) => t != nil && comparableType((~t).typ, false, seenʗ1, default!));
 }
 
 // NumMethods returns the number of methods available.
@@ -61,7 +61,7 @@ partial class types_package {
     return len(s.methods);
 }
 
-// Method returns the i'th method of type set s for 0 <= i < s.NumMethods().
+// Method returns the i'th method of s for 0 <= i < s.NumMethods().
 // The methods are ordered by their unique ID.
 [GoRecv] internal static ж<Func> Method(this ref _TypeSet s, nint i) {
     return s.methods[i];
@@ -113,7 +113,7 @@ internal static readonly @string comparableˢ = "comparable"u8;
 // ----------------------------------------------------------------------------
 // Implementation
 
-// hasTerms reports whether the type set has specific type terms.
+// hasTerms reports whether s has specific type terms.
 [GoRecv] internal static bool hasTerms(this ref _TypeSet s) {
     return !s.terms.isEmpty() && !s.terms.isAll();
 }
@@ -125,30 +125,13 @@ internal static readonly @string comparableˢ = "comparable"u8;
     return s1.terms.subsetOf(s2.terms);
 }
 
-// TODO(gri) TypeSet.is and TypeSet.underIs should probably also go into termlist.go
-
-// is calls f with the specific type terms of s and reports whether
-// all calls to f returned true. If there are no specific terms, is
-// returns the result of f(nil).
-[GoRecv] internal static bool @is(this ref _TypeSet s, Func<ж<term>, bool> f) {
+// typeset is an iterator over the (type/underlying type) pairs in s.
+// If s has no specific terms, typeset calls yield with (nil, nil).
+// In any case, typeset is guaranteed to call yield at least once.
+[GoRecv] internal static void typeset(this ref _TypeSet s, Func<ΔType, ΔType, bool> yield) {
     if (!s.hasTerms()) {
-        return f(nil);
-    }
-    foreach (var (_, t) in s.terms) {
-        assert((~t).typ != default!);
-        if (!f(t)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// underIs calls f with the underlying types of the specific type terms
-// of s and reports whether all calls to f returned true. If there are
-// no specific terms, underIs returns the result of f(nil).
-[GoRecv] internal static bool underIs(this ref _TypeSet s, Func<ΔType, bool> f) {
-    if (!s.hasTerms()) {
-        return f(default!);
+        yield(default!, default!);
+        return;
     }
     foreach (var (_, t) in s.terms) {
         assert((~t).typ != default!);
@@ -160,7 +143,22 @@ internal static readonly @string comparableˢ = "comparable"u8;
         if (debug) {
             assert(Identical(u, under(u)));
         }
-        if (!f(u)) {
+        if (!yield((~t).typ, u)) {
+            break;
+        }
+    }
+}
+
+// is calls f with the specific type terms of s and reports whether
+// all calls to f returned true. If there are no specific terms, is
+// returns the result of f(nil).
+[GoRecv] internal static bool @is(this ref _TypeSet s, Func<ж<Δterm>, bool> f) {
+    if (!s.hasTerms()) {
+        return f(nil);
+    }
+    foreach (var (_, t) in s.terms) {
+        assert((~t).typ != default!);
+        if (!f(t)) {
             return false;
         }
     }
@@ -193,7 +191,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         // let any follow-on errors play out.
         //
         // TODO(gri) Consider recording when this happens and reporting
-        // it as an error (but only if there were no other errors so to
+        // it as an error (but only if there were no other errors so
         // to not have unnecessary follow-on errors).
         if (!ityp.complete) {
             return ᏑtopTypeSet;
@@ -271,7 +269,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                         var mposʗ2 = mposʗ1;
                         var otherʗ1 = other;
                         Ꮡcheck.Value.later(() => {
-                            if (posΔ1.IsValid() && !Ꮡcheck.allowVersion(((atPos)posΔ1), go1_14) || !Identical((~m).typ, otherʗ1.Type())) {
+                            if (posΔ1.IsValid() && !Ꮡcheck.Value.allowVersion(go1_14) || !Identical((~m).typ, otherʗ1.Type())) {
                                 var err = Ꮡcheck.newError(DuplicateDecl);
                                 err.addf(((atPos)posΔ1), "duplicate method %s"u8, (~m).name);
                                 err.addf(((atPos)mposʗ2[otherʗ1._<ж<Func>>()]), "other declaration of method %s"u8, (~m).name);
@@ -298,7 +296,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                 posΔ2 = (ityp.embedPos.ValueSlot)[i];
             }
             bool comparable = default!;
-            Δtermlist terms = default!;
+            termlist terms = default!;
             var switchᴛ16 = under(typ);
             switch (switchᴛ16.type()) {
             case ж<Interface> u: {
@@ -337,7 +335,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
                 if (posΔ2.IsValid() && Ꮡcheck != nil && !Ꮡcheck.verifyVersionf(((atPos)posΔ2), go1_18, "embedding non-interface type %s"u8, typ)) {
                     continue;
                 }
-                terms = new Δtermlist(new ж<term>[]{Ꮡ(new term(false, typ))}.slice());
+                terms = new termlist(new ж<Δterm>[]{Ꮡ(new Δterm(false, typ))}.slice());
                 break;
             }}
             // The type set of an interface is the intersection of the type sets of all its elements.
@@ -363,7 +361,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
 
 // intersectTermLists computes the intersection of two term lists and respective comparable bits.
 // xcomp, ycomp are valid only if xterms.isAll() and yterms.isAll() respectively.
-internal static (Δtermlist, bool) intersectTermLists(Δtermlist xterms, bool xcomp, Δtermlist yterms, bool ycomp) {
+internal static (termlist, bool) intersectTermLists(termlist xterms, bool xcomp, termlist yterms, bool ycomp) {
     var terms = xterms.intersect(yterms);
     // If one of xterms or yterms is marked as comparable,
     // the result must only include comparable types.
@@ -373,7 +371,7 @@ internal static (Δtermlist, bool) intersectTermLists(Δtermlist xterms, bool xc
         nint i = 0;
         foreach (var (_, t) in terms) {
             assert((~t).typ != default!);
-            if (comparable((~t).typ, false, /* strictly comparable */
+            if (comparableType((~t).typ, false, /* strictly comparable */
  default!, default!)) {
                 terms[i] = t;
                 i++;
@@ -388,31 +386,21 @@ internal static (Δtermlist, bool) intersectTermLists(Δtermlist xterms, bool xc
     return (terms, comp);
 }
 
+internal static nint compareFunc(ж<Func> Ꮡa, ж<Func> Ꮡb) {
+    return Ꮡa.of(Func.Ꮡobject).cmp(Ꮡb.of(Func.Ꮡobject));
+}
+
 internal static void sortMethods(slice<ж<Func>> list) {
-    sort.Sort(((byUniqueMethodName)list));
+    slices.SortFunc<slice<ж<Func>>, ж<Func>>(list, compareFunc);
 }
 
 internal static void assertSortedMethods(slice<ж<Func>> list) {
     if (!debug) {
         throw panic("assertSortedMethods called outside debug mode");
     }
-    if (!sort.IsSorted(((byUniqueMethodName)list))) {
+    if (!slices.IsSortedFunc<slice<ж<Func>>, ж<Func>>(list, compareFunc)) {
         throw panic("methods not sorted");
     }
-}
-
-[GoType("[]ж<Func>")] partial struct byUniqueMethodName;
-
-internal static nint Len(this byUniqueMethodName a) {
-    return len(a);
-}
-
-internal static bool Less(this byUniqueMethodName a, nint i, nint j) {
-    return a[i].of(Func.Ꮡobject).less(a[j].of(Func.Ꮡobject));
-}
-
-internal static void Swap(this byUniqueMethodName a, nint i, nint j) {
-    (a[i], a[j]) = (a[j], a[i]);
 }
 
 // invalidTypeSet is a singleton type set to signal an invalid type set
@@ -433,11 +421,11 @@ internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Un
     }
     // avoid infinite recursion (see also computeInterfaceTypeSet)
     unionSets[Ꮡutyp] = @new<_TypeSet>();
-    Δtermlist allTerms = default!;
+    termlist allTerms = default!;
     foreach (var (_, vᴛ1) in utyp.terms) {
         var t = vᴛ1;
 
-        Δtermlist terms = default!;
+        termlist terms = default!;
         var u = under((~t).typ);
         {
             var (ui, _) = u._<ж<Interface>>(ᐧ); if (ui != nil){
@@ -453,7 +441,7 @@ internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Un
                     // The corresponding type set is empty.
                     t = default!; // ∅ term
                 }
-                terms = new Δtermlist(new ж<term>[]{t.Reinterpret<ΔTerm, term>()}.slice());
+                terms = new termlist(new ж<Δterm>[]{t.Reinterpret<ΔTerm, Δterm>()}.slice());
             }
         }
         // The type set of a union expression is the union

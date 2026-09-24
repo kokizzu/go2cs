@@ -30,14 +30,43 @@ global using timeꓸMonth = go.time_package.ΔMonth;
 global using timeꓸWeekday = go.time_package.ΔWeekday;
 global using xmlꓸToken = object;
 global using xmlꓸΔToken = object;
-using rand = go.math.rand_package;
 using testing = go.testing_package;
+using Δrand = go.math.rand_package;
 // </ImportedTypeAliases>
 
 using go;
 using static global::go.math.big_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6120696e7436343b206220696e7436343b206f757420737472696e677d", "setFrac64Testsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6120696e7436343b206220696e7436343b2070726f6420737472696e677d", "mulRangesZᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b612075696e7436343b20622075696e7436343b2070726f6420737472696e677d", "mulRangesNᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6420737472696e673b207820737472696e673b207920737472696e673b206120737472696e673b206220737472696e677d", "gcdTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b656c656d656e7420737472696e673b206d6f64756c757320737472696e677d", "modInverseTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420696e747d", "bitLenTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e673b206261736520696e743b2076616c20696e7436343b206f6b20626f6f6c7d", "stringTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "notTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f75742075696e747d", "tzbTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b207072656320696e743b206f757420737472696e677d", "floatStringTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b20666f726d617420737472696e673b206f757470757420737472696e673b2072656d61696e696e6720696e747d", "scanTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b20666f726d617420737472696e673b206f757470757420737472696e677d", "formatTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7261743120737472696e673b207261743220737472696e673b206f757420696e747d", "ratCmpTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7320737472696e673b206261736520696e743b206672616320626f6f6c3b2078206d6174682f6269672e6e61743b206220696e743b20636f756e7420696e743b20657272206572726f723b206e6578742072756e657d", "natScanTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7320737472696e673b2062617365326f6b20626f6f6c3b207365704f6b20626f6f6c3b207820696e7436343b206220696e743b20657272206572726f723b206e6578742072756e657d", "exponentTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820696e7436343b207920696e7436343b207120696e7436343b207220696e7436343b206420696e7436343b206d20696e7436347d", "divisionSignsTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b78206d6174682f6269672e576f72643b2079206d6174682f6269672e576f72643b2063206d6174682f6269672e576f72643b2071206d6174682f6269672e576f72643b2072206d6174682f6269672e576f72647d", "mulAddWWWTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b78206d6174682f6269672e576f72643b2079206d6174682f6269672e576f72643b2071206d6174682f6269672e576f72643b2072206d6174682f6269672e576f72647d", "mulWWTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b78206d6174682f6269672e6e61743b206220696e743b207320737472696e677d", "strTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b78206d6174682f6269672e6e61743b2079206d6174682f6269672e6e61743b207220696e747d", "cmpTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b206920696e743b20622075696e747d", "bitsetTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b20692075696e743b2077616e742075696e747d", "bitTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b20616e6420737472696e673b206f7220737472696e673b20786f7220737472696e673b20616e644e6f7420737472696e677d", "bitwiseTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b206d20737472696e673b206b302075696e7436343b206f7574333220737472696e673b206f7574363420737472696e677d", "montgomeryTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b206d20737472696e673b206f757420737472696e677d", "expTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b206e2075696e743b207a20737472696e677d", "subMod2NTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b207120737472696e673b207220737472696e677d", "quoTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820737472696e673b207920737472696e673b2073756d20737472696e673b2070726f6420737472696e677d", "ratBinTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7831206d6174682f6269672e576f72643b207830206d6174682f6269672e576f72643b2079206d6174682f6269672e576f72643b2071206d6174682f6269672e576f72643b2072206d6174682f6269672e576f72647d", "divWWTestsᴛ1")]
 [assembly: GoTypeAlias("Bits", "ΔBits")]
 [assembly: GoTypeAlias("Int", "ΔInt")]
 [assembly: GoTypeAlias("Rat", "ΔRat")]
@@ -67,8 +96,8 @@ using static global::go.math.big_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/big/alias_test.go", "alias_test.cs", "ADYggu6igoKCpqKCgpTuooKClIKU7oKC7qKCgpTuou6iAAIYAAwCloCCuICCgrgAAhwADwKWgKakuIKAgoK2goCCgtyCgoCCpLiAgoK2goCCgrimggAbIrq6AAQUgqKCuIKigrgAEEwABBAABxySkpSkpKSkgKY=", "183-185:1;186-188:2;189-191:3;192-194:4;195-197:5;198-202:6;199-201:6.1;203-207:7;204-206:7.1;208-212:8;209-211:8.1;213-217:9;214-216:9.1;218-224:10;220-223:10.1;225-231:11;227-230:11.1;232-236:12;233-235:12.1;237-239:13;240-242:14;243-245:15;246-248:16;249-251:17;252-254:18;255-257:19;258-260:20;261-266:21;262-265:21.1;267-269:22;270-274:23;271-273:23.1;275-277:24;278-282:25;279-281:25.1;283-285:26;286-288:27;289-291:28;293-310:29")]
-[assembly: go.GoPositionMap("math/big/example_rat_test.go", "example_rat_test.cs", "ABIoAAgCgoKUloK6hKyygro=")]
+[assembly: go.GoPositionMap("math/big/alias_test.go", "alias_test.cs", "ABIggu6igoKCpqKCgpTuooKClIKU7oKC7qKCgpTuou6iAAIYAAwCloCCuICCgrgAAhwADwKWgKakuIKAgoK2goCCgtyCgoCCpLiAgoK2goCCgrimggAbIrq6AAQUgqKCuIKigrgAEEwABBAABxySkpSkpKSkgKY=", "183-185:1;186-188:2;189-191:3;192-194:4;195-197:5;198-202:6;199-201:6.1;203-207:7;204-206:7.1;208-212:8;209-211:8.1;213-217:9;214-216:9.1;218-224:10;220-223:10.1;225-231:11;227-230:11.1;232-236:12;233-235:12.1;237-239:13;240-242:14;243-245:15;246-248:16;249-251:17;252-254:18;255-257:19;258-260:20;261-266:21;262-265:21.1;267-269:22;270-274:23;271-273:23.1;275-277:24;278-282:25;279-281:25.1;283-285:26;286-288:27;289-291:28;293-310:29")]
+[assembly: go.GoPositionMap("math/big/example_rat_test.go", "example_rat_test.cs", "AAwoAAgCgoKUloK6hKyygro=")]
 // </GoSourcePositionMaps>
 
 namespace go.math;
@@ -90,4 +119,46 @@ public static partial class big_test_package
     internal partial struct smallUint {}
     internal partial struct zeroOrOne {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() => builtin.initPackage(typeof(encoding.gob_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸxml() => builtin.initPackage(typeof(encoding.xml_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(go.math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(go.math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() => builtin.initPackage(typeof(go.testing.quick_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.math.big_package));
+    }
 }

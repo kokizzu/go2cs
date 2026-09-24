@@ -555,9 +555,9 @@ public static void TestBadRestartMarker(ж<testing.T> Ꮡt) {
         var want = tc[..5] == "PASS:";
         @string infix = tc[5..];
         var data = slice<byte>(default!);
-        data = append(data, prefix.ꓸꓸꓸ);
+        data = appendꓸꓸꓸ(data, prefix);
         data = append(data, infix.ꓸꓸꓸ);
-        data = append(data, suffix.ꓸꓸꓸ);
+        data = appendꓸꓸꓸ(data, suffix);
         var (_, errΔ1) = Decode(new jpeg_internal_test_package.bytes_ReaderжReader(bytes.NewReader(data)));
         var got = errΔ1 == default!;
         if (got != want) {

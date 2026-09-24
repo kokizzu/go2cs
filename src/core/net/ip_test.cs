@@ -13,18 +13,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(math.rand_package));
-}
-
 //6 zeroes in one group
 //5 zeroes in one group edge case
 // Issue 6628
@@ -178,6 +166,14 @@ public static void TestMarshalEmptyIP(ж<testing.T> Ꮡt) {
     if (!reflect.DeepEqual(got, slice<byte>(""u8))) {
         Ꮡt.Errorf(@"got %#v, want []byte("""")"u8, got);
     }
+    var buf = new slice<byte>(4);
+    (got, err) = ip.AppendText(buf);
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    if (!reflect.DeepEqual(got, slice<byte>("\x00\x00\x00\x00"u8))) {
+        Ꮡt.Errorf(@"got %#v, want []byte(""\x00\x00\x00\x00"")"u8, got);
+    }
 }
 
 // IPv4 address
@@ -283,14 +279,63 @@ public static void TestIPString(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("IP.MarshalText(%v) = %v, %v, want %v, %v"u8, (~tt).@in, @out, err, (~tt).byt, (~tt).error);
             }
         }
+        var buf = new slice<byte>(4, 32);
+        {
+            var (@out, err) = (~tt).@in.AppendText(buf); if (!bytes.Equal(@out[4..], (~tt).byt) || !reflect.DeepEqual(err, (~tt).error)) {
+                Ꮡt.Errorf("IP.AppendText(%v) = %v, %v, want %v, %v"u8, (~tt).@in, @out[4..], err, (~tt).byt, (~tt).error);
+            }
+        }
     }
 }
 
-internal static @string sink;
+public static void TestIPAppendTextNoAllocs(ж<testing.T> Ꮡt) {
+    // except the invalid IP
+    foreach (var (_, tt) in ipStringTests[..(int)(len(ipStringTests) - 1)]) {
+        var ttʗ1 = tt;
+        nint allocs = (nint)testing.AllocsPerRun(1000, () => {
+            var buf = new slice<byte>(0, 64);
+            (_, _) = (~ttʗ1).@in.AppendText(buf);
+        });
+        if (allocs != 0) {
+            Ꮡt.Errorf("IP(%q) AppendText allocs: %d times, want 0"u8, (~tt).@in, allocs);
+        }
+    }
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string iPv4ˢ = "IPv4"u8;
 internal static readonly @string iPv6ˢ = "IPv6"u8;
+internal static readonly @string iPv6Longˢ = "IPv6_long"u8;
+
+public static void BenchmarkIPMarshalText(ж<testing.B> Ꮡb) {
+    Ꮡb.Run(iPv4ˢ, (ж<testing.B> bΔ1) => {
+        bΔ1.ReportAllocs();
+        bΔ1.ResetTimer();
+        var ip = new IP(new byte[]{192, 0, 2, 1}.slice());
+        foreach (var _ᴛ1 in range((~bΔ1).N)) {
+            (_, _) = ip.MarshalText();
+        }
+    });
+    Ꮡb.Run(iPv6ˢ, (ж<testing.B> bΔ2) => {
+        bΔ2.ReportAllocs();
+        bΔ2.ResetTimer();
+        var ip = new IP(new byte[]{0x20, 0x1, 0xd, 0xb8, 0, 0, 0, 0, 0, 0xa, 0, 0xb, 0, 0xc, 0, 0xd}.slice());
+        foreach (var _ᴛ2 in range((~bΔ2).N)) {
+            (_, _) = ip.MarshalText();
+        }
+    });
+    Ꮡb.Run(iPv6Longˢ, (ж<testing.B> bΔ3) => {
+        bΔ3.ReportAllocs();
+        bΔ3.ResetTimer();
+        // fd7a:115c:a1e0:ab12:4843:cd96:626b:430b
+        var ip = new IP(new byte[]{253, 122, 17, 92, 161, 224, 171, 18, 72, 67, 205, 150, 98, 107, 67, 11}.slice());
+        foreach (var _ᴛ3 in range((~bΔ3).N)) {
+            (_, _) = ip.MarshalText();
+        }
+    });
+}
+
+internal static @string sink;
 
 public static void BenchmarkIPString(ж<testing.B> Ꮡb) {
     ᏑtestHookUninstaller.Do(uninstallTestHooks);
@@ -740,70 +785,70 @@ public static void TestIPAddrFamily(ж<testing.T> Ꮡt) {
 }
 internal static slice<ipAddrScopeTestsᴛ1> ipAddrScopeTests;
 internal static void initᴛipAddrScopeTests() { ipAddrScopeTests = new ipAddrScopeTestsᴛ1[]{
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified), IPv4zero, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified), IPv4(127, 0, 0, 1), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified), IPv6unspecified, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified), IPv6interfacelocalallnodes, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), IPv4(127, 0, 0, 1), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), IPv4(127, 255, 255, 254), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), IPv4(128, 1, 2, 3), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), IPv6loopback, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), IPv6linklocalallrouters, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), IPv4(224, 0, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), IPv4(239, 0, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), IPv4(240, 0, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), IPv6linklocalallnodes, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast), IPv4(224, 0, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast), IPv4(0xff, 0x01, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast), IPv6interfacelocalallnodes, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), IPv4(224, 0, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), IPv4(239, 0, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), IPv4(0xff, 0x02, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), IPv6linklocalallrouters, true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), IPv4(169, 254, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), IPv4(169, 255, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), IPv4(0xfe, 0x80, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), new IP(new byte[]{0xfe, 0xc0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), IPv4(240, 0, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), IPv4(232, 0, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), IPv4(169, 254, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), IPv4bcast, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), new IP(new byte[]{0x20, 0x1, 0xd, 0xb8, 0, 0, 0, 0, 0, 0, 0x1, 0x23, 0, 0x12, 0, 0x1}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), default!, false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(1, 1, 1, 1), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(9, 255, 255, 255), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(10, 0, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(10, 255, 255, 255), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(11, 0, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 15, 255, 255), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 16, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 16, 255, 255), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 23, 18, 255), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 31, 255, 255), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 31, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(172, 32, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(192, 167, 255, 255), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(192, 168, 0, 0), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(192, 168, 255, 255), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), IPv4(192, 169, 0, 0), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), new IP(new byte[]{0xfb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice()), false),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), new IP(new byte[]{0xfc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), new IP(new byte[]{0xfc, 0xff, 0x12, 0, 0, 0, 0, 0x44, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), new IP(new byte[]{0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice()), true),
-    new((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate), new IP(new byte[]{0xfe, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false)
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified)), IPv4zero, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified)), IPv4(127, 0, 0, 1), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified)), IPv6unspecified, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified)), IPv6interfacelocalallnodes, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsUnspecified)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), IPv4(127, 0, 0, 1), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), IPv4(127, 255, 255, 254), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), IPv4(128, 1, 2, 3), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), IPv6loopback, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), IPv6linklocalallrouters, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLoopback)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), IPv4(224, 0, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), IPv4(239, 0, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), IPv4(240, 0, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), IPv6linklocalallnodes, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsMulticast)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast)), IPv4(224, 0, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast)), IPv4(0xff, 0x01, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast)), IPv6interfacelocalallnodes, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsInterfaceLocalMulticast)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), IPv4(224, 0, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), IPv4(239, 0, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), IPv4(0xff, 0x02, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), IPv6linklocalallrouters, true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalMulticast)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), IPv4(169, 254, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), IPv4(169, 255, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), IPv4(0xfe, 0x80, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), new IP(new byte[]{0xfe, 0xc0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsLinkLocalUnicast)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), IPv4(240, 0, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), IPv4(232, 0, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), IPv4(169, 254, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), IPv4bcast, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), new IP(new byte[]{0x20, 0x1, 0xd, 0xb8, 0, 0, 0, 0, 0, 0, 0x1, 0x23, 0, 0x12, 0, 0x1}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), new IP(new byte[]{0xfe, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), new IP(new byte[]{0xff, 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsGlobalUnicast)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), default!, false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(1, 1, 1, 1), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(9, 255, 255, 255), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(10, 0, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(10, 255, 255, 255), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(11, 0, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 15, 255, 255), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 16, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 16, 255, 255), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 23, 18, 255), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 31, 255, 255), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 31, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(172, 32, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(192, 167, 255, 255), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(192, 168, 0, 0), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(192, 168, 255, 255), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), IPv4(192, 169, 0, 0), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), new IP(new byte[]{0xfb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice()), false),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), new IP(new byte[]{0xfc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), new IP(new byte[]{0xfc, 0xff, 0x12, 0, 0, 0, 0, 0x44, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), new IP(new byte[]{0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}.slice()), true),
+    new(((Func<global::go.net_package.IP, bool>)(global::go.net_package.IsPrivate)), new IP(new byte[]{0xfe, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}.slice()), false)
 }.slice(); }
 
 internal static @string name(any f) {
@@ -814,7 +859,7 @@ public static void TestIPAddrScope(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in ipAddrScopeTests) {
         {
             var ok = tt.scope(tt.@in); if (ok != tt.ok) {
-                Ꮡt.Errorf("%s(%q) = %v, want %v"u8, name(tt.scope), tt.@in, ok, tt.ok);
+                Ꮡt.Errorf("%s(%q) = %v, want %v"u8, name((tt.scope).OrTypedNilFunc()), tt.@in, ok, tt.ok);
             }
         }
         var ip = tt.@in.To4();
@@ -823,7 +868,7 @@ public static void TestIPAddrScope(ж<testing.T> Ꮡt) {
         }
         {
             var ok = tt.scope(ip); if (ok != tt.ok) {
-                Ꮡt.Errorf("%s(%q) = %v, want %v"u8, name(tt.scope), ip, ok, tt.ok);
+                Ꮡt.Errorf("%s(%q) = %v, want %v"u8, name((tt.scope).OrTypedNilFunc()), ip, ok, tt.ok);
             }
         }
     }

@@ -2,7 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using reflect = reflect_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 
 partial class main_package {
 
@@ -26,7 +26,7 @@ private static readonly @string emptyNameˢ = "<empty name>"u8;
 
 internal static @string nameOf(any fn) {
     var p = reflect.ValueOf(fn).Pointer();
-    var f = Δruntime.FuncForPC(p);
+    var f = runtime.FuncForPC(p);
     if (f == nil) {
         return nilFuncˢ;
     }

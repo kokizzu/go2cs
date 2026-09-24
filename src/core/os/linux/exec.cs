@@ -5,7 +5,7 @@ namespace go;
 
 using errors = errors_package;
 using testlog = @internal.testlog_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using syscall = syscall_package;
@@ -15,24 +15,6 @@ using go.sync;
 
 partial class os_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // ErrProcessDone indicates a [Process] has finished.
 public static error ErrProcessDone = errors.New("os: process already finished"u8);
 
@@ -41,7 +23,7 @@ public static error ErrProcessDone = errors.New("os: process already finished"u8
 internal static processMode modePID => /* iota */ 0;
 internal static processMode modeHandle => 1;
 
-[GoType("num:uint64")] partial struct processStatus;
+[GoType("num:uint64")] public partial struct processStatus;
 
 internal static processStatus statusOK => 0;
 internal static processStatus statusDone => /* 1 << 62 */ unchecked((processStatus)4611686018427387904);
@@ -97,7 +79,7 @@ internal static ж<Process> newPIDProcess(nint pid) {
         Pid: pid,
         mode: modePID
     ));
-    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
+    runtime.SetFinalizer(p.OrTypedNil(), ((Func<ж<Process>, error>)(Release)));
     return p;
 }
 
@@ -108,7 +90,7 @@ internal static ж<Process> newHandleProcess(nint pid, uintptr handle) {
         handle: handle
     ));
     p.of(Process.Ꮡstate).Store(1); // 1 persistent reference
-    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
+    runtime.SetFinalizer(p.OrTypedNil(), ((Func<ж<Process>, error>)(Release)));
     return p;
 }
 
@@ -120,7 +102,7 @@ internal static ж<Process> newDoneProcess(nint pid) {
     // N.B Since we set statusDone, handle will never actually be
     // used, so its value doesn't matter.
     p.of(Process.Ꮡstate).Store((uint64)statusDone); // No persistent reference, as there is no handle.
-    Δruntime.SetFinalizer(p.OrTypedNil(), (Func<ж<Process>, error>)(Release));
+    runtime.SetFinalizer(p.OrTypedNil(), ((Func<ж<Process>, error>)(Release)));
     return p;
 }
 

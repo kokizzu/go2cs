@@ -14,7 +14,7 @@ internal static void assert(bool b) {
     }
 }
 
-internal static void errorf(@string format, params ꓸꓸꓸany argsʗp) {
+internal static void panicf(@string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     throw panic(fmt.Errorf(format, args.ꓸꓸꓸ));

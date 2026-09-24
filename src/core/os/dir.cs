@@ -15,36 +15,6 @@ using go.io;
 
 partial class os_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸfilepathlite() {
-    builtin.initPackage(typeof(@internal.filepathlite_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 [GoType("num:nint")] partial struct readdirMode;
 
 internal static readdirMode readdirName => /* iota */ 0;
@@ -178,6 +148,9 @@ public static (slice<DirEntry>, error) ReadDir(@string name) {
 // to ErrInvalid is returned when copying from a symbolic link.
 //
 // Symbolic links in dir are followed.
+//
+// New files added to fsys (including if dir is a subdirectory of fsys)
+// while CopyFS is running are not guaranteed to be copied.
 //
 // Copying stops at and returns the first error encountered.
 public static error CopyFS(@string dir, fs.FS fsys) {

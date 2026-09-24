@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -18,13 +18,13 @@ internal static error setIPv4MulticastInterface(ж<netFD> Ꮡfd, ж<Interface> �
     }
     var mreq = Ꮡ(new syscall.IPMreqn(Ifindex: v));
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptIPMreqn(syscall.IPPROTO_IP, syscall.IP_MULTICAST_IF, mreq);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv4MulticastLoopback(ж<netFD> Ꮡfd, bool v) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IP, syscall.IP_MULTICAST_LOOP, boolint(v));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

@@ -61,11 +61,11 @@ using static go.go.doc.comment_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/doc/comment/html.go", "html.cs", "ACQqwoKCgpT4sqS2gpSCtoKCgoCCgoKkgoKCgraCgraCgpSCgoKCgoCCgoKCgpSkgoKClJSCzKKCgoKClJTYsoKUtIKCtIKCgoK0goKCgpSCggALEtKCgpSCgrSCgrSCgrSCgrSCgsY=")]
-[assembly: global::go.GoPositionMap("go/doc/comment/markdown.go", "markdown.cs", "ABks0rqCgoKUlKjCpLaCtoKCgIKCgqS2goKCgoKClMiCgoKUgIKCgpSkgoKClILuwoKCgoKUlrSCkpSUgoLGrNKClLSCgrSCgoKCtIKClIKCgoKCggAGEtKCgp6CgoIAAxCCgoIADwY=")]
-[assembly: global::go.GoPositionMap("go/doc/comment/parse.go", "parse.cs", "ADlSABs6AAIS8gACEuKClILKpgASKAAKFAAKFsoACRIAEiYAOYwBAAsCkoKUlJSAgramgoIAAhYACAKClKrCgu6CmqKCgpikpKSkAAITAAIYgpSogpS0goKC3AATLoIABxKEgoKClIKUgpSAgqaCgoLugoKCgpSogoIADiCCloKUuIKClAAJFoKcgoLCAAQQgvaCgrqCpJSograqoq7UgpSClIKogoKCqIKigoKUlIKUgpSokqiSgoKUqJKCgpSqooKWloKCqIKCqIKogoKAgqSCuoKCgIKkgqiokqiSrpKokoKCqqSSgoKClJSCgoKmgoQAAhDSgpSCgpaSkoKC3qqigqqCgoCCtpaigKSEgoKkgoKCgpSUgq7ygoKogIKkgoKUgpSUpoKWrLKCAAIaAAwCgoKCgoKogoKCgoKUlLSCgIKCgriigoKCgsaCtIKoggACEgAJAoKCgqaCgoKmgqKCgpSCgIK2gIK2yqzigoKClIKUAAIS4oKCgoKUkoKCgqaCgoKAktyCgoKkgIKSgoKUgoKUlIKCtpSUgoKUlIKCgrSCgoK0xoIAAhDYspSktLS0tKSCqIK6goKUgoKCgpSUAAcSgoKCgoKUgpSUtLS0gpS0gsissgABEKTaqgAFGKyqAAQQ2poABTCqkoKClIIAAhDkgoKAgoKClKSCgoKUlNia3KyigpSClIKUgpSClIKCgoKUpqaCgpSCgqbWigAFFA==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/html.go", "html.cs", "ABIqwoKCgpT4sqS2gpSCtoKCgoCCgoKkgoKCgraCgraCgpSCgoKCgoCCgoKCgpSkgoKClJSCzKKCgoKClJTYsoKUtIKCtIKCgoK0goKCgpSCggALEtKCgpSCgrSCgrSCgrSCgrSCgsY=")]
+[assembly: global::go.GoPositionMap("go/doc/comment/markdown.go", "markdown.cs", "ABMs0rqCgoKUlKjCpLaCtoKCgIKCgqS2goKCgoKClMiCgoKUgIKCgpSkgoKClILuwoKCgoKUlrSCkpSUgoLGrNKClLSCgrSCgoKCtIKClIKCgoKCggAGEtKCgp6CgoIAAxCCgoIADwY=")]
+[assembly: global::go.GoPositionMap("go/doc/comment/parse.go", "parse.cs", "ACdSABs6AAIS8gACEuKClILKpgASKAAKFAAKFsoACRIAEiYAOYwBAAsCkoKUlJSAgramgoIAAhYACAKClKrCgu6CmqKCgpikpKSkAAITAAIYgpSogpS0goKC3AATLoIABxKEgoKClIKUgpSAgqaCgoLugoKCgpSogoIADiCCloKUuIKClAAJFoKcgoLCAAQQgvaCgrqCpJSograqoq7UgpSClIKogoKCqIKigoKUlIKUgpSokqiSgoKUqJKCgpSqooKWloKCqIKCqIKogoKAgqSCuoKCgIKkgqiokqiSrpKokoKCqqSSgoKClJSCgoKmgoQAAhDSgpSCgpaSkoKC3qqigqqCgoCCtpaigKSEgoKkgoKCgpSUgq7ygoKogIKkgoKUgpSUpoKWrLKCAAIaAAwCgoKCgoKogoKCgoKUlLSCgIKCgriigoKCgsaCtIKoggACEgAJAoKCgqaCgoKmgqKCgpSCgIK2gIK2yqzigoKClIKUAAIS4oKCgoKUkoKCgqaCgoKAktyCgoKkgIKSgoKUgoKUlIKCtpSUgoKUlIKCgrSCgoK0xoIAAhDYspSktLS0tKSCqIK6goKUgoKCgpSUAAcSgoKCgoKUgpSUtLS0gpS0gsissgABEKTaqgAPGKyqAAoQ2poAGzCqkoKClIIAAhDkgoKAgoKClKSCgoKUlNiaAAkMrKKClIKUgpSClIKUgoKCgpSmpoKClIKCptaKAA0U", "291-291:1;703-710:1;787-792:1;899-902:1;903-909:2")]
 [assembly: global::go.GoPositionMap("go/doc/comment/print.go", "print.cs", "ADN0goKUpqKClKaigpQAAioAEgKCgoKUlJSkpLaClAAFFPaigoKCgpSCgoKClKYABhLCgoKCgpQABhCCgoKCgoKClIKCgoK6qqKAgqSosqS2graCgraCgoKCgoKUyIKCgpSCgpSClIKCgpSC7rKClLS0gpSCgsaCgt7CgoKCgoKU")]
-[assembly: global::go.GoPositionMap("go/doc/comment/text.go", "text.cs", "AB400tyClIKWgoKCgpSUgoKCgqaCgoKCuKrUgoKClIKUqMKktoK2goK2goKCgoKClMiCgoKClIKCgpSClIKCgoKClO7CgoKEgoKUlIKCgpSCgpSUvrKClLS0tAAMKAAsPoqClKSkpKS6goKCqLSCgt6CgoKUzJKksqKClIKUqIKCgoKCgoKClIKUgriCuJaCgpSCgoKUqJKUpA==")]
+[assembly: global::go.GoPositionMap("go/doc/comment/text.go", "text.cs", "ABg00tyClIKWgoKCgpSUgoKCgqaCgoKCuKrUgoKClIKUqMKktoK2goK2goKCgoKClMiCgoKClIKCgpSClIKCgoKClO7CgoKEgoKUlIKCgpSCgpSUvrKClLS0tAAMKAAsPoqClKSkpKS6goKCqLSCgt6CgoKUzJKksqKClIKUqIKCgoKCgoKClIKUgriCuJaCgpSCgoKUqJKUpA==", "231-231:1;232-244:2;255-272:3;278-278:4;280-289:5;281-284:5.1")]
 // </GoSourcePositionMaps>
 
 namespace go.go.doc;
@@ -104,4 +104,21 @@ public static partial class comment_package
     public partial struct Plain {}
     public partial struct Printer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

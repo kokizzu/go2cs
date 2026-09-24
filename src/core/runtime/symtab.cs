@@ -6,11 +6,10 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -46,7 +45,8 @@ partial class runtime_package {
     // File and Line are the file name and line number of the
     // location in this frame. For non-leaf frames, this will be
     // the location of a call. These may be the empty string and
-    // zero, respectively, if not known.
+    // zero, respectively, if not known. The file name uses
+    // forward slashes, even on Windows.
     public @string File;
     public nint Line;
     // startLine is the line number of the beginning of the function in
@@ -263,7 +263,7 @@ internal static ΔfuncInfo funcInfo(this ж<_func> Ꮡf) {
 // moduledata is stored in statically allocated non-pointer memory;
 // none of the pointers here are visible to the garbage collector.
 [GoType] partial struct moduledata {
-    public partial ref runtime.@internal.sys_package.NotInHeap NotInHeap { get; } // Only in static data
+    public partial ref @internal.runtime.sys_package.NotInHeap NotInHeap { get; } // Only in static data
     internal ж<pcHeader> pcHeader;
     internal slice<byte> funcnametab;
     internal slice<uint32> cutab;
@@ -328,16 +328,29 @@ internal static ΔfuncInfo funcInfo(this ж<_func> Ꮡf) {
 // To make sure the map isn't collected, we keep a second reference here.
 internal static slice<map<typeOff, ж<_type>>> pinnedTypemaps;
 
+// aixStaticDataBase (used only on AIX) holds the unrelocated address
+// of the data section, set by the linker.
+//
+// On AIX, an R_ADDR relocation from an RODATA symbol to a DATA symbol
+// does not work, as the dynamic loader can change the address of the
+// data section, and it is not possible to apply a dynamic relocation
+// to RODATA. In order to get the correct address, we need to apply
+// the delta between unrelocated and relocated data section addresses.
+// aixStaticDataBase is the unrelocated address, and moduledata.data is
+// the relocated one.
+internal static uintptr aixStaticDataBase; // linker symbol
+
 internal static ж<moduledata> Ꮡfirstmoduledata = new StandardBox<moduledata>(new moduledata(nil));
 internal static ref moduledata firstmoduledata => ref Ꮡfirstmoduledata.Value; // linker symbol
 
 // lastmoduledatap should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
+//   - github.com/bytedance/sonic
 //
 // Do not remove or change the type signature.
-// See go.dev/issue/67401.
+// See go.dev/issues/67401.
+// See go.dev/issues/71672.
 //
 //go:linkname lastmoduledatap
 internal static ж<moduledata> lastmoduledatap; // linker symbol
@@ -458,10 +471,11 @@ internal static readonly @string abiMismatchˢ = "abi mismatch"u8;
 // moduledataverify1 should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
+//   - github.com/bytedance/sonic
 //
 // Do not remove or change the type signature.
-// See go.dev/issue/67401.
+// See go.dev/issues/67401.
+// See go.dev/issues/71672.
 //
 //go:linkname moduledataverify1
 internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
@@ -587,6 +601,17 @@ internal static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offse
     return gostringnocopy(Ꮡ(md.funcnametab, nameOff));
 }
 
+// Despite being an exported symbol,
+// FuncForPC is linknamed by widely used packages.
+// Notable members of the hall of shame include:
+//   - gitee.com/quant1x/gox
+//
+// Do not remove or change the type signature.
+// See go.dev/issue/67401.
+//
+// Note that this comment is not part of the doc comment.
+//
+//go:linkname FuncForPC
 // go2cs generated this placeholder — func FuncForPC is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Name is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -664,7 +689,6 @@ internal static partial uintptr badFuncInfoEntry(ΔfuncInfo _);
 // findfunc should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
 //   - github.com/phuslu/log
 //
 // Do not remove or change the type signature.
@@ -815,14 +839,12 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     }
     var datap = f.datap;
     var Δp = (~datap).pctab[(int)(off)..];
-    ref var pc = ref heap<uintptr>(out var Ꮡpc);
-    pc = f.entry();
+    var pc = f.entry();
     var prevpc = pc;
-    ref var val = ref heap<int32>(out var Ꮡval);
-    val = (int32)(-1);
+    var val = (int32)(-1);
     while (ᐧ) {
         bool ok = default!;
-        (Δp, ok) = step(Δp, Ꮡpc, Ꮡval, pc == f.entry());
+        (Δp, ok) = step(Δp, ref pc, ref val, pc == f.entry());
         if (!ok) {
             break;
         }
@@ -871,7 +893,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     val = -1;
     while (ᐧ) {
         bool ok = default!;
-        (Δp, ok) = step(Δp, Ꮡpc, Ꮡval, pc == f.entry());
+        (Δp, ok) = step(Δp, ref pc, ref val, pc == f.entry());
         if (!ok) {
             break;
         }
@@ -966,14 +988,12 @@ internal static int32 funcspdelta(ΔfuncInfo f, uintptr targetpc) {
 internal static int32 funcMaxSPDelta(ΔfuncInfo f) {
     var datap = f.datap;
     var Δp = (~datap).pctab[(int)(f.pcsp)..];
-    ref var pc = ref heap<uintptr>(out var Ꮡpc);
-    pc = f.entry();
-    ref var val = ref heap<int32>(out var Ꮡval);
-    val = (int32)(-1);
+    var pc = f.entry();
+    var val = (int32)(-1);
     var most = (int32)0;
     while (ᐧ) {
         bool ok = default!;
-        (Δp, ok) = step(Δp, Ꮡpc, Ꮡval, pc == f.entry());
+        (Δp, ok) = step(Δp, ref pc, ref val, pc == f.entry());
         if (!ok) {
             return most;
         }
@@ -1002,16 +1022,6 @@ internal static int32 pcdatavalue1(ΔfuncInfo f, uint32 table, uintptr targetpc,
 }
 
 // Like pcdatavalue, but also return the start PC of this PCData value.
-//
-// pcdatavalue2 should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname pcdatavalue2
 internal static (int32, uintptr) pcdatavalue2(ΔfuncInfo f, uint32 table, uintptr targetpc) {
     if (table >= f.npcdata) {
         return (-1, 0);
@@ -1040,20 +1050,7 @@ internal static @unsafe.Pointer funcdata(ΔfuncInfo f, uint8 i) {
 }
 
 // step advances to the next pc, value pair in the encoded table.
-//
-// step should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname step
-internal static (slice<byte> newp, bool ok) step(slice<byte> Δp, ж<uintptr> Ꮡpc, ж<int32> Ꮡval, bool first) {
-    ref var pc = ref Ꮡpc.DerefOrNull();
-    ref var val = ref Ꮡval.DerefOrNull();
-
+internal static (slice<byte> newp, bool ok) step(slice<byte> Δp, ref uintptr pc, ref int32 val, bool first) {
     // For both uvdelta and pcdelta, the common case (~70%)
     // is that they are a single byte. If so, avoid calling readvarint.
     var uvdelta = (uint32)Δp[0];
@@ -1102,15 +1099,6 @@ internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string stackmapdataIndexOutOfˢ = "stackmapdata: index out of range"u8;
 
-// stackmapdata should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname stackmapdata
 //go:nowritebarrier
 internal static bitvector stackmapdata(ж<stackmap> Ꮡstkmap, int32 n) {
     ref var stkmap = ref Ꮡstkmap.DerefOrNull();

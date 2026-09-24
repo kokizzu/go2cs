@@ -9,6 +9,8 @@ using cipher = go.crypto.cipher_package;
 using des = go.crypto.des_package;
 using hmac = go.crypto.hmac_package;
 using boring = go.crypto.@internal.boring_package;
+using fipsaes = go.crypto.@internal.fips140.aes_package;
+using gcm = go.crypto.@internal.fips140.aes.gcm_package;
 using rc4 = go.crypto.rc4_package;
 using sha1 = go.crypto.sha1_package;
 using sha256 = go.crypto.sha256_package;
@@ -21,64 +23,11 @@ using chacha20poly1305 = vendor.golang.org.x.crypto.chacha20poly1305_package;
 using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140.aes;
 using vendor.golang.org.x.crypto;
 using Δx509 = go.crypto.x509_package;
 
 partial class tls_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸaes() {
-    builtin.initPackage(typeof(go.crypto.aes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸdes() {
-    builtin.initPackage(typeof(go.crypto.des_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸhmac() {
-    builtin.initPackage(typeof(go.crypto.hmac_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrc4() {
-    builtin.initPackage(typeof(go.crypto.rc4_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() {
-    builtin.initPackage(typeof(go.crypto.sha1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(go.crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20poly1305() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20poly1305_package));
-}
 
 // CipherSuite is a TLS cipher suite. Note that most functions in this package
 // accept and expose cipher suite IDs instead of this type.
@@ -279,7 +228,7 @@ internal static slice<ж<cipherSuiteTLS13>> cipherSuitesTLS13 = new ж<cipherSui
 //   - Anything else comes before CBC_SHA256
 //
 //     SHA-256 variants of the CBC ciphersuites don't implement any Lucky13
-//     countermeasures. See http://www.isg.rhul.ac.uk/tls/Lucky13.html and
+//     countermeasures. See https://www.isg.rhul.ac.uk/tls/Lucky13.html and
 //     https://www.imperialviolet.org/2013/02/04/luckythirteen.html.
 //
 //   - Anything else comes before 3DES
@@ -394,10 +343,11 @@ internal static map<uint16, bool> tdesCiphers = new map<uint16, bool>{
     [TLS_RSA_WITH_3DES_EDE_CBC_SHA] = true
 };
 
-internal static bool hasGCMAsmAMD64 = cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ;
+internal static bool hasGCMAsmAMD64 = cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ && cpu.X86.HasSSE41 && cpu.X86.HasSSSE3;
 internal static bool hasGCMAsmARM64 = cpu.ARM64.HasAES && cpu.ARM64.HasPMULL;
-internal static bool hasGCMAsmS390X = cpu.S390X.HasAES && cpu.S390X.HasAESCBC && cpu.S390X.HasAESCTR && (cpu.S390X.HasGHASH || cpu.S390X.HasAESGCM);
-internal static bool hasAESGCMHardwareSupport = runtime.GOARCH == "amd64"u8 && hasGCMAsmAMD64 || runtime.GOARCH == "arm64"u8 && hasGCMAsmARM64 || runtime.GOARCH == "s390x"u8 && hasGCMAsmS390X;
+internal static bool hasGCMAsmS390X = cpu.S390X.HasAES && cpu.S390X.HasAESCTR && cpu.S390X.HasGHASH;
+internal static bool hasGCMAsmPPC64 = runtime.GOARCH == "ppc64"u8 || runtime.GOARCH == "ppc64le"u8;
+internal static bool hasAESGCMHardwareSupport = hasGCMAsmAMD64 || hasGCMAsmARM64 || hasGCMAsmS390X || hasGCMAsmPPC64;
 
 // TLS 1.2
 // TLS 1.3
@@ -562,7 +512,8 @@ internal static aead aeadAESGCM(slice<byte> key, slice<byte> noncePrefix) {
         (aead, err) = boring.NewGCMTLS(aesΔ1);
     } else {
         boring.Unreachable();
-        (aead, err) = cipher.NewGCM(aesΔ1);
+        var (ᴛ1, ᴛ2) = gcm.NewGCMForTLS12(aesΔ1._<ж<fipsaes.Block>>());
+        (aead, err) = (new gcm_GCMForTLS12жAEAD(ᴛ1), ᴛ2);
     }
     if (err != default!) {
         throw panic(err);
@@ -590,7 +541,14 @@ internal static aead aeadAESGCMTLS13(slice<byte> key, slice<byte> nonceMask) {
     if (err != default!) {
         throw panic(err);
     }
-    (var aead, err) = cipher.NewGCM(aesΔ1);
+    cipher.AEAD aead = default!;
+    if (boring.Enabled){
+        (aead, err) = boring.NewGCMTLS13(aesΔ1);
+    } else {
+        boring.Unreachable();
+        var (ᴛ1, ᴛ2) = gcm.NewGCMForTLS13(aesΔ1._<ж<fipsaes.Block>>());
+        (aead, err) = (new gcm_GCMForTLS13жAEAD(ᴛ1), ᴛ2);
+    }
     if (err != default!) {
         throw panic(err);
     }

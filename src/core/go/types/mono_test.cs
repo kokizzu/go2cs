@@ -5,13 +5,13 @@ namespace go.go;
 
 using errors = errors_package;
 using fmt = fmt_package;
-using importer = global::go.go.importer_package;
 using types = global::go.go.types_package;
 using strings = strings_package;
 using testing = testing_package;
 using global::go.go;
 using io = io_package;
 using static global::go.go.types_internal_test_package;
+using token = global::go.go.token_package;
 
 partial class types_test_package {
 
@@ -23,8 +23,9 @@ internal static error checkMono(ж<testing.T> Ꮡt, @string body) {
         Error: (error err) => {
             fmt.Fprintln(new types_test_package.strings_BuilderжWriter(Ꮡbuf), err);
         },
-        Importer: importer.Default()
+        Importer: defaultImporter(fset)
     );
+    // TODO(adonovan): use same FileSet as typecheck
     typecheck(src, Ꮡconf, nil);
     if (buf.Len() == 0) {
         return default!;

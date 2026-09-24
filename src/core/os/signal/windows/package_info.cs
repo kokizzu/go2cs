@@ -62,8 +62,8 @@ using static go.os.signal_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ADhIgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC", "55-69:1;138-157:1;149-153:1.1;287-293:1")]
-[assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "ABEewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
+[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ACdKgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC", "56-70:1;139-158:1;150-154:1.1;288-294:1")]
+[assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "AAsewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go.os;
@@ -84,4 +84,18 @@ public static partial class signal_package
     internal partial struct signalCtx {}
     internal partial struct stopping {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

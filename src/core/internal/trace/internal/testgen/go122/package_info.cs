@@ -67,7 +67,7 @@ using static go.@internal.trace.@internal.testgen.testkit_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/internal/testgen/go122/trace.go", "trace.cs", "AGMutIKClKaWloCCABw2koIABhKigqiSrNKssq7i3IKolJKCgqiCqIKogoKoAAcQooKCgIK2ABtE0oKUyoKuwoKUgIKkgoKuwoKUgpSCgoKAgqSCgqjEgqiCgpaCgqKCgoKUloKCppaCgoKWgoKmpoIACx7SgoKUgoKCgpSUlIKAgqSClKaCgoKClIKUpKSkpKSkpKSkpKSs0paCgoKUgoKoqLLKgg==")]
+[assembly: go.GoPositionMap("internal/trace/internal/testgen/go122/trace.go", "trace.cs", "ABsutIKClKaWloCCABw2koIABhKigqiSrNKssq7i3IKolJKCgqiCqIKogoKoAAcQooKCgIK2ABtE0oKUyoKuwoKUgIKkgoKuwoKUgpSCgoKAgqSCgqjEgqiCgpaCgqKCgoKUloKCppaCgoKWgoKmpoIACx7SgoKUgoKCgpSUlIKAgqSClKaCgoKClIKUpKSkpKSkpKSkpKSs0paCgoKUgoKoqLLKgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.trace.@internal.testgen;
@@ -89,4 +89,25 @@ public static partial class testkit_package
     public partial struct ΔBatch {}
     public partial struct ΔGeneration {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() => builtin.initPackage(typeof(go.@internal.trace_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() => builtin.initPackage(typeof(go.@internal.trace.event_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸeventꓸgo122() => builtin.initPackage(typeof(go.@internal.trace.@event.go122_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸraw() => builtin.initPackage(typeof(go.@internal.trace.raw_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() => builtin.initPackage(typeof(go.@internal.trace.version_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtxtar() => builtin.initPackage(typeof(go.@internal.txtar_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

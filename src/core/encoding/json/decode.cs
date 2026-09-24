@@ -20,48 +20,6 @@ using go.unicode;
 
 partial class json_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(go.encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 // Unmarshal parses the JSON-encoded data and stores the result
 // in the value pointed to by v. If v is nil or not a pointer,
 // Unmarshal returns an [InvalidUnmarshalError].
@@ -95,8 +53,8 @@ partial class json_package {
 //   - bool, for JSON booleans
 //   - float64, for JSON numbers
 //   - string, for JSON strings
-//   - []interface{}, for JSON arrays
-//   - map[string]interface{}, for JSON objects
+//   - []any, for JSON arrays
+//   - map[string]any, for JSON objects
 //   - nil for JSON null
 //
 // To unmarshal a JSON array into a slice, Unmarshal resets the slice length
@@ -154,9 +112,6 @@ public static error Unmarshal(slice<byte> data, any v) {
 // The input can be assumed to be a valid encoding of
 // a JSON value. UnmarshalJSON must copy the JSON data
 // if it wishes to retain the data after returning.
-//
-// By convention, to approximate the behavior of [Unmarshal] itself,
-// Unmarshalers implement UnmarshalJSON([]byte("null")) as a no-op.
 [GoType] partial interface Unmarshaler {
     error UnmarshalJSON(slice<byte> _);
 }
@@ -168,7 +123,7 @@ public static error Unmarshal(slice<byte> data, any v) {
     public reflectꓸType Type; // type of Go value it could not be assigned to
     public int64 Offset;        // error occurred after reading Offset bytes
     public @string Struct;      // name of the struct type containing the field
-    public @string Field;      // the full path from root node to the field
+    public @string Field;      // the full path from root node to the field, include embedded struct
 }
 
 [GoRecv] public static @string Error(this ref UnmarshalTypeError e) {
@@ -302,7 +257,11 @@ internal static ж<decodeState> init(this ж<decodeState> Ꮡd, slice<byte> data
         switch (err.type()) {
         case ж<UnmarshalTypeError> errΔ1: {
             errΔ1.Value.Struct = (~d.errorContext).Struct.Name();
-            errΔ1.Value.Field = strings.Join((~d.errorContext).FieldStack, "."u8);
+            var fieldStack = d.errorContext.Value.FieldStack;
+            if ((~errΔ1).Field != ""u8) {
+                fieldStack = append(fieldStack, (~errΔ1).Field);
+            }
+            errΔ1.Value.Field = strings.Join(fieldStack, "."u8);
             break;
         }}
     }
@@ -559,9 +518,9 @@ internal static (Unmarshaler, encoding.TextUnmarshaler, reflectꓸValue) indirec
             break;
         }
         // Prevent infinite loop if v is an interface pointing to its own address:
-        //     var v interface{}
+        //     var v any
         //     v = &v
-        if (v.Elem().Kind() == reflect.ΔInterface && v.Elem().Elem() == v) {
+        if (v.Elem().Kind() == reflect.ΔInterface && v.Elem().Elem().Equal(v)) {
             v = v.Elem();
             break;
         }
@@ -798,7 +757,10 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
             if (f != nil){
                 subv = v;
                 destring = f.Value.quoted;
-                foreach (var (_, i) in (~f).index) {
+                if (d.errorContext == nil) {
+                    d.errorContext = @new<errorContext>();
+                }
+                foreach (var (i, ind) in (~f).index) {
                     if (subv.Kind() == reflect.ΔPointer) {
                         if (subv.IsNil()) {
                             // If a struct embeds a pointer to an unexported type,
@@ -818,13 +780,15 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
                         }
                         subv = subv.Elem();
                     }
-                    subv = subv.Field(i);
+                    if (i < len((~f).index) - 1) {
+                        d.errorContext.Value.FieldStack = append(
+                            (~d.errorContext).FieldStack,
+                            subv.Type().Field(ind).Name);
+                    }
+                    subv = subv.Field(ind);
                 }
-                if (d.errorContext == nil) {
-                    d.errorContext = @new<errorContext>();
-                }
-                d.errorContext.Value.FieldStack = append((~d.errorContext).FieldStack, (~f).name);
                 d.errorContext.Value.Struct = t;
+                d.errorContext.Value.FieldStack = append((~d.errorContext).FieldStack, (~f).name);
             } else 
             if (d.disallowUnknownFields) {
                 d.saveError(fmt.Errorf("json: unknown field %q"u8, key));
@@ -1183,7 +1147,7 @@ internal static readonly @string boolˢ = "bool"u8;
 // in an empty interface. They are not strictly necessary,
 // but they avoid the weight of reflection in this common case.
 
-// valueInterface is like value but returns interface{}
+// valueInterface is like value but returns any.
 internal static any /*val*/ valueInterface(this ж<decodeState> Ꮡd) {
     any val = default!;
 
@@ -1207,7 +1171,7 @@ internal static any /*val*/ valueInterface(this ж<decodeState> Ꮡd) {
     return val;
 }
 
-// arrayInterface is like array but returns []interface{}.
+// arrayInterface is like array but returns []any.
 internal static slice<any> arrayInterface(this ж<decodeState> Ꮡd) {
     ref var d = ref Ꮡd.DerefOrNull();
 
@@ -1233,7 +1197,7 @@ internal static slice<any> arrayInterface(this ж<decodeState> Ꮡd) {
     return v;
 }
 
-// objectInterface is like object but returns map[string]interface{}.
+// objectInterface is like object but returns map[string]any.
 internal static map<@string, any> objectInterface(this ж<decodeState> Ꮡd) {
     ref var d = ref Ꮡd.DerefOrNull();
 

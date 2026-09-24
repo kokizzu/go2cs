@@ -13,6 +13,7 @@ internal static class Go2CsTestHost
             "crc32_amd64.go",
             "crc32_arm64.go",
             "crc32_generic.go",
+            "crc32_loong64.go",
             "crc32_otherarch.go",
             "crc32_ppc64le.go",
             "crc32_s390x.go",
@@ -21,14 +22,14 @@ internal static class Go2CsTestHost
             "gen.go",
             "gen_const_ppc64le.go",
         });
-        registry.Add("TestArchCastagnoli", crc32_internal_test_package.TestArchCastagnoli, "crc32_test.go", 239);
-        registry.Add("TestArchIEEE", crc32_internal_test_package.TestArchIEEE, "crc32_test.go", 228);
+        registry.Add("TestArchCastagnoli", crc32_internal_test_package.TestArchCastagnoli, "crc32_test.go", 263);
+        registry.Add("TestArchIEEE", crc32_internal_test_package.TestArchIEEE, "crc32_test.go", 252);
         registry.Add("TestCastagnoliRace", crc32_internal_test_package.TestCastagnoliRace, "crc32_test.go", 17);
-        registry.Add("TestGolden", crc32_internal_test_package.TestGolden, "crc32_test.go", 250);
+        registry.Add("TestGolden", crc32_internal_test_package.TestGolden, "crc32_test.go", 274);
         registry.Add("TestGoldenMarshal", crc32_internal_test_package.TestGoldenMarshal, "crc32_test.go", 122);
-        registry.Add("TestMarshalTableMismatch", crc32_internal_test_package.TestMarshalTableMismatch, "crc32_test.go", 188);
+        registry.Add("TestMarshalTableMismatch", crc32_internal_test_package.TestMarshalTableMismatch, "crc32_test.go", 212);
         registry.Add("TestSimple", crc32_internal_test_package.TestSimple, "crc32_test.go", 110);
-        registry.Add("TestSlicing", crc32_internal_test_package.TestSlicing, "crc32_test.go", 203);
+        registry.Add("TestSlicing", crc32_internal_test_package.TestSlicing, "crc32_test.go", 227);
         return TestHost.Run(registry, args);
     }
 }

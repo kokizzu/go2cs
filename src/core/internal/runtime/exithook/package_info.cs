@@ -49,7 +49,7 @@ using static go.@internal.runtime.exithook_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/runtime/exithook/hooks.go", "hooks.cs", "AChWkoKUggAGEPKCgpSUgoKEgoCCuIKCgoKUAAgMgA==")]
+[assembly: go.GoPositionMap("internal/runtime/exithook/hooks.go", "hooks.cs", "AChWkoKUggAGEPKCgpSUgoKEgoCCuIKCgoKUAAgMgA==", "67-71:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.runtime;
@@ -67,4 +67,13 @@ public static partial class exithook_package
     internal partial struct exitError {}
     public partial struct Hook {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

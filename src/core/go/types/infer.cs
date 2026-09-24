@@ -8,7 +8,9 @@ namespace go.go;
 
 using fmt = fmt_package;
 using token = global::go.go.token_package;
+using slices = slices_package;
 using strings = strings_package;
+using System.Runtime.CompilerServices;
 using ast = global::go.go.ast_package;
 using global::go.go;
 
@@ -47,8 +49,8 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // be able to use it either.
         if ((~check.conf).Error != default!) {
             var tparamsʗ1 = tparams;
-            defer(() => {
-                assert(inferred == default! || len(inferred) == len(tparamsʗ1) && !containsNil(inferred));
+            defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
+                assert(inferred == default! || len(inferred) == len(tparamsʗ1) && !slices.Contains(inferred, (ΔType)(default!)));
             }, ref ᒐ);
         }
         if (traceInference) {
@@ -64,7 +66,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // Parameters and arguments must match in number.
         assert(Ꮡparams.Len() == len(args));
         // If we already have all type arguments, we're done.
-        if (len(targs) == n && !containsNil(targs)) {
+        if (len(targs) == n && !slices.Contains(targs, (ΔType)(default!))) {
             inferred = targs; goto ᒐdone;
         }
         // If we have invalid (ordinary) arguments, an error was reported before.
@@ -115,7 +117,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // Unify parameter and argument types for generic parameters with typed arguments
         // and collect the indices of generic parameters with untyped arguments.
         // Terminology: generic parameter = function parameter with a type-parameterized type
-        var u = newUnifier(tparams, targs, Ꮡcheck.allowVersion(posn, go1_21));
+        var u = newUnifier(tparams, targs, check.allowVersion(go1_21));
         var tparamsʗ3 = tparams;
         var uʗ1 = u;
         void errorf(ΔType tpar, ΔType targ, ж<operand> arg) {
@@ -235,12 +237,15 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                 if (traceInference) {
                     u.tracef("-- type parameter %s = %s: core(%s) = %s, single = %v"u8, tpar.OrTypedNil(), tx, tpar.OrTypedNil(), core.OrTypedNil(), single);
                 }
-                // If there is a core term (i.e., a core type with tilde information)
-                // unify the type parameter with the core type.
-                if (core != nil){
-                    // A type parameter can be unified with its core type in two cases.
+                // If the type parameter's constraint has a core term (i.e., a core type with tilde information)
+                // try to unify the type parameter with that core type.
+                if (core != nil) {
+                    // A type parameter can be unified with its constraint's core type in two cases.
                     switch (ᐧ) {
                     case {} when tx != default!: {
+                        if (traceInference) {
+                            u.tracef("-> unify type parameter %s (type %s) with constraint core type %s"u8, tpar.OrTypedNil(), tx, (~core).typ);
+                        }
                         if (!u.unify(tx, // The corresponding type argument tx is known. There are 2 cases:
  // 1) If the core type has a tilde, per spec requirement for tilde
  //    elements, the core type is an underlying (literal) type.
@@ -261,35 +266,47 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                         break;
                     }
                     case {} when single && !(~core).tilde: {
-                        u.set(tpar, // The corresponding type argument tx is unknown and there's a single
- // specific type and no tilde.
+                        if (traceInference) {
+                            u.tracef("-> set type parameter %s to constraint core type %s"u8, tpar.OrTypedNil(), (~core).typ);
+                        }
+                        u.set(tpar, // The corresponding type argument tx is unknown and the core term
+ // describes a single specific type and no tilde.
  // In this case the type argument must be that single type; set it.
  (~core).typ);
                         break;
                     }}
 
-                } else {
-                    if (tx != default!) {
-                        // We don't have a core type, but the type argument tx is known.
-                        // It must have (at least) all the methods of the type constraint,
-                        // and the method signatures must unify; otherwise tx cannot satisfy
-                        // the constraint.
-                        // TODO(gri) Now that unification handles interfaces, this code can
-                        //           be reduced to calling u.unify(tx, tpar.iface(), assign)
-                        //           (which will compare signatures exactly as we do below).
-                        //           We leave it as is for now because missingMethod provides
-                        //           a failure cause which allows for a better error message.
-                        //           Eventually, unify should return an error with cause.
-                        ref var cause = ref heap(new @string(), out var Ꮡcause);
-                        var constraint = tpar.iface();
-                        {
-                            var uʗ2 = u;
-                            var (m, _) = Ꮡcheck.missingMethod(tx, new InterfaceжΔType(constraint), true, (ΔType x, ΔType y) => uʗ2.unify(x, y, exact), Ꮡcause); if (m != nil) {
-                                // TODO(gri) better error message (see TODO above)
-                                err.addf(posn, "%s (type %s) does not satisfy %s %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint(), cause);
-                                inferred = default!; goto ᒐdone;
-                            }
-                        }
+                }
+                // Independent of whether there is a core term, if the type argument tx is known
+                // it must implement the methods of the type constraint, possibly after unification
+                // of the relevant method signatures, otherwise tx cannot satisfy the constraint.
+                // This unification step may provide additional type arguments.
+                //
+                // Note: The type argument tx may be known but contain references to other type
+                // parameters (i.e., tx may still be parameterized).
+                // In this case the methods of tx don't correctly reflect the final method set
+                // and we may get a missing method error below. Skip this step in this case.
+                //
+                // TODO(gri) We should be able continue even with a parameterized tx if we add
+                // a simplify step beforehand (see below). This will require factoring out the
+                // simplify phase so we can call it from here.
+                if (tx != default! && !isParameterized(tparams, tx)) {
+                    if (traceInference) {
+                        u.tracef("-> unify type parameter %s (type %s) methods with constraint methods"u8, tpar.OrTypedNil(), tx);
+                    }
+                    // TODO(gri) Now that unification handles interfaces, this code can
+                    //           be reduced to calling u.unify(tx, tpar.iface(), assign)
+                    //           (which will compare signatures exactly as we do below).
+                    //           We leave it as is for now because missingMethod provides
+                    //           a failure cause which allows for a better error message.
+                    //           Eventually, unify should return an error with cause.
+                    ref var cause = ref heap(new @string(), out var Ꮡcause);
+                    var constraint = tpar.iface();
+                    var uʗ2 = u;
+                    if (!Ꮡcheck.hasAllMethods(tx, new InterfaceжΔType(constraint), true, (ΔType x, ΔType y) => uʗ2.unify(x, y, exact), Ꮡcause)) {
+                        // TODO(gri) better error message (see TODO above)
+                        err.addf(posn, "%s (type %s) does not satisfy %s %s"u8, tpar.OrTypedNil(), tx, tpar.Constraint(), cause);
+                        inferred = default!; goto ᒐdone;
                     }
                 }
             }
@@ -309,7 +326,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // Some generic parameters with untyped arguments may have been given a type by now.
         // Collect all remaining parameters that don't have a type yet and determine the
         // maximum untyped type for each of those parameters, if possible.
-        map<ж<TypeParam>, ΔType> maxUntyped = default!;                              // lazily allocated (we may not need it)
+        map<ж<TypeParam>, ΔType> maxUntyped = default!;                                // lazily allocated (we may not need it)
         foreach (var (_, index) in untyped) {
             var tpar = (~@params.At(index)).typ._<ж<TypeParam>>(); // is type parameter (no alias) by construction of untyped
             if (u.at(tpar) == default!) {
@@ -401,7 +418,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
                         // t0 was simplified to t1.
                         // If t0 was a generic function, but the simplified signature t1 does
                         // not contain any type parameters anymore, the function is not generic
-                        // anymore. Remove it's type parameters. (go.dev/issue/59953)
+                        // anymore. Remove its type parameters. (go.dev/issue/59953)
                         // Note that if t0 was a signature, t1 must be a signature, and t1
                         // can only be a generic signature if it originated from a generic
                         // function argument. Those signatures are never defined types and
@@ -430,7 +447,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         foreach (var (i, typ) in inferred) {
             if (typ == default! || isParameterized(tparams, typ)) {
                 var obj = tparams[i].Value.obj;
-                err.addf(posn, "cannot infer %s (%v)"u8, (~obj).name, (~obj).pos);
+                err.addf(posn, "cannot infer %s (declared at %v)"u8, (~obj).name, (~obj).pos);
                 inferred = default!; goto ᒐdone;
             }
         }
@@ -438,16 +455,6 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
     ᒐdone: return inferred;
-}
-
-// containsNil reports whether list contains a nil entry.
-internal static bool containsNil(slice<ΔType> list) {
-    foreach (var (_, t) in list) {
-        if (t == default!) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // renameTParams renames the type parameters in the given type such that each type
@@ -613,7 +620,7 @@ internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ)
                     res = true; goto ᒐdone;
                 }
             }
-            res = tset.@is((ж<term> tΔ1) => tΔ1 != nil && Ꮡw.isParameterized((~tΔ1).typ)); goto ᒐdone;
+            res = tset.@is((ж<Δterm> tΔ1) => tΔ1 != nil && Ꮡw.isParameterized((~tΔ1).typ)); goto ᒐdone;
         }
         case ж<Map> t: {
             res = Ꮡw.isParameterized((~t).key) || Ꮡw.isParameterized((~t).elem); goto ᒐdone;
@@ -630,7 +637,7 @@ internal static bool /*res*/ isParameterized(this ж<tpWalker> Ꮡw, ΔType typ)
             break;
         }
         case ж<TypeParam> t: {
-            res = tparamIndex(w.tparams, t) >= 0; goto ᒐdone;
+            res = slices.Index(w.tparams, t) >= 0; goto ᒐdone;
         }
         default: {
             var t = typ;
@@ -657,13 +664,13 @@ internal static bool varList(this ж<tpWalker> Ꮡw, slice<ж<Var>> list) {
 // Otherwise, if tpar has a core type T, it returns a term corresponding to that
 // core type and false. In that case, if any term of tpar has a tilde, the core
 // term has a tilde. In all other cases coreTerm returns (nil, false).
-internal static (ж<term>, bool) coreTerm(ж<TypeParam> Ꮡtpar) {
+internal static (ж<Δterm>, bool) coreTerm(ж<TypeParam> Ꮡtpar) {
     ref var tpar = ref Ꮡtpar.DerefOrNull();
 
     nint n = 0;
-    ref var single = ref heap<ж<term>>(out var Ꮡsingle);      // valid if n == 1
+    ref var single = ref heap<ж<Δterm>>(out var Ꮡsingle);        // valid if n == 1
     ref var tilde = ref heap(new bool(), out var Ꮡtilde);
-    tpar.@is((ж<term> t) => {
+    tpar.@is((ж<Δterm> t) => {
         if (t == nil) {
             assert(n == 0);
             return false; // no terms
@@ -687,7 +694,7 @@ internal static (ж<term>, bool) coreTerm(ж<TypeParam> Ꮡtpar) {
             // If any term of tpar has a tilde, we don't
             // have a precise core type and we must return
             // a tilde as well.
-            return (Ꮡ(new term(tilde, typ)), false);
+            return (Ꮡ(new Δterm(tilde, typ)), false);
         }
     }
     return (default!, false);
@@ -727,7 +734,7 @@ internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) {
             {
                 var (tpar, _) = typ._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
                     {
-                        nint i = tparamIndex(w.tparams, tpar); if (i >= 0) {
+                        nint i = slices.Index(w.tparams, tpar); if (i >= 0) {
                             // cycle through tpar
                             w.inferred[i] = default!;
                         }
@@ -807,7 +814,7 @@ internal static void typ(this ж<cycleFinder> Ꮡw, ΔType typ) {
         }
         case ж<TypeParam> t: {
             {
-                nint i = tparamIndex(w.tparams, t); if (i >= 0 && w.inferred[i] != default!) {
+                nint i = slices.Index(w.tparams, t); if (i >= 0 && w.inferred[i] != default!) {
                     Ꮡw.typ(w.inferred[i]);
                 }
             }
@@ -827,17 +834,6 @@ internal static void varList(this ж<cycleFinder> Ꮡw, slice<ж<Var>> list) {
     foreach (var (_, v) in list) {
         Ꮡw.typ((~v).typ);
     }
-}
-
-// If tpar is a type parameter in list, tparamIndex returns the index
-// of the type parameter in list. Otherwise the result is < 0.
-internal static nint tparamIndex(slice<ж<TypeParam>> list, ж<TypeParam> Ꮡtpar) {
-    foreach (var (i, p) in list) {
-        if (p == Ꮡtpar) {
-            return i;
-        }
-    }
-    return -1;
 }
 
 } // end types_package

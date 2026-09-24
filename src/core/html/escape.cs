@@ -11,18 +11,6 @@ using unicode;
 
 partial class html_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 // First entry is what 0x80 should be replaced with.
 // Last entry is 0x9F.
 // 0x00->'\uFFFD' is handled programmatically.
@@ -68,7 +56,7 @@ internal static array<rune> replacementTable = new rune[]{
 // unescapeEntity reads an entity like "&lt;" from b[src:] and writes the
 // corresponding "<" to b[dst:], returning the incremented dst and src cursors.
 // Precondition: b[src] == '&' && dst <= src.
-internal static (nint dst1, nint src1) unescapeEntity(slice<byte> b, nint dst, nint src) {
+internal static (nint dst1, nint src1) unescapeEntity(slice<byte> b, nint dst, nint src, map<@string, rune> entity, map<@string, array<rune>> entity2) {
     nint dst1 = default!;
     nint src1 = default!;
 
@@ -209,13 +197,13 @@ public static @string EscapeString(@string s) {
 // UnescapeString(EscapeString(s)) == s always holds, but the converse isn't
 // always true.
 public static @string UnescapeString(@string s) {
-    ᏑpopulateMapsOnce.Do(populateMaps);
     nint i = strings.IndexByte(s, (rune)'&');
     if (i < 0) {
         return s;
     }
     var b = slice<byte>(s);
-    var (dst, src) = unescapeEntity(b, i, i);
+    var (entity, entity2) = entityMaps();
+    var (dst, src) = unescapeEntity(b, i, i, entity, entity2);
     while (len(s[(int)(src)..]) > 0) {
         if (s[src] == (rune)'&'){
             i = 0;
@@ -229,7 +217,7 @@ public static @string UnescapeString(@string s) {
         if (i > 0) {
             copy(b[(int)(dst)..], s[(int)(src)..(int)(src + i)]);
         }
-        (dst, src) = unescapeEntity(b, dst + i, src + i);
+        (dst, src) = unescapeEntity(b, dst + i, src + i, entity, entity2);
     }
     return ((@string)(b[..(int)(dst)]));
 }

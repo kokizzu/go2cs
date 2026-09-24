@@ -11,12 +11,6 @@ using static go.html.template_package;
 
 partial class template_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object blankTokensˢ = (@string)"Blank tokens"u8;
 
@@ -123,10 +117,10 @@ public static void TestNextJsCtx(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string beepBoopScriptBlipˢ = "beep */ boop </script blip <!--"u8;
+internal static readonly @string aBScriptCScriptDESCrIpTFˢ = "a */ b <script c </script d <!-- e <sCrIpT f </sCrIpT"u8;
 
 [GoRecv] internal static (slice<byte>, error) MarshalJSON(this ref jsonErrType e) {
-    return (default!, errors.New(beepBoopScriptBlipˢ));
+    return (default!, errors.New(aBScriptCScriptDESCrIpTFˢ));
 }
 
 [GoType("dyn")] internal partial struct TestJSValEscaper_tests {
@@ -188,7 +182,7 @@ public static void TestJSValEscaper(ж<testing.T> Ꮡt) {
         new((@string)"\U0001D11E"u8, "\"\U0001D11E\""u8, false), // or "\uD834\uDD1E"
 
         new(default!, " null "u8, false),
-        new(Ꮡ(new jsonErrType(nil)), " /* json: error calling MarshalJSON for type *template.jsonErrType: beep * / boop \\x3C/script blip \\x3C!-- */null "u8, true)
+        new(Ꮡ(new jsonErrType(nil)), " /* json: error calling MarshalJSON for type *template.jsonErrType: a * / b \\x3Cscript c \\x3C/script d \\x3C!-- e \\x3Cscript f \\x3C/script */null "u8, true)
     }.slice();
     foreach (var (_, test) in tests) {
         {

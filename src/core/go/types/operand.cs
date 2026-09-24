@@ -11,8 +11,8 @@ using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using ꓸꓸꓸany = Span<any>;
 
@@ -74,8 +74,7 @@ internal static array<@string> operandModeString = new golib.SparseArray<@string
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string nilWithInvalidTypeˢ = "nil (with invalid type)"u8;
-internal static readonly @string ofGenericTypeˢ = " of generic type "u8;
-internal static readonly @string ofTypeˢ = " of type "u8;
+internal static readonly @string genericˢ = "generic "u8;
 internal static readonly @string constrainedByˢ = " constrained by "u8;
 internal static readonly @string withEmptyTypeSetˢ = " with empty type set"u8;
 internal static readonly @string withInvalidTypeˢ = " with invalid type"u8;
@@ -194,22 +193,38 @@ internal static @string operandString(ref operand x, Func<ж<Package>, @string> 
     // <typ>
     if (hasType) {
         if (isValid(x.typ)){
-            @string intro = default!;
-            if (isGeneric(x.typ)){
-                intro = ofGenericTypeˢ;
-            } else {
-                intro = ofTypeˢ;
+            @string desc = default!;
+            if (isGeneric(x.typ)) {
+                desc = genericˢ;
             }
-            buf.WriteString(intro);
-            WriteType(Ꮡbuf, x.typ, qf);
-            {
-                var (tpar, _) = Unalias(x.typ)._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
-                    buf.WriteString(constrainedByˢ);
-                    WriteType(Ꮡbuf, (~tpar).bound, qf); // do not compute interface type sets here
-                    // If we have the type set and it's empty, say so for better error messages.
-                    if (hasEmptyTypeset(new TypeParamжΔType(tpar))) {
-                        buf.WriteString(withEmptyTypeSetˢ);
+            // Describe the type structure if it is an *Alias or *Named type.
+            // If the type is a renamed basic type, describe the basic type,
+            // as in "int32 type MyInt" for a *Named type MyInt.
+            // If it is a type parameter, describe the constraint instead.
+            var (tpar, _) = Unalias(x.typ)._<ж<TypeParam>>(ᐧ);
+            if (tpar == nil) {
+                switch (x.typ.type()) {
+                case ж<Alias> _:
+                case ж<Named> _: {
+                    @string what = compositeKind(x.typ);
+                    if (what == ""u8) {
+                        // x.typ must be basic type
+                        what = under(x.typ)._<ж<Basic>>().Value.name;
                     }
+                    desc += what + " "u8;
+                    break;
+                }}
+
+            }
+            // desc is "" or has a trailing space at the end
+            buf.WriteString(" of "u8 + desc + "type "u8);
+            WriteType(Ꮡbuf, x.typ, qf);
+            if (tpar != nil) {
+                buf.WriteString(constrainedByˢ);
+                WriteType(Ꮡbuf, (~tpar).bound, qf); // do not compute interface type sets here
+                // If we have the type set and it's empty, say so for better error messages.
+                if (hasEmptyTypeset(new TypeParamжΔType(tpar))) {
+                    buf.WriteString(withEmptyTypeSetˢ);
                 }
             }
         } else {
@@ -221,6 +236,61 @@ internal static @string operandString(ref operand x, Func<ж<Package>, @string> 
         buf.WriteByte((rune)')');
     }
     return Ꮡbuf.String();
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string arrayˢ = "array"u8;
+internal static readonly @string sliceˢ = "slice"u8;
+internal static readonly @string structˢ2 = "struct"u8;
+internal static readonly @string pointerˢ = "pointer"u8;
+internal static readonly @string mapˢ2 = "map"u8;
+internal static readonly @string chanˢ4 = "chan"u8;
+internal static readonly @string tupleˢ = "tuple"u8;
+internal static readonly @string unionˢ = "union"u8;
+
+// compositeKind returns the kind of the given composite type
+// ("array", "slice", etc.) or the empty string if typ is not
+// composite but a basic type.
+internal static @string compositeKind(ΔType typ) {
+    switch (under(typ).type()) {
+    case ж<Basic>: {
+        return ""u8;
+    }
+    case ж<Array>: {
+        return arrayˢ;
+    }
+    case ж<Slice>: {
+        return sliceˢ;
+    }
+    case ж<Struct>: {
+        return structˢ2;
+    }
+    case ж<Pointer>: {
+        return pointerˢ;
+    }
+    case ж<ΔSignature>: {
+        return funcˢ;
+    }
+    case ж<Interface>: {
+        return interfaceˢ2;
+    }
+    case ж<Map>: {
+        return mapˢ2;
+    }
+    case ж<Chan>: {
+        return chanˢ4;
+    }
+    case ж<Tuple>: {
+        return tupleˢ;
+    }
+    case ж<Union>: {
+        return unionˢ;
+    }
+    default: {
+        throw panic("unreachable");
+        break;
+    }}
+
 }
 
 internal static @string String(this ж<operand> Ꮡx) {
@@ -305,7 +375,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         if (Tp != nil) {
             // T is a type parameter: x is assignable to T if it is
             // representable by each specific type in the type set of T.
-            return (Tp.@is((ж<term> t) => {
+            return (Tp.@is((ж<Δterm> t) => {
                 if (t == nil) {
                     return false;
                 }
@@ -331,7 +401,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
     // the Checker.implements error cause.
     {
         var (_, ok) = Tu._<ж<Interface>>(ᐧ); if (ok && Tp == nil || isInterfacePtr(Tu)) {
-            if (Ꮡcheck.implements(x.Pos(), V, T, false, Ꮡcause)) {
+            if (Ꮡcheck.implements(V, T, false, Ꮡcause)) {
                 return (true, 0);
             }
             // V doesn't implement T but V may still be assignable to T if V
@@ -347,7 +417,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
     // If V is an interface, check if a missing type assertion is the problem.
     {
         var (Vi, _) = Vu._<ж<Interface>>(ᐧ); if (Vi != nil && Vp == nil) {
-            if (Ꮡcheck.implements(x.Pos(), T, V, false, nil)) {
+            if (Ꮡcheck.implements(T, V, false, nil)) {
                 // T implements V, so give hint about type assertion.
                 if (Ꮡcause != nil) {
                     cause = needTypeAssertionˢ;
@@ -389,7 +459,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         errors.Code code = IncompatibleAssign;
         var Tpʗ1 = Tp;
         var errorfʗ1 = errorf;
-        Tp.@is((ж<term> TΔ1) => {
+        Tp.@is((ж<Δterm> TΔ1) => {
             if (TΔ1 == nil) {
                 return false; // no specific types
             }
@@ -413,7 +483,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
         var Vpʗ1 = Vp;
         var errorfʗ2 = errorf;
         var origTʗ1 = origT;
-        Vp.@is((ж<term> VΔ1) => {
+        Vp.@is((ж<Δterm> VΔ1) => {
             if (VΔ1 == nil) {
                 return false; // no specific types
             }

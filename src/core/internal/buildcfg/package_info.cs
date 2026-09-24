@@ -60,8 +60,8 @@ using static go.@internal.buildcfg_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/buildcfg/cfg.go", "cfg.cs", "AFZYkoKCuIKAgqTWgoCkpKSktIIABxCCgoKUlNaimIKUlISCgoKClIKClpSkpKSCuIKUAA4egoKClIKUprKagpSCgoKCloKCgpaWlKaEpKSm1qKCqrSCloKWhpaChIK2lOiCgKS0gtaCgKS0gtaCgKSkpLSC1oKApKS0goKGggAHEIKCgpSClNaigpSkyMbWgqaCgoKmgtyClNqilKSkpKSkpKSkpoKUpIKClKSCgpSkgoKCgpaSgqakpKSCgpSkgoKUpIKClIKUpA==")]
-[assembly: go.GoPositionMap("internal/buildcfg/exp.go", "exp.cs", "ACZAgoKClAATKtrSlIKm7gAGEJSCgoKCgu6SgqiigpS4gpSCgpSCgpSogoKmgoKmgpSqoq7CgoKCgpSCgoKCgoKUgoKUuKqiqqI=")]
+[assembly: go.GoPositionMap("internal/buildcfg/cfg.go", "cfg.cs", "ADpakoKCuIKAgqTWgoCkpKSktILWgoKUpIKUgqqigpSCgpSCgpSCgqqigoKUAAcQgoKClJTWopiClJSEgoKCgpSCgpaUpKSkgriClAAOHoKCgpSClKaymoKUgoKCgpaCgoKWlpSmhKSkptaigqq0gpaCloaWgoSCtpTogoCktILWgoCktILWgoCkpKS0gtaCgKSktIKChoIABxCCgoKUgpTWooKUpMjG1oKmgoKCpoLcgpTaopSkpKSkpKSkpKaClKSCgpSkgoKUpIKCgoKWkoKmpKSkgoKUpIKClKSCgpSClKQ=", "314-316:1")]
+[assembly: go.GoPositionMap("internal/buildcfg/exp.go", "exp.cs", "ACBAgoKClAATKtrSlIKmgpSmAAoWAAYQlIKCgoKC7pKCqKKClLiClIKClIKClKiCgqaCgqaClKqirsKCgoKClIKCgoKCgpSCgpS4qqKqog==", "109-112:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -78,7 +78,23 @@ public static partial class buildcfg_package
     // <TypeAccessibility>
     public partial struct ExperimentFlags {}
     public partial struct Goarm64Features {}
-    public partial struct goarmFeatures {}
+    public partial struct GoarmFeatures {}
     public partial struct gowasmFeatures {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

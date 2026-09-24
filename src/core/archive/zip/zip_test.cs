@@ -497,7 +497,7 @@ internal static error errDiscardedBytes = errors.New("ReadAt of discarded bytes"
         if (add > space) {
             add = space;
         }
-        ss.buf = append(ss.buf, p[..(int)(add)].ꓸꓸꓸ);
+        ss.buf = appendꓸꓸꓸ(ss.buf, p[..(int)(add)]);
         p = p[(int)(add)..];
     }
     while (len(p) > 0) {
@@ -558,7 +558,7 @@ internal static bool suffixIsZip64(ж<testing.T> Ꮡt, sizedReaderAt zip) {
         }
     }
     var size = b.uint64();
-    if (size != directory64EndLen - 12) {
+    if (size != (uint64)(directory64EndLen - 12)) {
         Ꮡt.Errorf("expected length of %d, got %d"u8, (nint)(directory64EndLen - 12), size);
     }
     return true;

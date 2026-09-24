@@ -169,13 +169,13 @@ public static void TestInstallationImporter(ж<testing.T> Ꮡt) {
     // Ensure we don't regress the number of packages we can parse. First import
     // all packages into the same map and then each individually.
     var pkgMap = new map<@string, ж<types.Package>>();
-    foreach (var (_, pkg) in importablePackages) {
+    foreach (var (_, pkg) in importablePackages.ΔRangeSnapshot()) {
         (_, err) = imp(pkgMap, pkg, "."u8, default!);
         if (err != default!) {
             Ꮡt.Error(err);
         }
     }
-    foreach (var (_, pkg) in importablePackages) {
+    foreach (var (_, pkg) in importablePackages.ΔRangeSnapshot()) {
         (_, err) = imp(new map<@string, ж<types.Package>>(), pkg, "."u8, default!);
         if (err != default!) {
             Ꮡt.Error(err);

@@ -56,11 +56,13 @@ using static go.os_package;
 [assembly: GoImplement<SyscallError, error>(Pointer = true)]
 [assembly: GoImplement<dirEntry, go.io.fs_package.DirEntry>]
 [assembly: GoImplement<dirFS, go.io.fs_package.FS>]
+[assembly: GoImplement<errSymlink, error>]
 [assembly: GoImplement<fileStat, go.io.fs_package.FileInfo>(Pointer = true)]
 [assembly: GoImplement<fileWithoutReadFrom, io_package.Writer>]
 [assembly: GoImplement<fileWithoutWriteTo, io_package.Reader>]
 [assembly: GoImplement<go.io.fs_package.File, io_package.Reader>]
 [assembly: GoImplement<rawConn, syscall_package.RawConn>(Pointer = true)]
+[assembly: GoImplement<rootFS, go.io.fs_package.FS>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, ΔSignal>]
 // </InterfaceImplementations>
 
@@ -75,25 +77,28 @@ using static go.os_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/dir.go", "dir.cs", "ADVQABECgpSCuJQAAiQAEgKClIK4lAACIgAKAoKUgpSUAAcY8oKClJSChgAFKAARAqKCloKClJKCzIKWgoKUkoKClIKCloCCgqQ=", "126-128:1;150-190:1")]
-[assembly: go.GoPositionMap("os/dir_windows.go", "dir_windows.cs", "ADxYgsiCgoKCAAkSooIAAhDCgoKmlJSUpsoAGYYCgKKAooCigKSC")]
-[assembly: go.GoPositionMap("os/env.go", "env.cs", "ABIgopSCgoKClIKC7JSUgqaClKyyqqKUpKiSrLKUgpaSgoKUpqSmkpSssoKCAAIQ0oLaooKClKiSqJKqog==")]
-[assembly: go.GoPositionMap("os/error.go", "error.cs", "ACY8gAACEvAADB6ApICmkoKssoKUAAIS4gACEuIAAhLiAAIWAAgCgqa4goKmgqiSlKSklA==")]
-[assembly: go.GoPositionMap("os/exec.go", "exec.cs", "AF7SAYK4gqaCyoKCpoLcgoKmooKWgoKClIKClLiigpaCgoKCuJTclIKClIKUAAMS8oKWgoKC3JSmlIKClIKUuKKClqaiggAJFgAkTpCmkAACFgAJAgACIAANAoKsABUirLIAAhDSqqKokqiSrLKqoqyyAAIQ0g==")]
-[assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "ACI06IKAgoKCuILKgoKCpoKClpaEgqiCgoKCqKaCAAkWkqaCpoKmgqaC5qKClIKClIKSpMa0goLGtIKUqtSClA==")]
+[assembly: go.GoPositionMap("os/dir.go", "dir.cs", "ABdQABECgpSCuJQAAiQAEgKClIK4lAACIgAKAoKUgpSUAAcY8oKClJSChgAFLgAUAqKCloKClJKCzIKWgoKUkoKClIKCloCCgqQ=", "126-128:1;153-193:1")]
+[assembly: go.GoPositionMap("os/dir_windows.go", "dir_windows.cs", "ACRYgsiCgoKCAAkSooIAAhDCgoKmlJSUpsoACYYCgKKAooCigKSC")]
+[assembly: go.GoPositionMap("os/env.go", "env.cs", "AAwgopSCgoKClIKC7JSUgqaClKyyqqKUpKiSrLKUgpaSgoKUpqSmkpSssoKCAAIQ0oLaooKClKiSqJKqog==")]
+[assembly: go.GoPositionMap("os/error.go", "error.cs", "ACA8gAACEvAADB6ApICmkoKssoKUAAIS4gACEuIAAhLiAAIWAAgCgqa4goKmgqiSlKSklA==")]
+[assembly: go.GoPositionMap("os/exec.go", "exec.cs", "AEzSAYK4gqaCyoKCpoLcgoKmooKWgoKClIKClLiigpaCgoKCuJTclIKClIKUAAMS8oKWgoKC3JSmlIKClIKUuKKClqaiggAJFgAkTpCmkAACFgAJAgACIAANAoKsABUirLIAAhDSqqKokqiSrLKqoqyyAAIQ0g==")]
+[assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "ABw06IKAgoKCuILKgoKCpoKClpaEgqiCgoKCqKaCAAkWkqaCpoKmgqaC5qKClIKClIKSpMa0goLGtIKUqtSClA==")]
 [assembly: go.GoPositionMap("os/exec_windows.go", "exec_windows.cs", "ABQkAAgCgpSkpISCpLSkpIKCgpSCgoKUggAKBqKClKSkhIKCgoKUgoKCptbcgIK4gqaC1oKUgoKUpoKCgoKUupKClKqigoKCgoKUgsaCuIKClJSUgrSCtIKClKyygoKCgpSCgpSmooKmgqaC")]
 [assembly: go.GoPositionMap("os/executable.go", "executable.cs", "AAckAAsC")]
 [assembly: go.GoPositionMap("os/executable_windows.go", "executable_windows.cs", "AAsYgoKCgoKCgpSCppSmgg==")]
-[assembly: go.GoPositionMap("os/file.go", "file.cs", "AD18sAA1XoKmgtzigIKkgt4ACAKAgqaCloKCgoKUgoKU2MKAgqSCgpQABxKiAAoWgqzygIKkgoKUgpaEgpYABBQACQKAgqSCloKWgoKCgpSCgpSowoCCpIKClAAHEqIAChaCAAUQ8oCCpIKClIKUqqKCrLKCiIKogoSCgqiokoKClKqigIKCpIKCgpSAgoKCtq7CAAIQ0gACEuKCgoKUhKyyggAHFtIAAhDSqqKClAAGFLKClIKklAACGAAJAgAMIAANAoSUgoK4goKUpoKClKaCkoKClLgACCAADQKElIKCuIKClKaCgpSmgpKCgpS4AAkWAAgCkpSkpICCtpSkpAACKgASAKigAAI0ABgCrsIAAhLi2qKAgqQAAyQADwLKgoKClILKgpSuwoKClIKCgJSklKqigoKUgoKAlKSUpoKCgpSClIKU2JKClIKClIKUruKCgpSUgoCCgoK2zIKWgoKCgoKClJaCggAHFNKCgpSCgIKk", "309-311:1")]
-[assembly: go.GoPositionMap("os/file_posix.go", "file_posix.cs", "AA8m4oKUqtKCgqzigoKq0oKCqtKCgqiygoKUgpSCpqiSgoaClNiygIKkgIKkAAIU8oaClAACEuKGgpQABRDygIKkgIKk3NKAgqSAgqTc0oCCpICCpAACFPKCgoKUpoKCgIKkrNKAgqSAgqTYkoCCpNiSgIKk2JKAgqSqooKUAAIU8oKCgg==", "78-80:1;106-108:1;122-124:1;181-187:1")]
-[assembly: go.GoPositionMap("os/file_windows.go", "file_windows.cs", "ACtQAAgCgpTqooKCgpSAgrgACBCohKiS3LKCgpSmAAYQkoKUgoKUgoKCgoKCuJSmgqaigpSAgqSCgIKClLiCrvKApqSCgqrCgoKUkoKClNqigoK6goKUgoKogoKClIKkgIKAgvymgoKClKyygoKClAAGEIKClIKClIKCgoKClMiUvKKCgpSCgpSCgpSu1JaCgIKUgKbIuIKEgoKUgoIABxCUgpaCgpSCpoKCgqassoKClKaCgoKUAAQaAAoClKaClKTYgpSEgoKUhIKCgoKUgpSUgoKClJSUAAdGooKClA==", "243-245:1")]
-[assembly: go.GoPositionMap("os/getwd.go", "getwd.cs", "ABcs8oK6goKUgoKCgsyCmIKCgqaogoKCgoKCzIKUlILMgoKSlIKCloKCgoKUgoKCgrqCgoKClIKmqIKChA==")]
+[assembly: go.GoPositionMap("os/file.go", "file.cs", "AD18sAA1XoKmgtzigIKkgt4ACAKAgqaCloKCgoKUgoKU2MKAgqSCgpQABxKiAAoWgqzygIKkgoKUgpaEgpYABBQACQKAgqSCloKWgoKCgpSCgpSowoCCpIKClAAHEqIAChaCAAUQ8oCCpIKClIKUqqKCrLKCiIKogoSCgqiokoKClKqigIKCpIKCgoKUlJSAgoKCtq7CAAIS4gACFPKCgoKUhAAEELKCAAcY4gACENKqooKUAAYUsoKUgqSUAAIYAAkCAA0gAA0ChJSCgriCgpSmgoKUpoKSgoKUpLgACSAADQKElIKCuIKClKaCgpSmgpKCgpSkuAAJFgAIApKUpKSAgraUpKQAAioAEgCooAACNAAYAq7CAAIS4tqigIKkAAMoABECyoKCgpSCyoKUrsKCgpSCgoCUpJSqooKClIKCgJSklKaCgoKUgpSClNiSgpSCgpSClK7igoKUktaCgoCCgoK2zIKWgoKCgoKClJaCggAEFNKCgpSCgIKk", "309-311:1")]
+[assembly: go.GoPositionMap("os/file_posix.go", "file_posix.cs", "AA8m4oKUqtKCgqzigoKq0oKCqtKCgqiygoKUgpSCpqiSgoaClNiygIKkgIKkAAIU8oaClAACEuKGgpQABRDygIKkgIKk3NKAgqSAgqTc0oCCpICCpAACFPKCgoKUpoKCgIKkrNKAgqSAgqTYkoCCpNiSgIKk2JKAgqSqooKUAAIU8oKCgsySgoKC", "78-80:1;106-108:1;122-124:1;181-187:1")]
+[assembly: go.GoPositionMap("os/file_windows.go", "file_windows.cs", "ACVQAAgCgpTqooKCgpSAgrgACBCohKiS3LKCgpSmAAYQkoKUgoKClKaCpqKClICCpIKAgoKUuIKu8oCmpIKCqsKCgpSSgoKU2qKCgrqCgpSCgqiCgoKUgqSAgoCC/KaCgoKUrLKCgoKUzoKCgpSCgoKCgpTIlLyigoKUgoKUgoKUrtSWgoCClICmyLiChIKClIKCAAcQlIKWgoKUgqaCgoKmrLKCgpSmgoKClAAEGgAKApSmgpSk2IKUhIKClISCgoKClIKUlIKCgpSUlAAJTIKCgpQ=")]
+[assembly: go.GoPositionMap("os/getwd.go", "getwd.cs", "ABc0AAsCyoKaooKCgoKUgoIABhCCyoK6goKCuIKCgoKCgsyClJSCzIKCkpSCgpaCgoLKgpSUgoKCgrqCgoKClIKmqIKChA==")]
 [assembly: go.GoPositionMap("os/path.go", "path.cs", "AA0mAAgEgoKClAAFEIKClIKUgrqAgoKCyoKmgoKUlAACENKokoKUgpQ=")]
 [assembly: go.GoPositionMap("os/path_windows.go", "path_windows.cs", "ABAmpKaCgoKClIKCgpSClAACGAAJAoKUqJKClJSUAA0eggAHEIKUlIKWppaSgpSmpoKU2paCgsqCgoKCgoKUgoKmlJSC")]
-[assembly: go.GoPositionMap("os/pidfd_other.go", "pidfd_other.cs", "AAoWgqaCpoKmpIKmgg==")]
+[assembly: go.GoPositionMap("os/pidfd_other.go", "pidfd_other.cs", "AAoWgqaCpoKmgqaC")]
 [assembly: go.GoPositionMap("os/proc.go", "proc.cs", "ABAkgpSUprrQqrCqsKqw3MKCAAIQ0rgABhCEpg==")]
 [assembly: go.GoPositionMap("os/rawconn.go", "rawconn.cs", "ABMkgoCCpIKC1oKAgqSCgtaCgIKkgoKmgg==")]
 [assembly: go.GoPositionMap("os/removeall_noat.go", "removeall_noat.cs", "AA4egqbMgqiCgqiCgoCCpJSUqIKCgoKUlJaCgoSCgoSCgoKUgsyCAAcShIKmgpSC3oKCgpYABxDMgoKUgoCCgILYgpQ=")]
+[assembly: go.GoPositionMap("os/root.go", "root.cs", "ABEwAAkCgoKUkgAoWqKCrLKqoqqiqqIABRDygpSCgoKUgqrCggACEuKClKqiqsKCruKCpoKApsiCgKYABxoADAKClIKWlIKClIKWgpKClIKUlIKClKaClJSUlJSUgq7CyoKCgpSCgpSmooKCAAcSgoKUkoKG1qKCgpSCgpSS1oKCgpSokoKUyoKm", "282-284:1")]
+[assembly: go.GoPositionMap("os/root_openat.go", "root_openat.cs", "ABs80oKCgpSCgtbSgoKClILW0oKCgpSCguiCpoKGgpSmgoaClAACFgAMAoCCpISCgpaCgoKCAAIU4oSCgoKCgoKCltyCgoKUgoKUgoKUgoKUgpbugoCCtoKCgoKUooK4gIKCgpSCgpTulKaCgpSUgqYACRCA", "68-70:1;78-80:1;108-112:1")]
+[assembly: go.GoPositionMap("os/root_windows.go", "root_windows.cs", "ABVMABQEgpaCgoKClIKCgoKUhIKCloKClIKCloKWrJKClIKCgpTaqsKCgoKWyIKosoKClKiyhoKUpoKCgoCCtqaigoKUpoKUgoIACxqClILWgoIADh6UpoLclKKCgpSCgoKUgoKClJTEgpSmgqaC", "127-129:1;210-228:1")]
 [assembly: go.GoPositionMap("os/stat.go", "stat.cs", "AAoWooIAAhYACAKC")]
 [assembly: go.GoPositionMap("os/stat_windows.go", "stat_windows.cs", "AA8gwoKUqLKClIKCmqKCpoKAgqS6goKCgpSClIKAgqQAAhDChMqUuJaCgriClJSClNaCkoKUlKSCgpSC2JLYkoLclA==")]
 [assembly: go.GoPositionMap("os/sys.go", "sys.cs", "AAcQkg==")]
@@ -101,6 +106,7 @@ using static go.os_package;
 [assembly: go.GoPositionMap("os/tempfile.go", "tempfile.cs", "AA4o9IIAAhgACQKCloKClISCgoKCgoCCpJQABRDSgoKmgIKUpAACFgAIAoKWgoKUhIKCgoKClIKAgqSUgoCCtriCgpQ=")]
 [assembly: go.GoPositionMap("os/types.go", "types.cs", "AA4akAAsXoCigAACEOKCgoKU")]
 [assembly: go.GoPositionMap("os/types_windows.go", "types_windows.cs", "ACpcwoKCgpaCgoKCgpSWAA4o4gAJGAAICgAMHsIAChqiAAcQypQAAhDkpoLKgoKCgoKCpqaigpQAChiCgpaUpLiClKQABCAAEAau4oKUlISUgpSUpKSCgpSCprimgqiSAAkUwoKClJSCgpSUgoIADyKEgoKUgoKCgpSCgoKC2qKCgoKCgqaCprKCgpSCgpSokg==")]
+[assembly: go.GoPositionMap("os/zero_copy_posix.go", "zero_copy_posix.cs", "AAsgooCCpKyyhIKCloI=")]
 [assembly: go.GoPositionMap("os/zero_copy_stub.go", "zero_copy_stub.cs", "AAoWgqaC")]
 // </GoSourcePositionMaps>
 
@@ -121,6 +127,7 @@ public static partial class os_package
     internal partial struct dirEntry {}
     internal partial struct dirFS {}
     internal partial struct dirInfo {}
+    internal partial struct errSymlink {}
     internal partial struct fileStat {}
     internal partial struct fileWithoutReadFrom {}
     internal partial struct fileWithoutWriteTo {}
@@ -131,12 +138,41 @@ public static partial class os_package
     internal partial struct processStatus {}
     internal partial struct rawConn {}
     internal partial struct readdirMode {}
+    internal partial struct root {}
+    internal partial struct rootFS {}
     public partial interface ΔSignal {}
     public partial struct File {}
     public partial struct LinkError {}
     public partial struct ProcAttr {}
     public partial struct Process {}
     public partial struct ProcessState {}
+    public partial struct Root {}
     public partial struct SyscallError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸfilepathlite() => builtin.initPackage(typeof(@internal.filepathlite_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() => builtin.initPackage(typeof(@internal.poll_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() => builtin.initPackage(typeof(@internal.stringslite_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸexecenv() => builtin.initPackage(typeof(@internal.syscall.execenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestlog() => builtin.initPackage(typeof(@internal.testlog_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

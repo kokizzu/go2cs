@@ -26,6 +26,7 @@ internal static void testSignAndVerify(ж<testing.T> Ꮡt, nint i, ж<global::go
 }
 
 internal static void testParameterGeneration(ж<testing.T> Ꮡt, global::go.crypto.dsa_package.ParameterSizes sizes, nint L, nint N) {
+    Ꮡt.Helper();
     ref var priv = ref heap(new global::go.crypto.dsa_package.PrivateKey(), out var Ꮡpriv);
     var @params = Ꮡpriv.of(global::go.crypto.dsa_package.PrivateKey.ᏑParameters);
     var err = GenerateParameters(@params, rand.Reader, sizes);

@@ -49,8 +49,8 @@ using static go.slices_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("slices/iter.go", "iter.cs", "ABAcwoKCggAFEMKCgoLesoKCggAFEMKClKiSqsKCgqqigoKuwoKCAAIQ8oKWgpSogg==")]
-[assembly: go.GoPositionMap("slices/slices.go", "slices.cs", "ABQoAAgCgpSCgqYAAhAACAKClIKCgqYAAhQACgKCgpSCgIK2gpQAAhAACAKCgpSCgIK2gpSqwoKCpqrCgoKmqLKqwgACFAALAoSCgpSCgpTKgoKClAANILoABRDe3s7eAAIQ8oSCloKCgqzSgoKmgoCCgraCrgAIAoSClIKCgpSWgpSCgoKWhJSCgoIACxyUgoIADR6EgoKCgpSCgoKCAAYQgoKCrOQAAhDygpSCgoKCgoKogqas0oKUgoKCgoKCqIKmruKClICCpKiyAAIS4oKCpIKokoKUgoK4rKKCgoK4qLKCutKCgoKCpoKClAACEPKCloKAgqaCgoKU")]
+[assembly: go.GoPositionMap("slices/iter.go", "iter.cs", "AAocwoKCggAFEMKCgoLesoKCggAFEMKClKiSqsKCgqqigoKuwoKCAAIQ8oKWgpSogg==", "15-21:1;27-33:1;38-44:1;97-108:1")]
+[assembly: go.GoPositionMap("slices/slices.go", "slices.cs", "AA4oAAgCgpSCgqYAAhAACAKClIKCgqYAAhQACgKCgpSCgIK2gpQAAhAACAKCgpSCgIK2gpSqwoKCpqrCgoKmqLKqwgACFAALAoSCgpSCgpTKgoKClAANILoABRDe3s7eAAIQ8oSCloKCgqzSgoKmgoCCgraCrgAIAoSClIKCgpSWgpSCgoKWhJSCgoIACxyUgoIADR6EgoKCgpSCgoKCAAYQgoKCrOSCuAACEPKClIKCgoKCgqiCpqzSgpSCgoKCgoKogqau4oKUgJSkqLIAAhLigoKkggAEKKKCgoK4qLKCutKCgoKC3IKClAACEPKCloKCgpaCgoKU")]
 [assembly: go.GoPositionMap("slices/sort.go", "sort.cs", "AAwg0oIAAhgACwKCqsKowoKCpqrCgoKmrOKClIKClKzSgpSCgoKmrOKClIKClKzSgpSCgoKmrgAIBKaSgpSClLgAAhQACQKmkoKUgpS4AAocgoKCgqaCqsI=")]
 [assembly: go.GoPositionMap("slices/zsortanyfunc.go", "zsortanyfunc.cs", "AAgUkoKCzqKCgoKClIKUgpSCuIKCgpaCqIKCAAMU4oSagoSCgqiCgqiCgpaCgriCqIKCzIKCgpaChJKCgoKClIKCAAQSwoKUgpSClIKClIKChIKClIKUgpSCgpSCqqKClIKClIKUgpSCgpSokpiCgoKWgpaClpaCgoKUuIKCgpS4qqKCgoKEgoKClAAEFNKahL6ClIKCppaUpKTKkoKClKiSgoKCqJKmgoKCgoKCuIKCuIKCkoKCgpSEgoKCgoKUgIKkAAMuABYIuIKCgoKClLiClMy4goKCgoKUuIKUloKCkoKClIKUhIKCgpSogoKUgpSCAAMQwoKEgoKClIK4")]
 [assembly: go.GoPositionMap("slices/zsortordered.go", "zsortordered.cs", "AAoYsoKCzsKCgoKClIKUgpSCuKKCgpaCqIKCAAMUAAgChJqChIKCqIKCqIKCloKCuIKogoLMgoKCloKEkoKCgoKUgoIABBLigpSClIKUgoKUgoKEgoKUgpSClIKClIKqwoKUgoKUgpSClIKClKiymIKCgpaCloKWloKCgpS4goKClLiqwoKCgoSCgoKUAAQU8pqEvoKUgoKmlpSkpMqygoKUqLKCgoKosqaigoKCgoK4ooK4ooKSgoKClISCgoKCgpSAgqQAAy4AGAi4goKCgoKUuIKUzLiCgoKCgpS4gpSWgoKSgoKUgpSEgoKClKiCgpSClIIAAxDigoSCgoKUgrg=")]
@@ -71,4 +71,15 @@ public static partial class slices_package
     internal partial struct sortedHint {}
     internal partial struct xorshift {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

@@ -3,51 +3,48 @@
   "disclosures": [
     {
       "name": "TestAppendAllocs",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "Append allocated ",
-      "reason": "want-zero AllocsPerRun assert: binary.Append's reflect walk boxes every field value into `any` (Value readers) in the managed model where Go's encoder writes through pre-sized memory allocation-free; boxing into an interface allocates on the CLR by construction"
-    },
-    {
-      "name": "TestSizeAllocs/complex64",
-      "class": "alloc-profile",
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids; the interned descriptor read behind it is allocation-free but the boxing alone fails the want-zero"
-    },
-    {
-      "name": "TestSizeAllocs/complex128",
-      "class": "alloc-profile",
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids"
-    },
-    {
-      "name": "TestSizeAllocs/binary.Struct",
-      "class": "alloc-profile",
-      "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the struct argument per call, and the cached-struct-size lookup constructs a boxed reflect.Value — CLR heap allocations Go's non-escaping eface and pointer-word Value avoid"
+      "reason": "want-zero AllocsPerRun assert: binary.Append's reflect walk boxes every field value into `any` (Value readers) in the managed model where Go's encoder writes through pre-sized memory allocation-free; boxing into an interface allocates on the CLR by construction. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not.",
+      "want": "0 allocations per run",
+      "reading": "75 per run -- 75 go2cs-runtime object allocations (10,712 bytes) counted over 1 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 83 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `Append allocated 75 times instead of not allocating at all`",
+      "plan": "PARTIAL FORM (as fmt's): candidate sites binary.cs:554/560, reflect/value_impl.cs:811 and golib/GoReflect.FieldAccess.cs:564; the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A). Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed."
     },
     {
       "name": "TestSizeAllocs/*binary.Struct",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the pointer argument per call and Indirect materializes an addressable bridge Value — CLR heap allocations Go's non-escaping eface avoids"
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the pointer argument per call and Indirect materializes an addressable bridge Value — CLR heap allocations Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not.",
+      "want": "0 allocations per run",
+      "reading": "1 per run -- 10 go2cs-runtime object allocations (2,480 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 87 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `Expected no allocations, got 1`",
+      "plan": "PARTIAL FORM (as fmt's): candidate site binary.cs:554 (Indirect over ValueOf); the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A), as O2 names for all five. Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed. (Plan fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad.)"
     },
     {
       "name": "TestSizeAllocs/[]binary.Struct",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids"
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not.",
+      "want": "0 allocations per run",
+      "reading": "1 per run -- 10 go2cs-runtime object allocations (1,200 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 88 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `Expected no allocations, got 1`",
+      "plan": "PARTIAL FORM (as fmt's): candidate sites binary.cs:877/:880; the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A), as O2 names for all five. Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed. (Plan fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad.)"
     },
     {
       "name": "TestSizeAllocs/[]binary.Struct#01",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids"
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not.",
+      "want": "0 allocations per run",
+      "reading": "1 per run -- 10 go2cs-runtime object allocations (1,200 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 89 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `Expected no allocations, got 1`",
+      "plan": "PARTIAL FORM (as fmt's): candidate sites binary.cs:877/:880; the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A), as O2 names for all five. Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed. (Plan fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad.)"
     },
     {
       "name": "TestSizeAllocs/[1]binary.Struct",
-      "class": "alloc-profile",
+      "class": "deferred",
       "signature": "Expected no allocations, got ",
-      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the array argument per call (a full managed copy of the array struct) — CLR heap allocations Go's non-escaping eface avoids"
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the array argument per call (a full managed copy of the array struct) — CLR heap allocations Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not.",
+      "want": "0 allocations per run",
+      "reading": "1 per run -- 10 go2cs-runtime object allocations (2,160 bytes) counted over 10 runs at bb54ff0920 (the batch-8b stamp), Release with tiering off, readings-go1.24.13.tsv line 90 (claude/coord-h10-readings ac9f8251ee); unit COUNT, a LOWER BOUND; the test printed `Expected no allocations, got 1`",
+      "plan": "PARTIAL FORM (as fmt's): candidate sites binary.cs:877/:880; the plan is docs/phase4/DESIGN-zh-box-three-capabilities.md capability 1 plus docs/phase4/DESIGN-zh-box-reduction.md (Phase A), as O2 names for all five. Attribution comes first and is dated post-hop. R1: the entry can pass once its sites are removed. (Plan fixed up 2026-09-23 per COORD's ACCEPT-WITH-FIXES, ledger 3942e083ad.)"
     }
   ]
 }

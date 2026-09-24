@@ -150,10 +150,11 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
             // Reset CPU samples cursor.
             r.cpuSamples = r.gen.Value.cpuSamples;
             // Reset frontier.
-            foreach (var (kᴛ1, batches) in (~r.gen).batches) {
+            foreach (var (_, vᴛ1) in (~r.gen).batchMs) {
                 ref var m = ref heap(new ThreadID(), out var Ꮡm);
-                m = kᴛ1;
+                m = vᴛ1;
 
+                var batches = (~r.gen).batches[m];
                 var bc = Ꮡ(new batchCursor(m: m));
                 var (okΔ2, errΔ3) = bc.nextEvent(batches, (~r.gen).freq);
                 if (errΔ3 != default!) {
@@ -212,7 +213,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 // To do this, sort the min-heap. A sorted min-heap is still a
                 // min-heap, but now we can iterate over the rest and try to
                 // advance in order. This path should be rare.
-                slices.SortFunc<slice<ж<batchCursor>>, ж<batchCursor>>(r.frontier, (Func<ж<batchCursor>, ж<batchCursor>, nint>)(compare));
+                slices.SortFunc<slice<ж<batchCursor>>, ж<batchCursor>>(r.frontier, ((Func<ж<batchCursor>, ж<batchCursor>, nint>)(compare)));
                 var success = false;
                 for (nint i = 1; i < len(r.frontier); i++) {
                     {

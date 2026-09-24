@@ -17,17 +17,18 @@ using static go.net.http_internal_test_package;
 // <ExportedTypeAliases>
 [assembly: GoDynamicTypeLift("7374727563747b436f6f6b6965202a6e65742f687474702e436f6f6b69653b2052617720737472696e677d", "writeSetCookiesTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b436f6f6b696573205b5d2a6e65742f687474702e436f6f6b69653b2052617720737472696e677d", "addCookieTestsᴛ1")]
-[assembly: GoDynamicTypeLift("7374727563747b486561646572206e65742f687474702e4865616465723b20436f6f6b696573205b5d2a6e65742f687474702e436f6f6b69657d", "readSetCookiesTestsᴛ1")]
-[assembly: GoDynamicTypeLift("7374727563747b486561646572206e65742f687474702e4865616465723b2046696c74657220737472696e673b20436f6f6b696573205b5d2a6e65742f687474702e436f6f6b69657d", "readCookiesTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b61636365707420737472696e673b2065787065637441636365707420737472696e673b20636f6d7072657373656420626f6f6c7d", "roundTripTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b6368756e6b656420626f6f6c3b20636f6d7072657373656420626f6f6c7d", "readResponseCloseInMiddleTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b6465736320737472696e673b2064617461205b5d627974653b20636f6e74656e745479706520737472696e677d", "sniffTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b68206e65742f687474702e4865616465723b2065727220626f6f6c7d", "parseTimeTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b68206e65742f687474702e4865616465723b206578636c756465206d61705b737472696e675d626f6f6c3b20657870656374656420737472696e677d", "headerWriteTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b686561646572206e65742f687474702e4865616465723b20636f6f6b696573205b5d2a6e65742f687474702e436f6f6b69653b20676f646562756720737472696e677d", "readSetCookiesTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b686561646572206e65742f687474702e4865616465723b2066696c74657220737472696e673b20636f6f6b696573205b5d2a6e65742f687474702e436f6f6b69653b20676f646562756720737472696e677d", "readCookiesTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b68656164657220737472696e673b20757365726e616d6520737472696e673b2070617373776f726420737472696e673b206f6b20626f6f6c7d", "parseBasicAuthTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b2065727220737472696e673b20686561646572206e65742f687474702e4865616465727d", "readRequestErrorTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "newRequestHostTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b696f2e5265616465723b20696f2e436c6f7365727d", "testTransportClosesBodyOnError_body")]
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5265616465727d", "testHeadResponses_src")]
 [assembly: GoDynamicTypeLift("7374727563747b6d6574686f6420737472696e673b20686f737420737472696e673b207061746820737472696e673b20636f646520696e743b207061747465726e20737472696e677d", "serveMuxTestsᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b6d6574686f6420737472696e673b20686f737420737472696e673b2075726c20737472696e673b20636f646520696e743b2072656469724f6b20626f6f6c7d", "serveMuxTests2ᴛ1")]
 [assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20726571205b5d627974657d", "badRequestTestsᴛ1")]
@@ -75,19 +76,19 @@ using static go.net.http_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("net/http/cookie_test.go", "cookie_test.cs", "AK8B0gKigoKEgoCSuICSAAkMgqaCpoLmgoKCgoCCpICSpICSAChGgoKCgpSAggCTAaQCgoKClKaigpKCggBBgAGigpKCggALDIKCgoKCgoLcgpSCgoIADQqigoKEAA8mgoCCuICSAAsIooKChM6CgIK4gJIADAiCAA0kgoKClILKooIABxCCgoKClICSyKLMABIqgoKCgpSCuKK6AAsYgoKCgpSCAAkIggAhTIKCgpSCAAoKggCNAaQCgoKCgpSC")]
-[assembly: global::go.GoPositionMap("net/http/export_test.go", "export_test.cs", "ADFSuISCgoCCtoKUggAIDIKCAAgSooKq0oKCpoCkgoKSlKaC3pKmwoKC1tKCgoKClILWwoKC1sKCgoKCgqaC1sKCgoSClIKCgrqC1sKCgoKCgoKm1sKCgtbCgoLWgqrCgpS4goKUgpYACRTClLiCgpSClgAGEsKCuIKSgriigoKUgqbCgoKCgoKm1sKCgoKCgpTWgqaCgoKAtoCu8oKCgqaqooCCpKbKqqKCgpQ=", "47-60:1;91-93:1;253-256:1;298-298:1;339-341:1")]
+[assembly: global::go.GoPositionMap("net/http/cookie_test.go", "cookie_test.cs", "ALAB1AKigoKEgoCSuICSAAkMgqaCpoLmgoKCgoCCpICSpICSAChGgoKCgpSAggCnAcwCgoKClNaigoKSgoIAV6wBooKCkoKCAAsMgoKCgoKCgtyClIKCggANCqKCgoQADyaCgIK4gJIACwiigoKEzoKAgriAkgAMCIIADSSCgoKUgsqiggAHEIKCgoKUgJLIoswAEiqCgoKClIK4oroACxiCgoKClIIACgiCADR0goKCgpSCAAoKggCNAaQCgoKCgpSC")]
+[assembly: global::go.GoPositionMap("net/http/export_test.go", "export_test.cs", "ADFSuISCgoCCtoKUggAIDIKCAAgSooKq0oKCpoCkgoKSlKaC3pKm0oKC1tKCgoKClILW0oKC1tKCgoKCgqaC1sKCgoSClIKCgrqC1tKCgoKCgoKm1tKCgtbSgoLWgqrCgpS4goKUgpYACRTClLiCgpSClgAGEsKCuIKSgriigoKUgqbSgoKCgoKm1tKCgoKCgpTWgqaCgoKAtoCu8oKCgqaqooCCpKbKqqKCgpQ=", "47-60:1;91-93:1;253-256:1;298-298:1;339-341:1")]
 [assembly: global::go.GoPositionMap("net/http/filetransport_test.go", "filetransport_test.cs", "ABEegoKClAAJCKKEgoKCgoSCgoSCgoKCgpSClIKUgoKCgqiCgoKClNaChKiCgoSCgoKCgpSClIKUgoKCgqiCgoKClA==", "16-21:1")]
 [assembly: global::go.GoPositionMap("net/http/h2_error_test.go", "h2_error_test.cs", "ABUugqaCgoKCgpSClIKUgg==")]
 [assembly: global::go.GoPositionMap("net/http/header_test.go", "header_test.cs", "AGzYAYKCgoKClAARIIKCgoKCgpSUgoKUggAnUIKCgsqCgoKCAA4aooKCggAICIKClIKUgpSCgpSCAAsMogANJLKSgoKUgpSC", "229-232:1;260-270:1")]
-[assembly: global::go.GoPositionMap("net/http/http_test.go", "http_test.cs", "AB0qggAKIoKCgpSCAAcS4oKCgoKUAAkWgoKClIIACw6igpSCgoKC7rKCgoKCAAgMooIACBKCgoKAgraCABcusoKWgoCSgpaClIaWgoKUgoKClKiU7KKEgg==", "41-43:1;159-187:1")]
+[assembly: global::go.GoPositionMap("net/http/http_test.go", "http_test.cs", "AB0qggAKIoKCgpSCAAcS4oKCgoKUAAkWgoKClIIACw6igpSCgoKC7rKCgoKCAAgMooIACBKCgoKAgraCABYusoSCgJKCloKUhpaCgpSCgoKUqJTIgoKClIKCgpSClIKClILcooSC", "41-43:1;157-185:1")]
 [assembly: global::go.GoPositionMap("net/http/mapping_test.go", "mapping_test.cs", "ABMegoKClIKUgoKCgqaCgpSClIKAgsiCgoKCgoKYgoKClIaCAAgIgoIAIUSClIKClJKCgpSCgqaSgoKUgoKClJSSgoKUgoKClNyCgoKm", "54-57:1;58-60:2;107-143:1;109-118:1.1;119-130:1.2;131-142:1.3")]
 [assembly: global::go.GoPositionMap("net/http/pattern_test.go", "pattern_test.cs", "ABkaooiIkoKClgBbtgGCggAJCqIAFzSCgsqiqIKCgoKU9oIACRqCgoKClIKCggAJCqIAdYoCgoKAgqSAgqSCgoKClIKCggAJCqIAGjSCgoKCuIKCAAkMgoKCgIKkgoKCgpSUgoIACAiCAAcWgoIACgyCAAsegoKClIKCAAkKggAaPIKCgoKUgoI=", "14-16:1;18-20:2;22-26:3")]
 [assembly: global::go.GoPositionMap("net/http/proxy_test.go", "proxy_test.cs", "AB04goKCgoKClJSCgILagoKU")]
 [assembly: global::go.GoPositionMap("net/http/range_test.go", "range_test.cs", "ADp2goKCgoKUgoKUgoKUgg==")]
 [assembly: global::go.GoPositionMap("net/http/readrequest_test.go", "readrequest_test.cs", "AOUCygaCgoKCgoKUlIKCgoKCgoKClJSCgpSCzqIAIzaCgoKCgg==")]
 [assembly: global::go.GoPositionMap("net/http/requestwrite_test.go", "requestwrite_test.cs", "AIcCvgWCggANJIKCAKUB3gOCgoSSgpSUtLaCgpaCgoCSgqSCloKCgoKogoKCgoKClIKCggAWDKKEAAUSgoKUgpSWkpKCgIK2qAA0gAGCkpTMsoKUAAkUgoKClICCAAoUgoL8soKCgpSCgIKkgpSMgriCpoKCgpTKgAAKBpKSzMyCgpSCqIKCgoKCgoKCgpSCgpSCgoKmgqaCAAYQ7tKCkpKEyqaigoKCuIKUloKClAAMFIKClAAIEoCigKKAooCigKKA", "616-626:1;670-677:1;671-676:1.1;679-687:2;689-698:3;690-697:3.1;763-769:4;765-767:4.1;866-873:1;924-926:1;931-943:2")]
-[assembly: global::go.GoPositionMap("net/http/response_test.go", "response_test.cs", "ACI6gqaCAKkD1giisoKCgpSCgoKCgoKCgpSUgoLKgoKCgoKUgoKCAB8q0oKyooKUkoKUlIKCgpSUgoKUgoKUhIKClIKUlIKClIKUhIKCgoKClIKUgpSCgoKWgoKCgpSClISCgoCShtqCgoKCgpSCgoKUgoKCABMmgoKCgoKCgoKCgqiCgoKClICSgqSUgoKUgJLagtyCgoK4ooKIgoKUkoKUgoKClIKUggAmDrKOgpTegoKU3gAEEIKEACtggoKCgIKCgpTeooKClICCpJSClICCgpSkgpTYkoSCgpaCgIKkgIKmgoCCpICC", "649-652:1;653-658:2;727-729:3;856-865:1;867-876:2;878-884:3")]
+[assembly: global::go.GoPositionMap("net/http/response_test.go", "response_test.cs", "ACM8gqaCAMAD2AqisoKCgpSCgoKCgoKCgpSUgoLKgoKCgoKUgoKCgpSAkgAjMNKCsqKClJKClJSCgoKUlIKClIKClISCgpSClJSCgpSClISCgoKCgpSClIKUgoKCloKCgoKUgpSEgoKAkobagoKCgoKUgoKClIKCggATJoKCgoKCgoKCgoKogoKCgpSAkoKklIKClICS2oLcgoKCuKKCiIKClJKClIKCgpSClIIAJg6yjoKU3oKClN4ABBCChAArYIKCgoCCgoKU3qKCgpSAgqSUgpSAgoKUpIKU2JKEgoKWgoCCpICCpoKAgqSAgg==", "786-789:1;790-795:2;864-866:3;993-1002:1;1004-1013:2;1015-1021:3")]
 [assembly: global::go.GoPositionMap("net/http/responsewrite_test.go", "responsewrite_test.cs", "ABQkogDbAYIEgoKCgoKClIKCgg==")]
 [assembly: global::go.GoPositionMap("net/http/routing_index_test.go", "routing_index_test.cs", "AA4cuIKCgoKCgpS4ooKCgqaCpqKCgoKUlIKqooSEkoKCgoKClIKCgpSCgpSWvsqCAAQQkoK6kpKCzqKCgoLesoKUqJKClKqigoLKpJKCgpSCgoKCgoKUlJSAkg==", "43-48:1;58-78:1;102-104:1;109-113:1;119-125:1;120-124:1.1;121-123:1.1.1;147-151:1")]
 [assembly: global::go.GoPositionMap("net/http/routing_tree_test.go", "routing_tree_test.cs", "ABYiggAGFIKCgoKClIIADRCCgrimooKCgoKUlAAcBoIAAC6CgoKCABgUhIKCgoKCgpSClIK6AAoYAAsaACNEggAGEIIABhCCAAYQABUQooIAKViSgoKCgtyigoKUgoKWgoKClISCgoKWgoI=", "105-120:1;262-269:1;284-287:1")]
@@ -133,6 +134,7 @@ public static partial class http_internal_test_package
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
     [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
     [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(global::go.@internal.race_package));
     [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(global::go.@internal.testenv_package));
     [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
     [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(global::go.io.fs_package));
@@ -150,6 +152,7 @@ public static partial class http_internal_test_package
     [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttputil() => builtin.initPackage(typeof(global::go.net.http.httputil_package));
     [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() => builtin.initPackage(typeof(global::go.net.http.internal_package));
     [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸtestcert() => builtin.initPackage(typeof(global::go.net.http.@internal.testcert_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() => builtin.initPackage(typeof(global::go.net.netip_package));
     [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(global::go.net.textproto_package));
     [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(global::go.net.url_package));
     [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));

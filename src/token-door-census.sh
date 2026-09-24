@@ -181,9 +181,16 @@ echo "== functions parsed in zsyscall_windows.cs: $parsedn of $bodied bodied sig
 [ "${parsedn:-0}" = "$bodied" ] || { echo "REFUSE: parsed $parsedn of $bodied bodied signatures -- the parse is blind to $((bodied - parsedn))" >&2; exit 1; }
 
 # pass-3 controls: a known member must appear, a known non-member must not.
-grep -q "^getStartupInfo	" "$work/members" || { echo "CONTROL FAILED: getStartupInfo absent -- pass 3 is blind" >&2; exit 1; }
+# ⚠ RE-ANCHORED 2026-09-22. The member control was getStartupInfo -- the row this census was built to
+# size -- until its hand-own (zsyscall_windows_startupinfo_impl.cs) displaced it: a displaced wrapper
+# is a placeholder with no body, so pass 3 CANNOT list it, and the control read that success as
+# blindness. CreateProcess hands the trampoline the SAME record (a ж<StartupInfo>) and stays
+# undisplaced, so it carries the positive control; the retired member is asserted DISPLACED rather
+# than dropped, so the census states the movement instead of silently shrinking.
+grep -q "^CreateProcess	"  "$work/members" || { echo "CONTROL FAILED: CreateProcess absent -- pass 3 is blind" >&2; exit 1; }
 grep -q "^GetStdHandle	"   "$work/members" && { echo "CONTROL FAILED: GetStdHandle flagged -- pass 3 over-reports" >&2; exit 1; }
-echo "   controls OK: getStartupInfo present; GetStdHandle absent"
+grep -q "func getStartupInfo is hand-converted" "$ZSYS" || { echo "CONTROL FAILED: getStartupInfo is not displaced -- the hand-own's registration is gone" >&2; exit 1; }
+echo "   controls OK: CreateProcess present; GetStdHandle absent; getStartupInfo displaced"
 echo
 
 echo "== wrappers handing the trampoline a reference-bearing pointer DIRECTLY: $(wc -l < "$work/members")"

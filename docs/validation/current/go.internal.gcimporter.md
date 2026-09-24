@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `go/internal/gcimporter` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**583 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**621 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/go/internal/gcimporter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/go/internal/gcimporter).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 14 of the matched tests identically.
 
@@ -42,30 +44,66 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/crypto/ecdsa` | pass | pass |
 | `TestImportStdLib/crypto/ed25519` | pass | pass |
 | `TestImportStdLib/crypto/elliptic` | pass | pass |
+| `TestImportStdLib/crypto/fips140` | pass | pass |
+| `TestImportStdLib/crypto/hkdf` | pass | pass |
 | `TestImportStdLib/crypto/hmac` | pass | pass |
-| `TestImportStdLib/crypto/internal/alias` | pass | pass |
-| `TestImportStdLib/crypto/internal/bigmod` | pass | pass |
 | `TestImportStdLib/crypto/internal/boring` | pass | pass |
 | `TestImportStdLib/crypto/internal/boring/bbig` | pass | pass |
 | `TestImportStdLib/crypto/internal/boring/bcache` | pass | pass |
 | `TestImportStdLib/crypto/internal/boring/sig` | pass | pass |
 | `TestImportStdLib/crypto/internal/cryptotest` | pass | pass |
-| `TestImportStdLib/crypto/internal/edwards25519` | pass | pass |
-| `TestImportStdLib/crypto/internal/edwards25519/field` | pass | pass |
+| `TestImportStdLib/crypto/internal/entropy` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/aes` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/aes/gcm` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/alias` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/bigmod` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/check` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/check/checktest` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/drbg` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/ecdh` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/ecdsa` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/ed25519` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/edwards25519` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/edwards25519/field` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/hkdf` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/hmac` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/mlkem` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/nistec` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/nistec/fiat` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/pbkdf2` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/rsa` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/sha256` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/sha3` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/sha512` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/ssh` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/subtle` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/tls12` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140/tls13` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140deps` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140deps/byteorder` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140deps/cpu` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140deps/godebug` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140hash` | pass | pass |
+| `TestImportStdLib/crypto/internal/fips140only` | pass | pass |
 | `TestImportStdLib/crypto/internal/hpke` | pass | pass |
-| `TestImportStdLib/crypto/internal/mlkem768` | pass | pass |
-| `TestImportStdLib/crypto/internal/nistec` | pass | pass |
-| `TestImportStdLib/crypto/internal/nistec/fiat` | pass | pass |
+| `TestImportStdLib/crypto/internal/impl` | pass | pass |
 | `TestImportStdLib/crypto/internal/randutil` | pass | pass |
+| `TestImportStdLib/crypto/internal/sysrand` | pass | pass |
+| `TestImportStdLib/crypto/internal/sysrand/internal/seccomp` | pass | pass |
 | `TestImportStdLib/crypto/md5` | pass | pass |
+| `TestImportStdLib/crypto/mlkem` | pass | pass |
+| `TestImportStdLib/crypto/pbkdf2` | pass | pass |
 | `TestImportStdLib/crypto/rand` | pass | pass |
 | `TestImportStdLib/crypto/rc4` | pass | pass |
 | `TestImportStdLib/crypto/rsa` | pass | pass |
 | `TestImportStdLib/crypto/sha1` | pass | pass |
 | `TestImportStdLib/crypto/sha256` | pass | pass |
+| `TestImportStdLib/crypto/sha3` | pass | pass |
 | `TestImportStdLib/crypto/sha512` | pass | pass |
 | `TestImportStdLib/crypto/subtle` | pass | pass |
 | `TestImportStdLib/crypto/tls` | pass | pass |
+| `TestImportStdLib/crypto/tls/internal/fips140tls` | pass | pass |
 | `TestImportStdLib/crypto/x509` | pass | pass |
 | `TestImportStdLib/crypto/x509/pkix` | pass | pass |
 | `TestImportStdLib/database/sql` | pass | pass |
@@ -105,7 +143,6 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/go/internal/gccgoimporter` | pass | pass |
 | `TestImportStdLib/go/internal/gcimporter` | pass | pass |
 | `TestImportStdLib/go/internal/srcimporter` | pass | pass |
-| `TestImportStdLib/go/internal/typeparams` | pass | pass |
 | `TestImportStdLib/go/parser` | pass | pass |
 | `TestImportStdLib/go/printer` | pass | pass |
 | `TestImportStdLib/go/scanner` | pass | pass |
@@ -137,7 +174,6 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/internal/byteorder` | pass | pass |
 | `TestImportStdLib/internal/cfg` | pass | pass |
 | `TestImportStdLib/internal/chacha8rand` | pass | pass |
-| `TestImportStdLib/internal/concurrent` | pass | pass |
 | `TestImportStdLib/internal/coverage` | pass | pass |
 | `TestImportStdLib/internal/coverage/calloc` | pass | pass |
 | `TestImportStdLib/internal/coverage/cfile` | pass | pass |
@@ -156,6 +192,7 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/internal/cpu` | pass | pass |
 | `TestImportStdLib/internal/dag` | pass | pass |
 | `TestImportStdLib/internal/diff` | pass | pass |
+| `TestImportStdLib/internal/exportdata` | pass | pass |
 | `TestImportStdLib/internal/filepathlite` | pass | pass |
 | `TestImportStdLib/internal/fmtsort` | pass | pass |
 | `TestImportStdLib/internal/fuzz` | pass | pass |
@@ -183,15 +220,21 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/internal/reflectlite` | pass | pass |
 | `TestImportStdLib/internal/runtime/atomic` | pass | pass |
 | `TestImportStdLib/internal/runtime/exithook` | pass | pass |
+| `TestImportStdLib/internal/runtime/maps` | pass | pass |
+| `TestImportStdLib/internal/runtime/math` | pass | pass |
+| `TestImportStdLib/internal/runtime/sys` | pass | pass |
 | `TestImportStdLib/internal/saferio` | pass | pass |
 | `TestImportStdLib/internal/singleflight` | pass | pass |
 | `TestImportStdLib/internal/stringslite` | pass | pass |
+| `TestImportStdLib/internal/sync` | pass | pass |
+| `TestImportStdLib/internal/synctest` | pass | pass |
 | `TestImportStdLib/internal/syscall/execenv` | pass | pass |
 | `TestImportStdLib/internal/syscall/unix` | pass | pass |
 | `TestImportStdLib/internal/syscall/windows` | pass | pass |
 | `TestImportStdLib/internal/syscall/windows/registry` | pass | pass |
 | `TestImportStdLib/internal/syscall/windows/sysdll` | pass | pass |
 | `TestImportStdLib/internal/sysinfo` | pass | pass |
+| `TestImportStdLib/internal/syslist` | pass | pass |
 | `TestImportStdLib/internal/testenv` | pass | pass |
 | `TestImportStdLib/internal/testlog` | pass | pass |
 | `TestImportStdLib/internal/testpty` | pass | pass |
@@ -208,7 +251,6 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/internal/txtar` | pass | pass |
 | `TestImportStdLib/internal/types/errors` | pass | pass |
 | `TestImportStdLib/internal/unsafeheader` | pass | pass |
-| `TestImportStdLib/internal/weak` | pass | pass |
 | `TestImportStdLib/internal/xcoff` | pass | pass |
 | `TestImportStdLib/internal/zstd` | pass | pass |
 | `TestImportStdLib/io` | pass | pass |
@@ -269,9 +311,7 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/runtime` | pass | pass |
 | `TestImportStdLib/runtime/coverage` | pass | pass |
 | `TestImportStdLib/runtime/debug` | pass | pass |
-| `TestImportStdLib/runtime/internal/math` | pass | pass |
 | `TestImportStdLib/runtime/internal/startlinetest` | pass | pass |
-| `TestImportStdLib/runtime/internal/sys` | pass | pass |
 | `TestImportStdLib/runtime/metrics` | pass | pass |
 | `TestImportStdLib/runtime/pprof` | pass | pass |
 | `TestImportStdLib/runtime/race` | pass | pass |
@@ -306,10 +346,8 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/vendor/golang.org/x/crypto/chacha20poly1305` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/crypto/cryptobyte` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/crypto/cryptobyte/asn1` | pass | pass |
-| `TestImportStdLib/vendor/golang.org/x/crypto/hkdf` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/crypto/internal/alias` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/crypto/internal/poly1305` | pass | pass |
-| `TestImportStdLib/vendor/golang.org/x/crypto/sha3` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/net/dns/dnsmessage` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/net/http/httpguts` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/net/http/httpproxy` | pass | pass |
@@ -321,6 +359,7 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestImportStdLib/vendor/golang.org/x/text/transform` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/text/unicode/bidi` | pass | pass |
 | `TestImportStdLib/vendor/golang.org/x/text/unicode/norm` | pass | pass |
+| `TestImportStdLib/weak` | pass | pass |
 | `TestImportTestdata` | pass | pass |
 | `TestImportTypeparamTests` | pass | pass |
 | `TestImportTypeparamTests/absdiff.go` | pass | pass |
@@ -598,5 +637,6 @@ Both runtimes skip 14 of the matched tests identically.
 | `TestIssue25596` | pass | pass |
 | `TestIssue57015` | pass | pass |
 | `TestIssue5815` | pass | pass |
+| `TestIssue69912` | pass | pass |
 | `TestTypeNamingOrder` | pass | pass |
 | `TestVersionHandling` | pass | pass |

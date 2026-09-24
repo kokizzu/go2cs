@@ -24,6 +24,8 @@ using go;
 using static global::go.io_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b696f2e5772697465723b20666d742e537472696e6765727d", "testMultiWriter_sink")]
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5772697465723b20666d742e537472696e6765727d", "TestMultiWriter_sink")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -80,9 +82,9 @@ using static global::go.io_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/io_test.go", "io_test.cs", "AB44koKCgoKC6IKCgoKCgpaCgriCgoKCgoK4goKCgoKCuIKCgoKCgriCgoKCgoIACRSCgqyygoKCgoKkAAcQgu6C7LKCgoKCuIKCgoKCgriCgoKCgoK4goKCgoKCuKKCgoKEgoK4ooKCgoSCggAHEIIACAqC1qiEgoKWgoKWgoKWgoKWgoKWgoK4goIACRSygoKUpoKCgqaCgoKmgoKCgoKUgpSCgpSClIKClIKUgoKUgpSCgoKAgqSClIK4goKCgoKCgIKkgpSClICCpIKCgoKAggARCIKCAA0sgoKCgoCCpICC2pSChIKCgoKC3oKCloKCAAgIggADEIKCgoCCAAgKgoKCgoKClIKClICCAAoUgtaCgoKCgoCCpoKCgoKAggAOCKIAAxSEgoKCABAKooKCgpSSlpKCgoKC3pKCgoKCAAYQkgAIGoKCggAMDoKCgoKClqKCgoKUlIKUgoKihIKCgpTWloKCgpSCguiCgsqigoKCgpSmlIKCgoIACwiCgoKEgoKCgpSUlIKCgpSCgrqCguaCkoKCgqaogoKSguqCwoKSgg==")]
-[assembly: go.GoPositionMap("io/multi_test.go", "multi_test.cs", "ABkmgoKCgoKCgoKCgpSCgoKCpoKCpoKmlJKCgoKUkoKCgpSSuILegoKUgoKClIKUgIIACQiClKyC+qKSiJKUgvyCgqaC1oKCgoKCAA0IiIKEgoKEgpaCloKCloLegqiygoKCgqKCgpaUgpaChJLKgoaCgpSCgoLqkoKCgoKCupKCgoKCgoKUgt6CqLKCgoKClNiygoKCgqKCgqiCloSSAAYSgqaUgqiSgoKUgoK+soKCgoLoooK4koKCgpKogoCCpoLmpoCCyIKChIKEqIKAgsqCgII=")]
-[assembly: go.GoPositionMap("io/pipe_test.go", "pipe_test.cs", "ABEigoKClIKUqJKCgoKCgoKklIKCpoKCgoKCgpSClLqSgoKCgoKCgoKUgpSCgqaCgoIACBSSgoKmgoKCgoKUgoKCgoKCqIKCpIKCpoKUlIKClIKUgoIAESSCAAsYgoKCgpSUgpSmgrKCgoKUlIKCgoKClIKUgpSAgtySgoKCgoKC7JKygoKClJSCgoKClIKUgpSAgtySgoKCgoKCuIKCkoKUgoKmgoKSgpSCgqaigpKCgqKCgpSCgpaCgoKClIKEgpSCAA4IgoiCgIKkgoCCpoKCgIKkgoCC+IKsgoSCkoKAgsqCgoCC3IKCgqiChIKCooKCgIKkqIKAgtyCgpSCgoKCyoKCgoKUggAFEIKCuoKC")]
+[assembly: go.GoPositionMap("io/io_test.go", "io_test.cs", "AB44koKCgoKC6IKCgoKCgpaCgriCgoKCgoK4goKCgoKCuIKCgoKCgriCgoKCgoIACRSCgqyygoKCgoKkAAcQgu6C7LKCgoKCuIKCgoKCgriCgoKCgoK4goKCgoKCuKKCgoKEgoK4ooKCgoSCggAHEIIACAqC1qiEgoKWgoKWgoKWgoKWgoKWgoK4goIACRSygoKUpoKCgqaCgoKmgoKCgoKUgpSCgpSClIKClIKUgoKUgpSCgoKAgqSClIK4goKCgoKCgIKkgpSClICCpIKCgoKAggARCIKCAA0sgoKCgoCCpICC2pSChIKCgoKC3oKCloKCAAgIggADEIKCgoCCAAgKgoKCgoKClIKClICCAAoUgtaCgoKCgoCCpoKCgoKAggAOCKIAAxSEgoKCABAKooKCgpSSlpKCgoKC3pKCgoKCAAYQkgAIGoKCggAJDoKCgoSigoKClJSClIKCooSCgoKU1paCgoKUgoLogoL6ooKCgoKUppSCgoKCAAsIgoKChIKCgoKUlJSCgoKUgoK6goLmgpKCgoKmqIKCkoLqgsKCkoI=", "515-524:1;527-537:2;540-561:3;569-606:1;582-591:1.1;639-646:1;647-659:2;663-683:3;688-693:4")]
+[assembly: go.GoPositionMap("io/multi_test.go", "multi_test.cs", "ABomgoKCgoKCgoKCgpSCgoKCpoKCpoKmlJKCgoKUkoKCgpSSuILegoKUgoKClIKUgIIACQiClKyC+qKSiJKUgvyCgqaC1oKCgoKCAA0IiIKEgoKEgpaCloKCloLegqiygoKCgqKCgpaUgpaChJLKgoaCgpSCgoLqkoKCgoKCupKCgoKCgoKUgt6CqLKCgoKClNiygoKCgqKCgqiCloSSAAYSgqaUgqiSgoKUgoK+soKCgoLoooK4koKCgpKogoCCpoLmpoCCyIKChIKEqIKAgsqCgII=", "23-30:1;31-48:2;49-54:3;55-60:4;61-63:5;112-114:1;182-186:1;204-206:1;207-210:2;268-272:1;331-338:1;335-337:1.1")]
+[assembly: go.GoPositionMap("io/pipe_test.go", "pipe_test.cs", "ABEigoKClIKUqJKCgoKCgoKklIKCpoKCgoKCgpSClLqSgoKCgoKCgoKUgpSCgqaCgoIACBSSgoKmgoKCgoKUgoKCgoKCqIKCpIKCpoKUlIKClIKUgoIAESSCAAsYgoKCgpSUgpSmgrKCgoKUlIKCgoKClIKUgpSAgtySgoKCgoKC7JKygoKClJSCgoKClIKUgpSAgtySgoKCgoKCuIKCkoKUgoKmgoKSgpSCgqaigpKCgqKCgpSCgpaCgoKClIKEgpSCAA4IgoiCgIKkgoCCpoKCgIKkgoCC+IKsgoSCkoKAgsqCgoCC3IKCgqiChIKCooKCgIKkqIKAgtyCgpSCgoKCyoKCgoKUggAFEIKCuoKC", "267-270:1;278-281:1;292-300:1;351-377:1;355-360:1.1;379-412:2;384-391:2.1;431-433:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -99,6 +101,15 @@ public static partial class io_test_package
     // <TypeAccessibility>
     internal partial interface closer {}
     internal partial interface testMultiWriter_sink {}
+    [GoLocalName("simpleWriter")] internal partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {}
+    internal partial struct TestMultiWriter_sink {}
+    internal partial struct TestNopCloserWriterToForwarding_type {}
+    internal partial struct TestNopCloserWriterToForwarding_typeᴛ1 {}
+    internal partial struct TestOffsetWriter_Seek_tests {}
+    [GoLocalName("testError1")] internal partial struct TestPipeCloseError_testError1 {}
+    [GoLocalName("testError2")] internal partial struct TestPipeCloseError_testError2 {}
+    internal partial struct TestSectionReader_ReadAt_tests {}
+    internal partial struct TestSectionReader_Size_tests {}
     internal partial struct byteAndEOFReader {}
     internal partial struct dataAndErrorBuffer {}
     internal partial struct errWriter {}
@@ -111,14 +122,34 @@ public static partial class io_test_package
     internal partial struct writeToChecker {}
     internal partial struct zeroErrReader {}
     public partial struct Buffer {}
-    [GoLocalName("simpleWriter")] public partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {}
-    public partial struct TestMultiWriter_sink {}
-    public partial struct TestNopCloserWriterToForwarding_type {}
-    public partial struct TestNopCloserWriterToForwarding_typeᴛ1 {}
-    public partial struct TestOffsetWriter_Seek_tests {}
-    [GoLocalName("testError1")] public partial struct TestPipeCloseError_testError1 {}
-    [GoLocalName("testError2")] public partial struct TestPipeCloseError_testError2 {}
-    public partial struct TestSectionReader_ReadAt_tests {}
-    public partial struct TestSectionReader_Size_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() => builtin.initPackage(typeof(crypto.sha1_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.io_package));
+    }
 }

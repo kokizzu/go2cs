@@ -62,10 +62,10 @@ using static go.@internal.coverage.cfile_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cfile/apis.go", "apis.cs", "ACkikoKUqJKClIKUgqiSgpSokoKUgqaCgpSCloK4qJKCgpSCADl4goKUgoKmgoKmpg==")]
-[assembly: go.GoPositionMap("internal/coverage/cfile/emit.go", "emit.cs", "AFNKAESgAbKClIKCgoKmgoKWgoKCloCCgoLagoKUgoKUpoKCgpSsxN6Clt6EgoKCooKClJSCgoK6goKigIKkgoKClIKCuoKWgoKChKqigoKUgpaE3oCCuIKAgrassoKUgIKCgtykgpSWgqiCAAYQgIKkgqiAgqSAgsqAgqaokoCCpAACEAAIBoKCgpSCgoKCpqzSgoKCgoKCgpQAAhwADQKCgpSCloKAgraCgIK2rNKAgqSAgsqAgqasstaihIKigpSmgoSCgoKUloKCgpSCgqiCgoKCuoKCgoKmlIKWgoKCpgAHEoKCgqSAgpSCAAgQloKAgriUgqYABxDSgoKClIKCqsKCgIKkAAIQ0qaCgoSClIKCgoKigoKUlIKC")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/apis.go", "apis.cs", "ABEikoKUqJKClIKUgqiSgpSokoKUgqaCgpSCloK4qJKCgpSCADl4goKUgoKmgoKmpg==")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/emit.go", "emit.cs", "ACNKAESgAbKClIKCgoKmgoKWgoKCloCCgoLagoKUgoKUpoKCgpSsxN6Clt6EgoKCooKClJSCgoK6goKigIKkgoKClIKCuoKWgoKChKqigoKUgpaE3oCCuIKAgrassoKUgIKCgtykgpSWgqiCAAYQgIKkgqiAgqSAgsqAgqaokoCCpAACEAAIBoKCgpSCgoKCpqzSgoKCgoKCgpQAAhwADQKCgpSCloKAgraCgIK2rNKAgqSAgsqAgqasstaihIKigpSmgoSCgoKUloKCgpSCgqiCgoKCuoKCgoKmlIKWgoKCpgAHEoKCgqSAgpSCAAgQloKAgriUgqYABxDSgoKClIKCqsKCgIKkAAIQ0qaCgoSClIKCgoKigoKUlIKC", "455-461:1")]
 [assembly: go.GoPositionMap("internal/coverage/cfile/hooks.go", "hooks.cs", "AAo4ABYIgoKU")]
-[assembly: go.GoPositionMap("internal/coverage/cfile/testsupport.go", "testsupport.cs", "AEg84pKCqILKgIKkgIIABxCCgpiSgoKCgoKUkoKCzAAIEoKCgoKUgIK4goCCgILagIK4goCCpIKAgrgADBbkgoKUkpSCgoKUgoKUgoCCuJaygoKUkoKCgpSCgoKClIKogoCUgILGgoKU2IKAgsqCgoKCgoKUgoKCgoKAgraCgoKmgpSCgpS4AAkOhqKCgpSAggAHEIKCgIKkgoKAgrYAAhLigpSWgoKCgoKUgqaChIKUgoKCpqaClA==")]
+[assembly: go.GoPositionMap("internal/coverage/cfile/testsupport.go", "testsupport.cs", "AB484pKCqILKgIKkgIIABxCCgpiSgoKCgoKUkoKCzAAIEoKCgoKUgIK4goCCgILagIK4goCCpIKAgrgADBbkgoKUkpSCgoKUgoKUgoCCuJaygoKUkoKCgpSCgoKClIKogoCUgILGgoKU2IKAgsqCgoKCgoKUgoKCgoKAgraCgoKmgpSCgpS4AAkOhqKCgpSAggAHEIKCgIKkgoKAgrYAAhLigpSWgoKCgoKUgqaChIKUgoKCpqaClA==", "69-74:1;138-140:1;159-193:2")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -85,4 +85,32 @@ public static partial class cfile_package
     internal partial struct pkfunc {}
     internal partial struct tstate {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸfnv() => builtin.initPackage(typeof(hash.fnv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcformat() => builtin.initPackage(typeof(go.@internal.coverage.cformat_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcmerge() => builtin.initPackage(typeof(go.@internal.coverage.cmerge_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸdecodecounter() => builtin.initPackage(typeof(go.@internal.coverage.decodecounter_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸdecodemeta() => builtin.initPackage(typeof(go.@internal.coverage.decodemeta_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸencodecounter() => builtin.initPackage(typeof(go.@internal.coverage.encodecounter_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸencodemeta() => builtin.initPackage(typeof(go.@internal.coverage.encodemeta_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸpods() => builtin.initPackage(typeof(go.@internal.coverage.pods_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

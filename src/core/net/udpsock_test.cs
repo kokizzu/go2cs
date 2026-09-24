@@ -5,6 +5,7 @@ namespace go;
 
 using errors = errors_package;
 using fmt = fmt_package;
+using asan = @internal.asan_package;
 using testenv = @internal.testenv_package;
 using netip = net.netip_package;
 using Δos = os_package;
@@ -325,7 +326,7 @@ public static void TestUDPConnLocalAndRemoteNames(ж<testing.T> Ꮡt) {
                 new(c2.of(global::go.net_package.UDPConn.Ꮡconn).LocalAddr(), true),
                 new(c2.of(global::go.net_package.UDPConn.Ꮡconn).RemoteAddr(), true)
             }.array();
-            foreach (var (_, ca) in connAddrs) {
+            foreach (var (_, ca) in connAddrs.ΔRangeSnapshot()) {
                 {
                     var (a, ok) = ca.got._<ж<global::go.net_package.UDPAddr>>(ᐧ); if (ok != ca.ok || ok && (~a).Port == 0) {
                         Ꮡt.Fatalf("got %v; expected a proper address with non-zero port number"u8, ca.got);
@@ -359,7 +360,7 @@ public static void TestIPv6LinkLocalUnicastUDP(ж<testing.T> Ꮡt) {
             var ch = new channel<error>(1);
             var chʗ1 = ch;
             var handler = (ж<localPacketServer> lsΔ1, global::go.net_package.PacketConn c) => {
-                packetTransponder(c, chʗ1);
+                packetTransponder(c, chʗ1.WithDirection(GoChanDir.Send));
             };
             {
                 var errΔ1 = ls.buildup(handler); if (errΔ1 != default!) {
@@ -418,7 +419,7 @@ public static void TestUDPZeroBytePayload(ж<testing.T> Ꮡt) {
         if (exprᴛ1 == "plan9"u8) {
             Ꮡt.Skipf("not supported on %s"u8, Δruntime.GOOS);
         }
-        else if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8) {
+        else if (exprᴛ1 == "ios"u8) {
             testenv.SkipFlaky(new net_test_package.testing_TжTB(Ꮡt), 29225);
         }
 
@@ -587,6 +588,9 @@ public static void TestUDPReadTimeout(ж<testing.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
+
 public static void TestAllocs(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
@@ -598,6 +602,9 @@ public static void TestAllocs(ж<testing.T> Ꮡt) {
 
         if (!testableNetwork(udp4ˢ)) {
             Ꮡt.Skipf("skipping: udp4 not available"u8);
+        }
+        if (asan.Enabled) {
+            Ꮡt.Skip(testAllocatesMoreWithˢ);
         }
         // Optimizations are required to remove the allocs.
         testenv.SkipIfOptimizationOff(new net_test_package.testing_TжTB(Ꮡt));
@@ -855,6 +862,50 @@ public static void TestIPv6WriteMsgUDPAddrPortTargetAddrIPVersion(ж<testing.T> 
         (_, _, err) = conn.WriteMsgUDPAddrPort(buf, default!, daddr6);
         if (err != default!) {
             Ꮡt.Fatal(err);
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+// TestIPv4WriteMsgUDPAddrPortTargetAddrIPVersion verifies that
+// WriteMsgUDPAddrPort accepts IPv4 and IPv4-mapped IPv6 destination addresses,
+// and rejects IPv6 destination addresses on a "udp4" connection.
+public static void TestIPv4WriteMsgUDPAddrPortTargetAddrIPVersion(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var exprᴛ1 = Δruntime.GOOS;
+        if (exprᴛ1 == "plan9"u8) {
+            Ꮡt.Skipf("not supported on %s"u8, Δruntime.GOOS);
+        }
+
+        if (!testableNetwork(udp4ˢ)) {
+            Ꮡt.Skipf("skipping: udp4 not available"u8);
+        }
+        var (conn, err) = ListenUDP(udp4ˢ, Ꮡ(new UDPAddr(IP: IPv4(127, 0, 0, 1))));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var connʗ1 = conn;
+        defer(() => connʗ1.of(global::go.net_package.UDPConn.Ꮡconn).Close(), ref ᒐ);
+        var daddr4 = netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"u8), 12345);
+        var daddr4in6 = netip.AddrPortFrom(netip.MustParseAddr(ffff127001ˢ), 12345);
+        var daddr6 = netip.AddrPortFrom(netip.MustParseAddr("::1"u8), 12345);
+        var buf = new slice<byte>(8);
+        {
+            (_, _, err) = conn.WriteMsgUDPAddrPort(buf, default!, daddr4); if (err != default!) {
+                Ꮡt.Errorf("conn.WriteMsgUDPAddrPort(buf, nil, daddr4) failed: %v"u8, err);
+            }
+        }
+        {
+            (_, _, err) = conn.WriteMsgUDPAddrPort(buf, default!, daddr4in6); if (err != default!) {
+                Ꮡt.Errorf("conn.WriteMsgUDPAddrPort(buf, nil, daddr4in6) failed: %v"u8, err);
+            }
+        }
+        {
+            (_, _, err) = conn.WriteMsgUDPAddrPort(buf, default!, daddr6); if (err == default!) {
+                Ꮡt.Errorf("conn.WriteMsgUDPAddrPort(buf, nil, daddr6) should have failed, but got no error"u8);
+            }
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

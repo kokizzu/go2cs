@@ -3,23 +3,11 @@
 // license that can be found in the LICENSE file.
 namespace go.os;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using testing = testing_package;
 using static go.os.exec_package;
 
 partial class exec_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 [GoType("dyn")] internal partial struct TestDedupEnv_tests {
     internal bool noCase;
@@ -73,7 +61,7 @@ public static void TestDedupEnv(ж<testing.T> Ꮡt) {
     }.slice();
     foreach (var (_, tt) in tests) {
         var (got, err) = dedupEnvCase(tt.noCase, tt.nulOK, tt.@in);
-        if (!reflect.DeepEqual(got, tt.want) || (err != default!) != tt.wantErr) {
+        if (!slices.Equal<slice<@string>, @string>(got, tt.want) || (err != default!) != tt.wantErr) {
             Ꮡt.Errorf("Dedup(%v, %q) = %q, %v; want %q, error:%v"u8, tt.noCase, tt.@in, got, err, tt.want, tt.wantErr);
         }
     }

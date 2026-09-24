@@ -35,7 +35,7 @@ using static go.image.draw_internal_test_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("image/draw/bench_test.go", "bench_test.cs", "ABs20oSClIKCggAHEKSCgoIABxCoooKCgqaUuIKUpIKCggAHEKSCgoLKpIKCggAHEKSCgoIABxCkgoKCAAcQpIKCgoKCgpQAChSmgriSgoKmgrikpoKUgoS8kqaCpoKmgqaCpoKmgqaCpoKmgqaCpoKmgqaCpoKmgqqSpoKmgqaC")]
 [assembly: go.GoPositionMap("image/draw/clip_test.go", "clip_test.cs", "AJsBugKCgoKCgoKC0oKUqIKClIKClIKCgsyCpoKClJSCgg==")]
-[assembly: go.GoPositionMap("image/draw/draw_test.go", "draw_test.cs", "ABw0gKSApIKmgoKUgoKCgoKCAAcQgoKUgoKCgoKCpoKmgoCC7IKC7oKCgIIADhyApICkgqaCgpSCgoKCgoIABxCCgpSCgoKCgoKmgoKUgoKCgoKmgqaCgILsgoLugoKAgsiCgoKmgqaCpoKCgoKmpoKCgoKmpoKCgoKmpoIACBKCgqamgoKCgqamgoKCgqamgoKCgqamgoKCgqYAgQGEAqaCgoKClIKCgoKCgpSCgpSCgpaCsoKUgoKClIIABxCmggAKFoKCgoK4lLTIgoKClKaCpoKUuIKCgpQAChKCgoKCgoKCgpSCgoKmlIKCgoIAChSSgoKCgoKCgoIACQiCAA4esoKSkoKygoKCgtyCgqaUgoKClJSCgoKUlIKCgriCABc4goKCgoKChIKEgIKkgIKkgILKgoKCgoKCgIIACBDSlIKCgoKCgoKCgoKAggAQHsKCgpSSgoKUhJyYmoKCgoKCgoKCgoKUAAwQzIKCgpSUlAAQIoKCgILIgII=")]
+[assembly: go.GoPositionMap("image/draw/draw_test.go", "draw_test.cs", "ABw0gKSApIKmgoKUgoKCgoKCAAcQgoKUgoKCgoKCpoKmgoCC7IKC7oKCgIIADhyApICkgqaCgpSCgoKCgoIABxCCgpSCgoKCgoKmgoKUgoKCgoKmgqaCgILsgoLugoKAgsiCgoKmgqaCpoKCgoKmpoKCgoKmpoKCgoKmpoIACBKCgqamgoKCgqamgoKCgqamgoKCgqamgoKCgqYAgQGEAqaCgoKClIKCgoKCgpSCgpSCgpaCsoKUgoKClIIABxCmggAKFoKCgoK4lLTIgoKClKaCpoKUuIKCgpQAChKCgoKCgoKCgpSCgoKmlIKCgoIAChSSgoKCgoKCgoIACQiCAA4esoKSkoKygoKCgtyCgqaUgoKClJSCgoKUlIKCgriCABc4goKCgoKChIKEgIKkgIKkgILKgoKCgoKCgIIACBDSlIKCgoKCgoKCgoKAggAQHsKCgpSSgoKUhJyYmoKCgoKCgoKCgoKUAAwQzIKCgpSUlAAQIoKCgILIgII=", "586-595:1;774-782:1")]
 // </GoSourcePositionMaps>
 
 namespace go.image;
@@ -51,4 +51,20 @@ public static partial class draw_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸpng() => builtin.initPackage(typeof(go.image.png_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() => builtin.initPackage(typeof(go.testing.quick_package));
+    // </ImportInitializers>
 }

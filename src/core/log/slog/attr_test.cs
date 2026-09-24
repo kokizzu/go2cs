@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.log;
 
+using asan = go.@internal.asan_package;
 using testenv = go.@internal.testenv_package;
 using testing = testing_package;
 using time = time_package;
@@ -11,31 +12,17 @@ using static go.log.slog_package;
 
 partial class slog_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesWithAsanˢ = (@string)"test allocates with -asan"u8;
 internal static readonly @string keyˢ = "key"u8;
 internal static readonly @string fooˢ = "foo"u8;
 
 public static void TestAttrNoAlloc(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesWithAsanˢ);
+    }
     testenv.SkipIfOptimizationOff(new slog_test_package.testing_TжTB(Ꮡt));
     // Assign values just to make sure the compiler doesn't optimize away the statements.
     ref var i = ref heap(new int64(), out var Ꮡi);

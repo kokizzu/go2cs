@@ -19,18 +19,6 @@ using unicode;
 
 partial class fs_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() {
-    builtin.initPackage(typeof(@internal.oserror_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 // An FS provides access to a hierarchical file system.
 //
 // The FS interface is the minimum implementation required of the file system.
@@ -41,6 +29,7 @@ partial class fs_package {
 // correctness.
 [GoType] partial interface FS {
     // Open opens the named file.
+    // [File.Close] must be called to release any associated resources.
     //
     // When Open returns an error, it should be of type *PathError
     // with the Op field set to "open", the Path field set to name,
@@ -58,7 +47,7 @@ partial class fs_package {
 // Path names passed to open are UTF-8-encoded,
 // unrooted, slash-separated sequences of path elements, like “x/y/z”.
 // Path names must not contain an element that is “.” or “..” or the empty string,
-// except for the special case that the root directory is named “.”.
+// except for the special case that the name "." may be used for the root directory.
 // Paths must not start or end with a slash: “/x” and “x/” are invalid.
 //
 // Note that paths are slash-separated on all systems, even Windows.

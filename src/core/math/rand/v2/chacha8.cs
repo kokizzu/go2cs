@@ -10,12 +10,6 @@ using @internal;
 
 partial class rand_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
 // A ChaCha8 is a ChaCha8-based cryptographically strong
 // random number generator.
 [GoType] partial struct ChaCha8 {
@@ -74,12 +68,12 @@ public static (nint n, error err) Read(this ж<ChaCha8> Ꮡc, slice<byte> p) {
         p = p[(int)(n)..];
     }
     while (len(p) >= 8) {
-        byteorder.LePutUint64(p, Ꮡc.Uint64());
+        byteorder.LEPutUint64(p, Ꮡc.Uint64());
         p = p[8..];
         n += 8;
     }
     if (len(p) > 0) {
-        byteorder.LePutUint64(c.readBuf[..], Ꮡc.Uint64());
+        byteorder.LEPutUint64(c.readBuf[..], Ꮡc.Uint64());
         n += copy(p, c.readBuf[..]);
         c.readLen = 8 - len(p);
     }
@@ -89,7 +83,7 @@ public static (nint n, error err) Read(this ж<ChaCha8> Ꮡc, slice<byte> p) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidChaCha8ReadBufferˢ = "invalid ChaCha8 Read buffer encoding"u8;
 
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+// UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.
 public static error UnmarshalBinary(this ж<ChaCha8> Ꮡc, slice<byte> data) {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -119,17 +113,24 @@ internal static (slice<byte> buf, slice<byte> rest, bool ok) readUint8LengthPref
     return (b[1..(int)(1 + b[0])], b[(int)(1 + b[0])..], true);
 }
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-public static (slice<byte>, error) MarshalBinary(this ж<ChaCha8> Ꮡc) {
+// AppendBinary implements the [encoding.BinaryAppender] interface.
+public static (slice<byte>, error) AppendBinary(this ж<ChaCha8> Ꮡc, slice<byte> b) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     if (c.readLen > 0) {
-        var @out = slice<byte>("readbuf:"u8);
-        @out = append(@out, (uint8)c.readLen);
-        @out = appendꓸꓸꓸ(@out, c.readBuf[(int)(len(c.readBuf) - c.readLen)..]);
-        return (appendꓸꓸꓸ(@out, chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate))), default!);
+        b = append(b, ((@string)"readbuf:"u8).ꓸꓸꓸ);
+        b = append(b, (uint8)c.readLen);
+        b = appendꓸꓸꓸ(b, c.readBuf[(int)(len(c.readBuf) - c.readLen)..]);
     }
-    return (chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate)), default!);
+    return (appendꓸꓸꓸ(b, chacha8rand.Marshal(Ꮡc.of(ChaCha8.Ꮡstate))), default!);
+}
+
+// MarshalBinary implements the [encoding.BinaryMarshaler] interface.
+public static (slice<byte>, error) MarshalBinary(this ж<ChaCha8> Ꮡc) {
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    // the maximum length of (chacha8rand.Marshal + c.readBuf + "readbuf:") is 64
+    return Ꮡc.AppendBinary(new slice<byte>(0, 64));
 }
 
 } // end rand_package

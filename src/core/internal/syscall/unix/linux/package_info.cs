@@ -51,17 +51,18 @@ using static go.@internal.syscall.unix_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/unix/at.go", "at.cs", "ABEcgoKClqKClqaCgoKWooKW")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at.go", "at.cs", "AAscgoKClqKClqaCgoKWooKWpoKCgpSCgpSUzIKWpoKCgpaqgpQ=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/at_fstatat.go", "at_fstatat.cs", "AAscgoKCgpbCgpY=")]
-[assembly: go.GoPositionMap("internal/syscall/unix/copy_file_range_linux.go", "copy_file_range_linux.cs", "AAoYsgAEEIKClA==")]
-[assembly: go.GoPositionMap("internal/syscall/unix/eaccess_linux.go", "eaccess_linux.cs", "AAkSgg==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/copy_file_range_unix.go", "copy_file_range_unix.cs", "AAscsgAEEIKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/eaccess.go", "eaccess.cs", "AAscgtyU")]
 [assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
-[assembly: go.GoPositionMap("internal/syscall/unix/getrandom.go", "getrandom.cs", "ABgqkoKUgpSogoKUlA==")]
-[assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_linux.go", "kernel_version_linux.cs", "AAkgAAgCgoCCpqiCgriCgoKUqA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/getrandom.go", "getrandom.cs", "AA0iAAsQkoKCgpSUgpSogoKUlA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_linux.go", "kernel_version_linux.cs", "AAkc4oKAgqaogoK4goKClKg=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/net.go", "net.cs", "AAsguLi4uLi4uA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/nonblocking_unix.go", "nonblocking_unix.cs", "AAoWgoKClKaC")]
 [assembly: go.GoPositionMap("internal/syscall/unix/pidfd_linux.go", "pidfd_linux.cs", "AAkSgoKClKaCgoKU")]
 [assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_linux.go", "tcsetpgrp_linux.cs", "AAoewqKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/waitid_linux.go", "waitid_linux.cs", "AA0igsKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;
@@ -79,4 +80,16 @@ public static partial class unix_package
     internal partial struct siErrnoCode {}
     public partial struct GetRandomFlag {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

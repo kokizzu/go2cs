@@ -9,32 +9,21 @@ namespace go.@internal.coverage;
 // top-level info (counter mode, number of packages) and then a
 // separate self-contained meta-data section for each Go package.
 using bufio = bufio_package;
-using md5 = crypto.md5_package;
 using binary = encoding.binary_package;
 using fmt = fmt_package;
+using fnv = hash.fnv_package;
 using coverage = go.@internal.coverage_package;
 using slicereader = go.@internal.coverage.slicereader_package;
 using stringtab = go.@internal.coverage.stringtab_package;
 using io = io_package;
 using os = os_package;
-using crypto;
 using encoding;
 using go.@internal;
 using go.@internal.coverage;
+using hash;
+using hash = hash_package;
 
 partial class decodemeta_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
-    builtin.initPackage(typeof(crypto.md5_package));
-}
 
 // CoverageMetaFileReader provides state and methods for reading
 // a meta-data file from a code coverage run.
@@ -187,8 +176,10 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
 [GoRecv] public static (ж<CoverageMetaDataDecoder>, slice<byte>, error) GetPackageDecoder(this ref CoverageMetaFileReader r, uint32 pkIdx, slice<byte> payloadbuf) {
     var (pp, err) = r.GetPackagePayload(pkIdx, payloadbuf);
     if (r.debug) {
+        var h = fnv.New128a();
+        h.Write(pp);
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=-= pkidx=%d payload length is %d hash=%s\n"u8,
-            pkIdx, len(pp), fmt.Sprintf("%x"u8, md5.Sum(pp)));
+            pkIdx, len(pp), fmt.Sprintf("%x"u8, h.Sum(default!)));
     }
     if (err != default!) {
         return (default!, default!, err);

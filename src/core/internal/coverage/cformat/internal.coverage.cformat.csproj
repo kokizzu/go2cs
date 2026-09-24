@@ -160,7 +160,9 @@
     <ProjectReference Include="$(go2csPath)core/internal/coverage/cmerge/internal.coverage.cmerge.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/internal.coverage.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/maps/maps.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sort/sort.csproj" />
     <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
     <ProjectReference Include="$(go2csPath)core/text/tabwriter/text.tabwriter.csproj" />
   </ItemGroup>

@@ -50,7 +50,7 @@ using static go.@internal.coverage_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("internal/coverage/defs.go", "defs.cs", "ANMBogOClKSkpKSkpoKClKSkpKSkpAAMGoKUpKQAV8ABgg==")]
-[assembly: go.GoPositionMap("internal/coverage/pkid.go", "pkid.cs", "AEaUAbKCgqY=")]
+[assembly: go.GoPositionMap("internal/coverage/pkid.go", "pkid.cs", "AEiYAbKCgqY=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -77,4 +77,13 @@ public static partial class coverage_package
     [GoValueClone("Magic", "MetaFileHash")] public partial struct MetaFileHeader {}
     [GoValueClone("MetaHash")] public partial struct MetaSymbolHeader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

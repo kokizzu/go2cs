@@ -27,9 +27,9 @@ partial class coverage_package {
 //    slot: 1 path='internal/goarch'  hard-coded id: 2
 //    slot: 2 path='internal/runtime/atomic'  hard-coded id: 3
 //    slot: 3 path='internal/goos'
-//    slot: 4 path='runtime/internal/sys'  hard-coded id: 5
+//    slot: 4 path='internal/runtime/sys'  hard-coded id: 5
 //    slot: 5 path='internal/abi'  hard-coded id: 4
-//    slot: 6 path='runtime/internal/math'  hard-coded id: 6
+//    slot: 6 path='internal/runtime/math'  hard-coded id: 6
 //    slot: 7 path='internal/bytealg'  hard-coded id: 7
 //    slot: 8 path='internal/goexperiment'
 //    slot: 9 path='internal/runtime/syscall'  hard-coded id: 8
@@ -50,12 +50,14 @@ internal static array<@string> rtPkgs = new @string[]{
     "internal/runtime/atomic"u8,
     "internal/goos"u8,
     "internal/chacha8rand"u8,
-    "runtime/internal/sys"u8,
+    "internal/runtime/sys"u8,
     "internal/abi"u8,
-    "runtime/internal/math"u8,
+    "internal/runtime/maps"u8,
+    "internal/runtime/math"u8,
     "internal/bytealg"u8,
     "internal/goexperiment"u8,
     "internal/runtime/syscall"u8,
+    "internal/stringslite"u8,
     "runtime"u8
 }.array();
 

@@ -5,13 +5,16 @@
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-// Hand-written implementations of the two os/user lookups that read a netapi32 LEVEL RECORD back
-// out of the buffer syscall.NetUserGetInfo publishes.
+// Hand-written implementations of the three os/user lookups that read a netapi32 LEVEL RECORD back
+// out of a buffer the API publishes: lookupFullNameServer and lookupUserPrimaryGroup from
+// syscall.NetUserGetInfo, and listGroupsForUsernameAndDomain from NetUserGetLocalGroups, whose own
+// fabrication route is documented at the member.
 //
-// WHY THESE TWO AND NOT THE FILE. Every other declaration in lookup_windows.go reads managed values
-// and converts faithfully; only these two walk a native record. Hand-owning the file wholesale would
-// freeze correct conversions for no gain, so the two functions are registered individually in the
-// converter's manualConversionFuncs ("os/user") and supplied here.
+// WHY THESE THREE AND NOT THE FILE. Every other declaration in lookup_windows.go reads managed
+// values and converts faithfully; only these three walk a native record. Hand-owning the file
+// wholesale would freeze correct conversions for no gain, so the three functions are registered
+// individually in the converter's manualConversionFuncs ("os/user") and supplied here -- three
+// registry rows, three placeholders in lookup_windows.cs, three bodies below.
 //
 // WHAT GOES WRONG WITHOUT THIS. syscall.NetUserGetInfo is a `**byte` out-parameter member of the
 // ptrout class: it hands back a netapi32 buffer whose address the wrapper publishes into the
@@ -37,7 +40,10 @@
 //
 // OWNERSHIP. The buffer is netapi32's and is released with NetApiBufferFree. The converted bodies
 // deferred that; here it is an eager finally, so the native memory never outlives the transcription
-// -- the mirror-is-a-local doctrine the other hand-owns in this class established.
+// -- the mirror-is-a-local doctrine the other hand-owns in this class established. In
+// listGroupsForUsernameAndDomain the transcription is now the ONLY statement inside that try
+// (readLocalGroupNames, at the bottom of this file), so the buffer is released BEFORE the SID
+// lookups run rather than after them, and nothing past the finally reads native memory.
 
 using System;
 using System.Runtime.InteropServices;
@@ -251,8 +257,9 @@ partial class user_package
     // LocalGroupUserInfo0's single field is a `ж<uint16>`, so that span reinterprets eight raw
     // kernel bytes per element as a managed OBJECT REFERENCE -- one fabricated reference per group,
     // and `entry.Name == nil` then tests a reference the collector never handed out. Walking the
-    // native stride explicitly and lifting each name is the whole fix; the group lookup and error
-    // values below are the converted body's, unchanged.
+    // native stride explicitly and lifting each name is the whole fix; the group lookup below is
+    // the converted body's, unchanged. The EMPTY-MEMBERSHIP answer is not: 1.24 stopped calling it
+    // an error, and the split that follows from that is documented at the branch itself.
     internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) {
         // Check if both the domain name and user should be used.
         @string query = default!;
@@ -273,47 +280,103 @@ partial class user_package
         // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
         // elements which hold the names of local groups where the user participates.
         // The list does not follow any sorting order.
-        //
-        // If no groups can be found for this user, NetUserGetLocalGroups() should
-        // always return the SID of a single group called "None", which
-        // also happens to be the primary group for the local user.
         err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
         if (err != default!) {
             return (default!, err);
         }
 
+        // THE DECISION the buffer is read by is readLocalGroupNames, below. It is a separate member
+        // because it is the half of this function Go's own suite cannot reach here: TestGroupIds
+        // needs an account, and row 46's runtime half was ruled unobservable on any box that cannot
+        // create one. Everything the decision turns on is carried by (entriesRead, entries, domain,
+        // username), so a guard can drive it with a hand-built argument tuple and no account, no
+        // domain and no privilege.
+        slice<@string> names = default!;
+
         try {
-            NativeLocalGroupUserInfo0* entries = (NativeLocalGroupUserInfo0*)(nuint)(uintptr)p0;
-
-            // A published nil is the defect this member was taken for, and it must not read as an
-            // empty membership: it takes the same error as a genuinely empty list rather than
-            // silently answering "no groups".
-            if (entriesRead == 0 || entries == null) {
-                return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
-            }
-
-            slice<@string> sids = default!;
-
-            for (uint32 i = 0; i < entriesRead; i++) {
-                ushort* name = entries[i].Name;
-
-                if (name == null) {
-                    continue;
-                }
-
-                var (sid, errΔ1) = lookupGroupName(windows.UTF16PtrToString(copyNativeUtf16(name)));
-
-                if (errΔ1 != default!) {
-                    return (default!, errΔ1);
-                }
-
-                sids = append(sids, sid);
-            }
-
-            return (sids, default!);
+            (names, err) = readLocalGroupNames(entriesRead, (nuint)(uintptr)p0, domain, username);
         }
         finally {
             syscall.NetApiBufferFree(p0);
         }
+
+        if (err != default!) {
+            return (default!, err);
+        }
+
+        // The SID lookup stays OUTSIDE the seam, and deliberately: lookupGroupName is an API call
+        // (syscall.LookupSID), so a seam that answered SIDs could only be driven against names that
+        // resolve on the running host -- which is the account dependence the extraction exists to
+        // remove. By here the names are copies (copyNativeUtf16 copies) and the buffer is already
+        // released, so nothing below reads native memory. The loop is the converted body's.
+        slice<@string> sids = default!;
+
+        for (nint i = 0; i < len(names); i++) {
+            var (sid, errΔ1) = lookupGroupName(names[i]);
+
+            if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
+
+            sids = append(sids, sid);
+        }
+
+        return (sids, default!);
+    }
+
+    // The decision NetUserGetLocalGroups' published buffer is read by, and the whole of what this
+    // hand-own decides: which of the two zero-group cases holds and, when neither does, the names
+    // lifted off the native stride. `entries` is the buffer's ADDRESS rather than a typed pointer so
+    // the mirror above stays private and a guard can still hand it an image it built itself.
+    //
+    // THE TWO CASES ARE NOT ONE CASE. Until 1.24 they shared an error, because upstream answered an
+    // empty membership with an fmt.Errorf of its own and a published nil could hide inside it. 1.24
+    // removed both halves of that: `entriesRead == 0` now returns nil, nil, and the paragraph that
+    // justified the error -- the claim that NetUserGetLocalGroups() always returns a "None" group
+    // for a user with no groups -- went with it. So:
+    //
+    //   entriesRead == 0   an EMPTY MEMBERSHIP, and upstream's answer for it is no error at all.
+    //                      The caller ranges the nil slice zero times and appends the primary
+    //                      group, which is the POSIX behaviour it wants.
+    //
+    //   entries == null    a PUBLISHED NIL with entries claimed to read. Upstream slices the buffer
+    //                      here unconditionally and would fault; not doing that is the defect this
+    //                      member was taken for. It stays an error, and it must NOT be the case
+    //                      above -- answering "no groups" to a nil buffer is the silent wrong
+    //                      answer, and now that the empty membership is not an error, sharing one
+    //                      branch would produce it.
+    //
+    // The ORDER of the two tests is load-bearing and is what the guard's first two arms assert: an
+    // empty membership is not an error whatever the buffer is, and a nil buffer with entries
+    // CLAIMED is one. The error TEXT is asserted too -- it names entriesRead, domain and username,
+    // and it is the only record a reader of a failed lookup has that the buffer, not the caller,
+    // was what was wrong.
+    //
+    // Public for that guard (GolibTests). It widens no Go surface: Go has no such function, and
+    // every converted member of this package is unchanged.
+    public static unsafe (slice<@string>, error) readLocalGroupNames(uint32 entriesRead, nuint entries, @string domain, @string username) {
+        NativeLocalGroupUserInfo0* records = (NativeLocalGroupUserInfo0*)entries;
+
+        if (entriesRead == 0) {
+            return (default!, default!);
+        }
+
+        if (records == null) {
+            return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() published a nil buffer for %d entries for domain: %s, username: %s"u8, entriesRead, domain, username));
+        }
+
+        slice<@string> names = default!;
+
+        for (uint32 i = 0; i < entriesRead; i++) {
+            ushort* name = records[i].Name;
+
+            if (name == null) {
+                continue;
+            }
+
+            names = append(names, windows.UTF16PtrToString(copyNativeUtf16(name)));
+        }
+
+        return (names, default!);
     }
 }

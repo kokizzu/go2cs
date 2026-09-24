@@ -5,9 +5,10 @@ namespace go.@internal;
 
 using os = os_package;
 using Δruntime = runtime_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using testing = testing_package;
 using time = time_package;
+using go;
 using static go.@internal.poll_internal_test_package;
 
 partial class poll_test_package {

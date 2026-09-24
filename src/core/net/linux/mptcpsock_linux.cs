@@ -14,16 +14,10 @@ using @internal.syscall;
 
 partial class net_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
-    builtin.initPackage(typeof(@internal.syscall.unix_package));
-}
-
 internal static ж<Δsync.Once> ᏑmptcpOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once mptcpOnce => ref ᏑmptcpOnce.Value;
 internal static bool mptcpAvailable;
-internal static bool hasSOLMPTCP;
+internal static bool hasSOLMPTCP; // only valid if mptcpAvailable is true
 
 // These constants aren't in the syscall package, which is frozen
 internal static UntypedInt _IPPROTO_MPTCP => 0x106;
@@ -40,14 +34,20 @@ internal static bool supportsMultipathTCP() {
 // Check that MPTCP is supported by attempting to create an MPTCP socket and by
 // looking at the returned error if any.
 internal static void initMPTCPavailable() {
-    var (s, err) = sysSocket(syscall.AF_INET, syscall.SOCK_STREAM, _IPPROTO_MPTCP);
+    nint family = syscall.AF_INET;
+    if (!supportsIPv4()) {
+        family = syscall.AF_INET6;
+    }
+    var (s, err) = sysSocket(family, syscall.SOCK_STREAM, _IPPROTO_MPTCP);
     var matchᴛ1 = false;
     if (errors.Is(err, syscall.EPROTONOSUPPORT)) { matchᴛ1 = true;
+        return;
     }
-    else if (errors.Is(err, // Not supported: >= v5.6
+    if (errors.Is(err, // Not supported: >= v5.6
  syscall.EINVAL)) { matchᴛ1 = true;
+        return;
     }
-    else if (err == default!) { matchᴛ1 = true;
+    if (err == default!) { matchᴛ1 = true;
         poll.CloseFunc(s);
         fallthrough = true;
     }
@@ -131,6 +131,9 @@ internal static bool isUsingMPTCPProto(ж<netFD> Ꮡfd) {
 // Please look at the description of hasFallenBack (kernel >=5.16) and
 // isUsingMPTCPProto methods for more details about what is being checked here.
 internal static bool isUsingMultipathTCP(ж<netFD> Ꮡfd) {
+    if (!supportsMultipathTCP()) {
+        return false;
+    }
     if (hasSOLMPTCP) {
         return !hasFallenBack(Ꮡfd);
     }

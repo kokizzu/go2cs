@@ -13,10 +13,11 @@ using os = os_package;
 using exec = go.os.exec_package;
 using filepath = path.filepath_package;
 using strings = strings_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using testing = testing_package;
 using crypto;
 using fs = go.io.fs_package;
+using go;
 using go.@internal;
 using go.io;
 using go.os;
@@ -25,36 +26,6 @@ using path;
 using static go.@internal.zstd_package;
 
 partial class zstd_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // a small compressed .debug_ranges section.
 // tests holds some simple test cases, including some found by fuzzing.

@@ -22,42 +22,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class sql_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 // fakeDriver is a fake database that implements Go's driver.Driver
 // interface, just for testing.
 //
@@ -149,7 +113,7 @@ internal static error Unwrap(this fakeError err) {
     return err.Wrapped;
 }
 
-[GoType] public partial struct Δtable {
+[GoType] internal partial struct Δtable {
     internal sync.Mutex mu;
     internal slice<@string> colname;
     internal slice<@string> coltype;
@@ -197,11 +161,12 @@ internal static error Unwrap(this fakeError err) {
 }
 
 internal static void incrStat(this ж<fakeConn> Ꮡc, ж<nint> Ꮡv) {
+    ref var c = ref Ꮡc.DerefOrNull();
     ref var v = ref Ꮡv.DerefOrNull();
 
-    Ꮡc.of(fakeConn.Ꮡmu).Lock();
+    c.mu.Lock();
     v++;
-    Ꮡc.of(fakeConn.Ꮡmu).Unlock();
+    c.mu.Unlock();
 }
 
 [GoType] internal partial struct fakeTx {
@@ -304,9 +269,9 @@ internal static (driver.Conn, error) Open(this ж<fakeDriver> Ꮡd, @string dsn)
     }
     @string name = parts[0];
     var db = Ꮡd.getDB(name);
-    Ꮡd.of(fakeDriver.Ꮡmu).Lock();
+    d.mu.Lock();
     d.openCount++;
-    Ꮡd.of(fakeDriver.Ꮡmu).Unlock();
+    d.mu.Unlock();
     var conn = Ꮡ(new fakeConn(db: db));
     if (len(parts) >= 2 && parts[1] == "badConn") {
         conn.Value.bad = true;
@@ -322,11 +287,12 @@ internal static (driver.Conn, error) Open(this ж<fakeDriver> Ꮡd, @string dsn)
 
 internal static ж<fakeDB> getDB(this ж<fakeDriver> Ꮡd, @string name) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
-        Ꮡd.of(fakeDriver.Ꮡmu).Lock();
-        defer(Ꮡd.of(fakeDriver.Ꮡmu).Unlock, ref ᒐ);
+        d.mu.Lock();
+        ᒐd1 = true;
         if (d.dbs == default!) {
             d.dbs = new map<@string, ж<fakeDB>>();
         }
@@ -338,29 +304,31 @@ internal static ж<fakeDB> getDB(this ж<fakeDriver> Ꮡd, @string name) {
         return db;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡd.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void wipe(this ж<fakeDB> Ꮡdb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(fakeDB.Ꮡmu).Lock();
-        defer(Ꮡdb.of(fakeDB.Ꮡmu).Unlock, ref ᒐ);
+        db.mu.Lock();
+        ᒐd1 = true;
         db.tables = default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static error createTable(this ж<fakeDB> Ꮡdb, @string name, slice<@string> columnNames, slice<@string> columnTypes) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(fakeDB.Ꮡmu).Lock();
-        defer(Ꮡdb.of(fakeDB.Ꮡmu).Unlock, ref ᒐ);
+        db.mu.Lock();
+        ᒐd1 = true;
         if (db.tables == default!) {
             db.tables = new map<@string, ж<Δtable>>();
         }
@@ -377,7 +345,7 @@ internal static error createTable(this ж<fakeDB> Ꮡdb, @string name, slice<@st
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // must be called with db.mu lock held
@@ -396,7 +364,7 @@ internal static (@string typ, bool ok) columnType(this ж<fakeDB> Ꮡdb, @string
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(fakeDB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(fakeDB.Ꮡmu).Unlock, ref ᒐ);
         (var t, ok) = db.table(Δtable);
         if (!ok) {

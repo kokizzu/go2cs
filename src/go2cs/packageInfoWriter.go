@@ -150,6 +150,49 @@ func migrateProseBlock(packageInfoLines []string, legacyFirstLine string, marker
 	return updated
 }
 
+// refuseDuplicateGlobalUsings fails the conversion when the <ImportedTypeAliases> section it is
+// about to write would declare one `global using` NAME twice — which C# refuses outright (CS1537,
+// "The using alias … appeared previously in this namespace"), so emitting it produces a file that
+// cannot compile and says nothing about why.
+//
+// The section is a HashSet of rendered TEXT, so two declarations that agree on their target are
+// already one line; a surviving duplicate name therefore always carries DISAGREEING targets, and
+// both are named in the refusal. The shape is only reachable where lines from two sources meet —
+// the seeded production metadata merged under mergeExisting against a test variant's own aliases —
+// because a single conversion's aliases come from a map keyed by that same name.
+//
+// qualifiedImportedTypeAliases resolves the one shape the corpus has (crypto/ecdh), so this is the
+// guard rather than the fix: a future third source of alias declarations gets a refusal naming the
+// alias instead of a CS1537 in a build log several stages downstream. Only `global using` lines are
+// examined — a FILE-LOCAL `using X = …;` binds nothing at compilation scope and legitimately
+// shadows a global one of the same name.
+func refuseDuplicateGlobalUsings(sortedLines []string, packageInfoFileName string) {
+	declared := map[string]string{}
+
+	for _, line := range sortedLines {
+		declaration, isGlobal := strings.CutPrefix(strings.TrimSpace(line), "global using ")
+
+		if !isGlobal {
+			continue
+		}
+
+		name, target, found := strings.Cut(strings.TrimSuffix(declaration, ";"), " = ")
+
+		if !found {
+			continue
+		}
+
+		name, target = strings.TrimSpace(name), strings.TrimSpace(target)
+
+		if previous, seen := declared[name]; seen {
+			log.Fatalf("Refusing to write package info file \"%s\": the imported type alias \"%s\" is declared twice with different targets, \"%s\" and \"%s\". One `global using` name has exactly one meaning per compilation (CS1537); a second target must render fully qualified instead (see qualifiedImportedTypeAliases).\n",
+				packageInfoFileName, name, previous, target)
+		}
+
+		declared[name] = target
+	}
+}
+
 // writePackageInfoFile creates or updates a package information file (package_info.cs, or the
 // test conversion's package_test_info.cs) by inserting the CURRENT package-scoped metadata
 // globals (imported/exported type aliases, interface implementations, implicit conversions)
@@ -239,7 +282,15 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 				continue
 			}
 
-			lines.Add(fmt.Sprintf("global using %s = %s;", strings.ReplaceAll(alias, ".", TypeAliasDot), typeName))
+			// A key whose alias NAME the seeded production metadata already binds elsewhere
+			// declares nothing here: its references render fully qualified instead
+			// (getAliasedTypeName), so a second declaration of that one name would be pure
+			// CS1537. See qualifiedImportedTypeAliases.
+			if qualifiedImportedTypeAliases.Contains(alias) {
+				continue
+			}
+
+			lines.Add(fmt.Sprintf("global using %s = %s;", typeAliasName(alias), typeName))
 		}
 
 		// Add package-qualifier aliases used by recorded GoImplicitConv attributes (e.g.
@@ -253,6 +304,8 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		// Sort lines
 		sortedLines := lines.Keys()
 		sort.Strings(sortedLines)
+
+		refuseDuplicateGlobalUsings(sortedLines, packageInfoFileName)
 
 		// Insert imported type aliases into package info file
 		packageInfoLines = append(packageInfoLines[:startLineIndex+1],
@@ -505,7 +558,25 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 					continue
 				}
 				if inner, ok := strings.CutPrefix(implementation, PointerPrefix+"<"); ok {
-					lines.Add(fmt.Sprintf("[assembly: GoImplement<%s, %s>(Pointer = true)]", qualifyLocalTypeRef(strings.TrimSuffix(inner, ">")), qualifyLocalTypeRef(interfaceName)))
+					record := fmt.Sprintf("[assembly: GoImplement<%s, %s>(Pointer = true)]", qualifyLocalTypeRef(strings.TrimSuffix(inner, ">")), qualifyLocalTypeRef(interfaceName))
+
+					// A recompile-model seed carries the production half's records ALREADY FACETED
+					// (facetProductionPointerRecords), and a test variant re-derives a pair the
+					// production half also recorded whenever both halves cast the same struct to
+					// the same interface. The HashSet dedupes identical TEXT, and these two differ
+					// by the facet alone — so without this the file would carry two records for one
+					// pair, go2cs-gen would compose the adapter twice (CS0102 + CS0111 + CS8646,
+					// the os dirEntry shape one cause over), and the duplicate would additionally
+					// make adapterProductionNameKeepers count two faceted members and fall to rule
+					// 3, un-separating the very pass this facet exists to separate.
+					//
+					// The FACETED record wins, and that direction is the rule rather than a
+					// preference: it names what the production .cs already spells.
+					if lines.Contains(pointerRecordFacetedForm(record)) {
+						continue
+					}
+
+					lines.Add(record)
 					continue
 				}
 

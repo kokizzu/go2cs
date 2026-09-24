@@ -23,54 +23,6 @@ using io = io_package;
 
 partial class httptest_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509() {
-    builtin.initPackage(typeof(crypto.x509_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸtestcert() {
-    builtin.initPackage(typeof(go.net.http.@internal.testcert_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // A Server is an HTTP server listening on a system-chosen port on the
 // local loopback interface, for use in end-to-end HTTP tests.
 [GoType] partial struct Server {
@@ -349,7 +301,7 @@ public static void CloseClientConnections(this ж<Server> Ꮡs) {
         nint nconn = len(s.conns);
         var ch = new channel<EmptyStruct>(nconn);
         foreach (var (c, _) in s.conns) {
-            goǃ(Ꮡs.closeConnChan, c, ch);
+            goǃ(Ꮡs.closeConnChan, c, ch.WithDirection(GoChanDir.Send));
         }
         s.mu.Unlock();
         // Wait for outstanding closes to finish.

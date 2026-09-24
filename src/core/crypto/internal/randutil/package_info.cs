@@ -49,7 +49,7 @@ using static go.crypto.@internal.randutil_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/randutil/randutil.go", "randutil.cs", "AB0y4oKClrSkgg==")]
+[assembly: go.GoPositionMap("crypto/internal/randutil/randutil.go", "randutil.cs", "AA4o4oKUgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;
@@ -65,4 +65,15 @@ public static partial class randutil_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() => builtin.initPackage(typeof(math.rand.rand_package));
+    // </ImportInitializers>
 }

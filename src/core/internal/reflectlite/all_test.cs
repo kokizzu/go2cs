@@ -23,54 +23,6 @@ using ꓸꓸꓸPoint = Span<reflectlite_test_package.Point>;
 
 partial class reflectlite_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
-    builtin.initPackage(typeof(global::go.@internal.abi_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() {
-    builtin.initPackage(typeof(global::go.@internal.reflectlite_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 public static reflectꓸValue ToValue(reflectlite.Value v) {
     return reflect.ValueOf(reflectlite_internal_test_package.ToInterface(v));
 }
@@ -468,46 +420,46 @@ public static void TestSetValue(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestCanSetField_embed {
+[GoType("dyn")] internal partial struct TestCanSetField_embed {
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_Embed {
+[GoType("dyn")] internal partial struct TestCanSetField_Embed {
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_S1 {
+[GoType("dyn")] internal partial struct TestCanSetField_S1 {
     internal partial ref TestCanSetField_embed embed { get; }
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_S2 {
+[GoType("dyn")] internal partial struct TestCanSetField_S2 {
     internal partial ref ж<TestCanSetField_embed> embed { get; }
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_S3 {
+[GoType("dyn")] internal partial struct TestCanSetField_S3 {
     public partial ref TestCanSetField_Embed Embed { get; }
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_S4 {
+[GoType("dyn")] internal partial struct TestCanSetField_S4 {
     public partial ref ж<TestCanSetField_Embed> Embed { get; }
     internal nint x;
     public nint X;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_testCase {
+[GoType("dyn")] internal partial struct TestCanSetField_testCase {
     internal slice<nint> index;
     internal bool canSet;
 }
 
-[GoType("dyn")] partial struct TestCanSetField_tests {
+[GoType("dyn")] internal partial struct TestCanSetField_tests {
     internal reflectlite.Value val;
     internal slice<TestCanSetField_testCase> cases;
 }
@@ -640,7 +592,7 @@ public static void TestAll(ж<testing.T> Ꮡt) {
 internal static readonly @string float64ˢ = "float64"u8;
 internal static readonly object v2InterfaceDidNotReturnˢ = (@string)"v2.Interface() did not return float64, got "u8;
 
-[GoType("dyn")] partial struct TestInterfaceValue_inter {
+[GoType("dyn")] internal partial struct TestInterfaceValue_inter {
     public any E;
 }
 
@@ -696,18 +648,14 @@ internal static bool sameInts(slice<nint> x, slice<nint> y) {
     return true;
 }
 
-[GoType("dyn")] partial struct TestBigUnnamedStruct_b {
-    internal int64 a, b, c, d;
-}
-
-[GoType("dyn")] partial struct TestBigUnnamedStruct_type {
+[GoType("dyn")] internal partial struct TestBigUnnamedStruct_b {
     internal int64 a, b, c, d;
 }
 
 public static void TestBigUnnamedStruct(ж<testing.T> Ꮡt) {
     var b = new TestBigUnnamedStruct_b(1, 2, 3, 4);
     var v = ValueOf(b);
-    var b1 = reflectlite_internal_test_package.ToInterface(v)._<TestBigUnnamedStruct_type>();
+    var b1 = reflectlite_internal_test_package.ToInterface(v)._<TestBigUnnamedStruct_b>();
     if (b1.a != b.a || b1.b != b.b || b1.c != b.c || b1.d != b.d) {
         Ꮡt.Errorf("ValueOf(%v).Interface().(*Big) = %v"u8, b, b1);
     }
@@ -751,6 +699,9 @@ internal static Action fn3 = () => {
 }
 
 [GoType("ж<Loop>")] partial class Loop;
+// Descriptor carrier for `Loopy` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Loopy")] public interface Loopyᴅ { }
+
 
 internal static ж<Loop> Ꮡloop1 = new StandardBox<Loop>(default(Loop));
 internal static ref Loop loop1 => ref Ꮡloop1.ValueSlot;
@@ -786,7 +737,7 @@ internal static slice<DeepEqualTest> typeOfTests = new DeepEqualTest[]{
     new(new Basic(1, 0.5F), new Basic(1, 0.5F), true),
     new(((error)default!), ((error)default!), true),
     new(new map<nint, @string>{[1] = "one"u8, [2] = "two"u8}, new map<nint, @string>{[2] = "two"u8, [1] = "one"u8}, true),
-    new(fn1, fn2, true),
+    new((fn1).OrTypedNilFunc(), (fn2).OrTypedNilFunc(), true),
     new((nint)(1), (nint)(2), false),
     new((int32)1, (int32)2, false),
     new(0.5D, 0.6D, false),
@@ -802,8 +753,8 @@ internal static slice<DeepEqualTest> typeOfTests = new DeepEqualTest[]{
     new(new map<nint, @string>{[2] = "two"u8, [1] = "one"u8}, new map<nint, @string>{[1] = "one"u8}, false),
     new(default!, (nint)(1), false),
     new((nint)(1), default!, false),
-    new(fn1, fn3, false),
-    new(fn3, fn3, false),
+    new((fn1).OrTypedNilFunc(), (fn3).OrTypedNilFunc(), false),
+    new((fn3).OrTypedNilFunc(), (fn3).OrTypedNilFunc(), false),
     new(new slice<nint>[]{new nint[]{1}.slice()}.slice(), new slice<nint>[]{new nint[]{2}.slice()}.slice(), false),
     new(math.NaN(), math.NaN(), false),
     new(Ꮡ(new float64[]{math.NaN()}.array()), Ꮡ(new float64[]{math.NaN()}.array()), false),
@@ -864,43 +815,43 @@ public static void NotNil(any a, ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNil {
+[GoType("dyn")] internal partial struct TestIsNil_doNil {
     internal ж<nint> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ1 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ1 {
     internal any x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ2 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ2 {
     internal map<@string, nint> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ3 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ3 {
     internal Func<bool> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ4 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ4 {
     internal channel<nint> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ5 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ5 {
     internal slice<@string> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_doNilᴛ6 {
+[GoType("dyn")] internal partial struct TestIsNil_doNilᴛ6 {
     internal @unsafe.Pointer x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_si {
+[GoType("dyn")] internal partial struct TestIsNil_si {
     internal slice<nint> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_mi {
+[GoType("dyn")] internal partial struct TestIsNil_mi {
     internal map<nint, nint> x;
 }
 
-[GoType("dyn")] partial struct TestIsNil_fi {
+[GoType("dyn")] internal partial struct TestIsNil_fi {
     internal Action<ж<testing.T>> x;
 }
 
@@ -1018,7 +969,7 @@ public static nint TotalDist(this Point p, params ꓸꓸꓸPoint pointsʗp) {
     internal nint d;
 }
 
-[GoType("dyn")] partial struct TestImportPath_tests {
+[GoType("dyn")] internal partial struct TestImportPath_tests {
     internal reflectliteꓸType t;
     internal @string path;
 }
@@ -1108,21 +1059,21 @@ public static void TestAllocations(ж<testing.T> Ꮡt) {
     });
 }
 
-[GoType("dyn")] partial struct TestSetPanic_t0 {
+[GoType("dyn")] internal partial struct TestSetPanic_t0 {
     public nint W;
 }
 
-[GoType("dyn")] partial struct TestSetPanic_t1 {
+[GoType("dyn")] internal partial struct TestSetPanic_t1 {
     public nint Y;
     internal partial ref TestSetPanic_t0 t0 { get; }
 }
 
-[GoType("dyn")] partial struct TestSetPanic_T2 {
+[GoType("dyn")] internal partial struct TestSetPanic_T2 {
     public nint Z;
     internal TestSetPanic_t0 namedT0;
 }
 
-[GoType("dyn")] partial struct TestSetPanic_T {
+[GoType("dyn")] internal partial struct TestSetPanic_T {
     public nint X;
     internal partial ref TestSetPanic_t1 t1 { get; }
     public partial ref TestSetPanic_T2 T2 { get; }
@@ -1378,7 +1329,7 @@ public static void TestBigZero(ж<testing.T> Ꮡt) {
 }
 
 // Used to have inconsistency between IsValid() and Kind() != Invalid.
-[GoType("dyn")] partial struct TestInvalid_T {
+[GoType("dyn")] internal partial struct TestInvalid_T {
     internal any v;
 }
 
@@ -1436,7 +1387,7 @@ public static void TestNames(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestUnaddressableField_localBuffer {
+[GoType("dyn")] internal partial struct TestUnaddressableField_localBuffer {
     internal slice<byte> buf;
 }
 

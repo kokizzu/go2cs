@@ -10,18 +10,6 @@ using go.math;
 
 partial class flate_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(go.math.bits_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
 // hcode is a huffman code with a bit code and bit length.
 [GoType] partial struct hcode {
     internal uint16 code, len;
@@ -190,7 +178,7 @@ internal static UntypedInt maxBitsLimit => 16;
     while (ᐧ) {
         var l = Ꮡlevels.at<levelInfo>((nint)(level));
         if ((~l).nextPairFreq == math.MaxInt32 && (~l).nextCharFreq == math.MaxInt32) {
-            // We've run out of both leafs and pairs.
+            // We've run out of both leaves and pairs.
             // End all calculations for this level.
             // To make sure we never come back to this level or any lower level,
             // set nextPairFreq impossibly large.

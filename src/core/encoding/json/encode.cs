@@ -30,30 +30,6 @@ using go.unicode;
 
 partial class json_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // Marshal returns the JSON encoding of v.
 //
 // Marshal traverses the value v recursively.
@@ -99,8 +75,8 @@ partial class json_package {
 //
 // The "omitempty" option specifies that the field should be omitted
 // from the encoding if the field has an empty value, defined as
-// false, 0, a nil pointer, a nil interface value, and any empty array,
-// slice, map, or string.
+// false, 0, a nil pointer, a nil interface value, and any array,
+// slice, map, or string of length zero.
 //
 // As a special case, if the field tag is "-", the field is always omitted.
 // Note that a field with name "-" can still be generated using the tag "-,".
@@ -125,6 +101,17 @@ partial class json_package {
 //
 //	// Field appears in JSON as key "-".
 //	Field int `json:"-,"`
+//
+// The "omitzero" option specifies that the field should be omitted
+// from the encoding if the field has a zero value, according to rules:
+//
+// 1) If the field type has an "IsZero() bool" method, that will be used to
+// determine whether the value is zero.
+//
+// 2) Otherwise, the value is zero if it is the zero value for its type.
+//
+// If both "omitempty" and "omitzero" are specified, the field will be omitted
+// if the value is either empty or zero (or both).
 //
 // The "string" option signals that a field is stored as JSON inside a
 // JSON-encoded string. It applies only to fields of string, floating point,
@@ -764,7 +751,7 @@ FieldLoop:
             }
             fv = fv.Field(iΔ1);
         }
-        if ((~f).omitEmpty && isEmptyValue(fv)) {
+        if (((~f).omitEmpty && isEmptyValue(fv)) || ((~f).omitZero && ((~f).isZero == default! && fv.IsZero() || ((~f).isZero != default! && (~f).isZero(fv))))) {
             continue;
         }
         Ꮡe.of(encodeState.ᏑBuffer).WriteByte(next);
@@ -788,7 +775,8 @@ break_FieldLoop:;
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newStructEncoder(reflectꓸType t) {
     var se = new structEncoder(fields: cachedTypeFields(t));
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => se.encode(p1, p2, p3);
+    var seʗ1 = se;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => seʗ1.encode(p1, p2, p3);
 }
 
 [GoType] partial struct mapEncoder {
@@ -860,7 +848,8 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newMapEncoder(
     }
 
     var me = new mapEncoder(typeEncoder(t.Elem()));
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => me.encode(p1, p2, p3);
+    var meʗ1 = me;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => meʗ1.encode(p1, p2, p3);
 }
 
 internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts _) {
@@ -882,7 +871,7 @@ internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, en
 }
 
 [GoType("dyn")] internal partial struct encode_ptr {
-    internal any ptr;         // always an unsafe.Pointer, but avoids a dependency on package unsafe
+    internal any ptr; // always an unsafe.Pointer, but avoids a dependency on package unsafe
     internal nint len;
 }
 
@@ -928,7 +917,8 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newSliceEncode
         }
     }
     var enc = new sliceEncoder(newArrayEncoder(t));
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => enc.encode(p1, p2, p3);
+    var encʗ1 = enc;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => encʗ1.encode(p1, p2, p3);
 }
 
 [GoType] partial struct arrayEncoder {
@@ -949,7 +939,8 @@ internal static void encode(this arrayEncoder ae, ж<encodeState> Ꮡe, reflect�
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newArrayEncoder(reflectꓸType t) {
     var enc = new arrayEncoder(typeEncoder(t.Elem()));
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => enc.encode(p1, p2, p3);
+    var encʗ1 = enc;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => encʗ1.encode(p1, p2, p3);
 }
 
 [GoType] partial struct ptrEncoder {
@@ -988,7 +979,8 @@ internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸ
 
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newPtrEncoder(reflectꓸType t) {
     var enc = new ptrEncoder(typeEncoder(t.Elem()));
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => enc.encode(p1, p2, p3);
+    var encʗ1 = enc;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => encʗ1.encode(p1, p2, p3);
 }
 
 [GoType] partial struct condAddrEncoder {
@@ -1007,7 +999,8 @@ internal static void encode(this condAddrEncoder ce, ж<encodeState> Ꮡe, refle
 // CanAddr and delegates to canAddrEnc if so, else to elseEnc.
 internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newCondAddrEncoder(Action<ж<encodeState>, reflectꓸValue, encOpts> canAddrEnc, Action<ж<encodeState>, reflectꓸValue, encOpts> elseEnc) {
     var enc = new condAddrEncoder(canAddrEnc: canAddrEnc, elseEnc: elseEnc);
-    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => enc.encode(p1, p2, p3);
+    var encʗ1 = enc;
+    return (ж<encodeState> p1, reflectꓸValue p2, encOpts p3) => encʗ1.encode(p1, p2, p3);
 }
 
 internal static bool isValidTag(@string s) {
@@ -1169,14 +1162,23 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
     internal slice<nint> index;
     internal reflectꓸType typ;
     internal bool omitEmpty;
+    internal bool omitZero;
+    internal Func<reflectꓸValue, bool> isZero;
     internal bool quoted;
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> encoder;
 }
+
+[GoType] public partial interface isZeroer {
+    bool IsZero();
+}
+
+internal static reflectꓸType isZeroerType = reflect.TypeFor<isZeroer>();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string jsonˢ = "json"u8;
 internal static readonly @string stringˢ = "string"u8;
 internal static readonly @string omitemptyˢ = "omitempty"u8;
+internal static readonly @string omitzeroˢ = "omitzero"u8;
 
 // typeFields returns a list of fields that JSON should recognize for the given type.
 // The algorithm is breadth-first search over the set of structs to include - the top struct
@@ -1268,6 +1270,7 @@ internal static structFields typeFields(reflectꓸType t) {
                         index: index,
                         typ: ft,
                         omitEmpty: opts.Contains(omitemptyˢ),
+                        omitZero: opts.Contains(omitzeroˢ),
                         quoted: quoted
                     );
                     field.nameBytes = slice<byte>(field.name);
@@ -1275,6 +1278,43 @@ internal static structFields typeFields(reflectꓸType t) {
                     nameEscBuf = appendHTMLEscape(nameEscBuf[..0], field.nameBytes);
                     field.nameEscHTML = @""""u8 + ((sstring)nameEscBuf) + @""":"u8;
                     field.nameNonEsc = @""""u8 + field.name + @""":"u8;
+                    if (field.omitZero) {
+                        var tΔ2 = sf.Type;
+                        // Provide a function that uses a type's IsZero method.
+                        switch (ᐧ) {
+                        case {} when tΔ2.Kind() == reflect.ΔInterface && tΔ2.Implements(isZeroerType): {
+                            field.isZero = (reflectꓸValue v) => {
+                                // Avoid panics calling IsZero on a nil interface or
+                                // non-nil interface with nil pointer.
+                                return v.IsNil() || (v.Elem().Kind() == reflect.ΔPointer && v.Elem().IsNil()) || v.Interface()._<isZeroer>().IsZero();
+                            };
+                            break;
+                        }
+                        case {} when tΔ2.Kind() == reflect.ΔPointer && tΔ2.Implements(isZeroerType): {
+                            field.isZero = (reflectꓸValue v) => {
+                                // Avoid panics calling IsZero on nil pointer.
+                                return v.IsNil() || v.Interface()._<isZeroer>().IsZero();
+                            };
+                            break;
+                        }
+                        case {} when tΔ2.Implements(isZeroerType): {
+                            field.isZero = (reflectꓸValue v) => v.Interface()._<isZeroer>().IsZero();
+                            break;
+                        }
+                        case {} when reflect.PointerTo(tΔ2).Implements(isZeroerType): {
+                            field.isZero = (reflectꓸValue v) => {
+                                if (!v.CanAddr()) {
+                                    // Temporarily box v so we can take the address.
+                                    var v2 = reflect.New(v.Type()).Elem();
+                                    v2.Set(v);
+                                    v = v2;
+                                }
+                                return v.Addr().Interface()._<isZeroer>().IsZero();
+                            };
+                            break;
+                        }}
+
+                    }
                     fields = append(fields, field);
                     if (count[f.typ] > 1) {
                         // If there were multiple instances, add a second,

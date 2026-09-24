@@ -4,10 +4,9 @@
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -21,7 +20,8 @@ partial class runtime_package {
     internal sys.NotInHeap _;
     // The following members are accessed on every malloc,
     // so they are grouped here for better caching.
-    internal uintptr nextSample; // trigger heap sample after allocating this many bytes
+    internal int64 nextSample;   // trigger heap sample after allocating this many bytes
+    internal nint memProfRate;    // cached mem profile rate, used to detect changes
     internal uintptr scanAlloc; // bytes of scannable heap allocated
 // Allocator cache for tiny objects w/o pointers.
 // See "Tiny allocator" comment in malloc.go.
@@ -241,7 +241,7 @@ internal static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"
     // limit. It will simply mark the whole object or just skip it
     // since we're in the mark phase anyway.
     s.Value.limit = s.@base() + size;
-    s.initHeapBits(false);
+    s.initHeapBits();
     return s;
 }
 

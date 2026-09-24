@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `math/big` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `773afa2c2`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**224 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**230 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/math/big`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/big).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -84,6 +86,8 @@ comparison — it is the evidence behind the `math/big` row in
 | `TestFloatAdd32` | pass | pass |
 | `TestFloatAdd64` | pass | pass |
 | `TestFloatAddRoundZero` | pass | pass |
+| `TestFloatAppendText` | pass | pass |
+| `TestFloatAppendTextNil` | pass | pass |
 | `TestFloatArithmeticOverflow` | pass | pass |
 | `TestFloatArithmeticRounding` | pass | pass |
 | `TestFloatArithmeticSpecialValues` | pass | pass |
@@ -144,6 +148,8 @@ comparison — it is the evidence behind the `math/big` row in
 | `TestGobEncodingNilRatInSlice` | pass | pass |
 | `TestHilbert` | pass | pass |
 | `TestInt64` | pass | pass |
+| `TestIntAppendText` | pass | pass |
+| `TestIntAppendTextNil` | pass | pass |
 | `TestIntCmpSelf` | pass | pass |
 | `TestIntGobEncoding` | pass | pass |
 | `TestIntJSONEncoding` | pass | pass |
@@ -192,7 +198,7 @@ comparison — it is the evidence behind the `math/big` row in
 | `TestNatSubMod2N/aliasX` | pass | pass |
 | `TestNatSubMod2N/aliasY` | pass | pass |
 | `TestNatSubMod2N/noalias` | pass | pass |
-| `TestNewIntAllocs` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestNewIntAllocs` | fail | fail |
 | `TestNewIntMinInt64` | pass | pass |
 | `TestNormBits` | pass | pass |
 | `TestNot` | pass | pass |
@@ -201,6 +207,7 @@ comparison — it is the evidence behind the `math/big` row in
 | `TestQuo` | pass | pass |
 | `TestQuoStepD6` | pass | pass |
 | `TestRatAbs` | pass | pass |
+| `TestRatAppendText` | pass | pass |
 | `TestRatBin` | pass | pass |
 | `TestRatCmp` | pass | pass |
 | `TestRatGobDecodeShortBuffer` | pass | pass |
@@ -244,15 +251,18 @@ comparison — it is the evidence behind the `math/big` row in
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/math/big/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestMulUnbalanced` | `alloc-profile` | allocation-byte BUDGET assert on a different meter than the AllocsPerRun rows — runtime.ReadMemStats TotalAlloc delta, which the converted runtime maps to the CLR's own GC.GetTotalAllocatedBytes (a true byte total over every managed allocation, not golib's object-count lower bound): nat(nil).mul of a 50,000-word by 40-word unbalanced multiply must stay within 10x the input size (~400 KB), and the converted path allocates 23,482,832 bytes (58x) — the managed temp-nat slice<T> workspaces the recursive unbalanced multiply mints per block, which Go's escape analysis and nat pooling keep out of its own heap total. Same managed-runtime grounding as the AllocsPerRun rows, measured in bytes instead of objects. Reduction of exactly these sites is the zh-box reduction arc's math/big harvest; this entry retires with it. Measured 23,482,832 bytes = 58x input, 2026-08-29, go1.23.12/windows-amd64. |
-| `TestNewIntAllocs` | `alloc-profile` | want-zero AllocsPerRun assert: every leg is x.Add(x, NewInt(k)), and Go's escape analysis proves the NewInt(k) argument non-escaping so it lives on the stack; the managed model mints exactly ONE golib box per run for it (measured 1.0 at the B2 kind-split emission) — the one structural object the assert forbids |
+| `TestMulUnbalanced` | `deferred` | allocation-byte BUDGET assert on a different meter than the AllocsPerRun rows — runtime.ReadMemStats TotalAlloc delta, which the converted runtime maps to the CLR's own GC.GetTotalAllocatedBytes (a true byte total over every managed allocation, not golib's object-count lower bound): nat(nil).mul of a 50,000-word by 40-word unbalanced multiply must stay within 10x the input size (~400 KB), and the converted path allocates 23,482,832 bytes (58x) — the managed temp-nat slice<T> workspaces the recursive unbalanced multiply mints per block, which Go's escape analysis keeps out of its own heap total. Same managed-runtime grounding as the AllocsPerRun rows, measured in bytes instead of objects. Reduction of exactly these sites is the zh-box reduction arc's math/big harvest; this entry retires with it. Measured 23,482,832 bytes = 58x input, 2026-08-29, go1.23.12/windows-amd64. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O5): alloc-profile -> deferred. 'nat pooling' is dropped from the reason above: the converted path already emits Go's nat pool (math/big/nat.cs:450-470/606-630), so it is not what separates the two sides. |
 
 ## Excluded declarations
 

@@ -10,18 +10,6 @@ using static go.maps_package;
 
 partial class maps_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 internal static map<nint, nint> m1 = new map<nint, nint>{[1] = 2, [2] = 4, [4] = 8, [8] = 16};
 
 internal static map<nint, @string> m2 = new map<nint, @string>{[1] = "2"u8, [2] = "4"u8, [4] = "8"u8, [8] = "16"u8};
@@ -65,7 +53,7 @@ internal static bool equalNaN<T>(T v1, T v2) {
     return AreEqual(v1, v2) || (isNaN(v1) && isNaN(v2));
 }
 
-// equalStr compares ints and strings.
+// equalIntStr compares ints and strings.
 internal static bool equalIntStr(nint v1, @string v2) {
     return strconv.Itoa(v1) == v2;
 }
@@ -124,9 +112,9 @@ public static void TestCloneNil(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("map[nint, bool]")] internal partial struct TestCopy_M1;
+[GoLocalName("M1")] [GoType("map[nint, bool]")] internal partial struct TestCopy_M1;
 
-[GoType("map[nint, bool]")] internal partial struct TestCopy_M2;
+[GoLocalName("M2")] [GoType("map[nint, bool]")] internal partial struct TestCopy_M2;
 
 public static void TestCopy(ж<testing.T> Ꮡt) {
     var mc = Clone<map<nint, nint>, nint, nint>(m1);
@@ -206,9 +194,9 @@ public static void TestCloneWithMapAssign(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[17]float64")] internal partial struct TestCloneLarge_K; // > 128 bytes
+[GoLocalName("K")] [GoType("[17]float64")] internal partial struct TestCloneLarge_K; // > 128 bytes
 
-[GoType("[17]float64")] internal partial struct TestCloneLarge_V;
+[GoLocalName("V")] [GoType("[17]float64")] internal partial struct TestCloneLarge_V;
 
 public static void TestCloneLarge(ж<testing.T> Ꮡt) {
     float64 zero = default!;

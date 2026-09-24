@@ -12,18 +12,6 @@ using go.image;
 
 partial class jpeg_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
 // div returns a/b rounded to the nearest integer, instead of rounded to zero.
 internal static int32 div(int32 a, int32 b) {
     if (a >= 0) {
@@ -62,8 +50,8 @@ internal static quantIndex nQuantIndex => 2;
 // Chrominance.
 // unscaledQuant are the unscaled quantization tables in zig-zag order. Each
 // encoder copies and scales the tables according to its quality parameter.
-// The values are derived from section K.1 after converting from natural to
-// zig-zag order.
+// The values are derived from section K.1 of the spec, after converting from
+// natural to zig-zag order.
 internal static array<array<byte>> unscaledQuant = new array<byte>[]{
     new byte[]{
         16, 11, 12, 14, 12, 10, 16, 14,
@@ -95,7 +83,7 @@ internal static huffIndex nHuffIndex => 4;
 
 // huffmanSpec specifies a Huffman encoding.
 [GoType] partial struct huffmanSpec {
-    // count[i] is the number of codes of length i bits.
+    // count[i] is the number of codes of length i+1 bits.
     internal array<byte> count = new(16);
     // value[i] is the decoded value of the i'th codeword.
     internal slice<byte> value;
@@ -106,7 +94,15 @@ internal static huffIndex nHuffIndex => 4;
 // Chrominance DC.
 // Chrominance AC.
 // theHuffmanSpec is the Huffman encoding specifications.
-// This encoder uses the same Huffman encoding for all images.
+//
+// This encoder uses the same Huffman encoding for all images. It is also the
+// same Huffman encoding used by section K.3 of the spec.
+//
+// The DC tables have 12 decoded values, called categories.
+//
+// The AC tables have 162 decoded values: bytes that pack a 4-bit Run and a
+// 4-bit Size. There are 16 valid Runs and 10 valid Sizes, plus two special R|S
+// cases: 0|0 (meaning EOB) and F|0 (meaning ZRL).
 internal static array<huffmanSpec> theHuffmanSpec = new huffmanSpec[]{
     new(
         new byte[]{0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0}.array(),

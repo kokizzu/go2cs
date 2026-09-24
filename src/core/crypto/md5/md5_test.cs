@@ -72,7 +72,7 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
                 io.WriteString(c, g.@in);
             } else 
             if (j == 2){
-                io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
+                io.WriteString(c, g.@in[..(int)(len(g.@in) / 2)]);
                 c.Sum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
             } else 
@@ -101,8 +101,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("could not marshal: %v"u8, err);
             continue;
         }
+        (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+        if (err != default!) {
+            Ꮡt.Errorf("could not marshal: %v"u8, err);
+            continue;
+        }
+        stateAppend = stateAppend[4..];
         if (((sstring)state) != g.halfState) {
             Ꮡt.Errorf("md5(%q) state = %q, want %q"u8, g.@in, state, g.halfState);
+            continue;
+        }
+        if (((sstring)stateAppend) != g.halfState) {
+            Ꮡt.Errorf("md5(%q) stateAppend = %q, want %q"u8, g.@in, stateAppend, g.halfState);
             continue;
         }
         {
@@ -226,6 +236,7 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
 }
 
 public static void TestAllocations(ж<testing.T> Ꮡt) {
+    cryptotest.SkipTestAllocations(Ꮡt);
     var @in = slice<byte>("hello, world!"u8);
     ref var @out = ref heap<slice<byte>>(out var Ꮡout);
     @out = new slice<byte>(0, ΔSize);

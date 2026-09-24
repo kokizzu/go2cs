@@ -61,9 +61,9 @@ using static go.net.textproto_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("net/textproto/header.go", "header.cs", "AAkaooKssgACENKClIKClAACENKClKiS")]
-[assembly: go.GoPositionMap("net/textproto/pipeline.go", "pipeline.cs", "ACdIsoKCgoKqoqqiqqKqogAMINKCgoKUgoKUgoKs0oKCgpSCgoKUgoKUgoI=")]
-[assembly: go.GoPositionMap("net/textproto/reader.go", "reader.cs", "AE5K0qqigqiSgoKUrLKCgoKCgpSCpoKUgoKmAAIqABICgqqigoKUgoKUqqKCgpQAAhDSgqiCgpSSloCC7oKChMyEgpSWgoKClIKClJSokoKCgpSUgoKUlKbSgoKUptKCgpSCgoKClIKGlAACKAAVAoKClAACOgAeAoKCgoKCloKCgoKCgpSUlJQAAiYAEgKCggAHEtgADRCCgoKCgoKUlJSCgpSCgpSmgoKUgoKUpoKCmIKCtqKCloKCtpKClIK2gpSClIKUqqKClIKmvrKuyLKCgoKCgoKUqIKClJSUAAQwABMCAAIQ+LKCgoKUlrqCloCCgoKClKaCgoKogoKUgoKUgoKogoKohIKCgpSCgpTKgoKUloLOoKqygpTO1IKCgpSCgoKClJSUlJQAAhYACQSCgoKClIKClIKClJQABxoACAoABSYABSAADAwACAgAAhwACgKCqIKCgqa4gpSUgpaC6oKklIKUuICCpAAIEIKCAChS")]
-[assembly: go.GoPositionMap("net/textproto/textproto.go", "textproto.cs", "AC5Qgs6CAA4gkgAGEJKqooKClAACNgAcAoKCgoKClKiSgpSClKiSgpSClKaCpoKC")]
+[assembly: go.GoPositionMap("net/textproto/pipeline.go", "pipeline.cs", "ACFIsoKCgoKqoqqiqqKqogAMINKCgoKUgoKUgoKs0oKCgpSCgoKUgoKUgoI=")]
+[assembly: go.GoPositionMap("net/textproto/reader.go", "reader.cs", "AB5K0qqigqiSgoKUrLKCgoKCgpSCpoKUgoKmAAIqABICgqqigoKUgoKUqqKCgpQAAhDSgqiCgpSSloCC7oKChMyEgpSWgoKClIKClJSokoKCgpSUgoKUlKbSgoKUptKCgpSCgoKClIKGlAACKAAVAoKClAACOgAeAoKCgoKCgoKWgoKCgoKCgpSClIKUlAACJgASAoKCAAcS2AANEIKCgoKCgpSUlIKClIKClKaCgpSCgpSmgoKYgoK2ooKWgoK2koKUgraClIKUgpSqooKUgqa+sq7IsoKCgoKCgpSogoKUlJQABDAAEwIAAhD4soKCgpSWuoKWgIKCgoKUpoKCgqiCgpSCgpSCgqiCgqiEgoKClIKClMqCgpSWgs6gqrKClM7UgoKClIKCgoKUlJSUlAACFgAJBIKCgoKUgoKUgoKUlAAHGgAICgAXJgAFIAAMDAALCAACHAAKAoKogoKCpriClJSCloLqgqSUgpS4gIKkAAgQgoIAKFI=")]
+[assembly: go.GoPositionMap("net/textproto/textproto.go", "textproto.cs", "AChQgs6CAA4gkgAGEJKqooKClAACNgAcAoKCgoKClKiSgpSClKiSgpSClKaCpoKC")]
 [assembly: go.GoPositionMap("net/textproto/writer.go", "writer.cs", "ABMqku6ygoKCAAIUAAkCgoKmgoIADSCygoKCpIKUlKaClIKCuIKCtoCCpJSmooKUgrSCpIKkpA==")]
 // </GoSourcePositionMaps>
 
@@ -90,4 +90,23 @@ public static partial class textproto_package
     public partial struct Writer {}
     public partial struct ΔError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

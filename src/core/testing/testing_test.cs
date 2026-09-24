@@ -4,6 +4,8 @@
 namespace go;
 
 using bytes = bytes_package;
+using context = context_package;
+using errors = errors_package;
 using fmt = fmt_package;
 using race = @internal.race_package;
 using testenv = @internal.testenv_package;
@@ -11,6 +13,7 @@ using Δos = os_package;
 using exec = go.os.exec_package;
 using filepath = path.filepath_package;
 using Δregexp = regexp_package;
+using Δruntime = runtime_package;
 using slices = slices_package;
 using strings = strings_package;
 using Δsync = sync_package;
@@ -238,45 +241,37 @@ public static void TestSetenv(ж<testing.T> Ꮡt) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testingTParallelCalledˢ = "testing: t.Parallel called after t.Setenv; cannot set environment variables in parallel tests"u8;
-private static readonly @string goTestKey1ˢ = "GO_TEST_KEY_1"u8;
-private static readonly @string valueˢ = "value"u8;
-
-public static void TestSetenvWithParallelAfterSetenv(ж<testing.T> Ꮡt) {
+internal static void expectParallelConflict(ж<testing.T> Ꮡt) {
     GoFrame ᒐ = default;
     try {
-        defer(() => {
-            @string want = testingTParallelCalledˢ;
-            {
-                var got = recover(); if (!AreEqual(got, want)) {
-                    Ꮡt.Fatalf("expected panic; got %#v want %q"u8, got, want);
-                }
+        @string want = testing.ParallelConflict;
+        {
+            var got = recover(); if (!AreEqual(got, want)) {
+                Ꮡt.Fatalf("expected panic; got %#v want %q"u8, got, want);
             }
-        }, ref ᒐ);
-        Ꮡt.Setenv(goTestKey1ˢ, valueˢ);
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+internal static void testWithParallelAfter(ж<testing.T> Ꮡt, Action<ж<testing.T>> fn) {
+    GoFrame ᒐ = default;
+    try {
+        defer(expectParallelConflict, Ꮡt, ref ᒐ);
+        fn(Ꮡt);
         Ꮡt.Parallel();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testingTSetenvCalledˢ = "testing: t.Setenv called after t.Parallel; cannot set environment variables in parallel tests"u8;
-
-public static void TestSetenvWithParallelBeforeSetenv(ж<testing.T> Ꮡt) {
+internal static void testWithParallelBefore(ж<testing.T> Ꮡt, Action<ж<testing.T>> fn) {
     GoFrame ᒐ = default;
     try {
-        defer(() => {
-            @string want = testingTSetenvCalledˢ;
-            {
-                var got = recover(); if (!AreEqual(got, want)) {
-                    Ꮡt.Fatalf("expected panic; got %#v want %q"u8, got, want);
-                }
-            }
-        }, ref ᒐ);
+        defer(expectParallelConflict, Ꮡt, ref ᒐ);
         Ꮡt.Parallel();
-        Ꮡt.Setenv(goTestKey1ˢ, valueˢ);
+        fn(Ꮡt);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -285,20 +280,13 @@ public static void TestSetenvWithParallelBeforeSetenv(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string childˢ = "child"u8;
 
-public static void TestSetenvWithParallelParentBeforeSetenv(ж<testing.T> Ꮡt) {
+internal static void testWithParallelParentBefore(ж<testing.T> Ꮡt, Action<ж<testing.T>> fn) {
     Ꮡt.Parallel();
     Ꮡt.Run(childˢ, (ж<testing.T> tΔ1) => {
         GoFrame ᒐ = default;
         try {
-            defer(() => {
-                @string want = testingTSetenvCalledˢ;
-                {
-                    var got = recover(); if (!AreEqual(got, want)) {
-                        tΔ1.Fatalf("expected panic; got %#v want %q"u8, got, want);
-                    }
-                }
-            }, ref ᒐ);
-            tΔ1.Setenv(goTestKey1ˢ, valueˢ);
+            defer(expectParallelConflict, tΔ1, ref ᒐ);
+            fn(tΔ1);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }
@@ -308,26 +296,162 @@ public static void TestSetenvWithParallelParentBeforeSetenv(ж<testing.T> Ꮡt) 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string grandChildˢ = "grand-child"u8;
 
-public static void TestSetenvWithParallelGrandParentBeforeSetenv(ж<testing.T> Ꮡt) {
+internal static void testWithParallelGrandParentBefore(ж<testing.T> Ꮡt, Action<ж<testing.T>> fn) {
     Ꮡt.Parallel();
     Ꮡt.Run(childˢ, (ж<testing.T> tΔ1) => {
         tΔ1.Run(grandChildˢ, (ж<testing.T> tΔ2) => {
             GoFrame ᒐ = default;
             try {
-                defer(() => {
-                    @string want = testingTSetenvCalledˢ;
-                    {
-                        var got = recover(); if (!AreEqual(got, want)) {
-                            tΔ2.Fatalf("expected panic; got %#v want %q"u8, got, want);
-                        }
-                    }
-                }, ref ᒐ);
-                tΔ2.Setenv(goTestKey1ˢ, valueˢ);
+                defer(expectParallelConflict, tΔ2, ref ᒐ);
+                fn(tΔ2);
             }
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         });
     });
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goTestKey1ˢ = "GO_TEST_KEY_1"u8;
+private static readonly @string valueˢ = "value"u8;
+
+internal static void tSetenv(ж<testing.T> Ꮡt) {
+    Ꮡt.Setenv(goTestKey1ˢ, valueˢ);
+}
+
+public static void TestSetenvWithParallelAfter(ж<testing.T> Ꮡt) {
+    testWithParallelAfter(Ꮡt, tSetenv);
+}
+
+public static void TestSetenvWithParallelBefore(ж<testing.T> Ꮡt) {
+    testWithParallelBefore(Ꮡt, tSetenv);
+}
+
+public static void TestSetenvWithParallelParentBefore(ж<testing.T> Ꮡt) {
+    testWithParallelParentBefore(Ꮡt, tSetenv);
+}
+
+public static void TestSetenvWithParallelGrandParentBefore(ж<testing.T> Ꮡt) {
+    testWithParallelGrandParentBefore(Ꮡt, tSetenv);
+}
+
+internal static void tChdir(ж<testing.T> Ꮡt) {
+    Ꮡt.Chdir(Ꮡt.TempDir());
+}
+
+public static void TestChdirWithParallelAfter(ж<testing.T> Ꮡt) {
+    testWithParallelAfter(Ꮡt, tChdir);
+}
+
+public static void TestChdirWithParallelBefore(ж<testing.T> Ꮡt) {
+    testWithParallelBefore(Ꮡt, tChdir);
+}
+
+public static void TestChdirWithParallelParentBefore(ж<testing.T> Ꮡt) {
+    testWithParallelParentBefore(Ꮡt, tChdir);
+}
+
+public static void TestChdirWithParallelGrandParentBefore(ж<testing.T> Ꮡt) {
+    testWithParallelGrandParentBefore(Ꮡt, tChdir);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string skipˢ = "skip"u8;
+private static readonly @string pwdˢ = "PWD"u8;
+
+[GoType("dyn")] internal partial struct TestChdir_type {
+    internal @string name, dir, pwd;
+    internal bool extraChdir;
+}
+
+public static void TestChdir(ж<testing.T> Ꮡt) {
+    GoFrame ᒐ = default;
+    try {
+        var (oldDir, err) = Δos.Getwd();
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        defer(Δos.Chdir, oldDir, ref ᒐ);
+        // The "relative" test case relies on tmp not being a symlink.
+        (var tmp, err) = filepath.EvalSymlinks(Ꮡt.TempDir());
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        (var rel, err) = filepath.Rel(oldDir, tmp);
+        if (err != default!) {
+            // If GOROOT is on C: volume and tmp is on the D: volume, there
+            // is no relative path between them, so skip that test case.
+            rel = skipˢ;
+        }
+        foreach (var (_, vᴛ1) in new TestChdir_type[]{
+            new(
+                name: "absolute"u8,
+                dir: tmp,
+                pwd: tmp
+            ),
+            new(
+                name: "relative"u8,
+                dir: rel,
+                pwd: tmp
+            ),
+            new(
+                name: "current (absolute)"u8,
+                dir: oldDir,
+                pwd: oldDir
+            ),
+            new(
+                name: "current (relative) with extra os.Chdir"u8,
+                dir: "."u8,
+                pwd: oldDir,
+                extraChdir: true
+            )
+        }.slice()) {
+            ref var tc = ref heap(new TestChdir_type(), out var Ꮡtc);
+            tc = vᴛ1;
+
+            var tcʗ1 = tc;
+            Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
+                if (tcʗ1.dir == "skip"u8) {
+                    tΔ1.Skipf("skipping test because there is no relative path between %s and %s"u8, oldDir, tmp);
+                }
+                if (!filepath.IsAbs(tcʗ1.pwd)) {
+                    tΔ1.Fatalf("Bad tc.pwd: %q (must be absolute)"u8, tcʗ1.pwd);
+                }
+                tΔ1.Chdir(tcʗ1.dir);
+                var (newDirΔ1, errΔ1) = Δos.Getwd();
+                if (errΔ1 != default!) {
+                    tΔ1.Fatal(errΔ1);
+                }
+                if (newDirΔ1 != tcʗ1.pwd) {
+                    tΔ1.Fatalf("failed to chdir to %q: getwd: got %q, want %q"u8, tcʗ1.dir, newDirΔ1, tcʗ1.pwd);
+                }
+                var exprᴛ1 = Δruntime.GOOS;
+                if (exprᴛ1 == "windows"u8 || exprᴛ1 == "plan9"u8) {
+                }
+                else { /* default: */
+                    {
+                        @string pwd = Δos.Getenv(pwdˢ); if (pwd != tcʗ1.pwd) {
+                            // Windows and Plan 9 do not use the PWD variable.
+                            tΔ1.Fatalf("PWD: got %q, want %q"u8, pwd, tcʗ1.pwd);
+                        }
+                    }
+                }
+
+                if (tcʗ1.extraChdir) {
+                    Δos.Chdir(".."u8);
+                }
+            });
+            var (newDir, errΔ2) = Δos.Getwd();
+            if (errΔ2 != default!) {
+                Ꮡt.Fatal(errΔ2);
+            }
+            if (newDir != oldDir) {
+                Ꮡt.Fatalf("failed to restore wd to %s: getwd: %s"u8, oldDir, newDir);
+            }
+        }
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
 }
 
 // testingTrueInInit is part of TestTesting.
@@ -405,18 +529,12 @@ private static readonly @string testBenchtime2xˢ = "-test.benchtime=2x"u8;
 // runTest runs a helper test with -test.v, ignoring its exit status.
 // runTest both logs and returns the test output.
 internal static slice<byte> runTest(ж<testing.T> Ꮡt, @string test) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
     Ꮡt.Helper();
     testenv.MustHaveExec(new testing_TжTB(Ꮡt));
-    var (exe, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Skipf("can't find test executable: %v"u8, err);
-    }
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), exe, "-test.run=^"u8 + test + "$"u8, "-test.bench=" + test, testVˢ2, testParallel2ˢ, testBenchtime2xˢ);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.Executable(new testing_TжTB(Ꮡt)), "-test.run=^"u8 + test + "$"u8, "-test.bench=" + test, testVˢ2, testParallel2ˢ, testBenchtime2xˢ);
     cmd = testenv.CleanCmdEnv(cmd);
     cmd.Value.Env = append((~cmd).Env, "GO_WANT_HELPER_PROCESS=1"u8);
-    (var @out, err) = cmd.CombinedOutput();
+    var (@out, err) = cmd.CombinedOutput();
     Ꮡt.Logf("%v: %v\n%s"u8, cmd.OrTypedNil(), err, @out);
     return @out;
 }
@@ -658,14 +776,7 @@ public static void TestRaceBeforeParallel(ж<testing.T> Ꮡt) {
 private static readonly @string testRunˢ2 = "-test.run=^$"u8;
 
 public static void TestRaceBeforeTests(ж<testing.T> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    testenv.MustHaveExec(new testing_TжTB(Ꮡt));
-    var (exe, err) = Δos.Executable();
-    if (err != default!) {
-        Ꮡt.Skipf("can't find test executable: %v"u8, err);
-    }
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), exe, testRunˢ2);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.Executable(new testing_TжTB(Ꮡt)), testRunˢ2);
     cmd = testenv.CleanCmdEnv(cmd);
     cmd.Value.Env = append((~cmd).Env, "GO_WANT_RACE_BEFORE_TESTS=1"u8);
     var (@out, _) = cmd.CombinedOutput();
@@ -696,6 +807,22 @@ public static void TestBenchmarkRace(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string benchmarkBLoopRacyˢ = "BenchmarkBLoopRacy"u8;
+
+public static void TestBenchmarkRaceBLoop(ж<testing.T> Ꮡt) {
+    var @out = runTest(Ꮡt, benchmarkBLoopRacyˢ);
+    nint c = bytes.Count(@out, slice<byte>("race detected during execution of test"u8));
+    nint want = 0;
+    // We should see one race detector report.
+    if (race.Enabled) {
+        want = 1;
+    }
+    if (c != want) {
+        Ꮡt.Errorf("got %d race reports; want %d"u8, c, want);
+    }
+}
+
 public static void BenchmarkRacy(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
@@ -707,6 +834,15 @@ public static void BenchmarkRacy(ж<testing.B> Ꮡb) {
     }
 }
 
+public static void BenchmarkBLoopRacy(ж<testing.B> Ꮡb) {
+    if (Δos.Getenv(goWantHelperProcessˢ) != "1"u8) {
+        Ꮡb.Skipf("skipping intentionally-racy benchmark"u8);
+    }
+    while (Ꮡb.Loop()) {
+        doRace();
+    }
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string benchmarkSubRacyˢ = "BenchmarkSubRacy"u8;
 
@@ -714,10 +850,11 @@ public static void TestBenchmarkSubRace(ж<testing.T> Ꮡt) {
     var @out = runTest(Ꮡt, benchmarkSubRacyˢ);
     nint c = bytes.Count(@out, slice<byte>("race detected during execution of test"u8));
     nint want = 0;
-    // We should see two race detector reports:
-    // one in the sub-bencmark, and one in the parent afterward.
+    // We should see 3 race detector reports:
+    // one in the sub-bencmark, one in the parent afterward,
+    // and one in b.Loop.
     if (race.Enabled) {
-        want = 2;
+        want = 3;
     }
     if (c != want) {
         Ꮡt.Errorf("got %d race reports; want %d"u8, c, want);
@@ -727,6 +864,7 @@ public static void TestBenchmarkSubRace(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string nonRacyˢ = "non-racy"u8;
 private static readonly @string racyˢ = "racy"u8;
+private static readonly @string racyBLoopˢ = "racy-bLoop"u8;
 
 public static void BenchmarkSubRacy(ж<testing.B> Ꮡb) {
     if (Δos.Getenv(goWantHelperProcessˢ) != "1"u8) {
@@ -741,6 +879,11 @@ public static void BenchmarkSubRacy(ж<testing.B> Ꮡb) {
     });
     Ꮡb.Run(racyˢ, (ж<testing.B> bΔ2) => {
         for (nint i = 0; i < (~bΔ2).N; i++) {
+            doRace();
+        }
+    });
+    Ꮡb.Run(racyBLoopˢ, (ж<testing.B> bΔ3) => {
+        while (bΔ3.Loop()) {
             doRace();
         }
     });
@@ -927,6 +1070,102 @@ public static void TestParentRun(ж<testing.T> Ꮡt1) {
             t3.Log(helloInnerˢ);
         });
     });
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string innerˢ = "inner"u8;
+private static readonly @string inner2ˢ = "inner2"u8;
+private static readonly object expectedContextOfSiblingˢ = (@string)"expected context of sibling test to be canceled after its test function finished"u8;
+private static readonly object expectedContextCanceledˢ = (@string)"expected context canceled before cleanup"u8;
+
+public static void TestContext(ж<testing.T> Ꮡt) {
+    var ctx = Ꮡt.Context();
+    {
+        var err = ctx.Err(); if (err != default!) {
+            Ꮡt.Fatalf("expected non-canceled context, got %v"u8, err);
+        }
+    }
+    ref var innerCtx = ref heap<context.Context>(out var ᏑinnerCtx);
+    Ꮡt.Run(innerˢ, (ж<testing.T> tΔ1) => {
+        ᏑinnerCtx.ValueSlot = tΔ1.Context();
+        {
+            var err = ᏑinnerCtx.ValueSlot.Err(); if (err != default!) {
+                tΔ1.Fatalf("expected inner test to not inherit canceled context, got %v"u8, err);
+            }
+        }
+    });
+    Ꮡt.Run(inner2ˢ, (ж<testing.T> tΔ2) => {
+        if (!errors.Is(ᏑinnerCtx.ValueSlot.Err(), context.Canceled)) {
+            tΔ2.Fatal(expectedContextOfSiblingˢ);
+        }
+    });
+    var ctxʗ1 = ctx;
+    Ꮡt.Cleanup(() => {
+        if (!errors.Is(ctxʗ1.Err(), context.Canceled)) {
+            Ꮡt.Fatal(expectedContextCanceledˢ);
+        }
+    });
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string benchmarkBLoopPrintˢ = "BenchmarkBLoopPrint"u8;
+private static readonly @string benchmarkBLoopPrint09S2Sˢ = @"BenchmarkBLoopPrint(-[0-9]+)?\s+2\s+[0-9]+\s+ns/op"u8;
+private static readonly object missingBenchmarkOutputˢ = (@string)"missing benchmark output"u8;
+
+public static void TestBenchmarkBLoopIterationCorrect(ж<testing.T> Ꮡt) {
+    var @out = runTest(Ꮡt, benchmarkBLoopPrintˢ);
+    nint c = bytes.Count(@out, slice<byte>("Printing from BenchmarkBLoopPrint"u8));
+    nint want = 2;
+    if (c != want) {
+        Ꮡt.Errorf("got %d loop iterations; want %d"u8, c, want);
+    }
+    // b.Loop() will only rampup once.
+    c = bytes.Count(@out, slice<byte>("Ramping up from BenchmarkBLoopPrint"u8));
+    want = 1;
+    if (c != want) {
+        Ꮡt.Errorf("got %d loop rampup; want %d"u8, c, want);
+    }
+    var re = Δregexp.MustCompile(benchmarkBLoopPrint09S2Sˢ);
+    if (!re.Match(@out)) {
+        Ꮡt.Error(missingBenchmarkOutputˢ);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string benchmarkBNPrintˢ = "BenchmarkBNPrint"u8;
+
+public static void TestBenchmarkBNIterationCorrect(ж<testing.T> Ꮡt) {
+    var @out = runTest(Ꮡt, benchmarkBNPrintˢ);
+    nint c = bytes.Count(@out, slice<byte>("Printing from BenchmarkBNPrint"u8));
+    // runTest sets benchtime=2x, with semantics specified in #32051 it should
+    // run 3 times.
+    nint want = 3;
+    if (c != want) {
+        Ꮡt.Errorf("got %d loop iterations; want %d"u8, c, want);
+    }
+    // b.N style fixed iteration loop will rampup twice:
+    // One in run1(), the other in launch
+    c = bytes.Count(@out, slice<byte>("Ramping up from BenchmarkBNPrint"u8));
+    want = 2;
+    if (c != want) {
+        Ꮡt.Errorf("got %d loop rampup; want %d"u8, c, want);
+    }
+}
+
+public static void BenchmarkBLoopPrint(ж<testing.B> Ꮡb) {
+    Ꮡb.Logf("Ramping up from BenchmarkBLoopPrint"u8);
+    while (Ꮡb.Loop()) {
+        Ꮡb.Logf("Printing from BenchmarkBLoopPrint"u8);
+    }
+}
+
+public static void BenchmarkBNPrint(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.DerefOrNull();
+
+    Ꮡb.Logf("Ramping up from BenchmarkBNPrint"u8);
+    for (nint i = 0; i < b.N; i++) {
+        Ꮡb.Logf("Printing from BenchmarkBNPrint"u8);
+    }
 }
 
 } // end testing_test_package

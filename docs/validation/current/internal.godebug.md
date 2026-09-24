@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/godebug` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-29 · converter `773afa2c2`*
+*Validated 2026-09-23 · converter `7ec9e10ed`*
 
-**5 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**5 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/godebug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebug).
+
+Measured at `Release` (tiered JIT on), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 1 of the matched tests identically.
 

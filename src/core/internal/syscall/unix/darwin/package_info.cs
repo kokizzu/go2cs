@@ -15,7 +15,6 @@ global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
 global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
 global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
 global using abiꓸKind = go.@internal.abi_package.ΔKind;
-global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
 global using abiꓸName = go.@internal.abi_package.ΔName;
 global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
 global using runtimeꓸError = go.runtime_package.ΔError;
@@ -59,13 +58,15 @@ using static go.@internal.syscall.unix_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/unix/arc4random_darwin.go", "arc4random_darwin.cs", "ABIcpqSClA==")]
-[assembly: go.GoPositionMap("internal/syscall/unix/at_libc2.go", "at_libc2.cs", "ABEcgqaCpoKopqY=")]
-[assembly: go.GoPositionMap("internal/syscall/unix/eaccess_darwin.go", "eaccess_darwin.cs", "AAwamJKCgpSCgpSmgg==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/arc4random_darwin.go", "arc4random_darwin.cs", "AAwcpqSClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_darwin.go", "at_darwin.cs", "AA0emJKCgpSCgpSU7oKUppiSgoKUuIKU")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_libc2.go", "at_libc2.cs", "AAscgqaCpoKopqY=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/eaccess.go", "eaccess.cs", "AAscgtyU")]
+[assembly: go.GoPositionMap("internal/syscall/unix/faccessat_darwin.go", "faccessat_darwin.cs", "AAwamJKCgpSCgpQ=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_other.go", "kernel_version_other.cs", "AAgSgg==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/net.go", "net.cs", "AAsguLi4uLi4uA==")]
-[assembly: go.GoPositionMap("internal/syscall/unix/net_darwin.go", "net_darwin.cs", "ACNWAAYkAAQSpIIACRSCgpSopIKmqKSCqKampqbupIKmgpSopILMpILugpQ=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/net_darwin.go", "net_darwin.cs", "ACRYAAYkAAQSpIIACRSCgpSopIKmqKSCqKampqbupIKmgpSopILMpILugpQ=")]
 [assembly: go.GoPositionMap("internal/syscall/unix/nonblocking_unix.go", "nonblocking_unix.cs", "AAoWgoKClKaC")]
 [assembly: go.GoPositionMap("internal/syscall/unix/pty_darwin.go", "pty_darwin.cs", "AAwapIKCgpSopIKCgpSopIKCyoKUgoKCpqikgoKClA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_bsd.go", "tcsetpgrp_bsd.cs", "AAseqsI=")]
@@ -92,8 +93,10 @@ using static go.@internal.syscall.unix_package;
 [assembly: go.GoCgoImportDynamic("libc_getpwnam_r_trampoline", "getpwnam_r", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_getpwuid_r_trampoline", "getpwuid_r", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_grantpt_trampoline", "grantpt", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_mkdirat_trampoline", "mkdirat", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_posix_openpt_trampoline", "posix_openpt", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_ptsname_r_trampoline", "ptsname_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_readlinkat_trampoline", "readlinkat", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_sysconf_trampoline", "sysconf", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libc_unlockpt_trampoline", "unlockpt", "/usr/lib/libSystem.B.dylib")]
 [assembly: go.GoCgoImportDynamic("libresolv_res_9_nclose_trampoline", "res_9_nclose", "/usr/lib/libresolv.9.dylib")]
@@ -118,4 +121,16 @@ public static partial class unix_package
     public partial struct Passwd {}
     [GoValueClone("unexported")] public partial struct ResState {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() => builtin.initPackage(typeof(go.@internal.abi_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

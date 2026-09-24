@@ -12,12 +12,6 @@ using unicode = unicode_package;
 
 partial class syntax_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 // A Regexp is a node in a regular expression syntax tree.
 [GoType] partial struct Regexp {
     public Op Op; // operator
@@ -81,7 +75,7 @@ public static bool Equal(this ж<Regexp> Ꮡx, ж<Regexp> Ꮡy) {
         return slices.Equal<slice<rune>, rune>(x.Rune, y.Rune);
     }
     else if (exprᴛ1 == OpAlternate || exprᴛ1 == OpConcat) {
-        return slices.EqualFunc<slice<ж<Regexp>>, slice<ж<Regexp>>, ж<Regexp>, ж<Regexp>>(x.Sub, y.Sub, (Func<ж<Regexp>, ж<Regexp>, bool>)(Equal));
+        return slices.EqualFunc<slice<ж<Regexp>>, slice<ж<Regexp>>, ж<Regexp>, ж<Regexp>>(x.Sub, y.Sub, ((Func<ж<Regexp>, ж<Regexp>, bool>)(Equal)));
     }
     else if (exprᴛ1 == OpStar || exprᴛ1 == OpPlus || exprᴛ1 == OpQuest) {
         if ((Flags)(x.Flags & NonGreedy) != (Flags)(y.Flags & NonGreedy) || !x.Sub[0].Equal(y.Sub[0])) {

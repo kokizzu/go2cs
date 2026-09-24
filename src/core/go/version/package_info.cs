@@ -49,7 +49,7 @@ using static go.go.version_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/version/version.go", "version.cs", "ABkoooKClAACGgAKAoKClIKUAAMW8qiS")]
+[assembly: global::go.GoPositionMap("go/version/version.go", "version.cs", "ABMoooKClAACGgAKAoKClIKUAAMW8qiS")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -65,4 +65,14 @@ public static partial class version_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

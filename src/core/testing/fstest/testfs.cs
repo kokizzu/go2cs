@@ -9,42 +9,19 @@ using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
 using fs = go.io.fs_package;
+using maps = maps_package;
 using path = path_package;
-using reflect = reflect_package;
 using slices = slices_package;
 using strings = strings_package;
 using iotest = go.testing.iotest_package;
 using go.io;
 using go.testing;
+using iter = iter_package;
 using time = time_package;
 using ꓸꓸꓸany = Span<any>;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class fstest_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
-    builtin.initPackage(typeof(go.testing.iotest_package));
-}
 
 // TestFS tests a file system implementation.
 // It walks the entire tree of files in fsys,
@@ -113,13 +90,7 @@ internal static error testFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
     }
     delete(found, "."u8);
     if (len(expected) == 0 && len(found) > 0) {
-        slice<@string> list = default!;
-        foreach (var (k, _) in found) {
-            if (k != "."u8) {
-                list = append(list, k);
-            }
-        }
-        slices.Sort<slice<@string>, @string>(list);
+        var list = slices.Sorted(maps.Keys<map<@string, bool>, @string, bool>(found));
         if (len(list) > 15) {
             list = append(list[..10], "..."u8);
         }
@@ -427,7 +398,7 @@ internal static @string formatInfo(fs.FileInfo info) {
         t.errorf("%s: Glob(%#q): %w"u8, dir, glob, err);
         return;
     }
-    if (reflect.DeepEqual(want, names)) {
+    if (slices.Equal<slice<@string>, @string>(want, names)) {
         return;
     }
     if (!slices.IsSorted<slice<@string>, @string>(names)) {
@@ -663,7 +634,7 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string openˢ = "Open"u8;
 
-// checkBadPath checks that various invalid forms of file's name cannot be opened using t.fsys.Open.
+// checkOpen validates file opening behavior by attempting to open and then close the given file path.
 internal static void checkOpen(this ж<fsTester> Ꮡt, @string @file) {
     ref var t = ref Ꮡt.DerefOrNull();
 

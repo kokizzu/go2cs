@@ -11,80 +11,18 @@ using exec = go.os.exec_package;
 using Δruntime = runtime_package;
 using strconv = strconv_package;
 using strings = strings_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using testing = testing_package;
 using time = time_package;
+using go;
 using go.os;
 using Δsyscall = syscall_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class testenv_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingTestˢ = (@string)"skipping test:"u8;
 
 // MustHaveExec checks that the current system can start new processes
 // using os.StartProcess or (more commonly) exec.Command.
@@ -99,23 +37,34 @@ partial class testenv_package {
 // If exec is not supported, testenv.SyscallIsNotSupported will return true
 // for the resulting error.
 public static void MustHaveExec(testing.TB t) {
-    ᏑtryExecOnce.Do(() => {
-        tryExecErr = tryExec();
-    });
-    if (tryExecErr != default!) {
-        t.Skipf("skipping test: cannot exec subprocess on %s/%s: %v"u8, Δruntime.GOOS, Δruntime.GOARCH, tryExecErr);
+    {
+        var err = tryExec(); if (err != default!) {
+            @string msg = fmt.Sprintf("cannot exec subprocess on %s/%s: %v"u8, Δruntime.GOOS, Δruntime.GOARCH, err);
+            if (t == default!) {
+                throw panic(msg);
+            }
+            t.Helper();
+            t.Skip(skippingTestˢ, msg);
+        }
     }
 }
 
-internal static ж<sync.Once> ᏑtryExecOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once tryExecOnce => ref ᏑtryExecOnce.Value;
-internal static error tryExecErr;
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string canTProbeForExecSupportˢ = "can't probe for exec support with a non-test executable"u8;
-private static readonly @string testListˢ = "-test.list=^$"u8;
-
-internal static error tryExec() {
+// Assume that exec always works on non-mobile platforms and Android.
+// ios has an exec syscall but on real iOS devices it might return a
+// permission error. In an emulated environment (such as a Corellium host)
+// it might succeed, so if we need to exec we'll just have to try it and
+// find out.
+//
+// As of 2023-04-19 wasip1 and js don't have exec syscalls at all, but we
+// may as well use the same path so that this branch can be tested without
+// an ios environment.
+// This isn't a standard 'go test' binary, so we don't know how to
+// self-exec in a way that should succeed without side effects.
+// Just forget it.
+// We know that this is a test executable. We should be able to run it with a
+// no-op flag to check for overall exec support.
+internal static Func<error> tryExec;
+internal static void initᴛtryExec() { tryExec = sync.OnceValue(error () => {
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "wasip1"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "ios"u8) {
     }
@@ -123,31 +72,36 @@ internal static error tryExec() {
         return default!;
     }
 
-    // Assume that exec always works on non-mobile platforms and Android.
-    // ios has an exec syscall but on real iOS devices it might return a
-    // permission error. In an emulated environment (such as a Corellium host)
-    // it might succeed, so if we need to exec we'll just have to try it and
-    // find out.
-    //
-    // As of 2023-04-19 wasip1 and js don't have exec syscalls at all, but we
-    // may as well use the same path so that this branch can be tested without
-    // an ios environment.
     if (!testing.Testing()) {
-        // This isn't a standard 'go test' binary, so we don't know how to
-        // self-exec in a way that should succeed without side effects.
-        // Just forget it.
-        return errors.New(canTProbeForExecSupportˢ);
+        return errors.New("can't probe for exec support with a non-test executable"u8);
     }
-    // We know that this is a test executable. We should be able to run it with a
-    // no-op flag to check for overall exec support.
-    var (exe, err) = os.Executable();
+    var (exe, err) = exePath();
     if (err != default!) {
         return fmt.Errorf("can't probe for exec support: %w"u8, err);
     }
-    var cmd = exec.Command(exe, testListˢ);
+    var cmd = exec.Command(exe, "-test.list=^$"u8);
     cmd.Value.Env = origEnv;
     return cmd.Run();
+}); }
+
+// Executable is a wrapper around [MustHaveExec] and [os.Executable].
+// It returns the path name for the executable that started the current process,
+// or skips the test if the current system can't start new processes,
+// or fails the test if the path can not be obtained.
+public static @string Executable(testing.TB t) {
+    MustHaveExec(t);
+    var (exe, err) = exePath();
+    if (err != default!) {
+        @string msg = fmt.Sprintf("os.Executable error: %v"u8, err);
+        if (t == default!) {
+            throw panic(msg);
+        }
+        t.Fatal(msg);
+    }
+    return exe;
 }
+
+internal static Func<(@string, error)> exePath = sync.OnceValues((@string, error) () => os.Executable());
 
 internal static ж<sync.Map> ᏑexecPaths = new StandardBox<sync.Map>(default(sync.Map));
 internal static ref sync.Map execPaths => ref ᏑexecPaths.Value; // path -> error
@@ -163,6 +117,7 @@ public static void MustHaveExecPath(testing.TB t, @string path) {
         (err, _) = ᏑexecPaths.LoadOrStore(path, err);
     }
     if (err != default!) {
+        t.Helper();
         t.Skipf("skipping test: %s: %s"u8, path, err);
     }
 }

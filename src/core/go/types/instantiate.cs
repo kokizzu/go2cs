@@ -10,18 +10,12 @@ namespace go.go;
 using errors = errors_package;
 using fmt = fmt_package;
 using token = global::go.go.token_package;
-using buildcfg = global::go.@internal.buildcfg_package;
-using static global::go.@internal.types.errors_package;
-using global::go.@internal;
+using buildcfg = @internal.buildcfg_package;
+using static @internal.types.errors_package;
+using @internal;
 using global::go.go;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
 
 // A genericType implements access to its type parameters.
 [GoType] partial interface ΔgenericType :
@@ -86,7 +80,8 @@ public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slic
 // instance instantiates the given original (generic) function or type with the
 // provided type arguments and returns the resulting instance. If an identical
 // instance exists already in the given contexts, it returns that instance,
-// otherwise it creates a new one.
+// otherwise it creates a new one. If there is an error (such as wrong number
+// of type arguments), the result is Typ[Invalid].
 //
 // If expanding is non-nil, it is the Named instance type currently being
 // expanded. If ctxt is non-nil, it is the context associated with the current
@@ -94,6 +89,8 @@ public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slic
 // must be non-nil.
 //
 // For Named types the resulting instance may be unexpanded.
+//
+// check may be nil (when not type-checking syntax); pos is used only only if check is non-nil.
 internal static ΔType /*res*/ instance(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔgenericType orig, slice<ΔType> targs, ж<Named> Ꮡexpanding, ж<Context> Ꮡctxt) {
     ΔType res = default!;
 
@@ -149,14 +146,19 @@ internal static ΔType /*res*/ instance(this ж<Checker> Ꮡcheck, tokenꓸPos p
             assert(Ꮡexpanding == nil); // Alias instances cannot be reached from Named types
         }
         var tparams = origΔ1.TypeParams();
-        if (!Ꮡcheck.validateTArgLen(pos, // TODO(gri) investigate if this is needed (type argument and parameter count seem to be correct here)
- origΔ1.String(), tparams.Len(), len(targs))) {
+        if (!Ꮡcheck.validateTArgLen(pos, // verify type parameter count (see go.dev/issue/71198 for a test case)
+ (~origΔ1).obj.of(TypeName.Ꮡobject).Name(), tparams.Len(), len(targs))) {
+            // TODO(gri) Consider returning a valid alias instance with invalid
+            //           underlying (aliased) type to match behavior of *Named
+            //           types. Then this function will never return an invalid
+            //           result.
             return new BasicжΔType(Typ[Invalid]);
         }
         if (tparams.Len() == 0) {
             return new AliasжΔType(origΔ1); // nothing to do (minor optimization)
         }
-        return new AliasжΔType(Ꮡcheck.newAliasInstance(pos, origΔ1, targs, Ꮡexpanding, Ꮡctxt));
+        res = new AliasжΔType(Ꮡcheck.newAliasInstance(pos, origΔ1, targs, Ꮡexpanding, Ꮡctxt));
+        break;
     }
     case ж<ΔSignature> origΔ1: {
         assert(Ꮡexpanding == nil); // function instances cannot be reached from Named types
@@ -219,6 +221,7 @@ internal static bool validateTArgLen(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
     throw panic(fmt.Sprintf("%v: %s"u8, pos, msg));
 }
 
+// check may be nil; pos is used only if check is non-nil.
 internal static (nint, error) verify(this ж<Checker> Ꮡcheck, tokenꓸPos pos, slice<ж<TypeParam>> tparams, slice<ΔType> targs, ж<Context> Ꮡctxt) {
     var smap = makeSubstMap(tparams, targs);
     foreach (var (i, tpar) in tparams) {
@@ -230,7 +233,7 @@ internal static (nint, error) verify(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
         // the parameterized type.
         var bound = Ꮡcheck.subst(pos, (~tpar).bound, smap, nil, Ꮡctxt);
         ref var cause = ref heap(new @string(), out var Ꮡcause);
-        if (!Ꮡcheck.implements(pos, targs[i], bound, true, Ꮡcause)) {
+        if (!Ꮡcheck.implements(targs[i], bound, true, Ꮡcause)) {
             return (i, errors.New(cause));
         }
     }
@@ -247,7 +250,7 @@ internal static readonly @string satisfyˢ = "satisfy"u8;
 //
 // If the provided cause is non-nil, it may be set to an error string
 // explaining why V does not implement (or satisfy, for constraints) T.
-internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType V, ΔType T, bool constraint, ж<@string> Ꮡcause) {
+internal static bool implements(this ж<Checker> Ꮡcheck, ΔType V, ΔType T, bool constraint, ж<@string> Ꮡcause) {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var cause = ref Ꮡcause.DerefOrNull();
 
@@ -298,14 +301,12 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
         return false;
     }
     // V must implement T's methods, if any.
-    {
-        var (m, _) = Ꮡcheck.missingMethod(V, T, true, Identical, Ꮡcause); if (m != nil) {
-            /* !Implements(V, T) */
-            if (Ꮡcause != nil) {
-                cause = Ꮡcheck.sprintf("%s does not %s %s %s"u8, V, verb, T, cause);
-            }
-            return false;
+    if (!Ꮡcheck.hasAllMethods(V, T, true, Identical, Ꮡcause)) {
+        /* !Implements(V, T) */
+        if (Ꮡcause != nil) {
+            cause = Ꮡcheck.sprintf("%s does not %s %s %s"u8, V, verb, T, cause);
         }
+        return false;
     }
     // Only check comparability if we don't have a more specific error.
     var Tiʗ1 = Ti;
@@ -315,17 +316,16 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
         }
         // If T is comparable, V must be comparable.
         // If V is strictly comparable, we're done.
-        if (comparable(V, false, /* strict comparability */
+        if (comparableType(V, false, /* strict comparability */
  default!, default!)) {
             return true;
         }
         // For constraint satisfaction, use dynamic (spec) comparability
         // so that ordinary, non-type parameter interfaces implement comparable.
-        if (constraint && comparable(V, true, /* spec comparability */
+        if (constraint && comparableType(V, true, /* spec comparability */
  default!, default!)) {
             // V is comparable if we are at Go 1.20 or higher.
-            if (Ꮡcheck == nil || Ꮡcheck.allowVersion(((atPos)pos), go1_20)) {
-                // atPos needed so that go/types generate passes
+            if (Ꮡcheck == nil || Ꮡcheck.Value.allowVersion(go1_20)) {
                 return true;
             }
             if (Ꮡcause != nil) {
@@ -358,13 +358,13 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
     }
     // Otherwise, V's type must be included in the iface type set.
     ref var alt = ref heap<ΔType>(out var Ꮡalt);
-    if (Ti.typeSet().@is((ж<term> t) => {
+    if (Ti.typeSet().@is((ж<Δterm> t) => {
         if (!t.includes(V)) {
             // If V ∉ t.typ but V ∈ ~t.typ then remember this type
             // so we can suggest it as an alternative in the error
             // message.
             if (Ꮡalt.ValueSlot == default! && !(~t).tilde && Identical((~t).typ, under((~t).typ))) {
-                ref var tt = ref heap<term>(out var Ꮡtt);
+                ref var tt = ref heap<Δterm>(out var Ꮡtt);
                 tt = t.Value;
                 tt.tilde = true;
                 if (Ꮡtt.includes(V)) {

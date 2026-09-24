@@ -89,7 +89,7 @@ internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
     x.mant = appendꓸꓸꓸ(x.mant[..0], s[..(int)(n)]);
     // Do any (remaining) shift right in decimal representation.
     if (shift < 0) {
-        while (shift < -maxShift) {
+        while (shift < (nint)(-maxShift)) {
             shr(ref (Ꮡx).DerefOrNull(), maxShift);
             shift += maxShift;
         }

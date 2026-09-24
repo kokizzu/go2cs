@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/internal.godebug.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/internal/godebug@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/internal/godebug) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/internal/godebug)
+[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/internal.godebug.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/internal/godebug@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/internal/godebug) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/internal/godebug)
 
 Package godebug makes the settings in the $GODEBUG environment variable available to other packages. These settings are often used for compatibility tweaks, when we need to change a default behavior but want to let users opt back in to the original. For example GODEBUG=http2server=0 disables HTTP/2 support in the net/http server.
 
@@ -19,7 +19,7 @@ In typical usage, code should declare a Setting as a global and then call Value 
 		...
 	}
 
-Each time a non-default setting causes a change in program behavior, code must call \[Setting.IncNonDefault] to increment a counter that can be reported by [runtime/metrics.Read](https://pkg.go.dev/runtime/metrics@go1.23.12#Read). The call must only happen when the program executes a non-default behavior, not just when the setting is set to a non-default value. This is occasionally (but very rarely) infeasible, in which case the internal/godebugs table entry must set Opaque: true, and the documentation in doc/godebug.md should mention that metrics are unavailable.
+Each time a non-default setting causes a change in program behavior, code must call \[Setting.IncNonDefault] to increment a counter that can be reported by [runtime/metrics.Read](https://pkg.go.dev/runtime/metrics@go1.24.13#Read). The call must only happen when the program executes a non-default behavior, not just when the setting is set to a non-default value. This is occasionally (but very rarely) infeasible, in which case the internal/godebugs table entry must set Opaque: true, and the documentation in doc/godebug.md should mention that metrics are unavailable.
 
 Conventionally, the global variable representing a godebug is named for the godebug itself, with no case changes:
 

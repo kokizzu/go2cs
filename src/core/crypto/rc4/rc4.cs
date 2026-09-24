@@ -9,17 +9,14 @@
 // applications.
 namespace go.crypto;
 
-using alias = go.crypto.@internal.alias_package;
+using alias = go.crypto.@internal.fips140.alias_package;
+using fips140only = go.crypto.@internal.fips140only_package;
+using errors = errors_package;
 using strconv = strconv_package;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class rc4_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
 
 // A Cipher is an instance of RC4 using a particular key.
 [GoType] partial struct Cipher {
@@ -33,9 +30,15 @@ public static @string Error(this KeySizeError k) {
     return "crypto/rc4: invalid key size "u8 + strconv.Itoa((nint)k);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoRc4UseOfRc4IsNotˢ = "crypto/rc4: use of RC4 is not allowed in FIPS 140-only mode"u8;
+
 // NewCipher creates and returns a new [Cipher]. The key argument should be the
 // RC4 key, at least 1 byte and at most 256 bytes.
 public static (ж<Cipher>, error) NewCipher(slice<byte> key) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoRc4UseOfRc4IsNotˢ));
+    }
     nint k = len(key);
     if (k < 1 || k > 256) {
         return (default!, ((KeySizeError)k));

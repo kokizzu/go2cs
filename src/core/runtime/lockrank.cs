@@ -73,61 +73,63 @@ internal static lockRank lockRankItab => 30;
 
 internal static lockRank lockRankReflectOffs => 31;
 
-internal static lockRank lockRankUserArenaState => 32;
+internal static lockRank lockRankSynctest => 32;
 
-internal static lockRank lockRankTraceBuf => 33;
+internal static lockRank lockRankUserArenaState => 33;
 
-internal static lockRank lockRankTraceStrings => 34;
+internal static lockRank lockRankTraceBuf => 34;
 
-internal static lockRank lockRankFin => 35;
+internal static lockRank lockRankTraceStrings => 35;
 
-internal static lockRank lockRankSpanSetSpine => 36;
+internal static lockRank lockRankFin => 36;
 
-internal static lockRank lockRankMspanSpecial => 37;
+internal static lockRank lockRankSpanSetSpine => 37;
 
-internal static lockRank lockRankTraceTypeTab => 38;
+internal static lockRank lockRankMspanSpecial => 38;
 
-internal static lockRank lockRankGcBitsArenas => 39;
+internal static lockRank lockRankTraceTypeTab => 39;
 
-internal static lockRank lockRankProfInsert => 40;
+internal static lockRank lockRankGcBitsArenas => 40;
 
-internal static lockRank lockRankProfBlock => 41;
+internal static lockRank lockRankProfInsert => 41;
 
-internal static lockRank lockRankProfMemActive => 42;
+internal static lockRank lockRankProfBlock => 42;
 
-internal static lockRank lockRankProfMemFuture => 43;
+internal static lockRank lockRankProfMemActive => 43;
 
-internal static lockRank lockRankGscan => 44;
+internal static lockRank lockRankProfMemFuture => 44;
 
-internal static lockRank lockRankStackpool => 45;
+internal static lockRank lockRankGscan => 45;
 
-internal static lockRank lockRankStackLarge => 46;
+internal static lockRank lockRankStackpool => 46;
 
-internal static lockRank lockRankHchanLeaf => 47;
+internal static lockRank lockRankStackLarge => 47;
 
-internal static lockRank lockRankWbufSpans => 48;
+internal static lockRank lockRankHchanLeaf => 48;
 
-internal static lockRank lockRankMheap => 49;
+internal static lockRank lockRankWbufSpans => 49;
 
-internal static lockRank lockRankMheapSpecial => 50;
+internal static lockRank lockRankMheap => 50;
 
-internal static lockRank lockRankGlobalAlloc => 51;
+internal static lockRank lockRankMheapSpecial => 51;
 
-internal static lockRank lockRankTrace => 52;
+internal static lockRank lockRankGlobalAlloc => 52;
 
-internal static lockRank lockRankTraceStackTab => 53;
+internal static lockRank lockRankTrace => 53;
 
-internal static lockRank lockRankPanic => 54;
+internal static lockRank lockRankTraceStackTab => 54;
 
-internal static lockRank lockRankDeadlock => 55;
+internal static lockRank lockRankPanic => 55;
 
-internal static lockRank lockRankRaceFini => 56;
+internal static lockRank lockRankDeadlock => 56;
 
-internal static lockRank lockRankAllocmRInternal => 57;
+internal static lockRank lockRankRaceFini => 57;
 
-internal static lockRank lockRankExecRInternal => 58;
+internal static lockRank lockRankAllocmRInternal => 58;
 
-internal static lockRank lockRankTestRInternal => 59;
+internal static lockRank lockRankExecRInternal => 59;
+
+internal static lockRank lockRankTestRInternal => 60;
 
 // lockRankLeafRank is the rank of lock that does not have a declared rank,
 // and hence is a leaf lock.
@@ -166,6 +168,7 @@ internal static slice<@string> lockNames = new golib.SparseArray<@string>{
     [(int)lockRankRoot] = "root"u8,
     [(int)lockRankItab] = "itab"u8,
     [(int)lockRankReflectOffs] = "reflectOffs"u8,
+    [(int)lockRankSynctest] = "synctest"u8,
     [(int)lockRankUserArenaState] = "userArenaState"u8,
     [(int)lockRankTraceBuf] = "traceBuf"u8,
     [(int)lockRankTraceStrings] = "traceStrings"u8,
@@ -251,6 +254,7 @@ internal static slice<slice<lockRank>> lockPartialOrder = new golib.SparseArray<
     [(int)lockRankRoot] = new lockRank[]{}.slice(),
     [(int)lockRankItab] = new lockRank[]{}.slice(),
     [(int)lockRankReflectOffs] = new lockRank[]{lockRankItab}.slice(),
+    [(int)lockRankSynctest] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankRoot, lockRankItab, lockRankReflectOffs}.slice(),
     [(int)lockRankUserArenaState] = new lockRank[]{}.slice(),
     [(int)lockRankTraceBuf] = new lockRank[]{lockRankSysmon, lockRankScavenge}.slice(),
     [(int)lockRankTraceStrings] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankTraceBuf}.slice(),
@@ -263,16 +267,16 @@ internal static slice<slice<lockRank>> lockPartialOrder = new golib.SparseArray<
     [(int)lockRankProfBlock] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings}.slice(),
     [(int)lockRankProfMemActive] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings}.slice(),
     [(int)lockRankProfMemFuture] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankProfMemActive}.slice(),
-    [(int)lockRankGscan] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture}.slice(),
-    [(int)lockRankStackpool] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
-    [(int)lockRankStackLarge] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
-    [(int)lockRankHchanLeaf] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankHchanLeaf}.slice(),
-    [(int)lockRankWbufSpans] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
-    [(int)lockRankMheap] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans}.slice(),
-    [(int)lockRankMheapSpecial] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap}.slice(),
-    [(int)lockRankGlobalAlloc] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap, lockRankMheapSpecial}.slice(),
-    [(int)lockRankTrace] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap}.slice(),
-    [(int)lockRankTraceStackTab] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap, lockRankTrace}.slice(),
+    [(int)lockRankGscan] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture}.slice(),
+    [(int)lockRankStackpool] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
+    [(int)lockRankStackLarge] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
+    [(int)lockRankHchanLeaf] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankHchanLeaf}.slice(),
+    [(int)lockRankWbufSpans] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan}.slice(),
+    [(int)lockRankMheap] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans}.slice(),
+    [(int)lockRankMheapSpecial] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap}.slice(),
+    [(int)lockRankGlobalAlloc] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap, lockRankMheapSpecial}.slice(),
+    [(int)lockRankTrace] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap}.slice(),
+    [(int)lockRankTraceStackTab] = new lockRank[]{lockRankSysmon, lockRankScavenge, lockRankForcegc, lockRankDefer, lockRankSweepWaiters, lockRankAssistQueue, lockRankStrongFromWeakQueue, lockRankSweep, lockRankTestR, lockRankTimerSend, lockRankExecW, lockRankCpuprof, lockRankPollCache, lockRankPollDesc, lockRankWakeableSleep, lockRankHchan, lockRankAllocmR, lockRankExecR, lockRankSched, lockRankAllg, lockRankAllp, lockRankNotifyList, lockRankSudog, lockRankTimers, lockRankTimer, lockRankNetpollInit, lockRankRoot, lockRankItab, lockRankReflectOffs, lockRankSynctest, lockRankUserArenaState, lockRankTraceBuf, lockRankTraceStrings, lockRankFin, lockRankSpanSetSpine, lockRankMspanSpecial, lockRankGcBitsArenas, lockRankProfInsert, lockRankProfBlock, lockRankProfMemActive, lockRankProfMemFuture, lockRankGscan, lockRankStackpool, lockRankStackLarge, lockRankWbufSpans, lockRankMheap, lockRankTrace}.slice(),
     [(int)lockRankPanic] = new lockRank[]{}.slice(),
     [(int)lockRankDeadlock] = new lockRank[]{lockRankPanic, lockRankDeadlock}.slice(),
     [(int)lockRankRaceFini] = new lockRank[]{lockRankPanic}.slice(),

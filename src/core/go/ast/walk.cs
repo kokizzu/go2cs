@@ -8,12 +8,6 @@ using iter = iter_package;
 
 partial class ast_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸiter() {
-    builtin.initPackage(typeof(iter_package));
-}
-
 // A Visitor's Visit method is invoked for each node encountered by [Walk].
 // If the result visitor w is not nil, [Walk] visits each of the children
 // of node with the visitor w, followed by a call of w.Visit(nil).
@@ -435,7 +429,7 @@ internal static Visitor Visit(this inspector f, Node node) {
 // recursively for each of the non-nil children of node, followed by a
 // call of f(nil).
 public static void Inspect(Node node, Func<Node, bool> f) {
-    Walk(new inspectorᴠVisitor(new inspector(f)), node);
+    Walk(new inspectorᴠVisitor(NilSafeDelegateConversion<inspector, Func<Node, bool>>(f)), node);
 }
 
 // Preorder returns an iterator over all the nodes of the syntax tree

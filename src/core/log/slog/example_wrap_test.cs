@@ -10,6 +10,7 @@ using os = os_package;
 using filepath = path.filepath_package;
 using runtime = runtime_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using go.log;
 using io = io_package;
 using path;
@@ -18,33 +19,9 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class slog_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // Infof is an example of a user-defined logging function that wraps slog.
 // The log record contains the source position of the caller of Infof.
-public static void Infof(ж<Δslog.Logger> Ꮡlogger, @string format, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Infof(ж<Δslog.Logger> Ꮡlogger, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var logger = ref Ꮡlogger.DerefOrNull();

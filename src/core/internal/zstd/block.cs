@@ -7,12 +7,6 @@ using io = io_package;
 
 partial class zstd_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 // debug can be set in the source to print debug info using println.
 internal const bool debug = false;
 
@@ -88,21 +82,21 @@ internal static void initᴛseqCodeInfo() { seqCodeInfo = new golib.SparseArray<
         predefTableBits: 6,
         maxSym: 35,
         maxBits: 9,
-        toBaseline: (Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeLiteralBaselineFSE)
+        toBaseline: ((Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeLiteralBaselineFSE))
     ),
     [(int)seqOffset] = new(
         predefTable: predefinedOffsetTable[..],
         predefTableBits: 5,
         maxSym: 31,
         maxBits: 8,
-        toBaseline: (Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeOffsetBaselineFSE)
+        toBaseline: ((Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeOffsetBaselineFSE))
     ),
     [(int)seqMatch] = new(
         predefTable: predefinedMatchTable[..],
         predefTableBits: 6,
         maxSym: 52,
         maxBits: 9,
-        toBaseline: (Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeMatchBaselineFSE)
+        toBaseline: ((Func<ж<Reader>, nint, slice<fseEntry>, slice<fseBaselineEntry>, error>)(makeMatchBaselineFSE))
     )
 }.array(); }
 

@@ -3,18 +3,19 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal.coverage;
 
-using md5 = crypto.md5_package;
 using fmt = fmt_package;
+using fnv = hash.fnv_package;
 using coverage = go.@internal.coverage_package;
 using pods = go.@internal.coverage.pods_package;
 using os = os_package;
 using filepath = path.filepath_package;
 using runtime = runtime_package;
 using testing = testing_package;
-using crypto;
 using fs = io.fs_package;
 using go.@internal;
 using go.@internal.coverage;
+using hash;
+using hash = hash_package;
 using path;
 
 partial class pods_test_package {
@@ -49,13 +50,17 @@ public static void TestPodCollection(ж<testing.T> Ꮡt) {
     }
     var mkfileʗ1 = mkfile;
     @string mkmeta(@string dir, @string tag) {
-        var hash = md5.Sum(slice<byte>(tag));
+        var h = fnv.New128a();
+        h.Write(slice<byte>(tag));
+        var hash = h.Sum(default!);
         @string fn = fmt.Sprintf("%s.%x"u8, coverage.MetaFilePref, hash);
         return mkfileʗ1(dir, fn);
     }
     var mkfileʗ2 = mkfile;
     @string mkcounter(@string dir, @string tag, nint nt, nint pid) {
-        var hash = md5.Sum(slice<byte>(tag));
+        var h = fnv.New128a();
+        h.Write(slice<byte>(tag));
+        var hash = h.Sum(default!);
         @string fn = fmt.Sprintf(coverage.CounterFileTempl, coverage.CounterFilePref, hash, pid, nt);
         return mkfileʗ2(dir, fn);
     }
@@ -116,18 +121,18 @@ public static void TestPodCollection(ж<testing.T> Ꮡt) {
     }
     var expected = new @string[]{
         """
-o1/covmeta.ae7be26cdaa742ca148068d5ac90eaca [
-o1/covcounters.ae7be26cdaa742ca148068d5ac90eaca.40.2 o:0
-o1/covcounters.ae7be26cdaa742ca148068d5ac90eaca.41.2 o:0
-o1/covcounters.ae7be26cdaa742ca148068d5ac90eaca.42.1 o:0
-o2/covcounters.ae7be26cdaa742ca148068d5ac90eaca.35.11 o:1
+o1/covmeta.0880952782ab1be95aa0733055a4d06b [
+o1/covcounters.0880952782ab1be95aa0733055a4d06b.40.2 o:0
+o1/covcounters.0880952782ab1be95aa0733055a4d06b.41.2 o:0
+o1/covcounters.0880952782ab1be95aa0733055a4d06b.42.1 o:0
+o2/covcounters.0880952782ab1be95aa0733055a4d06b.35.11 o:1
 ]
 """u8,
         """
-o2/covmeta.aaf2f89992379705dac844c0a2a1d45f [
-o2/covcounters.aaf2f89992379705dac844c0a2a1d45f.36.3 o:1
-o2/covcounters.aaf2f89992379705dac844c0a2a1d45f.37.2 o:1
-o2/covcounters.aaf2f89992379705dac844c0a2a1d45f.38.1 o:1
+o2/covmeta.0880952783ab1be95aa0733055a4d1a6 [
+o2/covcounters.0880952783ab1be95aa0733055a4d1a6.36.3 o:1
+o2/covcounters.0880952783ab1be95aa0733055a4d1a6.37.2 o:1
+o2/covcounters.0880952783ab1be95aa0733055a4d1a6.38.1 o:1
 ]
 """u8
     }.slice();

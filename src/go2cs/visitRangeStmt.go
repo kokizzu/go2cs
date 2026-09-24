@@ -245,8 +245,15 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// (`range(seq.Invoke)` — see the yield-func emission below).
 	rangeIsNamedType := false
 
+	// The NAMED type itself, kept because rangeType is about to become its underlying. Go gives a
+	// range-over-int loop variable the operand's OWN type, so the integer arm below names this as
+	// range<T>'s type argument — without it the variable is typed by the underlying KIND and every
+	// method on the named type stops binding.
+	var rangeNamedType types.Type
+
 	if named, ok := rangeType.(*types.Named); ok {
 		rangeIsNamedType = true
+		rangeNamedType = named
 		rangeType = named.Underlying()
 	}
 
@@ -345,8 +352,15 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// into the loop body and the foreach iterates a temp var that is copied into the fresh box —
 	// rather than declaring the box once before the loop (which would also clash with the foreach's
 	// own re-declaration of the same name → CS0136). Captured here, emitted in the DEFINE branch.
+	//
+	// A range-over-FUNC loop is the same shape and was excluded by an arm test rather than by any
+	// property of the range: its yielded variable is per-iteration in Go exactly as a slice index
+	// is, and its foreach declares the name itself, so the before-the-loop decl produced BOTH a
+	// `ref var now = ref heap(new time.Time(), out var Ꮡnow);` and a `foreach (var now in
+	// range(seq))` in one scope — CS0136, internal/synctest's `for now := range seq` inside a
+	// goroutine. The three remaining arms (string/chan/int) keep the before-the-loop decl.
 	var keyHeapDecl, valHeapDecl string
-	deferRangeVarBox := !isStr && !isChan && !isInt && yieldFunc <= -1
+	deferRangeVarBox := !isStr && !isChan && !isInt
 
 	// If defining new variables, perform escape analysis on the key and value expressions
 	if !assignVars {
@@ -535,14 +549,36 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 		if untypedInt {
 			rangeExpr = fmt.Sprintf("@int(%s%s)", rangeExpr, ptrDeref)
 			ptrDeref = ""
+		} else if intBasic != nil && intBasic.Kind() != types.Int && rangeIsNamedType && rangeNamedType != nil {
+			// A NAMED integer type is its OWN type argument, and the operand is passed through
+			// unchanged. Go's rule is that the loop variable has the range operand's type, so
+			// `for days := range absDays(1e6)` gives `days` the type `absDays` — and every method
+			// on it must bind. Casting the operand down to the underlying width instead made the
+			// variable a bare `ulong`: time's abs_test.go called `.split()`, `.date()` and
+			// `.yearYday()` on it and every one failed CS1929, with three CS8130 deconstructions
+			// downstream (six errors, one root).
+			//
+			// ⚠ THE CONSTRAINT ADMITS THIS, and that is measured rather than hoped. range<T>'s
+			// bound is `struct, IComparisonOperators<T, T, bool>, IIncrementOperators<T>` — the
+			// OPERATOR PAIR the loop body actually uses, narrowed to that on purpose so golib's
+			// hand-written `uintptr` could bind (builtin.cs's own remark says so). A converted
+			// `[GoType("num:…")]` type declares both, plus the rest of the arithmetic set, from
+			// InheritedTypeTemplate — the comparison interface is gated only for `complex`, which
+			// Go cannot range over. `default(T)` is the zero of a Go named integer exactly as it
+			// is of the underlying, so the loop's start value is unchanged.
+			//
+			// The emission also READS like the Go, which is the tie-breaker the ruling named: the
+			// alternative — declaring the loop variable as the named type over a widened range and
+			// letting foreach's explicit conversion close the gap — spells two conversions where
+			// Go spells none.
+			// ⚠ SCOPE: this arm sits INSIDE the non-`int` width test, and deliberately. A named type
+			// whose underlying is `int` already emits the BARE `range(expr)` form, where C#'s own
+			// inference binds T to the named type and the variable is correctly typed — so it is
+			// right today and naming the type argument there would move corpus bytes for nothing.
+			// The defect is confined to the widths that spell the argument out.
+			rangeTypeArg = fmt.Sprintf("<%s>", v.getCSharpTypeName(rangeNamedType))
 		} else if intBasic != nil && intBasic.Kind() != types.Int {
-			csIntType := v.getCSharpTypeName(types.Default(intBasic))
-			rangeTypeArg = fmt.Sprintf("<%s>", csIntType)
-
-			if rangeIsNamedType {
-				rangeExpr = fmt.Sprintf("(%s)(%s%s)", csIntType, rangeExpr, ptrDeref)
-				ptrDeref = ""
-			}
+			rangeTypeArg = fmt.Sprintf("<%s>", v.getCSharpTypeName(types.Default(intBasic)))
 		}
 
 		if v.options.preferVarDecl {
@@ -587,9 +623,45 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				keyType = "var "
 			}
 
-			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, scalarKeyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			// A heap-boxed yielded variable takes the same per-iteration box the slice/array/map
+			// arm emits (see deferRangeVarBox): the foreach iterates a temp and the body opens
+			// with the fresh box and the copy into it. Declaring the box at the loop's own scope
+			// instead put two declarations of the name in one scope — CS0136.
+			iterExpr := scalarKeyExpr
+
+			if keyHeapDecl != "" {
+				iterExpr = v.getTempVarName("i")
+
+				if !v.options.preferVarDecl {
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
+				}
+
+				bodyIndent := v.indent(v.indentLevel + 1)
+				context.innerPrefix = fmt.Sprintf("%s%s%s%s%s = %s;%s", v.newline, bodyIndent, keyHeapDecl, v.newline+bodyIndent, keyExpr, iterExpr, v.newline)
+			}
+
+			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, iterExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		} else {
-			v.writeOutput("foreach (%s(%s%s, %s%s) in range%s(%s%s%s))", varInit, keyType, keyExpr, valType, valExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			// The two-value twin of the arm above; either yielded variable may be boxed.
+			kExpr, vExpr := keyExpr, valExpr
+			var innerPrefix string
+			bodyIndent := v.indent(v.indentLevel + 1)
+
+			if keyHeapDecl != "" {
+				kExpr = v.getTempVarName("i")
+				innerPrefix += fmt.Sprintf("%s%s%s%s%s = %s;", v.newline, bodyIndent, keyHeapDecl, v.newline+bodyIndent, keyExpr, kExpr)
+			}
+
+			if valHeapDecl != "" {
+				vExpr = v.getTempVarName("v")
+				innerPrefix += fmt.Sprintf("%s%s%s%s%s = %s;", v.newline, bodyIndent, valHeapDecl, v.newline+bodyIndent, valExpr, vExpr)
+			}
+
+			if innerPrefix != "" {
+				context.innerPrefix = innerPrefix + v.newline
+			}
+
+			v.writeOutput("foreach (%s(%s%s, %s%s) in range%s(%s%s%s))", varInit, keyType, kExpr, valType, vExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		}
 	} else {
 		// Handle slice, array, and map types

@@ -81,6 +81,9 @@ internal static byte _ELF_ST_TYPE(byte val) {
     internal ж<elfVerdef> verdef;
 }
 
+internal static uintptr vdsoLoadStart;
+internal static uintptr vdsoLoadEnd;
+
 // see vdso_linux_*.go for vdsoSymbolKeys[] and vdso*Sym vars
 internal static void vdsoInitFromSysinfoEhdr(ref vdsoInfo info, ж<elfEhdr> Ꮡhdr) {
     ref var hdr = ref Ꮡhdr.DerefOrNull();
@@ -99,6 +102,8 @@ internal static void vdsoInitFromSysinfoEhdr(ref vdsoInfo info, ж<elfEhdr> Ꮡh
             if (!foundVaddr) {
                 foundVaddr = true;
                 info.loadOffset = info.loadAddr + (uintptr)((~ptΔ1).p_offset - (~ptΔ1).p_vaddr);
+                vdsoLoadStart = info.loadOffset;
+                vdsoLoadEnd = info.loadOffset + (uintptr)(~ptΔ1).p_memsz;
             }
         }
         else if (exprᴛ1 == _PT_DYNAMIC) {
@@ -267,13 +272,7 @@ internal static void vdsoauxv(uintptr tag, uintptr val) {
 //
 //go:nosplit
 internal static bool inVDSOPage(uintptr pc) {
-    foreach (var (_, k) in vdsoSymbolKeys) {
-        if (k.ptr.Value != 0) {
-            var page = (uintptr)(k.ptr.Value & ~(physPageSize - 1));
-            return pc >= page && pc < page + physPageSize;
-        }
-    }
-    return false;
+    return pc >= vdsoLoadStart && pc < vdsoLoadEnd;
 }
 
 } // end runtime_package

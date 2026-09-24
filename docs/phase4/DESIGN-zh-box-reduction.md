@@ -538,6 +538,18 @@ A3's measured numbers in hand. Phase C is recorded as direction so the phases be
 against the right horizon; it is **not** scheduled, and nistec's want-zero rows stay unbanked
 until it exists or a better idea does.
 
+> **Dated cross-reference, 2026-09-23 (C1, from the H10 relabel ruling, ledger 2026-09-23 03:37 X(2),
+> O1, O5).** This section's two classes now each have a record: **class 3b** (a `new(T)` Go keeps in
+> the frame after inlining) is `DESIGN-nonescaping-locals.md` (REC-B, mechanism owner G), and
+> **class 4** (the `[N]T` value) is `DESIGN-array-value-storage.md` (REC-A, owner C1), which carries
+> this section's `slice<T>`-backing question and its 64 KB null-byref precondition forward. Both are
+> `deferred`, never `structural`: the ruling reversed fips140test's six structural pins (X(3)).
+> **Section 1's rsa premise (:82-83) is FALSIFIED by the emission**: "dominated by managed big-integer
+> arithmetic, ratified as provably-cannot-satisfy" does not survive `montgomeryMul`'s four element takes
+> per limb iteration (src/core/crypto/internal/fips140/bigmod/nat.cs:892/:894), which Go gets for free
+> because its callee only rebuilds the window (nat_noasm.go:11-13). crypto/rsa is `deferred` on
+> `DESIGN-syscall-buffer-element-address.md` §6 (REC-E) plus REC-B and this arc. Nothing above is rewritten.
+
 ---
 
 ## 7. Measurement plan — the counter is the gate instrument, plus the wall-clock gap the panel closed

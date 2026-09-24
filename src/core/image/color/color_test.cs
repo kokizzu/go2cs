@@ -45,7 +45,7 @@ public static void TestSqDiff(ж<testing.T> Ꮡt) {
         }
     }
     {
-        var err = quick.CheckEqual(orig, sqDiff, Ꮡ(new quick.Config(MaxCountScale: 10D))); if (err != default!) {
+        var err = quick.CheckEqual((orig).OrTypedNilFunc(), sqDiff, Ꮡ(new quick.Config(MaxCountScale: 10D))); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }

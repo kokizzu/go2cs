@@ -160,18 +160,9 @@ internal static error removeAllFrom(ж<File> Ꮡparent, @string @base) {
 // we are going to (try to) remove the file.
 // The contents of this file are not relevant for test caching.
 internal static (ж<File>, error) openDirAt(nint dirfd, @string name) {
-    nint r = default!;
-    while (ᐧ) {
-        error e = default!;
-        (r, e) = unix.Openat(dirfd, name, (nint)((nint)(nint)((nint)(nint)(O_RDONLY | (nint)syscall.O_CLOEXEC) | (nint)syscall.O_DIRECTORY) | (nint)syscall.O_NOFOLLOW), 0);
-        if (e == default!) {
-            break;
-        }
-        // See comment in openFileNolog.
-        if (AreEqual(e, syscall.EINTR)) {
-            continue;
-        }
-        return (default!, e);
+    var (r, err) = ignoringEINTR2((nint, error) () => unix.Openat(dirfd, name, (nint)((nint)(nint)((nint)(nint)(O_RDONLY | (nint)syscall.O_CLOEXEC) | (nint)syscall.O_DIRECTORY) | (nint)syscall.O_NOFOLLOW), 0));
+    if (err != default!) {
+        return (default!, err);
     }
     if (!supportsCloseOnExec) {
         syscall.CloseOnExec(r);

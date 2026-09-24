@@ -1,7 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using time = time_package;
 
 partial class main_package {
@@ -20,7 +20,7 @@ internal static @string registered() {
     ((Action)(() => {
         var p = Ꮡ(new payload(n: 1));
         var doneʗ2 = doneʗ1;
-        Δruntime.SetFinalizer(p.OrTypedNil(), (ж<payload> _Δp0) => {
+        runtime.SetFinalizer(p.OrTypedNil(), (ж<payload> _Δp0) => {
             close(doneʗ2);
         });
         _ = p.Value.n;
@@ -33,7 +33,7 @@ internal static @string registered() {
             return ranˢ;
         }
         case 1 when selᴛ2.ꟷᐳ(out _): {
-            Δruntime.GC();
+            runtime.GC();
             break;
         }}
     }
@@ -46,10 +46,10 @@ internal static @string cleared() {
     ((Action)(() => {
         var p = Ꮡ(new payload(n: 2));
         var doneʗ2 = doneʗ1;
-        Δruntime.SetFinalizer(p.OrTypedNil(), (ж<payload> _Δp0) => {
+        runtime.SetFinalizer(p.OrTypedNil(), (ж<payload> _Δp0) => {
             close(doneʗ2);
         });
-        Δruntime.SetFinalizer(p.OrTypedNil(), default!);
+        runtime.SetFinalizer(p.OrTypedNil(), default!);
         _ = p.Value.n;
     }))();
     for (nint i = 0; i < 40; i++) {
@@ -60,7 +60,7 @@ internal static @string cleared() {
             return ranˢ;
         }
         case 1 when selᴛ4.ꟷᐳ(out _): {
-            Δruntime.GC();
+            runtime.GC();
             break;
         }}
     }

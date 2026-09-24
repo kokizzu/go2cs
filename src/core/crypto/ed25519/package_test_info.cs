@@ -11,7 +11,7 @@ global using static global::go.crypto.ed25519_internal_test_package;
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
-global using execꓸError = go.os.exec_package.ΔError;
+global using ed25519ꓸPublicKey = go.crypto.@internal.fips140.ed25519_package.ΔPublicKey;
 global using jsonꓸToken = object;
 global using jsonꓸΔToken = object;
 global using osꓸDirEntry = go.io.fs_package.DirEntry;
@@ -28,11 +28,11 @@ using static global::go.crypto.ed25519_test_package;
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
+[assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<global::go.crypto.ed25519_package.Options, crypto_package.SignerOpts>(Pointer = true)]
 [assembly: GoImplement<global::go.crypto.ed25519_package.PrivateKey, crypto_package.Signer>]
 [assembly: GoImplement<go.compress.gzip_package.Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -46,7 +46,7 @@ using static global::go.crypto.ed25519_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ed25519/ed25519vectors_test.go", "ed25519vectors_test.cs", "ABxAABACgoiAgqSCgoKeqgALCIKChIKClIIAEwqClpSCgIKmgqiCgpSCgoKUhoCCpoKClKaCgoKClA==")]
+[assembly: go.GoPositionMap("crypto/ed25519/ed25519vectors_test.go", "ed25519vectors_test.cs", "ABk+ABACgoiAgqSCgoKeqgALCIKChIKClIIACQqmgoKEgoKUpoKCgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -61,7 +61,37 @@ public static partial class ed25519_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct downloadEd25519Vectors_dm {}
-    public partial struct TestEd25519Vectors_vectors {}
+    internal partial struct TestEd25519Vectors_vectors {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() => builtin.initPackage(typeof(compress.gzip_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() => builtin.initPackage(typeof(go.crypto.ed25519_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸcryptotest() => builtin.initPackage(typeof(go.crypto.@internal.cryptotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() => builtin.initPackage(typeof(go.crypto.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.crypto.ed25519_package));
+    }
 }

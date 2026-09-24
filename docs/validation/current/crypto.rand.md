@@ -6,15 +6,21 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/rand` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**298 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**314 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `TestAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestConcurrentRead` | pass | pass |
+| `TestConcurrentRead/Read` | pass | pass |
+| `TestConcurrentRead/Reader.Read` | pass | pass |
 | `TestInt` | pass | pass |
 | `TestIntEmptyMaxPanics` | pass | pass |
 | `TestIntMask` | pass | pass |
@@ -308,11 +314,39 @@ comparison — it is the evidence behind the `crypto/rand` row in
 | `TestIntReads/max=8` | pass | pass |
 | `TestIntReads/max=8192` | pass | pass |
 | `TestIntReads/max=8388608` | pass | pass |
+| `TestLargeRead` | pass | pass |
+| `TestLargeRead/Read` | pass | pass |
+| `TestLargeRead/Reader.Read` | pass | pass |
 | `TestPrimeBitsLt2` | pass | pass |
 | `TestPrimeNondeterministic` | pass | pass |
 | `TestPrimeSmall` | pass | pass |
 | `TestRead` | pass | pass |
+| `TestRead/Read` | pass | pass |
+| `TestRead/Reader.Read` | pass | pass |
+| `TestReadByteValues` | pass | pass |
+| `TestReadByteValues/Read` | pass | pass |
+| `TestReadByteValues/Reader.Read` | pass | pass |
 | `TestReadEmpty` | pass | pass |
+| `TestReadEmpty/Read` | pass | pass |
+| `TestReadEmpty/Reader.Read` | pass | pass |
+| `TestReadError` | pass | pass |
+| `TestReadUsesReader` | pass | pass |
+| `TestText` | pass | pass |
+
+## Disclosed divergences
+
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
+a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/crypto/rand/go2cs_test_disclosures.json);
+a disclosed test that fails any *other* way is still a hard mismatch.
+
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
+| Test | Class | Pinned reason |
+|:--|:--|:--|
+| `TestAllocations` | `deferred` | exact-count AllocsPerRun assert: crypto/rand.Read into a 32-byte buffer must allocate ZERO objects per run, and the converted path allocates two. DEFERRED rather than alloc-count-semantics, and the discriminator is the run's own unit note rather than a source read: the host reports `counted 20 go2cs-runtime object allocations (4,424 bytes) over 10 run(s)` and states the figure is an allocation COUNT per run from go2cs's own runtime counter, the structural mirror of runtime.MemStats.Mallocs -- so the counter SAW the allocations and the units are Go's own, which is exactly the case the deferred class exists for. The 20-vs-2 relation is TOTAL against PER RUN: 20 counted over 10 runs is the 2 the test's own `allocs = 2, want 0` reports, not a second measurement. It carries no `floor`: nothing in the CLR's object model requires an allocation to fill a 32-byte buffer with random bytes -- the closure's `make([]byte, 32)` does not escape, so Go stack-allocates it -- which makes the excess reducible bridge work rather than a structural minimum, and a floor claim here would be one the census could not falsify. Contrast crypto/internal/fips140test.TestXAESAllocations, whose reading is a 199-per-run LOWER BOUND over a whole AES-GCM seal/open round trip and is STRUCTURAL on a stated floor: the discriminator between the two is a named removable mechanism, not the size of the number. SCOPE OF THE MEASUREMENT: Release with tiering off, the configuration of record, read from the run's own environment block; no other configuration was run and none is claimed. |
 
 ## Excluded declarations
 

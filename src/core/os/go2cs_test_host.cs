@@ -24,6 +24,8 @@ internal static class Go2CsTestHost
             "dirent_openbsd.go",
             "dirent_solaris.go",
             "dirent_wasip1.go",
+            "eloop_netbsd.go",
+            "eloop_other.go",
             "env.go",
             "env_test.go",
             "env_unix_test.go",
@@ -48,6 +50,7 @@ internal static class Go2CsTestHost
             "executable_darwin.go",
             "executable_dragonfly.go",
             "executable_freebsd.go",
+            "executable_netbsd.go",
             "executable_path.go",
             "executable_plan9.go",
             "executable_procfs.go",
@@ -56,6 +59,7 @@ internal static class Go2CsTestHost
             "executable_test.go",
             "executable_wasm.go",
             "executable_windows.go",
+            "export_freebsd_test.go",
             "export_linux_test.go",
             "export_test.go",
             "export_unix_test.go",
@@ -71,6 +75,7 @@ internal static class Go2CsTestHost
             "file_wasip1.go",
             "file_windows.go",
             "getwd.go",
+            "getwd_unix_test.go",
             "os_test.go",
             "os_unix_test.go",
             "os_windows_test.go",
@@ -91,10 +96,24 @@ internal static class Go2CsTestHost
             "rawconn.go",
             "rawconn_test.go",
             "read_test.go",
+            "readfrom_freebsd_test.go",
             "readfrom_linux_test.go",
+            "readfrom_sendfile_test.go",
+            "readfrom_solaris_test.go",
+            "readfrom_unix_test.go",
             "removeall_at.go",
             "removeall_noat.go",
             "removeall_test.go",
+            "root.go",
+            "root_js.go",
+            "root_nonwindows.go",
+            "root_noopenat.go",
+            "root_openat.go",
+            "root_plan9.go",
+            "root_test.go",
+            "root_unix.go",
+            "root_windows.go",
+            "root_windows_test.go",
             "stat.go",
             "stat_aix.go",
             "stat_darwin.go",
@@ -145,7 +164,10 @@ internal static class Go2CsTestHost
             "wait_wait6.go",
             "wait_waitid.go",
             "writeto_linux_test.go",
+            "zero_copy_freebsd.go",
             "zero_copy_linux.go",
+            "zero_copy_posix.go",
+            "zero_copy_solaris.go",
             "zero_copy_stub.go",
         }, new string[]
         {
@@ -155,15 +177,16 @@ internal static class Go2CsTestHost
             "user",
         });
         registry.Add("TestAddExtendedPrefix", os_test_package.TestAddExtendedPrefix, "path_windows_test.go", 18);
-        registry.Add("TestAppExecLinkStat", os_test_package.TestAppExecLinkStat, "os_windows_test.go", 1395);
-        registry.Add("TestAppend", os_test_package.TestAppend, "os_test.go", 2144);
-        registry.Add("TestBadNetPathError", os_test_package.TestBadNetPathError, "os_windows_test.go", 625);
-        registry.Add("TestChdirAndGetwd", os_test_package.TestChdirAndGetwd, "os_test.go", 1609);
-        registry.Add("TestChmod", os_test_package.TestChmod, "os_test.go", 1264);
-        registry.Add("TestChtimes", os_test_package.TestChtimes, "os_test.go", 1375);
-        registry.Add("TestChtimesDir", os_test_package.TestChtimesDir, "os_test.go", 1491);
-        registry.Add("TestChtimesOmit", os_test_package.TestChtimesOmit, "os_test.go", 1385);
-        registry.Add("TestChtimesToUnixZero", os_test_package.TestChtimesToUnixZero, "os_test.go", 1545);
+        registry.Add("TestAppExecLinkStat", os_test_package.TestAppExecLinkStat, "os_windows_test.go", 1353);
+        registry.Add("TestAppend", os_test_package.TestAppend, "os_test.go", 2117);
+        registry.Add("TestAppendDoesntOverwrite", os_test_package.TestAppendDoesntOverwrite, "os_test.go", 3824);
+        registry.Add("TestBadNetPathError", os_test_package.TestBadNetPathError, "os_windows_test.go", 603);
+        registry.Add("TestChdirAndGetwd", os_test_package.TestChdirAndGetwd, "os_test.go", 1585);
+        registry.Add("TestChmod", os_test_package.TestChmod, "os_test.go", 1240);
+        registry.Add("TestChtimes", os_test_package.TestChtimes, "os_test.go", 1351);
+        registry.Add("TestChtimesDir", os_test_package.TestChtimesDir, "os_test.go", 1467);
+        registry.Add("TestChtimesOmit", os_test_package.TestChtimesOmit, "os_test.go", 1361);
+        registry.Add("TestChtimesToUnixZero", os_test_package.TestChtimesToUnixZero, "os_test.go", 1521);
         registry.Add("TestClearenv", os_test_package.TestClearenv, "env_test.go", 125);
         registry.Add("TestCloseWithBlockingReadByFd", os_test_package.TestCloseWithBlockingReadByFd, "pipe_test.go", 288);
         registry.Add("TestCloseWithBlockingReadByNewFile", os_test_package.TestCloseWithBlockingReadByNewFile, "pipe_test.go", 276);
@@ -171,56 +194,59 @@ internal static class Go2CsTestHost
         registry.Add("TestClosedPipeRaceWrite", os_test_package.TestClosedPipeRaceWrite, "pipe_test.go", 232);
         registry.Add("TestClosedStat", os_test_package.TestClosedStat, "stat_test.go", 342);
         registry.Add("TestConsistentEnviron", os_test_package.TestConsistentEnviron, "env_test.go", 90);
-        registry.Add("TestCopyFS", os_test_package.TestCopyFS, "os_test.go", 3339);
-        registry.Add("TestCopyFSWithSymlinks", os_test_package.TestCopyFSWithSymlinks, "os_test.go", 3430);
+        registry.Add("TestCopyFS", os_test_package.TestCopyFS, "os_test.go", 3533);
+        registry.Add("TestCopyFSWithSymlinks", os_test_package.TestCopyFSWithSymlinks, "os_test.go", 3684);
+        registry.Add("TestCopyFileToFile", os_test_package.TestCopyFileToFile, "copy_test.go", 74);
         registry.Add("TestCreateTemp", os_test_package.TestCreateTemp, "tempfile_test.go", 17);
-        registry.Add("TestCreateTempBadPattern", os_test_package.TestCreateTempBadPattern, "tempfile_test.go", 57);
-        registry.Add("TestCreateTempPattern", os_test_package.TestCreateTempPattern, "tempfile_test.go", 33);
-        registry.Add("TestDeleteReadOnly", os_test_package.TestDeleteReadOnly, "os_windows_test.go", 691);
-        registry.Add("TestDevNullFile", os_test_package.TestDevNullFile, "os_test.go", 2291);
+        registry.Add("TestCreateTempBadPattern", os_test_package.TestCreateTempBadPattern, "tempfile_test.go", 51);
+        registry.Add("TestCreateTempPattern", os_test_package.TestCreateTempPattern, "tempfile_test.go", 27);
+        registry.Add("TestDeleteReadOnly", os_test_package.TestDeleteReadOnly, "os_windows_test.go", 669);
+        registry.Add("TestDevNullFile", os_test_package.TestDevNullFile, "os_test.go", 2417);
         registry.Add("TestDirAndSymlinkStats", os_test_package.TestDirAndSymlinkStats, "stat_test.go", 232);
-        registry.Add("TestDirFS", os_test_package.TestDirFS, "os_test.go", 3034);
-        registry.Add("TestDirFSEmptyDir", os_test_package.TestDirFSEmptyDir, "os_test.go", 3101);
-        registry.Add("TestDirFSPathsValid", os_test_package.TestDirFSPathsValid, "os_test.go", 3117);
-        registry.Add("TestDirFSReadFileProc", os_test_package.TestDirFSReadFileProc, "os_test.go", 3166);
-        registry.Add("TestDirFSRootDir", os_test_package.TestDirFSRootDir, "os_test.go", 3081);
-        registry.Add("TestDirSeek", os_test_package.TestDirSeek, "os_test.go", 2887);
-        registry.Add("TestDoubleCloseError", os_test_package.TestDoubleCloseError, "os_test.go", 2804);
+        registry.Add("TestDirFS", os_test_package.TestDirFS, "os_test.go", 3217);
+        registry.Add("TestDirFSEmptyDir", os_test_package.TestDirFSEmptyDir, "os_test.go", 3295);
+        registry.Add("TestDirFSPathsValid", os_test_package.TestDirFSPathsValid, "os_test.go", 3311);
+        registry.Add("TestDirFSReadFileProc", os_test_package.TestDirFSReadFileProc, "os_test.go", 3360);
+        registry.Add("TestDirFSRootDir", os_test_package.TestDirFSRootDir, "os_test.go", 3275);
+        registry.Add("TestDirSeek", os_test_package.TestDirSeek, "os_test.go", 3054);
+        registry.Add("TestDoubleCloseError", os_test_package.TestDoubleCloseError, "os_test.go", 2917);
         registry.Add("TestEPIPE", os_test_package.TestEPIPE, "pipe_test.go", 30);
         registry.Add("TestEnvironConsistency", os_test_package.TestEnvironConsistency, "env_test.go", 173);
         registry.Add("TestErrIsExist", os_test_package.TestErrIsExist, "error_test.go", 16);
         registry.Add("TestErrIsNotExist", os_test_package.TestErrIsNotExist, "error_test.go", 64);
         registry.Add("TestErrPathNUL", os_test_package.TestErrPathNUL, "error_test.go", 148);
         registry.Add("TestErrorIsMethods", os_test_package.TestErrorIsMethods, "error_test.go", 185);
-        registry.Add("TestExecutable", os_test_package.TestExecutable, "executable_test.go", 18);
-        registry.Add("TestExecutableDeleted", os_test_package.TestExecutableDeleted, "executable_test.go", 91);
+        registry.Add("TestExecutable", os_test_package.TestExecutable, "executable_test.go", 16);
+        registry.Add("TestExecutableDeleted", os_test_package.TestExecutableDeleted, "executable_test.go", 84);
         registry.Add("TestExpand", os_test_package.TestExpand, "env_test.go", 60);
-        registry.Add("TestFTruncate", os_test_package.TestFTruncate, "os_test.go", 1304);
+        registry.Add("TestFTruncate", os_test_package.TestFTruncate, "os_test.go", 1280);
         registry.Add("TestFdRace", os_test_package.TestFdRace, "pipe_test.go", 408);
         registry.Add("TestFdReadRace", os_test_package.TestFdReadRace, "pipe_test.go", 435);
         registry.Add("TestFileAndSymlinkStats", os_test_package.TestFileAndSymlinkStats, "stat_test.go", 260);
-        registry.Add("TestFileChdir", os_test_package.TestFileChdir, "os_test.go", 1570);
-        registry.Add("TestFileReadDir", os_test_package.TestFileReadDir, "os_test.go", 486);
-        registry.Add("TestFileReaddir", os_test_package.TestFileReaddir, "os_test.go", 478);
-        registry.Add("TestFileReaddirnames", os_test_package.TestFileReaddirnames, "os_test.go", 470);
-        registry.Add("TestFileStatNUL", os_test_package.TestFileStatNUL, "os_windows_test.go", 1008);
-        registry.Add("TestFstat", os_test_package.TestFstat, "os_test.go", 257);
-        registry.Add("TestGetppid", os_test_package.TestGetppid, "os_test.go", 2579);
-        registry.Add("TestHardLink", os_test_package.TestHardLink, "os_test.go", 853);
-        registry.Add("TestHostname", os_test_package.TestHostname, "os_test.go", 1967);
-        registry.Add("TestIllformedUTF16FileName", os_test_package.TestIllformedUTF16FileName, "os_windows_test.go", 1464);
+        registry.Add("TestFileChdir", os_test_package.TestFileChdir, "os_test.go", 1546);
+        registry.Add("TestFilePermissions", os_test_package.TestFilePermissions, "os_test.go", 2152);
+        registry.Add("TestFileRDWRFlags", os_test_package.TestFileRDWRFlags, "os_test.go", 2253);
+        registry.Add("TestFileReadDir", os_test_package.TestFileReadDir, "os_test.go", 484);
+        registry.Add("TestFileReaddir", os_test_package.TestFileReaddir, "os_test.go", 476);
+        registry.Add("TestFileReaddirnames", os_test_package.TestFileReaddirnames, "os_test.go", 468);
+        registry.Add("TestFileStatNUL", os_test_package.TestFileStatNUL, "os_windows_test.go", 988);
+        registry.Add("TestFstat", os_test_package.TestFstat, "os_test.go", 255);
+        registry.Add("TestGetppid", os_test_package.TestGetppid, "os_test.go", 2699);
+        registry.Add("TestHardLink", os_test_package.TestHardLink, "os_test.go", 851);
+        registry.Add("TestHostname", os_test_package.TestHostname, "os_test.go", 1933);
+        registry.Add("TestIllformedUTF16FileName", os_test_package.TestIllformedUTF16FileName, "os_windows_test.go", 1422);
         registry.Add("TestIsExist", os_test_package.TestIsExist, "error_test.go", 109);
         registry.Add("TestIsPermission", os_test_package.TestIsPermission, "error_test.go", 137);
-        registry.Add("TestKillFindProcess", os_test_package.TestKillFindProcess, "os_test.go", 2609);
-        registry.Add("TestKillStartProcess", os_test_package.TestKillStartProcess, "os_test.go", 2570);
-        registry.Add("TestLargeCopyViaNetwork", os_test_package.TestLargeCopyViaNetwork, "copy_test.go", 25);
-        registry.Add("TestLargeWriteToConsole", os_test_package.TestLargeWriteToConsole, "os_test.go", 2303);
-        registry.Add("TestLongPath", os_test_package.TestLongPath, "os_test.go", 2467);
+        registry.Add("TestKillFindProcess", os_test_package.TestKillFindProcess, "os_test.go", 2728);
+        registry.Add("TestKillStartProcess", os_test_package.TestKillStartProcess, "os_test.go", 2690);
+        registry.Add("TestLargeCopyViaNetwork", os_test_package.TestLargeCopyViaNetwork, "copy_test.go", 26);
+        registry.Add("TestLargeWriteToConsole", os_test_package.TestLargeWriteToConsole, "os_test.go", 2429);
+        registry.Add("TestLongPath", os_test_package.TestLongPath, "os_test.go", 2588);
         registry.Add("TestLongPathAbs", os_test_package.TestLongPathAbs, "path_windows_test.go", 260);
         registry.Add("TestLongPathRel", os_test_package.TestLongPathRel, "path_windows_test.go", 267);
-        registry.Add("TestLongSymlink", os_test_package.TestLongSymlink, "os_test.go", 994);
+        registry.Add("TestLongSymlink", os_test_package.TestLongSymlink, "os_test.go", 970);
         registry.Add("TestLookupEnv", os_test_package.TestLookupEnv, "env_test.go", 153);
-        registry.Add("TestLstat", os_test_package.TestLstat, "os_test.go", 279);
+        registry.Add("TestLstat", os_test_package.TestLstat, "os_test.go", 277);
         registry.Add("TestMkdirAll", os_test_package.TestMkdirAll, "path_test.go", 18);
         registry.Add("TestMkdirAllAtSlash", os_test_package.TestMkdirAllAtSlash, "path_test.go", 100);
         registry.Add("TestMkdirAllExtendedLength", os_test_package.TestMkdirAllExtendedLength, "path_windows_test.go", 138);
@@ -228,109 +254,140 @@ internal static class Go2CsTestHost
         registry.Add("TestMkdirAllLongPath", os_test_package.TestMkdirAllLongPath, "path_windows_test.go", 122);
         registry.Add("TestMkdirAllVolumeNameAtRoot", os_test_package.TestMkdirAllVolumeNameAtRoot, "path_windows_test.go", 204);
         registry.Add("TestMkdirAllWithSymlink", os_test_package.TestMkdirAllWithSymlink, "path_test.go", 79);
-        registry.Add("TestMkdirTemp", os_test_package.TestMkdirTemp, "tempfile_test.go", 99);
-        registry.Add("TestMkdirTempBadDir", os_test_package.TestMkdirTempBadDir, "tempfile_test.go", 152);
-        registry.Add("TestMkdirTempBadPattern", os_test_package.TestMkdirTempBadPattern, "tempfile_test.go", 168);
-        registry.Add("TestNetworkSymbolicLink", os_test_package.TestNetworkSymbolicLink, "os_windows_test.go", 456);
-        registry.Add("TestNewFileInvalid", os_test_package.TestNewFileInvalid, "os_windows_test.go", 1532);
-        registry.Add("TestNilFileMethods", os_test_package.TestNilFileMethods, "os_test.go", 2644);
-        registry.Add("TestNilProcessStateString", os_test_package.TestNilProcessStateString, "os_test.go", 2213);
-        registry.Add("TestOneDrive", os_test_package.TestOneDrive, "os_windows_test.go", 968);
-        registry.Add("TestOpenDirTOCTOU", os_test_package.TestOpenDirTOCTOU, "os_windows_test.go", 1368);
-        registry.Add("TestOpenError", os_test_package.TestOpenError, "os_test.go", 1859);
-        registry.Add("TestOpenFileCreateExclDanglingSymlink", os_test_package.TestOpenFileCreateExclDanglingSymlink, "os_test.go", 2177);
-        registry.Add("TestOpenFileKeepsPermissions", os_test_package.TestOpenFileKeepsPermissions, "os_test.go", 2970);
-        registry.Add("TestOpenNoName", os_test_package.TestOpenNoName, "os_test.go", 1900);
+        registry.Add("TestMkdirTemp", os_test_package.TestMkdirTemp, "tempfile_test.go", 89);
+        registry.Add("TestMkdirTempBadDir", os_test_package.TestMkdirTempBadDir, "tempfile_test.go", 142);
+        registry.Add("TestMkdirTempBadPattern", os_test_package.TestMkdirTempBadPattern, "tempfile_test.go", 152);
+        registry.Add("TestNetworkSymbolicLink", os_test_package.TestNetworkSymbolicLink, "os_windows_test.go", 435);
+        registry.Add("TestNewFileInvalid", os_test_package.TestNewFileInvalid, "os_windows_test.go", 1490);
+        registry.Add("TestNilFileMethods", os_test_package.TestNilFileMethods, "os_test.go", 2763);
+        registry.Add("TestNilProcessStateString", os_test_package.TestNilProcessStateString, "os_test.go", 2339);
+        registry.Add("TestOneDrive", os_test_package.TestOneDrive, "os_windows_test.go", 948);
+        registry.Add("TestOpenDirTOCTOU", os_test_package.TestOpenDirTOCTOU, "os_windows_test.go", 1326);
+        registry.Add("TestOpenError", os_test_package.TestOpenError, "os_test.go", 1780);
+        registry.Add("TestOpenFileCreateExclDanglingSymlink", os_test_package.TestOpenFileCreateExclDanglingSymlink, "os_test.go", 2226);
+        registry.Add("TestOpenFileDevNull", os_test_package.TestOpenFileDevNull, "os_test.go", 3878);
+        registry.Add("TestOpenFileKeepsPermissions", os_test_package.TestOpenFileKeepsPermissions, "os_test.go", 3137);
+        registry.Add("TestOpenInRoot", os_test_package.TestOpenInRoot, "root_test.go", 1246);
+        registry.Add("TestOpenNoName", os_test_package.TestOpenNoName, "os_test.go", 1866);
         registry.Add("TestOpenRootSlash", os_test_package.TestOpenRootSlash, "path_windows_test.go", 161);
-        registry.Add("TestOpenVolumeName", os_test_package.TestOpenVolumeName, "os_windows_test.go", 661);
+        registry.Add("TestOpenVolumeName", os_test_package.TestOpenVolumeName, "os_windows_test.go", 639);
         registry.Add("TestPathErrorUnwrap", os_test_package.TestPathErrorUnwrap, "error_test.go", 174);
-        registry.Add("TestPipeCloseRace", os_test_package.TestPipeCloseRace, "os_test.go", 3280);
+        registry.Add("TestPipeCloseRace", os_test_package.TestPipeCloseRace, "os_test.go", 3474);
         registry.Add("TestPipeEOF", os_test_package.TestPipeEOF, "pipe_test.go", 338);
-        registry.Add("TestPipeIOCloseRace", os_test_package.TestPipeIOCloseRace, "os_test.go", 3202);
-        registry.Add("TestPipeThreads", os_test_package.TestPipeThreads, "os_test.go", 2709);
+        registry.Add("TestPipeIOCloseRace", os_test_package.TestPipeIOCloseRace, "os_test.go", 3396);
+        registry.Add("TestPipeThreads", os_test_package.TestPipeThreads, "os_test.go", 2825);
         registry.Add("TestProcessLiteral", os_test_package.TestProcessLiteral, "exec_test.go", 17);
         registry.Add("TestProcessReleaseTwice", os_test_package.TestProcessReleaseTwice, "exec_test.go", 43);
-        registry.Add("TestProgWideChdir", os_test_package.TestProgWideChdir, "os_test.go", 1679);
-        registry.Add("TestRandomLen", os_test_package.TestRandomLen, "os_test.go", 3315);
+        registry.Add("TestProgWideChdir", os_test_package.TestProgWideChdir, "os_test.go", 1640);
+        registry.Add("TestRandomLen", os_test_package.TestRandomLen, "os_test.go", 3509);
         registry.Add("TestRawConnReadWrite", os_test_package.TestRawConnReadWrite, "rawconn_test.go", 17);
-        registry.Add("TestRead0", os_test_package.TestRead0, "os_test.go", 299);
-        registry.Add("TestReadAt", os_test_package.TestReadAt, "os_test.go", 2006);
-        registry.Add("TestReadAtEOF", os_test_package.TestReadAtEOF, "os_test.go", 2451);
-        registry.Add("TestReadAtNegativeOffset", os_test_package.TestReadAtNegativeOffset, "os_test.go", 2057);
-        registry.Add("TestReadAtOffset", os_test_package.TestReadAtOffset, "os_test.go", 2028);
-        registry.Add("TestReadClosed", os_test_package.TestReadClosed, "os_test.go", 322);
-        registry.Add("TestReadDir", os_test_package.TestReadDir, "read_test.go", 107);
-        registry.Add("TestReadDirNoFileID", os_test_package.TestReadDirNoFileID, "os_windows_test.go", 1551);
-        registry.Add("TestReadDirPipe", os_test_package.TestReadDirPipe, "os_windows_test.go", 1539);
+        registry.Add("TestRead0", os_test_package.TestRead0, "os_test.go", 297);
+        registry.Add("TestReadAt", os_test_package.TestReadAt, "os_test.go", 1972);
+        registry.Add("TestReadAtEOF", os_test_package.TestReadAtEOF, "os_test.go", 2572);
+        registry.Add("TestReadAtNegativeOffset", os_test_package.TestReadAtNegativeOffset, "os_test.go", 2023);
+        registry.Add("TestReadAtOffset", os_test_package.TestReadAtOffset, "os_test.go", 1994);
+        registry.Add("TestReadClosed", os_test_package.TestReadClosed, "os_test.go", 320);
+        registry.Add("TestReadDir", os_test_package.TestReadDir, "read_test.go", 102);
+        registry.Add("TestReadDirNoFileID", os_test_package.TestReadDirNoFileID, "os_windows_test.go", 1509);
+        registry.Add("TestReadDirPipe", os_test_package.TestReadDirPipe, "os_windows_test.go", 1497);
         registry.Add("TestReadFile", os_test_package.TestReadFile, "read_test.go", 25);
-        registry.Add("TestReadFileProc", os_test_package.TestReadFileProc, "os_test.go", 3145);
+        registry.Add("TestReadFileProc", os_test_package.TestReadFileProc, "os_test.go", 3339);
         registry.Add("TestReadNonblockingFd", os_test_package.TestReadNonblockingFd, "pipe_test.go", 239);
         registry.Add("TestReadOnlyWriteFile", os_test_package.TestReadOnlyWriteFile, "read_test.go", 71);
-        registry.Add("TestReadStdin", os_test_package.TestReadStdin, "os_windows_test.go", 711);
-        registry.Add("TestReaddirNValues", os_test_package.TestReaddirNValues, "os_test.go", 668);
-        registry.Add("TestReaddirOfFile", os_test_package.TestReaddirOfFile, "os_test.go", 825);
-        registry.Add("TestReaddirSmallSeek", os_test_package.TestReaddirSmallSeek, "os_test.go", 2927);
-        registry.Add("TestReaddirStatFailures", os_test_package.TestReaddirStatFailures, "os_test.go", 760);
-        registry.Add("TestReaddirnamesOneAtATime", os_test_package.TestReaddirnamesOneAtATime, "os_test.go", 624);
-        registry.Add("TestReadlink", os_test_package.TestReadlink, "os_windows_test.go", 1262);
+        registry.Add("TestReadStdin", os_test_package.TestReadStdin, "os_windows_test.go", 689);
+        registry.Add("TestReaddirNValues", os_test_package.TestReaddirNValues, "os_test.go", 666);
+        registry.Add("TestReaddirOfFile", os_test_package.TestReaddirOfFile, "os_test.go", 823);
+        registry.Add("TestReaddirSmallSeek", os_test_package.TestReaddirSmallSeek, "os_test.go", 3094);
+        registry.Add("TestReaddirStatFailures", os_test_package.TestReaddirStatFailures, "os_test.go", 758);
+        registry.Add("TestReaddirnamesOneAtATime", os_test_package.TestReaddirnamesOneAtATime, "os_test.go", 622);
+        registry.Add("TestReadlink", os_test_package.TestReadlink, "os_windows_test.go", 1217);
         registry.Add("TestRemoveAll", os_test_package.TestRemoveAll, "removeall_test.go", 19);
-        registry.Add("TestRemoveAllButReadOnlyAndPathError", os_test_package.TestRemoveAllButReadOnlyAndPathError, "removeall_test.go", 274);
-        registry.Add("TestRemoveAllDot", os_test_package.TestRemoveAllDot, "removeall_test.go", 204);
-        registry.Add("TestRemoveAllDotDot", os_test_package.TestRemoveAllDotDot, "removeall_test.go", 231);
+        registry.Add("TestRemoveAllButReadOnlyAndPathError", os_test_package.TestRemoveAllButReadOnlyAndPathError, "removeall_test.go", 240);
+        registry.Add("TestRemoveAllDot", os_test_package.TestRemoveAllDot, "removeall_test.go", 189);
+        registry.Add("TestRemoveAllDotDot", os_test_package.TestRemoveAllDotDot, "removeall_test.go", 197);
         registry.Add("TestRemoveAllLarge", os_test_package.TestRemoveAllLarge, "removeall_test.go", 125);
         registry.Add("TestRemoveAllLongPath", os_test_package.TestRemoveAllLongPath, "removeall_test.go", 154);
         registry.Add("TestRemoveAllLongPathRelative", os_test_package.TestRemoveAllLongPathRelative, "path_windows_test.go", 223);
-        registry.Add("TestRemoveAllNoFcntl", os_test_package.TestRemoveAllNoFcntl, "removeall_test.go", 447);
-        registry.Add("TestRemoveAllRace", os_test_package.TestRemoveAllRace, "os_test.go", 2672);
-        registry.Add("TestRemoveAllWithMoreErrorThanReqSize", os_test_package.TestRemoveAllWithMoreErrorThanReqSize, "removeall_test.go", 386);
-        registry.Add("TestRemoveReadOnlyDir", os_test_package.TestRemoveReadOnlyDir, "removeall_test.go", 251);
-        registry.Add("TestRemoveUnreadableDir", os_test_package.TestRemoveUnreadableDir, "removeall_test.go", 360);
-        registry.Add("TestRename", os_test_package.TestRename, "os_test.go", 1015);
-        registry.Add("TestRenameCaseDifference", os_test_package.TestRenameCaseDifference, "os_test.go", 1133);
-        registry.Add("TestRenameFailed", os_test_package.TestRenameFailed, "os_test.go", 1073);
-        registry.Add("TestRenameNotExisting", os_test_package.TestRenameNotExisting, "os_test.go", 1096);
-        registry.Add("TestRenameOverwriteDest", os_test_package.TestRenameOverwriteDest, "os_test.go", 1036);
-        registry.Add("TestRenameToDirFailed", os_test_package.TestRenameToDirFailed, "os_test.go", 1107);
-        registry.Add("TestRootDirAsTemp", os_test_package.TestRootDirAsTemp, "os_windows_test.go", 1216);
-        registry.Add("TestRootRelativeDirSymlink", os_test_package.TestRootRelativeDirSymlink, "os_windows_test.go", 1078);
-        registry.Add("TestSameFile", os_test_package.TestSameFile, "os_test.go", 2221);
-        registry.Add("TestSameWindowsFile", os_test_package.TestSameWindowsFile, "os_windows_test.go", 55);
-        registry.Add("TestSeek", os_test_package.TestSeek, "os_test.go", 1764);
-        registry.Add("TestSeekError", os_test_package.TestSeekError, "os_test.go", 1808);
-        registry.Add("TestShareNotExistError", os_test_package.TestShareNotExistError, "os_windows_test.go", 610);
-        registry.Add("TestStartProcess", os_test_package.TestStartProcess, "os_test.go", 1225);
-        registry.Add("TestStartProcessAttr", os_test_package.TestStartProcessAttr, "os_windows_test.go", 599);
-        registry.Add("TestStat", os_test_package.TestStat, "os_test.go", 181);
+        registry.Add("TestRemoveAllNoFcntl", os_test_package.TestRemoveAllNoFcntl, "removeall_test.go", 413);
+        registry.Add("TestRemoveAllRace", os_test_package.TestRemoveAllRace, "os_test.go", 2791);
+        registry.Add("TestRemoveAllWithMoreErrorThanReqSize", os_test_package.TestRemoveAllWithMoreErrorThanReqSize, "removeall_test.go", 352);
+        registry.Add("TestRemoveReadOnlyDir", os_test_package.TestRemoveReadOnlyDir, "removeall_test.go", 217);
+        registry.Add("TestRemoveReadOnlyFile", os_test_package.TestRemoveReadOnlyFile, "os_test.go", 3858);
+        registry.Add("TestRemoveUnreadableDir", os_test_package.TestRemoveUnreadableDir, "removeall_test.go", 326);
+        registry.Add("TestRename", os_test_package.TestRename, "os_test.go", 991);
+        registry.Add("TestRenameCaseDifference", os_test_package.TestRenameCaseDifference, "os_test.go", 1109);
+        registry.Add("TestRenameFailed", os_test_package.TestRenameFailed, "os_test.go", 1049);
+        registry.Add("TestRenameNotExisting", os_test_package.TestRenameNotExisting, "os_test.go", 1072);
+        registry.Add("TestRenameOverwriteDest", os_test_package.TestRenameOverwriteDest, "os_test.go", 1012);
+        registry.Add("TestRenameToDirFailed", os_test_package.TestRenameToDirFailed, "os_test.go", 1083);
+        registry.Add("TestRootConcurrentClose", os_test_package.TestRootConcurrentClose, "root_test.go", 1100);
+        registry.Add("TestRootConsistencyCreate", os_test_package.TestRootConsistencyCreate, "root_test.go", 901);
+        registry.Add("TestRootConsistencyLstat", os_test_package.TestRootConsistencyLstat, "root_test.go", 969);
+        registry.Add("TestRootConsistencyMkdir", os_test_package.TestRootConsistencyMkdir, "root_test.go", 920);
+        registry.Add("TestRootConsistencyOpen", os_test_package.TestRootConsistencyOpen, "root_test.go", 874);
+        registry.Add("TestRootConsistencyRemove", os_test_package.TestRootConsistencyRemove, "root_test.go", 934);
+        registry.Add("TestRootConsistencyStat", os_test_package.TestRootConsistencyStat, "root_test.go", 951);
+        registry.Add("TestRootCreate", os_test_package.TestRootCreate, "root_test.go", 403);
+        registry.Add("TestRootDirAsTemp", os_test_package.TestRootDirAsTemp, "os_windows_test.go", 1174);
+        registry.Add("TestRootDirFS", os_test_package.TestRootDirFS, "os_test.go", 3222);
+        registry.Add("TestRootLstat", os_test_package.TestRootLstat, "root_test.go", 584);
+        registry.Add("TestRootMkdir", os_test_package.TestRootMkdir, "root_test.go", 426);
+        registry.Add("TestRootName", os_test_package.TestRootName, "root_test.go", 1269);
+        registry.Add("TestRootNonPermissionMode", os_test_package.TestRootNonPermissionMode, "root_test.go", 1039);
+        registry.Add("TestRootOpenFileAsRoot", os_test_package.TestRootOpenFileAsRoot, "root_test.go", 539);
+        registry.Add("TestRootOpenRoot", os_test_package.TestRootOpenRoot, "root_test.go", 460);
+        registry.Add("TestRootOpen_Directory", os_test_package.TestRootOpen_Directory, "root_test.go", 376);
+        registry.Add("TestRootOpen_File", os_test_package.TestRootOpen_File, "root_test.go", 354);
+        registry.Add("TestRootRaceRenameDir", os_test_package.TestRootRaceRenameDir, "root_test.go", 1147);
+        registry.Add("TestRootRelativeDirSymlink", os_test_package.TestRootRelativeDirSymlink, "os_windows_test.go", 1043);
+        registry.Add("TestRootRemoveDirectory", os_test_package.TestRootRemoveDirectory, "root_test.go", 512);
+        registry.Add("TestRootRemoveFile", os_test_package.TestRootRemoveFile, "root_test.go", 485);
+        registry.Add("TestRootRenameAfterOpen", os_test_package.TestRootRenameAfterOpen, "root_test.go", 987);
+        registry.Add("TestRootStat", os_test_package.TestRootStat, "root_test.go", 560);
+        registry.Add("TestRootSymlinkToRoot", os_test_package.TestRootSymlinkToRoot, "root_test.go", 1219);
+        registry.Add("TestRootUseAfterClose", os_test_package.TestRootUseAfterClose, "root_test.go", 1053);
+        registry.Add("TestRootWindowsCaseInsensitivity", os_test_package.TestRootWindowsCaseInsensitivity, "root_windows_test.go", 32);
+        registry.Add("TestRootWindowsDeviceNames", os_test_package.TestRootWindowsDeviceNames, "root_windows_test.go", 17);
+        registry.Add("TestSameFile", os_test_package.TestSameFile, "os_test.go", 2347);
+        registry.Add("TestSameWindowsFile", os_test_package.TestSameWindowsFile, "os_windows_test.go", 35);
+        registry.Add("TestSeek", os_test_package.TestSeek, "os_test.go", 1716);
+        registry.Add("TestSeekError", os_test_package.TestSeekError, "os_test.go", 1753);
+        registry.Add("TestShareNotExistError", os_test_package.TestShareNotExistError, "os_windows_test.go", 588);
+        registry.Add("TestStartProcess", os_test_package.TestStartProcess, "os_test.go", 1201);
+        registry.Add("TestStartProcessAttr", os_test_package.TestStartProcessAttr, "os_windows_test.go", 577);
+        registry.Add("TestStat", os_test_package.TestStat, "os_test.go", 180);
         registry.Add("TestStatConsole", os_test_package.TestStatConsole, "stat_test.go", 321);
-        registry.Add("TestStatDir", os_test_package.TestStatDir, "os_windows_test.go", 632);
-        registry.Add("TestStatDirModeExec", os_test_package.TestStatDirModeExec, "os_test.go", 2328);
-        registry.Add("TestStatDirWithTrailingSlash", os_test_package.TestStatDirWithTrailingSlash, "os_test.go", 2195);
-        registry.Add("TestStatError", os_test_package.TestStatError, "os_test.go", 198);
-        registry.Add("TestStatLxSymLink", os_test_package.TestStatLxSymLink, "os_windows_test.go", 560);
-        registry.Add("TestStatNUL", os_test_package.TestStatNUL, "os_windows_test.go", 1024);
-        registry.Add("TestStatOfInvalidName", os_test_package.TestStatOfInvalidName, "os_windows_test.go", 1191);
-        registry.Add("TestStatPagefile", os_test_package.TestStatPagefile, "os_windows_test.go", 790);
-        registry.Add("TestStatRelativeSymlink", os_test_package.TestStatRelativeSymlink, "os_test.go", 2401);
-        registry.Add("TestStatStdin", os_test_package.TestStatStdin, "os_test.go", 2350);
-        registry.Add("TestStatSymlinkLoop", os_test_package.TestStatSymlinkLoop, "os_test.go", 234);
+        registry.Add("TestStatDir", os_test_package.TestStatDir, "os_windows_test.go", 610);
+        registry.Add("TestStatDirModeExec", os_test_package.TestStatDirModeExec, "os_test.go", 2454);
+        registry.Add("TestStatDirWithTrailingSlash", os_test_package.TestStatDirWithTrailingSlash, "os_test.go", 2321);
+        registry.Add("TestStatError", os_test_package.TestStatError, "os_test.go", 197);
+        registry.Add("TestStatLxSymLink", os_test_package.TestStatLxSymLink, "os_windows_test.go", 539);
+        registry.Add("TestStatNUL", os_test_package.TestStatNUL, "os_windows_test.go", 1006);
+        registry.Add("TestStatOfInvalidName", os_test_package.TestStatOfInvalidName, "os_windows_test.go", 1149);
+        registry.Add("TestStatPagefile", os_test_package.TestStatPagefile, "os_windows_test.go", 768);
+        registry.Add("TestStatRelativeSymlink", os_test_package.TestStatRelativeSymlink, "os_test.go", 2522);
+        registry.Add("TestStatStdin", os_test_package.TestStatStdin, "os_test.go", 2476);
+        registry.Add("TestStatSymlinkLoop", os_test_package.TestStatSymlinkLoop, "os_test.go", 233);
         registry.Add("TestStdPipe", os_test_package.TestStdPipe, "pipe_test.go", 72);
-        registry.Add("TestSymlink", os_test_package.TestSymlink, "os_test.go", 933);
-        registry.Add("TestSymlinkCreation", os_test_package.TestSymlinkCreation, "os_windows_test.go", 1039);
+        registry.Add("TestSymlink", os_test_package.TestSymlink, "os_test.go", 909);
+        registry.Add("TestSymlinkCreation", os_test_package.TestSymlinkCreation, "os_windows_test.go", 1021);
         registry.Add("TestSymlinkWithTrailingSlash", os_test_package.TestSymlinkWithTrailingSlash, "stat_test.go", 289);
-        registry.Add("TestTruncate", os_test_package.TestTruncate, "os_test.go", 1324);
-        registry.Add("TestTruncateNonexistentFile", os_test_package.TestTruncateNonexistentFile, "os_test.go", 1344);
-        registry.Add("TestUTF16Alloc", os_test_package.TestUTF16Alloc, "os_windows_test.go", 1516);
+        registry.Add("TestTruncate", os_test_package.TestTruncate, "os_test.go", 1300);
+        registry.Add("TestTruncateNonexistentFile", os_test_package.TestTruncateNonexistentFile, "os_test.go", 1320);
+        registry.Add("TestUTF16Alloc", os_test_package.TestUTF16Alloc, "os_windows_test.go", 1474);
         registry.Add("TestUnsetenv", os_test_package.TestUnsetenv, "env_test.go", 100);
-        registry.Add("TestUserCacheDir", os_test_package.TestUserCacheDir, "os_test.go", 2810);
-        registry.Add("TestUserConfigDir", os_test_package.TestUserConfigDir, "os_test.go", 2834);
-        registry.Add("TestUserHomeDir", os_test_package.TestUserHomeDir, "os_test.go", 2858);
-        registry.Add("TestWindowsDevNullFile", os_test_package.TestWindowsDevNullFile, "os_windows_test.go", 978);
-        registry.Add("TestWorkingDirectoryRelativeSymlink", os_test_package.TestWorkingDirectoryRelativeSymlink, "os_windows_test.go", 1113);
-        registry.Add("TestWriteAt", os_test_package.TestWriteAt, "os_test.go", 2076);
-        registry.Add("TestWriteAtInAppendMode", os_test_package.TestWriteAtInAppendMode, "os_test.go", 2113);
-        registry.Add("TestWriteAtNegativeOffset", os_test_package.TestWriteAtNegativeOffset, "os_test.go", 2099);
+        registry.Add("TestUserCacheDir", os_test_package.TestUserCacheDir, "os_test.go", 2923);
+        registry.Add("TestUserCacheDirXDGConfigDirEnvVar", os_test_package.TestUserCacheDirXDGConfigDirEnvVar, "os_test.go", 2947);
+        registry.Add("TestUserConfigDir", os_test_package.TestUserConfigDir, "os_test.go", 2974);
+        registry.Add("TestUserConfigDirXDGConfigDirEnvVar", os_test_package.TestUserConfigDirXDGConfigDirEnvVar, "os_test.go", 2998);
+        registry.Add("TestUserHomeDir", os_test_package.TestUserHomeDir, "os_test.go", 3025);
+        registry.Add("TestWindowsDevNullFile", os_test_package.TestWindowsDevNullFile, "os_windows_test.go", 958);
+        registry.Add("TestWorkingDirectoryRelativeSymlink", os_test_package.TestWorkingDirectoryRelativeSymlink, "os_windows_test.go", 1078);
+        registry.Add("TestWriteAt", os_test_package.TestWriteAt, "os_test.go", 2042);
+        registry.Add("TestWriteAtInAppendMode", os_test_package.TestWriteAtInAppendMode, "os_test.go", 2079);
+        registry.Add("TestWriteAtNegativeOffset", os_test_package.TestWriteAtNegativeOffset, "os_test.go", 2065);
         registry.Add("TestWriteFile", os_test_package.TestWriteFile, "read_test.go", 43);
-        registry.Add("TestWriteStringAlloc", os_test_package.TestWriteStringAlloc, "os_test.go", 3183);
+        registry.Add("TestWriteStringAlloc", os_test_package.TestWriteStringAlloc, "os_test.go", 3377);
         registry.SetTestMain(os_test_package.TestMain);
         return TestHost.Run(registry, args);
     }

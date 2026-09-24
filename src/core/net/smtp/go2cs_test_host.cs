@@ -15,19 +15,20 @@ internal static class Go2CsTestHost
             "smtp_test.go",
         });
         registry.Add("TestAuth", smtp_internal_test_package.TestAuth, "smtp_test.go", 36);
-        registry.Add("TestAuthFailed", smtp_internal_test_package.TestAuthFailed, "smtp_test.go", 906);
+        registry.Add("TestAuthFailed", smtp_internal_test_package.TestAuthFailed, "smtp_test.go", 937);
         registry.Add("TestAuthPlain", smtp_internal_test_package.TestAuthPlain, "smtp_test.go", 65);
         registry.Add("TestBasic", smtp_internal_test_package.TestBasic, "smtp_test.go", 163);
         registry.Add("TestClientAuthTrimSpace", smtp_internal_test_package.TestClientAuthTrimSpace, "smtp_test.go", 113);
-        registry.Add("TestExtensions", smtp_internal_test_package.TestExtensions, "smtp_test.go", 291);
-        registry.Add("TestHello", smtp_internal_test_package.TestHello, "smtp_test.go", 637);
-        registry.Add("TestNewClient", smtp_internal_test_package.TestNewClient, "smtp_test.go", 504);
-        registry.Add("TestNewClient2", smtp_internal_test_package.TestNewClient2, "smtp_test.go", 549);
-        registry.Add("TestNewClientWithTLS", smtp_internal_test_package.TestNewClientWithTLS, "smtp_test.go", 590);
-        registry.Add("TestSendMail", smtp_internal_test_package.TestSendMail, "smtp_test.go", 749);
-        registry.Add("TestSendMailWithAuth", smtp_internal_test_package.TestSendMailWithAuth, "smtp_test.go", 852);
-        registry.Add("TestTLSClient", smtp_internal_test_package.TestTLSClient, "smtp_test.go", 950);
-        registry.Add("TestTLSConnState", smtp_internal_test_package.TestTLSConnState, "smtp_test.go", 973);
+        registry.Add("TestExtensions", smtp_internal_test_package.TestExtensions, "smtp_test.go", 322);
+        registry.Add("TestHELOFailed", smtp_internal_test_package.TestHELOFailed, "smtp_test.go", 291);
+        registry.Add("TestHello", smtp_internal_test_package.TestHello, "smtp_test.go", 668);
+        registry.Add("TestNewClient", smtp_internal_test_package.TestNewClient, "smtp_test.go", 535);
+        registry.Add("TestNewClient2", smtp_internal_test_package.TestNewClient2, "smtp_test.go", 580);
+        registry.Add("TestNewClientWithTLS", smtp_internal_test_package.TestNewClientWithTLS, "smtp_test.go", 621);
+        registry.Add("TestSendMail", smtp_internal_test_package.TestSendMail, "smtp_test.go", 780);
+        registry.Add("TestSendMailWithAuth", smtp_internal_test_package.TestSendMailWithAuth, "smtp_test.go", 883);
+        registry.Add("TestTLSClient", smtp_internal_test_package.TestTLSClient, "smtp_test.go", 981);
+        registry.Add("TestTLSConnState", smtp_internal_test_package.TestTLSConnState, "smtp_test.go", 1004);
         return TestHost.Run(registry, args);
     }
 }

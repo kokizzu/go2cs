@@ -52,7 +52,7 @@ using static go.vendor.golang.org.x.text.secure.bidirule_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/secure/bidirule/bidirule.go", "bidirule.cs", "AIsBjgIACQKCgoKUgoKUlKyygoKCgpSCgpSUqJKCgIKkqJKCgIKkqJIACRiigqiQqMKCgoKUgoKClKjCgpSClLSCgpS0tO6CgoK4ooKCgoKUgoK4lMqCgoKClICktLSCgtaUpqKCgoKClIKCgpTKgoKCgpSApLS0goLWlA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/secure/bidirule/bidirule.go", "bidirule.cs", "AHOOAgAJAoKCgpSCgpSUrLKCgoKClIKClJSokoKAgqSokoKAgqSokgAJGKKCqJCowoKCgpSCgoKUqMKClIKUtIKClLS07oKCgriigoKCgpSCgriUyoKCgoKUgKS0tIKC1pSmooKCgoKUgoKClMqCgoKClICktLSCgtaU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/text/secure/bidirule/bidirule10.0.0.go", "bidirule10.0.0.cs", "AAgSgg==")]
 // </GoSourcePositionMaps>
 
@@ -72,4 +72,17 @@ public static partial class bidirule_package
     internal partial struct ruleTransition {}
     public partial struct Transformer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸtransform() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.transform_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸunicodeꓸbidi() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.unicode.bidi_package));
+    // </ImportInitializers>
 }

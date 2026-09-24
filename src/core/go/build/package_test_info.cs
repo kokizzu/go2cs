@@ -29,6 +29,10 @@ using go;
 using static global::go.go.build_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6374787420676f2f6275696c642e436f6e746578743b206e616d6520737472696e673b206461746120737472696e673b206d6174636820626f6f6c7d", "matchFileTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "readEmbedTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b20657870656374656420737472696e677d", "expandSrcDirTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20636f6e74656e7420737472696e673b2074616773206d61705b737472696e675d626f6f6c3b2062696e6172794f6e6c7920626f6f6c3b2073686f756c644275696c6420626f6f6c3b20657272206572726f727d", "shouldBuildTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -52,11 +56,11 @@ using static global::go.go.build_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/build/build_test.go", "build_test.cs", "AEwmgoLmgpKCgoKCgpSCpoKCgoKUgqiCgoSCgoKCgoIACAaCgoKUgpaCgpSClIKC+IKCgpSClIL4goKAggAJCIKEgoKUyoKogIKmgIKmgIL4goKWgoKWgoKUggCVAYQDgrKSgoKCggAKFIKCgoKClIIABxCCAB08grKSkoKUlJKUgoIACQqCgpaCgpSCABYugoKCgpQACQqiAAkagoKClIIAEQ7CgpSEgoQABRaEgpKEgoSCgoKClJSCuIKmggAPDoKEhJKCgpSCgoKUgoK4ooSEkoKClIKCgoKCggAICoKEhJKCgpSCgoKWgoK4goSEkoKClJSCgpSClIKCAAsO0qiogoCCpICCpoKCkoKEgoCCooKUAAgM2IKCloLs2IKCloIACg7SgoKAgqSCgoSShIKCgrq6hICC/rKSgoKClIKCAAsSwpKCgoKClIKClIKCloKCgoKUgpSCguiCgoKUggAOCIKCgpaCgpSCgoKmlJQ=")]
-[assembly: global::go.GoPositionMap("go/build/deps_test.go", "deps_test.cs", "AEymC5SUgoKCloKCloKCloKUgIKkpoKmloKCgpSEgoSCgoKClIKUgoKCgqaCAAkOgoKClIKCgpSCgoKUgoKClJSClMiCgpSCgoKUgpSClIKCgoK4gqiSgoKUqqKCloKCgpaCgsySgoKUgoKCgoKCpg==")]
-[assembly: global::go.GoPositionMap("go/build/read_test.go", "read_test.cs", "AFnwAYKCgoKEgIKCpoKCgoKklJSCgpaCgsqCgoKCuIIASIwBuIKCgoKCpoKCggBTogGCgoLIgoKClIKCgoKUgoKC")]
+[assembly: global::go.GoPositionMap("go/build/build_test.go", "build_test.cs", "ABgqgoLmgpKCgoKCgpSCpoKCgoKUgqiCgoSCgoKCgoIACAaCgoKUgpaCgpSClIKC+IKCgpSClIL4goKAggAJCIKEgoKUyoKogIKmgIKmgIL4goKWgoKWgoKUggCVAYQDgrKSgoKCggAKFIKCgoKClIIABxCCAB08grKSkoKUlJKUgoIACQqCgpaCgpSCABYugoKCgpQACQqiAAkagoKClIIAEQ7CgpSEgoQABRaEgpKEgoSCgoKClJSCuIKmggAPDoKEhJKCgpSCgoKUgoK4ooSEkoKClIKCgoKCggAICoKEhJKCgpSCgoKWgoK4goSEkoKClJSCgpSClIKCAAsO0qiogoCCpICCpoKCkoKEgoCCooKUAAgM2IKCloLs2IKCloIACg7SgoKAgqSCgoSShIKCgrq6hICC/rKSgoKClIKCAAsSwpKCgoKClIKClIKCloKCgoKUgpSCguiCgoKUggAOCIKCgpaCgpSCgoKmlJQ=", "29-38:1;39-48:2;346-357:1;411-416:1;417-419:2;521-548:1;814-823:1")]
+[assembly: global::go.GoPositionMap("go/build/deps_test.go", "deps_test.cs", "AIoGjAyUlIKCgpaCgpaCgpaClICCpKaChIKCgpSEgoSCgoKClIKUgoKCgqaCAAkOgoKClIKCgpSCgoKUgoKClJSClMiCgpSCgoKUgpSClIKCgoK4gqiSgoKUqqKEgoKCloKCzJKCgpSCgoKCgoKm", "779-796:1")]
+[assembly: global::go.GoPositionMap("go/build/read_test.go", "read_test.cs", "AIQB8AGCgoKChICCgqaCgoKCpJSUgoKWgoLKgoKCgriCAEiMAbiCgoKCgqaCgoIAY6IBgoKCyIKCgpSCgoKClIKCgg==", "154-158:1;244-248:1")]
 [assembly: global::go.GoPositionMap("go/build/syslist_test.go", "syslist_test.cs", "ABAmgoKUpoKClAAZNIKCgg==")]
-[assembly: global::go.GoPositionMap("go/build/vendor_test.go", "vendor_test.cs", "ACI4koKCgoKClIKCgoKCpoIABxKCgoKm9qIABhSCgg==")]
+[assembly: global::go.GoPositionMap("go/build/vendor_test.go", "vendor_test.cs", "ACM4koKCgoKClIKCgoKCpoIAChKCgoKm9qIABhSCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -72,4 +76,35 @@ public static partial class build_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸdag() => builtin.initPackage(typeof(@internal.dag_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(global::go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(global::go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.go.build_package));
+    }
 }

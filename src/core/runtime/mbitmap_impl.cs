@@ -7,7 +7,7 @@
 
 // The GC pointer bitmap, answered from the TYPE rather than from the heap.
 //
-// Go's getgcmask reads the collector's own metadata to answer: findObject and the span's
+// Go's pointerMask reads the collector's own metadata to answer: findObject and the span's
 // typePointersOfUnchecked iterator for a heap object, activeModules' data/bss bitmaps for a global,
 // the frame's locals map for a stack slot. None of those exist in a managed runtime, and the
 // converted body does not fail cheaply when it tries — reflect's TestGCBits reported
@@ -25,7 +25,7 @@
 // assertion. Both compare the ALLOCATOR's view with the TYPE's view, and there is only one view
 // here — asserting agreement between an answer and itself is not a check, it is a decoration.
 //
-// Hand-owned: registered in manualConversionFuncs["runtime"]["getgcmask"], so a -stdlib reconvert
+// Hand-owned: registered in manualConversionFuncs["runtime"]["pointerMask"], so a -stdlib reconvert
 // emits the declaration as a placeholder and never regenerates the body over this file.
 
 using System;
@@ -44,13 +44,13 @@ partial class runtime_package
     // *T, and T is what gets walked.
     //
     // The result is one entry per POINTER WORD, 0 or 1, from the object's base upward. That
-    // granularity is Go's own, read off getgcmask's construction (`make([]byte, n/goarch.PtrSize)`,
+    // granularity is Go's own, read off pointerMask's construction (`make([]byte, n/goarch.PtrSize)`,
     // indexed `[i/goarch.PtrSize]`) and NOT off reflect's doc comment, which says "one entry per
     // byte" about the bitmap's storage. verifyGCBits compares by PREFIX — it forgives a mask longer
     // than expected, because Go's iterator runs out to the size class, and forgives nothing that is
     // shifted — so a byte-vs-word transposition would fail everywhere while an over-long answer
     // passes.
-    internal static slice<byte> /*mask*/ getgcmask(any epʗp)
+    internal static slice<byte> /*mask*/ pointerMask(any epʗp)
     {
         // The pointer contract is enforced by the same subsumption test every other value-side
         // descent in golib uses, rather than by a second rule written here: PointeeTypeOfValue
@@ -61,11 +61,11 @@ partial class runtime_package
         if (elem is null)
         {
             // Go's own text, verbatim. It is spelled here rather than referenced because the
-            // converter hoists a body's string literals WITH the body: displacing getgcmask
+            // converter hoists a body's string literals WITH the body: displacing pointerMask
             // removes badArgumentToGetgcmaskˢ from mbitmap.cs along with the two literals only
             // the checks this hand-own deliberately drops were using. The seam owns its own
             // constant, so nothing here depends on a hoist the displacement removes.
-            @throw("bad argument to getgcmask: expected type to be a pointer to the value type whose mask is being queried"u8);
+            @throw("bad argument to pointerMask: expected type to be a pointer to the value type whose mask is being queried"u8);
             return default!;
         }
 

@@ -5,11 +5,11 @@ namespace go;
 
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
-using math = runtime.@internal.math_package;
-using sys = runtime.@internal.sys_package;
+using math = @internal.runtime.math_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -19,7 +19,7 @@ partial class runtime_package {
     internal nint cap;
 }
 
-// A notInHeapSlice is a slice backed by runtime/internal/sys.NotInHeap memory.
+// A notInHeapSlice is a slice backed by internal/runtime/sys.NotInHeap memory.
 [GoType] partial struct notInHeapSlice {
     internal ж<notInHeap> Δarray;
     internal nint len;
@@ -81,7 +81,7 @@ internal static @unsafe.Pointer makeslicecopy(ж<_type> Ꮡet, nint tolen, nint 
         }
     }
     if (raceenabled) {
-        var callerpc = getcallerpc();
+        var callerpc = sys.GetCallerPC();
         var pc = abi.FuncPCABIInternal(makeslicecopy);
         racereadrangepc(from, copymem, callerpc, pc);
     }
@@ -187,7 +187,7 @@ internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint o
 
     nint oldLen = newLen - num;
     if (raceenabled) {
-        var callerpc = getcallerpc();
+        var callerpc = sys.GetCallerPC();
         racereadrangepc(oldPtr, (uintptr)(oldLen * (nint)et.Size_), callerpc, abi.FuncPCABIInternal(growslice));
     }
     if (msanenabled) {
@@ -377,7 +377,7 @@ internal static nint slicecopy(@unsafe.Pointer toPtr, nint toLen, @unsafe.Pointe
     }
     var size = (uintptr)n * width;
     if (raceenabled) {
-        var callerpc = getcallerpc();
+        var callerpc = sys.GetCallerPC();
         var pc = abi.FuncPCABIInternal(slicecopy);
         racereadrangepc(fromPtr, size, callerpc, pc);
         racewriterangepc(toPtr, size, callerpc, pc);

@@ -100,7 +100,6 @@ internal static void badsystemstack() {
 // Notable members of the hall of shame include:
 //   - github.com/bytedance/sonic
 //   - github.com/chenzhuoyu/iasm
-//   - github.com/cloudwego/frugal
 //   - github.com/dgraph-io/ristretto
 //   - github.com/outcaste-io/ristretto
 //
@@ -135,7 +134,6 @@ internal static void reflect_memclrNoHeapPointers(@unsafe.Pointer ptr, uintptr n
 // Notable members of the hall of shame include:
 //   - github.com/bytedance/sonic
 //   - github.com/cloudwego/dynamicgo
-//   - github.com/cloudwego/frugal
 //   - github.com/ebitengine/purego
 //   - github.com/tetratelabs/wazero
 //   - github.com/ugorji/go/codec
@@ -155,7 +153,7 @@ internal static void reflect_memmove(@unsafe.Pointer to, @unsafe.Pointer from, u
 }
 
 // exported value for testing
-internal const float32 hashLoad = /* float32(loadFactorNum) / float32(loadFactorDen) */ 6.5f;
+internal const float32 hashLoad = /* float32(loadFactorNum) / float32(loadFactorDen) */ 0.875f;
 
 // in internal/bytealg/equal_*.s
 //
@@ -275,7 +273,7 @@ internal static partial void reflectcall(ж<_type> stackArgsType, @unsafe.Pointe
 // Notable members of the hall of shame include:
 //   - github.com/sagernet/sing-tun
 //   - github.com/slackhq/nebula
-//   - github.com/tailscale/wireguard-go
+//   - golang.zx2c4.com/wireguard
 //
 // Do not remove or change the type signature.
 // See go.dev/issue/67401.
@@ -315,59 +313,6 @@ internal static partial void goexit(neverCallThisFunction _);
 // data dependency ordering.
 internal static partial void publicationBarrier();
 
-// getcallerpc returns the program counter (PC) of its caller's caller.
-// getcallersp returns the stack pointer (SP) of its caller's caller.
-// The implementation may be a compiler intrinsic; there is not
-// necessarily code implementing this on every platform.
-//
-// For example:
-//
-//	func f(arg1, arg2, arg3 int) {
-//		pc := getcallerpc()
-//		sp := getcallersp()
-//	}
-//
-// These two lines find the PC and SP immediately following
-// the call to f (where f will return).
-//
-// The call to getcallerpc and getcallersp must be done in the
-// frame being asked about.
-//
-// The result of getcallersp is correct at the time of the return,
-// but it may be invalidated by any subsequent call to a function
-// that might relocate the stack in order to grow or shrink it.
-// A general rule is that the result of getcallersp should be used
-// immediately and can only be passed to nosplit functions.
-
-//go:noescape
-internal static partial uintptr getcallerpc();
-
-//go:noescape
-internal static partial uintptr getcallersp();
-
-// implemented as an intrinsic on all platforms
-
-// getclosureptr returns the pointer to the current closure.
-// getclosureptr can only be used in an assignment statement
-// at the entry of a function. Moreover, go:nosplit directive
-// must be specified at the declaration of caller function,
-// so that the function prolog does not clobber the closure register.
-// for example:
-//
-//	//go:nosplit
-//	func f(arg1, arg2, arg3 int) {
-//		dx := getclosureptr()
-//	}
-//
-// The compiler rewrites calls to this function into instructions that fetch the
-// pointer from a well-known register (DX on x86 architecture, etc.) directly.
-//
-// WARNING: PGO-based devirtualization cannot detect that caller of
-// getclosureptr require closure context, and thus must maintain a list of
-// these functions, which is in
-// cmd/compile/internal/devirtualize/pgo.maybeDevirtualizeFunctionCall.
-internal static partial uintptr getclosureptr();
-
 //go:noescape
 internal static partial int32 asmcgocall(@unsafe.Pointer fn, @unsafe.Pointer arg);
 
@@ -376,10 +321,11 @@ internal static partial void morestack();
 // morestack_noctxt should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
+//   - github.com/bytedance/sonic
 //
 // Do not remove or change the type signature.
-// See go.dev/issue/67401.
+// See go.dev/issues/67401.
+// See go.dev/issues/71672.
 //
 //go:linkname morestack_noctxt
 internal static partial void morestack_noctxt();
@@ -467,6 +413,8 @@ internal static uintptr alignDown(uintptr n, uintptr a) {
 }
 
 // divRoundUp returns ceil(n / a).
+//
+//go:nosplit
 internal static uintptr divRoundUp(uintptr n, uintptr a) {
     // a is generally a power of two. This will get inlined and
     // the compiler will optimize the division.
@@ -501,7 +449,6 @@ internal static partial void gcWriteBarrier1();
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
 //   - github.com/bytedance/sonic
-//   - github.com/cloudwego/frugal
 //
 // Do not remove or change the type signature.
 // See go.dev/issue/67401.

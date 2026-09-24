@@ -51,7 +51,7 @@ using static go.hash.crc32_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/crc32/crc32.go", "crc32.cs", "AGioAYKEgoKmgpoADRaCgoKmggADEKKUgqSCpAAKHtKClAACENCkgKSApIDegoKCgoL2goKUgpSClIKmgpSkgpSkyrampoKmgKSCgqqgqKKCqLKCgoKCpg==")]
+[assembly: go.GoPositionMap("hash/crc32/crc32.go", "crc32.cs", "AFCoAYSCgpaCmgANFoKCloIAAxCilIKkgqQACh7SgpQAAhDQpICkgKSA3oKCgoKmgviCgpSClIKUgqaClKSClKTKtqamgqaApIKCqqCoooKosoKCgoKm")]
 [assembly: go.GoPositionMap("hash/crc32/crc32_generic.go", "crc32_generic.cs", "ABEosoKCqqKCgoKClKa8ooKClAAHFqKCgoKCgoKmqsKCgoKChpSUgpQ=")]
 // </GoSourcePositionMaps>
 
@@ -71,4 +71,17 @@ public static partial class crc32_package
     internal partial struct slicing8Table {}
     public partial struct Table {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

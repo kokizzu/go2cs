@@ -15,7 +15,6 @@ global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
 global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
 global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
 global using abiꓸKind = go.@internal.abi_package.ΔKind;
-global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
 global using abiꓸName = go.@internal.abi_package.ΔName;
 global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
 global using runtimeꓸError = go.runtime_package.ΔError;
@@ -65,8 +64,8 @@ using static go.@internal.reflectlite_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/reflectlite/type.go", "type.cs", "AHusAoKmgqaCpoLaooKCgoKC+oKClIKmgoKUgoLmgoKUgoKCgpSmgoIAAhoACw7kgqaCpoIABBaApIKCgpSmgoKClAAEHIKClIKCgoKUtLSUpoKmgoKClM6CgoKUpoKCgpSmgoKClKaCgoKUpoKCgpSmgoKClKaCgoKUAAIU8qqiAAQagoKUgoKmggAEvgEAFgSCuoKoprKCloKWAATYAQAPAoKU")]
-[assembly: go.GoPositionMap("internal/reflectlite/value.go", "value.cs", "AFCgAYKmgoKUptyqooKUgpSokoKClJSCloKSgoKUuLYACgyCAA40goKUAAQgooKUgr6ygqaClIIAAxLSAAi8AQAPAqqirMYABDLCgpQABCyygoKmAAIUAAkcAAgKmIKCxoKUuJSCgpSUuAAFFPKmmsqygg==")]
+[assembly: go.GoPositionMap("internal/reflectlite/type.go", "type.cs", "AHWsAoKmgqaCpoLaooKCgoKC+oKClIKmgoKUgoLmgoKUgoKCgpSmgoIAAhoACw7kgqaCpoIABBaApIKCgpSmgoKClAAEHIKClIKCgoKUtLSUpoKmgoKClM6CgoKUpoKCgpSmgoKClKaCgoKUpoKCgpSmgoKClKaCgoKUAAIU8qqiAAQagoKUgoKmggAEvgEACQSCuoKoprKCloKWAATYAdKClA==")]
+[assembly: go.GoPositionMap("internal/reflectlite/value.go", "value.cs", "AEqgAYKmgoKUptyqooKUgpSokoKClJSCloKSgoKUuLYACgyCAAw0goKUAAQgooKUgr6ygqaClIIAAxLSAAi8AdKqoqzGAAQykoKUAAQskoKCpgACFAAJHAAICpiCgsaClLiUgoKUlLgABRTypprKsoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -89,4 +88,15 @@ public static partial class reflectlite_package
     public partial struct Value {}
     public partial struct ValueError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() => builtin.initPackage(typeof(go.@internal.abi_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    // </ImportInitializers>
 }

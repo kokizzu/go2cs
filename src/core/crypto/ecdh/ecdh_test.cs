@@ -31,109 +31,13 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class ecdh_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(go.crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20_package));
-}
-
 // Check that PublicKey and PrivateKey implement the interfaces documented in
 // crypto.PublicKey and crypto.PrivateKey.
 
 [GoType("dyn")] partial interface _ᴛ1 {
     bool Equal(cryptoꓸPublicKey x);
 }
-internal static _ᴛ1 _ᴛ1ʗ = new ecdh.ΔPublicKeyж_ᴛ1(Ꮡ(new ecdhꓸPublicKey(nil)));
+internal static _ᴛ1 _ᴛ1ʗ = new go.crypto.ecdh_package.ΔPublicKeyж_ᴛ1(Ꮡ(new go.crypto.ecdh_package.ΔPublicKey(nil)));
 
 
 [GoType("dyn")] partial interface _ᴛ2 {
@@ -574,7 +478,8 @@ package main
 import "crypto/ecdh"
 import "crypto/rand"
 func main() {
-	curve := ecdh.P384()
+	// Use P-256, since that's what the always-enabled CAST uses.
+	curve := ecdh.P256()
 	key, err := curve.GenerateKey(rand.Reader)
 	if err != nil { panic(err) }
 	_, err = curve.NewPublicKey(key.PublicKey().Bytes())
@@ -597,11 +502,11 @@ private static readonly @string helloExeˢ2 = "./hello.exe"u8;
 private static readonly object unexpectedOutputˢ = (@string)"unexpected output:"u8;
 private static readonly @string toolˢ = "tool"u8;
 private static readonly @string mTCryptoˢ = @"(?m)T (crypto/.*)$"u8;
-private static readonly @string p384ˢ2 = "p384"u8;
-private static readonly @string p224ˢ = "p224"u8;
 private static readonly @string p256ˢ2 = "p256"u8;
+private static readonly @string p224ˢ = "p224"u8;
+private static readonly @string p384ˢ2 = "p384"u8;
 private static readonly @string p521ˢ2 = "p521"u8;
-private static readonly object noP384SymbolsFoundInˢ = (@string)"no P384 symbols found in program using ecdh.P384, test is broken"u8;
+private static readonly object noP256SymbolsFoundInˢ = (@string)"no P256 symbols found in program using ecdh.P256, test is broken"u8;
 
 // TestLinker ensures that using one curve does not bring all other
 // implementations into the binary. This also guarantees that govulncheck can
@@ -635,27 +540,27 @@ public static void TestLinker(ж<testing.T> Ꮡt) {
         }
     }
     // List all text symbols under crypto/... and make sure there are some for
-    // P384, but none for the other curves.
+    // P256, but none for the other curves.
     bool consistent = default!;
     @string nm = run(goBin, toolˢ, "nm", helloExeˢ);
     foreach (var (_, match) in regexp.MustCompile(mTCryptoˢ).FindAllStringSubmatch(nm, -1)) {
         @string symbol = strings.ToLower(match[1]);
-        if (strings.Contains(symbol, p384ˢ2)) {
+        if (strings.Contains(symbol, p256ˢ2)) {
             consistent = true;
         }
-        if (strings.Contains(symbol, p224ˢ) || strings.Contains(symbol, p256ˢ2) || strings.Contains(symbol, p521ˢ2)) {
-            Ꮡt.Errorf("unexpected symbol in program using only ecdh.P384: %s"u8, match[1]);
+        if (strings.Contains(symbol, p224ˢ) || strings.Contains(symbol, p384ˢ2) || strings.Contains(symbol, p521ˢ2)) {
+            Ꮡt.Errorf("unexpected symbol in program using only ecdh.P256: %s"u8, match[1]);
         }
     }
     if (!consistent) {
-        Ꮡt.Error(noP384SymbolsFoundInˢ);
+        Ꮡt.Error(noP256SymbolsFoundInˢ);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string cryptoEcdhPrivateKeyAndˢ = "crypto/ecdh: private key and public key curves do not match"u8;
 
-[GoType("dyn")] partial struct TestMismatchedCurves_curves {
+[GoType("dyn")] internal partial struct TestMismatchedCurves_curves {
     internal @string name;
     internal ecdhꓸCurve curve;
 }

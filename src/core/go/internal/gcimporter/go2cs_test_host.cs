@@ -9,10 +9,8 @@ internal static class Go2CsTestHost
     {
         TestRegistry registry = new("go/internal/gcimporter", new string[]
         {
-            "exportdata.go",
             "gcimporter.go",
             "gcimporter_test.go",
-            "iimport.go",
             "support.go",
             "testdata/a.go",
             "testdata/b.go",
@@ -24,6 +22,7 @@ internal static class Go2CsTestHost
             "testdata/issue25301.go",
             "testdata/issue25596.go",
             "testdata/issue57015.go",
+            "testdata/issue69912.go",
             "testdata/p.go",
             "testdata/versions/test.go",
             "testdata/versions/test_go1.11_0i.a",
@@ -39,22 +38,23 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("TestCorrectMethodPackage", gcimporter_test_package.TestCorrectMethodPackage, "gcimporter_test.go", 511);
-        registry.Add("TestImportStdLib", gcimporter_test_package.TestImportStdLib, "gcimporter_test.go", 345);
-        registry.Add("TestImportTestdata", gcimporter_test_package.TestImportTestdata, "gcimporter_test.go", 90);
-        registry.Add("TestImportTypeparamTests", gcimporter_test_package.TestImportTypeparamTests, "gcimporter_test.go", 130);
-        registry.Add("TestImportedTypes", gcimporter_test_package.TestImportedTypes, "gcimporter_test.go", 406);
-        registry.Add("TestIssue13566", gcimporter_test_package.TestIssue13566, "gcimporter_test.go", 535);
-        registry.Add("TestIssue13898", gcimporter_test_package.TestIssue13898, "gcimporter_test.go", 587);
-        registry.Add("TestIssue15517", gcimporter_test_package.TestIssue15517, "gcimporter_test.go", 634);
-        registry.Add("TestIssue15920", gcimporter_test_package.TestIssue15920, "gcimporter_test.go", 668);
-        registry.Add("TestIssue20046", gcimporter_test_package.TestIssue20046, "gcimporter_test.go", 679);
-        registry.Add("TestIssue25301", gcimporter_test_package.TestIssue25301, "gcimporter_test.go", 694);
-        registry.Add("TestIssue25596", gcimporter_test_package.TestIssue25596, "gcimporter_test.go", 705);
-        registry.Add("TestIssue57015", gcimporter_test_package.TestIssue57015, "gcimporter_test.go", 716);
-        registry.Add("TestIssue5815", gcimporter_test_package.TestIssue5815, "gcimporter_test.go", 482);
-        registry.Add("TestTypeNamingOrder", gcimporter_test_package.TestTypeNamingOrder, "gcimporter_test.go", 569);
-        registry.Add("TestVersionHandling", gcimporter_test_package.TestVersionHandling, "gcimporter_test.go", 252);
+        registry.Add("TestCorrectMethodPackage", gcimporter_test_package.TestCorrectMethodPackage, "gcimporter_test.go", 523);
+        registry.Add("TestImportStdLib", gcimporter_test_package.TestImportStdLib, "gcimporter_test.go", 357);
+        registry.Add("TestImportTestdata", gcimporter_test_package.TestImportTestdata, "gcimporter_test.go", 91);
+        registry.Add("TestImportTypeparamTests", gcimporter_test_package.TestImportTypeparamTests, "gcimporter_test.go", 126);
+        registry.Add("TestImportedTypes", gcimporter_test_package.TestImportedTypes, "gcimporter_test.go", 418);
+        registry.Add("TestIssue13566", gcimporter_test_package.TestIssue13566, "gcimporter_test.go", 547);
+        registry.Add("TestIssue13898", gcimporter_test_package.TestIssue13898, "gcimporter_test.go", 599);
+        registry.Add("TestIssue15517", gcimporter_test_package.TestIssue15517, "gcimporter_test.go", 646);
+        registry.Add("TestIssue15920", gcimporter_test_package.TestIssue15920, "gcimporter_test.go", 680);
+        registry.Add("TestIssue20046", gcimporter_test_package.TestIssue20046, "gcimporter_test.go", 691);
+        registry.Add("TestIssue25301", gcimporter_test_package.TestIssue25301, "gcimporter_test.go", 706);
+        registry.Add("TestIssue25596", gcimporter_test_package.TestIssue25596, "gcimporter_test.go", 717);
+        registry.Add("TestIssue57015", gcimporter_test_package.TestIssue57015, "gcimporter_test.go", 728);
+        registry.Add("TestIssue5815", gcimporter_test_package.TestIssue5815, "gcimporter_test.go", 494);
+        registry.Add("TestIssue69912", gcimporter_test_package.TestIssue69912, "gcimporter_test.go", 771);
+        registry.Add("TestTypeNamingOrder", gcimporter_test_package.TestTypeNamingOrder, "gcimporter_test.go", 581);
+        registry.Add("TestVersionHandling", gcimporter_test_package.TestVersionHandling, "gcimporter_test.go", 248);
         registry.SetTestMain(gcimporter_test_package.TestMain);
         return TestHost.Run(registry, args);
     }

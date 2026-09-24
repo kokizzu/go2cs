@@ -13,77 +13,18 @@ using big = math.big_package;
 using os = os_package;
 using Δruntime = runtime_package;
 using strings = strings_package;
+using System.Runtime.CompilerServices;
 using encoding;
 using global::go.go;
 using math;
 
 partial class pkgbits_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() {
-    builtin.initPackage(typeof(global::go.go.constant_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // A PkgDecoder provides methods for decoding a package's Unified IR
 // export data.
 [GoType] partial struct PkgDecoder {
     // version is the file format version.
-    internal uint32 version;
+    internal ΔVersion version;
     // sync indicates whether the file uses sync markers.
     internal bool sync;
     // pkgPath is the package path for the package to be decoded.
@@ -128,40 +69,32 @@ partial class pkgbits_package {
 // NewPkgDecoder returns a PkgDecoder initialized to read the Unified
 // IR export data from input. pkgPath is the package path for the
 // compilation unit that produced the export data.
-//
-// TODO(mdempsky): Remove pkgPath parameter; unneeded since CL 391014.
 public static PkgDecoder NewPkgDecoder(@string pkgPath, @string input) {
-    ref var pr = ref heap<PkgDecoder>(out var Ꮡpr);
-    pr = new PkgDecoder(
+    var pr = new PkgDecoder(
         pkgPath: pkgPath
     );
     // TODO(mdempsky): Implement direct indexing of input string to
     // avoid copying the position information.
     var r = strings.NewReader(input);
-    assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, Ꮡpr.of(PkgDecoder.Ꮡversion)) == default!);
-    switch (pr.version) {
-    default: {
-        throw panic(fmt.Errorf("unsupported version: %v"u8, pr.version));
-        break;
+    ref var ver = ref heap(new uint32(), out var Ꮡver);
+    assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, Ꮡver) == default!);
+    pr.version = ((ΔVersion)ver);
+    if (pr.version >= numVersions) {
+        throw panic(fmt.Errorf("cannot decode %q, export data version %d is greater than maximum supported version %d"u8, pkgPath, pr.version, (nint)(numVersions - 1)));
     }
-    case 0: {
-        break;
-    }
-    case 1: {
-// no flags
+    if (pr.version.Has(Flags)) {
         ref var flags = ref heap(new uint32(), out var Ꮡflags);
         assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, Ꮡflags) == default!);
         pr.sync = (uint32)(flags & (uint32)flagSyncMarkers) != 0;
-        break;
-    }}
-
+    }
     assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, pr.elemEndsEnds[..]) == default!);
     pr.elemEnds = new slice<uint32>((nint)(pr.elemEndsEnds[len(pr.elemEndsEnds) - 1]));
     assert(binary.Read(new strings_ReaderжReader(r), binary.LittleEndian, pr.elemEnds[..]) == default!);
     var (pos, err) = r.Seek(0, io.SeekCurrent);
     assert(err == default!);
     pr.elemData = input[(int)(pos)..];
-    assert(len(pr.elemData) - 8 == (nint)pr.elemEnds[len(pr.elemEnds) - 1]);
+    const nint fingerprintSize = 8;
+    assert(len(pr.elemData) - fingerprintSize == (nint)pr.elemEnds[len(pr.elemEnds) - 1]);
     return pr.ΔClone();
 }
 
@@ -194,7 +127,7 @@ public static PkgDecoder NewPkgDecoder(@string pkgPath, @string input) {
         absIdx += (nint)pr.elemEndsEnds[k - 1];
     }
     if (absIdx >= (nint)pr.elemEndsEnds[k]) {
-        errorf("%v:%v is out of bounds; %v"u8, k, idx, pr.elemEndsEnds);
+        panicf("%v:%v is out of bounds; %v"u8, k, idx, pr.elemEndsEnds);
     }
     return absIdx;
 }
@@ -302,7 +235,7 @@ public static Decoder TempDecoderRaw(this ж<PkgDecoder> Ꮡpr, RelocKind k, Ind
 
 [GoRecv] internal static void checkErr(this ref Decoder r, error err) {
     if (err != default!) {
-        errorf("unexpected decoding error: %w"u8, err);
+        panicf("unexpected decoding error: %w"u8, err);
     }
 }
 
@@ -331,7 +264,7 @@ internal static (uint64, error) readUvarint(ж<strings.Reader> Ꮡr) {
             return (x, err);
         }
         if (b < 0x80) {
-            if (i == binary.MaxVarintLen64 - 1 && b > 1) {
+            if (i == (nint)(binary.MaxVarintLen64 - 1) && b > 1) {
                 return (x, overflow);
             }
             return ((uint64)(x | ((uint64)b).Lsh(s)), default!);
@@ -364,7 +297,7 @@ internal static int64 rawVarint(this ж<Decoder> Ꮡr) {
 // that it matches the expected marker.
 //
 // If EnableSync is false, then Sync is a no-op.
-public static void Sync(this ж<Decoder> Ꮡr, SyncMarker mWant) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Sync(this ж<Decoder> Ꮡr, SyncMarker mWant) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     if (!(~r.common).sync) {
@@ -431,7 +364,7 @@ public static int64 Int64(this ж<Decoder> Ꮡr) {
     return Ꮡr.rawVarint();
 }
 
-// Int64 decodes and returns a uint64 value from the element bitstream.
+// Uint64 decodes and returns a uint64 value from the element bitstream.
 public static uint64 Uint64(this ж<Decoder> Ꮡr) {
     Ꮡr.Sync(SyncUint64);
     return Ꮡr.rawUvarint();
@@ -602,6 +535,11 @@ public static (@string, @string, CodeObj) PeekObj(this ж<PkgDecoder> Ꮡpr, Ind
     assert(name != ""u8);
     CodeObj tag = ((CodeObj)rcode);
     return (path, name, tag);
+}
+
+// Version reports the version of the bitstream.
+[GoRecv] public static ΔVersion Version(this ref Decoder w) {
+    return (~w.common).version;
 }
 
 } // end pkgbits_package

@@ -11,30 +11,6 @@ using io = io_package;
 
 partial class diff_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // A pair is a pair of values tracked for both the x and y side of a diff.
 // It is typically a pair of line indexes.
 [GoType] partial struct pair {
@@ -125,7 +101,7 @@ public static slice<byte> Diff(@string oldName, slice<byte> old, @string newName
         // If we're not at EOF and have too few common lines,
         // the chunk includes all the common lines and continues.
         UntypedInt C = 3; // number of context lines
-        if ((end.x < len(x) || end.y < len(y)) && (end.x - start.x < C || (len(ctext) > 0 && end.x - start.x < 2 * C))) {
+        if ((end.x < len(x) || end.y < len(y)) && (end.x - start.x < C || (len(ctext) > 0 && end.x - start.x < (nint)(2 * C)))) {
             foreach (var (_, s) in x[(int)(start.x)..(int)(end.x)]) {
                 ctext = append(ctext, " "u8 + s);
                 count.x++;

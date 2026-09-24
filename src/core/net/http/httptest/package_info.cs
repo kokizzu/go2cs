@@ -68,9 +68,9 @@ using static go.net.http.httptest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/httptest/httptest.go", "httptest.cs", "AD0mkgAINAAXAoKUgoKUloKChIKUtLTEpICClO6EgpaC3g==")]
-[assembly: go.GoPositionMap("net/http/httptest/recorder.go", "recorder.cs", "AEVmkgAKHsKCgoKUAAYU8oKUgpaEgoKCgpSWqqKCgpSqooKClKYACxiCupKCloKCgoKUqqKClAAGJAAPAoKUgpTugoKUgoKUlISAgoKCooKUlIKClIKCyIKClIKUgqYAAhDSgoKUgoKU")]
-[assembly: go.GoPositionMap("net/http/httptest/server.go", "server.cs", "AGp4goKCgpSUgoKAgrYADhyCgriCgoKmqqKCggACEuIACA6ygpSClIKCgoKCyrKClIKUgoKWgoKUlIKCgpSUgpSCgpSCgtyCgoKqooKCAAYS4oKCgoKCABImgriCpLqAgriCgIK4AAgGwoKCgoKClNjSgoKCgpQABhCCkoLo/sKuwqaCgqKC7MKCsoKElICCpIKYgoLqtoCCgpTGgIKClKSCuoCipsaC/qCoooKC")]
+[assembly: go.GoPositionMap("net/http/httptest/httptest.go", "httptest.cs", "ABMmkgAINAAXAoKUgoKUloKChIKUtLTEpICClO6EgpaC3g==")]
+[assembly: go.GoPositionMap("net/http/httptest/recorder.go", "recorder.cs", "AC1mkgAKHsKCgoKUAAYU8oKUgpaEgoKCgpSWqqKCgpSqooKClKYACxiCupKCloKCgoKUqqKClAAGJAAPAoKUgpTugoKUgoKUlISAgoKCooKUlIKClIKCyIKClIKUgqYAAhDSgoKUgoKU")]
+[assembly: go.GoPositionMap("net/http/httptest/server.go", "server.cs", "ADp4goKCgpSUgoKAgrYADhyCgriCgoKmqqKCggACEuIACA6ygpSClIKCgoKCyrKClIKUgoKWgoKUlIKCgpSUgpSCgpSCgtyCgoKqooKCAAYS4oKCgoKCABImgriCpLqAgriCgIK4AAgG0oKCgoKClNjSgoKCgpQABhCCkoLo/sKuwqaCgqKC7MKCsoKElICCpIKYgoLqtoCCgpTGgIKClKSCuoCipsaC/qCoooKC", "309-312:1;319-372:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -89,4 +89,32 @@ public static partial class httptest_package
     public partial struct ResponseRecorder {}
     public partial struct Server {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() => builtin.initPackage(typeof(crypto.tls_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509() => builtin.initPackage(typeof(crypto.x509_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸtestcert() => builtin.initPackage(typeof(go.net.http.@internal.testcert_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(go.net.textproto_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() => builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
+    // </ImportInitializers>
 }

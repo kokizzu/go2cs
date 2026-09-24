@@ -39,6 +39,10 @@ using go;
 using static global::go.database.sql_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("64617461626173652f73716c2e646561646c696e6572", "waitCondition_deadliner")]
+[assembly: GoDynamicTypeLift("696e746572666163657b446561646c696e652829202874696d652e54696d652c20626f6f6c297d", "waitCondition_deadliner")]
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4d757465783b20666e2066756e632829206572726f727d", "hookOpenErrᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4d757465783b20666e2066756e63282a64617461626173652f73716c2e66616b65436f6e6e2c206572726f72297d", "hookPostCloseConnᴛ1")]
 [assembly: GoTypeAlias("Conn", "ΔConn")]
 [assembly: GoTypeAlias("Stmt", "ΔStmt")]
 // </ExportedTypeAliases>
@@ -62,8 +66,8 @@ using static global::go.database.sql_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("database/sql/example_cli_test.go", "example_cli_test.cs", "AEgmooKChIKUgpSWgqaUhIKChIKUgoSigpaE2sKClICCAAwMwoKUgoKClA==")]
-[assembly: go.GoPositionMap("database/sql/example_test.go", "example_test.cs", "ACIqooKCgpSShIKCgKakyoKCqICCpAAIBoKCgoKClLS0AAgIgoKCgpSCgpSCAAgIooIAACqCgpSUgpiAgqSUgpTKgpiAgqSUgIIACggAChSClIKAgqQADgaiAAUUgoKUlIKAggANCqIABRSCgpSUgoKUlIKAgraAggALCIKCgpSCgoKClICC+MaCgpSSgoKClIKClIIACQiCgoKUgoKCgIKklICCAAkIgoKClIKCgoCCpJSCgoCCpJSAgvi0goKUpoKCgpS0tAAICLSCgpSmgoKClLS0AAgIooKCgpSUgoKCgIKkpoCCpA==")]
+[assembly: go.GoPositionMap("database/sql/example_cli_test.go", "example_cli_test.cs", "AB4mooKChIKUgpSWgqaUhIKChIKUgoSigpaE2sKClICCAAwMwoKUgoKClA==", "51-54:1")]
+[assembly: go.GoPositionMap("database/sql/example_test.go", "example_test.cs", "ABYqooKCgpSShIKCgKakyoKCqICCpAAIBoKCgoKClLS0AAgIgoKCgpSCgpSCABwIooIAACqCgpSUgpiAgqSUgpTKgpiAgqSUgIIACggAChSClIKAgqQADgaiAAUUgoKUlIKAggANCqIABRSCgpSUgoKUlIKAgraAggALCIKCgpSCgoKClICC+MaCgpSSgoKClIKClIIACQiCgoKUgoKCgIKklICCAAkIgoKClIKCgoCCpJSCgoCCpJSAgvi0goKUpoKCgpS0tAAICLSCgpSmgoKClLS0AAgIooKCgpSUgoKCgIKkpoCCpA==")]
 // </GoSourcePositionMaps>
 
 namespace go.database;
@@ -78,7 +82,46 @@ public static partial class sql_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct ExampleDB_Prepare_projects {}
-    public partial struct ExampleTx_Prepare_projects {}
+    internal partial struct ExampleDB_Prepare_projects {}
+    internal partial struct ExampleTx_Prepare_projects {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸdatabaseꓸsql() => builtin.initPackage(typeof(go.database.sql_package));
+    [GoInit] internal static void initᴛᴛimportꓸdatabaseꓸsqlꓸdriver() => builtin.initPackage(typeof(go.database.sql.driver_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸsignal() => builtin.initPackage(typeof(go.os.signal_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.database.sql_package));
+    }
 }

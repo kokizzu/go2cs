@@ -24,30 +24,6 @@ using io = io_package;
 
 partial class lzw_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 [GoType("num:nint")] partial struct Order;
 
 public static Order LSB => /* iota */ 0;
@@ -299,10 +275,10 @@ internal static readonly @string lzwUnknownOrderˢ = "lzw: unknown order"u8;
 [GoRecv] internal static void init(this ref Reader r, io.Reader src, Order order, nint litWidth) {
     var exprᴛ1 = order;
     if (exprᴛ1 == LSB) {
-        r.read = (Func<ж<Reader>, (uint16, error)>)(readLSB);
+        r.read = ((Func<ж<Reader>, (uint16, error)>)(readLSB));
     }
     else if (exprᴛ1 == MSB) {
-        r.read = (Func<ж<Reader>, (uint16, error)>)(readMSB);
+        r.read = ((Func<ж<Reader>, (uint16, error)>)(readMSB));
     }
     else { /* default: */
         r.err = errors.New(lzwUnknownOrderˢ);

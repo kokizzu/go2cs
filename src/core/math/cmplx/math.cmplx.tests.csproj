@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -82,30 +110,30 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="abs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="asin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="cmath_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="conj.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="exp.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="huge_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="isinf.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="isnan.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="log.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="phase.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="polar.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pow.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="rect.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sin.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sqrt.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tan.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="abs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="asin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cmath_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conj.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="exp.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="huge_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="isinf.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="isnan.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="log.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="phase.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="polar.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pow.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rect.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sqrt.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tan.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/math.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/testing/testing.csproj" />
     <ProjectReference Include="math.cmplx.csproj" />
     <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />

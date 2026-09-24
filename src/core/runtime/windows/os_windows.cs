@@ -6,6 +6,7 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
@@ -15,7 +16,7 @@ partial class runtime_package {
 // TODO(brainman): should not need those
 internal static UntypedInt _NSIG => 65;
 
-[GoType("unsafe_package.Pointer")] partial struct stdFunction;
+[GoType("global::go.unsafe_package.Pointer")] partial struct stdFunction;
 
 //go:cgo_import_dynamic runtime._AddVectoredContinueHandler AddVectoredContinueHandler%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._AddVectoredExceptionHandler AddVectoredExceptionHandler%2 "kernel32.dll"
@@ -903,9 +904,11 @@ internal static void unminit() {
     mp.Value.procid = 0;
 }
 
-// Called from exitm, but not from drop, to undo the effect of thread-owned
+// Called from mexit, but not from dropm, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
 //
+// This always runs without a P, so //go:nowritebarrierrec is required.
+//go:nowritebarrierrec
 //go:nosplit
 internal static void mdestroy(ref m mp) {
     if (mp.highResTimer != 0) {
@@ -961,10 +964,10 @@ internal static uintptr stdcall(stdFunction fn) {
     if ((~mp).profilehz != 0 && (~mp).libcallsp == 0) {
         // leave pc/sp for cpu profiler
         mp.of(m.Ꮡlibcallg).set(gp);
-        mp.Value.libcallpc = getcallerpc();
+        mp.Value.libcallpc = sys.GetCallerPC();
         // sp must be the last, because once async cpu profiler finds
         // all three values to be non-zero, it will use them
-        mp.Value.libcallsp = getcallersp();
+        mp.Value.libcallsp = sys.GetCallerSP();
         resetLibcall = true; // See comment in sys_darwin.go:libcCall
     }
     asmcgocall(asmstdcallAddr, @unsafe.Pointer.FromPinnedBox(mp.of(m.Ꮡlibcall)));
@@ -1092,26 +1095,7 @@ internal static void usleep_no_g(uint32 us) {
     stdcall_no_g(_WaitForSingleObject, len(args), (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡargs.at<uintptr>(0))));
 }
 
-//go:nosplit
-internal static void usleep(uint32 us) {
-    systemstack(() => {
-        uintptr h = default!;
-        uintptr timeout = default!;
-        // If the high-res timer is available and its handle has been allocated for this m, use it.
-        // Otherwise fall back to the low-res one, which doesn't need a handle.
-        if (haveHighResTimer && (~(~getg()).m).highResTimer != 0){
-            h = getg().Value.m.Value.highResTimer;
-            ref var dt = ref heap<int64>(out var Ꮡdt);
-            dt = -10 * (int64)us; // relative sleep (negative), 100ns units
-            stdcall6(_SetWaitableTimer, h, (uintptr)Ꮡdt, 0, 0, 0, 0);
-            timeout = _INFINITE;
-        } else {
-            h = _INVALID_HANDLE_VALUE;
-            timeout = (uintptr)us / 1000; // ms units
-        }
-        stdcall2(_WaitForSingleObject, h, timeout);
-    });
-}
+// go2cs generated this placeholder — func usleep is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static uintptr ctrlHandler(uint32 _type) {
     uint32 s = default!;
@@ -1223,33 +1207,9 @@ internal static void profileLoop() {
     }
 }
 
-internal static void setProcessCPUProfiler(int32 hz) {
-    if (profiletimer == 0) {
-        uintptr timer = default!;
-        if (haveHighResTimer){
-            timer = createHighResTimer();
-        } else {
-            timer = stdcall3(_CreateWaitableTimerA, 0, 0, 0);
-        }
-        atomic.Storeuintptr(Ꮡprofiletimer, timer);
-        newm(profileLoop, nil, -1);
-    }
-}
+// go2cs generated this placeholder — func setProcessCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void setThreadCPUProfiler(int32 hz) {
-    var ms = (int32)0;
-    ref var due = ref heap<int64>(out var Ꮡdue);
-    due = ~(int64)(~(uint64)(((uint64)1 << (int)(63))));
-    if (hz > 0) {
-        ms = 1000 / hz;
-        if (ms == 0) {
-            ms = 1;
-        }
-        due = (int64)ms * -10000;
-    }
-    stdcall6(_SetWaitableTimer, profiletimer, (uintptr)Ꮡdue, (uintptr)ms, 0, 0, 0);
-    atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
-}
+// go2cs generated this placeholder — func setThreadCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal const bool preemptMSupported = true;
 

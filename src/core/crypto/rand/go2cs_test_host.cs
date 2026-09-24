@@ -11,29 +11,29 @@ internal static class Go2CsTestHost
         {
             "example_test.go",
             "rand.go",
-            "rand_batched_test.go",
-            "rand_darwin.go",
-            "rand_getentropy.go",
-            "rand_getrandom.go",
-            "rand_js.go",
-            "rand_plan9.go",
             "rand_test.go",
-            "rand_unix.go",
-            "rand_wasip1.go",
-            "rand_windows.go",
+            "text.go",
+            "text_test.go",
             "util.go",
             "util_test.go",
         });
+        registry.Add("TestAllocations", rand_internal_test_package.TestAllocations, "rand_test.go", 155);
+        registry.Add("TestConcurrentRead", rand_internal_test_package.TestConcurrentRead, "rand_test.go", 126);
         registry.Add("TestInt", rand_test_package.TestInt, "util_test.go", 60);
         registry.Add("TestIntEmptyMaxPanics", rand_test_package.TestIntEmptyMaxPanics, "util_test.go", 133);
         registry.Add("TestIntMask", rand_test_package.TestIntMask, "util_test.go", 102);
         registry.Add("TestIntNegativeMaxPanics", rand_test_package.TestIntNegativeMaxPanics, "util_test.go", 139);
         registry.Add("TestIntReads", rand_test_package.TestIntReads, "util_test.go", 83);
+        registry.Add("TestLargeRead", rand_internal_test_package.TestLargeRead, "rand_test.go", 75);
         registry.Add("TestPrimeBitsLt2", rand_test_package.TestPrimeBitsLt2, "util_test.go", 35);
         registry.Add("TestPrimeNondeterministic", rand_test_package.TestPrimeNondeterministic, "util_test.go", 41);
         registry.Add("TestPrimeSmall", rand_test_package.TestPrimeSmall, "util_test.go", 19);
-        registry.Add("TestRead", rand_internal_test_package.TestRead, "rand_test.go", 14);
-        registry.Add("TestReadEmpty", rand_internal_test_package.TestReadEmpty, "rand_test.go", 34);
+        registry.Add("TestRead", rand_internal_test_package.TestRead, "rand_test.go", 32);
+        registry.Add("TestReadByteValues", rand_internal_test_package.TestReadByteValues, "rand_test.go", 56);
+        registry.Add("TestReadEmpty", rand_internal_test_package.TestReadEmpty, "rand_test.go", 89);
+        registry.Add("TestReadError", rand_internal_test_package.TestReadError, "rand_test.go", 167);
+        registry.Add("TestReadUsesReader", rand_internal_test_package.TestReadUsesReader, "rand_test.go", 110);
+        registry.Add("TestText", rand_test_package.TestText, "text_test.go", 13);
         return TestHost.Run(registry, args);
     }
 }

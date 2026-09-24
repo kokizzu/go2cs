@@ -11,30 +11,6 @@ using go.math.rand;
 
 partial class slices_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸiter() {
-    builtin.initPackage(typeof(iter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() {
-    builtin.initPackage(typeof(go.math.rand.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 public static void TestAll(ж<testing.T> Ꮡt) {
     for (nint size = 0; size < 10; size++) {
         slice<nint> s = default!;
@@ -113,7 +89,7 @@ internal static void testSeq(Func<nint, bool> yield) {
 internal static slice<nint> testSeqResult = new nint[]{0, 2, 4, 6, 8}.slice();
 
 public static void TestAppendSeq(ж<testing.T> Ꮡt) {
-    var s = AppendSeq<slice<nint>, nint>(new nint[]{1, 2}.slice(), testSeq);
+    var s = AppendSeq<slice<nint>, nint>(new nint[]{1, 2}.slice(), new iter.Seq<nint>(testSeq));
     var want = appendꓸꓸꓸ(new nint[]{1, 2}.slice(), testSeqResult);
     if (!Equal<slice<nint>, nint>(s, want)) {
         Ꮡt.Errorf("got %v, want %v"u8, s, want);
@@ -121,7 +97,7 @@ public static void TestAppendSeq(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCollect(ж<testing.T> Ꮡt) {
-    var s = Collect<nint>(testSeq);
+    var s = Collect<nint>(new iter.Seq<nint>(testSeq));
     var want = testSeqResult;
     if (!Equal<slice<nint>, nint>(s, want)) {
         Ꮡt.Errorf("got %v, want %v"u8, s, want);
@@ -208,7 +184,7 @@ public static void TestSortedStableFunc(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestChunk_cases {
+[GoType("dyn")] internal partial struct TestChunk_cases {
     internal @string name;
     internal slice<nint> s;
     internal nint n;
@@ -281,7 +257,7 @@ public static void TestChunk(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestChunkPanics_type {
+[GoType("dyn")] internal partial struct TestChunkPanics_type {
     internal @string name;
     internal slice<EmptyStruct> x;
     internal nint n;

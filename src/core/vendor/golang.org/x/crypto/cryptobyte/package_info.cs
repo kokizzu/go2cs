@@ -59,9 +59,9 @@ using static go.vendor.golang.org.x.crypto.cryptobyte_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1.go", "asn1.cs", "AC4swqqiqJKmgoKCgpaCgsySgoKCloKCzLKCloLKgoKCgpSClKSUgoKUzJKS3rKCgpSSupK2goKUvKKSgriCgoKUgqiCgoKClriCgpaCloKCqKaCkoKCloKCyoKCgpTKgqrYgpSCgoKUruKCuIKClIIAAhDygoKWlLS0pgACEuLkgoKUgvSCgpSCpKS0yIKUlIKUlJTKgoKClJSCgpSCgpSUpqKCgpSClIKUgqaCgoKUpoKCgpSCgqaCgqaCgoKUpoKClJSUlIKClKyygqrCgoKClIKUgqaigoKCuIKUgrqCloKCgqaqwoKCuozCgpSCgpSCloKCgpSUgqrCgoKUgoKClICCpILOwoKClISCgoK4gpSCloCCpriUgqrCgoSWgoKGloKCrNKCgpaCgpSCrLIAAhDSgoKUAAIQ0oKClAACENIAAhDyqsKClKqigq7igoKUgpSqooKUgq7CgoKClIIACwa0gIKU1rSUgpSu8oKCgpSClIKCgpSUlK7igoKCloKClqaygpSE3JaCntKUgriChIKWgoK6lJSUloKUlJaClIKW")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/builder.go", "builder.cs", "ACdKsgAEELIABRCiqqKClKqigpSokqiSqqKokqiSqJKokgALRpKokqiSqJKmwoKEgoSCgpaAkpTK1rSClpKEgpYABxKCgoLogoKUgoKEgoKWhIKWuIKUkoKCpIKkgqSCpIKUgoK6goKCgoKUgpaCgoKUgoKWgpbmooKUgpSClIKClKyygpSClIKClIKUgpQAChzSgoI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/string.go", "string.cs", "ABc0woKUgoKokqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqaigoKUgoKClIKmooKClIKCgpSCgpSCqqKssqyyqsKCgpSCqqKCgoKUqJI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1.go", "asn1.cs", "ABAswqqiqJKmgoKCgpaCgsySgoKCloKCzLKCloLKgoKCgpSClKSUgoKUzJKS3rKCgpSSupK2goKUvKKSgriCgoKUgqiCgoKClriCgpaCloKCqKaCkoKCloKCyoKCgpTKgqrYgpSCgoKUruKCuIKClIIAAhDygoKWlLS0pgACEuLkgoKUgvSCgpSCpKS0yIKUlIKUlJTKgoKClJSCgpSCgpSUpqKCgpSClIKUgqaCgoKUpoKCgpSCgqaCgqaCgoKUpoKClJSUlIKClKyygqrCgoKClIKUgqaigoKCuIKUgrqCloKCgqaqwoKCuozCgpSCgpSCloKCgpSUgqrCgoKUgoKClICCpILOwoKClISCgoK4gpSCloCCpriUgqrCgoSWgoKGloKCrNKCgpaCgpSCrLIAAhDSgoKUAAIQ0oKClAACENIAAhDyqsKClKqigq7igoKUgpSqooKUgq7CgoKClIIACwa0gIKU1rSUgpSu8oKCgpSClIKCgpSUlK7igoKCloKClqaygpSE3JaCntKUgriChIKWgoK6lJSUloKUlJaClIKW", "38-48:1;53-63:1;72-97:1;102-104:1;115-117:1;122-130:1;136-139:1;182-192:1;196-202:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/builder.go", "builder.cs", "ACFKsgAEELIABRCiqqKClKqigpSokqiSqqKokqiSqJKokgALRpKokqiSqJKmwoKEgoSCgpaAkpTK1rSClpKEgpYABxKCgoLogoKUgoKEgoKWhIKWuIKUkoKCpIKkgqSCpIKUgoK6goKCgoKUgpaCgoKUgoKWgpbmooKUgpSClIKClKyygpSClIKClIKUgpQAChzSgoI=", "168-181:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/string.go", "string.cs", "ABc0ooKUgoKokqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqrCgoKUgqaigoKUgoKClIKmooKClIKCgpSCgpSCqqKssqyyqsKCgpSCqqKCgoKUqJI=")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.crypto;
@@ -81,4 +81,19 @@ public static partial class cryptobyte_package
     public partial struct Builder {}
     public partial struct String {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() => builtin.initPackage(typeof(encoding.asn1_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -7,7 +7,7 @@ using context = context_package;
 using poll = @internal.poll_package;
 using windows = @internal.syscall.windows_package;
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
 using @internal;
@@ -219,7 +219,7 @@ internal static readonly @string wsasendˢ = "wsasend"u8;
 
 internal static (int64, error) writeBuffers(this ж<netFD> Ꮡfd, ж<Buffers> Ꮡbuf) {
     var (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Writev(Ꮡbuf.of(Buffers.Ꮡm_value));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(wsasendˢ, err));
 }
 

@@ -10,7 +10,6 @@ partial class time_internal_test_package {
         initᴛErrLocation();
         initᴛLoadTzinfo();
         initᴛNextStdChunk();
-        initᴛTzset();
         initᴛQuote();
         initᴛAppendFormatAny();
         initᴛAppendFormatRFC3339();
@@ -18,7 +17,6 @@ partial class time_internal_test_package {
         initᴛParseRFC3339();
         initᴛorigPlatformZoneSources();
         initᴛDisablePlatformSources();
-        initᴛDaysIn();
         initᴛMinMonoTime();
         initᴛMaxMonoTime();
     }

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestCountMallocs",
+      "class": "deferred",
+      "signature": " allocs, want <=",
+      "reason": "An AllocsPerRun family over 16 Sprintf/Fprintf legs, each bounded by Go's own mallocTest count (0 to 4). 15 of the 16 legs exceed their bound in the converted run; Sprintf(\"\") (no arguments) is the one that passes. DEFERRED, not alloc-count-semantics: the run's unit note reads `counted ... go2cs-runtime object allocations ... an allocation COUNT per run` -- Go's own unit. ONE mechanism is named and read at the 1.24.13 hop, and it is paid by every leg with arguments: the variadic pack. The call site is C# 13 `params Span<any>` (the compiler's stack pack, like Go's non-escaping ...any backing array), and Sprintf/Fprintf's first act, `aʗp.slice()`, copies it to the heap (golib slice.cs `slice<T>(this Span<T>)` -> AllocationCounter.CopyOf) -- one charged array per call where Go allocates none. That it is the no-argument leg that passes is consistent with it. The REST of each leg's surplus is NOT yet attributed (Sprintf(\"xxx\") has no pack and reads 2 against 1), so this entry is deferred on a partially named mechanism and says so.",
+      "want": "0 to 4 allocations per run by leg (Go's mallocTest bounds; 13 of the 16 legs want 0 or 1)",
+      "reading": "15 of 16 legs over, per run (recon run R at the hop; G's pass 3 at 8fc439415f DIVERGED on the same test): Sprintf(\"xxx\") 2/1, Sprintf(\"%x\") 3/0 and 3/1, Sprintf(\"%80000s\") 7/3, Sprintf(\"%s\") 4/1, Sprintf(\"%x %x\") 3/1, Sprintf(\"%g\") 7/1, Fprintf(buf,\"%s\") 3/0, Fprintf(buf,\"%x\") 2/0, 2/0 and 2/1, Fprintf(buf,\"%v\") 11/4 and 7/1, Fprintf(buf,\"%80000s\") 6/2, Fprintf(buf,\"%x %x %x\") 14/0 -- got/want, a LOWER BOUND by the host's own note",
+      "plan": "first the named site: a non-copying slice view over a params span the callee does not retain (Sprintf/Fprintf hand `a` to doPrintf and drop it when the printer is freed), which removes one charged array per call on every leg with arguments; then attribute the remainder leg by leg from the emission, starting with Sprintf(\"xxx\") (no pack, 2 against 1). The entry retires when a run reads every leg within its bound with the counter still charging the path."
+    }
+  ]
+}

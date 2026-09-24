@@ -50,7 +50,7 @@ using static global::go.expvar_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("expvar/expvar_test.go", "expvar_test.cs", "ABswwoKCgpQACAaCgoKC6IKCgoCCpIKWgoKAgqaAgqaCgILIgoSCgsqChIKC+oKCgoKUgpaCgoCCpoCCpoKAgsiChIKCyoKEgoIACgqCgoKAgqaCgJKkgJK4goCS+IKEgoIACQqCgoKCgoSCgJKCloSCgJKC6IKChIKChIKAkoKWgoCCpIKAkoKWgoKAkoKWgoKAgqSCgJKCAAgIooKEgoKCgoCCpICCpICCyoKCgoKUgoKUgoKClILoooKCgoKCgoCCpIKClIKClIK4goSEooLKooKCgoKUloKChIKygoSCggAFEtKCgpaChIKCgvqChIKEooLKgoKCgoKCgsqigoKCgpSWhIKSgoSCgoIABRLSgoKWhIKCgsqCgpKCyqKCgoKClJaChIKigoSCgtyCgqKCgJKkgIKmgoCSAAsIgoKCgoKCgpSCgoKKgIIACgiiooKCgoKClJKCgoKChIKC6MIABRSEgoKWgoKCgpSSgrKCgoKCgpSUlIKCgoKUlIKWhIKClKKCgoKCgpSCgoKCluqWsoKCgoSCgpaC6rKCgoKCgpSCgoKClpTYooKCgoSCgpaU1taigoKUgoKKgg==")]
+[assembly: go.GoPositionMap("expvar/expvar_test.go", "expvar_test.cs", "ABswwoKCgpQACAaCgoKC6IKCgoCCpIKWgoKAgqaAgqaCgILIgoSCgsqChIKC+oKCgoKUgpaCgoCCpoCCpoKAgsiChIKCyoKEgoIACgqCgoKAgqaCgJKkgJK4goCS+IKEgoIACQqCgoKCgoSCgJKCloSCgJKC6IKChIKChIKAkoKWgoCCpIKAkoKWgoKAkoKWgoKAgqSCgJKCAAgIooKEgoKCgoCCpICCpICCyoKCgoKUgoKUgoKClILoooKCgoKCgoCCpIKClIKClIK4goSEooLKooKCgoKUloKChIKygoSCggAFEtKCgpaChIKCgvqChIKEooLKgoKCgoKCgsqigoKCgpSWhIKSgoSCgoIABRLSgoKWhIKCgsqCgpKCyqKCgoKClJaChIKigoSCgtyCgqKCgJKkgIKmgoCSAA8IgoKCgoKCgpSCgoKKgIIACgiiooKCgoKClJKCgoKChIKC6MIABRSEgoKWgoKCgpSSgrKCgoKCgpSUlIKCgoKUlIKWhIKClKKCgoKCgpSCgoKCluqWsoKCgoSCgpaC6rKCgoKCgpSCgoKClpTYooKCgoSCgpaU1taigoKUgoKKgg==", "70-74:1;80-84:1;116-120:1;126-130:1;158-162:1;173-173:1;181-181:2;196-196:1;206-206:2;213-213:3;224-224:4;298-302:1;320-329:1;358-362:1;366-374:1;390-400:1;424-428:1;445-454:1;460-460:1;544-555:1;574-591:2;597-611:3;614-632:4;635-649:5")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -66,4 +66,32 @@ public static partial class expvar_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() => builtin.initPackage(typeof(crypto.sha1_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() => builtin.initPackage(typeof(go.net.http.httptest_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.expvar_package));
+    }
 }

@@ -1013,8 +1013,86 @@ func applyExportedTypeAliases(results [][2]string, info PackageInfo, derived boo
 			derivedTypeAliases.Add(alias)
 		}
 
+		// A `global using` name the SEEDED production metadata already binds to a different target
+		// cannot be re-bound here — see qualifiedImportedTypeAliases for the crypto/ecdh shape and
+		// for what a marked key renders as instead. MARK ONLY WHAT THE WRITER CAN DECLARE: a CONST
+		// key declares no `global using` at all (packageInfoWriter.go skips every one of them, in
+		// the `continue` above the qualified check), so it can never be the second declaration of a
+		// name — while marking it would make getAliasedTypeName return the BARE member, since
+		// isQualified is tested BEFORE isConst there, where the const arm composes
+		// `importQualifier(qualifier) + "." + member` and the two other const paths
+		// (typeNameResolution.go's `_package`-qualified lookup, convIdent.go's) keep composing
+		// theirs. This keeps the invariant structural rather than census-dependent.
+		if _, collides := seededAliasNameCollision(alias, typeName); collides && !constImportedTypeAliases.Contains(alias) {
+			qualifiedImportedTypeAliases.Add(alias)
+		}
+
 		packageLock.Unlock()
 	}
+}
+
+// typeAliasName renders an importedTypeAliases KEY as the `global using` ALIAS NAME it declares.
+// A C# identifier cannot carry a `.`, so each one becomes TypeAliasDot — which is also why two keys
+// that differ only in a `.` position would declare ONE name (see qualifiedImportedTypeAliases).
+func typeAliasName(alias string) string {
+	return strings.ReplaceAll(alias, ".", TypeAliasDot)
+}
+
+// seededAliasNameCollision reports whether recording `alias` -> `typeName` would re-bind a
+// `global using` name the seeded production metadata already binds to something else, returning that
+// production target. Callers hold packageLock; seededGlobalTypeAliases is filled before any variant
+// converts and is not written again, so the read needs no lock of its own.
+func seededAliasNameCollision(alias, typeName string) (string, bool) {
+	if len(seededGlobalTypeAliases) == 0 {
+		return "", false
+	}
+
+	seeded, exists := seededGlobalTypeAliases[typeAliasName(alias)]
+
+	return seeded, exists && seeded != typeName
+}
+
+// parseSeededGlobalTypeAliasLines extracts the `global using <name> = <target>;` declarations from a
+// package-info file's <ImportedTypeAliases> section, keyed by alias NAME. Only that section is read:
+// a `global using` elsewhere in the file is not an imported type alias, and the FILE-LOCAL `using
+// <name> = …;` lines the section also carries (the GoImplicitConv package qualifiers) bind nothing
+// at compilation scope and so collide with nothing.
+func parseSeededGlobalTypeAliasLines(lines []string) map[string]string {
+	aliases := map[string]string{}
+	inSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "<ImportedTypeAliases>") {
+			inSection = true
+			continue
+		}
+
+		if strings.Contains(trimmed, "</ImportedTypeAliases>") {
+			break
+		}
+
+		if !inSection {
+			continue
+		}
+
+		declaration, isGlobal := strings.CutPrefix(trimmed, "global using ")
+
+		if !isGlobal {
+			continue
+		}
+
+		name, target, found := strings.Cut(strings.TrimSuffix(declaration, ";"), " = ")
+
+		if !found {
+			continue
+		}
+
+		aliases[strings.TrimSpace(name)] = strings.TrimSpace(target)
+	}
+
+	return aliases
 }
 
 // loadPackageImplements records a converted package's exported GoImplement pairs from its

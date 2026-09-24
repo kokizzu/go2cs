@@ -29,7 +29,7 @@ using static go.compress.zlib_internal_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("compress/zlib/reader_test.go", "reader_test.cs", "AJYBrgKigoKCgoKClJSmgoKCgpSUgoKogIKkgII=")]
-[assembly: go.GoPositionMap("compress/zlib/writer_test.go", "writer_test.cs", "ABo41IKCgpSSgoKClNakkoKogpLSkoKCgpSSgoKC1oKCgpSmgoKClIKClIKCgvqCgoKCgoKCuoKCgpSUgpSClIKClJaCgoKClIKClISCyoKCgoKCgoKCyoKCgoKCgoKCpoLKgoKCgoKCgoKCpoLKgoKCgoKCgoKCgpSCyoKCgoKCgpSCgoKCgg==")]
+[assembly: go.GoPositionMap("compress/zlib/writer_test.go", "writer_test.cs", "ABo41IKCgpSSgoKClNakkoKogpLSkoKCgpSSgoKC1oKCgpSmgoKClIKClIKCgvqCgoKCgoKCuoKCgpSUgpSClIKClJaCgoKClIKClISCyoKCgoKCgoKCyoKCgoKCgoKCpoLKgoKCgoKCgoKCpoLKgoKCgoKCgoKCgpSCyoKCgoKCgpSCgoKCgg==", "54-67:1")]
 // </GoSourcePositionMaps>
 
 namespace go.compress;
@@ -45,4 +45,19 @@ public static partial class zlib_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

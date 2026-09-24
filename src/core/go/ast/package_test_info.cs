@@ -28,6 +28,12 @@ using go;
 using static global::go.go.ast_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b5820696e743b205920696e747d", "Δtypeᴛ2")]
+[assembly: GoDynamicTypeLift("7374727563747b5820696e743b207920696e747d", "Δtypeᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f6b20626f6f6c7d", "isDirectiveTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6c697374205b5d737472696e673b207465787420737472696e677d", "commentsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820616e793b207320737472696e677d", "testsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b7820696e747d", "Δtype")]
 [assembly: GoTypeAlias("Filter", "ΔFilter")]
 // </ExportedTypeAliases>
 
@@ -46,9 +52,9 @@ using static global::go.go.ast_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/ast/commentmap_test.go", "commentmap_test.cs", "AC3AAYKCgpSmooKCgpSWgoKCgoK6gIKqooKCgpSCgsqCgoKClJaCgIKCgsqCgoKCgoI=")]
-[assembly: global::go.GoPositionMap("go/ast/filter_test.go", "filter_test.cs", "AB9ylIKCgqiCgoKohpKAgqSEgg==")]
-[assembly: global::go.GoPositionMap("go/ast/issues_test.go", "issues_test.cs", "AA4cotyCgoKYkoKClISChIIACQyyADOiAYKCgpaCgg==")]
+[assembly: global::go.GoPositionMap("go/ast/commentmap_test.go", "commentmap_test.cs", "AGLAAYKCgpSmooKCgpSWgoKCgoK6gIKqooKCgpSCgsqCgoKClJaCgIKCgsqCgoKCgoI=")]
+[assembly: global::go.GoPositionMap("go/ast/filter_test.go", "filter_test.cs", "AD1ylIKCgqiCgoKohpKAgqSEgg==")]
+[assembly: global::go.GoPositionMap("go/ast/issues_test.go", "issues_test.cs", "AA4cotyCgoKYkoKClISChIIACQyyAGOiAYKCgpaCgg==", "29-32:1")]
 [assembly: global::go.GoPositionMap("go/ast/walk_test.go", "walk_test.cs", "ABIc3ISCgoKWgoCC")]
 // </GoSourcePositionMaps>
 
@@ -64,6 +70,30 @@ public static partial class ast_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct TestIssue28089_type {}
+    internal partial struct TestIssue28089_type {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸformat() => builtin.initPackage(typeof(global::go.go.format_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.go.ast_package));
+    }
 }

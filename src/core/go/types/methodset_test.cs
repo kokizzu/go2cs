@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.go;
 
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using ast = global::go.go.ast_package;
@@ -15,7 +16,7 @@ using types = global::go.go.types_package;
 
 partial class types_test_package {
 
-[GoType("dyn")] partial struct TestNewMethodSet_method {
+[GoType("dyn")] internal partial struct TestNewMethodSet_method {
     internal @string name;
     internal slice<nint> index;
     internal bool indirect;
@@ -105,7 +106,7 @@ public static void TestNewMethodSet(ж<testing.T> Ꮡt) {
                 }
             }
             {
-                var (got, want) = (sel.Index(), m.index); if (!sameSlice(got, want)) {
+                var (got, want) = (sel.Index(), m.index); if (!slices.Equal<slice<nint>, nint>(got, want)) {
                     Ꮡt.Errorf("%s [method %d]: got index = %v, want %v"u8, src, i, got, want);
                 }
             }

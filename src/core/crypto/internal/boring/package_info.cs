@@ -52,7 +52,7 @@ using static go.crypto.@internal.boring_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/boring/notboring.go", "notboring.cs", "ACMo2KrogMiAooCigKKAooCkgKKAooCigKKApICkgKKAAAoKgqSCpIKkgqSCAAoMgqSCpIKkgqSCpIKkgqSCpICigqSCpIKkggAIDICigKKAooCigKKA")]
+[assembly: go.GoPositionMap("crypto/internal/boring/notboring.go", "notboring.cs", "ABEo2KrogMiAooCigKKAooCkgKKAooCigKKApICkgKKAooAACgqCpIKkgqSCpIIACgyCpIKkgqSCpIKkgqSCpIKkgKKCpIKkgqSCAAgMgKKAooCigKKAooA=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;
@@ -76,4 +76,16 @@ public static partial class boring_package
     public partial struct PublicKeyRSA {}
     public partial struct randReader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    // </ImportInitializers>
 }

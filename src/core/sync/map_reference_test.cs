@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
+using isync = @internal.sync_package;
 using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using go.sync;
@@ -28,6 +29,7 @@ partial class sync_test_package {
 
 internal static mapInterface _ᴛ1ʗ = new sync_test_package.RWMutexMapжmapInterface(Ꮡ(new RWMutexMap(nil)));
 internal static mapInterface _ᴛ2ʗ = new sync_test_package.DeepCopyMapжmapInterface(Ꮡ(new DeepCopyMap(nil)));
+internal static mapInterface _ᴛ3ʗ = new sync_test_package.sync_HashTrieMapжmapInterface(Ꮡ(new isync.HashTrieMap<any, any>(nil)));
 
 // RWMutexMap is an implementation of mapInterface using a sync.RWMutex.
 [GoType] partial struct RWMutexMap {
@@ -182,15 +184,16 @@ public static void Range(this ж<RWMutexMap> Ꮡm, Func<any, any, bool> f) {
 
 public static void Clear(this ж<RWMutexMap> Ꮡm) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
         Ꮡm.of(RWMutexMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(RWMutexMap.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         clear(m.dirty);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡm.of(RWMutexMap.Ꮡmu).Unlock(); ᒐ.Run(); }
 }
 
 // DeepCopyMap is an implementation of mapInterface using a Mutex and
@@ -211,11 +214,13 @@ public static (any value, bool ok) Load(this ж<DeepCopyMap> Ꮡm, any key) {
 }
 
 public static void Store(this ж<DeepCopyMap> Ꮡm, any key, any value) {
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+    ref var m = ref Ꮡm.DerefOrNull();
+
+    m.mu.Lock();
     var dirty = Ꮡm.dirty();
     dirty[key] = value;
     Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock();
+    m.mu.Unlock();
 }
 
 public static (any actual, bool loaded) LoadOrStore(this ж<DeepCopyMap> Ꮡm, any key, any value) {
@@ -228,7 +233,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<DeepCopyMap> Ꮡm, a
     if (loaded) {
         return (actual, loaded);
     }
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+    m.mu.Lock();
     // Reload clean in case it changed while we were waiting on m.mu.
     (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
     (actual, loaded) = clean[key, ꟷ];
@@ -238,7 +243,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<DeepCopyMap> Ꮡm, a
         actual = value;
         Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
     }
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock();
+    m.mu.Unlock();
     return (actual, loaded);
 }
 
@@ -246,12 +251,13 @@ public static (any previous, bool loaded) Swap(this ж<DeepCopyMap> Ꮡm, any ke
     any previous = default!;
     bool loaded = default!;
 
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+    ref var m = ref Ꮡm.DerefOrNull();
+    m.mu.Lock();
     var dirty = Ꮡm.dirty();
     (previous, loaded) = dirty[key, ꟷ];
     dirty[key] = value;
     Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock();
+    m.mu.Unlock();
     return (previous, loaded);
 }
 
@@ -259,34 +265,39 @@ public static (any value, bool loaded) LoadAndDelete(this ж<DeepCopyMap> Ꮡm, 
     any value = default!;
     bool loaded = default!;
 
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+    ref var m = ref Ꮡm.DerefOrNull();
+    m.mu.Lock();
     var dirty = Ꮡm.dirty();
     (value, loaded) = dirty[key, ꟷ];
     delete(dirty, key);
     Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock();
+    m.mu.Unlock();
     return (value, loaded);
 }
 
 public static void Delete(this ж<DeepCopyMap> Ꮡm, any key) {
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+    ref var m = ref Ꮡm.DerefOrNull();
+
+    m.mu.Lock();
     var dirty = Ꮡm.dirty();
     delete(dirty, key);
     Ꮡm.of(DeepCopyMap.Ꮡclean).Store(dirty);
-    Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock();
+    m.mu.Unlock();
 }
 
 public static bool /*swapped*/ CompareAndSwap(this ж<DeepCopyMap> Ꮡm, any key, any old, any @new) {
     bool swapped = default!;
     GoFrame ᒐ = default;
     try {
+        ref var m = ref Ꮡm.DerefOrNull();
+
         var (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
         {
             var (previous, ok) = clean[key, ꟷ]; if (!ok || !AreEqual(previous, old)) {
                 swapped = false; goto ᒐdone;
             }
         }
-        Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
         var dirty = Ꮡm.dirty();
         var (value, loaded) = dirty[key, ꟷ];
@@ -306,13 +317,15 @@ public static bool /*deleted*/ CompareAndDelete(this ж<DeepCopyMap> Ꮡm, any k
     bool deleted = default!;
     GoFrame ᒐ = default;
     try {
+        ref var m = ref Ꮡm.DerefOrNull();
+
         var (clean, _) = Ꮡm.of(DeepCopyMap.Ꮡclean).Load()._<map<any, any>>(ᐧ);
         {
             var (previous, ok) = clean[key, ꟷ]; if (!ok || !AreEqual(previous, old)) {
                 deleted = false; goto ᒐdone;
             }
         }
-        Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
         var dirty = Ꮡm.dirty();
         var (value, loaded) = dirty[key, ꟷ];
@@ -348,13 +361,16 @@ internal static map<any, any> dirty(this ж<DeepCopyMap> Ꮡm) {
 
 public static void Clear(this ж<DeepCopyMap> Ꮡm) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
-        Ꮡm.of(DeepCopyMap.Ꮡmu).Lock();
-        defer(Ꮡm.of(DeepCopyMap.Ꮡmu).Unlock, ref ᒐ);
+        ref var m = ref Ꮡm.DerefOrNull();
+
+        m.mu.Lock();
+        ᒐd1 = true;
         Ꮡm.of(DeepCopyMap.Ꮡclean).Store(((map<any, any>)default!));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡm.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 } // end sync_test_package

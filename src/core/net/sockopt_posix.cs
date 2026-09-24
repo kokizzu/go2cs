@@ -5,7 +5,7 @@
 namespace go;
 
 using bytealg = @internal.bytealg_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -83,19 +83,19 @@ done:
 
 internal static error setReadBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_RCVBUF, bytes);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setWriteBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_SNDBUF, bytes);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setKeepAlive(ж<netFD> Ꮡfd, bool keepalive) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, boolint(keepalive));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -109,7 +109,7 @@ internal static error setLinger(ж<netFD> Ꮡfd, nint sec) {
         l.ΔLinger = 0;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptLinger(syscall.SOL_SOCKET, syscall.SO_LINGER, Ꮡl);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

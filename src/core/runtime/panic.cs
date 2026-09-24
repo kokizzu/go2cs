@@ -6,12 +6,11 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
+using sys = @internal.runtime.sys_package;
 using stringslite = @internal.stringslite_package;
-using sys = runtime.@internal.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -100,13 +99,13 @@ internal static readonly @string indexOutOfRangeˢ = "index out of range"u8;
 //
 //go:yeswritebarrierrec
 internal static void goPanicIndex(nint x, nint y) {
-    panicCheck1(getcallerpc(), indexOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), indexOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsIndex));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicIndexU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), indexOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), indexOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsIndex));
 }
 
@@ -117,25 +116,25 @@ internal static readonly @string sliceBoundsOutOfRangeˢ = "slice bounds out of 
 //
 //go:yeswritebarrierrec
 internal static void goPanicSliceAlen(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceAlen));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAlenU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceAlen));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAcap(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceAcap));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAcapU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceAcap));
 }
 
@@ -143,56 +142,56 @@ internal static void goPanicSliceAcapU(nuint x, nint y) {
 //
 //go:yeswritebarrierrec
 internal static void goPanicSliceB(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceB));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceBU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceB));
 }
 
 // failures in the comparisons for s[::x], 0 <= x <= y (y == len(s) or cap(s))
 internal static void goPanicSlice3Alen(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3Alen));
 }
 
 internal static void goPanicSlice3AlenU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3Alen));
 }
 
 internal static void goPanicSlice3Acap(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3Acap));
 }
 
 internal static void goPanicSlice3AcapU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3Acap));
 }
 
 // failures in the comparisons for s[:x:y], 0 <= x <= y
 internal static void goPanicSlice3B(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3B));
 }
 
 internal static void goPanicSlice3BU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3B));
 }
 
 // failures in the comparisons for s[x:y:], 0 <= x <= y
 internal static void goPanicSlice3C(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3C));
 }
 
 internal static void goPanicSlice3CU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
+    panicCheck1(sys.GetCallerPC(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3C));
 }
 
@@ -201,7 +200,7 @@ internal static readonly @string sliceLengthTooShortToˢ = "slice length too sho
 
 // failures in the conversion ([x]T)(s) or (*[x]T)(s), 0 <= x <= y, y == len(s)
 internal static void goPanicSliceConvert(nint x, nint y) {
-    panicCheck1(getcallerpc(), sliceLengthTooShortToˢ);
+    panicCheck1(sys.GetCallerPC(), sliceLengthTooShortToˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsConvert));
 }
 
@@ -248,7 +247,7 @@ internal static readonly @string negativeShiftAmountˢ = "negative shift amount"
 
 //go:yeswritebarrierrec
 internal static void panicshift() {
-    panicCheck1(getcallerpc(), negativeShiftAmountˢ);
+    panicCheck1(sys.GetCallerPC(), negativeShiftAmountˢ);
     throw panic(shiftError);
 }
 
@@ -313,11 +312,11 @@ internal static void deferproc(Action fn) {
     d.Value.link = gp.Value._defer;
     gp.Value._defer = d;
     d.Value.fn = fn;
-    d.Value.pc = getcallerpc();
-    // We must not be preempted between calling getcallersp and
-    // storing it to d.sp because getcallersp's result is a
+    d.Value.pc = sys.GetCallerPC();
+    // We must not be preempted between calling GetCallerSP and
+    // storing it to d.sp because GetCallerSP's result is a
     // uintptr stack pointer.
-    d.Value.sp = getcallersp();
+    d.Value.sp = sys.GetCallerSP();
     // deferproc returns 0 normally.
     // a deferred func that stops a panic
     // makes the deferproc return 1.
@@ -435,7 +434,7 @@ internal static any deferrangefunc() {
         // go code on the system stack can't defer
         @throw(deferOnSystemStackˢ);
     }
-    var fn = findfunc(getcallerpc());
+    var fn = findfunc(sys.GetCallerPC());
     if (fn.deferreturn == 0) {
         @throw(noDeferreturnˢ);
     }
@@ -443,10 +442,10 @@ internal static any deferrangefunc() {
     d.Value.link = gp.Value._defer;
     gp.Value._defer = d;
     d.Value.pc = fn.entry() + (uintptr)fn.deferreturn;
-    // We must not be preempted between calling getcallersp and
-    // storing it to d.sp because getcallersp's result is a
+    // We must not be preempted between calling GetCallerSP and
+    // storing it to d.sp because GetCallerSP's result is a
     // uintptr stack pointer.
-    d.Value.sp = getcallersp();
+    d.Value.sp = sys.GetCallerSP();
     d.Value.rangefunc = true;
     d.Value.head = @new<atomic.Pointer<_defer>>();
     return (~d).head.OrTypedNil();
@@ -465,7 +464,7 @@ internal static readonly @string deferAfterRangeFuncˢ = "defer after range func
 internal static void deferprocat(Action fn, any frame) {
     var head = frame._<ж<atomic.Pointer<_defer>>>();
     if (raceenabled) {
-        racewritepc(@unsafe.Pointer.FromPinnedBox(head), getcallerpc(), abi.FuncPCABIInternal(deferprocat));
+        racewritepc(@unsafe.Pointer.FromPinnedBox(head), sys.GetCallerPC(), abi.FuncPCABIInternal(deferprocat));
     }
     var d1 = newdefer();
     d1.Value.fn = fn;
@@ -490,7 +489,7 @@ internal static void deferconvert(ж<_defer> Ꮡd0) {
 
     var head = d0.head;
     if (raceenabled) {
-        racereadpc(@unsafe.Pointer.FromPinnedBox(head), getcallerpc(), abi.FuncPCABIInternal(deferconvert));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(head), sys.GetCallerPC(), abi.FuncPCABIInternal(deferconvert));
     }
     var tail = d0.link;
     d0.rangefunc = false;
@@ -535,8 +534,8 @@ internal static void deferprocStack(ж<_defer> Ꮡd) {
     // are initialized here.
     d.heap = false;
     d.rangefunc = false;
-    d.sp = getcallersp();
-    d.pc = getcallerpc();
+    d.sp = sys.GetCallerSP();
+    d.pc = sys.GetCallerPC();
     // The lines below implement:
     //   d.panic = nil
     //   d.fd = nil
@@ -642,7 +641,7 @@ internal static void popDefer(ref g gp) {
 internal static void deferreturn() {
     ref var Δp = ref heap(new _panic(), out var Ꮡp);
     Δp.deferreturn = true;
-    Ꮡp.start(getcallerpc(), (@unsafe.Pointer)getcallersp());
+    Ꮡp.start(sys.GetCallerPC(), (@unsafe.Pointer)sys.GetCallerSP());
     while (ᐧ) {
         var (fn, ok) = Ꮡp.nextDefer();
         if (!ok) {
@@ -826,7 +825,7 @@ internal static void gopanic(any e) {
     ref var Δp = ref heap(new _panic(), out var Ꮡp);
     Δp.arg = e;
     ᏑrunningPanicDefers.Add(1);
-    Ꮡp.start(getcallerpc(), (@unsafe.Pointer)getcallersp());
+    Ꮡp.start(sys.GetCallerPC(), (@unsafe.Pointer)sys.GetCallerSP());
     while (ᐧ) {
         var (fn, ok) = Ꮡp.nextDefer();
         if (!ok) {
@@ -863,8 +862,8 @@ internal static void start(this ж<_panic> Ꮡp, uintptr pc, @unsafe.Pointer sp)
     // that have been recovered. Also, so that if p is from Goexit, we
     // can restart its defer processing loop if a recovered panic tries
     // to jump past it.
-    Δp.startPC = getcallerpc();
-    Δp.startSP = (@unsafe.Pointer)getcallersp();
+    Δp.startPC = sys.GetCallerPC();
+    Δp.startSP = (@unsafe.Pointer)sys.GetCallerSP();
     if (Δp.deferreturn) {
         Δp.sp = sp;
         {
@@ -1063,6 +1062,36 @@ internal static void sync_fatal(@string s) {
     fatal(s);
 }
 
+//go:linkname rand_fatal crypto/rand.fatal
+internal static void rand_fatal(@string s) {
+    fatal(s);
+}
+
+//go:linkname sysrand_fatal crypto/internal/sysrand.fatal
+public static void sysrand_fatal(@string s) {
+    fatal(s);
+}
+
+//go:linkname fips_fatal crypto/internal/fips140.fatal
+public static void fips_fatal(@string s) {
+    fatal(s);
+}
+
+//go:linkname maps_fatal internal/runtime/maps.fatal
+internal static void maps_fatal(@string s) {
+    fatal(s);
+}
+
+//go:linkname internal_sync_throw internal/sync.throw
+internal static void internal_sync_throw(@string s) {
+    @throw(s);
+}
+
+//go:linkname internal_sync_fatal internal/sync.fatal
+internal static void internal_sync_fatal(@string s) {
+    fatal(s);
+}
+
 // go2cs generated this placeholder — func throw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func fatal is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -1108,7 +1137,7 @@ internal static void recovery(ж<g> Ꮡgp) {
         // frames that we've already processed.
         //
         // There's a similar issue with nested panics, when the inner
-        // panic supercedes the outer panic. Again, we end up needing to
+        // panic supersedes the outer panic. Again, we end up needing to
         // walk the same stack frames.
         //
         // These are probably pretty rare occurrences in practice, and
@@ -1212,8 +1241,8 @@ internal static void recovery(ж<g> Ꮡgp) {
 //
 //go:nosplit
 internal static void fatalthrow(throwType t) {
-    var pc = getcallerpc();
-    var sp = getcallersp();
+    var pc = sys.GetCallerPC();
+    var sp = sys.GetCallerSP();
     var gp = getg();
     if ((~(~gp).m).throwing == throwTypeNone) {
         gp.Value.m.Value.throwing = t;
@@ -1243,8 +1272,8 @@ internal static void fatalthrow(throwType t) {
 //
 //go:nosplit
 internal static void fatalpanic(ж<_panic> Ꮡmsgs) {
-    var pc = getcallerpc();
-    var sp = getcallersp();
+    var pc = sys.GetCallerPC();
+    var sp = sys.GetCallerSP();
     var gp = getg();
     bool docrash = default!;
     // Switch to the system stack to avoid any stack growth, which

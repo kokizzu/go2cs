@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,17 +80,35 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
+    <Compile Include="abs_test.cs" />
     <Compile Include="example_test.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="export_windows_test.cs" />
     <Compile Include="format_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="internal_test.cs" />
+    <Compile Include="linkname_test.cs" />
     <Compile Include="mono_test.cs" />
     <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
@@ -92,46 +122,48 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="embed.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_android_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="export_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="format.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="format_rfc3339.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="format_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="genzabbrs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="internal_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mono_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sleep.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sleep_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sys_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sys_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="sys_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/2020b_Europe_Berlin" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/2021a_America_Nuuk" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/2021a_Asia_Gaza" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/2021a_Europe_Dublin" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tick.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tick_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="time.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="time_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="tzdata_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_abbrs_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_android.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_android_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_goroot.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_ios.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_js.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_plan9.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_read.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_unix.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_unix_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_wasip1.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_windows.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="zoneinfo_windows_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="abs_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="embed.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_android_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="export_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="format.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="format_rfc3339.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="format_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="genzabbrs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="internal_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="linkname_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mono_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sleep.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sleep_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sys_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sys_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sys_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/2020b_Europe_Berlin" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/2021a_America_Nuuk" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/2021a_Asia_Gaza" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/2021a_Europe_Dublin" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tick.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tick_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="time.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="time_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tzdata_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_abbrs_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_android.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_android_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_goroot.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_ios.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_read.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="zoneinfo_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -142,6 +174,8 @@
     <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/runtime/math/internal.runtime.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/registry/internal.syscall.windows.registry.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
@@ -151,7 +185,6 @@
     <ProjectReference Include="$(go2csPath)core/math/rand/math.rand.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
     <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/internal/math/runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
     <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />

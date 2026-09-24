@@ -36,11 +36,16 @@ using static go.crypto.cipher_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<aesCtrWrapper, Stream>]
 [assembly: GoImplement<cbcDecrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<cbcEncrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<cfb, Stream>(Pointer = true)]
 [assembly: GoImplement<ctr, Stream>(Pointer = true)]
-[assembly: GoImplement<gcm, AEAD>(Pointer = true)]
+[assembly: GoImplement<gcmFallback, AEAD>(Pointer = true)]
+[assembly: GoImplement<gcmWithRandomNonce, AEAD>]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes.gcm_package.GCM, AEAD>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.CBCDecrypter, BlockMode>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.CBCEncrypter, BlockMode>(Pointer = true)]
 [assembly: GoImplement<ofb, Stream>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -55,12 +60,12 @@ using static go.crypto.cipher_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/cipher/cbc.go", "cbc.cs", "ACQ2ggARKrKClICCpK7CgpSmgKSCgpSClIKWhJSCloKCqKaCgpQADCCygpSAgqSuwoKUpoCkgoKUgpSClIK6goKWloKChIKCqIKWpoKClA==")]
-[assembly: go.GoPositionMap("crypto/cipher/cfb.go", "cfb.cs", "ABUugoKUgpSCgoKWypSCgpSCgr6yrLKmgpKUlO6E")]
-[assembly: go.GoPositionMap("crypto/cipher/ctr.go", "ctr.cs", "ACJOooCCpIKUgoKUAAcQgoKCgoKCgpaCgoK4gqaCgpSClIKClIKCgg==")]
-[assembly: go.GoPositionMap("crypto/cipher/gcm.go", "gcm.cs", "AFOqAeIAAhTyAAIWAAgC9oKCloKWgIKmgpaChN64hIKClgAHFIKmgqaCgpSCloKClpKEgoSEgoKEyoKCuIKWgpSCloKEkoSChIKEgoKWyoKWhKiSgoKopKiyloKCAAcSgpYABxKyhIKCgrqCgoKCgrqEgoKoqsKCgoKCvKKChIKCgrzCgq7ygIKUgqSCqLKEgoKEgoKWgoKCvgALDoKClIKCgoKCvMKCgoSChISChA==")]
-[assembly: go.GoPositionMap("crypto/cipher/io.go", "io.cs", "ABkmsoKCAA0csoKCgpKUqqKAgqQ=")]
-[assembly: go.GoPositionMap("crypto/cipher/ofb.go", "ofb.cs", "ABQwsoKClIKClN6CpoKCgoKUgoKCgoKUgqaCgpSClIKClIKCgg==")]
+[assembly: go.GoPositionMap("crypto/cipher/cbc.go", "cbc.cs", "ABs6ggAQKLKClICCpIKUgIKkrsKClKaApIKClIKUgpSAgqaElIKWgoKopoKClAALHrKClICCpIKUgIKkrsKClKaApIKClIKUgpSAgqSCuoKClpaCgoSCgqiClqaCgpQ=")]
+[assembly: go.GoPositionMap("crypto/cipher/cfb.go", "cfb.cs", "ABcwgoKUgpSCgoKWypSCgpSCggADGgAJAoKUAAIYAAkCgpSmgpKUlO6E")]
+[assembly: go.GoPositionMap("crypto/cipher/ctr.go", "ctr.cs", "ACVSooCCpIKUgIKkgpSCgpQADBqCpoKCgoKCgoKWgoKCuIKmgoKUgpSAgqSCgpSCgoI=")]
+[assembly: go.GoPositionMap("crypto/cipher/gcm.go", "gcm.cs", "ABw84oKUAAIU8oKUAAIWAAgCgpTWgoKCgpS4goKUAAUaAAoCgoKUgoKU7oKmgqaCgpaCgpSClIIAFzKCgpaCpoKClIKWgoKUgtyCgoKClIKWgoKUAA4UgoKUgpSAgqSClAALGIKmgqaCgpSClIKWgoKUgpaigoKEhIKChMqCgpSCloKUgpaCgpSClqKCgoSChIKCyoKWhKaigoKUgoKCuKKCgoKEgoKUgoKCuKKCpqKCgoKCrvKAgpSCpII=")]
+[assembly: go.GoPositionMap("crypto/cipher/io.go", "io.cs", "ABMmsoKCAA0csoKCgpKUqqKAgqQ=")]
+[assembly: go.GoPositionMap("crypto/cipher/ofb.go", "ofb.cs", "ABY+AAkCgpaCgpSCgpTegqaCgoKClIKCgoKClIKmgoKUgpSCgpSCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -79,13 +84,14 @@ public static partial class cipher_package
     internal partial interface cbcEncAble {}
     internal partial interface ctrAble {}
     internal partial interface gcmAble {}
+    internal partial struct aesCtrWrapper {}
     internal partial struct cbc {}
     internal partial struct cbcDecrypter {}
     internal partial struct cbcEncrypter {}
     internal partial struct cfb {}
     internal partial struct ctr {}
-    [GoValueClone("productTable")] internal partial struct gcm {}
-    internal partial struct gcmFieldElement {}
+    internal partial struct gcmFallback {}
+    internal partial struct gcmWithRandomNonce {}
     internal partial struct ofb {}
     public partial interface AEAD {}
     public partial interface Block {}
@@ -94,4 +100,20 @@ public static partial class cipher_package
     public partial struct StreamReader {}
     public partial struct StreamWriter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸaes() => builtin.initPackage(typeof(go.crypto.@internal.fips140.aes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸaesꓸgcm() => builtin.initPackage(typeof(go.crypto.@internal.fips140.aes.gcm_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

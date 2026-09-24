@@ -12,10 +12,11 @@ using hex = encoding.hex_package;
 using errors = errors_package;
 using io = io_package;
 using fs = go.io.fs_package;
+using maps = maps_package;
 using os = os_package;
 using path = path_package;
-using reflect = reflect_package;
 using slices = slices_package;
+using sort = sort_package;
 using strings = strings_package;
 using testing = testing_package;
 using fstest = go.testing.fstest_package;
@@ -761,7 +762,7 @@ public static void TestPaxXattrs(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    if (!reflect.DeepEqual((~hdr).Xattrs, xattrs)) {
+    if (!maps.Equal<map<@string, @string>, map<@string, @string>, @string, @string>((~hdr).Xattrs, xattrs)) {
         Ꮡt.Fatalf("xattrs did not survive round trip: got %+v, want %+v"u8,
             (~hdr).Xattrs, xattrs);
     }
@@ -1484,51 +1485,81 @@ public static void TestFileWriter(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string subfolderˢ = "subfolder"u8;
+
 public static void TestWriterAddFS(ж<testing.T> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
     var fsys = new fstest.MapFS(new map<@string, ж<fstest.MapFile>>{
+        ["emptyfolder"u8] = Ꮡ(new fstest.MapFile(Mode: (fs.FileMode)(493 | os.ModeDir))),
         ["file.go"u8] = Ꮡ(new fstest.MapFile(Data: slice<byte>("hello"u8))),
         ["subfolder/another.go"u8] = Ꮡ(new fstest.MapFile(Data: slice<byte>("world"u8)))
     });
+    // Notably missing here is the "subfolder" directory. This makes sure even
+    // if we don't have a subfolder directory listed.
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     var tw = NewWriter(new tar_test_package.bytes_BufferжWriter(Ꮡbuf));
     {
-        var errΔ1 = tw.AddFS(fsys); if (errΔ1 != default!) {
-            Ꮡt.Fatal(errΔ1);
+        var err = tw.AddFS(fsys); if (err != default!) {
+            Ꮡt.Fatal(err);
         }
     }
+    {
+        var err = tw.Close(); if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+    }
+    // Add subfolder into fsys to match what we'll read from the tar.
+    fsys[subfolderˢ] = Ꮡ(new fstest.MapFile(Mode: (fs.FileMode)(365 | os.ModeDir)));
     // Test that we can get the files back from the archive
     var tr = NewReader(new tar_test_package.bytes_BufferжReader(Ꮡbuf));
-    var (entries, err) = fsys.ReadDir("."u8);
-    if (err != default!) {
-        Ꮡt.Fatal(err);
+    var names = new slice<@string>(0, len(fsys));
+    foreach (var (name, _) in fsys) {
+        names = append(names, name);
     }
-    @string curfname = default!;
-    foreach (var (_, entry) in entries) {
-        curfname = entry.Name();
-        if (entry.IsDir()) {
-            curfname += "/"u8;
-            continue;
+    sort.Strings(names);
+    nint entriesLeft = len(fsys);
+    foreach (var (_, name) in names) {
+        entriesLeft--;
+        var (entryInfo, err) = fsys.Stat(name);
+        if (err != default!) {
+            Ꮡt.Fatalf("getting entry info error: %v"u8, err);
         }
-        var (hdr, errΔ2) = tr.Next();
-        if (AreEqual(errΔ2, io.EOF)) {
+        (var hdr, err) = tr.Next();
+        if (AreEqual(err, io.EOF)) {
             break; // End of archive
         }
-        if (errΔ2 != default!) {
-            Ꮡt.Fatal(errΔ2);
+        if (err != default!) {
+            Ꮡt.Fatal(err);
         }
-        (var data, errΔ2) = io.ReadAll(new global::go.archive.tar_package.ReaderжReader(tr));
-        if (errΔ2 != default!) {
-            Ꮡt.Fatal(errΔ2);
+        @string tmpName = name;
+        if (entryInfo.IsDir()) {
+            tmpName += "/"u8;
         }
-        if ((~hdr).Name != curfname) {
-            Ꮡt.Fatalf("got filename %v, want %v"u8,
-                curfname, (~hdr).Name);
+        if ((~hdr).Name != tmpName) {
+            Ꮡt.Errorf("test fs has filename %v; archive header has %v"u8,
+                name, (~hdr).Name);
         }
-        var origdata = fsys[curfname].Value.Data;
+        if (entryInfo.Mode() != hdr.FileInfo().Mode()) {
+            Ꮡt.Errorf("%s: test fs has mode %v; archive header has %v"u8,
+                name, entryInfo.Mode(), hdr.FileInfo().Mode());
+        }
+        if (entryInfo.IsDir()) {
+            continue;
+        }
+        (var data, err) = io.ReadAll(new global::go.archive.tar_package.ReaderжReader(tr));
+        if (err != default!) {
+            Ꮡt.Fatal(err);
+        }
+        var origdata = fsys[name].Value.Data;
         if (((sstring)data) != ((sstring)origdata)) {
-            Ꮡt.Fatalf("got file content %v, want %v"u8,
+            Ꮡt.Fatalf("test fs has file content %v; archive header has %v"u8,
                 data, origdata);
         }
+    }
+    if (entriesLeft > 0) {
+        Ꮡt.Fatalf("not all entries are in the archive"u8);
     }
 }
 

@@ -27,6 +27,7 @@ using go;
 using static global::go.syscall_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73747220737472696e673b2077737472205b5d75696e7431367d", "wtf8testsᴛ1")]
 [assembly: GoTypeAlias("Handle", "ΔHandle")]
 [assembly: GoTypeAlias("Signal", "ΔSignal")]
 [assembly: GoTypeAlias("Sockaddr", "ΔSockaddr")]
@@ -48,10 +49,10 @@ using static global::go.syscall_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("syscall/exec_windows_test.go", "exec_windows_test.cs", "AEIiggAWMoKAggALCqKogpaUgoKClIKCgpSqgoKCgpSSgqqCgoKkgpSEgqaCgoKUgoKUgJI=")]
-[assembly: go.GoPositionMap("syscall/syscall_test.go", "syscall_test.cs", "ABsegoKClIKClIL4gpSqooSCgoLogoKUgoCCpII=")]
-[assembly: go.GoPositionMap("syscall/syscall_windows_test.go", "syscall_windows_test.cs", "AB4kgoSCgpSCgoKUlIKClOiCgoKUggAMCIKEgoKClISOlIKCgpSCgpaCuIIACAaigoKUgoKClIKCgoLWgoIADAiCgoKEhgADHoKCgpSCgoKCmAADFoKCgoKClIKCloKCloKCgoK4AAgMgoSCgpSCgriE1oKCgpT4wrqCgpSCgoKWgoKCgIK2grqCgoKUlIKCgpToooKCgoKCgoSCgoKClJSEgpSC")]
-[assembly: go.GoPositionMap("syscall/wtf8_windows_test.go", "wtf8_windows_test.cs", "AJEBjAKCspKCgoLcgrKSgoLcooKUlIKCuIKC3KKCgpSCgoK4goK4goI=")]
+[assembly: go.GoPositionMap("syscall/exec_windows_test.go", "exec_windows_test.cs", "ABgiggAWMoKAggALCqKogpaUgoKClIKCgpSqgoKCgpSSgqqCgoKkgpSEgqaCgoKUgoKUgJI=", "82-85:1")]
+[assembly: go.GoPositionMap("syscall/syscall_test.go", "syscall_test.cs", "AA8egoKClIKClIL4gpSqooSCgoLogoKUgoCCpII=")]
+[assembly: go.GoPositionMap("syscall/syscall_windows_test.go", "syscall_windows_test.cs", "ABskgoSCgoKClIQACh6CgoKUgvqCgoKUggAMCIKEgoKClISOlIKCgpSCgpaCuIIACAaigoKUgoKClIKCgoLWgoIADAiCgoKEhgARHoKCgpSCgoKCmAANFoKCgoKClIKCloKCloKCgoK4tIK6goSCgpSCgpamgoKClPjCuoKClIKCgpaCgoKAgraCuoKCgpSUgoKClOiigoKCgoKChIKCgoKUlISClII=", "246-257:1;247-256:1.1;248-252:1.1.1;259-265:2;266-272:3;284-300:1")]
+[assembly: go.GoPositionMap("syscall/wtf8_windows_test.go", "wtf8_windows_test.cs", "AIUBjAKCspKCgoLcgrKSgoLcooKUlIKCuIKC3KKCgpSCgoK4goK4goI=", "136-142:1;148-153:1;161-174:1;182-199:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -66,8 +67,37 @@ public static partial class syscall_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestEscapeArg_type {}
+    internal partial struct TestOpen_tests {}
+    [GoLocalName("X")] [GoValueClone("fd", "pad")] internal partial struct TestWin32finddata_X {}
     internal partial struct wtf8testsᴛ1 {}
-    public partial struct TestEscapeArg_type {}
-    [GoLocalName("X")] [GoValueClone("fd", "pad")] public partial struct TestWin32finddata_X {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.syscall_package));
+    }
 }

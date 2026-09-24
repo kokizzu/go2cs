@@ -3,39 +3,17 @@
 // license that can be found in the LICENSE file.
 namespace go.os;
 
+using errors = errors_package;
 using fmt = fmt_package;
 using windows = @internal.syscall.windows_package;
 using registry = @internal.syscall.windows.registry_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
 using @internal.syscall;
 using @internal.syscall.windows;
 
 partial class user_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
-    builtin.initPackage(typeof(@internal.syscall.windows_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() {
-    builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 internal static (bool, error) isDomainJoined() {
     ref var domain = ref heap<ж<uint16>>(out var Ꮡdomain);
@@ -93,20 +71,81 @@ internal static (@string, error) getProfilesDirectory() {
     }
 }
 
+internal static bool isServiceAccount(ж<syscall.SID> Ꮡsid) {
+    if (!windows.IsValidSid(Ꮡsid)) {
+        // We don't accept SIDs from the public API, so this should never happen.
+        // Better be on the safe side and validate anyway.
+        return false;
+    }
+    // The following RIDs are considered service user accounts as per
+    // https://learn.microsoft.com/en-us/windows/win32/secauthz/well-known-sids and
+    // https://learn.microsoft.com/en-us/windows/win32/services/service-user-accounts:
+    // - "S-1-5-18": LocalSystem
+    // - "S-1-5-19": LocalService
+    // - "S-1-5-20": NetworkService
+    if (windows.GetSidSubAuthorityCount(Ꮡsid) != windows.SID_REVISION || windows.GetSidIdentifierAuthority(Ꮡsid) != windows.SECURITY_NT_AUTHORITY) {
+        return false;
+    }
+    var exprᴛ1 = windows.GetSidSubAuthority(Ꮡsid, 0);
+    if (exprᴛ1 == windows.SECURITY_LOCAL_SYSTEM_RID || exprᴛ1 == windows.SECURITY_LOCAL_SERVICE_RID || exprᴛ1 == windows.SECURITY_NETWORK_SERVICE_RID) {
+        return true;
+    }
+
+    return false;
+}
+
+internal static bool isValidUserAccountType(ж<syscall.SID> Ꮡsid, uint32 sidType) {
+    var exprᴛ1 = sidType;
+    if (exprᴛ1 == syscall.SidTypeUser) {
+        return true;
+    }
+    if (exprᴛ1 == syscall.SidTypeWellKnownGroup) {
+        return isServiceAccount(Ꮡsid);
+    }
+
+    return false;
+}
+
+internal static bool isValidGroupAccountType(uint32 sidType) {
+    var exprᴛ1 = sidType;
+    if (exprᴛ1 == syscall.SidTypeGroup) {
+        return true;
+    }
+    if (exprᴛ1 == syscall.SidTypeWellKnownGroup) {
+        return true;
+    }
+    if (exprᴛ1 == syscall.SidTypeAlias) {
+        return true;
+    }
+
+    // Some well-known groups are also considered service accounts,
+    // so isValidUserAccountType would return true for them.
+    // We have historically allowed them in LookupGroup and LookupGroupId,
+    // so don't treat them as invalid here.
+    // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-samr/7b2aeb27-92fc-41f6-8437-deb65d950921#gt_0387e636-5654-4910-9519-1f8326cf5ec0
+    // SidTypeAlias should also be treated as a group type next to SidTypeGroup
+    // and SidTypeWellKnownGroup:
+    // "alias object -> resource group: A group object..."
+    //
+    // Tests show that "Administrators" can be considered of type SidTypeAlias.
+    return false;
+}
+
 // lookupUsernameAndDomain obtains the username and domain for usid.
-internal static (@string username, @string domain, error e) lookupUsernameAndDomain(ж<syscall.SID> Ꮡusid) {
+internal static (@string username, @string domain, uint32 sidType, error e) lookupUsernameAndDomain(ж<syscall.SID> Ꮡusid) {
     @string username = default!;
     @string domain = default!;
+    uint32 sidType = default!;
     error e = default!;
 
-    (username, domain, var t, e) = Ꮡusid.LookupAccount(""u8);
+    (username, domain, sidType, e) = Ꮡusid.LookupAccount(""u8);
     if (e != default!) {
-        return ("", "", e);
+        return ("", "", 0, e);
     }
-    if (t != syscall.SidTypeUser) {
-        return ("", "", fmt.Errorf("user: should be user account type, not %d"u8, t));
+    if (!isValidUserAccountType(Ꮡusid, sidType)) {
+        return ("", "", 0, fmt.Errorf("user: should be user account type, not %d"u8, sidType));
     }
-    return (username, domain, default!);
+    return (username, domain, sidType, default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -140,20 +179,12 @@ internal static (@string, error) lookupGroupName(@string groupname) {
     if (e != default!) {
         return ("", e);
     }
-    // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-samr/7b2aeb27-92fc-41f6-8437-deb65d950921#gt_0387e636-5654-4910-9519-1f8326cf5ec0
-    // SidTypeAlias should also be treated as a group type next to SidTypeGroup
-    // and SidTypeWellKnownGroup:
-    // "alias object -> resource group: A group object..."
-    //
-    // Tests show that "Administrators" can be considered of type SidTypeAlias.
-    if (t != syscall.SidTypeGroup && t != syscall.SidTypeWellKnownGroup && t != syscall.SidTypeAlias) {
+    if (!isValidGroupAccountType(t)) {
         return ("", fmt.Errorf("lookupGroupName: should be group account type, not %d"u8, t));
     }
     return sid.String();
 }
 
-// listGroupsForUsernameAndDomain accepts username and domain and retrieves
-// a SID list of the local groups where this user is a member.
 // go2cs generated this placeholder — func listGroupsForUsernameAndDomain is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (ж<User>, error) newUser(@string uid, @string gid, @string dir, @string username, @string domain) {
@@ -178,60 +209,149 @@ internal static nint userBuffer = 0;
 internal static nint groupBuffer = 0;
 
 internal static (ж<User>, error) current() {
+    // Use runAsProcessOwner to ensure that we can access the process token
+    // when calling syscall.OpenCurrentProcessToken if the current thread
+    // is impersonating a different user. See https://go.dev/issue/68647.
+    ref var usr = ref heap<ж<User>>(out var Ꮡusr);
+    var err = runAsProcessOwner(error () => {
+        GoFrame ᒐ = default;
+        try {
+            var (t, e) = syscall.OpenCurrentProcessToken();
+            if (e != default!) {
+                return e;
+            }
+            defer(() => t.Close(), ref ᒐ);
+            (var u, e) = t.GetTokenUser();
+            if (e != default!) {
+                return e;
+            }
+            (var pg, e) = t.GetTokenPrimaryGroup();
+            if (e != default!) {
+                return e;
+            }
+            ref var uid = ref heap<@string>(out var Ꮡuid);
+            (uid, e) = (~u).User.Sid.String();
+            if (e != default!) {
+                return e;
+            }
+            ref var gid = ref heap<@string>(out var Ꮡgid);
+            (gid, e) = (~pg).PrimaryGroup.String();
+            if (e != default!) {
+                return e;
+            }
+            ref var dir = ref heap<@string>(out var Ꮡdir);
+            (dir, e) = t.GetUserProfileDirectory();
+            if (e != default!) {
+                return e;
+            }
+            ref var username = ref heap<@string>(out var Ꮡusername);
+            (username, e) = windows.GetUserName(syscall.NameSamCompatible);
+            if (e != default!) {
+                return e;
+            }
+            ref var displayName = ref heap<@string>(out var ᏑdisplayName);
+            (displayName, e) = windows.GetUserName(syscall.NameDisplay);
+            if (e != default!) {
+                // Historically, the username is used as fallback
+                // when the display name can't be retrieved.
+                displayName = username;
+            }
+            Ꮡusr.ValueSlot = Ꮡ(new User(
+                Uid: uid,
+                Gid: gid,
+                Username: username,
+                Name: displayName,
+                HomeDir: dir
+            ));
+            return default!;
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+        finally { ᒐ.Run(); }
+    });
+    return (usr, err);
+}
+
+// runAsProcessOwner runs f in the context of the current process owner,
+// that is, removing any impersonation that may be in effect before calling f,
+// and restoring the impersonation afterwards.
+internal static error runAsProcessOwner(Func<error> f) {
     GoFrame ᒐ = default;
     try {
-        var (t, e) = syscall.OpenCurrentProcessToken();
-        if (e != default!) {
-            return (default!, e);
+        ref var impersonationRollbackErr = ref heap<error>(out var ᏑimpersonationRollbackErr);
+        runtime.LockOSThread();
+        defer(() => {
+            // If impersonation failed, the thread is running with the wrong token,
+            // so it's better to terminate it.
+            // This is achieved by not calling runtime.UnlockOSThread.
+            if (ᏑimpersonationRollbackErr.ValueSlot != default!){
+                println((@string)"os/user: failed to revert to previous token:"u8, ᏑimpersonationRollbackErr.ValueSlot.Error());
+                runtime.Goexit();
+            } else {
+                runtime.UnlockOSThread();
+            }
+        }, ref ᒐ);
+        var (prevToken, isProcessToken, err) = getCurrentToken();
+        if (err != default!) {
+            return fmt.Errorf("os/user: failed to get current token: %w"u8, err);
         }
-        defer(() => t.Close(), ref ᒐ);
-        (var u, e) = t.GetTokenUser();
-        if (e != default!) {
-            return (default!, e);
+        defer(() => prevToken.Close(), ref ᒐ);
+        if (!isProcessToken) {
+            {
+                err = windows.RevertToSelf(); if (err != default!) {
+                    return fmt.Errorf("os/user: failed to revert to self: %w"u8, err);
+                }
+            }
+            defer(() => {
+                ᏑimpersonationRollbackErr.ValueSlot = windows.ImpersonateLoggedOnUser(prevToken);
+            }, ref ᒐ);
         }
-        (var pg, e) = t.GetTokenPrimaryGroup();
-        if (e != default!) {
-            return (default!, e);
-        }
-        (var uid, e) = (~u).User.Sid.String();
-        if (e != default!) {
-            return (default!, e);
-        }
-        (var gid, e) = (~pg).PrimaryGroup.String();
-        if (e != default!) {
-            return (default!, e);
-        }
-        (var dir, e) = t.GetUserProfileDirectory();
-        if (e != default!) {
-            return (default!, e);
-        }
-        (var username, var domain, e) = lookupUsernameAndDomain((~u).User.Sid);
-        if (e != default!) {
-            return (default!, e);
-        }
-        return newUser(uid, gid, dir, username, domain);
+        return f();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
 }
 
-// lookupUserPrimaryGroup obtains the primary group SID for a user using this method:
-// https://support.microsoft.com/en-us/help/297951/how-to-use-the-primarygroupid-attribute-to-find-the-primary-group-for
-// The method follows this formula: domainRID + "-" + primaryGroupRID
+// getCurrentToken returns the current thread token, or
+// the process token if the thread doesn't have a token.
+internal static (syscall.Token t, bool isProcessToken, error err) getCurrentToken() {
+    ref var t = ref heap(new syscall.Token(), out var Ꮡt);
+    bool isProcessToken = default!;
+    error err = default!;
+
+    var (thread, _) = windows.GetCurrentThread();
+    // Need TOKEN_DUPLICATE and TOKEN_IMPERSONATE to use the token in ImpersonateLoggedOnUser.
+    err = windows.OpenThreadToken(thread, (uint32)((UntypedInt)(syscall.TOKEN_QUERY | syscall.TOKEN_DUPLICATE) | (uint32)syscall.TOKEN_IMPERSONATE), true, Ꮡt);
+    if (errors.Is(err, windows.ERROR_NO_TOKEN)) {
+        // Not impersonating, use the process token.
+        isProcessToken = true;
+        (t, err) = syscall.OpenCurrentProcessToken();
+    }
+    return (t, isProcessToken, err);
+}
+
 // go2cs generated this placeholder — func lookupUserPrimaryGroup is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (ж<User>, error) newUserFromSid(ж<syscall.SID> Ꮡusid) {
-    var (username, domain, e) = lookupUsernameAndDomain(Ꮡusid);
-    if (e != default!) {
-        return (default!, e);
-    }
-    (var gid, e) = lookupUserPrimaryGroup(username, domain);
+    var (username, domain, sidType, e) = lookupUsernameAndDomain(Ꮡusid);
     if (e != default!) {
         return (default!, e);
     }
     (var uid, e) = Ꮡusid.String();
     if (e != default!) {
         return (default!, e);
+    }
+    @string gid = default!;
+    if (sidType == syscall.SidTypeWellKnownGroup){
+        // The SID does not contain a domain; this function's domain variable has
+        // been populated with the SID's identifier authority. This happens with
+        // special service user accounts such as "NT AUTHORITY\LocalSystem".
+        // In this case, gid is the same as the user SID.
+        gid = uid;
+    } else {
+        (gid, e) = lookupUserPrimaryGroup(username, domain);
+        if (e != default!) {
+            return (default!, e);
+        }
     }
     // If this user has logged in at least once their home path should be stored
     // in the registry under the specified SID. References:
@@ -262,7 +382,7 @@ internal static (ж<User>, error) lookupUser(@string username) {
     if (e != default!) {
         return (default!, e);
     }
-    if (t != syscall.SidTypeUser) {
+    if (!isValidUserAccountType(sid, t)) {
         return (default!, fmt.Errorf("user: should be user account type, not %d"u8, t));
     }
     return newUserFromSid(sid);
@@ -295,29 +415,64 @@ internal static (ж<Group>, error) lookupGroupId(@string gid) {
     if (err != default!) {
         return (default!, err);
     }
-    if (t != syscall.SidTypeGroup && t != syscall.SidTypeWellKnownGroup && t != syscall.SidTypeAlias) {
+    if (!isValidGroupAccountType(t)) {
         return (default!, fmt.Errorf("lookupGroupId: should be group account type, not %d"u8, t));
     }
     return (Ꮡ(new Group(Name: groupname, Gid: gid)), default!);
 }
 
 internal static (slice<@string>, error) listGroups(ref User user) {
-    var (sid, err) = syscall.StringToSid(user.Uid);
-    if (err != default!) {
-        return (default!, err);
-    }
-    (var username, var domain, err) = lookupUsernameAndDomain(sid);
-    if (err != default!) {
-        return (default!, err);
-    }
-    (var sids, err) = listGroupsForUsernameAndDomain(username, domain);
-    if (err != default!) {
-        return (default!, err);
+    ref var sids = ref heap<slice<@string>>(out var Ꮡsids);
+    {
+        var (u, err) = Current(); if (err == default! && (~u).Uid == user.Uid){
+            // It is faster and more reliable to get the groups
+            // of the current user from the current process token.
+            var errΔ1 = runAsProcessOwner(error () => {
+                GoFrame ᒐ = default;
+                try {
+                    var (t, errΔ2) = syscall.OpenCurrentProcessToken();
+                    if (errΔ2 != default!) {
+                        return errΔ2;
+                    }
+                    defer(() => t.Close(), ref ᒐ);
+                    (var groups, errΔ2) = windows.GetTokenGroups(t);
+                    if (errΔ2 != default!) {
+                        return errΔ2;
+                    }
+                    foreach (var (_, g) in groups.AllGroups()) {
+                        var (sid, errΔ3) = g.Sid.String();
+                        if (errΔ3 != default!) {
+                            return errΔ3;
+                        }
+                        Ꮡsids.ValueSlot = append(Ꮡsids.ValueSlot, sid);
+                    }
+                    return default!;
+                }
+                catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+                finally { ᒐ.Run(); }
+            });
+            if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
+        } else {
+            var (sid, errΔ4) = syscall.StringToSid(user.Uid);
+            if (errΔ4 != default!) {
+                return (default!, errΔ4);
+            }
+            (var username, var domain, _, errΔ4) = lookupUsernameAndDomain(sid);
+            if (errΔ4 != default!) {
+                return (default!, errΔ4);
+            }
+            (sids, errΔ4) = listGroupsForUsernameAndDomain(username, domain);
+            if (errΔ4 != default!) {
+                return (default!, errΔ4);
+            }
+        }
     }
     // Add the primary group of the user to the list if it is not already there.
     // This is done only to comply with the POSIX concept of a primary group.
-    foreach (var (_, sidΔ1) in sids) {
-        if (sidΔ1 == user.Gid) {
+    foreach (var (_, sid) in sids) {
+        if (sid == user.Gid) {
             return (sids, default!);
         }
     }

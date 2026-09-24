@@ -7,6 +7,7 @@ using bytes = bytes_package;
 using json = encoding.json_package;
 using fmt = fmt_package;
 using reflect = reflect_package;
+using regexp = regexp_package;
 using strings = strings_package;
 using utf8 = go.unicode.utf8_package;
 using encoding;
@@ -14,12 +15,6 @@ using go.unicode;
 using ꓸꓸꓸany = Span<any>;
 
 partial class template_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
 
 // jsWhitespace contains all of the JS whitespace characters, as defined
 // by the \s character class.
@@ -163,9 +158,9 @@ internal static any indirectToJSONMarshaler(any a) {
     return v.Interface();
 }
 
+internal static ж<regexp.Regexp> scriptTagRe = regexp.MustCompile("(?i)<(/?)script"u8);
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string scriptˢ = "</script"u8;
-internal static readonly @string x3CScriptˢ = @"\x3C/script"u8;
 internal static readonly @string x3Cˢ = @"\x3C!--"u8;
 internal static readonly @string nullˢ = " null "u8;
 internal static readonly @string u2028ˢ = @"\u2028"u8;
@@ -215,9 +210,9 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
         // In particular we:
         //   * replace "*/" comment end tokens with "* /", which does not
         //     terminate the comment
-        //   * replace "</script" with "\x3C/script", and "<!--" with
-        //     "\x3C!--", which prevents confusing script block termination
-        //     semantics
+        //   * replace "<script" and "</script" with "\x3Cscript" and "\x3C/script"
+        //     (case insensitively), and "<!--" with "\x3C!--", which prevents
+        //     confusing script block termination semantics
         //
         // We also put a space before the comment so that if it is flush against
         // a division operator it is not turned into a line comment:
@@ -226,8 +221,8 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
         //     x//* error marshaling y:
         //          second line of error message */null
         @string errStr = err.Error();
+        errStr = ((@string)scriptTagRe.ReplaceAll(slice<byte>(errStr), slice<byte>(@"\x3C${1}script"u8)));
         errStr = strings.ReplaceAll(errStr, "*/"u8, "* /"u8);
-        errStr = strings.ReplaceAll(errStr, scriptˢ, x3CScriptˢ);
         errStr = strings.ReplaceAll(errStr, "<!--"u8, x3Cˢ);
         return fmt.Sprintf(" /* %s */null "u8, errStr);
     }

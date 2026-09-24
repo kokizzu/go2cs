@@ -56,8 +56,8 @@ using static go.image.gif_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("image/gif/reader.go", "reader.cs", "AGyEAYKCgpSmgoKClAApXoKClIKClIKWgoKCuIKCgoKogoKqooKUgoKCqIKCAAIWAAgClLaWpoKCpKTMgoKklqjEgIKUpoSCgpSCloKCgpSUgILIgIKmgriClKbagoKClIKClIKCgIKUgILYpoKCgoKUkoKClKaCgoKUgpSkyIKSlqS0goCC3IKCgpSClIKmgoKClILKgoCCpIKUgoKCgoKUgpTWwoKClIKCgoKmgpSUgpSUgILcgoKClLaCgpSCpoKCkoCCgpQADRqAgoKUyoCCpLiCgoLMgpaCgoLKgoIACAaCgIKkgoKCggAQJIKU3IKCgpSAgqQAEyKygoKCgoKCgoKCgqaqooKAgqQAIEaigoCCpAALGKqigoCCpO6C")]
-[assembly: go.GoPositionMap("image/gif/writer.go", "writer.cs", "AC84goKCpgAiRIKmgqaCgqiCgoKogoKqooKAgrampoKUgoKUpoKClKaCgpSmgoKU5oKClIKCqIKChICCgoKCgoKCgoKClLiCgoK4goKCgoKCgoKUgoKCgviCgpSCgpTGgIKUgqSCgpSClJSmgoKCgpb2soKWgoKWgoKClIKCloKCgoKUgIKCuIKCgoKClJSWgpSUgpSCgoKCgsyCgIKUgoKClMqCpoK4goKUhIKCgoCCgoKCpoKCgoLIggAVKMKCloKWyIKUgoKCpICCuICClKaCgoKClJSCgtjEgoKWgoKUgpSCloKCgIKCgoLayoKClMyCkoKW")]
+[assembly: go.GoPositionMap("image/gif/reader.go", "reader.cs", "AEKEAYKCgpSmgoKClAApXoKClIKClIKWgoKCuIKCgoKogoKqooKUgoKCqIKCAAIWAAgClLaWpoKCpKTMgoKklqjEgIKUpoSCgpSCloKCgpSUgILIgIKmgriClKbagoKClIKClIKCgIKUgILYpoKCgoKUkoKClKaCgoKUgpSkyIKSlqS0goCC3IKCgpSClIKmgoKClILKgoCCpIKUgoKCgoKUgpTWwoKClIKCgoKmgpSUgpSUgILcgoKClLaCgpSCpoKCkoCCgpQADRqAgoKUyoCCpLiCgoLMgpaCgoLKgoIACAaCgIKkgoKCggAQJIKU3IKCgpSAgqQAEyKygoKCgoKCgoKCgqaqooKAgqQAIEaigoCCpAALGKqigoCCpO6C")]
+[assembly: go.GoPositionMap("image/gif/writer.go", "writer.cs", "AB04goKCpgAiRIKmgqaCgqiCgoKogoKqooKAgrampoKUgoKUpoKClKaCgpSmgoKU5oKClIKCqIKChICCgoKCgoKCgoKClLiCgoK4goKCgoKCgoKUgoKCgviCgpSCgpTGgIKUgqSCgpSClJSmgoKCgpb2soKWgoKWgoKClIKCloKCgoKUgIKCuIKCgoKClJSWgpSUgpSCgoKCgsyCgIKUgoKClMqCpoK4goKUhIKCgoCCgoKCpoKCgoLIggAVKMKCloKWyIKUgoKCpICCuICClKaCgoKClJSCgtjEgoKWgoKUgpSCloKCgIKCgoLayoKClMyCkoKW")]
 // </GoSourcePositionMaps>
 
 namespace go.image;
@@ -82,4 +82,23 @@ public static partial class gif_package
     public partial struct GIF {}
     public partial struct Options {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸlzw() => builtin.initPackage(typeof(compress.lzw_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() => builtin.initPackage(typeof(go.image.color.palette_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸdraw() => builtin.initPackage(typeof(go.image.draw_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

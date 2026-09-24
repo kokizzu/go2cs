@@ -10,30 +10,14 @@
 namespace go.crypto;
 
 using crypto = crypto_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using errors = errors_package;
 using hash = hash_package;
-using byteorder = @internal.byteorder_package;
-using @internal;
+using byteorder = go.@internal.byteorder_package;
+using go.@internal;
+using go.crypto.@internal;
 
 partial class md5_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
 
 [GoInit] internal static void init() {
     crypto.RegisterHash(crypto.MD5, New);
@@ -71,15 +55,18 @@ internal static readonly @string magic = "md5\x01"u8;
 internal const nint marshaledSize = /* len(magic) + 4*4 + BlockSize + 8 */ 92;
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
+    return d.AppendBinary(new slice<byte>(0, marshaledSize));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref digest d, slice<byte> b) {
     b = append(b, magic.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, d.s[0]);
-    b = byteorder.BeAppendUint32(b, d.s[1]);
-    b = byteorder.BeAppendUint32(b, d.s[2]);
-    b = byteorder.BeAppendUint32(b, d.s[3]);
+    b = byteorder.BEAppendUint32(b, d.s[0]);
+    b = byteorder.BEAppendUint32(b, d.s[1]);
+    b = byteorder.BEAppendUint32(b, d.s[2]);
+    b = byteorder.BEAppendUint32(b, d.s[3]);
     b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
-    b = byteorder.BeAppendUint64(b, d.len);
+    b = appendꓸꓸꓸ(b, new slice<byte>(len(d.x) - d.nx));
+    b = byteorder.BEAppendUint64(b, d.len);
     return (b, default!);
 }
 
@@ -106,16 +93,17 @@ internal static readonly @string cryptoMd5InvalidHashˢ2 = "crypto/md5: invalid 
 }
 
 internal static (slice<byte>, uint64) consumeUint64(slice<byte> b) {
-    return (b[8..], byteorder.BeUint64(b[0..8]));
+    return (b[8..], byteorder.BEUint64(b[0..8]));
 }
 
 internal static (slice<byte>, uint32) consumeUint32(slice<byte> b) {
-    return (b[4..], byteorder.BeUint32(b[0..4]));
+    return (b[4..], byteorder.BEUint32(b[0..4]));
 }
 
-// New returns a new hash.Hash computing the MD5 checksum. The Hash also
-// implements [encoding.BinaryMarshaler] and [encoding.BinaryUnmarshaler] to
-// marshal and unmarshal the internal state of the hash.
+// New returns a new [hash.Hash] computing the MD5 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New() {
     var d = @new<digest>();
     d.Reset();
@@ -130,11 +118,17 @@ public static hash.Hash New() {
     return ΔBlockSize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoMd5UseOfMd5IsNotˢ = "crypto/md5: use of MD5 is not allowed in FIPS 140-only mode"u8;
+
 internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) {
     nint nn = default!;
     error err = default!;
 
     ref var d = ref Ꮡd.DerefOrNull();
+    if (fips140only.Enabled) {
+        return (0, errors.New(cryptoMd5UseOfMd5IsNotˢ));
+    }
     // Note that we currently call block or blockGeneric
     // directly (guarded using haveAsm) because this allows
     // escape analysis to see that p and d don't escape.
@@ -179,6 +173,9 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {
     ref var d = ref Ꮡd.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        throw panic("crypto/md5: use of MD5 is not allowed in FIPS 140-only mode");
+    }
     // Append 0x80 to the end of the message and then append zeros
     // until the length is a multiple of 56 bytes. Finally append
     // 8 bytes representing the message length in bits.
@@ -186,7 +183,7 @@ internal static array<byte> checkSum(this ж<digest> Ꮡd) {
     // 1 byte end marker :: 0-63 padding bytes :: 8 byte length
     var tmp = new byte[]{0x80}.array(72);
     var pad = (55 - d.len) % 64; // calculate number of padding bytes
-    byteorder.LePutUint64(tmp[(int)(1 + pad)..], (d.len << (int)(3))); // append length in bits
+    byteorder.LEPutUint64(tmp[(int)(1 + pad)..], (d.len << (int)(3))); // append length in bits
     Ꮡd.Write(tmp[..(int)(1 + pad + 8)]);
     // The previous write ensures that a whole number of
     // blocks (i.e. a multiple of 64 bytes) have been hashed.
@@ -194,10 +191,10 @@ internal static array<byte> checkSum(this ж<digest> Ꮡd) {
         throw panic("d.nx != 0");
     }
     array<byte> digest = new(16); /* ΔSize */
-    byteorder.LePutUint32(digest[0..], d.s[0]);
-    byteorder.LePutUint32(digest[4..], d.s[1]);
-    byteorder.LePutUint32(digest[8..], d.s[2]);
-    byteorder.LePutUint32(digest[12..], d.s[3]);
+    byteorder.LEPutUint32(digest[0..], d.s[0]);
+    byteorder.LEPutUint32(digest[4..], d.s[1]);
+    byteorder.LEPutUint32(digest[8..], d.s[2]);
+    byteorder.LEPutUint32(digest[12..], d.s[3]);
     return digest.Clone();
 }
 

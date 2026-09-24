@@ -8,17 +8,14 @@ global using static global::go.unicode.utf16_package;
 global using static global::go.unicode.utf16_internal_test_package;
 
 // <ImportedTypeAliases>
-global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
-global using reflectꓸKind = go.reflect_package.ΔKind;
-global using reflectꓸMethod = go.reflect_package.ΔMethod;
-global using reflectꓸType = go.reflect_package.ΔType;
-global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
 using static global::go.unicode.utf16_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b722072756e653b2077616e7420626f6f6c7d", "surrogateTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b72312072756e653b2072322072756e653b2077616e742072756e657d", "decodeRuneTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -36,7 +33,7 @@ using static global::go.unicode.utf16_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("unicode/utf16/utf16_test.go", "utf16_test.cs", "AA8gkoKUggAICIIACRqAggASJIKCgoLKgoKCgpSCyqKCgoKCgoKClIKUlIKClIKUgoKCuIIAESSChLKSgoKmgsqCgoKCABIggoKCggAjMIKCgoLKtIKCuLSCgriilIKWgoKCyqKCgriigoK4ooKCgoKUuKKCgoKClLiigoI=")]
+[assembly: go.GoPositionMap("unicode/utf16/utf16_test.go", "utf16_test.cs", "AA8gkoKUggAICIIACRqAggASJIKCgoLKgoKCgpSCyqKCgoKCgoKClIKUlIKClIKUgoKCuIIAESSChLKSgoKmgsqCgoKCABIggoKCggAjMIKCgoLKtIKCuLSCgriilIKWgoKCyqKCgriigoK4ooKCgoKUuKKCgoKClLiigoI=", "131-136:1")]
 // </GoSourcePositionMaps>
 
 namespace go.unicode;
@@ -51,10 +48,30 @@ public static partial class utf16_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestRuneLen_type {}
     internal partial struct decodeRuneTestsᴛ1 {}
     internal partial struct decodeTest {}
     internal partial struct encodeTest {}
     internal partial struct surrogateTestsᴛ1 {}
-    public partial struct TestRuneLen_type {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.unicode.utf16_package));
+    }
 }

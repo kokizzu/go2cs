@@ -73,7 +73,7 @@ using static go.debug.buildinfo_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/buildinfo/buildinfo.go", "buildinfo.cs", "AJIBgAEACQKCgJKkuIKClJLssoKClIKClIIACyAACQaCgIKmgpSCgpS0goKUtIKClLSCgpS0goKUtIKClLQABxCCgpSCgpSYgoKClIKClAALGoKCgpSCgoKUlIKCtKSUgpSClKaUlqaCgoKUtqaCgoKUqJKCgpSCgoKClAAHEIKCgoKClKamgoKCpoKCpgAHEIKUpJSmgoKCgoKClKamhAARFoKEpgAHEIKCgoKUgoKUgoKUpqaUgoKokoKCgqYAChCCgoKCgpSmpoKAgqQAChCCgIKkpoKCgoKClKY=")]
+[assembly: go.GoPositionMap("debug/buildinfo/buildinfo.go", "buildinfo.cs", "AECIAQAJAoKAkqS4goKUkuyygoKUgoKUggAMIgAJBoKAgqaClIKClLSCgpS0goKUtIKClLSCgpS0goKUtAAHEIKCloKCqIKCpJSClgAfSoKCgoKUgoK4goKCgpSUgoK0pJSClIKUppSWpoKCgpS2psyCgqSWgoKUhIKCtqSUlJaokoKClIKCgoKUzqKClKiCgpaC3IKCgpaCuIKWgpSkloKCgoKUlJSUgriUgqaWlqaCgoKWgoKUpoKCgpaCgpQABxCCgoKCpqaCgoKmgoKmAAcQgpSklKaCgoKCgqamhAARFoKEpgAHEIKCgoKUgoKUgqamlIKCqJKCgoKmAAoQgoKCgqamgoCCpAAKEIKAgqSmgoKCgqY=", "69-75:1;250-250:1")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;
@@ -95,4 +95,27 @@ public static partial class buildinfo_package
     internal partial struct plan9objExe {}
     internal partial struct xcoffExe {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸelf() => builtin.initPackage(typeof(go.debug.elf_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸmacho() => builtin.initPackage(typeof(go.debug.macho_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸpe() => builtin.initPackage(typeof(go.debug.pe_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸplan9obj() => builtin.initPackage(typeof(go.debug.plan9obj_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸxcoff() => builtin.initPackage(typeof(@internal.xcoff_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() => builtin.initPackage(typeof(runtime.debug_package));
+    // </ImportInitializers>
 }

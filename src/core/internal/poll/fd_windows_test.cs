@@ -8,33 +8,16 @@ using fmt = fmt_package;
 using poll = go.@internal.poll_package;
 using windows = go.@internal.syscall.windows_package;
 using os = os_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using Δsyscall = syscall_package;
 using testing = testing_package;
 using @unsafe = unsafe_package;
+using go;
 using go.@internal;
 using go.@internal.syscall;
 using static go.@internal.poll_internal_test_package;
 
 partial class poll_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
-    builtin.initPackage(typeof(go.@internal.syscall.windows_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 [GoType] partial struct loggedFD {
     public @string Net;

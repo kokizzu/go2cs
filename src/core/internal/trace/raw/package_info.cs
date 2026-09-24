@@ -51,9 +51,9 @@ using static go.@internal.trace.raw_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/raw/event.go", "event.cs", "ADQ+woSCgoKCgoKUgoKCgpSUgoKmgoKU")]
-[assembly: go.GoPositionMap("internal/trace/raw/reader.go", "reader.cs", "ADA0koKSgpSokqiSgoKUgpSClIKCgoKUgoKUgoKUpoKCgoKmAAcQgoKCgoKUlKaCgoKUgoKCgpSU")]
-[assembly: go.GoPositionMap("internal/trace/raw/textreader.go", "textreader.cs", "ACM6koKCgpSCgpSCgpSCgpSCgpSCgoKCgqaokqiSgoKUgoKClIKCgpSCgoKCgpSClIKClKaCgoKClIKUgoKmAAcQgoKCgIKklIKCgpTcgoKCgoKUgpSClIKCpqbSgoKClIKClIKCgpSmgoKCgpSCgqaClIKCgoKmgpSmgoKClIKClA==")]
+[assembly: go.GoPositionMap("internal/trace/raw/event.go", "event.cs", "AB5AwoSCgoKCgoKUgoKCgpSUgoKmgoKUqJKCgoKUgoKClA==")]
+[assembly: go.GoPositionMap("internal/trace/raw/reader.go", "reader.cs", "ABg0koKSgpSokqiSgoKUgpSClIKCgoKUgoKUgoKUpoKCgoKmAAcQgoKCgoKUlKaCgoKUgoKCgpSU")]
+[assembly: go.GoPositionMap("internal/trace/raw/textreader.go", "textreader.cs", "AB06koKCgpSCgpSCgpSCgpSCgpSCgoKCgqaokqiSgoKUgoKClIKCgpSCgoKCgpSClIKClKaCgoKClIKUgoKmAAcQgoKCgIKklIKCgpTcgoKCgoKUgpSClIKCpqbSgoKClIKClIKCgpSmgoKCgpSCgqaClIKCgoKmgpSmgoKClIKClA==")]
 [assembly: go.GoPositionMap("internal/trace/raw/textwriter.go", "textwriter.cs", "ABIqkoKClKikgqiC")]
 [assembly: go.GoPositionMap("internal/trace/raw/writer.go", "writer.cs", "ABw8koKopIKoloKClIKCgrqCqIKCgqiCgpQ=")]
 // </GoSourcePositionMaps>
@@ -76,4 +76,22 @@ public static partial class raw_package
     public partial struct TextWriter {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() => builtin.initPackage(typeof(go.@internal.trace.event_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() => builtin.initPackage(typeof(go.@internal.trace.version_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    // </ImportInitializers>
 }

@@ -28,9 +28,9 @@ using static go.html_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("html/entity_test.go", "entity_test.cs", "AAwYgtaCgsyCgpSCpqKC")]
+[assembly: go.GoPositionMap("html/entity_test.go", "entity_test.cs", "AA8YgoSCzIKClIKmooI=")]
 [assembly: go.GoPositionMap("html/escape_test.go", "escape_test.cs", "AFm0AYKCgoLKggAMGoKAggAKGKKCgriigoK4ooKCgriigoKCuKKCgriigoI=")]
-[assembly: go.GoPositionMap("html/fuzz_test.go", "fuzz_test.cs", "AAoSgoKCgoLM")]
+[assembly: go.GoPositionMap("html/fuzz_test.go", "fuzz_test.cs", "AAoSgoKCgoLM", "10-21:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -46,4 +46,16 @@ public static partial class html_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

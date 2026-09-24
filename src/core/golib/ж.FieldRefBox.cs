@@ -26,7 +26,18 @@ namespace go;
 /// depend on it. <c>Delegate.Equals</c> compares method + target, so two conversions of the same
 /// accessor method group compare equal across call sites.
 /// </remarks>
-public sealed class FieldRefBox<T> : ж<T>
+/// <summary>
+/// Whether a pointer's storage is NATIVE memory, recursively through an <c>of()</c> chain — the one
+/// question equality needs answered across kinds without making <see cref="ж{T}.NativeAddress"/>
+/// (which gates the native-word accessors) mean something new. Non-generic so a field reference can ask
+/// its source, which it holds as <c>object</c>.
+/// </summary>
+internal interface INativeRooted
+{
+    bool IsNativeRooted { get; }
+}
+
+public sealed class FieldRefBox<T> : ж<T>, INativeRooted
 {
     private readonly object m_source;
     private readonly FieldRefFunc<T> m_accessor;
@@ -69,6 +80,35 @@ public sealed class FieldRefBox<T> : ж<T>
     public override nuint PointerOrderToken =>
         unchecked(AllocationBase(SourceIdentityHash(m_source)) + GoFieldDisplacement(m_source, m_token));
 
+    /// <summary>
+    /// The field slot's REAL address when this reference's root is native memory, else 0.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A field of a struct the program placed in NATIVE memory (<c>persistentalloc</c>, <c>sysAlloc</c>,
+    /// an mmap'd block) has a genuine machine address that nothing can move, and Go's own contract for
+    /// such a pointer is ADDRESS identity: <c>unsafe.Pointer</c> round-tripped through <c>uintptr</c>
+    /// and back is the same pointer. The <c>uintptr</c> conversion already answers that address (the
+    /// operator's `fixed` fallback reads the slot, which for a native root IS the native address);
+    /// EQUALITY did not, because each kind compared only against its own kind.
+    /// </para>
+    /// <para>
+    /// MEASURED, runtime row 2026-09-22: <c>lfnodeValidate</c> does
+    /// <c>lfstackUnpack(lfstackPack(node, ^uintptr(0))) != node</c>. `node` is <c>&amp;n.LFNode</c> over a
+    /// persistentalloc'd MyNode (this kind); the unpacked pointer is a <see cref="NativeBox{T}"/> over the
+    /// same address. Same address, different kind, so `!=` read TRUE and Go's FATAL
+    /// <c>throw("bad lfnode address")</c> ended the test host after 186 of 10,891 results.
+    /// </para>
+    /// <para>
+    /// This is identity ONLY. <see cref="ж{T}.NativeAddress"/> is deliberately NOT overridden: it gates
+    /// the native-word accessors (<c>ReadPointerWord</c>) and <c>unsafe.Add</c>'s byte-stepping arm,
+    /// which stay this kind's own. A managed-rooted field reference answers 0 and keeps the source+token
+    /// comparison below, unchanged.
+    /// </para>
+    /// </remarks>
+    internal unsafe nuint NativeSlotAddress =>
+        m_source is INativeRooted { IsNativeRooted: true } ? (nuint)Unsafe.AsPointer(ref ValueSlot) : 0;
+
     /// <inheritdoc/>
     public override bool Equals(ж<T>? other)
     {
@@ -78,6 +118,17 @@ public sealed class FieldRefBox<T> : ж<T>
         if (ReferenceEquals(this, other))
             return true;
 
+        // A native-rooted field reference IS its address (see NativeSlotAddress): compare by it, against
+        // either kind that can name the same machine address.
+        if (NativeSlotAddress is var address and not 0)
+        {
+            if (other is NativeBox<T> native)
+                return address == native.NativeAddress;
+
+            if (other is FieldRefBox<T> nativeField && nativeField.NativeSlotAddress is var otherAddress and not 0)
+                return address == otherAddress;
+        }
+
         // Pointer into a struct field: same source object and field accessor. The comparison uses
         // the field IDENTITY token — the original accessor delegate — never the stored ref
         // function (comparing per-call wrappers made every distinct `&x.field` box unequal).
@@ -85,7 +136,13 @@ public sealed class FieldRefBox<T> : ж<T>
     }
 
     /// <inheritdoc/>
-    public override int GetHashCode() => SourceIdentityHash(m_source);
+    // Consistent with Equals on both arms: a native-rooted reference hashes by the address it compares
+    // by (NativeBox hashes the same number), every other one by its source identity.
+    public override int GetHashCode() =>
+        NativeSlotAddress is var address and not 0 ? address.GetHashCode() : SourceIdentityHash(m_source);
+
+    /// <inheritdoc/>
+    bool INativeRooted.IsNativeRooted => m_source is INativeRooted { IsNativeRooted: true };
 
     /// <inheritdoc/>
     // A field reference's storage is its container's, recursively: `Ꮡo.of(Ꮡin).of(Ꮡv)` hangs off

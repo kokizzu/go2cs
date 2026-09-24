@@ -342,11 +342,11 @@ internal static readonly @string tlsInternalErrorSessionˢ = "tls: internal erro
     if (len(ticketKeys) == 0) {
         return (default!, errors.New(tlsInternalErrorSessionˢ));
     }
-    var encrypted = new slice<byte>((nint)aes.ΔBlockSize + len(state) + (nint)sha256.ΔSize);
-    var iv = encrypted[..(int)(aes.ΔBlockSize)];
-    var ciphertext = encrypted[(int)(aes.ΔBlockSize)..(int)(len(encrypted) - (nint)sha256.ΔSize)];
-    var authenticated = encrypted[..(int)(len(encrypted) - (nint)sha256.ΔSize)];
-    var macBytes = encrypted[(int)(len(encrypted) - (nint)sha256.ΔSize)..];
+    var encrypted = new slice<byte>((nint)aes.BlockSize + len(state) + (nint)sha256.Size);
+    var iv = encrypted[..(int)(aes.BlockSize)];
+    var ciphertext = encrypted[(int)(aes.BlockSize)..(int)(len(encrypted) - (nint)sha256.Size)];
+    var authenticated = encrypted[..(int)(len(encrypted) - (nint)sha256.Size)];
+    var macBytes = encrypted[(int)(len(encrypted) - (nint)sha256.Size)..];
     {
         var (_, errΔ1) = io.ReadFull(c.rand(), iv); if (errΔ1 != default!) {
             return (default!, errΔ1);
@@ -384,13 +384,13 @@ public static (ж<SessionState>, error) DecryptTicket(this ж<Config> Ꮡc, slic
 }
 
 [GoRecv] internal static slice<byte> decryptTicket(this ref Config c, slice<byte> encrypted, slice<ticketKey> ticketKeys) {
-    if (len(encrypted) < aes.ΔBlockSize + sha256.ΔSize) {
+    if (len(encrypted) < (nint)(aes.BlockSize + sha256.Size)) {
         return default!;
     }
-    var iv = encrypted[..(int)(aes.ΔBlockSize)];
-    var ciphertext = encrypted[(int)(aes.ΔBlockSize)..(int)(len(encrypted) - (nint)sha256.ΔSize)];
-    var authenticated = encrypted[..(int)(len(encrypted) - (nint)sha256.ΔSize)];
-    var macBytes = encrypted[(int)(len(encrypted) - (nint)sha256.ΔSize)..];
+    var iv = encrypted[..(int)(aes.BlockSize)];
+    var ciphertext = encrypted[(int)(aes.BlockSize)..(int)(len(encrypted) - (nint)sha256.Size)];
+    var authenticated = encrypted[..(int)(len(encrypted) - (nint)sha256.Size)];
+    var macBytes = encrypted[(int)(len(encrypted) - (nint)sha256.Size)..];
     foreach (var (_, vᴛ1) in ticketKeys) {
         var key = vᴛ1.ΔClone();
 

@@ -17,15 +17,16 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("TestAllocations", ed25519_internal_test_package.TestAllocations, "ed25519_test.go", 321);
-        registry.Add("TestCryptoSigner", ed25519_internal_test_package.TestCryptoSigner, "ed25519_test.go", 169);
-        registry.Add("TestEd25519Vectors", ed25519_test_package.TestEd25519Vectors, "ed25519vectors_test.go", 32);
-        registry.Add("TestEqual", ed25519_internal_test_package.TestEqual, "ed25519_test.go", 205);
-        registry.Add("TestGolden", ed25519_internal_test_package.TestGolden, "ed25519_test.go", 227);
-        registry.Add("TestMalleability", ed25519_internal_test_package.TestMalleability, "ed25519_test.go", 297);
-        registry.Add("TestSignVerify", ed25519_internal_test_package.TestSignVerify, "ed25519_test.go", 52);
-        registry.Add("TestSignVerifyContext", ed25519_internal_test_package.TestSignVerifyContext, "ed25519_test.go", 131);
-        registry.Add("TestSignVerifyHashed", ed25519_internal_test_package.TestSignVerifyHashed, "ed25519_test.go", 68);
+        registry.Add("TestAllocations", ed25519_internal_test_package.TestAllocations, "ed25519_test.go", 370);
+        registry.Add("TestCryptoSigner", ed25519_internal_test_package.TestCryptoSigner, "ed25519_test.go", 218);
+        registry.Add("TestEd25519Vectors", ed25519_test_package.TestEd25519Vectors, "ed25519vectors_test.go", 31);
+        registry.Add("TestEqual", ed25519_internal_test_package.TestEqual, "ed25519_test.go", 254);
+        registry.Add("TestGenerateKey", ed25519_internal_test_package.TestGenerateKey, "ed25519_test.go", 44);
+        registry.Add("TestGolden", ed25519_internal_test_package.TestGolden, "ed25519_test.go", 276);
+        registry.Add("TestMalleability", ed25519_internal_test_package.TestMalleability, "ed25519_test.go", 346);
+        registry.Add("TestSignVerify", ed25519_internal_test_package.TestSignVerify, "ed25519_test.go", 101);
+        registry.Add("TestSignVerifyContext", ed25519_internal_test_package.TestSignVerifyContext, "ed25519_test.go", 180);
+        registry.Add("TestSignVerifyHashed", ed25519_internal_test_package.TestSignVerifyHashed, "ed25519_test.go", 117);
         return TestHost.Run(registry, args);
     }
 }

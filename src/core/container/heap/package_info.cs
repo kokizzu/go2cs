@@ -49,7 +49,7 @@ using static go.container.heap_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("container/heap/heap.go", "heap.cs", "AC1S1IKCvKKCrLKCgoKqooKCgoKmrsKCuIKCgoKUgriCgoKCkpSCgIKkgpSClA==")]
+[assembly: go.GoPositionMap("container/heap/heap.go", "heap.cs", "ACdS1IKCvKKCrLKCgoKqooKCgoKmrsKCuIKCgoKUgriCgoKCkpSCgIKkgpSClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.container;
@@ -66,4 +66,14 @@ public static partial class heap_package
     // <TypeAccessibility>
     public partial interface Interface {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    // </ImportInitializers>
 }

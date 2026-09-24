@@ -711,6 +711,48 @@ func collectPublicizedTypes(pkg *types.Package) {
 			}
 		}
 	}
+
+	collectSiblingTestPublicizedTypes(scope, pkg)
+}
+
+// collectSiblingTestPublicizedTypes folds in the seed contributed by the package's IN-PACKAGE
+// `_test.go` half (see siblingTestPublicizedTypeNames). In Go that file IS the package, so a
+// PRODUCTION type reached by an EXPORTED member of it must be at least as accessible as the
+// consumer — but the loop above cannot reach that conclusion, because the production package
+// go/packages hands it excludes `_test.go` and the two halves of the decision are therefore never
+// in one scope: encoding/json's `isZeroer` is declared in encode.go and consumed by four EXPORTED
+// fields in encode_test.go, and the production emission wrote it with no access modifier (CS0052 x4
+// once the recompile model puts production and test in one compilation). The shape the rule's own
+// worked cases have — the type and its exported consumer in the SAME scope, as with context's
+// `testingT` — is unaffected, which is why every other package survived this.
+//
+// ⚠ THE RESOLUTION IS WHAT KEEPS THE SEED NARROW, and it is a gate rather than a hint: the scan
+// contributes NAMES, and only a name that resolves HERE, in the real production scope, to an
+// unexported package-level TYPE is publicized. A type the test half declares itself resolves to
+// nothing and is dropped; a name that denotes a var, a func or an exported type is dropped by its
+// own predicate. External `<pkg>_test` files never reach this at all — collectSiblingTestSignals
+// matches the package clause, so their declarations, which can only touch this package's exported
+// surface, contribute nothing.
+//
+// The deferred cascade in the caller then runs over the seeded set unchanged, so a type reached
+// only through an exported method of a seeded type is carried the same way it would be from a
+// production consumer.
+func collectSiblingTestPublicizedTypes(scope *types.Scope, pkg *types.Package) {
+	for _, name := range siblingTestPublicizedTypeNames {
+		typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+		if !ok || typeName.Exported() || typeName.Pkg() != pkg {
+			continue
+		}
+
+		packagePublicizedTypes[typeName] = true
+
+		// An exported consumer of the type reaches its exported methods' signature types too, by
+		// the same CS0050/CS0051 rule the loop above applies to a production consumer.
+		if named, ok := typeName.Type().(*types.Named); ok {
+			collectMethodSignatureUnexportedTypes(named, pkg)
+		}
+	}
 }
 
 // cascadePublicizedMethodTypes extends the publicized set through method signatures: a publicized
@@ -877,6 +919,33 @@ func collectUnexportedNamedTypes(t types.Type, pkg *types.Package) {
 		collectUnexportedNamedTypes(t.Elem(), pkg)
 	case *types.Chan:
 		collectUnexportedNamedTypes(t.Elem(), pkg)
+	case *types.Struct:
+		// AN ANONYMOUS STRUCT under an exported field or var — `var InternalTests = []struct{ Name
+		// string; Test func(testingT) }{…}` (time's abs_test.go, new at 1.24.13). The walk peels the
+		// slice, reaches the anonymous struct, and STOPPED here: the struct has no *types.Object, so
+		// the named-only recursion had nothing to record and never looked at its fields. `testingT`
+		// was therefore never publicized while the LIFT the struct becomes was emitted PUBLIC —
+		// generatedTypeScope reads the synthesized name `InternalTestsᴛ1`, whose capital I belongs to
+		// the exported VAR and not to any type Go exported — so a public field carried an internal
+		// type: CS0052 at abs_test.cs, and CS0050/CS0051 on the members the TypeGenerator generates
+		// from it (i9's s2 evidence, claude/i9-h10-s2-evidence b2eff468c7).
+		//
+		// ⚠ THIS ARM REVERSES A DELIBERATE OMISSION, so the reason it was deliberate is worth having:
+		// collectSignatureTypes' doc says an exported field/var of an anonymous struct is "left to
+		// the named-only walker (a public struct/var over an internal anon field type is legal when
+		// its own enclosing type is internal)". That holds for a FUNCTION-LOCAL lift, which
+		// localTypeAccess pins internal — and this walk never reaches one, since it runs over PACKAGE
+		// scope. It does NOT hold for a lift named after an EXPORTED package-level var or field,
+		// which is exactly the set this arm can reach and exactly the set whose lift comes out
+		// public. The omission was correct for the lifts it was written against and wrong for these.
+		//
+		// Only EXPORTED fields force the rule, as in the named-struct arm at the call site above: an
+		// unexported field of the lift is emitted internal and may hold an internal type.
+		for i := range t.NumFields() {
+			if field := t.Field(i); field.Exported() {
+				collectUnexportedNamedTypes(field.Type(), pkg)
+			}
+		}
 	case *types.Signature:
 		// A FUNC-typed element of an exported field/var — `var SupportedKDFs =
 		// map[uint16]func() *hkdfKDF` (crypto/internal/hpke), `var F func() snapshot`, or a

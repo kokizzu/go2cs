@@ -37,6 +37,8 @@ using static go.archive.tar_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5265616465727d", "WriteTo_src")]
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5772697465727d", "ReadFrom_dst")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -77,13 +79,13 @@ using static go.archive.tar_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("archive/tar/common.go", "common.cs", "AGpagoKCgoKmgpQAnwG8AoAABlLGgpSCgpSkpKSklAACFPKCgoKCgpSCpgACFgAIAoKCgoKUgoKUlIIAHSgADAKChKKC2IKCgoKUgoKAgoKkgoKUpoCCtqKCgpSCgoKCgpSmgIK2ooKUgoKUgoKCgpSCgoKCgpSmgIK6koKCgoKCgoKCgoKCgoKCgoailpK2pIKClIKkgqiCgpSClIKCgKS0tNaClIKCABk4gIKClKSClKSkpLaokgAHEICigKKAooCmkoKUqMSWgpSClIKogKSkpKSkgqS2lKSCpKSkpqaCABNGAAsCgpSC2pSCtIK0grSClMa0pKSClIKUgriApoKCgoKCgoKCgqaUgoKUgoKCyIKAgoKCgoKUgoK2gpQADiCilKQ=")]
+[assembly: go.GoPositionMap("archive/tar/common.go", "common.cs", "ADBegoKCgoKmgpQAnwG8AoAABlLGgpSCgpSkpKSklAACFPKCgoKCgpSCpgACFgAIAoKCgoKUgoKUlIIAHSgADAKChKKC2IKCgoKUgoKAgoKkgoKUpoCCtqKCgpSCgoKCgpSmgIK2ooKUgoKUgoKCgpSCgoKCgpSmgIK6koKCgoKCgoKCgoKCgoKCgoailpK2pIKClIKkgqiCgpSClIKCgKS0tNaClIKCABk4gIKClKSClKSkpLaokgAHEICigKKAooCmkoKUqMSWgpSClIKogKSkpKSkgqS2lKSCpKSkpqaCABNGAAsCgpSC2pSCtIK0grSClMa0pKSClIKUgriApoKCgoKCgoKUgoKUpIKAgoKCgoKUgoK2gpQADiCilKQ=", "350-376:1;377-395:2;396-423:3")]
 [assembly: go.GoPositionMap("archive/tar/format.go", "format.cs", "ABzYAYCigKKAooAACQyCgoKCppSkpAAWMKIABxCwoqCioKKgooCq1JKCgoKogoKClKSkpMzUyJK0goK0grS6ooKCgq7yooKUgpSoktqAooCigKKAooCigKKAooCigNigooCigKKAooCigKKAooCigKKAooDYoKKAooCigKKAooCigKKAooCigKKA2KCigKKAooCigKKAooCigMiAooCigMiAooA=")]
-[assembly: go.GoPositionMap("archive/tar/reader.go", "reader.cs", "ADdOkgACHAANAoKUgoKCgoKmpqKC7oKUgIKkgIKkhIKClICCpJaUgoKClIKCAAcQpIKCgpaClKSkqoCipIKUgpSCgpSsgKKqgKKokpSCAAUQ0pKClIKWgoKqwoKCgpS6goKUgpSu5JKSlLS0pLSkloCCpIKClIKCgpSogpSosoKClIKUpKSkpIKkgqSkpKSkgoKUtoKmgqqigoKUirSCgoKClISWlpSktoKUAAIWAAsEgIKkgoCCpIKUqIKCloKWgoKCgoKCgoKWgoKCgoKEgpSCgoigkoKUgoTGgoKCtIKCgoCCpICCAAIwABUCgoKAgqTGgqYAAhYADgiClISCgoKUgoKClIKUgoKClJaUgIKkgpQAAxwACgIABBCSgoCCpIKCgri6goKCuoCCpIKCzICCpIKCgoKClJSqxoKCgqiCgpSCuoKCgoKClIKUAAIaAAoCgpSCgpQAAhoACgKClIKClAAIErKClIKClJSkpAAICIKokqiSAAkUsoKCloKCgoKCkoKkgpSCgoKogpSkpKSkyMKCgoCCtoKWgoKCgoKSgqSCgoKUlIKCzIKCloKUpKSkyIKkgtqCgqqigoKUqtKCgoKUgpSqooKClKiawoDKgpSCgpS4goKU")]
-[assembly: go.GoPositionMap("archive/tar/stat_actime2.go", "stat_actime2.cs", "ABEcorai")]
-[assembly: go.GoPositionMap("archive/tar/stat_unix.go", "stat_unix.cs", "ACQkggAJDqKCgpSCgriAgqKCgrSAgqKCgsaCloKClJKCgqaCgoKCpoKCpoKCpoKCpoKCgqaCgoIADAo=")]
+[assembly: go.GoPositionMap("archive/tar/reader.go", "reader.cs", "ACVOkgACHAANAoKUgoKCgoKmpqKC7oKUgIKkgIKkhIKClICCpJaUgoKClIKCAAcQpIKCgpaClKSkqoCipIKUgpSCgpSsgKKqgKKokpSCAAUQ0pKClIKWgoKqwoKCgpS6goKUgpSu5JKSlLS0pLSkloCCpIKClIKCgpSogpSosoKClIKUpKSkpIKkgqSkpKSkgoKUtoKmgqqigoKUirSCgoKClISWlpSktoKUAAIWAAsEgIKkgoCCpIKUqIKCloKWgoKCgoKCgoKWgoKCgoKEgpSCgoigkoKUgoTGgoKCtIKCgoCCpICCAAIwABUCgoKAgqTGgqYAAhYADgiClISCgoKUgoKClIKUgoKClJaUgIKkgpQAAxwACgIABRKSgoKClICCpIKCgri6goKCuoCCpIKCzICCpIKCgoKClJSqxoKCgqiCgpSCuoKCgoKClIKUAAIaAAoCgpSCgpQAAhoACgKClIKClAAIErKClIKClJSkpAAICIKokqiSAAkUsoKCloKCgoKCkoKkgpSCgoKogpSkpKSkyMKCgoCCtoKWgoKCgoKSgqSCgoKUlIKCzIKCloKUpKSkyIKkgtqCgqqigoKUqtKCgoKUgpSqooKClKiawoDKgpSCgpS4goKU", "407-407:1;411-411:2;539-556:1;560-564:2")]
+[assembly: go.GoPositionMap("archive/tar/stat_actime2.go", "stat_actime2.cs", "AAscorai")]
+[assembly: go.GoPositionMap("archive/tar/stat_unix.go", "stat_unix.cs", "ABIkggAJDqKCgpSCgriAgqKCgrSAgqKCgsaCloKClJKCgqaCgoKCpoKCpoKCpoKCpoKCgqaCgoIADAo=")]
 [assembly: go.GoPositionMap("archive/tar/strconv.go", "strconv.cs", "AA0gkqiSgoKmqqKClIKCgqYAChqigIKkqJKClIKCzIKCAAMW8oKs6IzSgpaCooKClIKClJSCgpSClKiqooKCloKCgpSCloKm3ISClIKClKaCgoKWlICCpKqigqyylpaCgpSCqIKUgpSUgoKUqqKSgqiCgoKClKz0goKogoKUgoKoooKogoKWgpSqooKWgoKCloKClAACGgAKAoKUlKQ=")]
-[assembly: go.GoPositionMap("archive/tar/writer.go", "writer.cs", "ACZGkgAJHtKClICCpICCpIKu8oCCpKiCgpQABxKCgoKWgpSCpIKkgqTItJKAgqiSgoKCgpTmsgAjSJaChJKClIaSgoKClJiSgoKCgpSUgoKUgoKUgIK6koCSgoKAggAOHqa0koKCgIK2goKAgrqSgoKCgpSCACdQgoCCuJSAgqSUAAYcAAkChIKCloKCgoKCgoKChIKCgoKErNKWgoKUhIKCgoKCgoKCgoKCqICCpIKs0oCCpICCpIKUgoLcsqKClIKUgoKmgpSCgpSCgIKkgoKUkoLsooKCpKSWgoKCgpQAAhTygpSCgpQAAhoACgKClIKClKyygpSCqIKCqIIACBKygoKUgoKUlKSkAAgIgqiSqJIACRSygoKWgoKCgoKSgqSClIKCgqiClKSkpKTIwoKCgIK2gpaCgoKCgpKCgoKUpIKUgoLMgoKWgpSkpKSkyIKkguyCgoKmqJKClKSk")]
+[assembly: go.GoPositionMap("archive/tar/writer.go", "writer.cs", "ACJIkgAJHtKClICCpICCpIKu8oCCpKiCgpQABxKCgoKWgpSCpIKkgqTItJKAgqiSgoKCgpTmsgAjSJaChKSCgoKUmJKCgoKClJSCgpSCgpSAgrqSgJKCgoCCAA4eprSSgoKAgraCgoCCupKCgoKClIIAJ1CCgIK4lICCpJQABhwACQKEgoKWgoKCgoKCgoKEgoKCgoSs0paCgpSEgoKCgoKCgoKCgoKogIKkgqzSgIKkgIKkgpSCgtyyooKUgpSCgqaClIKClIKClICCpIKUgoKUkoLsooKCpKSWgoKCgpQAAhTygpSCgpQAAhoACgKClIKClKyygpSCqIKCqIIACBKygoKUgoKUlKSkAAgIgqiSqJIACRSygoKWgoKCgoKSgqSClIKCgqiClKSkpKTIwoKCgIK2gpaCgoKCgpKCgoKUpIKUgoLMgoKWgpSkpKSkyIKmguyCgoKmqJKClKSk", "209-209:1;407-443:1")]
 // </GoSourcePositionMaps>
 
 namespace go.archive;
@@ -129,4 +131,32 @@ public static partial class tar_package
     [GoValueClone("blk")] public partial struct Reader {}
     [GoValueClone("blk")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸuser() => builtin.initPackage(typeof(os.user_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

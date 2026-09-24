@@ -6,15 +6,54 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/des` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**18 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**55 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
+| `TestDESBlock` | pass | pass |
+| `TestDESBlock/DES` | pass | pass |
+| `TestDESBlock/DES/Decryption` | pass | pass |
+| `TestDESBlock/DES/Decryption/Aliasing` | pass | pass |
+| `TestDESBlock/DES/Decryption/AlterInput` | pass | pass |
+| `TestDESBlock/DES/Decryption/BufferOverlap` | pass | pass |
+| `TestDESBlock/DES/Decryption/NonZeroDst` | pass | pass |
+| `TestDESBlock/DES/Decryption/OutOfBoundsRead` | pass | pass |
+| `TestDESBlock/DES/Decryption/OutOfBoundsWrite` | pass | pass |
+| `TestDESBlock/DES/Decryption/ShortBlock` | pass | pass |
+| `TestDESBlock/DES/Encryption` | pass | pass |
+| `TestDESBlock/DES/Encryption/Aliasing` | pass | pass |
+| `TestDESBlock/DES/Encryption/AlterInput` | pass | pass |
+| `TestDESBlock/DES/Encryption/BufferOverlap` | pass | pass |
+| `TestDESBlock/DES/Encryption/NonZeroDst` | pass | pass |
+| `TestDESBlock/DES/Encryption/OutOfBoundsRead` | pass | pass |
+| `TestDESBlock/DES/Encryption/OutOfBoundsWrite` | pass | pass |
+| `TestDESBlock/DES/Encryption/ShortBlock` | pass | pass |
+| `TestDESBlock/DES/Roundtrip` | pass | pass |
+| `TestDESBlock/TripleDES` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/Aliasing` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/AlterInput` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/BufferOverlap` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/NonZeroDst` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/OutOfBoundsRead` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/OutOfBoundsWrite` | pass | pass |
+| `TestDESBlock/TripleDES/Decryption/ShortBlock` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/Aliasing` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/AlterInput` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/BufferOverlap` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/NonZeroDst` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/OutOfBoundsRead` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/OutOfBoundsWrite` | pass | pass |
+| `TestDESBlock/TripleDES/Encryption/ShortBlock` | pass | pass |
+| `TestDESBlock/TripleDES/Roundtrip` | pass | pass |
 | `TestDESDecryptBlock` | pass | pass |
 | `TestDESEncryptBlock` | pass | pass |
 | `TestDecryptTripleDES` | pass | pass |

@@ -11,18 +11,12 @@ using itoa = @internal.itoa_package;
 using msan = @internal.msan_package;
 using oserror = @internal.oserror_package;
 using race = @internal.race_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using @unsafe = unsafe_package;
 using @internal;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() {
-    builtin.initPackage(typeof(@internal.oserror_package));
-}
 
 public static nint Stdin = 0;
 public static nint Stdout = 1;

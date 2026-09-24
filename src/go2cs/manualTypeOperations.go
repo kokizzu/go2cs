@@ -122,7 +122,7 @@ func (scope goosScope) includes(goos string) bool {
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
-	"crypto/internal/alias": {
+	"crypto/internal/fips140/alias": {
 		// AnyOverlap orders element ADDRESSES — four `(uintptr)Ꮡ(…)` takes, each pinning its backing only
 		// until the box that took it is finalized, so a collection landing between two takes relocates one
 		// operand and the ordering compares two heap layouts. Measured 2026-09-03 (Release, tiering off):
@@ -135,6 +135,68 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// marker would hand-own it BY CONSEQUENCE (the internal/godebug class) and freeze its csproj,
 		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
 		"AnyOverlap": goosAny,
+	},
+	"crypto/internal/fips140/check": {
+		// init HMACs the module's text/rodata through Linkinfo, a `go:fipsinfo` symbol the GO LINKER
+		// synthesizes (cmd/link/internal/ld/fips.go): the hash is a property of the Go build's layout,
+		// and a CLR assembly carries no fips140 module sections. Converted, Linkinfo is zero-valued, so
+		// under GODEBUG=fips140=on the initializer panicked `fips140: no verification checksum found` --
+		// 44 of crypto/internal/fips140test's 52 divergences (the re-exec'd children of TestCASTPasses,
+		// TestCASTFailures, TestConditionals). Displaced onto an init that keeps Go's Enabled/Supported/
+		// debug/Verified shape and computes no checksum (COORD ruling 2026-09-22).
+		// Registered here rather than whole-file marked: check has exactly one non-test Go file, and a
+		// marker would hand-own it BY CONSEQUENCE and freeze its csproj, package_info and README.
+		// crypto/internal/fips140/check/check_impl.cs holds the [GoInit] body.
+		"init": goosAny,
+	},
+	"crypto/internal/fips140/nistec": {
+		// init aliases the EMBEDDED P-256 generator table into a typed view — Go 1.24 replaced a
+		// runtime-computed table with `p256PrecomputedEmbed` and takes it for free with
+		// `(*[43]p256AffineTable)(unsafe.Pointer(&p256PrecomputedEmbed))`. golib's array<T> is a
+		// readonly struct whose FIRST field is `T[] m_array` and a generated `[GoType("[N]E")]` type
+		// holds a StrongBox<array<E>>, so the raw-address route lays a MANAGED HEADER over the
+		// table's own DATA and its first eight bytes become a reference. NOT latent: measured at the
+		// version tip, SystemCertVerify dies 0xC0000005 on the first `.at<>()`, ten frames deep in
+		// ecdsa.GenerateKey -> ScalarBaseMult -> nistec.Select -> ElemRefBox.get_ValueSlot, before it
+		// reaches the certificate seam it exists to test.
+		// ⚠ q97's seam does NOT transfer. MemoryMarshal.Cast is constrained `where T : struct`, not
+		// `unmanaged`: it COMPILES for any struct and throws at RUNTIME. Measured —
+		// `MemoryMarshal.Cast<byte, p256AffineTable>` builds 0 errors and throws ArgumentException
+		// ("Only value types without pointers or references are supported") inside the module
+		// initializer. Every generated Go array type is a managed struct, so no AGGREGATE Go array
+		// type can be cast into; q97's worked because its destination was a PRIMITIVE.
+		// So the cure is a DECODE, and a copy is correct here: p256GeneratorTables is written once in
+		// this init and read at exactly two sites, nothing else in the corpus touches it, so there is
+		// no write-through requirement (q97's sponge had one). Reading every limb explicitly
+		// little-endian also subsumes the `cpu.BigEndian` arm, whose own reinterpret is cured by being
+		// removed rather than left behind. A SITE cure, not the class cure.
+		// Registered here rather than whole-file marked: nistec has ELEVEN non-test Go files, so a
+		// marker would hand-own the package BY CONSEQUENCE and freeze its csproj, package_info and
+		// README. crypto/internal/fips140/nistec/p256_impl.cs holds the body, and the companion
+		// carries the [GoInit] module initializer itself because a displaced init emits only the
+		// placeholder. The decode needs a Montgomery-limb loader the package does not have, so
+		// crypto/internal/fips140/nistec/fiat/p256_impl.cs adds one (SetBytes converts INTO the
+		// Montgomery domain and would double-convert these already-Montgomery limbs, silently).
+		"init": goosAny,
+	},
+	"crypto/internal/fips140/sha3": {
+		// keccakF1600Generic views the sponge state both ways — the [200]byte it absorbs into and the
+		// [25]uint64 it permutes over — and on a little-endian host Go takes the view for free with
+		// `a = (*[25]uint64)(unsafe.Pointer(da))`. golib's array<T> is a WINDOW ON A REAL T[], so a
+		// byte[] box has no uint64[] to window and the raw-address route materializes an array<uint64>
+		// HEADER out of the buffer's own DATA. Not latent: cpu.BigEndian is a `const bool = false`, so
+		// the reinterpret is the ONLY REACHABLE branch, on every permutation of every SHA-3 and SHAKE
+		// call. MEASURED at the post-fold tip in a clean tree — four GolibTests reds, and the lengths
+		// are the tell: the zeroed first permutation reads `length 0`, while the OS-oracle vectors
+		// hashing FILLED patterns read `length -658924933` and `-540099156`, negative because the
+		// length is content and not metadata. Displaced onto the house remedy, MemoryMarshal.Cast over
+		// the array's own span (internal/chacha8rand's chacha8_impl.cs takes it for the same seam, and
+		// ArrayShapeReinterpretTests binds it directly) — a genuine alias, which the sponge requires
+		// since absorb and squeeze read that same buffer between permutations.
+		// Registered here rather than whole-file marked: sha3 has EIGHT non-test Go files, so a marker
+		// would hand-own the package BY CONSEQUENCE and freeze its csproj, package_info and README.
+		// crypto/internal/fips140/sha3/keccakf_impl.cs holds the body.
+		"keccakF1600Generic": goosAny,
 	},
 	"vendor/golang.org/x/crypto/internal/alias": {
 		// The vendored purego twin of crypto/internal/alias.AnyOverlap: the same four-take address ordering,
@@ -177,6 +239,33 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// pointer-slot view is recorded for a second reaching site, not built here.
 		"persistentalloc1":  goosAny,
 		"inPersistentAlloc": goosAny,
+		// The entersyscall FAMILY (COORD ruling 2026-09-22): entersyscall, reentersyscall,
+		// entersyscallblock and exitsyscall hand a P to the scheduler across a system call and record
+		// the caller's PC/SP/FP for tracebacks. The managed host has no P or M to hand off, and
+		// entersyscall's `reentersyscall(sys.GetCallerPC(), sys.GetCallerSP(), getcallerfp())` reads
+		// two compiler intrinsics whose contract cannot be met here (they STAY throwing, by name). Left
+		// converted, the runtime row's test host died on the first Entersyscall (TestPreemptionAfterSyscall's
+		// goroutines). runtime/syscall_managed_impl.cs holds bodies that move only the goroutine's status
+		// (_Grunning <-> _Gsyscall) and leave syscallpc/syscallsp/syscallbp zero. The bodies live in the
+		// per-GOOS proc.cs of all three targets, hence goosAny.
+		"entersyscall":      goosAny,
+		"reentersyscall":    goosAny,
+		"entersyscallblock": goosAny,
+		"exitsyscall":       goosAny,
+		// usleep on WINDOWS (COORD ruling 2026-09-22): Go's body waits on a high-resolution waitable
+		// timer (or a ms-grained WaitForSingleObject) through stdcall6/stdcall2 -> asmcgocall, which has
+		// no managed body, so every runtime.usleep threw -- the runtime row's host died on one inside
+		// TestRuntimeLockMetricsAndProfile/runtime.lock/sample-1, and TestNetpollBreak reaches the same
+		// path. runtime/windows/usleep_windows_impl.cs sleeps the same microseconds without the OS call.
+		// Windows alone: linux already hand-owns its usleep (mem_linux_impl.cs) and darwin's converts.
+		"usleep": goosWindows,
+		// sysAllocOS / sysFreeOS on WINDOWS (COORD ruling 2026-09-22): VirtualAlloc / VirtualFree through
+		// stdcall4 / stdcall3 -> asmcgocall threw on every sysAlloc; on the runtime row one such throw under
+		// persistentalloc1 held globalAlloc's lock and echoed as 70 abandoned-lock panics.
+		// runtime/windows/mem_windows_impl.cs makes the same two kernel calls directly (the linux
+		// flavour's mmap precedent). The other sys*OS bodies are displaced only when a row reaches them.
+		"sysAllocOS": goosWindows,
+		"sysFreeOS":  goosWindows,
 		// addrRanges.init / add / cloneInto (increment 7 of the runtime row, W2a, 2026-09-05): the three
 		// writers that build a notInHeapSlice header FIELD BY FIELD over the managed a.ranges --
 		// `ranges := (*notInHeapSlice)(unsafe.Pointer(&a.ranges)); ranges.len = …; ranges.cap = …;
@@ -260,7 +349,7 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// pointer word ENDS and the mask reports WHICH words they are. GoReflect.GoGCMaskOf answers
 		// from that walk, so the hand-own reports the same truth at finer resolution rather than
 		// substituting a plausible one. runtime/mbitmap_impl.cs holds the body.
-		"getgcmask":  goosAny,
+		"pointerMask":  goosAny,
 		"g.guintptr": goosAny,
 		"setGNoWB":   goosAny,
 		"setMNoWB":   goosAny,
@@ -295,6 +384,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"notesleep":           goosAny,
 		"notetsleep_internal": goosAny,
 		"notetsleepg":         goosAny,
+		// go1.24's lock_spinbit.go (selected once goexperiment.spinbitmutex is baseline-ON) splits the
+		// tail of unlock2 into unlock2Wake, which walks the sleeping-M stack threaded through
+		// m.mWaitList. That field is the waiter QUEUE the managed core documents as NOT modelled, so the
+		// generated body would name a member this corpus deliberately does not carry -- i9 measured it as
+		// four errors in windows/lock_spinbit.cs (c2b26c50b), the ONLY four the 1.24.13 reconvert leaves
+		// once lock2 and unlock2 are displaced. Registering it here is what makes those four vanish WITH
+		// the body, instead of being answered by adding the field -- which would put two lock protocols
+		// in one runtime. Its managed body is EMPTY and lock_managed_impl.cs says why at the site.
+		//
+		// Go's only caller is lock_spinbit.go's own unlock2 (:268), already registered above, so this
+		// displaces nothing that anything still calls.
+		//
+		// HOP-CONDITIONAL, measured rather than reasoned: at 1.23.12 there is no unlock2Wake in the
+		// runtime package, so TestManualConversionRegistrationsDisplaceSomething is RED at master until
+		// the corpus reaches 1.24.13 -- "the entry matches no Go declaration in that package". This entry
+		// lands WITH the hop and never ahead of it (COORD 8be44bbc0a).
+		//
+		// (Placed after the group rather than beside unlock2 on purpose: a comment breaks gofmt's
+		// alignment run, and inserting it mid-group re-pads three neighbouring lines that have nothing
+		// to do with this change.)
+		"unlock2Wake": goosAny,
 		// The os/signal OS-handler-INSTALL layer (linux/signal_posix_impl.cs). sigenable/sigdisable/
 		// sigignore are the three functions signal_enable/signal_disable/signal_ignore (sigqueue.go,
 		// which stay auto) call to reach the kernel: the converted bodies install Go's own sigtramp
@@ -513,6 +623,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
 		// Caller(1) are the demonstrated consumers.
 		"callers": goosAny,
+		// saveblockevent (mprof_impl.cs): the block/mutex profile recorder, hand-owned as a REFUSAL BY
+		// NAME (COORD ruling (A), 2026-09-22). Its stack capture IS expressible (the callers branch,
+		// measured past the capture), but the store it records into is not: newBucket persistentallocs
+		// ONE block (a bucket header with reference-bearing next/allnext, the stk array, the record)
+		// reached by byte offset, and buckhash is a sysAlloc'd native array of *bucket -- the arm-2a
+		// class. The refusal replaces the stub's misleading "assembly, cgo, or linkname" throw. It is
+		// reached only above a block/mutex profile rate of 0 (Go's default), through runtime.blockevent
+		// (pulled by runtime/pprof's TestBlockProfileBias) and mutexevent. Declared once, in mprof.go,
+		// hence goosAny.
+		"saveblockevent": goosAny,
+		// setProcessCPUProfiler / setThreadCPUProfiler on WINDOWS (COORD ruling 2026-09-22): Go's
+		// Windows bodies create a waitable timer and a profileLoop thread that SuspendThread /
+		// GetThreadContext-samples every m, all through stdcall -> asmcgocall, which has no managed
+		// body. The first StartCPUProfile threw out of SetCPUProfileRate AFTER pprof's cpu.profiling
+		// and runtime's cpuprof.on were set and with cpuprof.lock held, so every later
+		// StartCPUProfile in the process answered "cpu profiling already in use". The managed model
+		// has no interrupt sampler, which is exactly Go's plan9 port (os3_plan9.go): the process
+		// setter does nothing and the thread setter records m.profilehz. windows/
+		// cpuprof_windows_impl.cs keeps that shape: a profile starts, stops and is valid, with zero
+		// samples. Windows alone: the linux and darwin bodies are signal/timer based and stay converted.
+		"setProcessCPUProfiler": goosWindows,
+		"setThreadCPUProfiler":  goosWindows,
 		// netpollGenericInit (netpoll_impl.cs) — the RUNTIME poller's one-time start-up, and a
 		// MODULE-INIT killer rather than a test failure, which is why it is here at all.
 		//
@@ -611,6 +743,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Type.ArrayType":  goosAny,
 		"Type.Elem":       goosAny,
 		"Type.Key":        goosAny,
+		// Type.MapType is the FIFTH member of that same prefix-downcast family, and the first one a
+		// ROW reached rather than a reflect test: internal/sync's TestHashTrieMapTruncHash, whose
+		// NewTruncHashTrieMap takes `abi.TypeOf(mx).MapType().Hasher` to borrow a real map's hasher.
+		// The auto body is correct Go read literally -- `(*mapType)(unsafe.Pointer(t))` -- and is
+		// rightly refused for the same reason the other four are: a SYNTHESIZED descriptor has no
+		// native storage, so the reinterpret falls through golib's aliasing gate (which needs
+		// SizeOf<TDst> <= SizeOf<T>, and a mapType is WIDER than the Type it embeds) and the address
+		// fallback mints a NativeBox over an order token. The first field read then panics in
+		// NativeBox.get_Value rather than fabricating managed references out of token bytes.
+		//
+		// Measured 2026-09-20: 0 of 34 subtests under that root, 29 of the 34 failures that one
+		// panic -- while TestHashTrieMap and TestHashTrieMapBadHash run the SAME 34 subtests over the
+		// same map and pass 34/34 each, because neither calls abi.TypeOf. Synthesized from the
+		// carried System.Type exactly as StructType/ArrayType/FuncType are; see type_impl.cs for what
+		// the projection honors and what it deliberately leaves zero.
+		"Type.MapType": goosAny,
 		// Type.FuncType is the THIRD prefix downcast of that same family, and it failed identically:
 		// the auto body's tag check is right (`Kind() != Func → nil`, Go's own "or nil if its tag
 		// does not match") and its `Reinterpret<Type, ΔFuncType>` is rightly refused, so a perfectly
@@ -1281,9 +1429,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// which KILLED the whole C# test host mid-run at os's TestReadlink and emptied every verdict
 	// after it. file_windows_impl.cs decodes the record from the byte slice at its documented
 	// offsets. openSymlink and normaliseLinkPath stay auto — they pass scalars, handles and strings.
+	//
+	// os.readReparseLinkHandle is that SAME BODY, and it is a 1.24 addition: 1.24 split the decode
+	// out of readReparseLink into a handle-taking function, so the reinterpret that used to exist at
+	// one site now exists at two and the ENTRY BELOW STOPPED COVERING IT. It is not latent — the
+	// same release added os.Root, and root_windows.go reaches readReparseLinkHandle DIRECTLY at two
+	// call sites (readReparseLinkAt, and the lstat branch of rootStat), so an os.Root symlink read takes
+	// ACCESS_VIOLATION with no readReparseLink anywhere on the stack. Both names are registered:
+	// readReparseLink keeps its entry because the companion answers it with an EAGER finally rather
+	// than the converted defer frame, which is that file's stated ownership doctrine for the handle.
 	"os": {
-		"File.readdir":    goosWindowsDarwin,
-		"readReparseLink": goosWindows,
+		"File.readdir":          goosWindowsDarwin,
+		"readReparseLink":       goosWindows,
+		"readReparseLinkHandle": goosWindows,
 	},
 	// os/user's two NetUserGetInfo readers are the SAME fork as net.adapterAddresses below, one
 	// structure smaller, and reached through the ptrout class rather than through a []byte the
@@ -1509,6 +1667,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// to own as well: Go sets it from `unsafe.Sizeof(procEntry)`, which is the MANAGED size here.
 		"Process32First": goosWindows,
 		"Process32Next":  goosWindows,
+		// The fourth member, reference-bearing through POINTER fields rather than an inline array:
+		// Go's StartupInfo holds `*uint16` (Desktop, Title, a reserved slot) and a reserved `*byte`,
+		// each a `ж<T>` reference in the converted record, so its address is not one kernel32 may
+		// write STARTUPINFOW's 104 bytes over. The boundary refuses the generated body by name
+		// ("argument 0 is a managed pointer token"), which is what kept syscall's TestGetStartupInfo
+		// -- and the banked row -- red at 1.24.13. Body in zsyscall_windows_startupinfo_impl.cs; the
+		// pointer fields come back as native-backed boxes over the process's own startup strings.
+		"getStartupInfo": goosWindows,
 		// The SOCKET-ADDRESS family — the member `net` forces, and the first that is two defects
 		// rather than one (syscall_windows_impl.cs carries the full write-up).
 		//
@@ -1858,6 +2024,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// this file did not build.
 		"GetAddrInfoW":  goosWindows,
 		"FreeAddrInfoW": goosWindows,
+		// THE NET-DATABASE FAMILY, the three unclosed siblings of the arc above. Each generated
+		// wrapper reinterprets ws2_32's returned record address as a MANAGED BOX in one line —
+		// `h = (ж<Hostent>)(uintptr)((@unsafe.Pointer)r0)` — over records whose Name is `ж<byte>`
+		// and whose Aliases / AddrList / Proto are `ж<ж<byte>>` or `ж<byte>`, i.e. managed
+		// references where native hostent / protoent / servent carry raw char* and char**. Nothing
+		// faults at the cast; the fabrication is at the first READ, which materializes the whole
+		// record — net's getprotobyname reads `(~p).Proto`, one uint16, and fabricates Name and
+		// Aliases on the way to it, the PrimaryGroupID note from os/user in a second costume. And
+		// ws2_32 returns these from THREAD-LOCAL storage, which net's own source says at
+		// lookup_windows.go, so a box aliasing them is stale the moment the thread resolves again.
+		// The `_`-prefixed members are registered rather than the exported ones: the reinterpret is
+		// theirs, and the exported wrappers do the string conversion faithfully. Bodies in
+		// zsyscall_windows_netdb_impl.cs, transcribe-on-arrival beside the addrinfo companion.
+		"_GetHostByName":  goosWindows,
+		"_GetProtoByName": goosWindows,
+		"_GetServByName":  goosWindows,
 		// The DNS RECORD pair, the same transcription shape one class over — and the member the
 		// ptrout census deferred BY NAME ("it belongs to a `net` DNS arc"). Two defects meet here:
 		// _DnsQuery's `qrs` is a `**DNSRecord` OUT-parameter, so the generated `(uintptr)Ꮡqrs`
@@ -2037,6 +2219,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// nil with a CLR type-safety break. Body in zsyscall_windows_ptrout_impl.cs, transcription
 		// in os/user's lookup_windows_impl.cs, one change.
 		"NetUserGetLocalGroups": goosWindows,
+		// THE os.Root DOOR, and the two hop-new members of the struct-passing class. Their third
+		// argument is a *OBJECT_ATTRIBUTES, whose converted record holds THREE `ж<T>` fields where
+		// ntdll reads raw pointers (types_windows.cs:108), and whose ObjectName's own pointee is
+		// reference-bearing too (NTUnicodeString.Buffer, string_windows.cs:11). A reference-bearing
+		// pointee has no pinnable slot, so `(uintptr)` on its box answers an ORDER TOKEN, and
+		// syscall/windows/dll_windows.cs's token door refuses it at argument 2 before the trampoline
+		// runs -- a panic that takes goroutine 1 with it, which is why the 494 leaves behind
+		// os.Root's TestRootConsistencyCreate have never had a C# side. Bodies in
+		// zsyscall_windows_ntfile_impl.cs, against blittable OBJECT_ATTRIBUTES and UNICODE_STRING
+		// mirrors; the CALL is the generated one and only the third argument's memory differs.
+		"NtCreateFile": goosWindows,
+		"NtOpenFile":   goosWindows,
 		// The privilege-adjustment member of the struct-passing class, and the one whose corruption
 		// BLAMES THE HOST. Its generated body passes advapi32 the address of a managed
 		// TOKEN_PRIVILEGES: native wants 16 bytes ending in one INLINE LUID_AND_ATTRIBUTES, and the
@@ -2048,6 +2242,34 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// sides of the boundary: the MANAGED LUID is correct, only the native image is not. The
 		// hand-own is internal/syscall/windows/windows/zsyscall_windows_privilege_impl.cs.
 		"adjustTokenPrivileges": goosWindows,
+		// The TOKEN-INFORMATION members, and the UNREPAIRED TWINS of members cured in
+		// syscall/windows/security_windows.cs on 2026-08. That file's header is the reference for
+		// the fork -- a KERNEL BYTE BUFFER THE CALLER REINTERPRETS, where no wrapper is at fault --
+		// and this package declares its OWN TOKEN_GROUPS, SID_AND_ATTRIBUTES,
+		// SID_IDENTIFIER_AUTHORITY and getTokenInfo loop, so the cure did not reach them. Nothing
+		// did, until Go 1.24 moved os/user's group lookup onto the process token.
+		//
+		// ONE ROOT, at security_windows.cs:201 and :236: `(ж<TOKEN_GROUPS>)(uintptr)(i)` and its
+		// sibling cast a kernel-filled byte buffer to a managed record whose field is a MANAGED
+		// REFERENCE, so the first read of that field fabricates an object reference out of raw
+		// kernel bytes. Measured (i9, c5f7b4b90d / ad7795475a): AllGroups read the fabricated
+		// array's length, `slice bounds out of range [::20] with capacity 14` against a token
+		// reporting 20 groups; GetSidIdentifierAuthority dereferenced the fabrication and took the
+		// test host down with an AccessViolationException at go.array<byte>.Clone(), which is why
+		// that measurement saw 494 leaves with no C# verdict rather than one failure.
+		//
+		// The remedy is the twin's, ported: the buffer on the PINNED OBJECT HEAP with a
+		// ConditionalWeakTable anchor per SID (lifetime), the PSIDs read through a
+		// [StructLayout(Sequential)] mirror and wrapped as NATIVE boxes (type). AllGroups then
+		// needs no address at all -- GetTokenGroups transcribes every entry into a correctly sized
+		// managed array and the slice is simply that array. getTokenInfo is registered with them
+		// because it is where the buffer is allocated; GetSidIdentifierAuthority is COPIED rather
+		// than pinned, because six plain bytes returned BY VALUE have no address inside them to
+		// keep valid. Body in internal/syscall/windows/windows/security_windows_impl.cs.
+		"getTokenInfo":              goosWindows,
+		"GetTokenGroups":            goosWindows,
+		"TOKEN_GROUPS.AllGroups":    goosWindows,
+		"GetSidIdentifierAuthority": goosWindows,
 		// The UDP SEND half of the datagram seam. Their generated bodies pass the kernel the address
 		// `sockaddr()` returns -- a pointer into a MANAGED box -- which is the struct-passing class;
 		// internal/syscall/windows/windows/net_windows_impl.cs writes a native stack image through the
@@ -2190,6 +2412,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// item-2 reading) to a one-line body returning nil, the value syncTimer itself returns under
 		// asynctimerchan=1. time/time_impl.cs holds the body beside its consumer.
 		"syncTimer": goosAny,
+	},
+	"internal/testenv": {
+		// CPUProfilingBroken (COORD ruling 2026-09-22) answers true on the managed host: the runtime has
+		// no CPU sampler, the case Go's own plan9 arm answers true for ("Profiling unimplemented"). The
+		// Windows setters are hand-owned in that shape (runtime/windows/cpuprof_windows_impl.cs), so a
+		// CPU profile starts, stops and carries ZERO samples. Left converted, it answered false on
+		// windows, so runtime/pprof's testCPUProfile doubled its duration (5 s, 10, 20, ...) until the
+		// package deadline, and each CPU test ate most of what was left (315 / 155 / 35 s measured).
+		// Answering true gives those tests Go's own 10-second deadline and ends each one in Go's own
+		// Skipf naming golang.org/issue/13841. internal/testenv/testenv_impl.cs holds the body.
+		"CPUProfilingBroken": goosAny,
 	},
 }
 

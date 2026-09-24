@@ -22,6 +22,7 @@ using go;
 using static global::go.context_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b54696d656f7574282920626f6f6c7d", "TestDeadlineExceededSupportsTimeout_type")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -44,11 +45,11 @@ using static global::go.context_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("context/afterfunc_test.go", "afterfunc_test.cs", "ABYugqaCpsKCgoKU1sKCgtaCpsKCgoKClIKygoKCggAJCMKCgoKUgoKk1qKCgpKC1qKCgpKC1qKCgpKUkoLWgoKCgoCSpIKCgJLIgoKCgJKkgoCSyIKCkoCSpIKAkg==")]
-[assembly: go.GoPositionMap("context/benchmark_test.go", "benchmark_test.cs", "ABUgwoKClIKSgoKCgpSClIKCAAgMgpKCgsqigoKGkoKCgsKCgoKU1oSCkoKCgpSCuISCggAJCoKCgoKCgqaCgoKCpoKCgoLugoL4goKCkoKmkoIACxCigpSSggAOEIKCkoKWgoKCgqKCxNyCgpKCloKC")]
-[assembly: go.GoPositionMap("context/example_test.go", "example_test.cs", "ABEqAAoMgoKCkoK0pMiWgpSCgoIAChoACwKCupS0tAAHEgAJBoKUtLQADxLShoCCgqSWgoSCAAIS4qLYggAIFMTKgoKCqMaEgoKCwoSClIKUgtYABRYACgKigpKClIKmgoKUloKCgpSUgoKClJSClIKCAAkQAAkGgoKSlKKCqIKUhIKUgoI=")]
+[assembly: go.GoPositionMap("context/afterfunc_test.go", "afterfunc_test.cs", "ABYugqaCptKCgoKU1tKCgtaCpsKCgoKClIKygoKCggAJCNKCgoKUgoKk1qKCgpKC1qKCgpKC1qKCgpKUkoLWgoKCgoCSpIKCgJLIgoKCgJKkgoCSyIKCkoCSpIKAkg==", "58-64:1;99-101:1;135-135:1")]
+[assembly: go.GoPositionMap("context/benchmark_test.go", "benchmark_test.cs", "ABUgwoKClIKSgoKCgpSClIKCAAgMgpKCgsqigoKGkoKCgsKCgoKU1oSCkoKCgpSCuISCggAJCoKCgoKCgqaCgoKCpoKCgoLugoL4goKCkoKmkoIACxCigpSSggAOEIKCkoKWgoKCgqKCxNyCgpKCloKC", "22-37:1;43-45:1;59-66:1;71-81:2;94-114:1;95-99:1.1;100-106:1.2;107-113:1.3;127-131:1;132-139:2;146-153:1;163-173:1;167-170:1.1;184-188:1")]
+[assembly: go.GoPositionMap("context/example_test.go", "example_test.cs", "ABEqAAoMgoKCkoK0pMiWgpSCgoIAChoACwKCupS0tAAHEgAJBoKUtLQADxLShoCCgqSWgoSCAAIS4qLYggAIFMTKgoKCqMaEgoKCwoSClIKUgtYABhYACgKigpKClIKmgoKUloKCgpSUgoKClJSClIKCAAkQAAkGgoKSlKKCqIKUhIKUgoI=", "27-41:1;30-39:1.1;106-112:1;128-159:1;129-145:1.1;166-177:2;175-175:2.1;191-206:1;193-196:1.1;238-247:1;240-242:1.1;243-246:1.2")]
 [assembly: go.GoPositionMap("context/net_test.go", "net_test.cs", "AA8agoKClII=")]
-[assembly: go.GoPositionMap("context/x_test.go", "x_test.cs", "ABUokqSCpIKkggAOJsKCgpaC1IKCgpSk1oCS+IKCgpSk1oCS+KKEgJKmgoKEgoCCpICCpqTqgoLWpICC2qKCgoKStNaAggAPCIKEgoCSpISCgoSCgoKEgoSC9oKEgoCSpISCgoSCgoKmooKCgoLWpICCAAgOgAARDKKCgIKkgIKkgIK4goSChICSpoKEgJKmgoSChICSpoKEgoSChIKEggAJBoKCAAoQ/oIABxCCAAcQgoIABxCCgtyCppSCgpSAgtqigoKUgoKCgoKCqJKCgoKCqIKCkJKmguaCgsiCkoKU5oKC+KKCgqKClIKCgpLmgoL4gqaCAAoGooSCgpKUhr6ClIKCtIKCtIKCgpSCgsaygoCCyIKk6ICSpIKCgoKCkuaklIKC1qTogoKChILWpICCpICCyJSCgoKUgoKAgqSAggAKCoKAkoKUgJKAkviCgJKClICSgpSAkoK4soCSggANBoKGgpSCAAoGgs4AMCqCggAHEIKCAAcQgoIABxCCgoKCAAcQgoKCggAHEIKCgoIABxCCgoKCAAcQgoKCggAHEIKCgoIABxCCggAHEIKCAAcQgoIABxCCggAHEIKCggAHEIKCggANIIKCggAHEIKCgtySkoKCgIKkgIIACQyCgoKilKaAgoKUpLiCkoKCgIKkgIKkgIKkgIIACRKCpqKCgoK4gpSChIKAgqSAggAPGrKmwoKC1sKCgtaCpqKCgoKChIK4gtaUpoKAgqSAgu6mgoKCgIKkgIKkgIKkgILcgoCCpICCpICCpICCyqaCgoKAgqSAgqSAgqSAgsiCgoKSlLTWguakgriigpKCkpTm+IKCgoKSlObIgoKCkpSClIK01oK6soKCpJSSlOY=")]
+[assembly: go.GoPositionMap("context/x_test.go", "x_test.cs", "ABUokqSCpIKkggAOJsKCgpaC1IKCgpSk1oCS+IKCgpSk1oCS+KKEgJKmgoKEgoCCpICCpqTqgoLWpICC2qKCgoKStNaAggAPCIKEgoCSpISCgoSCgoKEgoSC9oKEgoCSpISCgoSCgoKmooKCgoLWpICCAAgOgAARDKKCgIKkgIKkgIK4goSChICSpoKEgJKmgoSChICSpoKEgoSChIKEggAJBoKCAAoQ/oIABxCCAAcQgoIABxCCgtyCppSCgpSAgtqigoKUgoKCgoKCqJKCgoKCqIKCkJKmguaCgsiCkoKU5oKC+KKCgqKClIKCgpLmgoL4gqaCAAoGooSCgpKUhr6ClIKCtIKCtIKCgpSCgsaygoCCyIKk6ICSpIKCgoKCkuaklIKC1qTogoKChILWpICCpICCyJSCgoKUgoKAgqSAggAKCoKAkoKUgJKAkviCgJKClICSgpSAkoK4soCSggANBoKGgpSCAAoGgs4AMCqCggAHEIKCAAcQgoIABxCCgoKCAAcQgoKCggAHEIKCgoIABxCCgoKCAAcQgoKCggAHEIKCgoIABxCCggAHEIKCAAcQgoIABxCCggAHEIKCggAHEIKCggANIIKCggAHEIKCgtySkoKCgIKkgIIACQyCgoKilKaAgoKUpLiCkoKCgIKkgIKkgIKkgIIAFRKCpqKCgoK4gpSChIKAgqSAggAPGrKm0oKC1tKCgtaCpqKCgoKChIK4gtaUpoKAgqSAgu6mgoKCgIKkgIKkgIKkgILcgoCCpICCpICCpICCyqaCgoKAgqSAgqSAgqSAgsiCgoKSlLTWguakgriigpKCkpTm+IKCgoKSlObIgoKCkpSClIK01oK6soKCpJSSlOY=", "211-221:1;276-276:1;282-285:2;291-294:3;300-304:4;310-314:5;353-356:1;361-361:2;376-379:3;392-395:1;422-424:1;456-462:2;535-535:1;539-539:2;546-546:1;550-550:2;554-554:3;561-561:1;605-609:1;615-619:2;625-629:3;635-641:4;647-653:5;659-665:6;671-677:7;683-689:8;695-701:9;707-711:10;717-721:11;727-731:12;737-741:13;747-752:14;758-763:15;769-771:16;777-782:17;788-793:18;799-808:19;815-817:1;1004-1006:1;1027-1029:1;1041-1043:1;1054-1056:1;1075-1078:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -63,6 +64,10 @@ public static partial class context_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface TestDeadlineExceededSupportsTimeout_type {}
+    internal partial struct ExampleWithValue_favContextKey {}
+    internal partial struct TestAllocs_type {}
+    internal partial struct TestCause_type {}
     internal partial struct afterFuncContext {}
     internal partial struct customCauseContext {}
     internal partial struct customDoneContext {}
@@ -70,9 +75,31 @@ public static partial class context_test_package
     internal partial struct key2 {}
     internal partial struct otherContext {}
     internal partial struct testLayers_value {}
-    public partial interface TestDeadlineExceededSupportsTimeout_type {}
-    public partial struct ExampleWithValue_favContextKey {}
-    public partial struct TestAllocs_type {}
-    public partial struct TestCause_type {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.context_package));
+    }
 }

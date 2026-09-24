@@ -982,4 +982,46 @@ public static void TestIssue57490(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string testGoˢ = "test.go"u8;
+
+public static void TestParseTypeParamsAsParenExpr(ж<testing.T> Ꮡt) {
+    @string src = "package p; type X[A (B),] struct{}"u8;
+    var fset = token.NewFileSet();
+    var (f, err) = ParseFile(fset, testGoˢ, src, (global::go.go.parser_package.Mode)(ParseComments | SkipObjectResolution));
+    if (err != default!) {
+        Ꮡt.Fatal(err);
+    }
+    var typeParam = (~(~(~(~f).Decls[0]._<ж<ast.GenDecl>>()).Specs[0]._<ж<ast.TypeSpec>>()).TypeParams).List[0].Value.Type;
+    var (_, ok) = typeParam._<ж<ast.ParenExpr>>(ᐧ);
+    if (!ok) {
+        Ꮡt.Fatalf("typeParam is a %T; want: *ast.ParenExpr"u8, typeParam);
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string aGoˢ = "a.go"u8;
+
+[GoType("dyn")] internal partial struct TestEmptyFileHasValidStartEnd_type {
+    internal @string src;
+    internal @string want; // "Pos() FileStart FileEnd"
+}
+
+// TestEmptyFileHasValidStartEnd is a regression test for #70162.
+public static void TestEmptyFileHasValidStartEnd(ж<testing.T> Ꮡt) {
+    foreach (var (_, test) in new TestEmptyFileHasValidStartEnd_type[]{
+        new(src: ""u8, want: "0 1 1"u8),
+        new(src: "package "u8, want: "0 1 9"u8),
+        new(src: "package p"u8, want: "1 1 10"u8),
+        new(src: "type T int"u8, want: "0 1 11"u8)
+    }.slice()) {
+        var fset = token.NewFileSet();
+        var (f, _) = ParseFile(fset, aGoˢ, test.src, 0);
+        @string got = fmt.Sprintf("%d %d %d"u8, f.Pos(), (~f).FileStart, (~f).FileEnd);
+        if (got != test.want) {
+            Ꮡt.Fatalf("src = %q: got %s, want %s"u8, test.src, got, test.want);
+        }
+    }
+}
+
 } // end parser_internal_test_package

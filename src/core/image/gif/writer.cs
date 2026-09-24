@@ -20,24 +20,6 @@ using go.image.color;
 
 partial class gif_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() {
-    builtin.initPackage(typeof(go.image.color.palette_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸimageꓸdraw() {
-    builtin.initPackage(typeof(go.image.draw_package));
-}
-
 // Graphic control extension fields.
 internal static UntypedInt gcLabel => 0xF9;
 
@@ -170,8 +152,8 @@ internal static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
         return;
     }
     // Logical screen width and height.
-    byteorder.LePutUint16(e.buf[0..2], (uint16)e.g.Config.Width);
-    byteorder.LePutUint16(e.buf[2..4], (uint16)e.g.Config.Height);
+    byteorder.LEPutUint16(e.buf[0..2], (uint16)e.g.Config.Width);
+    byteorder.LEPutUint16(e.buf[2..4], (uint16)e.g.Config.Height);
     e.write(e.buf[..4]);
     {
         var (p, ok) = e.g.Config.ColorModel._<Δcolor.Palette>(ᐧ); if (ok && len(p) > 0){
@@ -209,7 +191,7 @@ internal static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
         }
         e.buf[0] = 0x03; // Block Size.
         e.buf[1] = 0x01; // Sub-block Index.
-        byteorder.LePutUint16(e.buf[2..4], (uint16)e.g.LoopCount);
+        byteorder.LEPutUint16(e.buf[2..4], (uint16)e.g.LoopCount);
         e.buf[4] = 0x00; // Block Terminator.
         e.write(e.buf[..5]);
     }
@@ -308,7 +290,7 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
         } else {
             e.buf[3] = (byte)(0x00 | (byte)(disposal << (int)(2)));
         }
-        byteorder.LePutUint16(e.buf[4..6], (uint16)delay); // Delay Time (1/100ths of a second)
+        byteorder.LEPutUint16(e.buf[4..6], (uint16)delay); // Delay Time (1/100ths of a second)
         // Transparent color index.
         if (transparentIndex != -1){
             e.buf[6] = (uint8)transparentIndex;
@@ -319,10 +301,10 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
         e.write(e.buf[..8]);
     }
     e.buf[0] = sImageDescriptor;
-    byteorder.LePutUint16(e.buf[1..3], (uint16)b.Min.X);
-    byteorder.LePutUint16(e.buf[3..5], (uint16)b.Min.Y);
-    byteorder.LePutUint16(e.buf[5..7], (uint16)b.Dx());
-    byteorder.LePutUint16(e.buf[7..9], (uint16)b.Dy());
+    byteorder.LEPutUint16(e.buf[1..3], (uint16)b.Min.X);
+    byteorder.LEPutUint16(e.buf[3..5], (uint16)b.Min.Y);
+    byteorder.LEPutUint16(e.buf[5..7], (uint16)b.Dx());
+    byteorder.LEPutUint16(e.buf[7..9], (uint16)b.Dy());
     e.write(e.buf[..9]);
     // To determine whether or not this frame's palette is the same as the
     // global palette, we can check a couple things. First, do they actually

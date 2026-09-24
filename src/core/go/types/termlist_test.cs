@@ -11,17 +11,11 @@ using static global::go.go.types_package;
 
 partial class types_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // maketl makes a term list from a string of the term list.
-internal static global::go.go.types_package.Δtermlist maketl(@string s) {
+internal static global::go.go.types_package.termlist maketl(@string s) {
     s = strings.ReplaceAll(s, " "u8, ""u8);
     var names = strings.Split(s, "|"u8);
-    var r = new global::go.go.types_package.Δtermlist(len(names));
+    var r = new global::go.go.types_package.termlist(len(names));
     foreach (var (i, n) in names) {
         r[i] = testTerm(n);
     }

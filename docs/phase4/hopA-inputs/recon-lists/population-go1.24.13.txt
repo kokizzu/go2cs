@@ -1,0 +1,276 @@
+# THE POPULATION OF RECORD at go1.24.13 -- N = 230 testable packages, one import path per line.
+#
+# This is the DENOMINATOR the roster's "Phase 4 progress" header measures against, and the closing
+# arithmetic of the H10 hop is checked against it by two instruments:
+#   src/check-roster-format.ps1        |population| == the header's N; every banked row and every
+#                                      exclusion row is a member; implementable == N - exclusions.
+#   docs/phase4/hopA-inputs/shardmap.py  dispatched + unscheduled == |population|, symmetric
+#                                      difference printed BY NAME.
+#
+# AXIS      windows/amd64, CGO_ENABLED=0
+# TAGS      -tags purego,math_big_pure_go   (the tags the corpus converts under)
+# GO        go1.24.13   (GOROOT pinned; `go version` reports the binary's build stamp, not the root
+#           it resolves, so the pin is stated rather than assumed)
+# DATE      2026-09-22
+#
+# THE DERIVATION LADDER -- three rules, in order. Regenerate and diff against this file rather than
+# editing it by hand:
+#
+#   346  `go list std`                       -- vendored packages included, exactly as go prints them.
+#   234  minus 112 packages with NO test file surviving the axis and tags:
+#        `go list -f '{{.ImportPath}} {{.TestGoFiles}} {{.XTestGoFiles}}' -tags purego,math_big_pure_go std`
+#        and keep a package when TestGoFiles union XTestGoFiles is non-empty.
+#   230  minus 4 packages whose SURVIVING test files declare no `^func Test\w*\(`:
+#        crypto/internal/fips140/aes/gcm, crypto/internal/fips140/drbg,
+#        crypto/internal/fips140/nistec/fiat, embed.
+#        (The scan is over the SELECTED files only, which is the difference between this rule and the
+#        1.23.12-era tag-independent count. The regex admits a bare `func Test(t *testing.T)` --
+#        internal/diff declares one and is a banked row -- so a stricter `^func Test[A-Z]` would
+#        contradict the roster.)
+#
+# WHAT IS *NOT* A RULE ANY MORE: the 1.23.12 derivation's third step, "exists in the corpus as a
+# converted package (a production .csproj under src/core)". It is FALSIFIED at 1.24.13 -- three
+# BANKED rows are test-only assemblies with no production .csproj (crypto/internal/fips140test,
+# go/ast/internal/tests, internal/coverage/test), so that rule would subtract members that validate.
+# Membership here is a property of GOROOT under the corpus's own axis and tags, and nothing else.
+#
+# CROSS-CHECKED, 2026-09-22: derived independently twice (this ladder, and the recon leg's own
+# per-package route) and the two sets are EQUAL at 230. The closing identities both hold:
+#   216 banked + 8 candidates + 6 exclusion rows inside N = 230
+#   212 dispatched + 18 unscheduled                       = 230
+#
+# NOT the same file as `population.txt` beside it. That one is the H10 RECON LEG's shard input --
+# 228 rows on the census Appendix's route, blind to internal/unsafeheader and runtime/trace -- and
+# it is kept as the point-in-time record of the leg it drove. This file is the population of record.
+#
+# LF only. Blank lines and '#' comments are ignored by every reader.
+archive/tar
+archive/zip
+bufio
+bytes
+cmp
+compress/bzip2
+compress/flate
+compress/gzip
+compress/lzw
+compress/zlib
+container/heap
+container/list
+container/ring
+context
+crypto
+crypto/aes
+crypto/cipher
+crypto/des
+crypto/dsa
+crypto/ecdh
+crypto/ecdsa
+crypto/ed25519
+crypto/elliptic
+crypto/hkdf
+crypto/hmac
+crypto/internal/boring
+crypto/internal/boring/bcache
+crypto/internal/fips140/aes
+crypto/internal/fips140/bigmod
+crypto/internal/fips140/ecdh
+crypto/internal/fips140/ecdsa
+crypto/internal/fips140/edwards25519
+crypto/internal/fips140/edwards25519/field
+crypto/internal/fips140/mlkem
+crypto/internal/fips140/nistec
+crypto/internal/fips140/rsa
+crypto/internal/fips140deps
+crypto/internal/fips140test
+crypto/internal/hpke
+crypto/internal/sysrand
+crypto/md5
+crypto/mlkem
+crypto/pbkdf2
+crypto/rand
+crypto/rc4
+crypto/rsa
+crypto/sha1
+crypto/sha256
+crypto/sha3
+crypto/sha512
+crypto/subtle
+crypto/tls
+crypto/x509
+database/sql
+database/sql/driver
+debug/buildinfo
+debug/dwarf
+debug/elf
+debug/gosym
+debug/macho
+debug/pe
+debug/plan9obj
+embed/internal/embedtest
+encoding/ascii85
+encoding/asn1
+encoding/base32
+encoding/base64
+encoding/binary
+encoding/csv
+encoding/gob
+encoding/hex
+encoding/json
+encoding/pem
+encoding/xml
+errors
+expvar
+flag
+fmt
+go/ast
+go/ast/internal/tests
+go/build
+go/build/constraint
+go/constant
+go/doc
+go/doc/comment
+go/format
+go/importer
+go/internal/gccgoimporter
+go/internal/gcimporter
+go/internal/srcimporter
+go/parser
+go/printer
+go/scanner
+go/token
+go/types
+go/version
+hash
+hash/adler32
+hash/crc32
+hash/crc64
+hash/fnv
+hash/maphash
+html
+html/template
+image
+image/color
+image/draw
+image/gif
+image/jpeg
+image/png
+index/suffixarray
+internal/abi
+internal/buildcfg
+internal/chacha8rand
+internal/copyright
+internal/coverage/cfile
+internal/coverage/cformat
+internal/coverage/cmerge
+internal/coverage/pods
+internal/coverage/slicereader
+internal/coverage/slicewriter
+internal/coverage/test
+internal/cpu
+internal/dag
+internal/diff
+internal/fmtsort
+internal/fuzz
+internal/godebug
+internal/godebugs
+internal/gover
+internal/itoa
+internal/pkgbits
+internal/platform
+internal/poll
+internal/profile
+internal/reflectlite
+internal/runtime/atomic
+internal/runtime/maps
+internal/runtime/math
+internal/runtime/sys
+internal/saferio
+internal/singleflight
+internal/sync
+internal/synctest
+internal/syscall/windows
+internal/syscall/windows/registry
+internal/sysinfo
+internal/testenv
+internal/trace
+internal/trace/internal/oldtrace
+internal/types/errors
+internal/unsafeheader
+internal/xcoff
+internal/zstd
+io
+io/fs
+io/ioutil
+iter
+log
+log/slog
+log/slog/internal/benchmarks
+log/slog/internal/buffer
+maps
+math
+math/big
+math/bits
+math/cmplx
+math/rand
+math/rand/v2
+mime
+mime/multipart
+mime/quotedprintable
+net
+net/http
+net/http/cgi
+net/http/cookiejar
+net/http/fcgi
+net/http/httptest
+net/http/httptrace
+net/http/httputil
+net/http/internal
+net/http/internal/ascii
+net/http/pprof
+net/internal/cgotest
+net/mail
+net/netip
+net/rpc
+net/rpc/jsonrpc
+net/smtp
+net/textproto
+net/url
+os
+os/exec
+os/exec/internal/fdtest
+os/signal
+os/user
+path
+path/filepath
+plugin
+reflect
+regexp
+regexp/syntax
+runtime
+runtime/debug
+runtime/internal/wasitest
+runtime/metrics
+runtime/pprof
+runtime/trace
+slices
+sort
+strconv
+strings
+sync
+sync/atomic
+syscall
+testing
+testing/fstest
+testing/iotest
+testing/quick
+testing/slogtest
+text/scanner
+text/tabwriter
+text/template
+text/template/parse
+time
+unicode
+unicode/utf16
+unicode/utf8
+unique
+weak

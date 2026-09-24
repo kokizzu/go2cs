@@ -5,7 +5,7 @@
 namespace go;
 
 using Δio = io_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using fs = go.io.fs_package;
 using go.io;
@@ -117,7 +117,7 @@ internal static error removeAll(@string path) {
     if (err1 == default! || IsNotExist(err1)) {
         return default!;
     }
-    if (Δruntime.GOOS == "windows"u8 && IsPermission(err1)) {
+    if (runtime.GOOS == "windows"u8 && IsPermission(err1)) {
         {
             var (fs, errΔ2) = Stat(path); if (errΔ2 == default!) {
                 {

@@ -31,6 +31,8 @@
   <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).tests" />
+    <!-- reflect.StructOf mints synthesized structs into this fixed-name dynamic assembly; a field type that is internal here cannot be loaded from there without the grant. -->
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
   </ItemGroup>
 
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
@@ -176,6 +178,7 @@
     <ProjectReference Include="$(go2csPath)core/internal/filepathlite/internal.filepathlite.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/itoa/internal.itoa.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/poll/internal.poll.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/stringslite/internal.stringslite.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/syscall/execenv/internal.syscall.execenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testlog/internal.testlog.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
@@ -201,7 +204,6 @@
   <ItemGroup Condition="'$(GoTargetOS)'=='linux'">
     <ProjectReference Include="$(go2csPath)core/internal/byteorder/internal.byteorder.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/goarch/internal.goarch.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/stringslite/internal.stringslite.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/syscall/unix/internal.syscall.unix.csproj" />
   </ItemGroup>
 

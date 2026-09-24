@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.text;
 
+using maps = maps_package;
 using reflect = reflect_package;
 using sync = sync_package;
 using parse = go.text.template.parse_package;
@@ -108,12 +109,8 @@ public static (ж<Template>, error) Clone(this ж<Template> Ꮡt) {
         }
         Ꮡt.of(Template.ᏑmuFuncs).RLock();
         ᒐd2 = true;
-        foreach (var (k, v) in t.parseFuncs) {
-            nt.Value.parseFuncs[k] = v;
-        }
-        foreach (var (k, v) in t.execFuncs) {
-            nt.Value.execFuncs[k] = v;
-        }
+        maps.Copy<FuncMap, FuncMap, @string, any>((~nt).parseFuncs, t.parseFuncs);
+        maps.Copy<map<@string, reflectꓸValue>, map<@string, reflectꓸValue>, @string, reflectꓸValue>((~nt).execFuncs, t.execFuncs);
         return (nt, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }

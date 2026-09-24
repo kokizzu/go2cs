@@ -143,10 +143,6 @@ public static void TestDeterministic(ж<testing.T> Ꮡt) {
     });
 }
 
-[GoType("dyn")] internal partial struct testDeterministic_src {
-    public io_package.Reader Reader;
-}
-
 internal static void testDeterministic(nint i, ж<testing.T> Ꮡt) {
     Ꮡt.Parallel();
     // Test so much we cross a good number of block boundaries.
@@ -169,7 +165,7 @@ internal static void testDeterministic(nint i, ж<testing.T> Ꮡt) {
     }
     // Use a very small prime sized buffer.
     var cbuf = new slice<byte>(787);
-    (_, err) = io.CopyBuffer(new flate_test_package.flate_WriterжWriter(w), new testDeterministic_src(new flate_test_package.bytes_BufferжReader(br)), cbuf);
+    (_, err) = io.CopyBuffer(new flate_test_package.flate_WriterжWriter(w), new TestWriteError_src(new flate_test_package.bytes_BufferжReader(br)), cbuf);
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
@@ -183,7 +179,7 @@ internal static void testDeterministic(nint i, ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    (_, err) = io.CopyBuffer(new flate_test_package.flate_WriterжWriter(w2), new testDeterministic_src(new flate_test_package.bytes_BufferжReader(br2)), cbuf);
+    (_, err) = io.CopyBuffer(new flate_test_package.flate_WriterжWriter(w2), new TestWriteError_src(new flate_test_package.bytes_BufferжReader(br2)), cbuf);
     if (err != default!) {
         Ꮡt.Fatal(err);
     }

@@ -7,13 +7,13 @@ using sync;
 
 partial class main_package {
 
-[GoType("unsafe_package.Pointer")] partial struct stdFunction;
+[GoType("global::go.unsafe_package.Pointer")] partial struct stdFunction;
 
 internal static stdFunction handler;
 
 internal static stdFunction other;
 
-[GoType("sync.atomic_package.Uint32")] partial struct counter;
+[GoType("global::go.sync.atomic_package.Uint32")] partial struct counter;
 
 internal static uint32 Load(this ж<counter> Ꮡc) {
     return (Ꮡc.Reinterpret<counter, atomic.Uint32>()).Load();

@@ -14,34 +14,18 @@ using io = io_package;
 using os = os_package;
 using filepath = path.filepath_package;
 using Δruntime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using exec = go.os.exec_package;
 using go.@internal;
 using go.@internal.trace;
 using go.os;
+using iter = iter_package;
 using path;
 using static go.@internal.trace_internal_test_package;
 
 partial class trace_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string annotationsGoˢ = "annotations.go"u8;
@@ -191,14 +175,13 @@ public static void TestTraceCPUProfile(ж<testing.T> Ꮡt) {
                 totalTraceSamples++;
                 if (hogRegion != nil && ev.Goroutine() == (~hogRegion).Goroutine()) {
                     traceSamples++;
-                    ref var fns = ref heap<slice<@string>>(out var Ꮡfns);
-                    ev.Stack().Frames((Δtrace.StackFrame frame) => {
+                    slice<@string> fns = default!;
+                    foreach (var frame in range<Δtrace.StackFrame>(ev.Stack().Frames().Invoke)) {
                         if (frame.Func != "runtime.goexit"u8) {
-                            Ꮡfns.ValueSlot = append(Ꮡfns.ValueSlot, fmt.Sprintf("%s:%d"u8, frame.Func, frame.Line));
+                            fns = append(fns, fmt.Sprintf("%s:%d"u8, frame.Func, frame.Line));
                         }
-                        return true;
-                    });
-                    @string stack = strings.Join(Ꮡfns.ValueSlot, "|"u8);
+                    }
+                    @string stack = strings.Join(fns, "|"u8);
                     traceStacks[stack]++;
                 }
             }
@@ -504,24 +487,17 @@ public static void TestTraceStacks(ж<testing.T> Ꮡt) {
             }.slice());
         }
         bool stackMatches(traceꓸStack stk, slice<TestTraceStacks_frame> frames) {
-            nint i = 0;
-            var match = true;
-            var framesʗ1 = frames;
-            stk.Frames((Δtrace.StackFrame f) => {
-                if (f.Func != framesʗ1[i].fn) {
-                    match = false;
+            foreach (var (i, f) in slices.Collect(stk.Frames())) {
+                if (f.Func != frames[i].fn) {
                     return false;
                 }
                 {
-                    var line = (uint64)framesʗ1[i].line; if (line != 0 && line != f.Line) {
-                        match = false;
+                    var line = (uint64)frames[i].line; if (line != 0 && line != f.Line) {
                         return false;
                     }
                 }
-                i++;
-                return true;
-            });
-            return match;
+            }
+            return true;
         }
         var (r, err) = Δtrace.NewReader(new trace_test_package.bytes_ReaderжReader(bytes.NewReader(tb)));
         if (err != default!) {
@@ -586,7 +562,7 @@ public static void TestTraceStress(ж<testing.T> Ꮡt) {
         Ꮡt.Skip("no os.Pipe on " + Δruntime.GOOS);
     }
 
-    testTraceProg(Ꮡt, stressGoˢ, default!);
+    testTraceProg(Ꮡt, stressGoˢ, checkReaderDeterminism);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -626,6 +602,48 @@ internal static readonly @string iterPullGoˢ = "iter-pull.go"u8;
 
 public static void TestTraceIterPull(ж<testing.T> Ꮡt) {
     testTraceProg(Ꮡt, iterPullGoˢ, default!);
+}
+
+internal static void checkReaderDeterminism(ж<testing.T> Ꮡt, slice<byte> tb, slice<byte> _Δp2, bool _Δp3) {
+    var tbʗ1 = tb;
+    slice<traceꓸEvent> events() {
+        slice<traceꓸEvent> evs = default!;
+        var (r, err) = Δtrace.NewReader(new trace_test_package.bytes_ReaderжReader(bytes.NewReader(tbʗ1)));
+        if (err != default!) {
+            Ꮡt.Error(err);
+        }
+        while (ᐧ) {
+            var (ev, errΔ1) = r.ReadEvent();
+            if (AreEqual(errΔ1, io.EOF)) {
+                break;
+            }
+            if (errΔ1 != default!) {
+                Ꮡt.Fatal(errΔ1);
+            }
+            evs = append(evs, ev.ΔClone());
+        }
+        return evs;
+    }
+    var evs1 = events();
+    var evs2 = events();
+    {
+        nint l1 = len(evs1);
+        nint l2 = len(evs2); if (l1 != l2) {
+            Ꮡt.Fatalf("re-reading trace gives different event count (%d != %d)"u8, l1, l2);
+        }
+    }
+    foreach (var (i, vᴛ1) in evs1) {
+        var ev1 = vᴛ1.ΔClone();
+
+        var ev2 = evs2[i].ΔClone();
+        {
+            @string s1 = ev1.String();
+            @string s2 = ev2.String(); if (s1 != s2) {
+                Ꮡt.Errorf("re-reading trace gives different event %d:\n%s\n%s\n"u8, i, s1, s2);
+                break;
+            }
+        }
+    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

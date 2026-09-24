@@ -11,7 +11,7 @@
 namespace go;
 
 using bytealg = @internal.bytealg_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using utf16 = unicode.utf16_package;
 using @unsafe = unsafe_package;
@@ -407,8 +407,8 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
             (pid, handle, err) = (0, 0, err); goto ᒐdone;
         }
         defer(CloseHandle, (~pi).Thread, ref ᒐ);
-        Δruntime.KeepAlive(fd);
-        Δruntime.KeepAlive(sys.OrTypedNil());
+        runtime.KeepAlive(fd);
+        runtime.KeepAlive(sys.OrTypedNil());
         (pid, handle, err) = ((nint)(~pi).ProcessId, (uintptr)(~pi).Process, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

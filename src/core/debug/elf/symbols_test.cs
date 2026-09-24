@@ -43,17 +43,30 @@ public static void TestSymbols(ж<testing.T> Ꮡt) {
                 fs = new global::go.debug.elf_package.Symbol[]{}.slice();
             }
             if (!reflect.DeepEqual(ts, fs)) {
-                Ꮡt.Errorf("%s: Symbols = %v, want %v"u8, @file, ts, fs);
+                Ꮡt.Errorf("%s: Symbols = %v, want %v"u8, @file, fs, ts);
+            }
+            foreach (var (i, s) in fs) {
+                if (s.HasVersion) {
+                    // No hidden versions here.
+                    if (s.VersionIndex.IsHidden()) {
+                        Ꮡt.Errorf("%s: symbol %d: unexpected hidden version"u8, @file, i);
+                    }
+                    {
+                        var (got, want) = (s.VersionIndex.Index(), (uint16)s.VersionIndex); if (got != want) {
+                            Ꮡt.Errorf("%s: symbol %d: VersionIndex.Index() == %d, want %d"u8, @file, i, got, want);
+                        }
+                    }
+                }
             }
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
         finally { ᒐ.Run(); }
     }
     foreach (var (@file, ts) in symbolsGolden) {
-        @do(@file, ts, (Func<ж<global::go.debug.elf_package.File>, (slice<global::go.debug.elf_package.Symbol>, error)>)(global::go.debug.elf_package.Symbols));
+        @do(@file, ts, ((Func<ж<global::go.debug.elf_package.File>, (slice<global::go.debug.elf_package.Symbol>, error)>)(global::go.debug.elf_package.Symbols)));
     }
     foreach (var (@file, ts) in dynamicSymbolsGolden) {
-        @do(@file, ts, (Func<ж<global::go.debug.elf_package.File>, (slice<global::go.debug.elf_package.Symbol>, error)>)(global::go.debug.elf_package.DynamicSymbols));
+        @do(@file, ts, ((Func<ж<global::go.debug.elf_package.File>, (slice<global::go.debug.elf_package.Symbol>, error)>)(global::go.debug.elf_package.DynamicSymbols)));
     }
 }
 
@@ -64,6 +77,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1,
             Value: 0x400200,
             Size: 0x0
@@ -72,6 +87,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x2,
             Value: 0x40021C,
             Size: 0x0
@@ -80,6 +97,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x3,
             Value: 0x400240,
             Size: 0x0
@@ -88,6 +107,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x4,
             Value: 0x400268,
             Size: 0x0
@@ -96,6 +117,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x5,
             Value: 0x400288,
             Size: 0x0
@@ -104,6 +127,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x6,
             Value: 0x4002E8,
             Size: 0x0
@@ -112,6 +137,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x7,
             Value: 0x400326,
             Size: 0x0
@@ -120,6 +147,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x8,
             Value: 0x400330,
             Size: 0x0
@@ -128,6 +157,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x9,
             Value: 0x400350,
             Size: 0x0
@@ -136,6 +167,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xA,
             Value: 0x400368,
             Size: 0x0
@@ -144,6 +177,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xB,
             Value: 0x400398,
             Size: 0x0
@@ -152,6 +187,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x4003B0,
             Size: 0x0
@@ -160,6 +197,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x4003E0,
             Size: 0x0
@@ -168,6 +207,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xE,
             Value: 0x400594,
             Size: 0x0
@@ -176,6 +217,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xF,
             Value: 0x4005A4,
             Size: 0x0
@@ -184,6 +227,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x10,
             Value: 0x4005B8,
             Size: 0x0
@@ -192,6 +237,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x11,
             Value: 0x4005E0,
             Size: 0x0
@@ -200,6 +247,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x12,
             Value: 0x600688,
             Size: 0x0
@@ -208,6 +257,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x13,
             Value: 0x600698,
             Size: 0x0
@@ -216,6 +267,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x14,
             Value: 0x6006A8,
             Size: 0x0
@@ -224,6 +277,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x15,
             Value: 0x6006B0,
             Size: 0x0
@@ -232,6 +287,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x16,
             Value: 0x600850,
             Size: 0x0
@@ -240,6 +297,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x17,
             Value: 0x600858,
             Size: 0x0
@@ -248,6 +307,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x18,
             Value: 0x600880,
             Size: 0x0
@@ -256,6 +317,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x19,
             Value: 0x600898,
             Size: 0x0
@@ -264,6 +327,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1A,
             Value: 0x0,
             Size: 0x0
@@ -272,6 +337,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1B,
             Value: 0x0,
             Size: 0x0
@@ -280,6 +347,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1C,
             Value: 0x0,
             Size: 0x0
@@ -288,6 +357,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1D,
             Value: 0x0,
             Size: 0x0
@@ -296,6 +367,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1E,
             Value: 0x0,
             Size: 0x0
@@ -304,6 +377,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1F,
             Value: 0x0,
             Size: 0x0
@@ -312,6 +387,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x20,
             Value: 0x0,
             Size: 0x0
@@ -320,6 +397,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x21,
             Value: 0x0,
             Size: 0x0
@@ -328,6 +407,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "init.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -336,6 +417,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "initfini.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -344,6 +427,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "call_gmon_start"u8,
             Info: 0x2,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x40040C,
             Size: 0x0
@@ -352,6 +437,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "crtstuff.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -360,6 +447,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__CTOR_LIST__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x12,
             Value: 0x600688,
             Size: 0x0
@@ -368,6 +457,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__DTOR_LIST__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x13,
             Value: 0x600698,
             Size: 0x0
@@ -376,6 +467,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__JCR_LIST__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x14,
             Value: 0x6006A8,
             Size: 0x0
@@ -384,6 +477,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__do_global_dtors_aux"u8,
             Info: 0x2,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x400430,
             Size: 0x0
@@ -392,6 +487,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "completed.6183"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x19,
             Value: 0x600898,
             Size: 0x1
@@ -400,6 +497,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "p.6181"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x18,
             Value: 0x600890,
             Size: 0x0
@@ -408,6 +507,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "frame_dummy"u8,
             Info: 0x2,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x400470,
             Size: 0x0
@@ -416,6 +517,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "crtstuff.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -424,6 +527,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__CTOR_END__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x12,
             Value: 0x600690,
             Size: 0x0
@@ -432,6 +537,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__DTOR_END__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x13,
             Value: 0x6006A0,
             Size: 0x0
@@ -440,6 +547,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__FRAME_END__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x11,
             Value: 0x400680,
             Size: 0x0
@@ -448,6 +557,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__JCR_END__"u8,
             Info: 0x1,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x14,
             Value: 0x6006A8,
             Size: 0x0
@@ -456,6 +567,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__do_global_ctors_aux"u8,
             Info: 0x2,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x400560,
             Size: 0x0
@@ -464,6 +577,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "initfini.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -472,6 +587,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "hello.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -480,6 +597,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_GLOBAL_OFFSET_TABLE_"u8,
             Info: 0x1,
             Other: 0x2,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x17,
             Value: 0x600858,
             Size: 0x0
@@ -488,6 +607,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__init_array_end"u8,
             Info: 0x0,
             Other: 0x2,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x12,
             Value: 0x600684,
             Size: 0x0
@@ -496,6 +617,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__init_array_start"u8,
             Info: 0x0,
             Other: 0x2,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x12,
             Value: 0x600684,
             Size: 0x0
@@ -504,6 +627,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_DYNAMIC"u8,
             Info: 0x1,
             Other: 0x2,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x15,
             Value: 0x6006B0,
             Size: 0x0
@@ -512,6 +637,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "data_start"u8,
             Info: 0x20,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x18,
             Value: 0x600880,
             Size: 0x0
@@ -520,6 +647,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__libc_csu_fini"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x4004C0,
             Size: 0x2
@@ -528,6 +657,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_start"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x4003E0,
             Size: 0x0
@@ -536,6 +667,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__gmon_start__"u8,
             Info: 0x20,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x0,
             Value: 0x0,
             Size: 0x0
@@ -544,6 +677,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_Jv_RegisterClasses"u8,
             Info: 0x20,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x0,
             Value: 0x0,
             Size: 0x0
@@ -552,6 +687,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "puts@@GLIBC_2.2.5"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x0,
             Value: 0x0,
             Size: 0x18C
@@ -560,6 +697,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_fini"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xE,
             Value: 0x400594,
             Size: 0x0
@@ -568,6 +707,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__libc_start_main@@GLIBC_2.2.5"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x0,
             Value: 0x0,
             Size: 0x1C2
@@ -576,6 +717,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_IO_stdin_used"u8,
             Info: 0x11,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xF,
             Value: 0x4005A4,
             Size: 0x4
@@ -584,6 +727,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__data_start"u8,
             Info: 0x10,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x18,
             Value: 0x600880,
             Size: 0x0
@@ -592,6 +737,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__dso_handle"u8,
             Info: 0x11,
             Other: 0x2,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x18,
             Value: 0x600888,
             Size: 0x0
@@ -600,6 +747,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__libc_csu_init"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x4004D0,
             Size: 0x89
@@ -608,6 +757,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "__bss_start"u8,
             Info: 0x10,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x600898,
             Size: 0x0
@@ -616,6 +767,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_end"u8,
             Info: 0x10,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x6008A0,
             Size: 0x0
@@ -624,6 +777,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_edata"u8,
             Info: 0x10,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x600898,
             Size: 0x0
@@ -632,6 +787,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "main"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x400498,
             Size: 0x1B
@@ -640,6 +797,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "_init"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xB,
             Value: 0x400398,
             Size: 0x0
@@ -649,6 +808,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "go-relocation-test-clang.c"u8,
             Info: 0x4,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF1,
             Value: 0x0,
             Size: 0x0
@@ -657,6 +818,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ".Linfo_string0"u8,
             Info: 0x0,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x0,
             Size: 0x0
@@ -665,6 +828,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ".Linfo_string1"u8,
             Info: 0x0,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x2C,
             Size: 0x0
@@ -673,6 +838,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ".Linfo_string2"u8,
             Info: 0x0,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x47,
             Size: 0x0
@@ -681,6 +848,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ".Linfo_string3"u8,
             Info: 0x0,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x4C,
             Size: 0x0
@@ -689,6 +858,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ".Linfo_string4"u8,
             Info: 0x0,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x4E,
             Size: 0x0
@@ -697,6 +868,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x1,
             Value: 0x0,
             Size: 0x0
@@ -705,6 +878,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x2,
             Value: 0x0,
             Size: 0x0
@@ -713,6 +888,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x3,
             Value: 0x0,
             Size: 0x0
@@ -721,6 +898,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x4,
             Value: 0x0,
             Size: 0x0
@@ -729,6 +908,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x6,
             Value: 0x0,
             Size: 0x0
@@ -737,6 +918,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x7,
             Value: 0x0,
             Size: 0x0
@@ -745,6 +928,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x8,
             Value: 0x0,
             Size: 0x0
@@ -753,6 +938,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xA,
             Value: 0x0,
             Size: 0x0
@@ -761,6 +948,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xC,
             Value: 0x0,
             Size: 0x0
@@ -769,6 +958,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xD,
             Value: 0x0,
             Size: 0x0
@@ -777,6 +968,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xE,
             Value: 0x0,
             Size: 0x0
@@ -785,6 +978,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xF,
             Value: 0x0,
             Size: 0x0
@@ -793,6 +988,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: ""u8,
             Info: 0x3,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0x10,
             Value: 0x0,
             Size: 0x0
@@ -801,6 +998,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> symbols
             Name: "v"u8,
             Info: 0x11,
             Other: 0x0,
+            HasVersion: false,
+            VersionIndex: 0,
             Section: 0xFFF2,
             Value: 0x4,
             Size: 0x4
@@ -814,6 +1013,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> dynamic
             Name: "__gmon_start__"u8,
             Info: 0x20,
             Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x0,
             Section: 0x0,
             Value: 0x0,
             Size: 0x0
@@ -822,6 +1023,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> dynamic
             Name: "puts"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x2,
             Section: 0x0,
             Value: 0x0,
             Size: 0x18C,
@@ -832,6 +1035,8 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> dynamic
             Name: "__libc_start_main"u8,
             Info: 0x12,
             Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x2,
             Section: 0x0,
             Value: 0x0,
             Size: 0x1C2,
@@ -839,7 +1044,290 @@ internal static map<@string, slice<global::go.debug.elf_package.Symbol>> dynamic
             Library: "libc.so.6"u8
         )}.slice(),
     ["testdata/go-relocation-test-clang-x86.obj"u8] = new global::go.debug.elf_package.Symbol[]{}.slice(),
-    ["testdata/hello-world-core.gz"u8] = new global::go.debug.elf_package.Symbol[]{}.slice()
+    ["testdata/hello-world-core.gz"u8] = new global::go.debug.elf_package.Symbol[]{}.slice(),
+    ["testdata/libtiffxx.so_"u8] = new global::go.debug.elf_package.Symbol[]{
+        new Symbol(
+            Name: "_ZNSo3putEc"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "strchr"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x4,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBC_2.2.5"u8,
+            Library: "libc.so.6"u8
+        ),
+        new Symbol(
+            Name: "__cxa_finalize"u8,
+            Info: 0x22,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x4,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBC_2.2.5"u8,
+            Library: "libc.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSo5tellpEv"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSo5seekpElSt12_Ios_Seekdir"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_Znwm"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZdlPvm"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x5,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "CXXABI_1.3.9"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "__stack_chk_fail"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x6,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBC_2.4"u8,
+            Library: "libc.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZSt16__ostream_insertIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_PKS3_l"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x7,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4.9"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSo5seekpESt4fposI11__mbstate_tE"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSi4readEPcl"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSi5seekgESt4fposI11__mbstate_tE"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSo5writeEPKcl"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSi5seekgElSt12_Ios_Seekdir"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZSt21ios_base_library_initv"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x8,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4.32"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "TIFFClientOpen"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x9,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "LIBTIFF_4.0"u8,
+            Library: "libtiff.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSt9basic_iosIcSt11char_traitsIcEE5clearESt12_Ios_Iostate"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ZNSi5tellgEv"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x3,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "GLIBCXX_3.4"u8,
+            Library: "libstdc++.so.6"u8
+        ),
+        new Symbol(
+            Name: "_ITM_deregisterTMCloneTable"u8,
+            Info: 0x20,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x1,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0
+        ),
+        new Symbol(
+            Name: "__gmon_start__"u8,
+            Info: 0x20,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x1,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0
+        ),
+        new Symbol(
+            Name: "_ITM_registerTMCloneTable"u8,
+            Info: 0x20,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x1,
+            Section: 0x0,
+            Value: 0x0,
+            Size: 0x0
+        ),
+        new Symbol(
+            Name: "LIBTIFFXX_4.0"u8,
+            Info: 0x11,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x2,
+            Section: 0xFFF1,
+            Value: 0x0,
+            Size: 0x0,
+            Version: "LIBTIFFXX_4.0"u8,
+            Library: ""u8
+        ),
+        new Symbol(
+            Name: "_Z14TIFFStreamOpenPKcPSo"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x2,
+            Section: 0xF,
+            Value: 0x1860,
+            Size: 0xB8,
+            Version: "LIBTIFFXX_4.0"u8,
+            Library: ""u8
+        ),
+        new Symbol(
+            Name: "_Z14TIFFStreamOpenPKcPSi"u8,
+            Info: 0x12,
+            Other: 0x0,
+            HasVersion: true,
+            VersionIndex: 0x2,
+            Section: 0xF,
+            Value: 0x1920,
+            Size: 0x13,
+            Version: "LIBTIFFXX_4.0"u8,
+            Library: ""u8
+        )}.slice()
 };
 
 } // end elf_internal_test_package

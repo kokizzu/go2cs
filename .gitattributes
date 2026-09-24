@@ -95,6 +95,41 @@ docs/ValidatedTestPackages.md text eol=lf
 docs/phase4/DATA-sweep-row-walltimes.md text eol=lf
 docs/phase4/DATA-h10-shardmap-projection-go124.md text eol=lf
 
+# 2026-09-22, H10 closing-arithmetic seat: the SAME ruling, the inputs it missed.
+# shardmap.py CR-guards FIVE files, not two -- the roster and the walltime basis
+# (pinned above), plus `recon-lists/*.txt`, `relocations.tsv` and whatever TSV
+# `--timings` names (recon-basis.tsv for the H10 pass-1 plan), none of which
+# carried a rule. Measured on a Windows checkout of this branch: population.txt
+# 255 CR bytes, relocations.tsv 14, recon-basis.tsv 214 -- every one of them LF
+# in the object store. The generator therefore REFUSED at its own population read
+# before reaching any later check, and has been unrunnable on a correct Windows
+# checkout since those guards landed; the refusal reads as a corrupted input and
+# is a correct checkout. Strengthen the premise, never weaken the guard
+# (2026-09-13). Blobs are already LF, so this pin rewrites nothing
+# (`git add --renormalize` over the directory stages nothing).
+docs/phase4/hopA-inputs/recon-lists/*.txt text eol=lf
+docs/phase4/hopA-inputs/*.tsv text eol=lf
+
+# ---------------------------------------------------------------------------
+# LF pin for the converter's embedded stdlib metadata asset
+# ---------------------------------------------------------------------------
+# Same reasoning as the three pins above, for the asset genstdlibmeta writes and
+# TestStdLibMetadataInSync guards. The generator used to emit CRLF while the blob
+# is LF, so a regeneration's RAW diff read 5,573 changed lines where the real
+# content delta was 339 -- every other line differing on endings alone. The
+# generator now writes LF (internal/stdlibmeta/generate.go), and this pin is what
+# keeps the checkout form from depending on a per-machine core.autocrlf.
+#
+# The guard itself is ending-insensitive (it compares through
+# normalizeLineEndings), so this pin is not what makes it pass -- it is what keeps
+# a future reader's `git diff` legible.
+#
+# Blobs are already LF, so this rewrites nothing: `git add --renormalize` stages
+# nothing beyond the files this commit edits.
+#
+# ORDER: above the -text blocks, for the reason the pins above state.
+src/go2cs/stdlib-metadata.txt text eol=lf
+
 # go2cs behavioral TargetComparison tests compare transpiled C# to .cs.target
 # golden files BYTE-FOR-BYTE (TargetComparisonTests.FileMatch). The converter
 # preserves the Go source's LF inside multi-line string literals, so these files
@@ -123,6 +158,13 @@ src/core/**/testdata/*.base64 -text
 # Marking the whole testdata tree also stops a validated-package sweep from
 # reporting these fixtures as modified on every run.
 src/core/**/testdata/** -text
+# Every //go:embed payload OUTSIDE testdata/ that a converted csproj names as an
+# <EmbeddedResource Include>, derived from every tracked and every emitted csproj at the
+# H10 close (2026-09-23). Go embeds these bytes with LF; under core.autocrlf=true an
+# unpinned text payload checks out CRLF and the embedded resource is no longer Go's.
+src/core/internal/trace/traceviewer/static/** -text
+src/core/embed/internal/embedtest/concurrency.txt -text
+src/core/crypto/internal/fips140test/acvp_capabilities.json -text
 
 # The converter EMBEDS these templates at compile time (embeddedTemplates.go) and
 # assumes CRLF: writePackageInfoFile splits the package_info skeleton on "\r\n", so

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
-using alias = go.crypto.@internal.alias_package;
+using alias = go.crypto.@internal.fips140.alias_package;
 using valias = go.vendor.golang.org.x.crypto.@internal.alias_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
@@ -366,43 +366,128 @@ public class AliasOverlapRaceTests
 
         GC.KeepAlive(keepAlive);
     }
+    // A planted worker exception is REPORTED as this test's failure, and the host lives to say so.
+    //
+    // This is RunStress's own negative control, and it is a test rather than a comment because the
+    // property it asserts is one nothing else in the suite can reach: the code path is "a raw worker
+    // thread throws", whose UNHARDENED behaviour is not a failing test but a dead process — and a
+    // dead process cannot report that it was supposed to fail. The arm is cheap (the plant stops the
+    // run on the first poll, so it costs no stress seconds) and it is the only thing standing between
+    // this file's hardening and a silent regression back to an abort.
+    //
+    // ⚠ IF THIS TEST EVER KILLS THE HOST INSTEAD OF FAILING, the hardening is gone. That is the
+    // signature to look for: not a red here, but this class reporting fewer tests than it declares.
+    [TestMethod]
+    public void AStressWorkerExceptionFailsTheTestAndNotTheHost()
+    {
+        AssertFailedException? reported = null;
+
+        try
+        {
+            RunStress(() => throw new InvalidOperationException("planted worker exception"));
+        }
+        catch (AssertFailedException ex)
+        {
+            reported = ex;
+        }
+
+        Assert.IsNotNull(reported,
+            "RunStress swallowed a worker exception instead of reporting it. An exception that escapes a raw " +
+            "worker thread is UNHANDLED and .NET ends the process — so the unhardened form of this defect is " +
+            "not a failing test, it is a test host that dies with every test it had not run yet");
+        StringAssert.Contains(reported!.Message, "planted worker exception",
+            "the report must carry the original exception's MESSAGE: an abort with no message is what this " +
+            "hardening exists to replace, and a report that loses the message is only a quieter abort");
+        StringAssert.Contains(reported!.Message, nameof(InvalidOperationException),
+            "…and its TYPE, which is what says whether the thrower was the code under test or this harness");
+    }
+
     // Runs `body` on StressThreads oversubscribed workers plus two allocation-churn threads for
     // StressSeconds, stopping at the first false; returns the number of workers that reported false.
+    //
+    // ⚠ EVERY THREAD BODY IS WRAPPED, and that is the shape rather than a decoration on it. These are
+    // raw `new Thread` workers: an exception that escapes one is an UNHANDLED exception, and .NET
+    // terminates the PROCESS — the test host, with every test that had not run yet. Measured, four
+    // times out of four: the GCM arm's first `Seal` threw NotImplementedException from
+    // crypto/internal/fips140's generated `setIndicator` stub (RED 7's class) and took the host with
+    // it, leaving two tests in this class UNRUN and the leg reporting an ABORT (i9, c0eecf8850).
+    //
+    // An abort says nothing about which test failed or why, and it costs the tests that never ran.
+    // A FAIL says both and costs nothing. The bodies here also call MSTest's Assert — whose failures
+    // are exceptions too, and were just as fatal on a worker as any other.
+    //
+    // So: the FIRST exception from any thread — worker or churn — is captured, stops the run, and is
+    // re-reported on the TEST's own thread after the join, where MSTest attributes it to this test.
+    // A thrower also counts as a failure, so no path can report success if that reporting is ever
+    // changed. The negative control above plants one deliberately.
     private static int RunStress(Func<bool> body)
     {
         int seconds = StressSeconds;
         int workers = StressThreads;
         bool stop = false;
         int failures = 0;
+        Exception? firstError = null;
+        string? firstErrorThread = null;
         var threads = new Thread[workers + 2];
+
+        // First writer wins the report; every thread stops either way.
+        void Capture(string which, Exception error)
+        {
+            if (Interlocked.CompareExchange(ref firstError, error, null) is null)
+                Volatile.Write(ref firstErrorThread, which);
+
+            Interlocked.Increment(ref failures);
+            Volatile.Write(ref stop, true);
+        }
 
         for (int i = 0; i < workers; i++)
         {
+            int index = i;
+
             threads[i] = new Thread(() =>
             {
-                while (!Volatile.Read(ref stop))
+                try
                 {
-                    if (!body())
+                    while (!Volatile.Read(ref stop))
                     {
-                        Interlocked.Increment(ref failures);
-                        Volatile.Write(ref stop, true);
-                        return;
+                        if (!body())
+                        {
+                            Interlocked.Increment(ref failures);
+                            Volatile.Write(ref stop, true);
+                            return;
+                        }
                     }
+                }
+                catch (Exception error)
+                {
+                    Capture($"worker {index}", error);
                 }
             }) { IsBackground = true };
         }
 
         for (int i = workers; i < workers + 2; i++)
         {
+            int index = i - workers;
+
             threads[i] = new Thread(() =>
             {
-                long n = 0;
-                while (!Volatile.Read(ref stop))
+                try
                 {
-                    byte[] garbage = new byte[256];
-                    garbage[0] = (byte)n;
-                    if ((++n & 0x3FFF) == 0)
-                        Thread.Yield();
+                    long n = 0;
+                    while (!Volatile.Read(ref stop))
+                    {
+                        byte[] garbage = new byte[256];
+                        garbage[0] = (byte)n;
+                        if ((++n & 0x3FFF) == 0)
+                            Thread.Yield();
+                    }
+                }
+                catch (Exception error)
+                {
+                    // The churn threads only allocate, so nothing is EXPECTED here — which is exactly
+                    // why it is wrapped. An OutOfMemoryException on one of these would have ended the
+                    // host as surely as the GCM stub did, and been harder to attribute.
+                    Capture($"allocation-churn thread {index}", error);
                 }
             }) { IsBackground = true };
         }
@@ -417,8 +502,30 @@ public class AliasOverlapRaceTests
 
         Volatile.Write(ref stop, true);
 
+        int unjoined = 0;
+
         foreach (Thread t in threads)
-            t.Join(5000);
+        {
+            if (!t.Join(5000))
+                unjoined++;
+        }
+
+        if (firstError is not null)
+        {
+            Assert.Fail($"a stress {firstErrorThread} threw {firstError.GetType().FullName}: {firstError.Message}" +
+                Environment.NewLine + Environment.NewLine + firstError + Environment.NewLine + Environment.NewLine +
+                "Reported here rather than left to end the process: an exception escaping a raw worker thread is " +
+                "unhandled, and the host dies with every test it had not run yet. If the thrower is a generated " +
+                "NotImplementedException, this is RED 7's class reaching a test rather than a defect in what the " +
+                "test measures — the declared-not-implemented census names the member.");
+        }
+
+        if (unjoined > 0)
+        {
+            Assert.Fail($"{unjoined} of {threads.Length} stress threads did not stop within 5 s of being asked to. " +
+                "They are background threads, so the process will not wait for them and the NEXT test inherits " +
+                "them — which is a finding about this guard's own machinery, not about the code under test.");
+        }
 
         return failures;
     }

@@ -13,6 +13,7 @@ internal static class Go2CsTestHost
             "export_test.go",
             "io.go",
             "io_test.go",
+            "ioutil/testdata/hello",
             "multi.go",
             "multi_test.go",
             "pipe.go",
@@ -52,7 +53,7 @@ internal static class Go2CsTestHost
         registry.Add("TestMultiWriter_WriteStringSingleAlloc", io_test_package.TestMultiWriter_WriteStringSingleAlloc, "multi_test.go", 106);
         registry.Add("TestNopCloserWriterToForwarding", io_test_package.TestNopCloserWriterToForwarding, "io_test.go", 484);
         registry.Add("TestOffsetWriter_Seek", io_test_package.TestOffsetWriter_Seek, "io_test.go", 505);
-        registry.Add("TestOffsetWriter_Write", io_test_package.TestOffsetWriter_Write, "io_test.go", 637);
+        registry.Add("TestOffsetWriter_Write", io_test_package.TestOffsetWriter_Write, "io_test.go", 634);
         registry.Add("TestOffsetWriter_WriteAt", io_test_package.TestOffsetWriter_WriteAt, "io_test.go", 564);
         registry.Add("TestPipe1", io_test_package.TestPipe1, "pipe_test.go", 29);
         registry.Add("TestPipe2", io_test_package.TestPipe2, "pipe_test.go", 61);
@@ -73,7 +74,7 @@ internal static class Go2CsTestHost
         registry.Add("TestSectionReader_Size", io_test_package.TestSectionReader_Size, "io_test.go", 421);
         registry.Add("TestTeeReader", io_test_package.TestTeeReader, "io_test.go", 329);
         registry.Add("TestWriteAfterWriterClose", io_test_package.TestWriteAfterWriterClose, "pipe_test.go", 287);
-        registry.Add("TestWriteAt_PositionPriorToBase", io_test_package.TestWriteAt_PositionPriorToBase, "io_test.go", 617);
+        registry.Add("TestWriteAt_PositionPriorToBase", io_test_package.TestWriteAt_PositionPriorToBase, "io_test.go", 614);
         registry.Add("TestWriteEmpty", io_test_package.TestWriteEmpty, "pipe_test.go", 265);
         registry.Add("TestWriteNil", io_test_package.TestWriteNil, "pipe_test.go", 276);
         return TestHost.Run(registry, args);

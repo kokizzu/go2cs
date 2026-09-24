@@ -43,8 +43,8 @@ using static global::go.@internal.xcoff_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/xcoff/ar_test.go", "ar_test.cs", "ADVQgoKCgoKClIKCloKClIKCgpaCgoKUgqaCgoI=")]
-[assembly: go.GoPositionMap("internal/xcoff/file_test.go", "file_test.cs", "ADhwgoKEgoKClIKCloKClIKCgqaCgoKUgoKClIL6ooKCgg==")]
+[assembly: go.GoPositionMap("internal/xcoff/ar_test.go", "ar_test.cs", "AClQgoKCgoKClIKCloKClIKCgpaCgoKUgqaCgoI=")]
+[assembly: go.GoPositionMap("internal/xcoff/file_test.go", "file_test.cs", "ADlygoKEgoKClIKCloKClIKCgqaCgoKUgoKClIL6ooKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -60,4 +60,23 @@ public static partial class xcoff_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.xcoff_package));
+    }
 }

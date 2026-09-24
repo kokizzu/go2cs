@@ -11,12 +11,6 @@ using static go.time_internal_test_package;
 
 partial class time_test_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸtimeꓸtzdata() {
-    builtin.initPackage(typeof(go.time.tzdata_package));
-}
-
 internal static slice<@string> zones = new @string[]{
     "Asia/Jerusalem"u8,
     "America/Los_Angeles"u8

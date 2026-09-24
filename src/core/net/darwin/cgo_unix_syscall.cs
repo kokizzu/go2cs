@@ -14,22 +14,17 @@ global using _C_struct_sockaddr = go.syscall_package.RawSockaddr;
 namespace go;
 
 using unix = @internal.syscall.unix_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
 using @internal.syscall;
 
 partial class net_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 internal static UntypedInt _C_AF_INET => /* syscall.AF_INET */ 2;
 internal static UntypedInt _C_AF_INET6 => /* syscall.AF_INET6 */ 30;
 internal static UntypedInt _C_AF_UNSPEC => /* syscall.AF_UNSPEC */ 0;
+internal static UntypedInt _C_EAI_ADDRFAMILY => /* unix.EAI_ADDRFAMILY */ 1;
 internal static UntypedInt _C_EAI_AGAIN => /* unix.EAI_AGAIN */ 2;
 internal static UntypedInt _C_EAI_NONAME => /* unix.EAI_NONAME */ 8;
 internal static UntypedInt _C_EAI_SERVICE => /* unix.EAI_SERVICE */ 9;
@@ -42,7 +37,7 @@ internal static UntypedInt _C_SOCK_DGRAM => /* syscall.SOCK_DGRAM */ 2;
 internal static UntypedInt _C_SOCK_STREAM => /* syscall.SOCK_STREAM */ 1;
 
 internal static void _C_free(@unsafe.Pointer p) {
-    Δruntime.KeepAlive(p);
+    runtime.KeepAlive(p);
 }
 
 internal static @unsafe.Pointer _C_malloc(uintptr n) {

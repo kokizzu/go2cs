@@ -12,6 +12,8 @@ using static go.go.constant_package;
 using static go.go.constant_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b2073686f727420737472696e673b20657861637420737472696e677d", "stringTestsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b76616c20696e7436343b2077616e7420696e747d", "bitLenTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -28,7 +30,7 @@ using static go.go.constant_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/constant/value_test.go", "value_test.cs", "AG6KAoKCgoKCloKCgpSAgoKClKSCqIKCgoKWgpaCzqKCggB3mAKCgoKEksqCtKK2goKWhIKCgoKWgoKWgoLKgoKCgpQAOHSCgoKAgqSAggAFEKKClpSkpKaAlIKCpoKApIK0tLSC2AAXOMLYtMT44oSClpSkgqQAFiaigsqCgoKCAAsYgoKCloKWgIKmgILagoIAAhSCgoKClICCpICC7IKCAAsYgoKogoK6goKCggAJFICkggAKGoKCgtyCkoKCgoKCgoKUlIIAFCaCgoCC")]
+[assembly: global::go.GoPositionMap("go/constant/value_test.go", "value_test.cs", "AG6KAoKCgoKCloKCgpSAgoKClKSCqIKCgoKWgpaCzqKCggB3mAKCgoKEksqCtKK2goKWhIKCgoKWgoKWgoLKgoKCgpQAOHSCgoKAgqSAggAFEKKClpSkpKaAlIKCpoKApIK0tLSC2AAXOMLYtMT44oSClpSkgqQAFiaigsqCgoKCAAsYgoKCloKWgIKmgILagoIAAhSCgoKClICCpICC7IKCAAsYgoKogoK6goKCggAJFICkggAKGoKCgtyCkoKCgoKCgoKUlIIAFCaCgoCC", "692-706:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -44,4 +46,19 @@ public static partial class constant_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(global::go.math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

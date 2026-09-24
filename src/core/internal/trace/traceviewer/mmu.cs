@@ -30,26 +30,15 @@ using math = math_package;
 using http = net.http_package;
 using strconv = strconv_package;
 using strings = strings_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using time = time_package;
 using encoding;
+using go;
 using go.@internal;
 using io = io_package;
 using net;
 
 partial class traceviewer_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // type MutatorUtilFunc is a methodless func type — rendered inline as its base delegate
 

@@ -8,52 +8,16 @@ namespace go.net.http;
 
 using context = context_package;
 using tls = crypto.tls_package;
-using nettrace = go.@internal.nettrace_package;
+using nettrace = @internal.nettrace_package;
 using net = net_package;
 using textproto = go.net.textproto_package;
 using reflect = reflect_package;
 using time = time_package;
+using @internal;
 using crypto;
-using go.@internal;
 using go.net;
 
 partial class httptrace_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() {
-    builtin.initPackage(typeof(crypto.tls_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
-    builtin.initPackage(typeof(go.net.textproto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // unique type to prevent assignment.
 [GoType] partial struct clientEventContextKey {

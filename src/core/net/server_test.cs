@@ -87,7 +87,7 @@ public static void TestTCPServer(ж<testing.T> Ꮡt) {
                     var ch = tpchs[iΔ2];
                     var chʗ1 = ch;
                     var handler = (ж<localServer> ls, global::go.net_package.Listener lnΔ1) => {
-                        ls.transponder(lnΔ1, chʗ1);
+                        ls.transponder(lnΔ1, chʗ1.WithDirection(GoChanDir.Send));
                     };
                     {
                         var errΔ1 = Ꮡlss.ValueSlot[iΔ2].buildup(handler); if (errΔ1 != default!) {
@@ -115,7 +115,7 @@ public static void TestTCPServer(ж<testing.T> Ꮡt) {
                     var cʗ1 = c;
                     defer(() => cʗ1.Close(), ref ᒐ);
                     trchs = append(trchs, new channel<error>(1));
-                    goǃ(transceiver, c, slice<byte>("TCP SERVER TEST"u8), trchs[iΔ3]);
+                    goǃ(transceiver, c, slice<byte>("TCP SERVER TEST"u8), trchs[iΔ3].WithDirection(GoChanDir.Send));
                 }
                 foreach (var (_, ch) in trchs) {
                     foreach (var errΔ3 in ch) {
@@ -176,7 +176,7 @@ public static void TestUnixAndUnixpacketServer(ж<testing.T> Ꮡt) {
                 var ch = tpchs[iΔ2];
                 var chʗ1 = ch;
                 var handler = (ж<localServer> ls, global::go.net_package.Listener lnΔ1) => {
-                    ls.transponder(lnΔ1, chʗ1);
+                    ls.transponder(lnΔ1, chʗ1.WithDirection(GoChanDir.Send));
                 };
                 {
                     var errΔ1 = lss[iΔ2].buildup(handler); if (errΔ1 != default!) {
@@ -205,7 +205,7 @@ public static void TestUnixAndUnixpacketServer(ж<testing.T> Ꮡt) {
                 var cʗ1 = c;
                 defer(() => cʗ1.Close(), ref ᒐ);
                 trchs = append(trchs, new channel<error>(1));
-                goǃ(transceiver, c, slice<byte>("UNIX AND UNIXPACKET SERVER TEST"u8), trchs[iΔ3]);
+                goǃ(transceiver, c, slice<byte>("UNIX AND UNIXPACKET SERVER TEST"u8), trchs[iΔ3].WithDirection(GoChanDir.Send));
             }
             foreach (var (_, ch) in trchs) {
                 foreach (var errΔ3 in ch) {
@@ -288,7 +288,7 @@ public static void TestUDPServer(ж<testing.T> Ꮡt) {
                 ref var tpch = ref heap<channel<error>>(out var Ꮡtpch);
                 Ꮡtpch.ValueSlot = new channel<error>(1);
                 var handler = (ж<localPacketServer> lsΔ1, global::go.net_package.PacketConn c) => {
-                    packetTransponder(c, Ꮡtpch.ValueSlot);
+                    packetTransponder(c, Ꮡtpch.ValueSlot.WithDirection(GoChanDir.Send));
                 };
                 {
                     var errΔ1 = ls.buildup(handler); if (errΔ1 != default!) {
@@ -314,7 +314,7 @@ public static void TestUDPServer(ж<testing.T> Ꮡt) {
                     }
                     var c2ʗ1 = c2;
                     defer(() => c2ʗ1.Close(), ref ᒐ);
-                    goǃ(transceiver, c2, slice<byte>("UDP SERVER TEST"u8), trch);
+                    goǃ(transceiver, c2, slice<byte>("UDP SERVER TEST"u8), trch.WithDirection(GoChanDir.Send));
                 } else {
                     var (c2, errΔ3) = ListenPacket(ttʗ1.tnet, JoinHostPort(ttʗ1.taddr, "0"u8));
                     if (errΔ3 != default!) {
@@ -331,7 +331,7 @@ public static void TestUDPServer(ж<testing.T> Ꮡt) {
                     if (errΔ3 != default!) {
                         tΔ1.Fatal(errΔ3);
                     }
-                    goǃ(packetTransceiver, c2, slice<byte>("UDP SERVER TEST"u8), new global::go.net_package.UDPAddrжΔAddr(dst), trch);
+                    goǃ(packetTransceiver, c2, slice<byte>("UDP SERVER TEST"u8), new global::go.net_package.UDPAddrжΔAddr(dst), trch.WithDirection(GoChanDir.Send));
                 }
                 while (trch != default! || Ꮡtpch.ValueSlot != default!) {
                     var selᴛ11 = trch;
@@ -402,7 +402,7 @@ public static void TestUnixgramServer(ж<testing.T> Ꮡt) {
                 ref var tpch = ref heap<channel<error>>(out var Ꮡtpch);
                 Ꮡtpch.ValueSlot = new channel<error>(1);
                 var handler = (ж<localPacketServer> lsΔ1, global::go.net_package.PacketConn c) => {
-                    packetTransponder(c, Ꮡtpch.ValueSlot);
+                    packetTransponder(c, Ꮡtpch.ValueSlot.WithDirection(GoChanDir.Send));
                 };
                 {
                     var errΔ1 = ls.buildup(handler); if (errΔ1 != default!) {
@@ -425,7 +425,7 @@ public static void TestUnixgramServer(ж<testing.T> Ꮡt) {
                     defer(Δos.Remove, c2.LocalAddr().String(), ref ᒐ);
                     var c2ʗ1 = c2;
                     defer(() => c2ʗ1.Close(), ref ᒐ);
-                    goǃ(transceiver, c2, slice<byte>(c2.LocalAddr().String()), trch);
+                    goǃ(transceiver, c2, slice<byte>(c2.LocalAddr().String()), trch.WithDirection(GoChanDir.Send));
                 } else {
                     var (c2, errΔ3) = ListenPacket(unixgramˢ, ttʗ1.caddr);
                     if (errΔ3 != default!) {
@@ -439,7 +439,7 @@ public static void TestUnixgramServer(ж<testing.T> Ꮡt) {
                     defer(Δos.Remove, c2.LocalAddr().String(), ref ᒐ);
                     var c2ʗ2 = c2;
                     defer(() => c2ʗ2.Close(), ref ᒐ);
-                    goǃ(packetTransceiver, c2, slice<byte>("UNIXGRAM SERVER TEST"u8), (~ls).PacketConn.LocalAddr(), trch);
+                    goǃ(packetTransceiver, c2, slice<byte>("UNIXGRAM SERVER TEST"u8), (~ls).PacketConn.LocalAddr(), trch.WithDirection(GoChanDir.Send));
                 }
                 while (trch != default! || Ꮡtpch.ValueSlot != default!) {
                     var selᴛ13 = trch;

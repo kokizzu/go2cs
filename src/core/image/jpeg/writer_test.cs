@@ -84,7 +84,7 @@ public static void TestUnscaledQuant(ж<testing.T> Ꮡt) {
     if (bad) {
         var names = new @string[]{"Luminance"u8, "Chrominance"u8}.array();
         var buf = Ꮡ(new strings.Builder(nil));
-        foreach (var (i, name) in names) {
+        foreach (var (i, name) in names.ΔRangeSnapshot()) {
             fmt.Fprintf(new jpeg_internal_test_package.strings_BuilderжWriter(buf), "// %s.\n{\n"u8, name);
             for (nint zig = 0; zig < blockSize; zig++) {
                 fmt.Fprintf(new jpeg_internal_test_package.strings_BuilderжWriter(buf), "%d, "u8, unscaledQuantInNaturalOrder[i][unzig[zig]]);

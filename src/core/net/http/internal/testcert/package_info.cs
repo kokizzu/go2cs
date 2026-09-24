@@ -49,7 +49,7 @@ using static go.net.http.@internal.testcert_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/internal/testcert/testcert.go", "testcert.cs", "ACOCAYA=")]
+[assembly: go.GoPositionMap("net/http/internal/testcert/testcert.go", "testcert.cs", "AEuCAYA=")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http.@internal;
@@ -65,4 +65,14 @@ public static partial class testcert_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

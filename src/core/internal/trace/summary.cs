@@ -7,6 +7,7 @@ using cmp = cmp_package;
 using slices = slices_package;
 using strings = strings_package;
 using time = time_package;
+using iter = iter_package;
 
 partial class trace_package {
 
@@ -22,9 +23,9 @@ partial class trace_package {
     public GoID ID;
     public @string Name; // A non-unique human-friendly identifier for the goroutine.
     public uint64 PC; // The first PC we saw for the entry function of the goroutine
-    public ΔTime CreationTime; // Timestamp of the first appearance in the trace.
-    public ΔTime StartTime; // Timestamp of the first time it started running. 0 if the goroutine never ran.
-    public ΔTime EndTime; // Timestamp of when the goroutine exited. 0 if the goroutine never exited.
+    public ΔTime CreationTime;   // Timestamp of the first appearance in the trace.
+    public ΔTime StartTime;   // Timestamp of the first time it started running. 0 if the goroutine never ran.
+    public ΔTime EndTime;   // Timestamp of when the goroutine exited. 0 if the goroutine never exited.
     // List of regions in the goroutine, sorted based on the start time.
     public slice<ж<UserRegionSummary>> Regions;
     // Statistics of execution time during the goroutine execution.
@@ -382,24 +383,14 @@ ID: id, goroutineSummary: Ꮡ(new goroutineSummary(nil))));
                     // and identify the goroutine by the root frame of that stack.
                     // This root frame will be identical for all transitions on this
                     // goroutine, because it represents its immutable start point.
-                    var stk = st.Stack;
-                    if (stk != NoStack) {
-                        ref var frame = ref heap(new StackFrame(), out var Ꮡframe);
-                        bool ok = default!;
-                        stk.Frames((StackFrame f) => {
-                            Ꮡframe.Value = f;
-                            ok = true;
-                            return true;
-                        });
-                        if (ok) {
-                            // NB: this PC won't actually be consistent for
-                            // goroutines which existed at the start of the
-                            // trace. The UI doesn't use it directly; this
-                            // mainly serves as an indication that we
-                            // actually saw a call stack for the goroutine
-                            g.Value.PC = frame.PC;
-                            g.Value.Name = frame.Func;
-                        }
+                    foreach (var frame in range<StackFrame>(st.Stack.Frames().Invoke)) {
+                        // NB: this PC won't actually be consistent for
+                        // goroutines which existed at the start of the
+                        // trace. The UI doesn't use it directly; this
+                        // mainly serves as an indication that we
+                        // actually saw a call stack for the goroutine
+                        g.Value.PC = frame.PC;
+                        g.Value.Name = frame.Func;
                     }
                 }
                 var exprᴛ4 = @new;

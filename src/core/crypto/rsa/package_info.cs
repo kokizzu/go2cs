@@ -10,12 +10,13 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using bigmodꓸNat = go.crypto.@internal.bigmod_package.ΔNat;
+global using bigmodꓸNat = go.crypto.@internal.fips140.bigmod_package.ΔNat;
 global using bigꓸInt = go.math.big_package.ΔInt;
 global using bigꓸRat = go.math.big_package.ΔRat;
 global using cryptoꓸDecrypterOpts = object;
 global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
+global using rsaꓸPublicKey = go.crypto.@internal.fips140.rsa_package.ΔPublicKey;
 // </ImportedTypeAliases>
 
 using go;
@@ -42,6 +43,7 @@ using static go.crypto.rsa_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -55,10 +57,10 @@ using static go.crypto.rsa_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/rsa/notboring.go", "notboring.cs", "ABEWgqSC")]
-[assembly: go.GoPositionMap("crypto/rsa/pkcs1v15.go", "pkcs1v15.cs", "AEFUAA8ChICCpIKCloKCgpSUloKCgoKClIKEgoKCgpSWAAIWAAoCgIKmgoKClIKClJaCgpSClAACSgAkAoCCpIKCloKClqaWgoIAAhIACwKCgoKWgoKCgpSCgqaCgqiCzISCgoK6hIKCqLKCgpaCgoKCuKgAGEgADgaCgpaCgoKUluamooKClIKCgrqCgpSCgoKUgoIAAhYACgKCgoKUgIKkzIKWgoKWgoKUgpY=")]
-[assembly: go.GoPositionMap("crypto/rsa/pss.go", "pss.cs", "ABo+AA0GgoIABRCCqoKWgoKCAAoahIKChIIABRCCvKqWltaWgoKUgoIABhCCqIK6grqCirKCzKiWgoKClN6CgoKmgqgAABDigoKElpKUruKCgoKWgoKCuIKClAAIFICSgoKmABE0kqaigpQABBwAEQ6CgoKUlISCloKUgoK2qKK2goCCpAACGAALAoKCgpSAgqSUgsqCloKCgoIABhCCgpSW")]
-[assembly: go.GoPositionMap("crypto/rsa/rsa.go", "rsa.cs", "AFd20qiSgoKUABM60oKUgpSClAANIJKqooKClIKUgpSCgqaq0gACFgAIAoCCptzSgpaUgpTIgIKCgIKkgIKklOgAHz7CgIK4gpSClJSCAAYQgoKCgoKCgqYAAhDSAAcsABMChISCgpSCgoKCgoKCgoKCloKClIKClIKClgARIpaChIKWgpSmpoKCqISCggALGIKUgoKCgpSogoKCuoKCgoKCgpS4loKChIKCgsiCqJKAgqSAgqSAgqSqooKEgoKCgoKEgoKUAAgSgoSCgpSCgpSEAAIqABkOgIKkgoKCloKCgpSUhIKChIKChIKChIKCloKEgoKCgpSWAAoaooaigoKUgpSClIKUgrqCloKEgoSEgoKCgoSChIKEAAcUsoKWzIKCgpSCgpSUgoKCgpSCgqiUlJSUlJaCgoKoAAIaAAoCpqKAgqSChJaCgoKUgoKUloKCloKChISChIKEzI7ygoSCgoKCgpaClg==")]
+[assembly: go.GoPositionMap("crypto/rsa/fips.go", "fips.cs", "ACRYkqaigpQACBgADAKAgqaCloKCgpSUhISAgqSClIKWgoKWgoKUlIKCtqiiuAADGAAJAoCCpoKCgpSAgqSWhICCpIKWgoKWgoKUlKSkAAQsABYCgIKmhIKCgoKUgoKUlISEgIKkgpSCloKClAAGGgAMAoLWooCCpoKChJSCgpSCgpSWgoSAgqSCgqiCgpYABh4ADgKCgoKUloCCpoKCgpSWgIKkgpaCgpQAAxYACAKCgoKUloCCpoKCgpSAgqSWgIKkgpaCgpSmgpSkpKSmggAJBoKClIKUgpSClIKUgpTmgoKUgIKkgpSClA==")]
+[assembly: go.GoPositionMap("crypto/rsa/notboring.go", "notboring.cs", "AAsWgqSC")]
+[assembly: go.GoPositionMap("crypto/rsa/pkcs1v15.go", "pkcs1v15.cs", "ACFUAA8CgpaAgqaEgoKWgoKClJSWgoKCgoKUgoSCgoKClJaCgpQAAhYACgKAgqaCgoKUgoKUloKClIKUAAJKACQCgIKmgoKWgoKWppaCggACEgALAoKWgoKCloKCgoKUgoKmgoKUgoKogsyEgoKCuoSCgqiygoKWgoKCgrio")]
+[assembly: go.GoPositionMap("crypto/rsa/rsa.go", "rsa.cs", "AE+cAdKokoKClAAaPpKqooKClIKUgpSCgqaq0gACFgAIAoCCptzSgpaUgpTIgIKCgIKkgIKklOgAHUL4griClILugoKUgoKU1oKClAAFGgAKAoCCpoSCgpSCgoKCgoKCgoKClgAOHJaClIKUgpaCAAoWgqaClIIAEiQABywAEwKClIKWhIKEgpaClKamgoKohIKCAAsYgpSCgoKClKiCgoK6goKCgoKClLiWgoKEgoKCyIKAgqYADySigpaCppT2goSClIKUgpSClIKogqaClIKCgpaUgpaCgoKCgoL2goSCgpSEgqiCgpSCqIKEgoSCgpaCgoKChIKEgoKClpamgoKClKaigpSCgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -81,4 +83,30 @@ public static partial class rsa_package
     public partial struct PrivateKey {}
     public partial struct PublicKey {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboringꓸbbig() => builtin.initPackage(typeof(go.crypto.@internal.boring.bbig_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140hash() => builtin.initPackage(typeof(go.crypto.@internal.fips140hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸbigmod() => builtin.initPackage(typeof(go.crypto.@internal.fips140.bigmod_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸrsa() => builtin.initPackage(typeof(go.crypto.@internal.fips140.rsa_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() => builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(go.math.big_package));
+    // </ImportInitializers>
 }

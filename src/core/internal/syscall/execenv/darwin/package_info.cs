@@ -50,7 +50,7 @@ using static go.@internal.syscall.execenv_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/execenv/execenv_default.go", "execenv_default.cs", "ABAi4g==")]
+[assembly: go.GoPositionMap("internal/syscall/execenv/execenv_default.go", "execenv_default.cs", "AAoi4g==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;
@@ -66,4 +66,14 @@ public static partial class execenv_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

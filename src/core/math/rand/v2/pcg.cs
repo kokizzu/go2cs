@@ -11,12 +11,6 @@ using go.math;
 
 partial class rand_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(go.math.bits_package));
-}
-
 // https://numpy.org/devdocs/reference/random/upgrading-pcg64.html
 // https://github.com/imneme/pcg-cpp/commit/871d0494ee9c9a7b7c43f753e3d8ca47c26f8005
 
@@ -38,24 +32,28 @@ public static ж<PCG> NewPCG(uint64 seed1, uint64 seed2) {
     p.lo = seed2;
 }
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-[GoRecv] public static (slice<byte>, error) MarshalBinary(this ref PCG p) {
-    var b = new slice<byte>(20);
-    copy(b, "pcg:"u8);
-    byteorder.BePutUint64(b[4..], p.hi);
-    byteorder.BePutUint64(b[(int)(4 + 8)..], p.lo);
+// AppendBinary implements the [encoding.BinaryAppender] interface.
+[GoRecv] public static (slice<byte>, error) AppendBinary(this ref PCG p, slice<byte> b) {
+    b = append(b, ((@string)"pcg:"u8).ꓸꓸꓸ);
+    b = byteorder.BEAppendUint64(b, p.hi);
+    b = byteorder.BEAppendUint64(b, p.lo);
     return (b, default!);
+}
+
+// MarshalBinary implements the [encoding.BinaryMarshaler] interface.
+[GoRecv] public static (slice<byte>, error) MarshalBinary(this ref PCG p) {
+    return p.AppendBinary(new slice<byte>(0, 20));
 }
 
 internal static error errUnmarshalPCG = errors.New("invalid PCG encoding"u8);
 
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+// UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.
 [GoRecv] public static error UnmarshalBinary(this ref PCG p, slice<byte> data) {
     if (len(data) != 20 || ((sstring)(data[..4])) != "pcg:"u8) {
         return errUnmarshalPCG;
     }
-    p.hi = byteorder.BeUint64(data[4..]);
-    p.lo = byteorder.BeUint64(data[(int)(4 + 8)..]);
+    p.hi = byteorder.BEUint64(data[4..]);
+    p.lo = byteorder.BEUint64(data[(int)(4 + 8)..]);
     return default!;
 }
 

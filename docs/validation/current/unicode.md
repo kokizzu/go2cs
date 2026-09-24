@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `unicode` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-22 · converter `c6fdbe73c`*
 
-**28 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**28 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -52,6 +54,9 @@ test requiring a capability the managed runtime does not provide — a `testing`
 has not implemented, or a platform behavior it provably cannot reproduce. Each is named with
 the capability it needs.
 
+- BenchmarkSimpleFold (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkToLower (benchmark): benchmark execution is deferred to Phase 4D
+- BenchmarkToUpper (benchmark): benchmark execution is deferred to Phase 4D
 - ExampleIsDigit (example): example execution is deferred to Phase 4D
 - ExampleIsLetter (example): example execution is deferred to Phase 4D
 - ExampleIsLower (example): example execution is deferred to Phase 4D

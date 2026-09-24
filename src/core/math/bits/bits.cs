@@ -49,7 +49,7 @@ public static nint LeadingZeros64(uint64 x) {
 
 // --- TrailingZeros ---
 
-// See http://supertech.csail.mit.edu/papers/debruijn.pdf
+// See http://keithandkatie.com/keith/papers/debruijn.html
 internal static UntypedInt deBruijn32 => 0x077CB531;
 
 internal static array<byte> deBruijn32tab = new byte[]{
@@ -370,9 +370,8 @@ public static nint /*n*/ Len64(uint64 x) {
     return n + (nint)len8tab[(int)(x)];
 }
 
-// go2cs generated this placeholder — func Add is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 // --- Add with carry ---
+// go2cs generated this placeholder — func Add is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Add32 returns the sum with carry of x, y and carry: sum = x + y + carry.
 // The carry input must be 0 or 1; otherwise the behavior is undefined.
@@ -406,9 +405,8 @@ public static (uint64 sum, uint64 carryOut) Add64(uint64 x, uint64 y, uint64 car
     return (sum, carryOut);
 }
 
-// go2cs generated this placeholder — func Sub is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 // --- Subtract with borrow ---
+// go2cs generated this placeholder — func Sub is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Sub32 returns the difference of x, y and borrow, diff = x - y - borrow.
 // The borrow input must be 0 or 1; otherwise the behavior is undefined.
@@ -443,9 +441,8 @@ public static (uint64 diff, uint64 borrowOut) Sub64(uint64 x, uint64 y, uint64 b
     return (diff, borrowOut);
 }
 
-// go2cs generated this placeholder — func Mul is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 // --- Full-width multiply ---
+// go2cs generated this placeholder — func Mul is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Mul32 returns the 64-bit product of x and y: (hi, lo) = x * y
 // with the product bits' upper half returned in hi and the lower

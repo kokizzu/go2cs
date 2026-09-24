@@ -11,11 +11,10 @@
 namespace go;
 
 using abi = @internal.abi_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -222,7 +221,7 @@ public static int64 pprof_cyclesPerSecond() {
 // See go.dev/issue/67401.
 //
 //go:linkname runtime_pprof_readProfile runtime/pprof.readProfile
-internal static (slice<uint64>, slice<@unsafe.Pointer>, bool) runtime_pprof_readProfile() {
+public static (slice<uint64>, slice<@unsafe.Pointer>, bool) runtime_pprof_readProfile() {
     @lock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));
     var log = cpuprof.log;
     unlock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));

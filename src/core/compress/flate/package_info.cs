@@ -56,12 +56,12 @@ using static go.compress.flate_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/flate/deflate.go", "deflate.cs", "AHP4AYKUgoKCgpSUgoKCgqiCgpSmgoKUyoKCpoKCgoKUgoKUrtSClIKogqaWgoKCgoKUgoSCloKCgoKmlLiCquKCgpaWgoKogoKCloKChIKChIKCgoKUlKaUlIKCpqaCgIKkggAEELKqooKUgoKCgoK+soKCgoKmrMSCgqiClKS0grSCgrqWgpSUgqaCgoKCgoKCgoKmgoKWhIKCgpSCgoKUgpSUlIKUgoCCpJSmlIKCgoKUgoKCgoKCloaAgoK2qIKU3IKCgpSUgoKCpoKUpoSCgsqUlICCpKaCgoKUgoKAgqSmgoL8goKCpoKCgr6ygpSCgqaygpSCgoKCgqamooKUgoKCgoKUgqaChJSCgqSCgqSCgoKCgqSCpIKCgqSkpoKCgoKUpIKCpIKClIKUgoKCgoKCyKKClIKUgoKClICCpIKClIIAAh4ADAKCgIKkAAIS4oKCgpSCgu6CAAscogACGAALBqiSrLKAlIKCpg==")]
-[assembly: go.GoPositionMap("compress/flate/deflatefast.go", "deflatefast.cs", "ABE0goKmgoKoggAXMoKqtIK6goKCzJaCgoKEAA8ghIKCgoKCgoKClIKCgoSClIKUzAAIFMyCgpaCgoKCAAcSgoKCgoKChIKCgoKCuoKClIKCgqaCgpSssoKCqIKCgpSCgqaogoKogoKClIKCgsyCgqiCgoKCpqqippaCAAMQwpSClIKogoLKlJQ=")]
+[assembly: go.GoPositionMap("compress/flate/deflate.go", "deflate.cs", "AFv4AYKUgoKCgpSUgoKCgqiCgpSmgoKUyoKCpoKCgoKUgoKUrtSClIKogqaWgoKCgoKUgoSCloKCgoKmlLiCquKCgpaWgoKogoKCloKChIKChIKCgoKUlKaUlIKCpqaCgIKkggAEELKqooKUgoKCgoK+soKCgoKmrMSCgqiClKS0grSCgrqWgpSUgqaCgoKCgoKCgoKmgoKWhIKCgpSCgoKUgpSUlIKUgoCCpJSmlIKCgoKUgoKCgoKCloaAgoK2qIKU3IKCgpSUgoKCpoKUpoSCgsqUlICCpKaCgoKUgoKAgqSmgoL8goKCpoKCgr6ygpSCgqaygpSCgoKCgqamooKUgoKCgoKUgqaChJSCgqSCgqSCgoKCgqSCpIKCgqSkpoKCgoKUpIKCpIKCgoKCgoKCgsiigpSClIKCgpSAgqSCgpSCAAIeAAwCgoCCpAACEuKCgoKUgoLuggALHKIAAhgACwaokqyygJSCgqY=")]
+[assembly: go.GoPositionMap("compress/flate/deflatefast.go", "deflatefast.cs", "ABE0goKmgoKoggAXMoKqtIK6goKCzJaCgoKEAA8ghIKCgoKCgoKClIKCgoSClIKUzAAIFMyCgpaCgoKCAAcSgoKCgoKChIKCgoKCuoKClIKCgqaCgpSssoKCqIKCgpSCgqaogoKogoKClIKCgsyCgqiCgoKCpqqippaCAAMQwpSCgqiCgsqUlA==")]
 [assembly: go.GoPositionMap("compress/flate/dict_decoder.go", "dict_decoder.cs", "ACNOsoSClISClIKCgpSokoKUqJKokqyyrLKssoIAAhDSgoKCgoIACBSCgoIADyKCloIAAhLigoKClIKWgpaCrLKCgoKClA==")]
-[assembly: go.GoPositionMap("compress/flate/huffman_bit_writer.go", "huffman_bit_writer.cs", "AE28AYIAChaCgqaCgoKUgoKCgpKUlJSCgqaCgpSmgoKUgoKCgoKCgoKCgoKCgoKCgoKU6IKClIKCgpSCgoKClIKUggACHgAPAoLclIKCloKClISCgoKmgoKCpoKCgoKCgoKClIKCgoKCpoKCgpSCgoKCgpSUgoKCgoKmgoKCgqaCpqjigoKUioqokgACErKClIKUpoKClIKCgoKCgoKCgoKCgoKCgoKClAADEtKClIKClIKCgoSCgpaCgoKCgpSElIK0grSC6oKClIKClIKCgqaCgpaSgpQAAhDSgpaChIKCypSUlKyigoa4goKEgoKCqIKCgqiClKgAAhDSgpaCqIKCloCCgoK4lq7ygpSCloKCgpSCgoKogoKmgoKUpoKUgoKqooKUgoKCpoKCgoKCgqaCgoKCgoIACBKCgoKCrLKCqIKohISCgoSIyIKCloCCgoK4goKClIKCgoKmgoKCgoKCgoKCgoKClIKClJSCrLKCgg==")]
-[assembly: go.GoPositionMap("compress/flate/huffman_code.go", "huffman_code.cs", "ADpokoKmgKSCqJKCgoKCgoKWgraCtoK2gvSUpoKCgoKU7IKCgoKmAAQmAA4CgpSCgqiCnsrEptyCgrqEgoKCyoKCgpaClIKUgsqUgpaAypSUgqaC7oKWgoKCpoKUqsKCgoKC3ISCgoKUAAMQ4riUlJSCgoKUqIKmlJSUlpTKooKmgKSCpoDIooKmgKSCgpSmgKSC")]
-[assembly: go.GoPositionMap("compress/flate/inflate.go", "inflate.cs", "ADJGgsyAAAoUggAKFoIAKWbYtIKaopKCgpSClIKUAAgUgpaCgoKCggAGEIKWgoKCloKCgoKCgoKUgqiCgpSCgoKCgoLcgpSmgqaUgoKCgoKUuriCuIKUpoKCgswAK16igoCCtoKCgoKClLaCgraAoqSCgrbYsoKCgoKClJSClIKCyoKClAAJELSCgIK2goKUgoKClIKUgpaCgoCCtoKClIKUgrqCgoKUlIKClpKCgpSkgoKClLSCgrSCgrSCgIK2goKCgpSCgqiC3oKWrsKalKSmhJKCgoKUgoKUgoKCgoKUtIKmgrSCtIK0grSCtIK0grSCtIKCgIKCtoKCloKCgoCCgraCgpSAgoK4lLSEgpKAgoK2goKCtIK4goKWgpaEkoKClISCgoKClLq2gpaCgoKClIKCgoKWgoKCloKqooKCloKCgoKCgpaCgoKUpoKCgpSUqJKClKaCgoKUgoKCqPq4koKCgoKCgpSCgpSCgoKClIKCgoKClIKCyoKAgoKCtoKmlKaChJKClIKUgpSClLiC7oKCAAIWAAgChIKCgoKCggACFPKEgoKCgoKC")]
+[assembly: go.GoPositionMap("compress/flate/huffman_bit_writer.go", "huffman_bit_writer.cs", "AE28AYIAChaCgqaCgoKUgoKCgpKUlJSCgqaCgpSmgoKUgoKCgoKCgoKCgoKCgoKCgoKU6IKClIKCgpSCgoKClIKUggACHgAPAsqUgoKWgoKUhIKCgqaCgoKmgoKCgoKCgoKUgoKCgoKmgoKClIKCgoKClJSCgoKCgqaCgoKCpoKmqOKCgpSKiqiSAAISsoKUgpSmgoKUgoKCgoKCgoKCgoKCgoKCgoKUAAMS0oKUgoKUgoKChIKCloKCgoKClISUgrSCtILqgoKUgoKUgoKCpoKClpKClAACENKCloKEgoLKlJSUrKKChriCgoSCgoKogoKCqIKUqAACENKCloKogoKWgIKCgriWrvKChIKCgpSCgoKogoKmgoKUpoKUgoKqooKUgoKCpoKCgoKCgqaCgoKCgoIACBKCgoKCrLKCqJaEhIKChIjIgoKWgIKCgriCgoKUgoKCgqaCgoKCgoKCgoKCgoKUgoKUlIKssoKC")]
+[assembly: go.GoPositionMap("compress/flate/huffman_code.go", "huffman_code.cs", "AC5okoKmgKSCqJKCgoKCgoKWgraCtoK2gvSUpoKCgoKU7IKCgoKmAAQmAA4CgpSCgqiCnsrEptyCgrqEgoKCyoKCgpaClIKUgsqUgpaAypSUgqaC7oKWgoKCpoKUqsKCgoKC3ISCgoKUAAMQ4riUlJSCgoKUqIKmlJSUlpTKooKmgKSCpoDIooKmgKSCgpSmgKSC")]
+[assembly: go.GoPositionMap("compress/flate/inflate.go", "inflate.cs", "ACBGgsyAAAoUggAKFoIAKWbYtIKaopKCgpSClIKUAAgUgpaCgoKCggAGEIKWgoKCloKCgoKCgoKUgqiCgpSCgoKCgoLcgpSmgqaUgoKCgoKUuriCuIKUpoKCgswAK16igoCCtoKCgoKClLaCgraAoqSCgrbYsoKCgoKClJSClIKCyoKClAAJELSCgIK2goKUgoKClIKUgpaCgoCCtoKClIKUgrqCgoKUlIKClpKCgpSkgoKClLSCgrSCgrSCgIK2goKCgpSCgqiC3oKWrsKalKSmhJKCgoKUgoKUgoKCgoKUtIKmgrSCtIK0grSCtIK0grSCtIKCgIKCtoKCloKCgoCCgraCgpSAgoK4lLSEgpKAgoK2goKCtIK4goKWgpaEkoKClISCgoKClLq2gpaCgoKClIKCgoKWgoKCloKqooKCloKCgoKCgpaCgoKUpoKCgpSUqJKClKaCgoKUgoKCqPq4koKCgoKCgpSCgpSCgoKClIKCgoKClIKCyoKAgoKCtoKmlKaChJKClIKUgpSClLiC7oKCAAIWAAgChIKCgoKCggACFPKEgoKCgoKC", "767-783:1")]
 [assembly: go.GoPositionMap("compress/flate/token.go", "token.cs", "AEGOAZCmkqiQppCkgKSAppKClIKU")]
 // </GoSourcePositionMaps>
 
@@ -101,4 +101,22 @@ public static partial class flate_package
     public partial struct WriteError {}
     [GoValueClone("d")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

@@ -36,7 +36,7 @@ using static global::go.io.ioutil_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("io/ioutil/ioutil_test.go", "ioutil_test.cs", "ABEggoKClIL4goKCgpaCgoKW1oKCgpSCiICCpoKCloKogubCgpSCqIKClIKEgoKCgpSCgpSCgpSC6IKCgoKWgoKCloKCgpS0xoKUgg==")]
-[assembly: go.GoPositionMap("io/ioutil/tempfile_test.go", "tempfile_test.cs", "ABYiooKClISCgoIACgiiyoKCgoKUgoKCggAQEqKCgpSEggAIGLKygpKCpoKCpLYAFAyigoKWAAQShKKCgpSEgoLYsqKCAAgUkoL8woKClISCgoCCAAwIooKClISCAAgYspKCgoKktg==")]
+[assembly: go.GoPositionMap("io/ioutil/tempfile_test.go", "tempfile_test.cs", "ABYiooKClISCgoIACgiiyoKCgoKUgoKCggAQEqKCgpSEggAIGLKygpKCpoKCpLYAFAyigoKWAAQShKKCgpSEgoLYsqKCAAgUkoL8woKClISCgoCCAAwIooKClISCAAgYspKCgoKktg==", "77-93:1;79-83:1.1;114-125:1;128-131:2;140-143:3;183-194:1")]
 // </GoSourcePositionMaps>
 
 namespace go.io;
@@ -51,9 +51,34 @@ public static partial class ioutil_test_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct TestTempDir_BadPattern_tests {}
-    public partial struct TestTempDir_tests {}
-    public partial struct TestTempFile_BadPattern_tests {}
-    public partial struct TestTempFile_pattern_tests {}
+    internal partial struct TestTempDir_BadPattern_tests {}
+    internal partial struct TestTempDir_tests {}
+    internal partial struct TestTempFile_BadPattern_tests {}
+    internal partial struct TestTempFile_pattern_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸioutil() => builtin.initPackage(typeof(go.io.ioutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.io.ioutil_package));
+    }
 }

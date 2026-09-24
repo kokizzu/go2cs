@@ -34,6 +34,7 @@ using static go.os.user_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4f6e63653b2075202a6f732f757365722e557365723b20657272206572726f727d", "cacheᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -62,11 +63,11 @@ using static go.os.user_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/listgroups_unix.go", "listgroups_unix.cs", "AD0mgoKUgoKWgoKCloSCgoKCgoKUAAcUgroABhCClJSUlJSCqIKClJSCgpaWpqKCgpSU")]
-[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
-[assembly: go.GoPositionMap("os/user/lookup_stubs.go", "lookup_stubs.cs", "ABsugraCgpaSAAgQlIKUgtqClIKClIKClJSmgoCC2qaCgIKk")]
-[assembly: go.GoPositionMap("os/user/lookup_unix.go", "lookup_unix.cs", "ABg4AAkCloKCuoKChKaClLqCgpaogt6CgpSCgqiClIKU3IKCgpSCsoKmgsyUgIKkuIKAgqSkpoKAgqSkqqKCgpSCsoKmgoSUgIKkgIKkAAoWgriCgoKUgIKkpKaCgIKkpKaigoKUktaigoKUktaigoKUktaigoKUkg==")]
-[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADaKAYLOgs6CzoI=")]
+[assembly: go.GoPositionMap("os/user/listgroups_unix.go", "listgroups_unix.cs", "ABMmgoKUgoKWgoKCloSCgoKCgoKUAAcUgroABhCClJSUlJSCqIKClJSCgpaWpqKCgpSU")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "AA4q0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS", "22-22:1")]
+[assembly: go.GoPositionMap("os/user/lookup_stubs.go", "lookup_stubs.cs", "ABUugraCgpaSAAgQlIKUgtqClIKClIKClJSmgoCC2qaCgIKk")]
+[assembly: go.GoPositionMap("os/user/lookup_unix.go", "lookup_unix.cs", "ABI4AAkCloKCuoKChKaClLqCgpaogt6CgpSCgqiClIKU3IKCgpSCsoKmgsyUgIKkuIKAgqSkpoKAgqSkqqKCgpSCsoKmgoSUgIKkgIKkAAoWgriCgoKUgIKkpKaCgIKkpKaigoKUktaigoKUktaigoKUktaigoKUkg==", "99-117:1;146-175:1")]
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "AEOKAYLOgs6CzoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.os;
@@ -89,4 +90,23 @@ public static partial class user_package
     public partial struct UnknownUserIdError {}
     public partial struct User {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

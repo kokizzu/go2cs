@@ -6,6 +6,7 @@ namespace go.crypto;
 
 partial class x509_internal_test_package {
     static x509_internal_test_package() {
+        initᴛnistTestPolicies();
         initᴛverifyTests();
         initᴛunknownAuthorityErrorTests();
     }

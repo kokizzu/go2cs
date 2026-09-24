@@ -6,6 +6,8 @@
 // This file implements Sizes.
 namespace go.go;
 
+using System.Runtime.CompilerServices;
+
 partial class types_package {
 
 // Sizes defines the sizing functions for package unsafe.
@@ -53,7 +55,7 @@ public static int64 /*result*/ Alignof(this ж<StdSizes> Ꮡs, ΔType T) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        defer(() => {
+        defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
             assert(result >= 1);
         }, ref ᒐ);
         // For arrays and structs, alignment is defined in terms

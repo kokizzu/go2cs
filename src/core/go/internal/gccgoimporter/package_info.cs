@@ -78,10 +78,10 @@ using static go.go.@internal.gccgoimporter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/ar.go", "ar.cs", "AG5q0oCCpoKAgqaUpKSkypKCgoKAgqSEgpaCgpaCuIKCgqiClIKAggAIDqKCgpSCgpSokoKCgpaCgoKUgoKorLKAgqTugoCCpA==")]
-[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/gccgoinstallation.go", "gccgoinstallation.cs", "AEA80oKCgoKWgoKWgoKClLaCgoLsgoKClISosoKCgoKUhIKCgpSWhKqi")]
+[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/ar.go", "ar.cs", "AD5q0oCCpoKAgqaUpKSkypKCgoKAgqSEgpaCgpaCuIKCgqiClIKAggAIDqKCgpSCgpSokoKCgpaCgoKUgoKorLKAgqTugoCCpA==")]
+[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/gccgoinstallation.go", "gccgoinstallation.cs", "ACI80oKCgoKWgoKWgoKClLaCgoLsgoKClISosoKCgoKUhIKCgpSWhKqi")]
 [assembly: global::go.GoPositionMap("go/internal/gccgoimporter/importer.go", "importer.cs", "AC1UooKChO6CgroACSAACwKCgpSCkoKogoKCloKWgqaCpraCgoKCgpSCloKCgoKClIKWggALGIIACgqCloKCgoKAgqSCgqaCkoKClIKUgIK2goKWgoKUgqSWgoKCloKCgpSCgqiUgoKCggADMgAVBvyigoCCpICCpA==", "83-87:1;146-247:1")]
-[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/parser.go", "parser.cs", "AFFwooKCgoKmooKAkoKCggAHEIKmgoCCtqaipoKCgpSCpoKClKaCgoK4goKClNqigpSCpoKClIKmgoKUpMiCpoKs4oKClpS2graitqzEgpSCgoKUrvKCgoKUgoKUqJKUgqaCpoKAgqTY0oKCgoKUgIKUpLTE2IKClOjSlIKUlIKCgoKUgoKCgpSCgpSCqLKCgriU2NKCgoKCgoIACAoACAaCgoKolIKCgqaCtqampoKCgqaCgoKWlIKCloKCgpS4goSClIKmgqiCppKClIKmgoKClIKClIKmpqiygoKClIKCgpQADRYACBCCgpSUgpQAAxLSgpSClIKUgpSClLuClIKUtIKCgpSUxAAJENKCgoKCloLegoKClIKCgpSCgoKopoKCgqiChIKUgoKUloKCgoKUqIKUgoKUgoKClIKUgoKCgoKCgoSCqKaCgoKClKaCgpKClKiygoKEgoSCloKEgoSC2LKEgoSCgoKEgtiyhIKEgpSCgriSgoLIgtiyhIKEgoSCgoKCgpSEgtiygoSCgoKUgoKCgpSmhKiylIKClIKmgqbKsoKEgoSCqLKUgoKClIKWgoKEypbYsoSChIKEgoKCgpSCgqaUhILYsoKCgoKCloKEhKiylKaUpqamyKampoIAHTyCAAM44oKC2OKEgpSCgoKUgoKUlIK4goKCpoKmgpaCrAAIAoKC2gAIBoKCpJSWgoKEgpSEgoKCgpQACwrSgoKEjIKCgoKWgpSqgoKCgpSUhIKCloLq0oKCgpaCgoKCgpSClIKClILqkoKCgoKUqJKCAAMSAAkClJaUgoKCpoKCpoKClKaEkoKUqJKUgoKCpgAHHgANApSWlKaCgoKCgpSmgoKCpoKCpoKCgoKCpoKCgoKmgoKmgoKClKaCgqaCgoKUpoKCgqbKsoKUgoKUlIKCgIK2gg==", "66-66:1;1011-1013:1;1045-1047:1;1075-1079:1;1159-1161:1")]
+[assembly: global::go.GoPositionMap("go/internal/gccgoimporter/parser.go", "parser.cs", "ADlwooKCgoKmooKAkoKCggAHEIKmgoCCtqaipoKCgpSCpoKClKaCgoK4goKClNqigpSCpoKClIKmgoKUpMiCpoKs4oKClpS2graitqzEgpSCgoKUrvKCgoKUgoKUqJKUgqaCpoKAgqTY0oKCgoKUgIKUpLTE2IKClOjSlIKUlIKCgoKUgoKCgpSCgpSCqLKCgriU2NKCgoKCgoIACAoACAaCgoKolIKCgqaCtqampoKCgqaCgoKWlIKCloKCgpS4goSClIKmgqiCppKClIKmgoKClIKClIKmpqiygoKClIKCgpQADRYACBCCgpSUgpQAAxLSgpSClIKUgpSClLuClIKUtIKCgpSUxAAJENKCgoKCloLegoKClIKCgpSCgoKopoKCgqiChIKUgoKUloKCgoKUqIKUgoKUgoKClIKUgoKCgoKCgoSCqKaCgoKClKaCgpKClKiygoKEgoSCloKEgoSC2LKEgoSCgoKEgtiyhIKEgpSCgriSgoLIgtiyhIKEgoSCgoKCgpSEgtiygoSCgoKUgoKCgpSmhKiylIKClIKmgqbKsoKEgoSCqLKUgoKClIKWgoKEypbYsoSChIKEgoKCgpSCgqaUhILYsoKCgoKCloKEhKiylKaUpqamyKampoIAHTyCAAM44oKC2OKEgpSCgoKUgoKUlIK4goKCpoKmgpaCrAAIAoKC2gAIBoKCpJSWgoKEgpSEgoKCgpQACwrSgoKEjIKCgoKWgpSqgoKCgpSUhIKCloLq0oKCgpaCgoKCgpSClIKClILqkoKCgoKUqJKCAAMSAAkClJaUgoKCpoKCpoKClKaEkoKUqJKUgoKCpgAHHgANApSWlKaCgoKCgpSmgoKCpoKCpoKCgoKCpoKCgoKmgoKmgoKClKaCgqaCgoKUpoKCgqbKsoKUgoKUlIKCgIK2gg==", "66-66:1;1011-1013:1;1045-1047:1;1075-1079:1;1159-1161:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go.@internal;
@@ -107,4 +107,30 @@ public static partial class gccgoimporter_package
     public partial struct InitData {}
     public partial struct PackageInit {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸelf() => builtin.initPackage(typeof(debug.elf_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() => builtin.initPackage(typeof(global::go.go.constant_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸxcoff() => builtin.initPackage(typeof(global::go.@internal.xcoff_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(global::go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸscanner() => builtin.initPackage(typeof(text.scanner_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

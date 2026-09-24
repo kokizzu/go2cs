@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -99,19 +111,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="example_monitor_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="garbage.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="garbage_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="heapdump_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mod.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mod_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="panic_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stack.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stack_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/5501685e611fa764" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/71634114e78567cf" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/c73dce23c1f2494c" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="example_monitor_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="garbage.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="garbage_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="heapdump_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mod.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mod_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="panic_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="stack.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="stack_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="stubs.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/5501685e611fa764" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/71634114e78567cf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/fuzz/FuzzParseBuildInfoRoundTrip/c73dce23c1f2494c" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

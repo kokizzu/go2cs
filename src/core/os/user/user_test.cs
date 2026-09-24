@@ -55,8 +55,9 @@ public static void TestCurrent(ж<testing.T> Ꮡt) {
 public static void BenchmarkCurrent(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
+    // Benchmark current instead of Current because Current caches the result.
     for (nint i = 0; i < b.N; i++) {
-        Current();
+        current();
     }
 }
 

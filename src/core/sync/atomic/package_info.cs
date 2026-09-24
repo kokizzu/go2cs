@@ -49,7 +49,8 @@ using static go.sync.atomic_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("sync/atomic/doc.go", "doc.cs", "ADaIAQAOCsi6yLi4usi6yLi4vNrO6LrKysrKysrKysrIusi6yLi4usi6yLg=")]
+[assembly: go.GoPositionMap("sync/atomic/doc.go", "doc.cs", "ADaOAQARDNzYvNzc2LwABRD83u7u7u7u7Nzc2Lzc3Ng=")]
+[assembly: go.GoPositionMap("sync/atomic/doc_64.go", "doc_64.cs", "AAgc7u7u7gAGEgAIDu7u7u7u7u4=")]
 // </GoSourcePositionMaps>
 
 namespace go.sync;
@@ -65,4 +66,13 @@ public static partial class atomic_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

@@ -14,6 +14,7 @@ internal static class Go2CsTestHost
             "example_pool_test.go",
             "example_test.go",
             "export_test.go",
+            "hashtriemap.go",
             "map.go",
             "map_bench_test.go",
             "map_reference_test.go",
@@ -39,20 +40,21 @@ internal static class Go2CsTestHost
         {
             "atomic",
         });
-        registry.Add("TestCompareAndSwap_NonExistingKey", sync_test_package.TestCompareAndSwap_NonExistingKey, "map_test.go", 282);
-        registry.Add("TestConcurrentClear", sync_test_package.TestConcurrentClear, "map_test.go", 305);
-        registry.Add("TestConcurrentRange", sync_test_package.TestConcurrentRange, "map_test.go", 148);
+        registry.Add("TestCompareAndSwap_NonExistingKey", sync_test_package.TestCompareAndSwap_NonExistingKey, "map_test.go", 293);
+        registry.Add("TestConcurrentClear", sync_test_package.TestConcurrentClear, "map_test.go", 316);
+        registry.Add("TestConcurrentRange", sync_test_package.TestConcurrentRange, "map_test.go", 159);
         registry.Add("TestCondBroadcast", sync_test_package.TestCondBroadcast, "cond_test.go", 79);
         registry.Add("TestCondCopy", sync_test_package.TestCondCopy, "cond_test.go", 241);
         registry.Add("TestCondSignal", sync_test_package.TestCondSignal, "cond_test.go", 14);
         registry.Add("TestCondSignalGenerations", sync_test_package.TestCondSignalGenerations, "cond_test.go", 52);
         registry.Add("TestCondSignalStealing", sync_test_package.TestCondSignalStealing, "cond_test.go", 187);
-        registry.Add("TestIssue40999", sync_test_package.TestIssue40999, "map_test.go", 209);
-        registry.Add("TestMapClearNoAllocations", sync_test_package.TestMapClearNoAllocations, "map_test.go", 350);
-        registry.Add("TestMapMatchesDeepCopy", sync_test_package.TestMapMatchesDeepCopy, "map_test.go", 142);
-        registry.Add("TestMapMatchesRWMutex", sync_test_package.TestMapMatchesRWMutex, "map_test.go", 136);
-        registry.Add("TestMapRangeNestedCall", sync_test_package.TestMapRangeNestedCall, "map_test.go", 232);
-        registry.Add("TestMapRangeNoAllocations", sync_test_package.TestMapRangeNoAllocations, "map_test.go", 290);
+        registry.Add("TestIssue40999", sync_test_package.TestIssue40999, "map_test.go", 220);
+        registry.Add("TestMapClearOneAllocation", sync_test_package.TestMapClearOneAllocation, "map_test.go", 361);
+        registry.Add("TestMapMatchesDeepCopy", sync_test_package.TestMapMatchesDeepCopy, "map_test.go", 147);
+        registry.Add("TestMapMatchesHashTrieMap", sync_test_package.TestMapMatchesHashTrieMap, "map_test.go", 153);
+        registry.Add("TestMapMatchesRWMutex", sync_test_package.TestMapMatchesRWMutex, "map_test.go", 141);
+        registry.Add("TestMapRangeNestedCall", sync_test_package.TestMapRangeNestedCall, "map_test.go", 243);
+        registry.Add("TestMapRangeNoAllocations", sync_test_package.TestMapRangeNoAllocations, "map_test.go", 301);
         registry.Add("TestMutex", sync_test_package.TestMutex, "mutex_test.go", 75);
         registry.Add("TestMutexFairness", sync_test_package.TestMutexFairness, "mutex_test.go", 199);
         registry.Add("TestMutexMisuse", sync_test_package.TestMutexMisuse, "mutex_test.go", 189);

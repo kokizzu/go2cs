@@ -4,7 +4,7 @@
 namespace go;
 
 using poll = @internal.poll_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -34,7 +34,7 @@ internal static error Control(this ж<rawConn> Ꮡc, Action<uintptr> f) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawControl(f);
-    Δruntime.KeepAlive(c.fd.OrTypedNil());
+    runtime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-control"u8, Net: (~c.fd).net, Source: default!, Addr: (~c.fd).laddr, Err: err)));
     }
@@ -48,7 +48,7 @@ internal static error Read(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawRead(f);
-    Δruntime.KeepAlive(c.fd.OrTypedNil());
+    runtime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-read"u8, Net: (~c.fd).net, Source: (~c.fd).laddr, Addr: (~c.fd).raddr, Err: err)));
     }
@@ -62,7 +62,7 @@ internal static error Write(this ж<rawConn> Ꮡc, Func<uintptr, bool> f) {
         return syscall.EINVAL;
     }
     var err = c.fd.of(netFD.Ꮡpfd).RawWrite(f);
-    Δruntime.KeepAlive(c.fd.OrTypedNil());
+    runtime.KeepAlive(c.fd.OrTypedNil());
     if (err != default!) {
         err = new OpErrorжerror(Ꮡ(new OpError(Op: "raw-write"u8, Net: (~c.fd).net, Source: (~c.fd).laddr, Addr: (~c.fd).raddr, Err: err)));
     }

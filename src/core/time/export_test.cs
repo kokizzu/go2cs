@@ -32,8 +32,8 @@ internal static void initᴛDisablePlatformSources() { DisablePlatformSources = 
 public static Func<@string, (@string, bool)> GorootZoneSource = gorootZoneSource;
 public static Func<@string, (nint, bool)> ParseTimeZone;
 internal static void initᴛParseTimeZone() { ParseTimeZone = parseTimeZone; }
-public static Action<ж<global::go.time_package.Time>, int64> SetMono = (Action<ж<global::go.time_package.Time>, int64>)(global::go.time_package.setMono);
-public static Func<ж<global::go.time_package.Time>, int64> GetMono = (Func<ж<global::go.time_package.Time>, int64>)(global::go.time_package.mono);
+public static Action<ж<global::go.time_package.Time>, int64> SetMono = ((Action<ж<global::go.time_package.Time>, int64>)(global::go.time_package.setMono));
+public static Func<ж<global::go.time_package.Time>, int64> GetMono = ((Func<ж<global::go.time_package.Time>, int64>)(global::go.time_package.mono));
 public static error ErrLocation;
 internal static void initᴛErrLocation() { ErrLocation = errLocation; }
 public static Func<@string, (slice<byte>, error)> ReadFile = readFile;
@@ -41,8 +41,7 @@ public static Func<@string, @string, (slice<byte>, error)> LoadTzinfo;
 internal static void initᴛLoadTzinfo() { LoadTzinfo = loadTzinfo; }
 public static Func<@string, (@string, nint, @string)> NextStdChunk;
 internal static void initᴛNextStdChunk() { NextStdChunk = nextStdChunk; }
-public static Func<@string, int64, int64, (@string, nint, int64, int64, bool, bool)> Tzset;
-internal static void initᴛTzset() { Tzset = tzset; }
+public static Func<@string, int64, int64, (@string, nint, int64, int64, bool, bool)> Tzset = tzset;
 public static Func<@string, (@string, @string, bool)> TzsetName = tzsetName;
 public static Func<@string, (nint, @string, bool)> TzsetOffset = tzsetOffset;
 
@@ -139,10 +138,10 @@ internal static void initᴛQuote() { Quote = quote; }
 public static Func<slice<byte>, nint, nint, slice<byte>> AppendInt = appendInt;
 
 public static Func<global::go.time_package.Time, slice<byte>, @string, slice<byte>> AppendFormatAny;
-internal static void initᴛAppendFormatAny() { AppendFormatAny = (Func<global::go.time_package.Time, slice<byte>, @string, slice<byte>>)(global::go.time_package.appendFormat); }
+internal static void initᴛAppendFormatAny() { AppendFormatAny = ((Func<global::go.time_package.Time, slice<byte>, @string, slice<byte>>)(global::go.time_package.appendFormat)); }
 
 public static Func<global::go.time_package.Time, slice<byte>, bool, slice<byte>> AppendFormatRFC3339;
-internal static void initᴛAppendFormatRFC3339() { AppendFormatRFC3339 = (Func<global::go.time_package.Time, slice<byte>, bool, slice<byte>>)(global::go.time_package.appendFormatRFC3339); }
+internal static void initᴛAppendFormatRFC3339() { AppendFormatRFC3339 = ((Func<global::go.time_package.Time, slice<byte>, bool, slice<byte>>)(global::go.time_package.appendFormatRFC3339)); }
 
 public static Func<@string, @string, ж<global::go.time_package.ΔLocation>, ж<global::go.time_package.ΔLocation>, (global::go.time_package.Time, error)> ParseAny;
 internal static void initᴛParseAny() { ParseAny = parse; }

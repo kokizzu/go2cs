@@ -4,7 +4,7 @@
 namespace go;
 
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -18,13 +18,13 @@ internal static error setIPv4MulticastInterface(ж<netFD> Ꮡfd, ж<Interface> �
     array<byte> a = new(4);
     copy(a[..], ip.To4());
     err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInet4Addr(syscall.IPPROTO_IP, syscall.IP_MULTICAST_IF, a);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv4MulticastLoopback(ж<netFD> Ꮡfd, bool v) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IP, syscall.IP_MULTICAST_LOOP, boolint(v));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

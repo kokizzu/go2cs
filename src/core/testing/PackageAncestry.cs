@@ -288,7 +288,14 @@ internal static class PackageAncestry
             symbolicLinks &= isSymbolicLink;
         }
 
-        AssertToolchainAcceptsLinks(goRoot, staged, symbolicLinks);
+        // The JUNCTION FALLBACK, and only it: at Go 1.24 a junction-staged tree is refused without
+        // this and the symbolic-link form needs nothing. Set BEFORE the probe below, because the
+        // probe is the first thing that runs the toolchain through these links. The ANSWER is carried
+        // forward rather than recomputed: a run whose own environment names winsymlink gets no setting
+        // from this host, and the refusal below must not claim otherwise.
+        bool junctionGodebug = !symbolicLinks && ApplyJunctionGodebug();
+
+        AssertToolchainAcceptsLinks(goRoot, staged, symbolicLinks, junctionGodebug);
 
         static void RemoveExisting(string target)
         {
@@ -417,7 +424,7 @@ internal static class PackageAncestry
     /// internal reports nothing either way, which is the right answer: there was no refusal to close.
     /// </para>
     /// </remarks>
-    private static void AssertToolchainAcceptsLinks(string goRoot, List<(string Target, string Real)> staged, bool symbolicLinks)
+    private static void AssertToolchainAcceptsLinks(string goRoot, List<(string Target, string Real)> staged, bool symbolicLinks, bool junctionGodebug)
     {
         string goTool = Path.Combine(goRoot, "bin", OperatingSystem.IsWindows() ? "go.exe" : "go");
 
@@ -449,16 +456,59 @@ internal static class PackageAncestry
                 CreateJunction(target, real);
             }
 
+            // Junctions now, so this run is on the fallback path after all and owes it the same
+            // GODEBUG the fallback sets — before the re-probe, and before any fixture program runs.
+            junctionGodebug = ApplyJunctionGodebug();
+
             refusal = FirstRefusal(goTool, staged);
 
             if (refusal is null)
                 return;
         }
 
+        // Naming the PRIVILEGE, because that is the one thing the operator can act on: every machine
+        // that reaches the junction path at all reached it by being refused a symbolic link.
+        // The symbolic-link arm is worded for EVERY platform, not just Windows: the rebuild block
+        // above is gated on OperatingSystem.IsWindows(), and off Windows CreateFixtureLink re-throws
+        // instead of falling back, so no junction is ever built there and "rebuilt as junctions just
+        // above" was simply untrue on the platforms that reach this arm without one.
+        string privilege = symbolicLinks
+            ? "This machine DID create the symbolic links — on Windows they were rebuilt as junctions " +
+              "just above only because the toolchain refused the symbolic form too; on other platforms " +
+              "no junction is built at all, so the symbolic-link refusal itself is the finding."
+            : "This machine has no SeCreateSymbolicLinkPrivilege, so the staging never got the " +
+              "attributable form and fell back to a JUNCTION; granting it (Developer Mode, or an " +
+              "elevated shell) is what gets the symbolic link, which the toolchain accepts unaided.";
+
+        // And naming WHOSE winsymlink the probe ran under, because the two answers send the reader to
+        // different places. Saying "probed with winsymlink=0" unconditionally is FALSE on exactly the
+        // run that most needs the truth: a caller who pre-set the variable gets an early return from
+        // ApplyJunctionGodebug, the junction is probed with THEIR value, and a refusal that credits
+        // this host with a setting it did not make points the investigation at the host instead of at
+        // the environment that produced it.
+        // Every Windows route to this throw has been through a junction — either the staging fell back
+        // to one, or the block above rebuilt the symlinks as one — and no other platform has a
+        // junction to probe at all.
+        bool junctionProbed = !symbolicLinks || OperatingSystem.IsWindows();
+
+        string godebug = !junctionProbed
+            ? $"No junction was probed on this platform, so {JunctionGodebugName} does not enter into it."
+            : junctionGodebug
+                ? $"The junction was probed with {GodebugVariable}={JunctionGodebugSetting}, as this " +
+                  "host set it — which is what Go 1.24 needs to resolve a mount point at all, so that " +
+                  "is not the missing piece here."
+                : $"This host set NO {JunctionGodebugName}: the run's own environment already names one " +
+                  $"({GodebugVariable}={Environment.GetEnvironmentVariable(GodebugVariable)}) and an " +
+                  "explicit setting from the caller is left alone, so the junction was probed with the " +
+                  $"{JunctionGodebugName} value YOUR environment supplies — which is what refused it. " +
+                  $"Dropping {JunctionGodebugName} from {GodebugVariable} lets this host apply the one " +
+                  "Go 1.24 needs.";
+
         throw new InvalidOperationException(
             "the Go toolchain still refuses an internal/… import through a link-staged fixture tree, " +
             "so the programs staged there would fail exactly as a plain copy does. Neither a directory " +
-            "symlink nor a junction was accepted on this machine. The toolchain said: " + refusal);
+            $"symlink nor a junction was accepted on this machine. {privilege} {godebug} " +
+            "The toolchain said: " + refusal);
 
         // Returns the toolchain's refusal text for the first link-staged tree that is still refused,
         // or null when none is.
@@ -539,6 +589,243 @@ internal static class PackageAncestry
             }
         }
     }
+
+    // JUNCTION FALLBACK ONLY. Go 1.24's `go` binary dropped winsymlink=0 from its DefaultGODEBUG
+    // (1.23's carried it), so os.Lstat stopped reporting a mount point as a symbolic link and
+    // filepath.EvalSymlinks stopped evaluating one — which means cmd/go's expandPath hands
+    // disallowInternal a junction path UNRESOLVED, it no longer sees a directory under $GOROOT/src,
+    // and an internal/… import from a junction-staged fixture tree is refused. Putting the setting
+    // back for the toolchain restores the 1.23 resolution for exactly this staging and nothing else;
+    // a machine that got the symbolic link never comes here.
+    //
+    // Measured 2026-09-20 on internal/coverage/cfile's testdata/harness.go, one axis at a time:
+    //   junction  go1.23.12  GODEBUG unset -> accepted | junction  go1.24.13  GODEBUG unset -> REFUSED
+    //   symlink   go1.24.13  GODEBUG unset -> accepted | junction  go1.24.13  winsymlink=0 -> accepted
+    //
+    // Published to BOTH environments, because both sides run the toolchain: the probe above starts
+    // `go list` as a CLR child, while a fixture program is started by the TEST through converted
+    // os/exec, whose Cmd.Environ() reads the converted syscall package's own copy. Same two halves,
+    // and the same measured reason, as TestHost's sandbox marker.
+    //
+    // ONE OF TWO, AND THE OTHER IS NOT PUT BACK — worth naming, because the junction path is thereby
+    // a configuration that existed at NEITHER release. `winreadlinkvolume=0` sat in the same dropped
+    // list: `go version -m` reads
+    //   1.23.12  build DefaultGODEBUG=…,winreadlinkvolume=0,winsymlink=0,…
+    //   1.24.13  (no DefaultGODEBUG line at all)
+    // and the corpus reads that neighbour too (os/windows/file_windows.cs:384,414,417 — both are in
+    // internal/godebugs/table.cs:68-69 as os settings changed at 23). Restoring only winsymlink is
+    // what the measurement supports and all this staging needs; the neighbour is NAMED here, not
+    // measured and not proposed, so that a later surprise involving reparse-point volume paths starts
+    // from a known asymmetry rather than from scratch.
+    //
+    // Returns whether THIS host applied the setting — false when the run's own environment already
+    // names it, which the refusal text downstream has to be able to say.
+    private static bool ApplyJunctionGodebug()
+    {
+        // TAKEN WHOLE, AND OVER THE FILE'S EXISTING LOCK OBJECT. s_fixtureLinks already guards this
+        // file's other cross-host state — the staged links themselves, at :326, :336 and :342 — and
+        // the junction GODEBUG is reached on the same thread, at the same two moments (staging and
+        // teardown), through the same public surface: there is no reachability difference between the
+        // two to justify a second object, a second answer, or a lock ordering to get wrong. NEITHER
+        // set needs a lock for cross-host safety as the tier runs today, because those many hosts in
+        // one process are SERIALISED — the measurement is at the statics' declaration below. Both
+        // take it as uniform care, so the file says ONE thing about its cross-host state and so that
+        // re-enabling [assembly: Parallelize] cannot silently open a window here.
+        //
+        // The whole body, not just the capture: the pre-value is worth keeping only if the write it
+        // was captured for cannot be interleaved, and the early return below reads the same store the
+        // write changes. Held across TestHost.PublishEnvironmentVariable deliberately — that call is
+        // a plain CLR write plus a reflective set into the converted syscall package, so it re-enters
+        // nothing here and waits on nothing — and across the stderr line. That IS a longer hold than
+        // the three regions above, which are a Clear, an Add and a set scan; it is not borrowing a
+        // precedent from them. It is affordable because nothing contends for this monitor: the tier
+        // is single-threaded (below), both calls are bounded, and neither can block on a thread that
+        // wants this lock.
+        lock (s_fixtureLinks)
+        {
+            string? existing = Environment.GetEnvironmentVariable(GodebugVariable);
+
+            // An explicit winsymlink from the run's own environment WINS, whichever way it points: the
+            // caller has said something specific about the one setting this would change, and a host
+            // that silently appends its own is no longer running the configuration it was handed. It
+            // also makes this idempotent, which the in-process guard tier needs — it runs many hosts
+            // in one process, and appending once per host would build a list instead of setting a
+            // value. Idempotent is what makes a SECOND call in one host harmless; the lock above is
+            // what would make a second host harmless, and neither substitutes for the other.
+            if (NamesJunctionSetting(existing))
+                return false;
+
+            // CAPTURED BEFORE THE FIRST WRITE, in both stores, because the write is process-wide and
+            // the setting is owed back at the staged tree's teardown (TestHost.Run's finally calls
+            // RestoreJunctionGodebug below). The two are read separately rather than assumed equal —
+            // the converted store is a snapshot syscall took at its own static init, so it can
+            // legitimately differ from the CLR's — and this is the same idiom, for the same two
+            // stores, that T.Setenv uses in TestExecution. Guarded so that a second apply within one
+            // host could never overwrite the pre-value with an already-modified one; the two call
+            // sites are mutually exclusive today.
+            if (!s_junctionGodebugApplied)
+            {
+                s_junctionGodebugPreviousManaged = existing;
+                s_junctionGodebugConvertedPresent =
+                    TestHost.TryGetConvertedEnvironmentVariable(GodebugVariable, out s_junctionGodebugPreviousConverted);
+                s_junctionGodebugApplied = true;
+            }
+
+            // APPEND, never replace. GODEBUG is a list and the pipeline puts real settings in it;
+            // taking the variable over would silently drop them.
+            string value = string.IsNullOrEmpty(existing)
+                ? JunctionGodebugSetting
+                : $"{existing},{JunctionGodebugSetting}";
+
+            // THE GUARD ABOVE RESTS ON AN ORDERING INSIDE THIS CALL: PublishEnvironmentVariable writes
+            // the CLR store first and the converted store second, and the second is the half that can
+            // throw. Reversed, a throwing converted write would leave the CLR store unchanged, the
+            // guard would not fire for the next host in this process, and the value would grow a
+            // SECOND winsymlink=0. One ordering away — said again at that method's own site, since it
+            // is the one that could move.
+            TestHost.PublishEnvironmentVariable(GodebugVariable, value);
+
+            // Said out loud, on the channel the unprobed-link note above already uses and for the same
+            // reason: this run hands the toolchain a NON-DEFAULT setting, and a configuration the host
+            // imposed on itself should not be something a reader has to infer from the link type. It
+            // is also what makes "the symbolic-link path sets nothing" readable rather than merely
+            // argued — the line is absent on every run that got the attributable form.
+            //
+            // READ IT AS "this host imposed the setting", NOT as "the setting is in force". A junction
+            // run whose caller pre-set winsymlink returns above and prints nothing while running with
+            // the caller's value — so the line's ABSENCE says only that this host did not impose one,
+            // and is not evidence about the link type or about what the toolchain saw.
+            Console.Error.WriteLine(
+                $"testing: fixture trees staged as junctions (no symbolic-link privilege) — {GodebugVariable}={value} " +
+                "set for the Go toolchain, without which Go 1.24 refuses their internal/… imports");
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Puts back the <c>GODEBUG</c> the junction fallback replaced, in both stores — a no-op on every
+    /// run that did not apply one.
+    /// </summary>
+    /// <remarks>
+    /// The setting lives exactly as long as the junctions do. It is process-wide, and the corpus's own
+    /// GODEBUG reader observes the CLR store, so a host that left it set would hand the NEXT host in
+    /// the process a <c>winsymlink</c> the environment never named — and the in-process guard tier
+    /// runs many hosts in one process. Absence is restored AS ABSENCE, each store to the value that
+    /// store held.
+    /// <para>
+    /// THE HALF-APPLICATION MIRRORS HERE, POINTING THE OTHER WAY. The converted store is put back
+    /// through the same reflective writer the apply wrote it with
+    /// (<see cref="TestHost.SetConvertedEnvironmentVariable"/>, the half of
+    /// <c>PublishEnvironmentVariable</c> that can fail), and that writer WARNS rather than throws —
+    /// inherited from the publisher <c>T.Setenv</c> shares, and deliberately unchanged. So a restore
+    /// whose converted half fails leaves the CLR store PUT BACK and the converted store still
+    /// carrying <c>winsymlink=0</c>: the two stores disagree in the OPPOSITE direction from a
+    /// half-failed apply, where it is the CLR store that carries the setting the other lacks. The
+    /// tell is the same one either way — that writer's single stderr line — and there is no other.
+    /// </para>
+    /// </remarks>
+    public static void RestoreJunctionGodebug()
+    {
+        // WHOLE, over the same object and for the same reason as the apply: this is the other end of
+        // the pairing those statics record, and a put-back that could interleave with an apply is the
+        // one window the capture exists to close. Sequential today, so it is uniform care rather than
+        // a fix. No nesting is introduced: TestHost.Run's finally calls ReleaseFixtureLinks (:326,
+        // which takes this lock over the link set) and then calls this from a SEPARATE try, so the
+        // two are consecutive acquisitions — and Monitor is reentrant in any case.
+        lock (s_fixtureLinks)
+        {
+            if (!s_junctionGodebugApplied)
+                return;
+
+            // Cleared FIRST, so a throwing restore cannot leave this run's pre-values armed for the
+            // next host to put back on top of its own.
+            s_junctionGodebugApplied = false;
+
+            string? managed = s_junctionGodebugPreviousManaged;
+            string? converted = s_junctionGodebugPreviousConverted;
+            bool convertedPresent = s_junctionGodebugConvertedPresent;
+
+            s_junctionGodebugPreviousManaged = null;
+            s_junctionGodebugPreviousConverted = null;
+            s_junctionGodebugConvertedPresent = false;
+
+            // Aimed store by store rather than through PublishEnvironmentVariable, which writes ONE
+            // value to both: the apply computed its value from the CLR store and wrote it to both, so
+            // putting the CLR's old value into the converted store would be a second clobber rather
+            // than a restore.
+            Environment.SetEnvironmentVariable(GodebugVariable, managed);
+            TestHost.SetConvertedEnvironmentVariable(GodebugVariable, convertedPresent ? converted : null);
+        }
+    }
+
+    // TOKEN-WISE, never a substring. GODEBUG is a comma-separated list of name=value settings, and the
+    // question is whether the run's own environment names THIS setting — which `Contains("winsymlink")`
+    // does not answer: a future `winsymlinkfoo=1` satisfies it and would suppress the fix for a run
+    // that said nothing about winsymlink at all. The neighbour `winreadlinkvolume` matches under
+    // neither form, and must not. No trimming, deliberately: internal/godebug's own parser splits on
+    // ',' and '=' without it, so a token the toolchain will not honour must not count here either.
+    private static bool NamesJunctionSetting(string? godebug)
+    {
+        if (string.IsNullOrEmpty(godebug))
+            return false;
+
+        foreach (string setting in godebug.Split(','))
+        {
+            int separator = setting.IndexOf('=');
+            ReadOnlySpan<char> name = separator < 0 ? setting.AsSpan() : setting.AsSpan(0, separator);
+
+            if (name.Equals(JunctionGodebugName, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    // The GODEBUG this run displaced, captured once on the first apply and owed back at teardown.
+    // Static because the setting it guards is process-wide, and one host run executes per test
+    // process — which is Go's model, and the same reason s_fixtureLinks above is static.
+    //
+    // WRITTEN AND READ UNDER lock (s_fixtureLinks), the same object and the same discipline as the
+    // link set itself — ApplyJunctionGodebug and RestoreJunctionGodebug each take it over their whole
+    // body. NEITHER set needs that lock for cross-host safety as the tier runs today, because the
+    // "many hosts in one process" the notes above keep referring to are SERIALISED. MEASURED
+    // 2026-09-20 at this ref: the in-process tier is MSTest, and the property that matters is NOT that
+    // the test files are free of concurrency — they are not — but that nothing concurrent WRAPS A HOST
+    // RUN. Every one of the 27 TestHost.Run calls in TestingRuntimeTests.cs is a synchronous call in
+    // the test method's own body, neither awaited nor Task-wrapped, which is stronger than awaited, and
+    // NO thread or task in either tree encloses one. The thread a reader grepping for Thread WILL find
+    // is real — TestingRuntimeTests.cs:191, under `using System.Threading` at :10 — and it does not
+    // matter: it is constructed INSIDE a registered test body (the registry.Add lambda opening at
+    // :189), started at :192 and joined at :193 before that body returns, so it lives strictly within
+    // the ONE host run at :196 and cannot make two hosts concurrent. Thread.Sleep at :279 is the same
+    // shape, and the six Parallel() hits (:32, :38, :247, :271, :298, :302) are Go's T.Parallel() under
+    // test on a converted testing.T, not C# parallelism; the file contains no async, await or Task at
+    // all. GolibTests adds 8 more call sites across five files (2, 2, 2, 1, 1), 35 in the tree, on the
+    // same terms — counted by a strict predicate, no `//` before the call on its line, because a raw
+    // grep reads 36 and the extra is HostUnknownFlagPassThroughTests.cs:55 MENTIONING the call in a
+    // comment, which is not a call site. One of those five does construct a thread
+    // (MainGoroutineIdentityTests.cs:167, started :194, joined :195), but in a different test method
+    // from its host run at :108, and that body calls no host at all.
+    // The enforcement is that MSTest runs one test method
+    // at a time absent an [assembly: Parallelize], that the tree's only such attribute is
+    // DELIBERATELY disabled at BehavioralTestBase.cs:23 under its reason on :22 ("Don't enable for
+    // timing tests:"), and that no .runsettings exists anywhere to raise parallelism instead.
+    // So the lock is UNIFORM CARE, not a fix for a live race: it costs an uncontended Monitor twice
+    // per host, it keeps the file saying one thing about its cross-host state, and it means that
+    // re-enabling that attribute cannot silently open a window here. What re-enabling WOULD still
+    // owe is a reading of whether one process-wide capture is the right shape at all when several
+    // hosts stage at once, or whether it has to become per-host — the lock makes that a design
+    // question rather than a corruption. Said at the attribute too, so the dependency is findable
+    // from the line somebody would change.
+    private static bool s_junctionGodebugApplied;
+    private static string? s_junctionGodebugPreviousManaged;
+    private static string? s_junctionGodebugPreviousConverted;
+    private static bool s_junctionGodebugConvertedPresent;
+
+    private const string GodebugVariable = "GODEBUG";
+    private const string JunctionGodebugName = "winsymlink";
+    private const string JunctionGodebugSetting = $"{JunctionGodebugName}=0";
 
     // Generous, because it is a safety net against a wedged child rather than a performance
     // assumption: a cold `go list` on a slow host pays for the module load before it answers.

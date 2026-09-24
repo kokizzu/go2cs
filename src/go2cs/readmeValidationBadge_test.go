@@ -15,6 +15,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"go2cs/internal/releasestamp"
 )
 
 // badgeTree builds the minimal repository shape the badge emitter reads: a go2cs root (identified,
@@ -41,6 +43,14 @@ func badgeTree(t *testing.T, dotID string, version string) (string, string) {
 		mustWriteFile(t, filepath.Join(root, versionPropsFileName), fmt.Sprintf(
 			"<Project>\r\n  <PropertyGroup>\r\n    <GoStdLibVersion>%s</GoStdLibVersion>\r\n    <GoBuildNumber>%s</GoBuildNumber>\r\n  </PropertyGroup>\r\n</Project>\r\n",
 			strings.Join(parts[:3], "."), parts[3]))
+
+		// ⚠ AND THE SNAPSHOT THAT RECORDS IT AS PUBLISHED. Passing a version to this helper means
+		// "this version is published", and since the H11 ruling of 2026-09-20 that is a TREE FACT the
+		// badge resolution consults — `docs/validation/<version>/`, the publish ritual's write-once
+		// snapshot — rather than something version.props can assert on its own. Without this directory
+		// every composed-target test reads the unpublished-line fallback instead, which is what nine
+		// of them did when the resolution changed and this helper had not caught up.
+		mustMkdirAll(t, filepath.Join(tree, "docs", validationDocsDirName, version))
 	}
 
 	return root, projectPath
@@ -874,6 +884,7 @@ func TestPackageReadmeEmissionFollowsPackageProvenanceNotRunMode(t *testing.T) {
 		t.Fatal("a -tests conversion with no resolved runtime root emitted a README")
 	}
 }
+
 // The gate above decides WHETHER a corpus package gets a README; this decides WHEN its Tests badge
 // can be current, and they are different questions. The badge is composed during CONVERSION from
 // docs/validation/current/<dot-id>.md, while the run that WRITES that page is the compare at the END
@@ -1003,4 +1014,160 @@ func TestPackageReadmeRefreshFollowsInProcessConversionNotRunMode(t *testing.T) 
 	if _, err := os.Stat(readmePath); !os.IsNotExist(err) {
 		t.Errorf("another package's emission record refreshed this package's README")
 	}
+}
+
+// TestPublishedStampFollowsTheRecordedSnapshot controls the H11 ruling of 2026-09-20: the badges that
+// follow H2 target the PUBLISHED release stamp, and "published" is the write-once snapshot directory
+// under docs/validation/ — not version.props's arithmetic.
+//
+// ⚠ EVERY ARM IS TWO-SIDED, because the defect this cures is a badge that POINTS SOMEWHERE WRONG
+// rather than a badge that is absent: a one-sided arm asserting "the composed form is not used" would
+// pass just as well against an emitter that had stopped composing at all. Each arm therefore names the
+// stamp it expects, and the pair of arms differs by exactly one axis — whether the snapshot exists.
+func TestPublishedStampFollowsTheRecordedSnapshot(t *testing.T) {
+	// snapshotTree builds a go2cs root whose version.props names base+counter, and whose
+	// docs/validation/ carries exactly the snapshots listed. Returns the go2cs root.
+	snapshotTree := func(t *testing.T, base string, counter string, snapshots ...string) string {
+		t.Helper()
+
+		tree := t.TempDir()
+		root := filepath.Join(tree, "src")
+
+		mustMkdirAll(t, filepath.Join(root, "core", "golib"))
+		mustWriteFile(t, filepath.Join(root, "core", "golib", "golib.csproj"), "<Project />")
+		mustWriteFile(t, filepath.Join(root, versionPropsFileName), fmt.Sprintf(
+			"<Project>\r\n  <PropertyGroup>\r\n    <GoStdLibVersion>%s</GoStdLibVersion>\r\n    <GoBuildNumber>%s</GoBuildNumber>\r\n  </PropertyGroup>\r\n</Project>\r\n",
+			base, counter))
+
+		for _, snapshot := range snapshots {
+			mustMkdirAll(t, filepath.Join(tree, "docs", validationDocsDirName, snapshot))
+		}
+
+		return root
+	}
+
+	t.Run("a published line uses the composed stamp", func(t *testing.T) {
+		root := snapshotTree(t, "1.23.12", "3", "1.23.12.1", "1.23.12.2", "1.23.12.3")
+
+		if got := publishedPackageVersion(root); got != "1.23.12.3" {
+			t.Fatalf("a recorded composed stamp must be used: want 1.23.12.3, got %q", got)
+		}
+	})
+
+	t.Run("an unpublished line falls back to the newest recorded release", func(t *testing.T) {
+		// The H2 hop state: the base is bumped, the counter is reset, and no snapshot carries the new
+		// base yet. The composed stamp would be 1.24.13.0 — a tag and a page that do not exist.
+		root := snapshotTree(t, "1.24.13", "0", "1.23.12.1", "1.23.12.2", "1.23.12.3")
+
+		if got := publishedPackageVersion(root); got != "1.23.12.3" {
+			t.Fatalf("an unpublished base must target the last REAL release: want 1.23.12.3, got %q", got)
+		}
+	})
+
+	t.Run("a carried counter is not trusted either", func(t *testing.T) {
+		// The defect as it was actually found at 0f97dcc8db: the base bumped and the counter CARRIED
+		// from the previous line, so the composed stamp looks plausible and is still unpublished.
+		root := snapshotTree(t, "1.24.13", "3", "1.23.12.1", "1.23.12.2", "1.23.12.3")
+
+		if got := publishedPackageVersion(root); got != "1.23.12.3" {
+			t.Fatalf("a carried counter composes an unpublished stamp and must NOT be used: want 1.23.12.3, got %q", got)
+		}
+	})
+
+	t.Run("no snapshots at all omits the badge", func(t *testing.T) {
+		root := snapshotTree(t, "1.24.13", "0")
+
+		if got := publishedPackageVersion(root); got != "" {
+			t.Fatalf("with nothing published there is no honest target: want \"\", got %q", got)
+		}
+	})
+
+	t.Run("current is not a release", func(t *testing.T) {
+		root := snapshotTree(t, "1.24.13", "0", validationCurrentDirName)
+
+		if got := publishedPackageVersion(root); got != "" {
+			t.Fatalf("docs/validation/current is the working proof set, never a published release: got %q", got)
+		}
+	})
+
+	// ⚠ THE STRING-SORT TRAP. This arm was WRONG when first written, and the way it was wrong is the
+	// point: it used the repository's own two bases, 1.23.1.7 and 1.23.12.1, on the belief that the
+	// later release sorts below the earlier one lexically. It does not — '2' > '.', so a lexical
+	// maximum returns 1.23.12.1 as well, and the arm passed against a string compare planted on
+	// purpose. A trap that today's data cannot express still has to be tested, with data that can.
+	//
+	// The revision reaching double digits is the first form this actually takes, and H2's per-release
+	// counter makes it routine: the tenth publish of any base.
+	t.Run("newest is chosen numerically, not lexically", func(t *testing.T) {
+		root := snapshotTree(t, "1.24.13", "0", "1.23.12.9", "1.23.12.10")
+
+		if got := publishedPackageVersion(root); got != "1.23.12.10" {
+			t.Fatalf("newest must be numeric: want 1.23.12.10, got %q — a lexical compare returns 1.23.12.9", got)
+		}
+	})
+
+	// The second form, and the one this corpus is already one hop away from: a two-digit COMPONENT
+	// left of the revision. 1.23.12 is such a base; a 1.23.9 beside it would have ordered wrongly.
+	t.Run("a two-digit component left of the revision", func(t *testing.T) {
+		root := snapshotTree(t, "1.24.13", "0", "1.23.9.1", "1.23.12.1")
+
+		if got := publishedPackageVersion(root); got != "1.23.12.1" {
+			t.Fatalf("newest must be numeric: want 1.23.12.1, got %q — a lexical compare returns 1.23.9.1", got)
+		}
+	})
+
+	t.Run("the comparator itself, both directions", func(t *testing.T) {
+		for _, c := range []struct {
+			a, b string
+			want string // "a" when a is later, "b" when b is, "=" when equal
+		}{
+			// ⚠ These first two are REAL releases of this repository and a string compare gets them
+			// RIGHT, so they are not the discriminating cases — they are here because they are the
+			// pair the emitter meets today, and the arms below are the ones that discriminate.
+			{"1.23.12.1", "1.23.1.7", "a"},
+			{"1.23.1.7", "1.23.12.1", "b"},
+			{"1.23.12.9", "1.23.12.10", "b"},
+			{"1.23.9.1", "1.23.12.1", "b"},
+			{"1.24.13.1", "1.23.12.9", "a"},
+			{"1.23.12.3", "1.23.12.3", "="},
+			{"1.23.12.10", "1.23.12.9", "a"},
+		} {
+			got := releasestamp.Compare(c.a, c.b)
+			sign := "="
+
+			if got > 0 {
+				sign = "a"
+			} else if got < 0 {
+				sign = "b"
+			}
+
+			if sign != c.want {
+				t.Errorf("releasestamp.Compare(%q, %q) = %d (%s), want %s", c.a, c.b, got, sign, c.want)
+			}
+		}
+	})
+
+	// ── THE CORPUS ARM ────────────────────────────────────────────────────────────────────────────
+	//
+	// The unit arms above prove the rule; this one proves the TREE obeys it. It is the arm that would
+	// have caught the 2026-09-20 defect, and it is cheap enough to run on every suite.
+	t.Run("the resolved stamp at this tree is a recorded release", func(t *testing.T) {
+		repo := repoRootFromPackageDir(t)
+		root := filepath.Join(repo, "src")
+		snapshots := filepath.Join(repo, "docs", validationDocsDirName)
+
+		stamp := publishedPackageVersion(root)
+
+		if stamp == "" {
+			t.Fatal("VACUOUS or BROKEN: this repository records published releases, so the resolution must " +
+				"name one; an empty stamp means docs/validation/ was not found and every badge is omitted")
+		}
+
+		if !releasestamp.Recorded(snapshots, stamp) {
+			t.Fatalf("the badges would target %q, which has NO snapshot under docs/validation/ — that is a "+
+				"tag and a proof page a reader cannot reach", stamp)
+		}
+
+		t.Logf("resolved published stamp %s (newest recorded snapshot %s)", stamp, releasestamp.Newest(snapshots))
+	})
 }

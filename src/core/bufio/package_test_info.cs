@@ -22,6 +22,7 @@ using go;
 using static global::go.bufio_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e70757420737472696e673b20657870656374205b5d627566696f5f746573742e726561644c696e65526573756c747d", "readLineNewlinesTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -74,8 +75,8 @@ using static global::go.bufio_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("bufio/bufio_test.go", "bufio_test.cs", "AB42goKCpoKCgoKCpKaosoKCgoKClIKCpKbWgoKCgIKmgoCCABEmwoKCgoKUgpSUqLKCgoKCgoKmABgygoKCgoKCgpSEgoKCgoKCgoKCgoKCAAsWgvaCgoSCooKWtIKkxgAKFLKCgoKUlKaCgoKCgoKCgpSUlIIADh6CggAICIKCgoKUgoKCgpSUlICCpIKClIKmgviCgoKCgIL4goKCgoCC+IKCgoKAgviCgoKCgIL4goKCgIL4goKCgIIACAiCgoKClIKCgoKUlJSAgqSCgpSCpoK4goKCgpSCgoKUgriCgILIgIIACgqkAAkIggADFISSgoKWgqKCgpSAgsqCgoKAgqSUqIKCABYMkoKCgpSCgpSAgqSCpoKClIKClIKmgoKUgoKCpoKmgoKUgoKUgoKUgqaCgpSCgpSC+JSCgoKCgoKkuIKCgpSCgoKCgpSCpoSUgoKCgsqmgoKCgoKAggAICoKCgqKChIKCpoK4goSClIKCgoK8goKCgoKClICCpoKClIKCgoLugoKCgoKUgoK6gqiCgoKUhIIAChiCAAsYgoKCgoKCpoKCggAJDIKClIKCpoKC+IKClIKCpoKC6IKCgoKCgoKCgoCCpIKC+IKCgoKCgoKCgoKUgoKCgpSCgoKCgoKUgoKCgoKCAAgSgoKmgoKmgoKClIK4goKCgoKUgoIACQiClIKAgqSAgqSAgqSAgqSAgqSAgqSAgqSAgqSAgqSAgqSAgqSAgriCgIKkgIKkgIKkgILsgqaUgoKCggAOGrKCgpSClIKCgpSmtIKCkoKCgoKUgpSCgpSUgIKklILKgoKmgoKClIKCgoKUgoKClIKCgpSCgviCgoKCgoKCgoKUgoKUgriigoKCuKKCgoKCloKC6IKCgoKCACA+goK4goKCgoKClIKClIKCyoKCuIKCpqaCgoKCgIKmgoIAChaCpoIACRSCgoKAgtqCurqCgoKCgoKAgoKkgIKCpICSAAwYgqaCAAoWgoKCgIIABRLCgoKCgpSCgpSCgpSCgpaCgoKCgpSCgpSCgpSCgpSCggAFEIKCyoDkxoKCpLSC1rYADBSCgoKClKaCgoKCgIKkgIKkgIKkgIKkguqSgpaCgqiCggAIEoKClIKokoKWgoKogoKClIKAksiCgpaCgqiCgoIACRSCgoKmgoKCgqqihIKChIKAgqSCgIKkgIKmgJKkgJLIgoKCgoKSgoKClJSCgoIACgqCgoKCgpSCqIKCgoKWgoSCgpaCgoKCguaCwoKEgoKCgpSCloKCgoKClIKogoKCgoKUgoKCgoIAEQiiACRigpQACRSClAAJFIKUABoygoKCgoKClIKCpoKAkoKkgILcgoCSpICSyIKAkqSAkgAQIoKClIKCpqKSAAcQgoKEmtamgoKCloKCgpSAgriAgraAgriCgpSCAAkMgqaC9oKCgIKkgIIACgyC+qKCgoKAgqSAgqSAgqSAgsi0goKCgoKCgoK4tIKCgoKCgoKCuKKCgoKCgoKCgoLoooKCgoKAgqSCgoKCgpSCyqKCgoKCgoSCgsq0goKCgoKCgoK4ooKCgoKCgoKCuKKCgoKCgoKCgoLoooKCgoKCgpSCyqKCgoKCgoKCgoKCgoKCuKKCgoKCgg==")]
-[assembly: go.GoPositionMap("bufio/scan_test.go", "scan_test.cs", "ABUqsoKCABIigoKCgoKCgoCCtoKUgoLMkoKCgoKSlLKClIKCgqaClIKClIKCAA8ikoKCgoKCgoKClIKCpoKUgpSCggALGIKClKzSgoKClJKCkpSUgoKUuqSCgoKCgoKClJSClIKCgoKCgoKUlIKCpoKCupKUgoKCgoKCgoKUgoKCgoKCgpSUgoKmgoK6koKCgoKCgqaCgrqSgriokoK4qJKCyqiSgsrMxIKCgoKUgpSClpKCgoKCgoK4gpSCgvqSlMKCgoKUlJSClIL+gtaCgoKUgoL+gqaCgoKUgoK4goKCgoKCgpSAgs6igoKmpoKCgoKCgpSCpoKUgILIgqaCpoKClAAIBqKClIKCgpSAgraCgqaC6IKCgoKmgtyCgoKUqJKSgoKUgpSCupKCgoKCgoKmggAFEIKCgoKUgpSCgpTaopKCgoKCgoKmgIIACRCCqqKClICC")]
+[assembly: go.GoPositionMap("bufio/bufio_test.go", "bufio_test.cs", "ACA4goKCpoKCgoKCpKaosoKCgoKClIKCpKbWgoKCgIKmgoCCABEmwoKCgoKUgpSUqLKCgoKCgoKmABgygoKCgoKCgpSEgoKCgoKCgoKCgoKCAAsWgvaCgoSCooKWtIKkxgAKFLKCgoKUlKaCgoKCgoKCgpSUlIIADh6CggAICIKCgoKUgoKCgpSUlICCpIKClIKmgviCgoKCgIL4goKCgoCC+IKCgoKAgviCgoKCgIL4goKCgIL4goKCgIIACAiCgoKClIKCgoKUlJSAgqSCgpSCpoK4goKCgpSCgoKUgriCgILIgIIACgqkAAkIggADFISSgoKWgqKCgpSAgsqCgoKAgqSUqIKCABYMkoKCgpSCgpSAgqSCpoKClIKClIKmgoKUgoKCpoKmgoKUgoKUgoKUgqaCgpSCgpSC+JSCgoKCgoKkuIKCgpSCgoKCgpSCpoSUgoKCgsqmgoKCgoKAggAJCoKClIKCooKEgoKmgriChIKUgoKCgryCgoKCgoKUgIKmgoKUgoKCgu6CgoKCgpSCgrqCqIKCgpSEggAKGIIACxiCgoKCgoKmgoKCAAkMgoKUgoKmgoL4goKUgoKmgoLogoKCgoKCgoKCgIKkgoL4goKCgoKCgoKCgpSCgoKClIKCgoKCgpSCgoKCgoIACBKCgqaCgqaCgoKUgriCgoKCgpSCggAJCIKUgoCCpICCpICCpICCpICCpICCpICCpICCpICCpICCpICCpICCuIKAgqSAgqSAgqSAguyCppSCgoKCAA4asoKClIKUgoKClKaigoKSgoKCgpSClIKClJSAgqSUgsqCgqaCgoKUgoKCgpSCgoKUgoKClIKC+IKCgoKCgoKCgpSCgpSCuKKCgoK4ooKCgoKWgoLogoKCgoIAID6CgriCgoKCgoKUgoKUgoLKgoK4goKmpoKCgoKAgqaCggAKFoKmggAJFIKCgoCC2oK6uoKCgoKCgoCCgqSAgoKkgJIADBiCpoIAChaCgoKAggAFEsKCgoKClIKClIKClIKCloKCgoKClIKClIKClIKClIKCAAUQgoLKgOTGgoKktILWtgAMFIKCgoKUpoKCgoKAgqSAgqSAgqSAgqSC6pKCloKCqIKCAAgSgoKUgqiSgpaCgqiCgoKUgoCSyIKCloKCqIKCggAJFIKCgqaCgoKCqqKEgoKEgoCCpIKAgqSAgqaAkqSAksiCgoKCgpKCgoKUlIKCggAKCoKCgoKClIKogoKCgpaChIKCloKCgoKC5oLCgoSCgoKClIKWgoKCgoKUgqiCgoKCgpSCgoKCggARCKIAJGKClAAJFIKUAAkUgpQAGjKCgoKCgoKUgoKmgoCSgqSAgtyCgJKkgJLIgoCSpICSABAigoKUgoKmopIABxCCgoSa1qaCgoKWgoKClICCuICCtoCCuIKClIIACQyCpoL2goKAgqSAggAKDIL6ooKCgoCCpICCpICCpICCyLSCgoKCgoKCgri0goKCgoKCgoK4ooKCgoKCgoKCguiigoKCgoCCpIKCgoKClILKooKCgoKChIKCyrSCgoKCgoKCgriigoKCgoKCgoK4ooKCgoKCgoKCguiigoKCgoKClILKooKCgoKCgoKCgoKCgoK4ooKCgoKC", "188-191:1;407-410:1;428-436:2;594-602:1;1167-1167:1;1168-1168:2;1173-1173:3;1294-1305:1;1468-1483:1;1471-1478:1.1;1488-1497:1;1614-1619:1;1627-1632:2;1640-1645:3")]
+[assembly: go.GoPositionMap("bufio/scan_test.go", "scan_test.cs", "ABUqsoKCABIigoKCgoKCgoCCtoKUgoLMkoKCgoKSlLKClIKCgqaClIKClIKCAA8ikoKCgoKCgoKClIKCpoKUgpSCggALGIKClKzSgoKClJKCkpSUgoKUuqSCgoKCgoKClJSClIKCgoKCgoKUlIKCpoKCupKUgoKCgoKCgoKUgoKCgoKCgpSUgoKmgoK6koKCgoKCgqaCgrqSgriokoK4qJKCyqiSgsrMxIKCgoKUgpSClpKCgoKCgoK4gpSCgvqSlMKCgoKUlJSClIL+gtaCgoKUgoL+gqaCgoKUgoK4goKCgoKCgpSAgs6igoKmpoKCgoKCgpSCpoKUgILIgqaCpoKClAAIBqKClIKCgpSAgraCgqaC6IKCgoKmgtyCgoKUqJKSgoKUgpSCupKCgoKCgoKmggAFEIKCgoKUgpSCgpTaopKCgoKCgoKmgIIACRCCqqKClICC", "315-324:1;350-359:1;469-477:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -90,6 +91,7 @@ public static partial class bufio_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestReaderDiscard_tests {}
     internal partial struct alwaysError {}
     internal partial struct bufReader {}
     internal partial struct countdown {}
@@ -120,6 +122,34 @@ public static partial class bufio_test_package
     internal partial struct writerWithReadFromError {}
     internal partial struct zeroReader {}
     public partial struct StringReader {}
-    public partial struct TestReaderDiscard_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() => builtin.initPackage(typeof(go.testing.iotest_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.bufio_package));
+    }
 }

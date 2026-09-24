@@ -63,7 +63,7 @@ public static IPMask IPv4Mask(byte a, byte b, byte c, byte d) {
 // followed by 0s up to a total length of 'bits' bits.
 // For a mask of this form, CIDRMask is the inverse of [IPMask.Size].
 public static IPMask CIDRMask(nint ones, nint bits) {
-    if (bits != 8 * IPv4len && bits != 8 * IPv6len) {
+    if (bits != (nint)(8 * IPv4len) && bits != (nint)(8 * IPv6len)) {
         return default!;
     }
     if (ones < 0 || ones > bits) {
@@ -298,13 +298,19 @@ public static @string String(this IP ip) {
     if (len(ip) != IPv4len && len(ip) != IPv6len) {
         return "?"u8 + hexString(ip);
     }
-    // If IPv4, use dotted notation.
-    {
-        var p4 = ip.To4(); if (len(p4) == IPv4len) {
-            return netip.AddrFrom4(new array<byte>(p4, 4)).String();
-        }
+    slice<byte> buf = default!;
+    var exprᴛ1 = len(ip);
+    if (exprᴛ1 == IPv4len) {
+        const nint maxCap = /* len("255.255.255.255") */ 15;
+        buf = new slice<byte>(0, maxCap);
     }
-    return netip.AddrFrom16(new array<byte>(ip, 16)).String();
+    else if (exprᴛ1 == IPv6len) {
+        const nint maxCap = /* len("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff") */ 39;
+        buf = new slice<byte>(0, maxCap);
+    }
+
+    buf = ip.appendTo(buf);
+    return ((@string)buf);
 }
 
 internal static @string hexString(slice<byte> b) {
@@ -324,17 +330,42 @@ internal static @string ipEmptyString(IP ip) {
     return ip.String();
 }
 
+// appendTo appends the string representation of ip to b and returns the expanded b
+// If len(ip) != IPv4len or IPv6len, it appends nothing.
+internal static slice<byte> appendTo(this IP ip, slice<byte> b) {
+    // If IPv4, use dotted notation.
+    {
+        var p4 = ip.To4(); if (len(p4) == IPv4len) {
+            ip = p4;
+        }
+    }
+    var (addr, _) = netip.AddrFromSlice(ip);
+    return addr.AppendTo(b);
+}
+
+// AppendText implements the [encoding.TextAppender] interface.
+// The encoding is the same as returned by [IP.String], with one exception:
+// When len(ip) is zero, it appends nothing.
+public static (slice<byte>, error) AppendText(this IP ip, slice<byte> b) {
+    if (len(ip) == 0) {
+        return (b, default!);
+    }
+    if (len(ip) != IPv4len && len(ip) != IPv6len) {
+        return (b, new AddrErrorжerror(Ꮡ(new AddrError(Err: "invalid IP address"u8, Addr: hexString(ip)))));
+    }
+    return (ip.appendTo(b), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface.
 // The encoding is the same as returned by [IP.String], with one exception:
 // When len(ip) is zero, it returns an empty slice.
 public static (slice<byte>, error) MarshalText(this IP ip) {
-    if (len(ip) == 0) {
-        return (slice<byte>(""u8), default!);
+    // 24 is satisfied with all IPv4 addresses and short IPv6 addresses
+    var (b, err) = ip.AppendText(new slice<byte>(0, 24));
+    if (err != default!) {
+        return (default!, err);
     }
-    if (len(ip) != IPv4len && len(ip) != IPv6len) {
-        return (default!, new AddrErrorжerror(Ꮡ(new AddrError(Err: "invalid IP address"u8, Addr: hexString(ip)))));
-    }
-    return (slice<byte>(ip.String()), default!);
+    return (b, default!);
 }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.

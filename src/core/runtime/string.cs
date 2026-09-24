@@ -6,8 +6,10 @@ namespace go;
 using abi = @internal.abi_package;
 using bytealg = @internal.bytealg_package;
 using goarch = @internal.goarch_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -55,8 +57,8 @@ internal static @string concatstrings(ж<tmpBuf> Ꮡbuf, slice<@string> a) {
     }
     var (s, b) = rawstringtmp(Ꮡbuf, l);
     foreach (var (_, x) in a) {
-        copy(b, x);
-        b = b[(int)(len(x))..];
+        nint n = copy(b, x);
+        b = b[(int)(n)..];
     }
     return s;
 }
@@ -77,22 +79,53 @@ internal static @string concatstring5(ж<tmpBuf> Ꮡbuf, @string a0, @string a1,
     return concatstrings(Ꮡbuf, new @string[]{a0, a1, a2, a3, a4}.slice());
 }
 
+// concatbytes implements a Go string concatenation x+y+z+... returning a slice
+// of bytes.
+// The operands are passed in the slice a.
+internal static slice<byte> concatbytes(slice<@string> a) {
+    nint l = 0;
+    foreach (var (_, x) in a) {
+        nint n = len(x);
+        if (l + n < l) {
+            @throw(stringConcatenationTooˢ);
+        }
+        l += n;
+    }
+    if (l == 0) {
+        // This is to match the return type of the non-optimized concatenation.
+        return new byte[]{}.slice();
+    }
+    var b = rawbyteslice(l);
+    nint offset = 0;
+    foreach (var (_, x) in a) {
+        copy(b[(int)(offset)..], x);
+        offset += len(x);
+    }
+    return b;
+}
+
+internal static slice<byte> concatbyte2(@string a0, @string a1) {
+    return concatbytes(new @string[]{a0, a1}.slice());
+}
+
+internal static slice<byte> concatbyte3(@string a0, @string a1, @string a2) {
+    return concatbytes(new @string[]{a0, a1, a2}.slice());
+}
+
+internal static slice<byte> concatbyte4(@string a0, @string a1, @string a2, @string a3) {
+    return concatbytes(new @string[]{a0, a1, a2, a3}.slice());
+}
+
+internal static slice<byte> concatbyte5(@string a0, @string a1, @string a2, @string a3, @string a4) {
+    return concatbytes(new @string[]{a0, a1, a2, a3, a4}.slice());
+}
+
 // slicebytetostring converts a byte slice to a string.
 // It is inserted by the compiler into generated code.
 // ptr is a pointer to the first element of the slice;
 // n is the length of the slice.
 // Buf is a fixed-size buffer for the result,
 // it is not nil if the result does not escape.
-//
-// slicebytetostring should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname slicebytetostring
 internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, nint n) {
     ref var ptr = ref Ꮡptr.DerefOrNull();
 
@@ -105,7 +138,7 @@ internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, ni
     if (raceenabled) {
         racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡptr),
             (uintptr)n,
-            getcallerpc(),
+            sys.GetCallerPC(),
             abi.FuncPCABIInternal(slicebytetostring));
     }
     if (msanenabled) {
@@ -171,7 +204,7 @@ internal static @string slicebytetostringtmp(ж<byte> Ꮡptr, nint n) {
     if (raceenabled && n > 0) {
         racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡptr),
             (uintptr)n,
-            getcallerpc(),
+            sys.GetCallerPC(),
             abi.FuncPCABIInternal(slicebytetostringtmp));
     }
     if (msanenabled && n > 0) {
@@ -225,7 +258,7 @@ internal static @string slicerunetostring(ж<tmpBuf> Ꮡbuf, slice<rune> a) {
     if (raceenabled && len(a) > 0) {
         racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡ(a, 0)),
             (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4,
-            getcallerpc(),
+            sys.GetCallerPC(),
             abi.FuncPCABIInternal(slicerunetostring));
     }
     if (msanenabled && len(a) > 0) {

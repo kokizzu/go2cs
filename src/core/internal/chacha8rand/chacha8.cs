@@ -56,10 +56,10 @@ public static void Init(this ж<State> Ꮡs, [GoArrayDims(32)] array<byte> seed)
     seed = seed.Clone();
 
     Ꮡs.Init64(new uint64[]{
-        byteorder.LeUint64(seed[(int)(0 * 8)..]),
-        byteorder.LeUint64(seed[(int)(1 * 8)..]),
-        byteorder.LeUint64(seed[(int)(2 * 8)..]),
-        byteorder.LeUint64(seed[(int)(3 * 8)..])
+        byteorder.LEUint64(seed[(int)(0 * 8)..]),
+        byteorder.LEUint64(seed[(int)(1 * 8)..]),
+        byteorder.LEUint64(seed[(int)(2 * 8)..]),
+        byteorder.LEUint64(seed[(int)(3 * 8)..])
     }.array());
 }
 
@@ -99,7 +99,7 @@ public static void Refill(this ж<State> Ꮡs) {
     block(Ꮡs.of(State.Ꮡseed), Ꮡs.of(State.Ꮡbuf), s.c);
     s.i = 0;
     s.n = (uint32)len(s.buf);
-    if (s.c == ctrMax - ctrInc) {
+    if (s.c == (uint32)(ctrMax - ctrInc)) {
         s.n = (uint32)len(s.buf) - (uint32)reseed;
     }
 }
@@ -136,9 +136,9 @@ public static slice<byte> Marshal(ж<State> Ꮡs) {
     var data = new slice<byte>(6 * 8);
     copy(data, "chacha8:"u8);
     var used = (s.c / (uint32)ctrInc) * (uint32)chunk + s.i;
-    byteorder.BePutUint64(data[(int)(1 * 8)..], (uint64)used);
+    byteorder.BEPutUint64(data[(int)(1 * 8)..], (uint64)used);
     foreach (var (i, seed) in s.seed.ΔRangeSnapshot()) {
-        byteorder.LePutUint64(data[(int)((2 + i) * 8)..], seed);
+        byteorder.LEPutUint64(data[(int)((2 + i) * 8)..], seed);
     }
     return data;
 }
@@ -160,18 +160,18 @@ public static error Unmarshal(ж<State> Ꮡs, slice<byte> data) {
     if (len(data) != 6 * 8 || ((sstring)(data[..8])) != "chacha8:"u8) {
         return new errUnmarshalChaCha8жerror(@new<errUnmarshalChaCha8>());
     }
-    var used = byteorder.BeUint64(data[(int)(1 * 8)..]);
-    if (used > (ctrMax / ctrInc) * chunk - reseed) {
+    var used = byteorder.BEUint64(data[(int)(1 * 8)..]);
+    if (used > (uint64)((ctrMax / ctrInc) * chunk - reseed)) {
         return new errUnmarshalChaCha8жerror(@new<errUnmarshalChaCha8>());
     }
     foreach (var (i, _) in s.seed) {
-        s.seed[i] = byteorder.LeUint64(data[(int)((2 + i) * 8)..]);
+        s.seed[i] = byteorder.LEUint64(data[(int)((2 + i) * 8)..]);
     }
     s.c = (uint32)ctrInc * ((uint32)used / (uint32)chunk);
     block(Ꮡs.of(State.Ꮡseed), Ꮡs.of(State.Ꮡbuf), s.c);
     s.i = (uint32)used % (uint32)chunk;
     s.n = chunk;
-    if (s.c == ctrMax - ctrInc) {
+    if (s.c == (uint32)(ctrMax - ctrInc)) {
         s.n = chunk - reseed;
     }
     return default!;

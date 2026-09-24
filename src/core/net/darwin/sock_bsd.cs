@@ -4,7 +4,7 @@
 //go:build darwin || dragonfly || freebsd || netbsd || openbsd
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 
 partial class net_package {
@@ -17,7 +17,7 @@ internal static readonly @string kernSomaxconnˢ = "kern.somaxconn"u8;
 internal static nint maxListenerBacklog() {
     uint32 n = default!;
     error err = default!;
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8) {
         (n, err) = syscall.SysctlUint32(kernIpcSomaxconnˢ);
     }

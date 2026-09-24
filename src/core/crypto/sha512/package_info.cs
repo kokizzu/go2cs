@@ -30,8 +30,6 @@ using static go.crypto.sha512_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
-[assembly: GoTypeAlias("Size", "const:ΔSize")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -41,7 +39,7 @@ using static go.crypto.sha512_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<digest, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha512_package.Digest, hash_package.Hash>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -55,9 +53,7 @@ using static go.crypto.sha512_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/sha512/sha512.go", "sha512.cs", "AC4qgoKCggAzhAGClIKCgoKCgoKkgoKCgoKCgqSCgoKCgoKCpIKCgoKCgoKkggALFoKClKSkpKSkgoKCgoKCgoKCgoLmgoKUAA0MpIKUgoKCgoKCgoKCgoKCpoKokoKUgoKokoKCqJKCgqiSgpSCgqaClKSkpMiApMKClIKCgoKCgoKUlIKCgpSClKaCgqaCgoKUpKSkyLSCgoKCgpSogriChIKWgoKCgoKCgoKClqiSgpSSgoKokoKUkoKCgoKokpKCgoKCqJKSgoKCgg==")]
-[assembly: go.GoPositionMap("crypto/sha512/sha512block.go", "sha512block.cs", "AGbAAYKCgoKCgpaCgoKChJaEgoSEgoKCgoKCgpaCgoKCgoKChJY=")]
-[assembly: go.GoPositionMap("crypto/sha512/sha512block_generic.go", "sha512block_generic.cs", "AAgSgg==")]
+[assembly: go.GoPositionMap("crypto/sha512/sha512.go", "sha512.cs", "ABUogoKCggAIMsKClK7CrsKuwoKUqJKClIKCgoKokoKUgoKCgqiSgoKCgqiSgoKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -72,6 +68,18 @@ public static partial class sha512_package
     // via declarations below.
 
     // <TypeAccessibility>
-    [GoValueClone("h", "x")] internal partial struct digest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸsha512() => builtin.initPackage(typeof(go.crypto.@internal.fips140.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    // </ImportInitializers>
 }

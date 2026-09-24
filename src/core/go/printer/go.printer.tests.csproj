@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -82,57 +110,57 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="comment.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="gobuild.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="nodes.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="performance_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="printer.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="printer_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/alignment.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/alignment.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/comments.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/comments.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/comments.x" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/comments2.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/comments2.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/complit.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/complit.x" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/declarations.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/declarations.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doc.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/doc.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/empty.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/empty.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/expressions.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/expressions.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/expressions.raw" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/generics.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/generics.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/go2numbers.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/go2numbers.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/go2numbers.norm" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild1.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild1.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild2.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild2.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild3.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild3.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild4.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild4.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild5.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild5.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild6.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild6.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild7.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/gobuild7.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linebreaks.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/linebreaks.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/parser.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/slow.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/slow.input" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/statements.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/statements.input" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="comment.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="gobuild.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="nodes.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="performance_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="printer.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="printer_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/alignment.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/alignment.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/comments.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/comments.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/comments.x" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/comments2.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/comments2.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/complit.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/complit.x" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/declarations.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/declarations.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doc.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/doc.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/empty.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/empty.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/expressions.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/expressions.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/expressions.raw" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/generics.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/generics.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/go2numbers.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/go2numbers.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/go2numbers.norm" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild1.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild1.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild2.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild2.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild3.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild3.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild4.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild4.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild5.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild5.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild6.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild6.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild7.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/gobuild7.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linebreaks.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linebreaks.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/parser.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/slow.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/slow.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/statements.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/statements.input" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>

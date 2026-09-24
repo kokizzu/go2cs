@@ -49,8 +49,9 @@ using static go.bytes_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("bytes/buffer.go", "buffer.cs", "AEFs0KzA3OKUlKiQqKCooKaQqrKCgpSCgpSssoKCrLKAgoKkrLKUgqaAgqSCgpSCyqSmpoKCAAIQ0oKUgqyygoKClKyygoKClAAIGuKCgoKCgoKWgoKClILOwoKCAAoWgqaUgoLe4oKAgoKClIKCgriCyIKuwoKCgpSCrtSCgpSCgoKUgq7igpSCgpSUgoKClK7CgoKClIKCgpSqopSClIKCggACEPKUgpSCgoKClIKCggAFENKClIKUggAEEsKClIKClAACEgAJAqaCqMKCgoKClIKCggACEgAIAoIAAhgACQAAAhDi")]
-[assembly: go.GoPositionMap("bytes/bytes.go", "bytes.cs", "AB0mxKyyqqKClIKCgoKCgoKUgoKClKq0gpSClIKCgoKUgrqSqJKokqiSqJKmgoKCpqiSgpSkpIKUpKSokgACENKUpIKCgpSUpKSCggAEEMKUlIKClKKCppSClJSCgoKUlIKAgoKCpraCgoKCgpSClIKUgoKUpoKClKaCgriuwpSUgoCCgoKmtoKCgqKCppSClJSCgoKUgoKCgqaUgoKCgpSClIKClIKClKaCgpSmgoK4qqKClIKUgpSCloKCgoKCgpSCgpSCAAIYAAkAAAIS8gACEuCswgAEEuaClIKCgoKCgpaUqIKCgpSClIKCgoKUgoKUgpSUkpQACRT2AAQUgoKCgoKUgoKCpoKmqIKogoKWqqKClJSWgoKClJSCgpSWgoKCgpSokqiSrviCgoKCgpSCgpSUAAImABACgsyClIKUhIIAARoACgKCgoKCpoKCgoKClJSqooKCgoKClJaSlJSCgoKClJSUqqKCgoKCgpSWkoKUgoKCgpSUlKiQqKKqoqqiqqKCgoKCgoKCgpSCgoKCgpSUgoKUqrSClKSkpKSmgqYAAhAACAiClIKClILOooKClKqigoKClJSqoqqigpSqooKUrLKssqyygoKCgoKUgpSUrLKCkoKUgoKmAAQewoKCgpSUqJKssoKCpqqilJSClIKUgJKkqqKUlIKUgpSAkqSmgoKUlJSmooKClJSUlKaCgpKClIKUlJSUqqKClIKUgJKkpoKClKaigoKUlKaCgpKClIKUlKq0goKCppSCuoKCgoKUgt6mlKqigoKCgoKClAACEuKClJSUlIKogoKCgoKCgoKmlIKClIIAAhDSrMSCgoKCgqiCqIKmgpSmhIKCgoSigpSClIKUgryCqIKmlIKUuoKClIKUqKiSgpSkpIKUpKaSlIKCgoKCgqaCgpSUgpSClIKCgpSmpIKCgoKCgoKCgpSUgpSCggAIEoKClKYAAhLigIKkrLKClAACEuKClAACEuKClA==")]
+[assembly: go.GoPositionMap("bytes/buffer.go", "buffer.cs", "AC9s0KzA3OKUlKiQqKCooKaQqrKCgpSCgpSssoKCrLKAgoKkrLKUgqaAgqSCgpSCyqSmpoKCAAIQ0oKUgqyygoKClKyygoKClAAIGuKCgoKCgoKWgoKClILOwoKCAAoWgqaUgoLe4oKAgoKClIKCgriCyIKuwoKCgpSCrtSCgpSCgoKUgq7igpSCgpSUgoKClK7CgoKClIKCgpSqopSClIKCggACEPKUgpSCgoKClIKCggAFENKClIKUggAEEsKClIKClAACEgAJAqaCqMKCgoKClIKCggACEgAIAoIAAhgACQAAAhDi", "230-234:1")]
+[assembly: go.GoPositionMap("bytes/bytes.go", "bytes.cs", "ABMoxKyyqqKClIKCgoKCgoKUgoKClKq0gpSClIKCgoKUgrqSqJKokqiSqJKmgoKCpqiSgpSkpIKUpKSokgACENKClKSCgoKUlKSqsoKCgoKCgoKClKaCgqaCgoKChKaEhqKAgtqCgoKCgoKCptgABBDClJSCgpSigqaUgpSUgoKClJSCgIKCgqa2goKCgoKUgpSClIKClKaCgpSmgoK4rsKUlIKAgoKCpraCgoKigqaUgpSUgoKClIKCgoKmlIKCgoKUgpSCgpSCgpSmgoKUpoKCuKqigpSClIKUgpaCgoKCgoKUgoKUggACGAAJAAACEvIAAhLgrMIABBLmgpSCgoKCgoKWlKiCgoKUgpSCgoKClIKClIKUlJKUAAkU9gAEFIKCgoKClIKCgqaCpqiCqIKClqqigpSUloKCgpSUgoKUloKCgoKUqJKokq74goKCgoKUgoKUlAACJgAQAoLMgpSCgpSEggABGgAKAoKCgoKmgoKCgpSqooKCgoKClJaSlJSCgoKClJSUqqKCgoKCgpSWkoKUgoKCgpSUlKiQqKK6orqiuqKCgoKCgoKCgpSCgoKCgpSUgoKUqrSClKSkpKSmgqYAAhAACAiClIKClILOooKClKqigoKClJSqoqqigpSqooKUrLKssqyygoKCgoKUgpSUrLKCkoKUgoKmAAQewoKCgpSUqJKssoKCpqqilJSClIKUgJKkqqKUlIKUgpSAkqSmgoKUlJSmooKClJSUlKaCgpKClIKUlJSUqqKClIKUgJKkpoKClKaigoKUlKaCgpKClIKUlKq0goKCppSCuoKCgoKUgt6mlKqigoKCgoKClAACEuKClJSUlIKogoKCgoKCgoKmlIKClIIAAhDSrMSCgoKCgqiCqIKmgpSmhIKCgoSigpSClIKUgryCqIKmlIKUuoKClIKUqKiSgpSkpIKUpKaSlIKCgoKCgqaCgpSUgpSClIKCgpSmpIKCgoKCgoKCgpSUgpSCggAIEoKClKYAAhLigIKkrLKClAACEuKClAACEuKClA==", "838-845:1")]
+[assembly: go.GoPositionMap("bytes/iter.go", "iter.cs", "AAwk0oKCgoCClKSCprqSgoKCgpTOooKUkoKCgpSCgpSUAAMQwq7CrsKSgoKCgoKCgpSCgoKUtpSUggAEEsKSgoKCgoKUgoKClLaUlII=", "19-32:1;37-45:1;54-67:1;91-116:1;124-147:1")]
 [assembly: go.GoPositionMap("bytes/reader.go", "reader.cs", "ABc0ooKUrLCmwoKUgoKC2NSClIKUgoKUqJKCgpSCgtiSgpSCgqjSgoKUgoCCgqSCguiSgpSClIKC6JKCgpSkpKSkgpSCqMKCgpSCgoKUgoKClKiQppA=")]
 // </GoSourcePositionMaps>
 
@@ -72,4 +73,20 @@ public static partial class bytes_package
     public partial struct Buffer {}
     public partial struct Reader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

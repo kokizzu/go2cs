@@ -24,12 +24,6 @@ using go.sync;
 
 partial class tls_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
-
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
 [GoType] partial struct Conn {
@@ -233,6 +227,9 @@ partial class tls_package {
     return default!;
 }
 
+// setTrafficSecret sets the traffic secret for the given encryption level. setTrafficSecret
+// should not be called directly, but rather through the Conn setWriteTrafficSecret and
+// setReadTrafficSecret wrapper methods.
 [GoRecv] internal static void setTrafficSecret(this ref halfConn hc, ж<cipherSuiteTLS13> Ꮡsuite, QUICEncryptionLevel level, slice<byte> secret) {
     ref var suite = ref Ꮡsuite.DerefOrNull();
 
@@ -419,7 +416,7 @@ internal static nint roundUp(nint a, nint b) {
             if (typ != recordTypeApplicationData) {
                 return (default!, 0, alertUnexpectedMessage);
             }
-            if (len(plaintext) > maxPlaintext + 1) {
+            if (len(plaintext) > (nint)(maxPlaintext + 1)) {
                 return (default!, 0, alertRecordOverflow);
             }
             // Remove padding and find the ContentType scanning from the end.
@@ -1456,8 +1453,6 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
         if (cipherSuite == nil) {
             return c.@in.setErrorLocked(Ꮡc.sendAlert(alertInternalError));
         }
-        var newSecret = cipherSuite.nextTrafficSecret(c.@in.trafficSecret);
-        c.@in.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecret);
         if (keyUpdate.updateRequested) {
             Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
             ᒐd1 = true;
@@ -1473,7 +1468,13 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
                 return default!;
             }
             var newSecretΔ1 = cipherSuite.nextTrafficSecret(c.@out.trafficSecret);
-            c.@out.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecretΔ1);
+            c.setWriteTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecretΔ1);
+        }
+        var newSecret = cipherSuite.nextTrafficSecret(c.@in.trafficSecret);
+        {
+            var err = Ꮡc.setReadTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecret); if (err != default!) {
+                return err;
+            }
         }
         return default!;
     }
@@ -1742,7 +1743,11 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
                 // Provide the 1-RTT read secret now that the handshake is complete.
                 // The QUIC layer MUST NOT decrypt 1-RTT packets prior to completing
                 // the handshake (RFC 9001, Section 5.7).
-                c.quicSetReadSecret(QUICEncryptionLevelApplication, c.cipherSuite, c.@in.trafficSecret);
+                {
+                    var err = Ꮡc.quicSetReadSecret(QUICEncryptionLevelApplication, c.cipherSuite, c.@in.trafficSecret); if (err != default!) {
+                        ret = err; goto ᒐdone;
+                    }
+                }
             } else {
                 ref var a = ref heap(new alert(), out var Ꮡa);
                 Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
@@ -1871,6 +1876,33 @@ public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Unlock(); ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string tlsHandshakeBufferNotˢ = "tls: handshake buffer not empty before setting read traffic secret"u8;
+
+// setReadTrafficSecret sets the read traffic secret for the given encryption level. If
+// being called at the same time as setWriteTrafficSecret, the caller must ensure the call
+// to setWriteTrafficSecret happens first so any alerts are sent at the write level.
+internal static error setReadTrafficSecret(this ж<Conn> Ꮡc, ж<cipherSuiteTLS13> Ꮡsuite, QUICEncryptionLevel level, slice<byte> secret) {
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    // Ensure that there are no buffered handshake messages before changing the
+    // read keys, since that can cause messages to be parsed that were encrypted
+    // using old keys which are no longer appropriate.
+    if (c.hand.Len() != 0) {
+        Ꮡc.sendAlert(alertUnexpectedMessage);
+        return errors.New(tlsHandshakeBufferNotˢ);
+    }
+    c.@in.setTrafficSecret(Ꮡsuite, level, secret);
+    return default!;
+}
+
+// setWriteTrafficSecret sets the write traffic secret for the given encryption level. If
+// being called at the same time as setReadTrafficSecret, the caller must ensure the call
+// to setWriteTrafficSecret happens first so any alerts are sent at the write level.
+[GoRecv] internal static void setWriteTrafficSecret(this ref Conn c, ж<cipherSuiteTLS13> Ꮡsuite, QUICEncryptionLevel level, slice<byte> secret) {
+    c.@out.setTrafficSecret(Ꮡsuite, level, secret);
 }
 
 } // end tls_package

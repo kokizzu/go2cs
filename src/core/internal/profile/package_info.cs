@@ -72,13 +72,13 @@ using static go.@internal.profile_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/profile/encode.go", "encode.cs", "AB0agqyygoSCgpaCgoKClIKCgoIABhCCgpSCgoKCAAYQgoKogoKWgoKClKaClKaCgoKWgoSAgoKmgoK4goKUgpSClIKUgpSCgoKCgoCCpAAVDoKCgqiCgoKogoKCqIKCgqiCgoKogoKUgpQABhiCgoIABhrShIKCgoKWgoKCgoKWgoKCgoKAgoKClLaWgoKWgoKCopKCgoKUpoKUgpSCgpSWgoSAgqaAgoKkooKCloKCgqaCpoKCAAwWgqaCgoKUggANGIKCgriCpoKCggAOGoKmgoKCgoKCgoKCggAcIoKmgoKCgoIADxSCgoK4gqaCggAMFoKmgoKCgoIAEiKCgoKClKaCgpSCgpSC")]
+[assembly: go.GoPositionMap("internal/profile/encode.go", "encode.cs", "AAsagqyygoSCgpaCgoKClIKCgoIABhCCgpSCgoKCAAYQgoKogoKWgoKClKaClKaCgoKWgoSAgoKmgoK4goKUgpSClIKUgpSCgoKCgoCCpAAVDoKCgqiCgoKogoKCqIKCgqiCgoKogoKUgpQABhiCgoIABhrShIKCgoKWgoKCgoKWgoKCgoKAgoKClLaWgoKWgoKCopKCgoKUpoKUgpSCgpSWgoSAgqaAgoKkooKCloKCgqaCpoKCAAwWgqaCgoKUggANGIKCgriCpoKCggAOGoKmgoKCgoKCgoKCggAcIoKmgoKCgoIADxSCgoK4gqaCggAMFoKmgoKCgoIAEiKCgoKClKaCgpSCgpSC")]
 [assembly: go.GoPositionMap("internal/profile/filter.go", "filter.cs", "AAoe4oKCgoKCgqaCqtKCgoKClIK4goKClIK4")]
-[assembly: go.GoPositionMap("internal/profile/graph.go", "graph.cs", "AEKKAaKClKqigpSqoqrSgIKCgoKUgpSmgoIACRaSqJKCgpSAgqaW+tQACC6ygoCCuICCpqaCpoKmgoKCzIKCgqamgqaCgoKCggAQKKKClKjCgoKCgpKCgpSClIKUgpSUAAcSgoCCpIKCgoKCgoKmgoKCpoKCloKmlKimlIKCgpSClIKUlAAGEqKUpKQACRKCgpS4goKUvtKCgoKCgpSCgpSUpoKCgpSmsoKAgqaAgqSmgoKUyoKowoKClKaUgoKUgrqShISCloKClIKUgpSUrLKCgpaCqJKCgpTKgqaCgpaCgoKWgoSmgqaCgpQ=")]
-[assembly: go.GoPositionMap("internal/profile/merge.go", "merge.cs", "ABIq8oKUgoKWAAYQlIKChMqWgoK6gqaorNSAgqaCgoKogoKCqIKCgpSmgqaCgoKmABQuou6ClIKCgpSCgoKCgoKCyoKAgoKUpIKCgqiSgoKWgoKUhIKClIQADBqigpaAgoKmgu6CuIKAgoKkgoKCqJK4lIKUgoKClJSCAAgSooKWgIK4goCCgoKkAAsYloKCgqqmpIKCgrqUtAAJDAAHEIK4pqKClICCpIKAgoKk7oKCgqiSAAweooKAgriigoKCgoKUgoKUgoCCgraCqAAKHIKs0oKWgpaCgqaqog==")]
-[assembly: go.GoPositionMap("internal/profile/profile.go", "profile.cs", "AIkB+AGigoKWgoKClIKClJaCgpaAgqTsgoKWgoCCpoCCpqjSgoKCkoLe1IKClIKCzIKCgpSClJSCgoKUgpSUgoKClIKUgoCCgraCgIKC2qyygoKCgqiCgoKClILMgoKClIKCpoK6qqSCgIKkgoKUgpaCgoKUgoKCgpSCgpSCgoKCgpSUgoKClKiCgoKAgqSClIKCgILKgraUqIKCgoKUgpSClIKUAAYQruKAgqaWgpaEgoKUgoKUgoKWgoKCuIKs0oKWgpaCgqiqooKCpqqigoKmprKClKiygoSCgIKkgIKmAAQWtJKCqIKClIKAgraokqiSgpSCgpSokoKUgoKCgqaClIKCgrg=")]
+[assembly: go.GoPositionMap("internal/profile/graph.go", "graph.cs", "ADyKAaKClKqigpSqoqrSgIKCgoKUgpSmgoIACRaSqJKCgpSAgqaW+tQACC6ygoCCuICCpqaCpoKmgoKCzIKCgqamgqaCgoKCggAQKKKClKjCgoKCgpKCgpSClIKUgpSUAAcSgoCCpIKCgoKCgoKmgoKCpoKCloKmlKimlIKCgpSClIKUlAAGEqKUpKQACRKCgpS4goKUvtKCgoKCgpSCgpSUpoKCgpSmsoKAgqaAgqSmgoKUyoKowoKClKaUgoKUgrqShISCloKClIKUgpSUrLKCgpaCqJKCgpTKgqaCgpaCgoKWgoSmgqaCgpQ=")]
+[assembly: go.GoPositionMap("internal/profile/merge.go", "merge.cs", "AAwq8oKUgoKWAAYQlIKChMqWgoK6gqaorNSAgqaCgoKogoKCqIKCgpSmgqaCgoKmABQuou6ClIKCgpSCgoKCgoKCyoKAgoKUpIKCgqiSgoKWgoKUhIKClIQADBqigpaAgoKmgu6CuIKAgoKkgoKCqJK4lIKUgoKClJSCAAgSooKWgIK4goCCgoKkAAsYloKCgqqmpIKCgrqUtAAJDAAHEIK4pqKClICCpIKAgoKk7oKCgqiSAAweooKAgriigoKCgoKUgoKUgoCCgraCqAAKHIKs0oKWgpaCgqaqog==")]
+[assembly: go.GoPositionMap("internal/profile/profile.go", "profile.cs", "AHH4AaKCgpaCgoKUgoKUloKCloCCpOyCgpaCgIKmgIKmqNKCgoKSgt7UgoKUgoLMgoKClIKUlIKCgpSClJSCgoKUgpSCgIKCtoKAgoLarLKCgoKCqIKCgoKUgsyCgoKUgoKmgrqqpIKAgqSCgpSCloKCgpSCgoKClIKClIKCgoKClJSCgoKUqIKCgoCCpIKUgoKAgsqCtpSogoKCgpSClIKUgpQABhCu4oCCppaCloSCgpSCgpSCgpaCgoK4gqzSgpaCloKCqKqigoKmqqKCgqamsoKUqLKChIKAgqSAgqYABBa0koKogoKUgoCCtqiSqJKClIKClKiSgpSCgoKCpoKUgoKCuA==")]
 [assembly: go.GoPositionMap("internal/profile/proto.go", "proto.cs", "AClYgoKCpoKCgpSmgoKmlIKmgpSCgpSCgoKCgoKUgriCgpSmgoKmgoKUpoKUgoKUgoKCgoKClIK4goKmgoK4goKUuIKClKaigoKCgoKCgqaCkqaCpoLWgoKCgoKUgoIACAqCgoKUgoKCgpSCgsaClIK0goKClIKUgrSClIK0ptaCgpSmooCCpIKChJKCgpSClICCtqaigIKkgqailIKCgoSAgqSUlIKAgqSCpqKAgqSCpqKClIKChICCpJSUgoCCpIKmgoCCpIKmooKAgqSCpqKAgqSClJQ=")]
-[assembly: go.GoPositionMap("internal/profile/prune.go", "prune.cs", "ABEisoKEgoKCgIKUgpSCgtyUlpSUzLiCgoKCgpSClIKClIKCAAUQopKEgoCCpIKAgraU")]
+[assembly: go.GoPositionMap("internal/profile/prune.go", "prune.cs", "AAsisoKEgoKCgIKUgpSCgtyUlpSUzLiCgoKCgpSClIKClIKCAAUQopKEgoCCpIKAgraU")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -123,4 +123,23 @@ public static partial class profile_package
     public partial struct ValueType {}
     public partial struct locationMap {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() => builtin.initPackage(typeof(compress.gzip_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

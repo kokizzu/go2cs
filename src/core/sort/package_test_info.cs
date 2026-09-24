@@ -17,6 +17,9 @@ using go;
 using static global::go.sort_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6120696e743b206220696e747d", "intPairsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b206e20696e743b20662066756e6328696e742920626f6f6c3b206920696e747d", "testsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20726573756c7420696e743b206920696e747d", "wrappertestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -42,12 +45,12 @@ using static global::go.sort_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("sort/example_keys_test.go", "example_keys_test.cs", "ABg2ksgACBSSqJKokgAPFqSGhoaqgoSChIKEgg==")]
-[assembly: go.GoPositionMap("sort/example_multi_test.go", "example_multi_test.cs", "ABo4soKqwsySqJIAAhLihJKCgpa2/AAVJMSGhoaagpaChIKEgoSC")]
+[assembly: go.GoPositionMap("sort/example_keys_test.go", "example_keys_test.cs", "ABg2ksgACBSSqJKokgAPFqSGhoaqgoSChIKEgg==", "66-68:1;69-71:2;72-74:3;75-77:4")]
+[assembly: go.GoPositionMap("sort/example_multi_test.go", "example_multi_test.cs", "ABo4soKqwsySqJIAAhLihJKCgpa2/AAVJMSGhoaagpaChIKEgoSC", "95-97:1;98-100:2;101-103:3;104-106:4")]
 [assembly: go.GoPositionMap("sort/example_wrapper_test.go", "example_wrapper_test.cs", "AA0cgAAJEoCigAAIDIAACAyA5IIABxKCgoSCggACJgAPAoI=")]
-[assembly: go.GoPositionMap("sort/search_test.go", "search_test.cs", "AA4cggAlSoKCgoIACwqCgoKClpaEACNgspKYgoIABRCigpSmpoKCgqaCkoKAgJKClIKmggAXLIKCgsqCgoKCgoLmgoKUgpSCgriigr6ygpKCgt7agpKChJSUhIKClIKUgg==")]
-[assembly: go.GoPositionMap("sort/sort_slices_benchmark_test.go", "sort_slices_benchmark_test.cs", "ABIosoKCgpSmgoKClKaCgoKUpoKCgpSCyqKCgoKCuKKCgoKCuKKCgoKCuKKCgoKCvKKCgoKCgoKClJSmooKCgoK4ooKCgoK4ooKEgriigoSCAAwagKKAooCkgoKCgpSmgoKCgpaChIKCyqKCgoKCuKKCgoKCgg==")]
-[assembly: go.GoPositionMap("sort/sort_test.go", "sort_test.cs", "ABwwgoKCgoKCuIKCgoKCgrqSgoSCloK4goKCgoKCuIKCgoKCuIKCgoKCuIKCgoKCuIKSlpKCuKKCgpSCgpSClIKCuKKCgoKCgoKCgpSCypSCgpSCgoKmooKCgoKogoKCgoIACBKCpIKClKSCgrjGgoCCuKiC6KKCgoKUhIKCgoK4ooKCgpSEgoKCkriigoKClISCgoKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKUgoKCgoK4ooKCgpSCgoKCkriigoKCgpSCgriigoKCgpSCkriigoKCgpSCggAaPoCigoKkgoKUgqaCgoKUpqKCgpSCgpKCgoKCgoKClKSkpKSCgpSCyoKClIK2graClIK2gpSCtoKYpKK4koIAChiCAAcQgqaCpoIADh6ApIKClISClIKmgqiCpJamgqaCkoKClKaCgoKClIKCyoKCgoIACRKQooCigKaSgrqSkoKCgoKUgpSUpqKSgpSWgpSClIKCgpSCqIKCgpSCqIKUgoKClIIACAyCgoKUgpSC7IKUguiA0oDkooKUgoKCgoKCgoKClJSCgoKCgpSCAAgMgKKAooCigKKAooA=")]
+[assembly: go.GoPositionMap("sort/search_test.go", "search_test.cs", "AA4cggAlSoKCgoIACwqCgoKClpaEACNgspKYgoIABRCigpSmpoKCgqaCkoKAgJKClIKmggAXLIKCgsqCgoKCgoLmgoKUgpSCgriigr6ygpKCgt7agpKChJSUhIKClIKUgg==", "15-17:1;122-131:1;123-125:1.1;156-156:1;229-229:1;248-251:1")]
+[assembly: go.GoPositionMap("sort/sort_slices_benchmark_test.go", "sort_slices_benchmark_test.cs", "ABIosoKCgpSmgoKClKaCgoKUpoKCgpSCyqKCgoKCuKKCgoKCuKKCgoKCuKKCgoKCvKKCgoKCgoKClJSmooKCgoK4ooKCgoK4ooKEgriigoSCAAwagKKAooCkgoKCgpSmgoKCgpaChIKCyqKCgoKCuKKCgoKCgg==", "175-175:1;194-194:1")]
+[assembly: go.GoPositionMap("sort/sort_test.go", "sort_test.cs", "ABwwgoKCgoKCuIKCgoKCgrqSgoSCloK4goKCgoKCuIKCgoKCuIKCgoKCuIKCgoKCuIKSlpKCuKKCgpSCgpSClIKCuKKCgoKCgoKCgpSCypSCgpSCgoKmooKCgoKogoKCgoIACBKCpIKClKSCgrjGgoCCuKiC6KKCgoKUhIKCgoK4ooKCgpSEgoKCkriigoKClISCgoKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKClIKCuKKCgoKUgoKCgoK4ooKCgpSCgoKCkriigoKCgpSCgriigoKCgpSCkriigoKCgpSCggAaPoCigoKkgoKUgqaCgoKUpqKCgpSCgpKCgoKCgoKClKSkpKSCgpSCyoKClIK2graClIK2gpSCtoKYpKK4koIAChiCAAcQgqaCpoIADh6ApIKClISClIKmgqiCpJamgqaCkoKClKaCgoKClIKCyoKCgoIACRKQooCigKaSgrqSkoKCgoKUgpSUpqKSgpSWgpSClIKCgpSCqIKCgpSCqIKUgoKClIIACAyCgoKUgpSC7IKUguiA0oDkooKUgoKCgoKCgoKClJSCgoKCgpSCAAgMgKKAooCigKKAooA=", "53-53:1;97-99:1;100-100:2;194-198:1;236-236:1;334-334:1;360-360:1;523-523:1;527-527:1;531-531:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -62,6 +65,7 @@ public static partial class sort_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct TestFind_tests {}
     internal partial struct adversaryTestingData {}
     internal partial struct au {}
     internal partial struct earthMass {}
@@ -81,7 +85,32 @@ public static partial class sort_test_package
     public partial struct Organ {}
     public partial struct Organs {}
     public partial struct Planet {}
-    public partial struct TestFind_tests {}
     public partial struct multiSorter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() => builtin.initPackage(typeof(go.math.rand.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.sort_package));
+    }
 }

@@ -15,24 +15,6 @@ using go.math;
 
 partial class slices_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 internal static array<nint> ints = new nint[]{74, 59, 238, -784, 9845, 959, 905, 0, 0, 42, 7586, -5467984, 7586}.array();
 
 internal static array<float64> float64s = new float64[]{74.3D, 59.0D, Δmath.Inf(1), 238.2D, -784.0D, 2.3D, Δmath.Inf(-1), 9845.768D, -959.7485D, 905D, 7.8D, 7.8D, 74.3D, 59.0D, Δmath.Inf(1), 238.2D, -784.0D, 2.3D}.array();
@@ -194,7 +176,7 @@ internal static nint cmpS(S s1, S s2) {
     return cmp.Compare(s1.a, s2.a);
 }
 
-[GoType("dyn")] partial struct TestMinMax_tests {
+[GoType("dyn")] internal partial struct TestMinMax_tests {
     internal slice<nint> data;
     internal nint wantMin;
     internal nint wantMax;
@@ -311,7 +293,7 @@ public static void TestMinMaxPanics(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBinarySearch_tests {
+[GoType("dyn")] internal partial struct TestBinarySearch_tests {
     internal slice<@string> data;
     internal @string target;
     internal nint wantPos;
@@ -385,7 +367,7 @@ public static void TestBinarySearch(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBinarySearchInts_tests {
+[GoType("dyn")] internal partial struct TestBinarySearchInts_tests {
     internal nint target;
     internal nint wantPos;
     internal bool wantFound;
@@ -423,7 +405,7 @@ public static void TestBinarySearchInts(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestBinarySearchFloats_tests {
+[GoType("dyn")] internal partial struct TestBinarySearchFloats_tests {
     internal float64 target;
     internal nint wantPos;
     internal bool wantFound;

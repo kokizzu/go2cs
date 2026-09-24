@@ -11,30 +11,6 @@ using static go.fmt_internal_test_package;
 
 partial class fmt_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string innerErrorˢ = "inner error"u8;
 internal static readonly object prefixˢ = (@string)"prefix"u8;
@@ -42,7 +18,7 @@ internal static readonly object suffixˢ = (@string)"suffix"u8;
 internal static readonly object positionalVerbˢ = (@string)"positional verb"u8;
 internal static readonly object notAnErrorˢ = (@string)"not-an-error"u8;
 
-[GoType("dyn")] partial struct TestErrorf_type {
+[GoType("dyn")] internal partial struct TestErrorf_type {
     internal error err;
     internal @string wantText;
     internal error wantUnwrap;
@@ -136,7 +112,7 @@ public static void TestErrorf(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial interface splitErr_type {
+[GoType("dyn")] internal partial interface splitErr_type {
     slice<error> Unwrap();
 }
 

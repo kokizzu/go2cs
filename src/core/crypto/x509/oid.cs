@@ -16,48 +16,6 @@ using go.math;
 
 partial class x509_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() {
-    builtin.initPackage(typeof(encoding.asn1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(go.math.bits_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 internal static error errInvalidOID = errors.New("invalid oid"u8);
 
 // An OID represents an ASN.1 OBJECT IDENTIFIER.
@@ -151,9 +109,14 @@ internal static slice<byte> appendBase128BigInt(slice<byte> dst, ж<bigꓸInt> �
     return dst;
 }
 
+// AppendText implements [encoding.TextAppender]
+public static (slice<byte>, error) AppendText(this OID o, slice<byte> b) {
+    return (append(b, o.String().ꓸꓸꓸ), default!);
+}
+
 // MarshalText implements [encoding.TextMarshaler]
 public static (slice<byte>, error) MarshalText(this OID o) {
-    return (slice<byte>(o.String()), default!);
+    return o.AppendText(default!);
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]
@@ -210,9 +173,14 @@ public static (slice<byte>, error) MarshalText(this OID o) {
     return default!;
 }
 
+// AppendBinary implements [encoding.BinaryAppender]
+public static (slice<byte>, error) AppendBinary(this OID o, slice<byte> b) {
+    return (appendꓸꓸꓸ(b, o.der), default!);
+}
+
 // MarshalBinary implements [encoding.BinaryMarshaler]
 public static (slice<byte>, error) MarshalBinary(this OID o) {
-    return (bytes.Clone(o.der), default!);
+    return o.AppendBinary(default!);
 }
 
 // UnmarshalBinary implements [encoding.BinaryUnmarshaler]

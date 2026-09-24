@@ -11,12 +11,6 @@ using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
 // Verify that our IsPrint agrees with unicode.IsPrint.
 public static void TestIsPrint(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
@@ -366,7 +360,7 @@ public static void TestUnquote(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestUnquoteInvalidUTF8_tests {
+[GoType("dyn")] internal partial struct TestUnquoteInvalidUTF8_tests {
     internal @string @in;
     // one of:
     internal @string want;

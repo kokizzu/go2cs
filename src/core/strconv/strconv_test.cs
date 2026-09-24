@@ -12,12 +12,6 @@ using strconv = strconv_package;
 
 partial class strconv_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 internal static array<byte> globalBuf = new(64);
 internal static @string nextToOne = "1.00000000000000011102230246251565404236316680908203125"u8 + strings.Repeat("0"u8, 10000) + "1"u8;
 // In practice we see 7 for the next one, but allow some slop.
@@ -113,7 +107,7 @@ internal static readonly @string appendQuoteˢ = "AppendQuote"u8;
 internal static readonly @string appendQuoteToASCIIˢ = "AppendQuoteToASCII"u8;
 internal static readonly @string appendQuoteToGraphicˢ = "AppendQuoteToGraphic"u8;
 
-[GoType("dyn")] partial struct TestAllocationsFromBytes_bytes {
+[GoType("dyn")] internal partial struct TestAllocationsFromBytes_bytes {
     public slice<byte> Bool, Number, String, Buffer;
 }
 
@@ -179,7 +173,7 @@ public static void TestAllocationsFromBytes(ж<testing.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidˢ = "INVALID"u8;
 
-[GoType("dyn")] partial struct TestErrorPrefixes_vectors {
+[GoType("dyn")] internal partial struct TestErrorPrefixes_vectors {
     internal error err;  // Input error
     internal @string want; // Function name wanted
 }

@@ -152,7 +152,7 @@ internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ref QUICConfig config
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsStartCalledMoreThanˢ = "tls: Start called more than once"u8;
-internal static readonly @string tlsConfigMinVersionMustˢ = "tls: Config MinVersion must be at least TLS 1.13"u8;
+internal static readonly @string tlsConfigMinVersionMustˢ = "tls: Config MinVersion must be at least TLS 1.3"u8;
 
 // Start starts the client or server handshake protocol.
 // It may produce connection events, which may be read with [QUICConn.NextEvent].
@@ -370,13 +370,24 @@ internal static error quicReadHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
     return default!;
 }
 
-[GoRecv] internal static void quicSetReadSecret(this ref Conn c, QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
+internal static error quicSetReadSecret(this ж<Conn> Ꮡc, QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    // Ensure that there are no buffered handshake messages before changing the
+    // read keys, since that can cause messages to be parsed that were encrypted
+    // using old keys which are no longer appropriate.
+    // TODO(roland): we should merge this check with the similar one in setReadTrafficSecret.
+    if (c.hand.Len() != 0) {
+        Ꮡc.sendAlert(alertUnexpectedMessage);
+        return errors.New(tlsHandshakeBufferNotˢ);
+    }
     c.quic.Value.events = append((~c.quic).events, new QUICEvent(
         Kind: QUICSetReadSecret,
         Level: level,
         Suite: suite,
         Data: secret
     ));
+    return default!;
 }
 
 [GoRecv] internal static void quicSetWriteSecret(this ref Conn c, QUICEncryptionLevel level, uint16 suite, slice<byte> secret) {

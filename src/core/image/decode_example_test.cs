@@ -14,16 +14,10 @@ using strings = strings_package;
 using color = go.image.color_package;
 using encoding;
 using go.image;
-using io = io_package;
 using static go.image_internal_test_package;
+using Δio = io_package;
 
 partial class image_test_package {
-
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸimageꓸjpeg() {
-    builtin.initPackage(typeof(go.image.jpeg_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object widthˢ = (@string)"Width:"u8;
@@ -79,7 +73,7 @@ public static void Example() {
     }
     // Print the results.
     fmt.Printf("%-14s %6s %6s %6s %6s\n"u8, binˢ, redˢ, greenˢ, blueˢ, alphaˢ);
-    foreach (var (i, vᴛ1) in histogram) {
+    foreach (var (i, vᴛ1) in histogram.ΔRangeSnapshot()) {
         var x = vᴛ1.Clone();
 
         fmt.Printf("0x%04x-0x%04x: %6d %6d %6d %6d\n"u8, (i << (int)(12)), ((i + 1) << (int)(12)) - 1, x[0], x[1], x[2], x[3]);

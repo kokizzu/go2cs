@@ -92,7 +92,7 @@ public static void TestRFC3339Conversion(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestAppendInt_tests {
+[GoType("dyn")] internal partial struct TestAppendInt_tests {
     internal nint @in;
     internal nint width;
     internal @string want;
@@ -600,12 +600,12 @@ public static void TestFormatAndParse(ж<Δtesting.T> Ꮡt) {
     var cfg = Ꮡ(new quick.Config(MaxCount: 10000));
     // Try a reasonable date first, then the huge ones.
     {
-        var err = quick.Check(f32, cfg); if (err != default!) {
+        var err = quick.Check((f32).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
     {
-        var err = quick.Check(f, cfg); if (err != default!) {
+        var err = quick.Check((f).OrTypedNilFunc(), cfg); if (err != default!) {
             Ꮡt.Fatal(err);
         }
     }
@@ -905,7 +905,7 @@ public static void TestUnderscoreTwoThousand(ж<Δtesting.T> Ꮡt) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string cannotParseˢ = "cannot parse"u8;
 
-[GoType("dyn")] partial struct TestStd0xParseError_tests {
+[GoType("dyn")] internal partial struct TestStd0xParseError_tests {
     internal @string format, value, valueElemPrefix;
 }
 
@@ -983,7 +983,7 @@ public static void TestParseYday(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestQuote_tests {
+[GoType("dyn")] internal partial struct TestQuote_tests {
     internal @string s, want;
 }
 
@@ -1007,7 +1007,7 @@ public static void TestQuote(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFormatFractionalSecondSeparators_tests {
+[GoType("dyn")] internal partial struct TestFormatFractionalSecondSeparators_tests {
     internal @string s, want;
 }
 
@@ -1080,7 +1080,7 @@ public static void TestParseFractionalSecondsLongerThanNineDigits(ж<Δtesting.T
 public static void FuzzFormatRFC3339(ж<Δtesting.F> Ꮡf) {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    foreach (var (_, vᴛ1) in new array<int64>[]{
+    foreach (var (_, vᴛ1) in GoReflect.WithElemDims(new array<int64>[]{
         new int64[]{Δmath.MinInt64, Δmath.MinInt64}.array(), // 292277026304-08-26T15:42:51Z
 
         new int64[]{-62167219200L, 0}.array(), // 0000-01-01T00:00:00Z
@@ -1090,7 +1090,7 @@ public static void FuzzFormatRFC3339(ж<Δtesting.F> Ꮡf) {
         new int64[]{253402300799L, 999999999}.array(), // 9999-12-31T23:59:59.999999999Z
 
         new int64[]{Δmath.MaxInt64, Δmath.MaxInt64}.array()
-    }.slice()) {
+    }.slice(), 2)) {
         var ts = vᴛ1.Clone();
 
         // -292277022365-05-08T08:17:07Z

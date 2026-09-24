@@ -23,24 +23,6 @@ using static go.net_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
 internal static slice<@string> nslookupTestServers = new @string[]{"mail.golang.com"u8, "gmail.com"u8}.slice();
 
 internal static slice<@string> lookupTestIPs = new @string[]{"8.8.8.8"u8, "1.1.1.1"u8}.slice();
@@ -168,7 +150,7 @@ public static void TestNSLookupTXT(ж<testing.T> Ꮡt) {
         }
         slices.Sort<slice<@string>, @string>(expected);
         slices.Sort<slice<@string>, @string>(txt);
-        if (!reflect.DeepEqual(expected, txt)) {
+        if (!slices.Equal<slice<@string>, @string>(expected, txt)) {
             tΔ1.Errorf("different results %s:\texp:%v\tgot:%v"u8, server, toJson(expected), toJson(txt));
         }
     });
@@ -193,7 +175,7 @@ public static void TestLookupLocalPTR(ж<testing.T> Ꮡt) {
     }
     slices.Sort<slice<@string>, @string>(expected);
     slices.Sort<slice<@string>, @string>(names);
-    if (!reflect.DeepEqual(expected, names)) {
+    if (!slices.Equal<slice<@string>, @string>(expected, names)) {
         Ꮡt.Errorf("different results %s:\texp:%v\tgot:%v"u8, addr, toJson(expected), toJson(names));
     }
 }
@@ -223,7 +205,7 @@ public static void TestLookupPTR(ж<testing.T> Ꮡt) {
         }
         slices.Sort<slice<@string>, @string>(expected);
         slices.Sort<slice<@string>, @string>(names);
-        if (!reflect.DeepEqual(expected, names)) {
+        if (!slices.Equal<slice<@string>, @string>(expected, names)) {
             Ꮡt.Errorf("different results %s:\texp:%v\tgot:%v"u8, addr, toJson(expected), toJson(names));
         }
     }

@@ -32,16 +32,12 @@ public static void TestFlag(ж<testing.T> Ꮡt) {
         @string flagΔ1 = flag;
         Ꮡt.Run(flagΔ1, (ж<testing.T> tΔ1) => {
             tΔ1.Parallel();
-            var (exe, err) = Δos.Executable();
-            if (err != default!) {
-                exe = Δos.Args[0];
-            }
-            var cmd = exec.Command(exe, testRunTestFlagˢ, "-test_flag_arg=" + flagΔ1);
+            var cmd = exec.Command(testenv.Executable(new testing_TжTB(tΔ1)), testRunTestFlagˢ, "-test_flag_arg=" + flagΔ1);
             if (flagΔ1 != ""u8) {
                 cmd.Value.Args = append((~cmd).Args, flagΔ1);
             }
             cmd.Value.Env = append(cmd.Environ(), flagTestEnv + "=1");
-            (var b, err) = cmd.CombinedOutput();
+            var (b, err) = cmd.CombinedOutput();
             if (len(b) > 0) {
                 // When we set -test.v=test2json, we need to escape the ^V control
                 // character used for JSON framing so that the JSON parser doesn't

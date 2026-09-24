@@ -85,11 +85,10 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using goexperiment = @internal.goexperiment_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 using ꓸꓸꓸuintptr = Span<uintptr>;
 
 partial class runtime_package {
@@ -398,6 +397,12 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
         ref var restore = ref heap<bool>(out var Ꮡrestore);
         restore = true;
         defer(ᴛ1 => unwindm(ref ᴛ1.DerefOrNull()), Ꮡrestore, ref ᒐ);
+        bool ditAlreadySet = default!;
+        if (debug.dataindependenttiming == 1 && (~(~gp).m).isextra) {
+            // We only need to enable DIT for threads that were created by C, as it
+            // should already by enabled on threads that were created by Go.
+            ditAlreadySet = sys.EnableDIT();
+        }
         if (raceenabled) {
             raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡracecgosync));
         }
@@ -410,6 +415,10 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
         cb(frame);
         if (raceenabled) {
             racereleasemerge(@unsafe.Pointer.FromPinnedBox(Ꮡracecgosync));
+        }
+        if (debug.dataindependenttiming == 1 && !ditAlreadySet) {
+            // Only unset DIT if it wasn't already enabled when cgocallback was called.
+            sys.DisableDIT();
         }
         // Do not unwind m->g0->sched.sp.
         // Our caller, cgocallback, will do that.

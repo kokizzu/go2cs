@@ -71,8 +71,8 @@ using static go.debug.elf_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/elf/elf.go", "elf.cs", "AFegAYCigAAOIoCigAAOIoCigAAwZoCigAAaOoCigAD/AooGgKKAABg2gKKAAEOMAYCigAAgRoCigAAULoCigABBoAGAooAAECaAooAA1gHQA4CigAASOICigABG6gGAooAADiKAooAAFjKAooAAI1CAooAAECaAooAAYcoBgKKAAIwCngSAooAAQIYBgKKAAKgC1gSAooAAXL4BgKKAAGreAYCigADMAZ4DgKKAAKIB1AKAooAAygKkBYCigAB07gGAooAAggGKAoCigAB49gGAooAAT54BgKKAooAADhyAooCigqSAAFGiAYCigKKAABMmgoKCgpTMgoKCgoKUqKaCgoKCgpSClIKmgpSClA==")]
-[assembly: go.GoPositionMap("debug/elf/file.go", "file.cs", "AJ4B2AHy2qKClAAFEgAIAoKWgoSCloKCgpaCgoKmuJSkqoKWpIIAHkKQABcygoKClIKokoKClIKCgpSCrLKCgoKUqqKCgqaqooSSgIKkgpaCgtq2goKUpKSkhIKCloKGkpKCopSCgoCCpIKCgoCSpIKCgoKCgqSCgoCCpIKCgoCSpIKCgoKCgqaClIKWgpaClpKUgqSCpIKogoKClIKCgpSCAAsWggALFoKUgpSCgt6CkoKUgoCCpIKCpIKAgqSCgqSCloIABhCCgoK6gqiCgpSCgoKClIKCgpSCggAMGIKCAAwYgpSClISCgqaUgoKAgqSCgoKkgoKAgqSCgoK4loKoppSCgpSCgpSCgoKCqNqilKamAAoOgoKCloKClIKUgpaCgqiEhIKCgoKCgoKCgoKCgoKCgoKCltaCgoKWgoKUgpaCgqiEhIKCgoKCgoKCgoKCgoKCgoKClqiSgpaCgqaqooKCptqilKSkpKSkpKSkpKSkpAAEFOLWlIKWgoKWgoSCgoKEgpSCgs6UgpSCpIKUgrjWlIKWgoKWgoSCgoKEgpSEgoKUgoKoppSCloKCloKEgoKChIKUhJSClIKCuKaUgpaCgpaChIKCgoSClIKCzpSClIKkgpSCuNaUgpaCgpaChIKCgoSClIKClpSClIK4ppSCloKCloKEgoKChIKUgoKWlIKUgqSClIK4ppSCloKCloKEgoKChIKUhJSClIKCuKaUgpaCgpaChIKCgoKCgpSCloKUgoKWlIKUgqSClIK4ppSCloKCloKEgoKCgoKEgpSCgpaUgpSCpIKUgrimlIKWgoKWgoSCgoKEgpSCgpaUgpSCpIKUgrimlIKWgoKWgoSCgoKEgpSCgpaUgpSCpIKUgrimlIKWgoKWgoSCgoKEgpSCgpaUgpSCpIKUgrgACwaigpSkpNyCgoKWuJaCgpSClIKClIKCppqigoKClICCpIKClJaCgqiCgoKUgJSmgoKWgoCCtoCCygACEuKCAAIYAAkCgoKUgoKmAAgawoKClIKCgoKCgqYABxSilKiCgpSEgoKCgpSCgpSCgoKChIKCgoK4goKCgoKCgoKWgoKUloKUqIKClISCgqrkgoKUgoKUgoKUgqyyAAUQ0rakgpSUgoKWgoKUgpaCgpSCgoKClIKCpIKCpIKCgriqooKClIKCloKClIKYkoKCgpSCgqSCgqSCpgAICoI=")]
+[assembly: go.GoPositionMap("debug/elf/elf.go", "elf.cs", "AFGgAYCigAAOIoCigAAOIoCigAAwZoCigAAaOoCigAD/AooGgKKAABg2gKKAAEOMAYCigAAgRoCigAAULoCigABBoAGAooAAECaAooAA2gHQA4CigAAZOICigABG6gGAooAADiKAooAAFjKAooAAI1CAooAAECaAooAAYcoBgKKAAIwCngSAooAAQIYBgKKAAKgC1gSAooAAXL4BgKKAAGreAYCigADMAZ4DgKKAAKIB1AKAooAAygKkBYCigAB07gGAooAAggGKAoCigAB49gGAooAAT54BgKKAooAADhyAooCigqSAAFGiAYCigKKAABk4goKCgpTMgoKCgoKUqKaCgoKCgpSClIKmgpSClA==")]
+[assembly: go.GoPositionMap("debug/elf/file.go", "file.cs", "AGfaAfLaooKUAAUSAAgCgpaChIKWgoKCloKCgqa4lKSqgpakggAeQpAAHUKCgoKUgqiSgoKUgoKClIKssoKCgpSqooKCpqqihJKAgqSCloKC2raCgpSkpKSEgoKWgoaSkoKilIKCgIKkgoKCgJKkgoKCgoKCpIKCgIKkgoKCgJKkgoKCgoKCpoKUgpaCloKWkpSCpIKkgqiCgoKUgoKClIIACxaCAAsWgpSClIKC3oKSgpSCgIKkgoKkgoCCpIKCpIKWggAGEIKCgrqCqIKClIKUgoKCgpSCgoKUgoIADBiCggAMGIKUgpSEgoKmlIKCgIKkgoKCpIKCgIKkgoKCuJaCqKaUgoKUgoKUgoKCgqjaopSmpgAKDoKCgpaCgpSClIKWgoKohISCgoKCgoKCgoKCgoKCgoKCgpbWgoKCloKClIKWgoKohISCgoKCgoKCgoKCgoKCgoKCgpaokoKWgoKmqqKCgqbaopSkpKSkpKSkpKSkpKQABBTi1pSCloKCloKEgoKChIKUgoLOlIKUgqSClIK41pSCloKCloKEgoKChIKUhIKClIKCqKaUgpaCgpaChIKCgoSClISUgpSCgrimlIKWgoKWgoSCgoKEgpSCgs6UgpSCpIKUgrjWlIKWgoKWgoSCgoKEgpSCgpaUgpSCuKaUgpaCgpaChIKCgoSClIKClpSClIKkgpSCuKaUgpaCgpaChIKCgoSClISUgpSCgrimlIKWgoKWgoSCgoKCgoKUgpaClIKClpSClIKkgpSCuKaUgpaCgpaChIKCgoKChIKUgoKWlIKUgqSClIK4ppSCloKCloKEgoKChIKUgoKWlIKUgqSClIK4ppSCloKCloKEgoKChIKUgoKWlIKUgqSClIK4ppSCloKCloKEgoKChIKUgoKWlIKUgqSClIK4AAsGooKUpKTcgoKClriWgoKUgpSCgpSCgqaaooKCgpSAgqSCgpSWgoKogoKClICUpoKCloKAgraAgsoAAhLiggACGAAJAoKClIKClIKCpgAIGsKCgpSAgqSCgoKCgqYABBCiAAIgAA0CAB5AkpSogoKUhIKCgoKUkoKUgoKCgoSCloKCgoKCgpSCgoSClJaW3oKUloTYkoKCgpSCgpSCqKiSlKiCgpSEgoKCgpSSgpSCgoKChIKCgoKUgoKCgoTMgpSWuoKUloTYkoKCgpSCgpSCqKzEgoKUhIKAgqSAgqSqtIKClIKClIKEgpaCgoK6goKorLIABRDStqSClJSCgpaCgpSCloKClIKCgoKUgoKkgoKkgoKCuKqigoKUgoKWgoKUgpiSgoKClIKCpIKCpIKmAAgKgg==", "160-162:1;170-173:2;1336-1346:1;1349-1379:2")]
 [assembly: go.GoPositionMap("debug/elf/reader.go", "reader.cs", "AA8igqaCpoKmggANHIKCgpSUprKClIKCpoKClKSkpKaUpqa2tpSWkoKCgpSAguiC")]
 // </GoSourcePositionMaps>
 
@@ -92,7 +92,6 @@ public static partial class elf_package
     internal partial struct intName {}
     internal partial struct nobitsSectionReader {}
     internal partial struct readSeekerFromReader {}
-    internal partial struct verneed {}
     public partial struct Chdr32 {}
     public partial struct Chdr64 {}
     public partial struct Class {}
@@ -102,6 +101,10 @@ public static partial class elf_package
     public partial struct DynFlag {}
     public partial struct DynFlag1 {}
     public partial struct DynTag {}
+    public partial struct DynamicVersion {}
+    public partial struct DynamicVersionDep {}
+    public partial struct DynamicVersionFlag {}
+    public partial struct DynamicVersionNeed {}
     public partial struct File {}
     public partial struct FileHeader {}
     public partial struct FormatError {}
@@ -147,7 +150,29 @@ public static partial class elf_package
     public partial struct Symbol {}
     public partial struct Type {}
     public partial struct Version {}
+    public partial struct VersionIndex {}
     public partial struct ΔData {}
     public partial struct ΔSection {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() => builtin.initPackage(typeof(compress.zlib_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() => builtin.initPackage(typeof(go.debug.dwarf_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸzstd() => builtin.initPackage(typeof(@internal.zstd_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

@@ -59,7 +59,7 @@ using static go.debug.plan9obj_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/plan9obj/file.go", "file.cs", "AF2IAZKokAAVKoKCgpSCqJKCgpSCgoKUgqyygoKClKaCgpSk+qKEkoCCpIKCloKAgqYACBKCgIKkgoKWAAYWhISCgsqCgoKWpoKCgoKUgqaCgpSCloKUgoKGkoKCgoKmlIKCgoLYgpSCgoSUqqKCgoKUgpaCkpKCgoKCgpS0gpKCgpSAgqTGlLSUgpYAChCSgoKWgoKWqqKCgqY=")]
+[assembly: go.GoPositionMap("debug/plan9obj/file.go", "file.cs", "AEOIAZKokAAVKoKCgpSCqJKCgpSCgoKUgqyygoKClKaCgpSk+qKEkoCCpIKCloKAgqYACBKCgIKkgoKWAAYWhISCgsqCgoKWpoKCgoKUgqaCgpSCloKUgoKGkoKCgoKmlIKCgoLYgpSCgoSUqqKCgoKUgpaCkpKCgoKCgpS0gpKCgpSAgqTGlLSUgpYAChCSgoKWgoKWqqKCgqY=", "267-270:1;277-304:2")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;
@@ -84,4 +84,19 @@ public static partial class plan9obj_package
     public partial struct Sym {}
     public partial struct ΔSection {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    // </ImportInitializers>
 }

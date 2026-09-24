@@ -52,8 +52,8 @@ using static go.debug.gosym_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/gosym/pclntab.go", "pclntab.cs", "AGGiAQAMEoKCgoKUgoKUgoK0tLSCtJSmgpKs0oKUgq7igpSCgqYAAhYACAIAAh4ADgKCAAcYooKUqNKCgoIABhCEgpS6ppaCgoKUtLS0tLS0tLSkloKEhpiUgoKCgoKCgoKCgqSCgoKCgoKCgoKkgoKCgoKCgoKCgqT65IKCqIKCgoKCgoKCgoIABxCU2LKSgpSWgqiykoKCgoKCgqaCqJKAgqSCgoKokoCCpIKCgqiSqJKClKiyAAkWkqiSgoKUqJKokoKUAAgUsoKokqi2ppSmgKKAooCigKKAqrKCuIKClIKCqMKCgpSClJSCgoKCrLKUkpKCgqYAAhLigpaSkpKSkpKCgoKClMqClIKClIKmppSo4oKCqIKClIKC6OKCgqiCgpSCgoKCgpSmkpSCgIKk6OKCgqiCgoKcsoKCgoKCgpSUlIKCpujSgoSClISCgoKmgoKCgqbc8oKCqIKC")]
-[assembly: go.GoPositionMap("debug/gosym/symtab.go", "symtab.cs", "ADNGkK7SgoKUgpSU6qLMgqiCloKCloCCpKyypoKCuJSClMqCqJKCgIKCgsqmpAA9hAGCkpSCgpqC5LSCtIKCgpSCgpSUgoKCgpSCgoKClJSCgoKCpoKClIK4goKCgoKUgpSClIKCpoKClILKgoKUgoKUgoKYkoKCgoKmlIKCgoLYgpSCgoSCgqaClJSs0oKCgpSCloKClIKCgoKCkoKCgoKCgoKWgoKSgoKUgpS0gpSCkoKClICCpMaUtLSClIKWgoSClIKClLqCgoKUpJaSlIaCgoaygoCCtoKGgpKCgpSClNqAkqSCmKKCgoKUtLTqgoKCgoKCgoKCuKSClIKClLSCgrSCgsbIgpSClKqigoKCgpS0pMaq4oCCpIKClJSs8oKCloKCgpSWgoKUgoKCgqaqtIKClILYqqKCgoKmqJKCgpSC2AAMHAAJAgAAEISCgpKUuMiSlIK4+IKUpoKClpSCqIKCgoKCgpSmgoKkyIKU5pQABBawAAoUggAKFoKCgpSC")]
+[assembly: go.GoPositionMap("debug/gosym/pclntab.go", "pclntab.cs", "AEmiAQAMEoKCgoKUgoKUgoK0tLSCtJSmgpKs0oKUgq7igpSCgqYAAhYACAIAAh4ADgKCAAcYooKUqNKCgoIABhCEgpS6ppaCgoKUtLS0tLS0tLSkloKEhpiUgoKCgoKCgoKCgqSCgoKCgoKCgoKkgoKCgoKCgoKCgqT65IKCqIKCgoKCgoKCgoIABxCU2LKSgpSWgqiykoKCgoKCgqaCqJKAgqSCgoKokoCCpIKCgqiSqJKClKiyAAkWkqiSgoKUqJKokoKUAAgUsoKokqi2ppSmgKKAooCigKKAqrKCuIKClIKCqMKCgpSClJSCgoKCrLKUkpKCgqYAAhLigpaSkpKSkpKCgoKClMqClIKClIKmppSo4oKCqIKClIKC6OKCgqiCgpSCgoKCgpSmkpSCgIKk6OKCgqiCgoKcsoKCgoKCgpSUlIKCpujigoSClISCgoKmgoKCgqbc8oKCqIKC", "209-212:1;251-253:2;254-256:3;303-305:1;337-339:1;570-574:1;587-591:1;619-623:1;686-688:1")]
+[assembly: go.GoPositionMap("debug/gosym/symtab.go", "symtab.cs", "ACFGkK7SgoKUgpSU6qLMgqiCloKCloCCpKyypoKCuJSClMqCqJKCgIKCgsqmpAA9hAGCkpSCgpqC5LSCtIKCgpSCgpSUgoKCgpSCgoKClJSCgoKCpoKClIK4goKCgoKUgpSClIKCpoKClILKgoKUgoKUgoKYkoKCgoKmlIKCgoLYgpSCgoSCgqaClJSs0oKCgpSCloKClIKCgoKCkoKCgoKCgoKWgoKSgoKUgpS0gpSCkoKClICCpMaUtLSClIKWgoSClIKClLqCgoKUpJaSlIaCgoaygoCCtoKGgpKCgpSClNqAkqSCmKKCgoKUtLTqgoKCgoKCgoKCuKSClIKClLSCgrSCgsbIgpSClKqigoKCgpS0pMaq4oCCpIKClJSs8oKCloKCgpSWgoKUgoKCgqaqtIKClILYqqKCgoKmqJKCgpSC2AAMHAAJAgAAEISCgpKUuMiSlIK4+IKUpoKClpSCqIKCgoKCgpSmgoKkyIKU5pQABBawAAoUggAKFoKCgpSC", "338-341:1;355-401:2")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;
@@ -82,4 +82,20 @@ public static partial class gosym_package
     public partial struct UnknownFileError {}
     public partial struct UnknownLineError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

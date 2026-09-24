@@ -5,8 +5,8 @@ namespace go.go;
 
 using ast = global::go.go.ast_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
@@ -18,7 +18,7 @@ partial class types_package {
 [GoType] partial struct Interface {
     internal ж<Checker> check;  // for error reporting; nil once type set is computed
     internal slice<ж<Func>> methods; // ordered list of explicitly declared methods
-    internal slice<ΔType> embeddeds; // ordered list of explicitly embedded elements
+    internal slice<ΔType> embeddeds;  // ordered list of explicitly embedded elements
     internal ж<slice<tokenꓸPos>> embedPos; // positions of embedded elements; or nil (for error messages) - use pointer to save space
     internal bool @implicit;         // interface is wrapper for type set literal (non-interface T, ~T, or A|B)
     internal bool complete;         // indicates that obj, methods, and embeddeds are set and type set can be computed

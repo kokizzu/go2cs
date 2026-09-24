@@ -55,9 +55,9 @@ using static go.math.rand_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("math/rand/exp.go", "exp.cs", "ABg88oKCgoKClIKUgg==")]
+[assembly: go.GoPositionMap("math/rand/exp.go", "exp.cs", "ABI88oKCgoKClIKUgg==")]
 [assembly: go.GoPositionMap("math/rand/normal.go", "normal.cs", "ABIugoKUAAIU8oKCgoKUlpSCgoKCpoKUlII=")]
-[assembly: go.GoPositionMap("math/rand/rand.go", "rand.cs", "AENmwqaCgoIAECiigqrCgIKCpoKokKaQppKClKiQppKCqqKClJKUgoKClKqigpSSlIKCgpQAAhgACQKCgoKCgoKCgqaqooKUgpSoABEigoKClKjIgoKClKqi3IKCgpSssoIABxKCgoKUgoK+0pSklKaygoKCgoKClJSUgoKUgoIADyKigIKokoKCgpTM7paoAAkSgqaCpoKmsoKCggACJgAQApaCgIKCAAkWgoSUvKCooKigqKCmkKqwqrCqsKigqKCooKqwAAIQ4AACFAAIAAACEvD+soKCgqaygoKCpqKCgqjCgoKCqqKClLrSgoKC")]
+[assembly: go.GoPositionMap("math/rand/rand.go", "rand.cs", "ADFmwqaCgoIAECiigqrCgIKCpoKokKaQppKClKiQppKCqqKClJKUgoKClKqigpSSlIKCgpQAAhgACQKCgoKCgoKCgqaqooKUgpSoABEigoKClKjIgoKClKqi3IKCgpSssoIABxKCgoKUgoK+0pSklKaygoKCgoKClJSUgoKUgoIAEiiigIKokoKCgpTM7paoAAkSgqaCpoKmwoKCggACLAATAoKUhJaCgIKCAAkWgoSUvKCooKigqKCmkKqwqrCqsKigqKCooKqwAAIQ4AACFAAIAAACEvD+soKCgqaygoKCpqKCgqjCgoKCqqKClLrSgoKC")]
 [assembly: go.GoPositionMap("math/rand/rng.go", "rng.cs", "ALQB9gKSrIKCgoKUqJKChIKClIKWgoKCgoKCgoKCgoLMkqiSgoKWgoKWgoI=")]
 [assembly: go.GoPositionMap("math/rand/zipf.go", "zipf.cs", "ABo2gqaCruKCgpSCgoKCgoKCgoKqwoKUhIKCgoKCgpSCpg==")]
 // </GoSourcePositionMaps>
@@ -82,4 +82,17 @@ public static partial class rand_package
     public partial struct Rand {}
     public partial struct Zipf {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

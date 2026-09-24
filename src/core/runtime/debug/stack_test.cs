@@ -5,7 +5,7 @@ namespace go.runtime;
 
 using bytes = bytes_package;
 using fmt = fmt_package;
-using testenv = go.@internal.testenv_package;
+using testenv = @internal.testenv_package;
 using log = log_package;
 using os = os_package;
 using exec = go.os.exec_package;
@@ -15,31 +15,13 @@ using debug = go.runtime.debug_package;
 using static go.runtime.debug_package;
 using strings = strings_package;
 using testing = testing_package;
-using go.@internal;
+using @internal;
 using go.os;
 using go.runtime;
 using io = io_package;
 using path;
 
 partial class debug_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string goRuntimeDebugTestˢ = "GO_RUNTIME_DEBUG_TEST_ENTRYPOINT"u8;

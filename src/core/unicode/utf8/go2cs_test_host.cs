@@ -22,11 +22,12 @@ internal static class Go2CsTestHost
         registry.Add("TestFullRune", utf8_test_package.TestFullRune, "utf8_test.go", 89);
         registry.Add("TestNegativeRune", utf8_test_package.TestNegativeRune, "utf8_test.go", 406);
         registry.Add("TestRuneCount", utf8_test_package.TestRuneCount, "utf8_test.go", 430);
-        registry.Add("TestRuneLen", utf8_test_package.TestRuneLen, "utf8_test.go", 459);
+        registry.Add("TestRuneCountNonASCIIAllocation", utf8_test_package.TestRuneCountNonASCIIAllocation, "utf8_test.go", 441);
+        registry.Add("TestRuneLen", utf8_test_package.TestRuneLen, "utf8_test.go", 468);
         registry.Add("TestRuntimeConversion", utf8_test_package.TestRuntimeConversion, "utf8_test.go", 235);
         registry.Add("TestSequencing", utf8_test_package.TestSequencing, "utf8_test.go", 217);
-        registry.Add("TestValid", utf8_test_package.TestValid, "utf8_test.go", 493);
-        registry.Add("TestValidRune", utf8_test_package.TestValidRune, "utf8_test.go", 524);
+        registry.Add("TestValid", utf8_test_package.TestValid, "utf8_test.go", 502);
+        registry.Add("TestValidRune", utf8_test_package.TestValidRune, "utf8_test.go", 533);
         return TestHost.Run(registry, args);
     }
 }

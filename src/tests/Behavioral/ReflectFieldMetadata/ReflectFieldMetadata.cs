@@ -52,7 +52,7 @@ internal static nint M(this @base b) {
     internal partial ref twice twice { get; }
 }
 
-[GoType("ReflectFieldMetadata.fieldlib_package.Outer")] partial struct local;
+[GoType("global::go.ReflectFieldMetadata.fieldlib_package.Outer")] partial struct local;
 
 [GoType("num:nint")] partial struct myInt;
 

@@ -7,7 +7,7 @@ namespace go;
 using context = context_package;
 using poll = @internal.poll_package;
 using netip = net.netip_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal;
@@ -35,7 +35,7 @@ internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        var exprᴛ1 = Δruntime.GOOS;
+        var exprᴛ1 = runtime.GOOS;
         if (exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
             p.ipv4Enabled = true;
             p.ipv6Enabled = true;
@@ -59,7 +59,7 @@ internal static void probe(this ж<ipStackCapabilities> Ꮡp) {
             new(laddr: new TCPAddr(IP: ParseIP("::1"u8)), value: 1),
             new(laddr: new TCPAddr(IP: IPv4(127, 0, 0, 1)), value: 0)
         }.slice();
-        var exprᴛ3 = Δruntime.GOOS;
+        var exprᴛ3 = runtime.GOOS;
         if (exprᴛ3 == "dragonfly"u8 || exprᴛ3 == "openbsd"u8) {
             probes = probes[..1];
         }
@@ -170,7 +170,7 @@ internal static (nint family, bool ipv6only) favoriteAddrFamily(@string network,
 }
 
 internal static (ж<netFD> fd, error err) internetSocket(context.Context ctx, @string net, Δsockaddr laddr, Δsockaddr raddr, nint sotype, nint proto, @string mode, Func<context.Context, @string, @string, syscall.RawConn, error> ctrlCtxFn) {
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "aix"u8 || exprᴛ1 == "windows"u8 || exprᴛ1 == "openbsd"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "wasip1"u8) {
         if (mode == "dial"u8 && raddr.isWildcard()) {
             raddr = raddr.toLocal(net);
@@ -255,8 +255,12 @@ internal static (syscall.Sockaddr, error) ipToSockaddr(nint family, IP ip, nint 
 internal static (syscall.SockaddrInet4, error) addrPortToSockaddrInet4(netip.AddrPort ap) {
     // ipToSockaddrInet4 has special handling here for zero length slices.
     // We do not, because netip has no concept of a generic zero IP address.
+    //
+    // addr is allowed to be an IPv4-mapped IPv6 address.
+    // As4 will unmap it to an IPv4 address.
+    // The error message is kept consistent with ipToSockaddrInet4.
     var addr = ap.Addr();
-    if (!addr.Is4()) {
+    if (!addr.Is4() && !addr.Is4In6()) {
         return (new syscall.SockaddrInet4(nil), new AddrErrorжerror(Ꮡ(new AddrError(Err: "non-IPv4 address"u8, Addr: addr.String()))));
     }
     var sa = new syscall.SockaddrInet4(

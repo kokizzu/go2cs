@@ -33,42 +33,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class smtp_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() {
-    builtin.initPackage(typeof(crypto.tls_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
-    builtin.initPackage(typeof(go.net.textproto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // A Client represents a client connection to an SMTP server.
 [GoType] partial struct Client {
     // Text is the textproto.Conn used by the Client. It is exported to allow for
@@ -590,11 +554,7 @@ internal static readonly @string quitˢ = "QUIT"u8;
 public static error Quit(this ж<Client> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    {
-        var errΔ1 = Ꮡc.hello(); if (errΔ1 != default!) {
-            return errΔ1;
-        }
-    }
+    Ꮡc.hello(); // ignore error; we're quitting anyhow
     var (_, _, err) = Ꮡc.cmd(221, quitˢ);
     if (err != default!) {
         return err;

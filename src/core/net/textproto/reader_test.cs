@@ -9,6 +9,7 @@ using io = io_package;
 using net = net_package;
 using reflect = reflect_package;
 using runtime = runtime_package;
+using slices = slices_package;
 using strings = strings_package;
 using sync = sync_package;
 using testing = testing_package;
@@ -109,12 +110,12 @@ public static void TestReadDotLines(ж<testing.T> Ꮡt) {
     var r = reader(dotlinesFooBarBazQuuxˢ);
     var (s, err) = r.ReadDotLines();
     var want = new @string[]{"dotlines"u8, "foo"u8, ".bar"u8, "..baz"u8, "quux"u8, ""u8}.slice();
-    if (!reflect.DeepEqual(s, want) || err != default!) {
+    if (!slices.Equal<slice<@string>, @string>(s, want) || err != default!) {
         Ꮡt.Fatalf("ReadDotLines: %v, %v"u8, s, err);
     }
     (s, err) = r.ReadDotLines();
     want = new @string[]{"another"u8}.slice();
-    if (!reflect.DeepEqual(s, want) || !AreEqual(err, io.ErrUnexpectedEOF)) {
+    if (!slices.Equal<slice<@string>, @string>(s, want) || !AreEqual(err, io.ErrUnexpectedEOF)) {
         Ꮡt.Fatalf("ReadDotLines2: %v, %v"u8, s, err);
     }
 }
@@ -126,12 +127,12 @@ public static void TestReadDotBytes(ж<testing.T> Ꮡt) {
     var r = reader(dotlinesFooBarBazQuuxˢ2);
     var (b, err) = r.ReadDotBytes();
     var want = slice<byte>("dotlines\nfoo\n.bar\n..baz\nquux\n\n"u8);
-    if (!reflect.DeepEqual(b, want) || err != default!) {
+    if (!slices.Equal<slice<byte>, byte>(b, want) || err != default!) {
         Ꮡt.Fatalf("ReadDotBytes: %q, %v"u8, b, err);
     }
     (b, err) = r.ReadDotBytes();
     want = slice<byte>("anot.her\n"u8);
-    if (!reflect.DeepEqual(b, want) || !AreEqual(err, io.ErrUnexpectedEOF)) {
+    if (!slices.Equal<slice<byte>, byte>(b, want) || !AreEqual(err, io.ErrUnexpectedEOF)) {
         Ꮡt.Fatalf("ReadDotBytes2: %q, %v"u8, b, err);
     }
 }

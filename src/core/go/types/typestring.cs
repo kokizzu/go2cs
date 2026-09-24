@@ -8,7 +8,7 @@ namespace go.go;
 
 using bytes = bytes_package;
 using fmt = fmt_package;
-using sort = sort_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using utf8 = global::go.unicode.utf8_package;
@@ -154,7 +154,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
             break;
         }
         case ж<Struct> t: {
-            w.@string(structˢ2);
+            w.@string(structˢ);
             foreach (var (i, f) in (~t).fields) {
                 if (i > 0) {
                     w.@byte((rune)';');
@@ -249,7 +249,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
                 // Print it as such and continue.
                 w.@string(implicitˢ);
             }
-            w.@string(interfaceˢ2);
+            w.@string(interfaceˢ);
             var first = true;
             if (w.ctxt != nil){
                 Ꮡw.typeSet(t.typeSet());
@@ -274,7 +274,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
             break;
         }
         case ж<Map> t: {
-            w.@string(mapˢ2);
+            w.@string(mapˢ);
             Ꮡw.typ((~t).key);
             w.@byte((rune)']');
             Ꮡw.typ((~t).elem);
@@ -285,7 +285,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
             bool parens = default!;
             var exprᴛ1 = (~t).dir;
             if (exprᴛ1 == SendRecv) {
-                s = chanˢ4;
+                s = chanˢ3;
                 {
                     var (c, _) = (~t).elem._<ж<Chan>>(ᐧ); if (c != nil && (~c).dir == RecvOnly) {
                         // chan (<-chan T) requires parentheses
@@ -294,10 +294,10 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
                 }
             }
             else if (exprᴛ1 == SendOnly) {
-                s = chanˢ2;
+                s = chanˢ;
             }
             else if (exprᴛ1 == RecvOnly) {
-                s = chanˢ3;
+                s = chanˢ2;
             }
             else { /* default: */
                 w.error(unknownChannelDirectionˢ);
@@ -337,7 +337,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
                 break;
             }
             {
-                nint i = tparamIndex(w.tparams.list(), t); if (i >= 0){
+                nint i = slices.Index(w.tparams.list(), t); if (i >= 0){
                     // The names of type parameters that are declared by the type being
                     // hashed are not part of the type identity. Replace them with a
                     // placeholder indicating their index.
@@ -367,9 +367,14 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) {
         case ж<Alias> t: {
             w.typeName((~t).obj);
             {
-                var list = (~t).targs.list(); if (len(list) != 0) {
+                var list = (~t).targs.list(); if (len(list) != 0){
                     // instantiated type
                     Ꮡw.typeList(list);
+                } else 
+                if (w.ctxt == nil && t.TypeParams().Len() != 0) {
+                    // For type hashing, don't need to format the TypeParams
+                    // parameterized type
+                    Ꮡw.tParamList(t.TypeParams().list());
                 }
             }
             if (w.ctxt != nil) {
@@ -417,16 +422,16 @@ internal static void typeSet(this ж<typeWriter> Ꮡw, ж<_TypeSet> Ꮡs) {
     default: {
 // nothing to do
         slice<@string> termHashes = default!;
-        foreach (var (_, term) in s.terms) {
+        foreach (var (_, Δterm) in s.terms) {
             // terms are not canonically sorted, so we sort their hashes instead.
             ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-            if ((~term).tilde) {
+            if ((~Δterm).tilde) {
                 buf.WriteByte((rune)'~');
             }
-            newTypeHasher(Ꮡbuf, w.ctxt).typ((~term).typ);
+            newTypeHasher(Ꮡbuf, w.ctxt).typ((~Δterm).typ);
             termHashes = append(termHashes, Ꮡbuf.String());
         }
-        sort.Strings(termHashes);
+        slices.Sort<slice<@string>, @string>(termHashes);
         if (!first) {
             w.@byte((rune)';');
         }

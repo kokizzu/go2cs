@@ -17,12 +17,6 @@ using ꓸꓸꓸbyte = Span<byte>;
 
 partial class norm_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸtransform() {
-    builtin.initPackage(typeof(go.vendor.golang.org.x.text.transform_package));
-}
-
 [GoType("num:nint")] partial struct Form;
 
 public static Form NFC => /* iota */ 0;
@@ -629,7 +623,7 @@ internal static void decomposeToLastBoundary(ж<reorderBuffer> Ꮡrb) {
     if (info.BoundaryAfter()) {
         return;
     }
-    array<ΔProperties> add = new(31); /* maxNonStarters + 1 */                                           // stores runeInfo in reverse order
+    array<ΔProperties> add = new(31); /* maxNonStarters + 1 */                                             // stores runeInfo in reverse order
     nint padd = 0;
     var ss = ((streamSafe)0);
     nint p = len(rb.@out);

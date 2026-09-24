@@ -24,24 +24,6 @@ using Δio = io_package;
 
 partial class net_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() {
-    builtin.initPackage(typeof(net.netip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 internal static ж<global::go.net_package.Resolver> ᏑgoResolver = new StandardBox<global::go.net_package.Resolver>(new Resolver(PreferGo: true));
 internal static ref global::go.net_package.Resolver goResolver => ref ᏑgoResolver.Value;
 
@@ -252,7 +234,8 @@ public static void TestLookupGmailTXT(ж<testing.T> Ꮡt) {
     }
     nint attempts = 0;
     for (nint i = 0; i < len(lookupGmailTXTTests); i++) {
-        var tt = lookupGmailTXTTests[i];
+        ref var tt = ref heap<lookupGmailTXTTestsᴛ1>(out var Ꮡtt);
+        tt = lookupGmailTXTTests[i];
         var (txts, err) = LookupTXT(tt.name);
         if (err != default!) {
             testenv.SkipFlakyNet(new net_test_package.testing_TжTB(Ꮡt));
@@ -269,14 +252,8 @@ public static void TestLookupGmailTXT(ж<testing.T> Ꮡt) {
         if (len(txts) == 0) {
             Ꮡt.Error(gotNoRecordˢ);
         }
-        var found = false;
-        foreach (var (_, txt) in txts) {
-            if (strings.Contains(txt, tt.txt) && (strings.HasSuffix(txt, tt.host) || strings.HasSuffix(txt, tt.host + "."u8))) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
+        var ttʗ1 = tt;
+        if (!slices.ContainsFunc(txts, (@string txt) => strings.Contains(txt, ttʗ1.txt) && (strings.HasSuffix(txt, ttʗ1.host) || strings.HasSuffix(txt, ttʗ1.host + "."u8)))) {
             Ꮡt.Errorf("got %v; want a record containing %s, %s"u8, txts, tt.txt, tt.host);
         }
     }
@@ -335,14 +312,7 @@ public static void TestLookupIPv6LinkLocalAddr(ж<testing.T> Ꮡt) {
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        var found = false;
-        foreach (var (_, addr) in addrs) {
-            if (addr == "fe80::1%lo0"u8) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
+        if (!slices.Contains(addrs, fe801Lo0ˢ)) {
             Ꮡt.Skipf("not supported on %s"u8, Δruntime.GOOS);
         }
         {
@@ -489,7 +459,7 @@ public static void TestLookupLongTXT(ж<testing.T> Ꮡt) {
             strings.Repeat("abcdefghijklmnopqrstuvwxyABCDEFGHJIKLMNOPQRSTUVWXY"u8, 10),
             "gophers rule"u8
         }.slice();
-        if (!reflect.DeepEqual(txts, want)) {
+        if (!slices.Equal<slice<@string>, @string>(txts, want)) {
             Ꮡt.Fatalf("LookupTXT golang.rsc.io incorrect\nhave %q\nwant %q"u8, txts, want);
         }
     }

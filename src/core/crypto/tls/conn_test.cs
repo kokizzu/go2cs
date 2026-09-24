@@ -255,6 +255,7 @@ internal static void runDynamicRecordSizingTest(ж<testing.T> Ꮡt, ж<global::g
 }
 
 public static void TestDynamicRecordSizingWithStreamCipher(ж<testing.T> Ꮡt) {
+    skipFIPS(Ꮡt); // No RC4 in FIPS mode.
     var config = testConfig.Clone();
     config.Value.MaxVersion = VersionTLS12;
     config.Value.CipherSuites = new uint16[]{TLS_RSA_WITH_RC4_128_SHA}.slice();
@@ -262,6 +263,7 @@ public static void TestDynamicRecordSizingWithStreamCipher(ж<testing.T> Ꮡt) {
 }
 
 public static void TestDynamicRecordSizingWithCBC(ж<testing.T> Ꮡt) {
+    skipFIPS(Ꮡt); // No CBC cipher suites in defaultCipherSuitesFIPS.
     var config = testConfig.Clone();
     config.Value.MaxVersion = VersionTLS12;
     config.Value.CipherSuites = new uint16[]{TLS_RSA_WITH_AES_256_CBC_SHA}.slice();
@@ -286,6 +288,34 @@ public static void TestDynamicRecordSizingWithTLSv13(ж<testing.T> Ꮡt) {
     public net_package.Conn Conn;
     internal ж<global::go.crypto.tls_package.Conn> tlsConn;
 }
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this hairpinConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this hairpinConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this hairpinConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this hairpinConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this hairpinConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this hairpinConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
+
+// Go method set entry for the promoted 'Conn.Write()' - provided ONLY by the embedded
+// interface field in *hairpinConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Write(this hairpinConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Write(b);
 
 [GoRecv] internal static error Close(this ref hairpinConn conn) {
     conn.tlsConn.ConnectionState();

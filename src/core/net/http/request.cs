@@ -12,6 +12,7 @@ using base64 = encoding.base64_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
+using maps = maps_package;
 using mime = mime_package;
 using multipart = go.mime.multipart_package;
 using httptrace = go.net.http.httptrace_package;
@@ -347,12 +348,8 @@ internal static map<@string, bool> reqWriteExcludeHeader = new map<@string, bool
     r2.Value = r;
     r2.Value.ctx = ctx;
     r2.Value.URL = cloneURL(r.URL);
-    if (r.Header != default!) {
-        r2.Value.Header = r.Header.Clone();
-    }
-    if (r.Trailer != default!) {
-        r2.Value.Trailer = r.Trailer.Clone();
-    }
+    r2.Value.Header = r.Header.Clone();
+    r2.Value.Trailer = r.Trailer.Clone();
     {
         var s = r.TransferEncoding; if (s != default!) {
             var s2 = new slice<@string>(builtin.len(s));
@@ -371,15 +368,7 @@ internal static map<@string, bool> reqWriteExcludeHeader = new map<@string, bool
             r2.Value.matches = s2;
         }
     }
-    {
-        var s = r.otherValues; if (s != default!) {
-            var s2 = new map<@string, @string>(builtin.len(s));
-            foreach (var (k, v) in s) {
-                s2[k] = v;
-            }
-            r2.Value.otherValues = s2;
-        }
-    }
+    r2.Value.otherValues = maps.Clone<map<@string, @string>, @string, @string>(r.otherValues);
     return r2;
 }
 
@@ -878,9 +867,9 @@ internal static readonly @string netHttpNilContextˢ = "net/http: nil Context"u8
 //
 // NewRequestWithContext returns a Request suitable for use with
 // [Client.Do] or [Transport.RoundTrip]. To create a request for use with
-// testing a Server Handler, either use the [NewRequest] function in the
-// net/http/httptest package, use [ReadRequest], or manually update the
-// Request fields. For an outgoing client request, the context
+// testing a Server Handler, either use the [net/http/httptest.NewRequest] function,
+// use [ReadRequest], or manually update the Request fields.
+// For an outgoing client request, the context
 // controls the entire lifetime of a request and its response:
 // obtaining a connection, sending the request, and reading the
 // response headers and body. See the Request type's documentation for

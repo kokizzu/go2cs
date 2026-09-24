@@ -24,9 +24,11 @@ partial class runtime_package {
 
 // mTraceState is per-M state for the tracer.
 [GoType] partial struct mTraceState {
-    internal atomic.Uintptr seqlock; // seqlock indicating that this M is writing to a trace buffer.
-    internal array<ж<traceBuf>> buf = new(2); // Per-M traceBuf for writing. Indexed by trace.gen%2.
-    internal ж<m> link;          // Snapshot of alllink or freelink.
+    internal atomic.Uintptr seqlock;                    // seqlock indicating that this M is writing to a trace buffer.
+    internal array<array<ж<traceBuf>>> buf = new(2, () => new(2)); // Per-M traceBuf for writing. Indexed by trace.gen%2.
+    internal ж<m> link;                             // Snapshot of alllink or freelink.
+    internal uint32 reentered;                            // Whether we've reentered tracing from within tracing.
+    internal bool oldthrowsplit;                              // gp.throwsplit upon calling traceLocker.writer. For debugging.
 }
 
 // pTraceState is per-P state for the tracer.
@@ -49,15 +51,15 @@ partial class runtime_package {
 internal static void traceLockInit() {
     // Sharing a lock rank here is fine because they should never be accessed
     // together. If they are, we want to find out immediately.
-    lockInit(ref Δtrace.stringTab[0].@lock, lockRankTraceStrings);
-    lockInit(ref Δtrace.stringTab[0].tab.mem.@lock, lockRankTraceStrings);
-    lockInit(ref Δtrace.stringTab[1].@lock, lockRankTraceStrings);
-    lockInit(ref Δtrace.stringTab[1].tab.mem.@lock, lockRankTraceStrings);
-    lockInit(ref Δtrace.stackTab[0].tab.mem.@lock, lockRankTraceStackTab);
-    lockInit(ref Δtrace.stackTab[1].tab.mem.@lock, lockRankTraceStackTab);
-    lockInit(ref Δtrace.typeTab[0].tab.mem.@lock, lockRankTraceTypeTab);
-    lockInit(ref Δtrace.typeTab[1].tab.mem.@lock, lockRankTraceTypeTab);
-    lockInit(ref Δtrace.@lock, lockRankTrace);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 0).of(traceStringTable.Ꮡlock), lockRankTraceStrings);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 0).of(traceStringTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStrings);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 1).of(traceStringTable.Ꮡlock), lockRankTraceStrings);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, 1).of(traceStringTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStrings);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstackTab, 0).of(traceStackTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStackTab);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstackTab, 1).of(traceStackTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceStackTab);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑtypeTab, 0).of(traceTypeTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceTypeTab);
+    lockInit(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑtypeTab, 1).of(traceTypeTable.Ꮡtab).of(traceMap.Ꮡmem).of(traceRegionAlloc.Ꮡlock), lockRankTraceTypeTab);
+    lockInit(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock), lockRankTrace);
 }
 
 // lockRankMayTraceFlush records the lock ranking effects of a
@@ -88,6 +90,7 @@ internal static traceBlockReason traceBlockDebugCall => 12;
 internal static traceBlockReason traceBlockUntilGCEnds => 13;
 internal static traceBlockReason traceBlockSleep => 14;
 internal static traceBlockReason traceBlockGCWeakToStrongWait => 15;
+internal static traceBlockReason traceBlockSynctest => 16;
 
 internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@string>{
     [traceBlockGeneric] = "unspecified"u8,
@@ -105,7 +108,8 @@ internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@
     [traceBlockDebugCall] = "wait for debug call"u8,
     [traceBlockUntilGCEnds] = "wait until GC ends"u8,
     [traceBlockSleep] = "sleep"u8,
-    [traceBlockGCWeakToStrongWait] = "GC weak to strong wait"u8
+    [traceBlockGCWeakToStrongWait] = "GC weak to strong wait"u8,
+    [traceBlockSynctest] = "synctest"u8
 }.array();
 
 [GoType("num:uint8")] partial struct traceGoStopReason;
@@ -167,24 +171,8 @@ internal static traceLocker traceAcquire() {
     return traceAcquireEnabled();
 }
 
-// traceTryAcquire is like traceAcquire, but may return an invalid traceLocker even
-// if tracing is enabled. For example, it will return !ok if traceAcquire is being
-// called with an active traceAcquire on the M (reentrant locking). This exists for
-// optimistically emitting events in the few contexts where tracing is now allowed.
-//
-// nosplit for alignment with traceTryAcquire, so it can be used in the
-// same contexts.
-//
-//go:nosplit
-internal static traceLocker traceTryAcquire() {
-    if (!traceEnabled()) {
-        return new traceLocker(nil);
-    }
-    return traceTryAcquireEnabled();
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badUseOfTraceSeqlockOrˢ = "bad use of trace.seqlock or tracer is reentrant"u8;
+internal static readonly @string badUseOfTraceSeqlockˢ = "bad use of trace.seqlock"u8;
 
 // traceAcquireEnabled is the traceEnabled path for traceAcquire. It's explicitly
 // broken out to make traceAcquire inlineable to keep the overhead of the tracer
@@ -200,6 +188,13 @@ internal static traceLocker traceAcquireEnabled() {
     lockRankMayTraceFlush();
     // Prevent preemption.
     var mp = acquirem();
+    // Check if we're already tracing. It's safe to be reentrant in general,
+    // because this function (and the invariants of traceLocker.writer) ensure
+    // that it is.
+    if (mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Load() % 2 == 1) {
+        mp.Value.trace.reentered++;
+        return new traceLocker(mp, ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡgen).Load());
+    }
     // Acquire the trace seqlock. This prevents traceAdvance from moving forward
     // until all Ms are observed to be outside of their seqlock critical section.
     //
@@ -208,7 +203,7 @@ internal static traceLocker traceAcquireEnabled() {
     // doing.
     var seq = mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 1) {
-        @throw(badUseOfTraceSeqlockOrˢ);
+        @throw(badUseOfTraceSeqlockˢ);
     }
     // N.B. This load of gen appears redundant with the one in traceEnabled.
     // However, it's very important that the gen we use for writing to the trace
@@ -227,25 +222,6 @@ internal static traceLocker traceAcquireEnabled() {
     return new traceLocker(mp, gen);
 }
 
-// traceTryAcquireEnabled is like traceAcquireEnabled but may return an invalid
-// traceLocker under some conditions. See traceTryAcquire for more details.
-//
-// nosplit for alignment with traceAcquireEnabled, so it can be used in the
-// same contexts.
-//
-//go:nosplit
-internal static traceLocker traceTryAcquireEnabled() {
-    // Any time we acquire a traceLocker, we may flush a trace buffer. But
-    // buffer flushes are rare. Record the lock edge even if it doesn't happen
-    // this time.
-    lockRankMayTraceFlush();
-    // Check if we're already locked. If so, return an invalid traceLocker.
-    if ((~getg()).m.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Load() % 2 == 1) {
-        return new traceLocker(nil);
-    }
-    return traceAcquireEnabled();
-}
-
 // ok returns true if the traceLocker is valid (i.e. tracing is enabled).
 //
 // nosplit because it's called on the syscall path when stack movement is forbidden.
@@ -255,19 +231,20 @@ internal static bool ok(this traceLocker tl) {
     return tl.gen != 0;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badUseOfTraceSeqlockˢ = "bad use of trace.seqlock"u8;
-
 // traceRelease indicates that this M is done writing trace events.
 //
 // nosplit because it's called on the syscall path when stack movement is forbidden.
 //
 //go:nosplit
 internal static void traceRelease(traceLocker tl) {
-    var seq = tl.mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
-    if (debugTraceReentrancy && seq % 2 != 0) {
-        print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
-        @throw(badUseOfTraceSeqlockˢ);
+    if ((~tl.mp).trace.reentered > 0){
+        tl.mp.Value.trace.reentered--;
+    } else {
+        var seq = tl.mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
+        if (debugTraceReentrancy && seq % 2 != 0) {
+            print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
+            @throw(badUseOfTraceSeqlockˢ);
+        }
     }
     releasem(ref (tl.mp).DerefOrNull());
 }
@@ -286,7 +263,7 @@ internal static void traceExitedSyscall() {
 
 // Gomaxprocs emits a ProcsChange event.
 internal static void Gomaxprocs(this traceLocker tl, int32 procs) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvProcsChange, ((traceArg)(uint64)procs), tl.stack(1));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvProcsChange, ((traceArg)(uint64)procs), tl.stack(1));
 }
 
 // ProcStart traces a ProcStart event.
@@ -297,14 +274,14 @@ internal static void ProcStart(this traceLocker tl) {
     // Procs are typically started within the scheduler when there is no user goroutine. If there is a user goroutine,
     // it must be in _Gsyscall because the only time a goroutine is allowed to have its Proc moved around from under it
     // is during a syscall.
-    tl.eventWriter(traceGoSyscall, traceProcIdle).commit(traceEvProcStart, ((traceArg)(uint64)(~pp).id), pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
+    tl.eventWriter(traceGoSyscall, traceProcIdle).@event(traceEvProcStart, ((traceArg)(uint64)(~pp).id), pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
 }
 
 // ProcStop traces a ProcStop event.
 internal static void ProcStop(this traceLocker tl, ж<Δp> Ꮡpp) {
     // The only time a goroutine is allowed to have its Proc moved around
     // from under it is during a syscall.
-    tl.eventWriter(traceGoSyscall, traceProcRunning).commit(traceEvProcStop);
+    tl.eventWriter(traceGoSyscall, traceProcRunning).@event(traceEvProcStop);
 }
 
 // GCActive traces a GCActive event.
@@ -312,7 +289,7 @@ internal static void ProcStop(this traceLocker tl, ж<Δp> Ꮡpp) {
 // Must be emitted by an actively running goroutine on an active P. This restriction can be changed
 // easily and only depends on where it's currently called.
 internal static void GCActive(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCActive, ((traceArg)Δtrace.seqGC));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCActive, ((traceArg)Δtrace.seqGC));
     // N.B. Only one GC can be running at a time, so this is naturally
     // serialized by the caller.
     Δtrace.seqGC++;
@@ -323,7 +300,7 @@ internal static void GCActive(this traceLocker tl) {
 // Must be emitted by an actively running goroutine on an active P. This restriction can be changed
 // easily and only depends on where it's currently called.
 internal static void GCStart(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCBegin, ((traceArg)Δtrace.seqGC), tl.stack(3));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCBegin, ((traceArg)Δtrace.seqGC), tl.stack(3));
     // N.B. Only one GC can be running at a time, so this is naturally
     // serialized by the caller.
     Δtrace.seqGC++;
@@ -334,7 +311,7 @@ internal static void GCStart(this traceLocker tl) {
 // Must be emitted by an actively running goroutine on an active P. This restriction can be changed
 // easily and only depends on where it's currently called.
 internal static void GCDone(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCEnd, ((traceArg)Δtrace.seqGC));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCEnd, ((traceArg)Δtrace.seqGC));
     // N.B. Only one GC can be running at a time, so this is naturally
     // serialized by the caller.
     Δtrace.seqGC++;
@@ -344,14 +321,14 @@ internal static void GCDone(this traceLocker tl) {
 internal static void STWStart(this traceLocker tl, stwReason reason) {
     // Although the current P may be in _Pgcstop here, we model the P as running during the STW. This deviates from the
     // runtime's state tracking, but it's more accurate and doesn't result in any loss of information.
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSTWBegin, tl.@string(reason.String()), tl.stack(2));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvSTWBegin, tl.@string(reason.String()), tl.stack(2));
 }
 
 // STWDone traces a STWEnd event.
 internal static void STWDone(this traceLocker tl) {
     // Although the current P may be in _Pgcstop here, we model the P as running during the STW. This deviates from the
     // runtime's state tracking, but it's more accurate and doesn't result in any loss of information.
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSTWEnd);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvSTWEnd);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -386,7 +363,7 @@ internal static void GCSweepSpan(this traceLocker tl, uintptr bytesSwept) {
     var pp = (~tl.mp).p.ptr();
     if ((~pp).trace.maySweep) {
         if ((~pp).trace.swept == 0) {
-            tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCSweepBegin, tl.stack(1));
+            tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCSweepBegin, tl.stack(1));
             pp.Value.trace.inSweep = true;
         }
         pp.Value.trace.swept += bytesSwept;
@@ -407,7 +384,7 @@ internal static void GCSweepDone(this traceLocker tl) {
         @throw(missingTraceGCSweepStartˢ);
     }
     if ((~pp).trace.inSweep) {
-        tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCSweepEnd, ((traceArg)(uint64)(~pp).trace.swept), ((traceArg)(uint64)(~pp).trace.reclaimed));
+        tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCSweepEnd, ((traceArg)(uint64)(~pp).trace.swept), ((traceArg)(uint64)(~pp).trace.reclaimed));
         pp.Value.trace.inSweep = false;
     }
     pp.Value.trace.maySweep = false;
@@ -415,12 +392,12 @@ internal static void GCSweepDone(this traceLocker tl) {
 
 // GCMarkAssistStart emits a MarkAssistBegin event.
 internal static void GCMarkAssistStart(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCMarkAssistBegin, tl.stack(1));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCMarkAssistBegin, tl.stack(1));
 }
 
 // GCMarkAssistDone emits a MarkAssistEnd event.
 internal static void GCMarkAssistDone(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCMarkAssistEnd);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGCMarkAssistEnd);
 }
 
 // GoCreate emits a GoCreate event.
@@ -432,7 +409,7 @@ internal static void GoCreate(this traceLocker tl, ж<g> Ꮡnewg, uintptr pc, bo
     if (blocked) {
         ev = traceEvGoCreateBlocked;
     }
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(ev, ((traceArg)newg.goid), tl.startPC(pc), tl.stack(2));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(ev, ((traceArg)newg.goid), tl.startPC(pc), tl.stack(2));
 }
 
 // GoStart emits a GoStart event.
@@ -442,18 +419,17 @@ internal static void GoStart(this traceLocker tl) {
     var gp = getg().Value.m.Value.curg;
     var pp = gp.Value.m.Value.p;
     var w = tl.eventWriter(traceGoRunnable, traceProcRunning);
-    w = w.write(traceEvGoStart, ((traceArg)(~gp).goid), gp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
+    w.@event(traceEvGoStart, ((traceArg)(~gp).goid), gp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
     if ((~pp.ptr()).gcMarkWorkerMode != gcMarkWorkerNotWorker) {
-        w = w.write(traceEvGoLabel, Δtrace.markWorkerLabels[(nint)(tl.gen % 2)][(~pp.ptr()).gcMarkWorkerMode]);
+        w.@event(traceEvGoLabel, Δtrace.markWorkerLabels[(nint)(tl.gen % 2)][(~pp.ptr()).gcMarkWorkerMode]);
     }
-    w.end();
 }
 
 // GoEnd emits a GoDestroy event.
 //
 // TODO(mknyszek): Rename this to GoDestroy.
 internal static void GoEnd(this traceLocker tl) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoDestroy);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoDestroy);
 }
 
 // GoSched emits a GoStop event with a GoSched reason.
@@ -468,7 +444,7 @@ internal static void GoPreempt(this traceLocker tl) {
 
 // GoStop emits a GoStop event with the provided reason.
 internal static void GoStop(this traceLocker tl, traceGoStopReason reason) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoStop, Δtrace.goStopReasons[(nint)(tl.gen % 2)][reason], tl.stack(1));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoStop, Δtrace.goStopReasons[(nint)(tl.gen % 2)][reason], tl.stack(1));
 }
 
 // GoPark emits a GoBlock event with the provided reason.
@@ -476,7 +452,7 @@ internal static void GoStop(this traceLocker tl, traceGoStopReason reason) {
 // TODO(mknyszek): Replace traceBlockReason with waitReason. It's silly
 // that we have both, and waitReason is way more descriptive.
 internal static void GoPark(this traceLocker tl, traceBlockReason reason, nint skip) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoBlock, Δtrace.goBlockReasons[(nint)(tl.gen % 2)][reason], tl.stack(skip));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoBlock, Δtrace.goBlockReasons[(nint)(tl.gen % 2)][reason], tl.stack(skip));
 }
 
 // GoUnpark emits a GoUnblock event.
@@ -484,42 +460,36 @@ internal static void GoUnpark(this traceLocker tl, ж<g> Ꮡgp, nint skip) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     // Emit a GoWaiting status if necessary for the unblocked goroutine.
-    var w = tl.eventWriter(traceGoRunning, traceProcRunning);
-    // Careful: don't use the event writer. We never want status or in-progress events
-    // to trigger more in-progress events.
-    w.w = emitUnblockStatus(w.w, Ꮡgp, tl.gen);
-    w.commit(traceEvGoUnblock, ((traceArg)gp.goid), Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), tl.stack(skip));
+    tl.emitUnblockStatus(Ꮡgp, tl.gen);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoUnblock, ((traceArg)gp.goid), Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), tl.stack(skip));
 }
 
-// GoCoroswitch emits a GoSwitch event. If destroy is true, the calling goroutine
+// GoSwitch emits a GoSwitch event. If destroy is true, the calling goroutine
 // is simultaneously being destroyed.
 internal static void GoSwitch(this traceLocker tl, ж<g> Ꮡnextg, bool destroy) {
     ref var nextg = ref Ꮡnextg.DerefOrNull();
 
     // Emit a GoWaiting status if necessary for the unblocked goroutine.
+    tl.emitUnblockStatus(Ꮡnextg, tl.gen);
     var w = tl.eventWriter(traceGoRunning, traceProcRunning);
-    // Careful: don't use the event writer. We never want status or in-progress events
-    // to trigger more in-progress events.
-    w.w = emitUnblockStatus(w.w, Ꮡnextg, tl.gen);
     var ev = traceEvGoSwitch;
     if (destroy) {
         ev = traceEvGoSwitchDestroy;
     }
-    w.commit(ev, ((traceArg)nextg.goid), Ꮡnextg.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
+    w.@event(ev, ((traceArg)nextg.goid), Ꮡnextg.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
 }
 
 // emitUnblockStatus emits a GoStatus GoWaiting event for a goroutine about to be
 // unblocked to the trace writer.
-internal static traceWriter emitUnblockStatus(traceWriter w, ж<g> Ꮡgp, uintptr gen) {
+internal static void emitUnblockStatus(this traceLocker tl, ж<g> Ꮡgp, uintptr gen) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (!Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).statusWasTraced(gen) && Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).acquireStatus(gen)) {
         // TODO(go.dev/issue/65634): Although it would be nice to add a stack trace here of gp,
         // we cannot safely do so. gp is in _Gwaiting and so we don't have ownership of its stack.
         // We can fix this by acquiring the goroutine's scan bit.
-        w = w.writeGoStatus(gp.goid, -1, traceGoWaiting, gp.inMarkAssist, 0);
+        tl.writer().writeGoStatus(gp.goid, -1, traceGoWaiting, gp.inMarkAssist, 0).end();
     }
-    return w;
 }
 
 // GoSysCall emits a GoSyscallBegin event.
@@ -529,7 +499,7 @@ internal static void GoSysCall(this traceLocker tl) {
     // Scribble down the M that the P is currently attached to.
     var pp = (~tl.mp).p.ptr();
     pp.Value.trace.mSyscallID = (int64)(~tl.mp).procid;
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoSyscallBegin, pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), tl.stack(1));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoSyscallBegin, pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), tl.stack(1));
 }
 
 // GoSysExit emits a GoSyscallEnd event, possibly along with a GoSyscallBlocked event
@@ -550,7 +520,7 @@ internal static void GoSysExit(this traceLocker tl, bool lostP) {
     } else {
         (~tl.mp).p.ptr().Value.trace.mSyscallID = -1;
     }
-    tl.eventWriter(traceGoSyscall, procStatus).commit(ev);
+    tl.eventWriter(traceGoSyscall, procStatus).@event(ev);
 }
 
 // ProcSteal indicates that our current M stole a P from another M.
@@ -564,6 +534,16 @@ internal static void ProcSteal(this traceLocker tl, ж<Δp> Ꮡpp, bool inSyscal
     // Grab the M ID we stole from.
     var mStolenFrom = pp.trace.mSyscallID;
     pp.trace.mSyscallID = -1;
+    // Emit the status of the P we're stealing. We may be just about to do this when creating the event
+    // writer but it's not guaranteed, even if inSyscall is true. Although it might seem like from a
+    // syscall context we're always stealing a P for ourselves, we may have not wired it up yet (so
+    // it wouldn't be visible to eventWriter) or we may not even intend to wire it up to ourselves
+    // at all (e.g. entersyscall_gcwait).
+    if (!Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).statusWasTraced(tl.gen) && Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).acquireStatus(tl.gen)) {
+        // Careful: don't use the event writer. We never want status or in-progress events
+        // to trigger more in-progress events.
+        tl.writer().writeProcStatus((uint64)pp.id, traceProcSyscallAbandoned, pp.trace.inSweep).end();
+    }
     // The status of the proc and goroutine, if we need to emit one here, is not evident from the
     // context of just emitting this event alone. There are two cases. Either we're trying to steal
     // the P just to get its attention (e.g. STW or sysmon retake) or we're trying to steal a P for
@@ -576,23 +556,12 @@ internal static void ProcSteal(this traceLocker tl, ж<Δp> Ꮡpp, bool inSyscal
         goStatus = traceGoSyscall;
         procStatus = traceProcSyscallAbandoned;
     }
-    var w = tl.eventWriter(goStatus, procStatus);
-    // Emit the status of the P we're stealing. We may have *just* done this when creating the event
-    // writer but it's not guaranteed, even if inSyscall is true. Although it might seem like from a
-    // syscall context we're always stealing a P for ourselves, we may have not wired it up yet (so
-    // it wouldn't be visible to eventWriter) or we may not even intend to wire it up to ourselves
-    // at all (e.g. entersyscall_gcwait).
-    if (!Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).statusWasTraced(tl.gen) && Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).acquireStatus(tl.gen)) {
-        // Careful: don't use the event writer. We never want status or in-progress events
-        // to trigger more in-progress events.
-        w.w = w.w.writeProcStatus((uint64)pp.id, traceProcSyscallAbandoned, pp.trace.inSweep);
-    }
-    w.commit(traceEvProcSteal, ((traceArg)(uint64)pp.id), Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), ((traceArg)(uint64)mStolenFrom));
+    tl.eventWriter(goStatus, procStatus).@event(traceEvProcSteal, ((traceArg)(uint64)pp.id), Ꮡpp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen), ((traceArg)(uint64)mStolenFrom));
 }
 
 // HeapAlloc emits a HeapAlloc event.
 internal static void HeapAlloc(this traceLocker tl, uint64 live) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvHeapAlloc, ((traceArg)live));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvHeapAlloc, ((traceArg)live));
 }
 
 // HeapGoal reads the current heap goal and emits a HeapGoal event.
@@ -602,7 +571,7 @@ internal static void HeapGoal(this traceLocker tl) {
         // Heap-based triggering is disabled.
         heapGoal = 0;
     }
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvHeapGoal, ((traceArg)heapGoal));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvHeapGoal, ((traceArg)heapGoal));
 }
 
 // GoCreateSyscall indicates that a goroutine has transitioned from dead to GoSyscall.
@@ -617,7 +586,7 @@ internal static void GoCreateSyscall(this traceLocker tl, ж<g> Ꮡgp) {
     // N.B. We should never trace a status for this goroutine (which we're currently running on),
     // since we want this to appear like goroutine creation.
     Ꮡgp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).setStatusTraced(tl.gen);
-    tl.eventWriter(traceGoBad, traceProcBad).commit(traceEvGoCreateSyscall, ((traceArg)gp.goid));
+    tl.eventWriter(traceGoBad, traceProcBad).@event(traceEvGoCreateSyscall, ((traceArg)gp.goid));
 }
 
 // GoDestroySyscall indicates that a goroutine has transitioned from GoSyscall to dead.
@@ -629,7 +598,7 @@ internal static void GoCreateSyscall(this traceLocker tl, ж<g> Ꮡgp) {
 internal static void GoDestroySyscall(this traceLocker tl) {
     // N.B. If we trace a status here, we must never have a P, and we must be on a goroutine
     // that is in the syscall state.
-    tl.eventWriter(traceGoSyscall, traceProcBad).commit(traceEvGoDestroySyscall);
+    tl.eventWriter(traceGoSyscall, traceProcBad).@event(traceEvGoDestroySyscall);
 }
 
 // To access runtime functions from runtime/trace.
@@ -644,7 +613,7 @@ internal static void trace_userTaskCreate(uint64 id, uint64 parentID, @string ta
         // Need to do this check because the caller won't have it.
         return;
     }
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvUserTaskBegin, ((traceArg)id), ((traceArg)parentID), tl.@string(taskType), tl.stack(3));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvUserTaskBegin, ((traceArg)id), ((traceArg)parentID), tl.@string(taskType), tl.stack(3));
     traceRelease(tl);
 }
 
@@ -657,11 +626,11 @@ internal static void trace_userTaskEnd(uint64 id) {
         // Need to do this check because the caller won't have it.
         return;
     }
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvUserTaskEnd, ((traceArg)id), tl.stack(2));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvUserTaskEnd, ((traceArg)id), tl.stack(2));
     traceRelease(tl);
 }
 
-// trace_userTaskEnd emits a UserRegionBegin or UserRegionEnd event,
+// trace_userRegion emits a UserRegionBegin or UserRegionEnd event,
 // depending on mode (0 == Begin, 1 == End).
 //
 // TODO(mknyszek): Just make this two functions.
@@ -687,11 +656,11 @@ internal static void trace_userRegion(uint64 id, uint64 mode, @string name) {
         return;
     }}
 
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(ev, ((traceArg)id), tl.@string(name), tl.stack(3));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(ev, ((traceArg)id), tl.@string(name), tl.stack(3));
     traceRelease(tl);
 }
 
-// trace_userTaskEnd emits a UserRegionBegin or UserRegionEnd event.
+// trace_userLog emits a UserRegionBegin or UserRegionEnd event.
 //
 //go:linkname trace_userLog runtime/trace.userLog
 internal static void trace_userLog(uint64 id, @string category, @string message) {
@@ -700,7 +669,7 @@ internal static void trace_userLog(uint64 id, @string category, @string message)
         // Need to do this check because the caller won't have it.
         return;
     }
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvUserLog, ((traceArg)id), tl.@string(category), tl.uniqueString(message), tl.stack(3));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvUserLog, ((traceArg)id), tl.@string(category), tl.uniqueString(message), tl.stack(3));
     traceRelease(tl);
 }
 
@@ -723,16 +692,18 @@ internal static void traceThreadDestroy(ж<m> Ꮡmp) {
     // as well.
     var seq = Ꮡmp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 1) {
-        @throw(badUseOfTraceSeqlockOrˢ);
+        @throw(badUseOfTraceSeqlockˢ);
     }
     systemstack(() => {
         @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
         foreach (var (i, _) in Ꮡmp.Value.trace.buf) {
-            if (Ꮡmp.Value.trace.buf[i] != nil) {
-                // N.B. traceBufFlush accepts a generation, but it
-                // really just cares about gen%2.
-                traceBufFlush(Ꮡmp.Value.trace.buf[i], (uintptr)i);
-                Ꮡmp.Value.trace.buf[i] = default!;
+            foreach (var (exp, buf) in Ꮡmp.Value.trace.buf[i].ΔRangeSnapshot()) {
+                if (buf != nil) {
+                    // N.B. traceBufFlush accepts a generation, but it
+                    // really just cares about gen%2.
+                    traceBufFlush(buf, (uintptr)i);
+                    Ꮡmp.Value.trace.buf[i][exp] = default!;
+                }
             }
         }
         unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));

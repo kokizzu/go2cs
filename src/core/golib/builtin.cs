@@ -2276,9 +2276,14 @@ public static partial class builtin
     /// Formats arguments in an implementation-specific way and writes the result to standard-error along with a new line.
     /// </summary>
     /// <param name="args">Arguments to display.</param>
+    /// <remarks>
+    /// The terminator is a bare <c>\n</c> on every OS, as Go's runtime printer writes it — never
+    /// <c>WriteLine</c>, whose CRLF on Windows breaks a Go test matching <c>"...\n"</c> in a child's
+    /// output (crypto/internal/fips140test's TestCASTPasses failed 24 verdicts on exactly that).
+    /// </remarks>
     public static void println(params object[] args)
     {
-        Console.Error.WriteLine(string.Join(" ", args.Select(printArg)));
+        Console.Error.Write(string.Join(" ", args.Select(printArg)) + "\n");
     }
 
     // Formats a single print/println argument the way gc's runtime printer does where the BCL
@@ -2301,7 +2306,8 @@ public static partial class builtin
     #if DEBUG
         throw new InvalidOperationException($"{message} [{code}]");
     #else
-        Console.Error.WriteLine(message);
+        // A bare "\n", as Go's runtime writes "fatal error: ..." on every OS (see println).
+        Console.Error.Write(message + "\n");
         Environment.Exit((int)code);
     #endif
     }
@@ -2380,12 +2386,27 @@ public static partial class builtin
 
         // The CANONICAL NIL FUNC (GoReflect.CanonicalNilFunc — a nil func packed into interface
         // space) asserts to exactly its own delegate type, yielding Go's nil func: success with
-        // the null delegate. Every other target type is Go's failed assertion. Placed BELOW the
-        // `case T` arm so an assert to `any`/object keeps the carrier in interface space.
+        // the null delegate. Placed BELOW the `case T` arm so an assert to `any`/object keeps the
+        // carrier in interface space.
+        //
+        // An INTERFACE target is answered by the carried type's method set: Go's (type=Fn, value=nil)
+        // satisfies every interface a NAMED func type's methods do, and a method that never reads its
+        // receiver runs on it — fmt's `p.arg.(Stringer)` on a nil `Fn` with `String() string` prints
+        // "String(fn)" (fmt's TestSprintf). An unnamed func type has no methods and still misses.
+        // Every other target type is Go's failed assertion.
         if (target is NilFuncValue nilFunc)
         {
+            if (nilFunc.Type == typeOfT)
+            {
+                value = default!;
+                return true;
+            }
+
+            if (AssertFacts<T>.IsInterface && TryAdaptNilFunc<T>(nilFunc.Type, out value))
+                return true;
+
             value = default!;
-            return nilFunc.Type == typeOfT;
+            return false;
         }
 
         // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
@@ -2540,6 +2561,32 @@ public static partial class builtin
                     return true;
                 }
             }
+        }
+
+        value = default!;
+        return false;
+    }
+
+    // Resolves a typed nil func (NilFuncValue) against INTERFACE T by the delegate type it carries --
+    // with the value null, the type is all that is left to resolve by -- through the two tiers a
+    // non-nil func value takes above: the nominal adapter registered for the pair, then the
+    // structural shell over the type's Go method set. Both wrap the NULL delegate, which is Go's
+    // receiver for the call. Not projected into Itab<T>: that cache resolves a live subject by its own
+    // type, and each tier already memoizes its per-pair decision.
+    private static bool TryAdaptNilFunc<T>(Type delegateType, out T value)
+    {
+        if (AdapterRegistry.TryGetAdapterFactory(delegateType, typeof(T), out Func<object, object>? nominal) &&
+            nominal(null!) is T nominalValue)
+        {
+            value = nominalValue;
+            return true;
+        }
+
+        if (Cache<T>.Implements(delegateType) &&
+            AdapterBinder.TryCreate(null, delegateType, typeof(T), out object? shell) && shell is T shellValue)
+        {
+            value = shellValue;
+            return true;
         }
 
         value = default!;
@@ -2813,6 +2860,101 @@ public static partial class builtin
             result[i] = conv(source[i]);
 
         return new slice<TWide>(result);
+    }
+
+    /// <summary>
+    /// Projects a factory delegate through an element conversion, returning a delegate of the widened type.
+    /// </summary>
+    /// <typeparam name="T">Source result type.</typeparam>
+    /// <typeparam name="TWide">Widened result type, e.g., an interface type.</typeparam>
+    /// <param name="source">Source factory.</param>
+    /// <param name="conv">Result widening conversion.</param>
+    /// <returns>A delegate that calls <paramref name="source"/> and widens its result, or <c>null</c> for a nil source.</returns>
+    /// <remarks>
+    /// The DELEGATE-RESULT twin of the slice overload above, for a Go generic call whose
+    /// interface-constrained type parameter is reached as a func RESULT and instantiated with a pointer
+    /// type — <c>hmac.New(sha256.New, key)</c> instantiating <c>New[H fips140.Hash](h func() H, …)</c>
+    /// with <c>H=*sha256.Digest</c>: the <c>ж&lt;Digest&gt;</c> box does not implement the constraint
+    /// (its generated pointer adapter does), so each call of the factory is widened through the adapter
+    /// and the type argument becomes the interface itself. One adapter per invocation; the object is
+    /// the same shared box, so Go pointer identity is preserved.
+    /// </remarks>
+    public static Func<TWide> widen<T, TWide>(Func<T> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil: Go's `h == nil` in the callee must answer as it would have.
+        if (source is null)
+            return default!;
+
+        return () => conv(source());
+    }
+
+    /// <summary>
+    /// Widens a Go CONSTRUCTOR's delegate — <c>func(A) (T, error)</c> — so its first result carries the
+    /// projected interface while the error passes through untouched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The constructor-idiom twin of the <c>Func&lt;T&gt;</c> overload above. crypto/mlkem's
+    /// <c>testRoundTrip[E encapsulationKey, D decapsulationKey[E]]</c> reaches <c>E</c> through
+    /// <c>newEncapsulationKey func([]byte) (E, error)</c>, so the delegate position is
+    /// <c>Func&lt;slice&lt;byte&gt;, (E, error)&gt;</c> and the niladic overload cannot express it: the
+    /// four call sites rendered the box as the type argument and failed CS0311 ×4.
+    /// </para>
+    /// <para>
+    /// ⚠ The error is NOT converted and NOT inspected. A Go constructor returns its error beside the
+    /// value and the callee reads both; widening the value must leave the error exactly as the source
+    /// produced it, including a non-nil error beside a zero value.
+    /// </para>
+    /// <para>
+    /// ONE shape, for one measured need. A second arity or a third result waits for a row that reaches
+    /// it — guessing the shape here would be machinery for a case no corpus row has.
+    /// </para>
+    /// </remarks>
+    /// <summary>
+    /// Widens a NILADIC Go constructor's delegate — <c>func() (T, error)</c> — so its first result
+    /// carries the projected interface while the error passes through untouched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The second half of crypto/mlkem's shape, and the row needs BOTH: <c>testRoundTrip</c> reaches
+    /// <c>D</c> through <c>generateKey func() (D, error)</c> (niladic) and <c>E</c> through
+    /// <c>newEncapsulationKey func([]byte) (E, error)</c> (one argument). Emitting only the
+    /// one-argument form left the niladic positions as method groups the compiler could not convert —
+    /// CS0407 ×8, <c>'(ж&lt;DecapsulationKey1024&gt;, error) GenerateKey1024()' has the wrong return
+    /// type</c>.
+    /// </para>
+    /// <para>
+    /// ⚠ Distinguished from the <c>Func&lt;T&gt;</c> overload by its PARAMETER type, not its arity, so
+    /// the emission passes the type arguments explicitly and resolution is unambiguous:
+    /// <c>Func&lt;T&gt;</c> with <c>T=(X, error)</c> and <c>Func&lt;(T, error)&gt;</c> with
+    /// <c>T=X</c> are the same closed type, and only the explicit list separates them.
+    /// </para>
+    /// </remarks>
+    public static Func<(TWide, error)> widenResult<T, TWide>(Func<(T, error)> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil, identically to the other overloads.
+        if (source is null)
+            return default!;
+
+        return () =>
+        {
+            (T value, error err) = source();
+            return (conv(value), err);
+        };
+    }
+
+    public static Func<A, (TWide, error)> widen<A, T, TWide>(Func<A, (T, error)> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil, identically to the niladic overload: Go's `h == nil` in the
+        // callee must answer as it would have.
+        if (source is null)
+            return default!;
+
+        return a =>
+        {
+            (T value, error err) = source(a);
+            return (conv(value), err);
+        };
     }
 
 

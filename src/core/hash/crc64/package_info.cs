@@ -51,7 +51,7 @@ using static go.hash.crc64_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/crc64/crc64.go", "crc64.cs", "ADRMgqaCgqqigpSkpMiCgoKCgoKUppSmgoKCgoKCgqYACBzQpICkgKSA3oKCgoKC9oKClIKUgpSCpoKClIKCgqTalKaCggAAELiClKiSpoKCpoCkgoKqoKaygoKCgqY=")]
+[assembly: go.GoPositionMap("hash/crc64/crc64.go", "crc64.cs", "ACJOgoKqooKUpKTIgoKCgoKClKaUpoKCgoKCgoKmAAgc0KSApICkgN6CgoKCpoL2goKUgpSClIKmgoKUgoKCpNqUpoKCAAAQuIKUqJKmgoKmgKSCgqqgprKCgoKCpg==")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;
@@ -69,4 +69,16 @@ public static partial class crc64_package
     internal partial struct digest {}
     public partial struct Table {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

@@ -12,6 +12,7 @@ using Δruntime = runtime_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using hash = hash_package;
 using static go.io_internal_test_package;
@@ -99,7 +100,7 @@ public static void TestMultiReaderAsWriterTo(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestMultiWriter_sink {
+[GoType("dyn")] internal partial struct TestMultiWriter_sink {
     public io_package.Writer Writer;
     public fmt_package.Stringer Stringer;
 }
@@ -114,7 +115,7 @@ public static void TestMultiWriter_String(ж<testing.T> Ꮡt) {
     testMultiWriter(Ꮡt, new bytes_BufferжtestMultiWriter_sink(@new<bytes.Buffer>()));
 }
 
-[GoType("dyn")] partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {
+[GoType("dyn")] internal partial struct TestMultiWriter_WriteStringSingleAlloc_simpleWriter {
 // hide bytes.Buffer's WriteString
     public io_package.Writer Writer;
 }
@@ -163,7 +164,7 @@ public static void TestMultiWriter_StringCheckCall(ж<testing.T> Ꮡt) {
 internal static readonly @string myInputTextˢ = "My input text."u8;
 internal static readonly object incorrectSha1Valueˢ = (@string)"incorrect sha1 value"u8;
 
-[GoType("dyn")] partial interface testMultiWriter_sink :
+[GoType("dyn")] internal partial interface testMultiWriter_sink :
     Writer,
     fmt.Stringer
 {
@@ -192,12 +193,12 @@ internal static void testMultiWriter(ж<testing.T> Ꮡt, testMultiWriter_sink si
 
 internal delegate (nint, error) writerFunc(slice<byte> p);
 
-internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
     return f(p);
 }
 
 // Test that MultiWriter properly flattens chained multiWriters.
-public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     var pc = new slice<uintptr>(1000); // 1000 should fit the full stack
@@ -206,7 +207,7 @@ public static void TestMultiWriterSingleChainFlatten(ж<testing.T> Ꮡt) {
     nint writeDepth = default!; // will contain the depth from which writerFunc.Writer was called
 
     var pcʗ1 = pc;
-    Δio.Writer w = MultiWriter(new io_test_package.writerFuncᴠWriter(new writerFunc((slice<byte> p) => {
+    Δio.Writer w = MultiWriter(new io_test_package.writerFuncᴠWriter(new writerFunc([MethodImpl(MethodImplOptions.NoInlining)] (slice<byte> p) => {
         nint nΔ1 = Δruntime.Callers(1, pcʗ1);
         writeDepth += callDepth(pcʗ1[..(int)(nΔ1)]);
         return (0, default!);
@@ -269,7 +270,7 @@ public static void TestMultiWriterCopy(ж<testing.T> Ꮡt) {
 
 internal delegate (nint, error) readerFunc(slice<byte> p);
 
-internal static (nint, error) Read(this readerFunc f, slice<byte> p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint, error) Read(this readerFunc f, slice<byte> p) {
     return f(p);
 }
 
@@ -290,7 +291,7 @@ internal static nint /*depth*/ callDepth(slice<uintptr> callers) {
 internal static readonly @string irrelevantˢ = "irrelevant"u8;
 
 // Test that MultiReader properly flattens chained multiReaders when Read is called
-public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     var pc = new slice<uintptr>(1000); // 1000 should fit the full stack
@@ -299,7 +300,7 @@ public static void TestMultiReaderFlatten(ж<testing.T> Ꮡt) {
     nint readDepth = default!; // will contain the depth from which fakeReader.Read was called
 
     var pcʗ1 = pc;
-    Δio.Reader r = MultiReader(new io_test_package.readerFuncᴠReader(new readerFunc((slice<byte> p) => {
+    Δio.Reader r = MultiReader(new io_test_package.readerFuncᴠReader(new readerFunc([MethodImpl(MethodImplOptions.NoInlining)] (slice<byte> p) => {
         nint nΔ1 = Δruntime.Callers(1, pcʗ1);
         readDepth = callDepth(pcʗ1[..(int)(nΔ1)]);
         return (0, errors.New(irrelevantˢ));

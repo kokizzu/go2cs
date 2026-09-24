@@ -51,9 +51,9 @@ using static global::go.debug.dwarf_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/dwarf/entry_test.go", "entry_test.cs", "ABUe6oKCgoKUgpiigoCCpIIAEBaCAAgQhMqEyoS41oIACBLWggAIEqaCgoKCgoKClIKUloKCgpSCABAKggAiVoKChIKCgoKWgpaAgqSCgoKUgpSWggALCtgAPGqCgoKWgoKUggAJCriCgpSCgoKCgoKCgpSClIKUgoKUuIKCgtyiAGDCAYKCAAYQgoKCgpSC3ILiqIKClII=")]
-[assembly: go.GoPositionMap("debug/dwarf/line_test.go", "line_test.cs", "ABMo3gARJoSmzIKClgARJrr2zIKSgoKUgoKWABEmhNbMAA8ihKaUggAOHoQADgaCloKClIKCmJKCgoKEgoKClJSogoCCpLiCgoKCgrakuoCCpIKCgIKkloKCgIKkAA0MtJKCgoKCpJaCgsyCloKCpJaCgoKCgpSmgpSogoKCgoKClLqCgoKCgriCgpSCgpSClJTWgoKCgpS4goKCgpaCuIKUgoKUgoKCgqamgoIAJlSCgoKCyojyppSCgoKUgoKClIKClII=")]
-[assembly: go.GoPositionMap("debug/dwarf/type_test.go", "type_test.cs", "ADBegoKCloKClKaCgoKWgoKUpoKCgpaCgpTmguaC1oLmgoKCgoKClIKUgoKClIKCgIKUpoCCgpSCgsiCqIKC+u6CgoKCgoKUgpSUyoKCgoIADRbKgoKCgoKClIKUgoKCgoKClIKCgpSCgpSEpoKCgoKmgoIADh6CgqaCgtaCgqaCgtaCgqaigoKCgpSCloKCgpaEgoKClIKUlpSClIKCgriCAAskAAkCgg==")]
+[assembly: go.GoPositionMap("debug/dwarf/entry_test.go", "entry_test.cs", "ABUe6oKCgoKUgpiigoCCpIIAERaCAAgQhMqEyoS41oIACBLWggAIEqaCgoKCgoKClIKUloKCgpSCABEKggAiVoKChIKCgoKWgpaAgqSCgoKUgpSWggALCtgAPGqCgoKWgoKUggAJCriCgpSCgoKCgoKCgpSClIKUgoKUuIKCgtyiAGDCAYKCAAYQgoKCgpSC3ILiqIKClII=", "293-321:1")]
+[assembly: go.GoPositionMap("debug/dwarf/line_test.go", "line_test.cs", "ABMo3gARJoSmzIKClgARJrr2zIKSgoKUgoKWABEmhNbMAA8ihKaUggAOHoQADgaCloKClIKCmJKCgoKEgoKClJSogoCCpLiCgoKCgrakuoCCpIKCgIKkloKCgIKkAA0MtJKCgoKCpJaCgsyCloKCpJaCgoKCgpSmgpSogoKCgoKClLqCgoKCgriCgpSCgpSClJTWgoKCgpS4goKCgpaCuIKUgoKUgoKCgqamgoIAJlSCgoKCyojyppSCgoKUgoKClIKClII=", "95-100:1")]
+[assembly: go.GoPositionMap("debug/dwarf/type_test.go", "type_test.cs", "ADBegoKCloKClKaCgoKWgoKUpoKCgpaCgpTmguaC1oLmgoKCgoKClIKUgoKClIKCgIKUpoCCgpSCgsiCqIKC+u6CgoKCgoKUgpSUyoKCgoIADRbKgoKCgoKClIKUgoKCgoKClIKCgpSCgpSEpoKCgoKmgoIADh6CgqaCgtaCgqaCgtaCgqaigoKCgpSCloKCgpaEgoKClIKUlpSClIKCgriCAAskAAkCgg==", "290-299:1")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;
@@ -68,11 +68,40 @@ public static partial class dwarf_test_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct Test64Bit_tests {}
+    internal partial struct TestReaderRanges_subprograms {}
+    internal partial struct TestReaderRanges_subprogramsᴛ1 {}
+    internal partial struct TestReaderRanges_tests {}
     internal partial struct joinTest {}
     internal partial struct wantRange {}
-    public partial struct Test64Bit_tests {}
-    public partial struct TestReaderRanges_subprograms {}
-    public partial struct TestReaderRanges_subprogramsᴛ1 {}
-    public partial struct TestReaderRanges_tests {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() => builtin.initPackage(typeof(go.debug.dwarf_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸelf() => builtin.initPackage(typeof(go.debug.elf_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸmacho() => builtin.initPackage(typeof(go.debug.macho_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸpe() => builtin.initPackage(typeof(go.debug.pe_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.debug.dwarf_package));
+    }
 }

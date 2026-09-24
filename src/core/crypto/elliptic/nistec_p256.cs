@@ -4,9 +4,9 @@
 //go:build amd64 || arm64
 namespace go.crypto;
 
-using nistec = go.crypto.@internal.nistec_package;
+using nistec = go.crypto.@internal.fips140.nistec_package;
 using big = math.big_package;
-using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 using math;
 
 partial class elliptic_package {

@@ -4,8 +4,12 @@
 namespace go.crypto;
 
 using bytes = bytes_package;
+using cipher = go.crypto.cipher_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using fmt = fmt_package;
 using testing = testing_package;
+using go.crypto;
+using go.crypto.@internal;
 using static go.crypto.rc4_package;
 
 partial class rc4_internal_test_package {
@@ -130,6 +134,13 @@ public static void TestBlock(ж<testing.T> Ꮡt) {
     if (!bytes.Equal(data1, data2)) {
         Ꮡt.Fatalf("bad block"u8);
     }
+}
+
+public static void TestRC4Stream(ж<testing.T> Ꮡt) {
+    cryptotest.TestStream(Ꮡt, () => {
+        var (c, _) = NewCipher(golden[0].key);
+        return new rc4_internal_test_package.rc4_CipherжStream(c);
+    });
 }
 
 internal static void benchmark(ж<testing.B> Ꮡb, int64 size) {

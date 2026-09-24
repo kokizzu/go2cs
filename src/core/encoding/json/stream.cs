@@ -11,18 +11,6 @@ using io = io_package;
 
 partial class json_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 // A Decoder reads and decodes JSON values from an input stream.
 [GoType] partial struct Decoder {
     internal io.Reader r;
@@ -44,8 +32,8 @@ public static ж<Decoder> NewDecoder(io.Reader r) {
     return Ꮡ(new Decoder(r: r));
 }
 
-// UseNumber causes the Decoder to unmarshal a number into an interface{} as a
-// [Number] instead of as a float64.
+// UseNumber causes the Decoder to unmarshal a number into an
+// interface value as a [Number] instead of as a float64.
 [GoRecv] public static void UseNumber(this ref Decoder dec) {
     dec.d.useNumber = true;
 }

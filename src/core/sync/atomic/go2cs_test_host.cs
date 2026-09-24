@@ -11,6 +11,8 @@ internal static class Go2CsTestHost
         {
             "atomic_test.go",
             "doc.go",
+            "doc_32.go",
+            "doc_64.go",
             "example_test.go",
             "type.go",
             "value.go",

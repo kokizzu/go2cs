@@ -12,6 +12,8 @@ using static go.image_package;
 using static go.image_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b536574524742413634287820696e742c207920696e742c206320696d6167652f636f6c6f722e524742413634297d", "TestRGBA64Image_type")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20696d6167652066756e63282920696d6167652e696d6167657d", "testImagesᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -37,8 +39,8 @@ using static go.image_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("image/geom_test.go", "geom_test.cs", "AAsYtIKClIKCgoK4lgAOIIKCgoKC3oKCgoCCpICCpICCtoKCgoKCgpSUggAHEoKCgoCCpICCpJSUgoKCgoKCgg==")]
-[assembly: go.GoPositionMap("image/image_test.go", "image_test.cs", "ABYogoKCABUugoKCgoKUgoKUgoKClIKClIKCgpSCgpSCgpSCgoKmgoKCAAgItLKCgqaC1piioqKioqKioqKioqamgoK4gpSCloKCggAGEIKCgoK4gtyCnIKCgoKCppyCgoKCggAUCpSCgqiCAAEgggABILaCgoK2toKC/qK4goKClIKChKjKgrKSgoKCgtyCkrKigoKCgtyigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChII=")]
+[assembly: go.GoPositionMap("image/geom_test.go", "geom_test.cs", "AAsYtIKClIKCgoK4lgAOIIKCgoKC3oKCgoCCpICCpICCtoKCgoKCgpSUggAHEoKCgoCCpICCpJSUgoKCgoKCgg==", "14-27:1")]
+[assembly: go.GoPositionMap("image/image_test.go", "image_test.cs", "ABYogoKCABUugoKCgoKUgoKUgoKClIKClIKCgpSCgpSCgpSCgoKmgoKCAAgItLKCgqaC1piioqKioqKioqKioqamgoK4gpSCloKCggAGEIKCgoK4gtyCnIKCgoKCppyCgoKCggAUCpSCgqiCAAEgggABILaCgoK2toKC/qK4goKClIKChKjKgrKSgoKCgtyCkrKigoKCgtyigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChIK4ooKEgriigoKEgriigoSCuKKCgoSCuKKChIK4ooKChII=", "94-102:1;95-99:1.1;108-108:2;109-109:3;110-110:4;111-111:5;112-112:6;113-113:7;114-114:8;115-115:9;116-116:10;117-117:11;118-118:12;119-119:13;197-201:1;283-290:1;297-304:1")]
 [assembly: go.GoPositionMap("image/ycbcr_test.go", "ycbcr_test.cs", "AAwYggAVLAAHENyCgoKmgsqUgpaClLqCgoKCgoK6goKCgoKWgoKCgoKUAAkUgoKCyoKCgqaCgoKC")]
 // </GoSourcePositionMaps>
 
@@ -55,4 +57,26 @@ public static partial class image_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolorꓸpalette() => builtin.initPackage(typeof(global::go.image.color.palette_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸgif() => builtin.initPackage(typeof(go.image.gif_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸjpeg() => builtin.initPackage(typeof(go.image.jpeg_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸpng() => builtin.initPackage(typeof(go.image.png_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

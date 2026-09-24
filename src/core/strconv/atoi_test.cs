@@ -13,18 +13,6 @@ using strconv = strconv_package;
 
 partial class strconv_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 [GoType] partial struct parseUint64Test {
     internal @string @in;
     internal uint64 @out;
@@ -708,10 +696,10 @@ internal static void benchmarkAtoi(ж<testing.B> Ꮡb, nint neg) {
         new("31bit"u8, 2147483648L - 1)
     }.slice();
     if (IntSize == 64) {
-        cases = append(cases, new benchCase[]{
+        cases = appendꓸꓸꓸ(cases, new benchCase[]{
             new("56bit"u8, 72057594037927935L),
             new("63bit"u8, 9223372036854775807L)
-        }.slice().ꓸꓸꓸ);
+        }.slice());
     }
     foreach (var (_, vᴛ1) in cases) {
         ref var cs = ref heap(new benchCase(), out var Ꮡcs);

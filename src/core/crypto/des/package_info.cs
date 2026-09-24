@@ -53,8 +53,8 @@ using static go.crypto.des_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/des/block.go", "block.cs", "ABEYgoKChIKEgoKmgqiCloKqooSCioKKgoqCigAJFLKCgpSmgoKCgoKogoKWhAAFELSCgpaCggAKGoKCAAkYgoIAChqCAAkWqsaChIKChIKChIKChIKCgqrCgoKUgoKClKiSloKWgpaUlL6y")]
-[assembly: go.GoPositionMap("crypto/des/cipher.go", "cipher.cs", "ACAmggAHEpKCloKCpoCkgoKUgpSClKaCgpSClIKUAAcSkoKWgoKCgqaApIKClIKUgpaCgoSChIKUgpSCloKEgqaCgpSClIKWgoKEgoSClIKUgpaChII=")]
+[assembly: go.GoPositionMap("crypto/des/block.go", "block.cs", "AAsYgoKChIKEgoKmgqiCloKqooSCioKKgoqCigAJFLKCgpSmgoKCgoKogoKWhAAFELSCgpaCggAKGoKCAAkYgoIAChqCAAkWqsaChIKChIKChIKChIKCgqrCgoKUgoKClKiSloKWgpaUlL6y")]
+[assembly: go.GoPositionMap("crypto/des/cipher.go", "cipher.cs", "ABcqggAKEpKCloKWgoKmgKSCgpSClIKUpoKClIKUgpQAChKSgpaCloKCgoKmgKSCgpSClIKWgoKEgoSClIKUgpaChIKmgoKUgpSCloKChIKEgpSClIKWgoSC")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -73,4 +73,18 @@ public static partial class des_package
     [GoValueClone("cipher1", "cipher2", "cipher3")] internal partial struct tripleDESCipher {}
     public partial struct KeySizeError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

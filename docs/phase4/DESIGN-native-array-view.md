@@ -85,6 +85,42 @@ exists to render exactly this). The blocker is that `array<T>` has nowhere to pu
 | `internal/syscall/windows/registry/windows` | 2 |
 | `vendor/…/route/darwin`, `vendor/…/sha3` | 1 each |
 
+**AMENDED 2026-09-16 (C1, q100) — the 61 above is a 2026-08-23 number and the hop added nine sites.
+Re-taken at `claude/version-go1.24.13` `46307b4704`, and the predicate is stated because the obvious
+one is wrong:**
+
+```
+  PREDICATE   the text `(ж<array<` … `>)(uintptr)` where the `>` closing the OUTER `ж<` is found by
+              DEPTH MATCHING, never a character class — the element type can itself be
+              `ж<array<uint16>>` (syscall/windows/zsyscall_windows.cs:1694), which a `[^>]*`
+              predicate cuts in half
+  READING     79 textual sites in 43 files · 9 inside a `//` comment · 70 CODE SITES
+```
+
+| package dir | code sites |   | package dir | code sites |
+|:--|--:|---|:--|--:|
+| `runtime` | 16 | | `runtime/linux` | 16 |
+| `runtime/darwin` | 9 | | `runtime/windows` | 7 |
+| `syscall/linux` | 5 | | `internal/runtime/maps` | 4 |
+| `syscall/darwin` | 4 | | `crypto/internal/fips140/nistec` | 2 |
+| `net/darwin` | 2 | | `crypto/internal/fips140/sha3` | 1 |
+| `golib` | 1 | | `internal/reflectlite` | 1 |
+| `reflect` | 1 | | `syscall/windows` | 1 |
+
+**And the axis §4's withdrawal turns on — what feeds the `uintptr`:**
+
+```
+   25  A   PINNED-MANAGED — `@unsafe.Pointer.FromPinnedBox(…)`, e.g. syscall/darwin/syscall_unix.cs:335
+           `(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet4.ᏑPort)))`
+           ⚠ this IS lane R's counter-example class, and it is 36% of the population
+   15  B   a value cast to `@unsafe.Pointer` (`(@unsafe.Pointer)gp.sigpc`, `(@unsafe.Pointer)pc`)
+   30  C   everything else — `sysAllocOS(…)`, `atomic.Loadp(…)`, `funcdata(…)`, bare locals
+```
+
+⚠ The instrument's own first run read **0** sites — the depth counter started after consuming the
+`<` it was meant to be balancing — and was caught only because a cruder `grep` had read 79. A zero
+that disagrees with a cruder instrument is the instrument's fault until proven otherwise.
+
 ### 1.5 The liveness audit — latent, with a live trigger
 
 The raw count reads alarmingly (35 in `runtime`); the audit says otherwise, and the honest framing
@@ -203,6 +239,50 @@ exactly as the sibling arc did.
 ---
 
 ## 4. The safety floor — separable, and landable before the representation
+
+> **AMENDED 2026-09-16 (C1, q100). ⚠ READ THE STATUS BLOCK BEFORE THIS HEADING.** The section as
+> written below was ratified floor-first and then **WITHDRAWN AS SPECIFIED** at master `8f7cf67cc`,
+> on lane R's measured disproof (6 of 609 behavioral), with floor-first ordering REVOKED. The text
+> below is kept unchanged because its *motivation* is unrefuted — the measured `Length=-1414812757`
+> stands — but its *specification*, a type-tested panic, does not.
+>
+> **What LANDED instead, ruled by the coordinator on C1's hold:** a **PROVENANCE-tested** refusal,
+> scoped to `array<U>` element types, as the FIFTH arm of `ж<T>`'s `uintptr` operator
+> (`golib/ж.cs`), between the null-resolution census count and the `NativeBox` fall-through:
+> *resolution null AND `T` is `array<…>`* → `RuntimeErrorPanic.NativeArrayViewWithoutElementStorage`,
+> the tenth named panic beside the nine. `array.cs`'s `AliasPointer` fallback funnels through the
+> same operator and needs no change of its own; a test names that site as reached.
+>
+> The discriminator R named — the address's provenance — did not exist when this section was
+> withdrawn. [`DESIGN-pointer-provenance.md`](DESIGN-pointer-provenance.md) (RATIFIED) supplies it,
+> its mechanism has landed, and `ManagedPointerTokens.Resolve` is already the operator's first act.
+> A pinned-managed address therefore resolves and is ADMITTED, which is what keeps R's six green;
+> a genuinely-native one carries no record and is refused by name.
+>
+> ⚠ A citation to a section heading is a citation to its STATUS block first. The coordinator's own
+> q100 routing quoted this heading's "separable, and landable before the representation" without
+> reading two paragraphs up, and the cut stopped on it. Banked as a class.
+>
+> **AMENDED 2026-09-19 (C1) — THE BOUND, stated because the arms do not state it.** What landed
+> refuses the **no-provenance class**, not "fabricated array views" in general. The condition is
+> *resolution null AND `T` is `array<…>`*, so an address that resolves to a **LIVE box of a
+> different pointee type**, at an `array<U>` pointee, still falls through to `NativeBox`
+> **UNREFUSED**. That is by design and is what "IT CURES NOTHING" means concretely here;
+> `NativeArrayViewFloorTests` arm 3 exercises that shape but asserts `IsNotNull` only, so the bound
+> is a property of the specification rather than an accident of the arms. Widening to cover the
+> live-box case would be a separate cut with its own measurement, not a tightening of this one.
+> (Coordinator finding (a) on the q100 gate, mailbox `1135d780c`; C2's second-lane read `a810502ff`
+> reached the same bound from the code side and observed that `ж.cs`'s own "ONE BOUND" paragraph
+> stated the WEAK-ENTRY bound and not this one. Both now state it, and the code paragraph reads
+> "TWO BOUNDS".)
+>
+> ⚠ Recorded beside it, because it is the maintenance hazard this bound creates: the
+> `resolved is null` conjunct is **load-bearing**, and the arm's comment as cut implied it was not.
+> Arms 2 and 4 in `ж.cs` are `Q44RegistryCensus.Enabled`-gated counters that divert no control flow
+> and do not execute at all on the production path, so *reaching* the floor does not imply *firing*
+> it. Simplifying the condition to `if (s_isArrayShaped)` is precisely the type-tested floor
+> withdrawn above at 6 of 609 red; arm 3 is the regression test that would catch the edit.
+
 
 **Whatever is ruled for §3, the raw-address route must stop fabricating references.** Today it
 silently invents one; a named panic converts a memory-safety hole into a diagnostic that names its

@@ -8,7 +8,6 @@ global using textOff = go.@internal.abi_package.TextOff;
 global using _type = go.@internal.abi_package.Type;
 global using uncommontype = go.@internal.abi_package.UncommonType;
 global using interfacetype = go.@internal.abi_package.ΔInterfaceType;
-global using maptype = go.@internal.abi_package.ΔMapType;
 global using arraytype = go.@internal.abi_package.ΔArrayType;
 global using chantype = go.@internal.abi_package.ChanType;
 global using slicetype = go.@internal.abi_package.SliceType;
@@ -20,8 +19,12 @@ global using structtype = go.@internal.abi_package.ΔStructType;
 namespace go;
 
 using abi = @internal.abi_package;
+using goarch = @internal.goarch_package;
+using goexperiment = @internal.goexperiment_package;
+using atomic = @internal.runtime.atomic_package;
 using @unsafe = unsafe_package;
 using @internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -88,6 +91,200 @@ internal static @string pkgpath(this Δrtype t) {
     return ""u8;
 }
 
+// getGCMask returns the pointer/nonpointer bitmask for type t.
+//
+// nosplit because it is used during write barriers and must not be preempted.
+//
+//go:nosplit
+internal static ж<byte> getGCMask(ж<_type> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    if ((abi.TFlag)(t.TFlag & abi.TFlagGCMaskOnDemand) != 0) {
+        // Split the rest into getGCMaskOnDemand so getGCMask itself is inlineable.
+        return getGCMaskOnDemand(Ꮡt);
+    }
+    return t.GCData;
+}
+
+// inProgress is a byte whose address is a sentinel indicating that
+// some thread is currently building the GC bitmask for a type.
+internal static ж<byte> ᏑinProgress = new StandardBox<byte>(default(byte));
+internal static ref byte inProgress => ref ᏑinProgress.Value;
+
+// nosplit because it is used during write barriers and must not be preempted.
+//
+//go:nosplit
+internal static ж<byte> getGCMaskOnDemand(ж<_type> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    // For large types, GCData doesn't point directly to a bitmask.
+    // Instead it points to a pointer to a bitmask, and the runtime
+    // is responsible for (on first use) creating the bitmask and
+    // storing a pointer to it in that slot.
+    // TODO: we could use &t.GCData as the slot, but types are
+    // in read-only memory currently.
+    @unsafe.Pointer addr = @unsafe.Pointer.FromPinnedBox(t.GCData);
+    if (GOOS == "aix"u8) {
+        addr = (uintptr)add(addr, firstmoduledata.data - aixStaticDataBase);
+    }
+    while (ᐧ) {
+        ref var Δp = ref heap<ж<byte>>(out var Ꮡp);
+        Δp = (ж<byte>)(uintptr)(atomic.Loadp(addr));
+        var exprᴛ1 = Δp;
+        if (exprᴛ1 == ᏑinProgress) {
+            osyield();
+            continue;
+        }
+        else if (exprᴛ1 == default!) {
+            if (!atomic.Casp1((ж<@unsafe.Pointer>)(uintptr)(addr), // Already built.
+ // Someone else is currently building it.
+ // Just wait until the builder is done.
+ // We can't block here, so spinning while having
+ // the OS thread yield is about the best we can do.
+ // Not built yet.
+ // Attempt to get exclusive access to build it.
+ nil, @unsafe.Pointer.FromPinnedBox(ᏑinProgress))) {
+                continue;
+            }
+            var bytes = (uintptr)goarch.PtrSize * divRoundUp(t.PtrBytes / (uintptr)goarch.PtrSize, // Build gcmask for this type.
+ 8 * goarch.PtrSize);
+            Δp = (ж<byte>)(uintptr)(persistentalloc(bytes, goarch.PtrSize, Ꮡmemstats.of(mstats.Ꮡother_sys)));
+            systemstack(() => {
+                buildGCMask(Ꮡt, new bitCursor(ptr: Ꮡp.ValueSlot, n: 0));
+            });
+            atomic.StorepNoWB(addr, // Store the newly-built gcmask for future callers.
+ @unsafe.Pointer.FromPinnedBox(Δp));
+            return Δp;
+        }
+        else { /* default: */
+            return Δp;
+        }
+
+    }
+}
+
+// A bitCursor is a simple cursor to memory to which we
+// can write a set of bits.
+[GoType] partial struct bitCursor {
+    internal ж<byte> ptr; // base of region
+    internal uintptr n; // cursor points to bit n of region
+}
+
+// Write to b cnt bits starting at bit 0 of data.
+// Requires cnt>0.
+internal static void write(this bitCursor b, ж<byte> Ꮡdata, uintptr cnt) {
+    ref var data = ref Ꮡdata.DerefOrNull();
+
+    // Starting byte for writing.
+    var Δp = addb(b.ptr, b.n / 8);
+    // Note: if we're starting halfway through a byte, we load the
+    // existing lower bits so we don't clobber them.
+    var n = b.n % 8; // # of valid bits in buf
+    var buf = (uintptr)((uintptr)(Δp.Value) & (((uintptr)1).Lsh((uint64)(n)) - 1)); // buffered bits to start
+    // Work 8 bits at a time.
+    while (cnt > 8) {
+        // Read 8 more bits, now buf has 8-15 valid bits in it.
+        buf |= (uintptr)(((uintptr)(data)).Lsh((uint64)(n)));
+        n += 8;
+        Ꮡdata = addb(Ꮡdata, 1); data = ref Ꮡdata.DerefOrNull();
+        cnt -= 8;
+        // Write 8 of the buffered bits out.
+        Δp.Value = (byte)buf;
+        buf >>= (int)(8);
+        n -= 8;
+        Δp = addb(Δp, 1);
+    }
+    // Read remaining bits.
+    buf |= (uintptr)(((uintptr)((uintptr)(data) & (((uintptr)1).Lsh((uint64)(cnt)) - 1))).Lsh((uint64)(n)));
+    n += cnt;
+    // Flush remaining bits.
+    if (n > 8) {
+        Δp.Value = (byte)buf;
+        buf >>= (int)(8);
+        n -= 8;
+        Δp = addb(Δp, 1);
+    }
+    Δp.Value &= unchecked((byte)~(byte)(((byte)1).Lsh((uint64)(n)) - 1));
+    Δp.Value |= (byte)((byte)buf);
+}
+
+internal static bitCursor offset(this bitCursor b, uintptr cnt) {
+    return new bitCursor(ptr: b.ptr, n: b.n + cnt);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string pointerlessTypeˢ = "pointerless type"u8;
+internal static readonly @string unexpectedKindˢ = "unexpected kind"u8;
+
+// buildGCMask writes the ptr/nonptr bitmap for t to dst.
+// t must have a pointer.
+internal static void buildGCMask(ж<_type> Ꮡt, bitCursor dst) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    // Note: we want to avoid a situation where buildGCMask gets into a
+    // very deep recursion, because M stacks are fixed size and pretty small
+    // (16KB). We do that by ensuring that any recursive
+    // call operates on a type at most half the size of its parent.
+    // Thus, the recursive chain can be at most 64 calls deep (on a
+    // 64-bit machine).
+    // Recursion is avoided by using a "tail call" (jumping to the
+    // "top" label) for any recursive call with a large subtype.
+top:
+    if (t.PtrBytes == 0) {
+        @throw(pointerlessTypeˢ);
+    }
+    if ((abi.TFlag)(t.TFlag & abi.TFlagGCMaskOnDemand) == 0) {
+        // copy t.GCData to dst
+        dst.write(t.GCData, t.PtrBytes / (uintptr)goarch.PtrSize);
+        return;
+    }
+    // The above case should handle all kinds except
+    // possibly arrays and structs.
+    var exprᴛ1 = t.Kind();
+    if (exprᴛ1 == abi.Array) {
+        var a = Ꮡt.ArrayType();
+        if ((~a).Len == 1) {
+            // Avoid recursive call for element type that
+            // isn't smaller than the parent type.
+            Ꮡt = a.Value.Elem; t = ref Ꮡt.DerefOrNull();
+            goto top;
+        }
+        var e = a.Value.Elem;
+        for (var i = (uintptr)0; i < (~a).Len; i++) {
+            buildGCMask(e, dst);
+            dst = dst.offset((~e).Size_ / (uintptr)goarch.PtrSize);
+        }
+    }
+    else if (exprᴛ1 == abi.Struct) {
+        var s = Ꮡt.StructType();
+        abi.StructField bigField = default!;
+        foreach (var (_, f) in (~s).Fields) {
+            var ft = f.Typ;
+            if (!ft.Pointers()) {
+                continue;
+            }
+            if ((~ft).Size_ > t.Size_ / 2) {
+                // Avoid recursive call for field type that
+                // is larger than half of the parent type.
+                // There can be only one.
+                bigField = f;
+                continue;
+            }
+            buildGCMask(ft, dst.offset(f.Offset / (uintptr)goarch.PtrSize));
+        }
+        if (bigField.Typ != nil) {
+            // Note: this case causes bits to be written out of order.
+            Ꮡt = bigField.Typ; t = ref Ꮡt.DerefOrNull();
+            dst = dst.offset(bigField.Offset / (uintptr)goarch.PtrSize);
+            goto top;
+        }
+    }
+    else { /* default: */
+        @throw(unexpectedKindˢ);
+    }
+
+}
+
 // reflectOffs holds type offsets defined at run time by the reflect package.
 //
 // When a type is defined at run time, its *rtype data lives on the heap.
@@ -129,15 +326,6 @@ internal static void reflectOffsUnlock() {
 internal static readonly @string runtimeNameOffsetOutOfˢ = "runtime: name offset out of range"u8;
 internal static readonly @string runtimeNameOffsetBaseˢ = "runtime: name offset base pointer out of range"u8;
 
-// resolveNameOff should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname resolveNameOff
 internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff off) {
     if (off == 0) {
         return new abiꓸName();
@@ -175,15 +363,6 @@ internal static abiꓸName nameOff(this Δrtype t, nameOff off) {
 internal static readonly @string runtimeTypeOffsetBaseˢ = "runtime: type offset base pointer out of range"u8;
 internal static readonly @string runtimeTypeOffsetOutOfˢ = "runtime: type offset out of range"u8;
 
-// resolveTypeOff should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname resolveTypeOff
 internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff off) {
     if (off == 0 || off == -1) {
         // -1 is the sentinel value for unreachable code.
@@ -460,8 +639,13 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     if (exprᴛ1 == abi.Map) {
-        var mt = Ꮡt.Reinterpret<_type, maptype>();
-        var mv = Ꮡv.Reinterpret<_type, maptype>();
+        if (goexperiment.SwissMap) {
+            var mtΔ1 = Ꮡt.Reinterpret<_type, abi.SwissMapType>();
+            var mvΔ1 = Ꮡv.Reinterpret<_type, abi.SwissMapType>();
+            return typesEqual((~mtΔ1).Key, (~mvΔ1).Key, seen) && typesEqual((~mtΔ1).Elem, (~mvΔ1).Elem, seen);
+        }
+        var mt = Ꮡt.Reinterpret<_type, abi.OldMapType>();
+        var mv = Ꮡv.Reinterpret<_type, abi.OldMapType>();
         return typesEqual((~mt).Key, (~mv).Key, seen) && typesEqual((~mt).Elem, (~mv).Elem, seen);
     }
     if (exprᴛ1 == abi.Pointer) {

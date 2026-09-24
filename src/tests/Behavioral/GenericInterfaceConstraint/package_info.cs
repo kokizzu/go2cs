@@ -36,8 +36,11 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Circle, Figure>(Pointer = true)]
 [assembly: GoImplement<Circle, Round>(Pointer = true)]
 [assembly: GoImplement<Circle, Shape>(Pointer = true)]
+[assembly: GoImplement<Figure, Shape>]
+[assembly: GoImplement<Square, Figure>(Pointer = true)]
 [assembly: GoImplement<Square, Shape>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -52,7 +55,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("GenericInterfaceConstraint.go", "GenericInterfaceConstraint.cs", "ABU4gtaCpoLugtaCqKKCgpSqooK4gqaCgoKChIKCgoSCgg==")]
+[assembly: go.GoPositionMap("GenericInterfaceConstraint.go", "GenericInterfaceConstraint.cs", "ABU4gtaCpoLugtaCqKKCgpSqooK4gtyigpSCpoIABxiCpoKCgoKEgoKChIKChIKEgpCAkoSEgpI=", "120-120:1;126-126:2;127-127:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,6 +71,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    public partial interface Figure {}
     public partial interface Round {}
     public partial interface Shape {}
     public partial struct Circle {}

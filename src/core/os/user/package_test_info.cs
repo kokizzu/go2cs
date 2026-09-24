@@ -7,11 +7,13 @@
 global using static global::go.os.user_package;
 
 // <ImportedTypeAliases>
+global using execꓸError = go.os.exec_package.ΔError;
 global using osꓸDirEntry = go.io.fs_package.DirEntry;
 global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
+global using runtimeꓸError = go.runtime_package.ΔError;
 global using syscallꓸHandle = go.syscall_package.ΔHandle;
 global using syscallꓸSignal = go.syscall_package.ΔSignal;
 global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
@@ -22,9 +24,11 @@ using go;
 using static global::go.os.user_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73696420737472696e673b206e616d6520737472696e677d", "serviceAccountsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
+[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -39,7 +43,8 @@ using static global::go.os.user_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/user_test.go", "user_test.cs", "ABIkgoKCuMKCgpSCgoKClKaClILoooK4soKUgpSClIKUgriChIKCgpTegoKUpoKEgoKClKiCgpTWgoKCuMKCgpSChIKCgpSogriClIKWgoKUggAJCIKCgriChIKCgpSogoKUgriCgoKm", "27-29:1;121-123:1")]
+[assembly: go.GoPositionMap("os/user/user_test.go", "user_test.cs", "ABIkgoKCuMKCgpSCgoKClKaClILotIK4soKUgpSClIKUgriChIKCgpTegoKUpoKEgoKClKiCgpTWgoKCuMKCgpSChIKCgpSogriClIKWgoKUggAJCIKCgriChIKCgpSogoKUgriCgoKm", "27-29:1;122-124:1")]
+[assembly: go.GoPositionMap("os/user/user_windows_test.go", "user_windows_test.cs", "ACU80oKGspSCgoa2lJSGkpSCgoKWgoSSgoKCgoKm2oKCpoKAgoK2gqaSgIKCyO7SypSCgoKUgoKUgoKUgoKCgIKkgpSCgpTWwoKEkoKW3IKygIKkhIKmgpSUgpQACgrCgoSSgqiWgIKkgoKUqIKClAAKBoKmloKCgoKUgoKCgpSClIKCgoKCuJSEgoKWgpSCAA4agoKCgoKClILKgoKCgoKClIKUgsqCgoKCgoKUgsqCgoKCgoKUgg==", "38-49:1;94-100:2;135-137:1;161-180:1;200-206:1")]
 // </GoSourcePositionMaps>
 
 namespace go.os;
@@ -63,8 +68,22 @@ public static partial class user_internal_test_package
     // item of the project guarantees.
 
     // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
     [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
     [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
     // </ImportInitializers>
     // Go runs every `init` in the package under test - the production files' included -
     // before the first test. The production package is a REFERENCED assembly here, whose

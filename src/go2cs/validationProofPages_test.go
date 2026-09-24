@@ -393,3 +393,38 @@ func TestValidationProofPageStatesTheTerminalContext(t *testing.T) {
 		})
 	}
 }
+
+// TestDisclosedHeadingIsClassAware pins the other half of the golden: a page whose disclosures include
+// no `deferred` entry keeps the "provably cannot" heading byte for byte and gains no class sentence,
+// so only pages that disclose a deferred entry move on regeneration. The golden fixture now carries a
+// deferred entry, so this control re-renders the same fixture with that entry reclassed.
+//
+// RED PROOF: rendering the class sentence unconditionally reds this control; the pre-change renderer
+// reds the golden at line 30 (its heading claims "provably cannot" over a deferred entry).
+func TestDisclosedHeadingIsClassAware(t *testing.T) {
+	comparison, disclosures := loadProofFixture(t)
+
+	deferred := 0
+	for name, disclosure := range disclosures {
+		if disclosure.Class == deferredClass {
+			deferred++
+			disclosure.Class = "alloc-count-semantics"
+			disclosure.Want, disclosure.Reading, disclosure.Plan = "", "", ""
+			disclosures[name] = disclosure
+		}
+	}
+
+	if deferred == 0 {
+		t.Fatal("the fixture carries no deferred entry, so the golden no longer exercises the class-aware heading")
+	}
+
+	page := renderValidationProofPage(fixtureProvenance(), comparison, disclosures, nil)
+
+	if !strings.Contains(page, "A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not\n") {
+		t.Error("a page with no deferred entry lost its \"provably cannot\" heading")
+	}
+
+	if strings.Contains(page, "The **Class** column says") || strings.Contains(page, "this conversion does not satisfy") {
+		t.Error("a page with no deferred entry gained the class-aware wording")
+	}
+}

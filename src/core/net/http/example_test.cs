@@ -165,7 +165,7 @@ public static void ExampleServer_Shutdown() {
         ᐸꟷ(sigint);
         // We received an interrupt signal, shut down.
         {
-            var err = Ꮡsrv.Shutdown(context.Background()); if (err != default!) {
+            var err = Ꮡsrv.Shutdown(context_package.Background()); if (err != default!) {
                 // Error from closing listeners, or context timeout:
                 log.Printf("HTTP server Shutdown: %v"u8, err);
             }
@@ -246,6 +246,31 @@ public static void ExampleNotFoundHandler() {
     // Create sample handler that returns 200
     mux.Handle(resourcesPeopleˢ, newPeopleHandler());
     log.Fatal(Δhttp.ListenAndServe(":8080"u8, new Δhttp.ServeMuxжΔHandler(mux)));
+}
+
+public static void ExampleProtocols_http1() {
+    ref var srv = ref heap<Δhttp.Server>(out var Ꮡsrv);
+    srv = new Δhttp.Server(
+        Addr: ":8443"u8
+    );
+    // Serve only HTTP/1.
+    srv.Protocols = @new<Δhttp.Protocols>();
+    srv.Protocols.SetHTTP1(true);
+    log.Fatal(Ꮡsrv.ListenAndServeTLS(certPemˢ, keyPemˢ));
+}
+
+public static void ExampleProtocols_http1or2() {
+    var t = Δhttp.DefaultTransport._<ж<Δhttp.Transport>>().Clone();
+    // Use either HTTP/1 and HTTP/2.
+    t.Value.Protocols = @new<Δhttp.Protocols>();
+    (~t).Protocols.SetHTTP1(true);
+    (~t).Protocols.SetHTTP2(true);
+    var cli = Ꮡ(new Δhttp.Client(Transport: new Δhttp.TransportжRoundTripper(t)));
+    var (res, err) = cli.Get(httpWwwGoogleComRobotsˢ);
+    if (err != default!) {
+        log.Fatal(err);
+    }
+    (~res).Body.Close();
 }
 
 } // end http_test_package

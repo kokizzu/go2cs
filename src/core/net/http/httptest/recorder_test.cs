@@ -342,7 +342,7 @@ public static void TestRecorder(ж<testing.T> Ꮡt) {
         var ttʗ1 = tt;
         Ꮡt.Run(tt.name, (ж<testing.T> tΔ1) => {
             var (r, _) = http.NewRequest(getˢ, httpFooComˢ, default!);
-            var h = new http.HandlerFunc(ttʗ1.h);
+            var h = NilSafeDelegateConversion<http.HandlerFunc, Action<http.ResponseWriter, ж<http.Request>>>(ttʗ1.h);
             var rec = NewRecorder();
             h.ServeHTTP(new httptest_test_package.httptest_ResponseRecorderжResponseWriter(rec), r);
             foreach (var (_, checkΔ1) in ttʗ1.checks) {

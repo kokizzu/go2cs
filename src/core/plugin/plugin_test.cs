@@ -8,12 +8,6 @@ using testing = testing_package;
 
 partial class plugin_test_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸplugin() {
-    builtin.initPackage(typeof(plugin_package));
-}
-
 public static void TestPlugin(ж<testing.T> Ꮡt) {
 }
 

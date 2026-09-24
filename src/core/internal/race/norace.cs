@@ -4,7 +4,9 @@
 //go:build !race
 namespace go.@internal;
 
+using abi = go.@internal.abi_package;
 using @unsafe = unsafe_package;
+using go.@internal;
 
 partial class race_package {
 
@@ -28,7 +30,19 @@ public static void Enable() {
 public static void Read(@unsafe.Pointer addr) {
 }
 
+public static void ReadPC(@unsafe.Pointer addr, uintptr callerpc, uintptr pc) {
+}
+
+public static void ReadObjectPC(ж<abi.Type> Ꮡt, @unsafe.Pointer addr, uintptr callerpc, uintptr pc) {
+}
+
 public static void Write(@unsafe.Pointer addr) {
+}
+
+public static void WritePC(@unsafe.Pointer addr, uintptr callerpc, uintptr pc) {
+}
+
+public static void WriteObjectPC(ж<abi.Type> Ꮡt, @unsafe.Pointer addr, uintptr callerpc, uintptr pc) {
 }
 
 public static void ReadRange(@unsafe.Pointer addr, nint len) {

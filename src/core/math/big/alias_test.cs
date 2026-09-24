@@ -5,7 +5,7 @@ namespace go.math;
 
 using cryptorand = crypto.rand_package;
 using big = go.math.big_package;
-using rand = go.math.rand_package;
+using Δrand = go.math.rand_package;
 using reflect = reflect_package;
 using testing = testing_package;
 using quick = go.testing.quick_package;
@@ -16,42 +16,6 @@ using static go.math.big_internal_test_package;
 
 partial class big_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸquick() {
-    builtin.initPackage(typeof(go.testing.quick_package));
-}
-
 internal static bool equal(ж<bigꓸInt> Ꮡz, ж<bigꓸInt> Ꮡx) {
     return Ꮡz.Cmp(Ꮡx) == 0;
 }
@@ -60,7 +24,7 @@ internal static bool equal(ж<bigꓸInt> Ꮡz, ж<bigꓸInt> Ꮡx) {
     public partial ref ж<math.big_package.ΔInt> Int { get; }
 }
 
-internal static ж<bigꓸInt> generatePositiveInt(ж<rand.Rand> Ꮡrand, nint size) {
+internal static ж<bigꓸInt> generatePositiveInt(ж<Δrand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var n = big.NewInt(1);
@@ -69,7 +33,7 @@ internal static ж<bigꓸInt> generatePositiveInt(ж<rand.Rand> Ꮡrand, nint si
     return n;
 }
 
-internal static reflectꓸValue Generate(this bigInt _, ж<rand.Rand> Ꮡrand, nint size) {
+internal static reflectꓸValue Generate(this bigInt _, ж<Δrand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var n = generatePositiveInt(Ꮡrand, size);
@@ -83,7 +47,7 @@ internal static reflectꓸValue Generate(this bigInt _, ж<rand.Rand> Ꮡrand, n
     public partial ref ж<math.big_package.ΔInt> Int { get; }
 }
 
-internal static reflectꓸValue Generate(this notZeroInt _, ж<rand.Rand> Ꮡrand, nint size) {
+internal static reflectꓸValue Generate(this notZeroInt _, ж<Δrand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     var n = generatePositiveInt(Ꮡrand, size);
@@ -100,7 +64,7 @@ internal static reflectꓸValue Generate(this notZeroInt _, ж<rand.Rand> Ꮡran
     public partial ref ж<math.big_package.ΔInt> Int { get; }
 }
 
-internal static reflectꓸValue Generate(this positiveInt _, ж<rand.Rand> Ꮡrand, nint size) {
+internal static reflectꓸValue Generate(this positiveInt _, ж<Δrand.Rand> Ꮡrand, nint size) {
     var n = generatePositiveInt(Ꮡrand, size);
     return reflect.ValueOf(new positiveInt(n));
 }
@@ -109,7 +73,7 @@ internal static reflectꓸValue Generate(this positiveInt _, ж<rand.Rand> Ꮡra
     public partial ref ж<math.big_package.ΔInt> Int { get; }
 }
 
-internal static reflectꓸValue Generate(this prime _, ж<rand.Rand> Ꮡr, nint size) {
+internal static reflectꓸValue Generate(this prime _, ж<Δrand.Rand> Ꮡr, nint size) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     var (n, err) = cryptorand.Prime(new big_test_package.rand_RandжReader(Ꮡr), r.Intn(size * 8 - 2) + 2);
@@ -123,7 +87,7 @@ internal static reflectꓸValue Generate(this prime _, ж<rand.Rand> Ꮡr, nint 
     [GoEmbedded] internal nuint @uint;
 }
 
-internal static reflectꓸValue Generate(this zeroOrOne _, ж<rand.Rand> Ꮡrand, nint size) {
+internal static reflectꓸValue Generate(this zeroOrOne _, ж<Δrand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     return reflect.ValueOf(new zeroOrOne((nuint)randΔ1.Intn(2)));
@@ -133,7 +97,7 @@ internal static reflectꓸValue Generate(this zeroOrOne _, ж<rand.Rand> Ꮡrand
     [GoEmbedded] internal nuint @uint;
 }
 
-internal static reflectꓸValue Generate(this smallUint _, ж<rand.Rand> Ꮡrand, nint size) {
+internal static reflectꓸValue Generate(this smallUint _, ж<Δrand.Rand> Ꮡrand, nint size) {
     ref var randΔ1 = ref Ꮡrand.DerefOrNull();
 
     return reflect.ValueOf(new smallUint((nuint)randΔ1.Intn(1024)));
@@ -269,11 +233,11 @@ public static void TestAliasing(ж<testing.T> Ꮡt) {
 
 
     foreach (var (name, f) in new map<@string, any>{
-        ["Abs"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Abs), v.Int, x.Int),
-        ["Add"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Add), v.Int, x.Int, y.Int),
-        ["And"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.And), v.Int, x.Int, y.Int),
-        ["AndNot"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.AndNot), v.Int, x.Int, y.Int),
-        ["Div"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Div), v.Int, x.Int, y.Int),
+        ["Abs"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Abs)), v.Int, x.Int),
+        ["Add"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Add)), v.Int, x.Int, y.Int),
+        ["And"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.And)), v.Int, x.Int, y.Int),
+        ["AndNot"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.AndNot)), v.Int, x.Int, y.Int),
+        ["Div"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Div)), v.Int, x.Int, y.Int),
         ["Exp-XY"u8] = bool (bigInt v, bigInt x, bigInt y, notZeroInt z) => {
             var zʗ1 = z;
             return checkAliasingTwoArgs(Ꮡt, (ж<bigꓸInt> vΔ1, ж<bigꓸInt> xΔ1, ж<bigꓸInt> yΔ1) => vΔ1.Exp(xΔ1, yΔ1, zʗ1.Int), v.Int, x.Int, y.Int);
@@ -309,32 +273,32 @@ public static void TestAliasing(ж<testing.T> Ꮡt) {
             var nʗ1 = n;
             return checkAliasingOneArg(Ꮡt, (ж<bigꓸInt> vΔ1, ж<bigꓸInt> xΔ1) => vΔ1.Lsh(xΔ1, nʗ1.@uint), v.Int, x.Int);
         },
-        ["Mod"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Mod), v.Int, x.Int, y.Int),
-        ["ModInverse"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.ModInverse), v.Int, x.Int, y.Int),
-        ["ModSqrt"u8] = bool (bigInt v, bigInt x, prime p) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.ModSqrt), v.Int, x.Int, p.Int),
-        ["Mul"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Mul), v.Int, x.Int, y.Int),
-        ["Neg"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Neg), v.Int, x.Int),
-        ["Not"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Not), v.Int, x.Int),
-        ["Or"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Or), v.Int, x.Int, y.Int),
-        ["Quo"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Quo), v.Int, x.Int, y.Int),
+        ["Mod"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Mod)), v.Int, x.Int, y.Int),
+        ["ModInverse"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.ModInverse)), v.Int, x.Int, y.Int),
+        ["ModSqrt"u8] = bool (bigInt v, bigInt x, prime p) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.ModSqrt)), v.Int, x.Int, p.Int),
+        ["Mul"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Mul)), v.Int, x.Int, y.Int),
+        ["Neg"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Neg)), v.Int, x.Int),
+        ["Not"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Not)), v.Int, x.Int),
+        ["Or"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Or)), v.Int, x.Int, y.Int),
+        ["Quo"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Quo)), v.Int, x.Int, y.Int),
         ["Rand"u8] = bool (bigInt v, bigInt x, int64 seed) => checkAliasingOneArg(Ꮡt, (ж<bigꓸInt> vΔ1, ж<bigꓸInt> xΔ1) => {
-                var rnd = rand.New(rand.NewSource(seed));
+                var rnd = Δrand.New(Δrand.NewSource(seed));
                 return vΔ1.Rand(rnd, xΔ1);
             }, v.Int, x.Int),
-        ["Rem"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Rem), v.Int, x.Int, y.Int),
+        ["Rem"u8] = bool (bigInt v, bigInt x, notZeroInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Rem)), v.Int, x.Int, y.Int),
         ["Rsh"u8] = bool (bigInt v, bigInt x, smallUint n) => {
             var nʗ2 = n;
             return checkAliasingOneArg(Ꮡt, (ж<bigꓸInt> vΔ1, ж<bigꓸInt> xΔ1) => vΔ1.Rsh(xΔ1, nʗ2.@uint), v.Int, x.Int);
         },
-        ["Set"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Set), v.Int, x.Int),
+        ["Set"u8] = bool (bigInt v, bigInt x) => checkAliasingOneArg(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Set)), v.Int, x.Int),
         ["SetBit"u8] = bool (bigInt v, bigInt x, smallUint i, zeroOrOne b) => {
             var bʗ3 = b;
             var iʗ1 = i;
             return checkAliasingOneArg(Ꮡt, (ж<bigꓸInt> vΔ1, ж<bigꓸInt> xΔ1) => vΔ1.SetBit(xΔ1, (nint)iʗ1.@uint, bʗ3.@uint), v.Int, x.Int);
         },
-        ["Sqrt"u8] = bool (bigInt v, positiveInt x) => checkAliasingOneArg(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Sqrt), v.Int, x.Int),
-        ["Sub"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Sub), v.Int, x.Int, y.Int),
-        ["Xor"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, (Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Xor), v.Int, x.Int, y.Int)
+        ["Sqrt"u8] = bool (bigInt v, positiveInt x) => checkAliasingOneArg(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Sqrt)), v.Int, x.Int),
+        ["Sub"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Sub)), v.Int, x.Int, y.Int),
+        ["Xor"u8] = bool (bigInt v, bigInt x, bigInt y) => checkAliasingTwoArgs(Ꮡt, ((Func<ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>, ж<bigꓸInt>>)(big.Xor)), v.Int, x.Int, y.Int)
     }) {
         var fʗ1 = f;
         Ꮡt.Run(name, (ж<testing.T> tΔ1) => {

@@ -154,6 +154,19 @@ public static class PointerExtensions
             return new FieldRefBox<TDst>(box, ж<T>.ReinterpretRef<TDst>);
         }
 
+        // Go's PREFIX-DOWNCAST idiom over a descriptor its owning package can PROJECT —
+        // `(*SwissMapType)(unsafe.Pointer(abi.TypeOf(m)))`, emitted Reinterpret<abi.Type, SwissMapType>().
+        // In Go the larger allocation is really behind the header; here a synthetic ж<abi.Type> holds
+        // only the header, so aliasing is unrepresentable (ReinterpretAliasesStorage rightly refuses the
+        // pair: the destination does not fit) and the address route below read past the box — the
+        // order token of a reference-bearing pointee, refused on first dereference by arm 2a. The
+        // owning package already builds the ONE faithful answer for that downcast (abi's cached
+        // Type.MapType() projection), so the reinterpret returns that same object: `mt` from a raw
+        // downcast and `t.MapType()` are then one pointer, as they are in Go. A projection that answers
+        // nil (a descriptor of another kind) falls through to the routes below unchanged.
+        if (PrefixProjection<T, TDst>.Project is { } project && project(box) is { } projected)
+            return projected;
+
         // A Go slice HEADER read over a golib slice<X> — `(*slice)(unsafe.Pointer(&b))`, emitted as
         // Reinterpret<slice<X>, Δsliceᴛ>(). Not an aliasing pair (five fields and a T[] against a pointer
         // and two integers) and not pinnable, so the address route below minted a NativeBox over the
@@ -513,4 +526,21 @@ public static class PointerExtensions
             return "<nil>";
         }
     }
+}
+
+/// <summary>
+/// A package-registered PROJECTION for Go's prefix-downcast idiom from <typeparamref name="T"/> to
+/// <typeparamref name="TDst"/>: <see cref="PointerExtensions.Reinterpret{T,TDst}"/> consults it before
+/// the address route, and returns its answer when it answers one.
+/// </summary>
+/// <remarks>
+/// Only the package that owns both types knows the faithful answer (golib cannot name abi's types),
+/// so the owner registers it — once, from a module initializer, before any of its descriptors can
+/// exist. The projection must answer the SAME box for the same source on every call (pointer identity
+/// is Go-observable) and <c>null</c> for a source it does not describe, which leaves the reinterpret
+/// exactly as it was. Unregistered pairs cost one static read.
+/// </remarks>
+public static class PrefixProjection<T, TDst>
+{
+    public static Func<ж<T>, ж<TDst>?>? Project;
 }

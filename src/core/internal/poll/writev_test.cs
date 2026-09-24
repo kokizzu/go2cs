@@ -11,12 +11,6 @@ using static go.@internal.poll_internal_test_package;
 
 partial class poll_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 [GoType("dyn")] internal partial struct TestConsume_tests {
     internal slice<slice<byte>> @in;
     internal int64 consume;

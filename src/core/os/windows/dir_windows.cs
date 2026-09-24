@@ -6,7 +6,7 @@ namespace go;
 using windows = @internal.syscall.windows_package;
 using Δio = io_package;
 using fs = go.io.fs_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
@@ -14,30 +14,6 @@ using @internal.syscall;
 using go.io;
 
 partial class os_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
-    builtin.initPackage(typeof(@internal.syscall.windows_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 // Auxiliary information if the File describes a directory
 [GoType] partial struct dirInfo {

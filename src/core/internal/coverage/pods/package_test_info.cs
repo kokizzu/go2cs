@@ -35,7 +35,7 @@ using static global::go.@internal.coverage.pods_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/pods/pods_test.go", "pods_test.cs", "ABsktoKCgIKkloKCgIKklpKCgpaSgoKWgoKCgpaSgoKCgpSUqIKWgpaCgoKWloKCgt6CloKCqIKWgpYABxqCgoK6goKCgg==")]
+[assembly: go.GoPositionMap("internal/coverage/pods/pods_test.go", "pods_test.cs", "ABwktoKCgIKkloKCgIKklpKCgoKClpKCgoKCloKCgoKWkoKCgoKUlKiCloKWgoKClpaCgoLegpaCgqiCloKWABAagoKCuoKCgoI=", "21-27:1;29-35:2;37-43:3;45-51:4;53-58:5;60-70:6")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -51,4 +51,28 @@ public static partial class pods_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸfnv() => builtin.initPackage(typeof(hash.fnv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸpods() => builtin.initPackage(typeof(go.@internal.coverage.pods_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.coverage.pods_package));
+    }
 }

@@ -506,7 +506,7 @@ internal static nint encodePerm(slice<nint> s) {
     return m;
 }
 
-[GoType("dyn")] partial struct TestUniformFactorial_tests {
+[GoType("dyn")] internal partial struct TestUniformFactorial_tests {
     internal @string name;
     internal Func<nint> fn;
 }
@@ -553,7 +553,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
                     return encodePerm(pʗ1);
                 })
             }.array();
-            foreach (var (_, vᴛ1) in tests) {
+            foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
                 ref var test = ref heap(new TestUniformFactorial_tests(), out var Ꮡtest);
                 test = vᴛ1;
 
@@ -597,6 +597,51 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
             }
         });
     }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string randseednop0ˢ = "randseednop=0"u8;
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+internal static readonly object globalSeedShouldTakeˢ = (@string)"global Seed should take effect"u8;
+internal static readonly @string randseednop1ˢ = "randseednop=1"u8;
+internal static readonly object globalSeedShouldBeANoOpˢ = (@string)"global Seed should be a no-op"u8;
+internal static readonly @string godebugUnsetˢ = "GODEBUG unset"u8;
+internal static readonly object globalSeedShouldDefaultˢ = (@string)"global Seed should default to being a no-op"u8;
+
+public static void TestSeedNop(ж<testing.T> Ꮡt) {
+    // If the global Seed takes effect, then resetting it to a certain value
+    // should provide predictable output to functions using it.
+    Ꮡt.Run(randseednop0ˢ, (ж<testing.T> tΔ1) => {
+        tΔ1.Setenv(godebugˢ, randseednop0ˢ);
+        Seed(1);
+        var before = Int63();
+        Seed(1);
+        var after = Int63();
+        if (before != after) {
+            tΔ1.Fatal(globalSeedShouldTakeˢ);
+        }
+    });
+    // If calls to the global Seed are no-op then functions using it should
+    // provide different output, even if it was reset to the same value.
+    Ꮡt.Run(randseednop1ˢ, (ж<testing.T> tΔ2) => {
+        tΔ2.Setenv(godebugˢ, randseednop1ˢ);
+        Seed(1);
+        var before = Int63();
+        Seed(1);
+        var after = Int63();
+        if (before == after) {
+            tΔ2.Fatal(globalSeedShouldBeANoOpˢ);
+        }
+    });
+    Ꮡt.Run(godebugUnsetˢ, (ж<testing.T> tΔ3) => {
+        Seed(1);
+        var before = Int63();
+        Seed(1);
+        var after = Int63();
+        if (before == after) {
+            tΔ3.Fatal(globalSeedShouldDefaultˢ);
+        }
+    });
 }
 
 // Benchmarks

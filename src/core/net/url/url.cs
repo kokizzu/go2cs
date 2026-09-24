@@ -11,50 +11,20 @@ namespace go.net;
 // contain references to issue numbers with details.
 using errors = errors_package;
 using fmt = fmt_package;
+using godebug = @internal.godebug_package;
+using maps = maps_package;
+using netip = go.net.netip_package;
 using path = path_package;
 using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
+using @internal;
+using go.net;
+using iter = iter_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class url_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
 
 // Error reports an error and the operation and URL that caused it.
 [GoType] partial struct ΔError {
@@ -730,49 +700,71 @@ internal static (ж<Userinfo> user, @string host, error err) parseAuthority(@str
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string missingInHostˢ = "missing ']' in host"u8;
+internal static readonly @string invalidIpLiteralˢ = "invalid IP-literal"u8;
 
 // parseHost parses host as an authority without user
 // information. That is, as host[:port].
 internal static (@string, error) parseHost(@string host) {
-    if (strings.HasPrefix(host, "["u8)){
-        // Parse an IP-Literal in RFC 3986 and RFC 6874.
-        // E.g., "[fe80::1]", "[fe80::1%25en0]", "[fe80::1]:80".
-        nint i = strings.LastIndex(host, "]"u8);
-        if (i < 0) {
-            return ("", errors.New(missingInHostˢ));
-        }
-        @string colonPort = host[(int)(i + 1)..];
-        if (!validOptionalPort(colonPort)) {
-            return ("", fmt.Errorf("invalid port %q after host"u8, colonPort));
-        }
-        // RFC 6874 defines that %25 (%-encoded percent) introduces
-        // the zone identifier, and the zone identifier can use basically
-        // any %-encoding it likes. That's different from the host, which
-        // can only %-encode non-ASCII bytes.
-        // We do impose some restrictions on the zone, to avoid stupidity
-        // like newlines.
-        nint zone = strings.Index(host[..(int)(i)], "%25"u8);
-        if (zone >= 0) {
-            var (host1, errΔ1) = unescape(host[..(int)(zone)], encodeHost);
-            if (errΔ1 != default!) {
-                return ("", errΔ1);
-            }
-            (var host2, errΔ1) = unescape(host[(int)(zone)..(int)(i)], encodeZone);
-            if (errΔ1 != default!) {
-                return ("", errΔ1);
-            }
-            (var host3, errΔ1) = unescape(host[(int)(i)..], encodeHost);
-            if (errΔ1 != default!) {
-                return ("", errΔ1);
-            }
-            return (host1 + host2 + host3, default!);
-        }
-    } else 
     {
-        nint i = strings.LastIndex(host, ":"u8); if (i != -1) {
-            @string colonPort = host[(int)(i)..];
+        nint openBracketIdx = strings.LastIndex(host, "["u8); if (openBracketIdx != -1){
+            // Parse an IP-Literal in RFC 3986 and RFC 6874.
+            // E.g., "[fe80::1]", "[fe80::1%25en0]", "[fe80::1]:80".
+            nint closeBracketIdx = strings.LastIndex(host, "]"u8);
+            if (closeBracketIdx < 0) {
+                return ("", errors.New(missingInHostˢ));
+            }
+            @string colonPort = host[(int)(closeBracketIdx + 1)..];
             if (!validOptionalPort(colonPort)) {
                 return ("", fmt.Errorf("invalid port %q after host"u8, colonPort));
+            }
+            var (unescapedColonPort, errΔ1) = unescape(colonPort, encodeHost);
+            if (errΔ1 != default!) {
+                return ("", errΔ1);
+            }
+            @string hostname = host[(int)(openBracketIdx + 1)..(int)(closeBracketIdx)];
+            @string unescapedHostname = default!;
+            // RFC 6874 defines that %25 (%-encoded percent) introduces
+            // the zone identifier, and the zone identifier can use basically
+            // any %-encoding it likes. That's different from the host, which
+            // can only %-encode non-ASCII bytes.
+            // We do impose some restrictions on the zone, to avoid stupidity
+            // like newlines.
+            nint zoneIdx = strings.Index(hostname, "%25"u8);
+            if (zoneIdx >= 0){
+                var (hostPart, errΔ2) = unescape(hostname[..(int)(zoneIdx)], encodeHost);
+                if (errΔ2 != default!) {
+                    return ("", errΔ2);
+                }
+                (var zonePart, errΔ2) = unescape(hostname[(int)(zoneIdx)..], encodeZone);
+                if (errΔ2 != default!) {
+                    return ("", errΔ2);
+                }
+                unescapedHostname = hostPart + zonePart;
+            } else {
+                error errΔ3 = default!;
+                (unescapedHostname, errΔ3) = unescape(hostname, encodeHost);
+                if (errΔ3 != default!) {
+                    return ("", errΔ3);
+                }
+            }
+            // Per RFC 3986, only a host identified by a valid
+            // IPv6 address can be enclosed by square brackets.
+            // This excludes any IPv4, but notably not IPv4-mapped addresses.
+            (var addr, errΔ1) = netip.ParseAddr(unescapedHostname);
+            if (errΔ1 != default!) {
+                return ("", fmt.Errorf("invalid host: %w"u8, errΔ1));
+            }
+            if (addr.Is4()) {
+                return ("", errors.New(invalidIpLiteralˢ));
+            }
+            return ("[" + unescapedHostname + "]" + unescapedColonPort, default!);
+        } else 
+        {
+            nint i = strings.LastIndex(host, ":"u8); if (i != -1) {
+                @string colonPort = host[(int)(i)..];
+                if (!validOptionalPort(colonPort)) {
+                    return ("", fmt.Errorf("invalid port %q after host"u8, colonPort));
+                }
             }
         }
     }
@@ -1099,9 +1091,35 @@ public static (Values, error) ParseQuery(@string query) {
     return (m, err);
 }
 
+internal static ж<godebug.Setting> urlmaxqueryparams = godebug.New("urlmaxqueryparams"u8);
+
+internal static UntypedInt defaultMaxParams => 10000;
+
+internal static bool urlParamsWithinMax(nint @params) {
+    var withinDefaultMax = @params <= defaultMaxParams;
+    if (urlmaxqueryparams.Value() == ""u8) {
+        return withinDefaultMax;
+    }
+    var (customMax, err) = strconv.Atoi(urlmaxqueryparams.Value());
+    if (err != default!) {
+        return withinDefaultMax;
+    }
+    var withinCustomMax = customMax == 0 || @params < customMax;
+    if (withinDefaultMax != withinCustomMax) {
+        urlmaxqueryparams.IncNonDefault();
+    }
+    return withinCustomMax;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string numberOfUrlQueryˢ = "number of URL query parameters exceeded limit"u8;
+
 internal static error /*err*/ parseQuery(Values m, @string query) {
     error err = default!;
 
+    if (!urlParamsWithinMax(strings.Count(query, "&"u8) + 1)) {
+        return errors.New(numberOfUrlQueryˢ);
+    }
     while (query != ""u8) {
         @string key = default!;
         (key, query, _) = strings.Cut(query, "&"u8);
@@ -1139,12 +1157,7 @@ public static @string Encode(this Values v) {
         return ""u8;
     }
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    var keys = new slice<@string>(0, len(v));
-    foreach (var (k, _) in v) {
-        keys = append(keys, k);
-    }
-    slices.Sort<slice<@string>, @string>(keys);
-    foreach (var (_, k) in keys) {
+    foreach (var (_, k) in slices.Sorted(maps.Keys<Values, @string, slice<@string>>(v))) {
         var vs = v[k];
         @string keyEscaped = QueryEscape(k);
         foreach (var (_, vΔ1) in vs) {
@@ -1350,7 +1363,11 @@ internal static (@string host, @string port) splitHostPort(@string hostPort) {
 // Marshaling interface implementations.
 // Would like to implement MarshalText/UnmarshalText but that will change the JSON representation of URLs.
 [GoRecv] public static (slice<byte> text, error err) MarshalBinary(this ref URL u) {
-    return (slice<byte>(u.String()), default!);
+    return u.AppendBinary(default!);
+}
+
+[GoRecv] public static (slice<byte>, error) AppendBinary(this ref URL u, slice<byte> b) {
+    return (append(b, u.String().ꓸꓸꓸ), default!);
 }
 
 [GoRecv] public static error UnmarshalBinary(this ref URL u, slice<byte> text) {

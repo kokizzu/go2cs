@@ -15,13 +15,16 @@ internal static ref vdsoVersionKey vdsoLinuxVersion => ref ᏑvdsoLinuxVersion.V
 internal static slice<vdsoSymbolKey> vdsoSymbolKeys;
 internal static void initᴛvdsoSymbolKeys() { vdsoSymbolKeys = new vdsoSymbolKey[]{
     new("__vdso_gettimeofday"u8, 0x315ca59, 0xb01bca00U, ᏑvdsoGettimeofdaySym),
-    new("__vdso_clock_gettime"u8, 0xd35ec75, 0x6e43a318, ᏑvdsoClockgettimeSym)
+    new("__vdso_clock_gettime"u8, 0xd35ec75, 0x6e43a318, ᏑvdsoClockgettimeSym),
+    new("__vdso_getrandom"u8, 0x25425d, 0x84a559bfU, ᏑvdsoGetrandomSym)
 }.slice(); }
 
 public static ж<uintptr> ᏑvdsoGettimeofdaySym = new StandardBox<uintptr>(default(uintptr));
 public static ref uintptr vdsoGettimeofdaySym => ref ᏑvdsoGettimeofdaySym.Value;
 public static ж<uintptr> ᏑvdsoClockgettimeSym = new StandardBox<uintptr>(default(uintptr));
 public static ref uintptr vdsoClockgettimeSym => ref ᏑvdsoClockgettimeSym.Value;
+internal static ж<uintptr> ᏑvdsoGetrandomSym = new StandardBox<uintptr>(default(uintptr));
+internal static ref uintptr vdsoGetrandomSym => ref ᏑvdsoGetrandomSym.Value;
 
 // vdsoGettimeofdaySym is accessed from the syscall package.
 //go:linkname vdsoGettimeofdaySym

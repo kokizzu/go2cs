@@ -70,8 +70,8 @@ using static go.net.http.fcgi_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/fcgi/child.go", "child.cs", "AGFKgsqCqJKCgoKCgpSCgoKUgoKUgoKCggANHKLugqaCgpSClAAIBoKClIKClIKClIIAAxDCgpSCgoCCpIKCpoKClKaCggAIFILuwoKCgoKAgqSAggAXIrKClJaUppaCgIKkgoKUgoKoooKUgqSCgoKmpJSUppSCgqakgoKmpJKCgpSUlKSCgoLMooKCgqamsoKClIKUgoKCgqaCggAHEoKEgriCgqYABBTygoKCgpSUgpSCgoKUggAHEvKC2rSapILclLY=")]
-[assembly: go.GoPositionMap("net/http/fcgi/fcgi.go", "fcgi.cs", "AF+eAYKClIKC7oKCgoKCAA0egqjSgoKCgpQADRCygIKkgpSCgIKkpoKo0oKCgoKAgqSAgqSAgqSC1oKCgoKmgoKCgoKCgIKkgIKkgIK2gqaCgpSSgoKUgoKUpoKClKaCgoKClIIACRSCgIKCpKaCgoIAChaCgoKCgpSAgqSClKaU")]
+[assembly: go.GoPositionMap("net/http/fcgi/child.go", "child.cs", "ACVKgsqCqJKCgoKCgpSCgoKUgoKUgoKCggANHKLugqaCgpSClAAIBoKClIKClIKClIIAAxDCgpSCgoCCpIKCpoKClKaCggAIFILuwoKCgoKAgqSAggAXIrKClJaUppaCgIKkgoKUgoKoooKUgqSCgoKmpJSUppSCgqakgoKmpJKCgpSUlKSCgoLMooKCgqamsoKClIKUgoKCgqaCggAHEoKEgriCgqYABBTygoKCgpSUgpSCgoKUggAHEvKC2rSapILclLY=")]
+[assembly: go.GoPositionMap("net/http/fcgi/fcgi.go", "fcgi.cs", "AEeeAYKClIKC7oKCgoKCAA0egqjigoKCgpQADRCygIKkgpSCgIKkpoKo4oKCgoKAgqSAgqSAgqSC1oKCgoKmgoKCgoKCgIKkgIKkgIK2gqaCgpSSgoKUgoKUpoKClKaCgoKClIIACRSCgIKCpKaCgoIAChaCgoKCgpSAgqSClKaU")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -98,4 +98,27 @@ public static partial class fcgi_package
     internal partial struct streamWriter {}
     public partial struct recType {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸcgi() => builtin.initPackage(typeof(go.net.http.cgi_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -6,15 +6,10 @@
 // mechanism.
 namespace go.@internal;
 
-using sync = sync_package;
+using sync = go.sync_package;
+using go;
 
 partial class singleflight_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // call is an in-flight or completed singleflight.Do call
 [GoType] partial struct call {
@@ -86,9 +81,9 @@ public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Fun
     {
         var (cΔ1, ok) = g.m[key, ꟷ]; if (ok) {
             cΔ1.Value.dups++;
-            cΔ1.Value.chans = append((~cΔ1).chans, ch);
+            cΔ1.Value.chans = append((~cΔ1).chans, ch.WithDirection(GoChanDir.Send));
             g.mu.Unlock();
-            return ch;
+            return ch.WithDirection(GoChanDir.Recv);
         }
     }
     var c = Ꮡ(new call(chans: new channel/*<-*/<Result>[]{ch}.slice()));
@@ -96,7 +91,7 @@ public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Fun
     g.m[key] = c;
     g.mu.Unlock();
     goǃ(Ꮡg.doCall, c, key, fn);
-    return ch;
+    return ch.WithDirection(GoChanDir.Recv);
 }
 
 // doCall handles the single call for a key.

@@ -54,24 +54,71 @@ type projitemsEntry struct {
 	path string // relative to src\go2cs, backslash-separated, exactly as written after the prefix
 }
 
+// classifyGoSourceRegistration splits the walked Go sources into the ones the item list does not
+// register at all and the ones it registers under the WRONG MSBuild item type.
+//
+// ⚠ THE SECOND CLASS WAS INVISIBLE UNTIL 2026-09-16. readProjitemsEntries has always recorded
+// each entry's item name, and this check keyed its map on the PATH alone -- so a Go source spelled
+// <Content Include="..."/> satisfied it. Measured as a regression on the real file: respelling one
+// row from <None> to <Content> left all three guards in this file at exit 0. A shared project COPIES
+// Content items to the output directory, so the wrong element changes what Visual Studio does and no
+// gate saw it. The field was captured and then dropped in the one direction that mattered.
+//
+// It is a pure function over its two inputs so both classes can be made to FIRE on synthetic entries
+// -- a guard nobody has watched fail proves nothing, and this one reads a real file it must not edit.
+func classifyGoSourceRegistration(entries []projitemsEntry, goSources []string) (missing []string, misfiled []projitemsEntry) {
+	registeredAsNone := make(map[string]bool, len(entries))
+	registeredOtherwise := make(map[string]projitemsEntry, len(entries))
+
+	for _, entry := range entries {
+		if entry.item == "None" {
+			registeredAsNone[entry.path] = true
+			continue
+		}
+
+		if _, seen := registeredOtherwise[entry.path]; !seen {
+			registeredOtherwise[entry.path] = entry
+		}
+	}
+
+	for _, source := range goSources {
+		if registeredAsNone[source] {
+			continue
+		}
+
+		if entry, wrongType := registeredOtherwise[source]; wrongType {
+			misfiled = append(misfiled, entry)
+			continue
+		}
+
+		missing = append(missing, source)
+	}
+
+	return missing, misfiled
+}
+
 // Every Go source under src\go2cs must be registered, including the internal\ command packages
 // (which appear with backslash-separated relative paths).
 func TestProjitemsRegistersEveryGoSource(t *testing.T) {
 	entries := readProjitemsEntries(t)
 	goSources, _ := walkConverterTree(t)
 
-	registered := make(map[string]bool, len(entries))
+	missing, misfiled := classifyGoSourceRegistration(entries, goSources)
 
-	for _, entry := range entries {
-		registered[entry.path] = true
-	}
+	if len(misfiled) > 0 {
+		var report strings.Builder
 
-	var missing []string
+		fmt.Fprintf(&report, "%s registers %d Go source(s) under the wrong MSBuild item type.\n", projitemsFileName, len(misfiled))
+		report.WriteString("A shared project COPIES <Content> items to the output directory; a Go source belongs\n")
+		report.WriteString("in the <None> ItemGroup. Respell each of these as <None>:\n")
 
-	for _, source := range goSources {
-		if !registered[source] {
-			missing = append(missing, source)
+		for _, entry := range misfiled {
+			fmt.Fprintf(&report, "    <%s Include=\"%s%s\" />\n", entry.item, projitemsIncludePrefix, entry.path)
 		}
+
+		report.WriteString("\n" + projitemsEditingNote)
+
+		t.Error(report.String())
 	}
 
 	if len(missing) == 0 {
@@ -254,17 +301,43 @@ func walkConverterTree(t *testing.T) (goSources []string, onDisk map[string]bool
 }
 
 // projitemsInsertionHint renders the line a missing source needs, plus the entry it belongs after,
-// so the fix is one mechanical edit that lands where Visual Studio would have put it. Both
-// ItemGroups are held in case-insensitive ordinal order by path (verified against the file as
-// committed); inserting anywhere else works but VS re-sorts it on the next touch, turning a
-// one-line fix into a diff.
+// so the fix is one mechanical edit that lands where Visual Studio would have put it.
+//
+// ⚠ IT TAKES THE NEAREST PREDECESSOR BY KEY, NOT THE LAST ONE IN FILE ORDER, AND THE DIFFERENCE
+// IS NOT THEORETICAL. This comment used to say both ItemGroups are held in case-insensitive ordinal
+// order by path, "verified against the file as committed". That is no longer true of the file and
+// was not true when it was read: measured 2026-09-16 at the version tip, 18 of 304 <None> rows sort
+// below their own predecessor (case-insensitive key; 27 under LC_ALL=C byte order, so the count is
+// meaningless without naming the collation). Rows get appended beside a related row rather than in
+// sorted position, and the file keeps that shape.
+//
+// On such a file "the last entry in file order that sorts below the key" walks PAST the insertion
+// point whenever a low-sorting row sits late: measured on this same tip, that rule named
+// LICENSE-EXCEPTION at line 308 as the predecessor for a row belonging at line 171 -- 137 lines
+// after the row it should precede. Taking the GREATEST key below the target instead is bounded, has
+// no dependence on file order at all, and is where Visual Studio's own sort puts the row.
+//
+// Inserting anywhere else still works for MSBuild; VS re-sorts on its next touch, turning a one-line
+// fix into a whole-file diff, which is the only cost and the reason this hint exists.
 func projitemsInsertionHint(missing string, entries []projitemsEntry) string {
 	key := strings.ToLower(missing)
 	predecessor := ""
+	predecessorKey := ""
 
 	for _, entry := range entries {
-		if entry.item == "None" && strings.ToLower(entry.path) < key {
+		if entry.item != "None" {
+			continue
+		}
+
+		candidate := strings.ToLower(entry.path)
+
+		if candidate >= key {
+			continue
+		}
+
+		if predecessor == "" || candidate > predecessorKey {
 			predecessor = entry.path
+			predecessorKey = candidate
 		}
 	}
 
@@ -275,4 +348,79 @@ func projitemsInsertionHint(missing string, entries []projitemsEntry) string {
 	}
 
 	return fmt.Sprintf("%s\n  after\n    <None Include=\"%s%s\" />\n", line, projitemsIncludePrefix, predecessor)
+}
+
+// ⚠ THE TWO CHECKS ABOVE READ A REAL FILE THEY MUST NOT EDIT, so neither has ever been watched
+// fail on the thing it claims to catch. These two run the same logic over SYNTHETIC entries, where a
+// red arm costs nothing. Both cases below are taken from measurements, not invented: the <Content>
+// respelling is the regression that left all three file-reading guards at exit 0, and the late
+// low-sorting row is the shape that made the old hint name a predecessor 137 lines too far down.
+func TestProjitemsRegistrationClassifierFires(t *testing.T) {
+	entries := []projitemsEntry{
+		{item: "None", path: `adapterNameCollisions.go`},
+		{item: "Content", path: `internal\repoguard\nativeCallGateWindows_test.go`},
+		{item: "Content", path: `csproj-template.xml`},
+	}
+
+	goSources := []string{
+		`adapterNameCollisions.go`,
+		`internal\repoguard\nativeCallGateWindows_test.go`,
+		`zeroSizeFieldLayout.go`,
+	}
+
+	missing, misfiled := classifyGoSourceRegistration(entries, goSources)
+
+	if len(missing) != 1 || missing[0] != `zeroSizeFieldLayout.go` {
+		t.Errorf("a source registered NOWHERE must read as missing; got %v", missing)
+	}
+
+	if len(misfiled) != 1 || misfiled[0].path != `internal\repoguard\nativeCallGateWindows_test.go` || misfiled[0].item != "Content" {
+		t.Errorf("a .go source registered as <Content> must read as MISFILED, not as registered; got %v", misfiled)
+	}
+
+	// The admitting arm, one axis: the same source spelled <None> is neither missing nor misfiled.
+	// Without it, a classifier that reported everything would pass the arm above.
+	entries[1].item = "None"
+
+	missing, misfiled = classifyGoSourceRegistration(entries, goSources)
+
+	if len(misfiled) != 0 {
+		t.Errorf("respelled <None>, the same source must be accepted; got misfiled %v", misfiled)
+	}
+
+	if len(missing) != 1 || missing[0] != `zeroSizeFieldLayout.go` {
+		t.Errorf("the admitting arm must not disturb the missing set; got %v", missing)
+	}
+}
+
+func TestProjitemsInsertionHintTakesTheNearestPredecessor(t *testing.T) {
+	// File order deliberately unsorted, reproducing the real file's shape: LICENSE-EXCEPTION sorts
+	// below `nested...` and sits LAST, and a <Content> row sorts below it too. Neither may be named.
+	entries := []projitemsEntry{
+		{item: "None", path: `nestedArgScaling_test.go`},
+		{item: "None", path: `visitValueSpec.go`},
+		{item: "Content", path: `nestedContentDecoy.xml`},
+		{item: "None", path: `LICENSE-EXCEPTION`},
+	}
+
+	hint := projitemsInsertionHint(`nestedMapPointerValue_test.go`, entries)
+
+	if !strings.Contains(hint, `nestedArgScaling_test.go`) {
+		t.Errorf("the hint must name the NEAREST key below the target, not the last one in file order.\n%s", hint)
+	}
+
+	if strings.Contains(hint, `LICENSE-EXCEPTION`) {
+		t.Errorf("a low-sorting row sitting LATE must not be named: that is the unbounded rule this replaced.\n%s", hint)
+	}
+
+	if strings.Contains(hint, `nestedContentDecoy.xml`) {
+		t.Errorf("the hint must search WITHIN the <None> group; a <Content> row is not a predecessor.\n%s", hint)
+	}
+
+	// Nothing sorts below the first row, so the hint must say FIRST rather than name something.
+	first := projitemsInsertionHint(`aardvark.go`, entries)
+
+	if !strings.Contains(first, "as the FIRST entry") {
+		t.Errorf("with no entry sorting below the target the hint must say FIRST; got\n%s", first)
+	}
 }

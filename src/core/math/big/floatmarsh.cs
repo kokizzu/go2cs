@@ -11,12 +11,6 @@ using @internal;
 
 partial class big_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
 // Gob codec version. Permits backward-compatible changes to the encoding.
 internal const byte floatGobVersion = 1;
 
@@ -53,9 +47,9 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
         b |= (byte)(1);
     }
     buf[1] = b;
-    byteorder.BePutUint32(buf[2..], x.prec);
+    byteorder.BEPutUint32(buf[2..], x.prec);
     if (x.form == finite) {
-        byteorder.BePutUint32(buf[6..], (uint32)x.exp);
+        byteorder.BEPutUint32(buf[6..], (uint32)x.exp);
         x.mant[(int)(len(x.mant) - n)..].bytes(buf[10..]); // cut off unused trailing words
     }
     return (buf, default!);
@@ -90,12 +84,12 @@ public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
     z.acc = (Accuracy)(((Accuracy)(int8)((byte)(((b >> (int)(3))) & 3))) - 1);
     z.form = ((form)((byte)(((b >> (int)(1))) & 3)));
     z.neg = (byte)(b & 1) != 0;
-    z.prec = byteorder.BeUint32(buf[2..]);
+    z.prec = byteorder.BEUint32(buf[2..]);
     if (z.form == finite) {
         if (len(buf) < 10) {
             return errors.New(floatGobDecodeBufferTooˢ2);
         }
-        z.exp = (int32)byteorder.BeUint32(buf[6..]);
+        z.exp = (int32)byteorder.BEUint32(buf[6..]);
         z.mant = z.mant.setBytes(buf[10..]);
     }
     if (oldPrec != 0) {
@@ -110,15 +104,21 @@ public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
     return default!;
 }
 
+// AppendText implements the [encoding.TextAppender] interface.
+// Only the [Float] value is marshaled (in full precision), other
+// attributes such as precision or accuracy are ignored.
+public static (slice<byte>, error) AppendText(this ж<Float> Ꮡx, slice<byte> b) {
+    if (Ꮡx == nil) {
+        return (append(b, ((@string)"<nil>"u8).ꓸꓸꓸ), default!);
+    }
+    return (Ꮡx.Append(b, (rune)'g', -1), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface.
 // Only the [Float] value is marshaled (in full precision), other
 // attributes such as precision or accuracy are ignored.
 public static (slice<byte> text, error err) MarshalText(this ж<Float> Ꮡx) {
-    if (Ꮡx == nil) {
-        return (slice<byte>("<nil>"u8), default!);
-    }
-    slice<byte> buf = default!;
-    return (Ꮡx.Append(buf, (rune)'g', -1), default!);
+    return Ꮡx.AppendText(default!);
 }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.

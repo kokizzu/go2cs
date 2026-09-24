@@ -8,12 +8,6 @@ using @internal;
 
 partial class strconv_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
-    builtin.initPackage(typeof(@internal.stringslite_package));
-}
-
 internal static readonly @string fnParseComplex = "ParseComplex"u8;
 
 // convErr splits an error returned by parseFloatPrefix

@@ -1939,6 +1939,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckTypedNilFuncBoundaries() => CheckTarget("TypedNilFuncBoundaries");
 
     [TestMethod]
+    public void CheckTypedNilFuncMethodSet() => CheckTarget("TypedNilFuncMethodSet");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]

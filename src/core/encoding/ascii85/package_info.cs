@@ -52,7 +52,7 @@ using static go.encoding.ascii85_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/ascii85/ascii85.go", "ascii85.cs", "ABk2AA0CgpaCgoKCgoKGkrSCpIKkgqS4goKCgoKogoKogoKClJSClKiQrtAAChSygqiCgoKClIKCgpSCgIKkqIKCgpSCgoKAgraCqIKCgqq0goKClAAEErIAAiAAEQKCgoKClJS0grSCtKSCgoKCgoKCgqaCgsqClLiUgoKCuKiQAAwYsoKUgpaUgoKCmLKCgoKCgpSmgoKCgqa6gpSCgqiC")]
+[assembly: go.GoPositionMap("encoding/ascii85/ascii85.go", "ascii85.cs", "AA02AA0CgpaCgoKCgoKGkrSCpIKkgqS4goKCgoKogoKogoKClJSClKiQrtAAChSygqiCgoKClIKCgpSCgIKkqIKCgpSCgoKAgraCqIKCgqq0goKClAAEErIAAiAAEQKCgoKClJS0grSCtKSCgoKCgoKCgqaCgsqClLiUgoKCuKiQAAwYsoKUgpaUgoKCmLKCgoKCgpSmgoKCgqa6gpSCgqiC")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -71,4 +71,15 @@ public static partial class ascii85_package
     [GoValueClone("buf", "@out")] internal partial struct encoder {}
     public partial struct CorruptInputError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

@@ -83,11 +83,11 @@ using static go.@internal.trace.traceviewer_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/traceviewer/emitter.go", "emitter.cs", "AEI2soKCgoKEggALBIKCpoKUlKKClKKClIKUgpSmpqaCggAKCoIABSCE9Ka4gpKClJKClJSCgraClIKUgqbcgoKCzgADEIKogoKCgpSCgpaCgrqCgu6CgoKUgoKWgIIAFCiCgqYAAB4AEBCEloKCloKUgoKoqJKCgoKUggAJHKKEACNGgoK4goKUpoKmgqaCpoKClKaCpoKClAAXMIKClIKUkoKUggAKFgAUKoKClIKUkgAWLoKClKaCpoKClIIACBIAEiaCpoKCpoKmgoKCgpSCAAsYpoKCgpSCAAsYpoiygpSCpoKClJKClIIABxCokoIABhCmgqqiAAkGgoSClIKWhIKCgoSCgpSUlqaC7gAIEoLcAAcUoqiSgpSCgoSCgoKCgoKUAAcQggB0vAGCgg==")]
-[assembly: go.GoPositionMap("internal/trace/traceviewer/histogram.go", "histogram.cs", "ACs0koKClIKClIKClIKUqJKosoKWhIKCgqiCgpSClKaClIKogoI=")]
-[assembly: go.GoPositionMap("internal/trace/traceviewer/http.go", "http.cs", "AB0egpKAgoIAGuADgoKUAAoWgtaCgoCCgqSCAAyOAoI=")]
-[assembly: go.GoPositionMap("internal/trace/traceviewer/mmu.go", "mmu.cs", "ADpWgsqSlIKkgqQADhiCgoKUABAiooKCgoKUhJKCgpSCpqiSgoKCloKCgoK6goKAgqSmlIKCgpSCpoCCtoKCgoKCgoKUgpSogoKCAAqQA7KCgoKWgoKCgpSGkoKWgoKCAAgShJKigqY=")]
-[assembly: go.GoPositionMap("internal/trace/traceviewer/pprof.go", "pprof.cs", "AE0ykqKChJKCgpSCgoKUgIKCpJaCgoKUkoKUgoKUgoCCgqSAgoKkgIKCpIKAgoKkgoIADBSCAAcQgoKCgoKCgoKC3IKUAAkUgpSUyuaCgoKUgoCCpA==")]
+[assembly: go.GoPositionMap("internal/trace/traceviewer/emitter.go", "emitter.cs", "AB42soKCgoKEggALBIKCpoKUlKKClKKClIKUgpSmpqaCggAKCoIABSCE9Ka4gpKClJKClJSCgraClIKUgqbcgoKCzgADEIKogoKCgpSCgpaCgrqCgu6CgoKUgoKWgIIAFCiCgqYAAB4AEBCEloKCloKUgoKoqJKCgoKUggAJHKKEACNGgoK4goKUpoKmgqaCpoKClKaCpoKClAAXMIKClIKUkoKUggAKFgAUKoKClIKUkgAWLoKClKaCpoKClIIACBIAEiaCpoKCpoKmgoKCgpSCAAsYpoKCgpSCAAsYpoiygpSCpoKClJKClIIABxCokoIABhCmgqqiAAkGgoSClIKWhIKCgoSCgpSUlqaC7gAIEoLcAAcUoqiSgpSCgoSCgoKCgoKUAAcQggB0vAGCgg==", "36-40:1;41-65:2;47-50:2.1;51-54:2.2;66-68:3;69-73:4;97-99:1;100-129:2;106-109:2.1;110-113:2.2;121-123:2.3;124-126:2.4;130-132:3;133-206:4")]
+[assembly: go.GoPositionMap("internal/trace/traceviewer/histogram.go", "histogram.cs", "ABk0koKClIKClIKClIKUqJKosoKWhIKCgqiCgpSClKaClIKogoI=")]
+[assembly: go.GoPositionMap("internal/trace/traceviewer/http.go", "http.cs", "ABEegpKAgoIA9QHgA4KClAAKFoLWgoKAgoKkggCIAY4Cgg==", "16-21:1;279-286:1")]
+[assembly: go.GoPositionMap("internal/trace/traceviewer/mmu.go", "mmu.cs", "AC9WgsqSlIKkgqQADhiCgoKUABAiooKCgoKUhJKCgpSCpqiSgoKCloKCgoK6goKAgqSmlIKCgpSCpoCCtoKCgoKCgoKUgpSogoKCAMsBkAOygoKCloKCgoKUhpKCloKCggAIEoSSooKm", "49-59:1;101-109:1")]
+[assembly: go.GoPositionMap("internal/trace/traceviewer/pprof.go", "pprof.cs", "ACkykqKChJKCgpSCgoKUgIKCpJaCgoKUkoKUgoKUgoCCgqSAgoKkgIKCpIKAgoKkgoIADBSCAAcQgoKCgoKCgoKC3IKUAAkUgpSUyuaCgoKUgoCCpA==", "26-81:1;30-34:1.1;52-55:1.2")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.trace;
@@ -126,4 +126,32 @@ public static partial class traceviewer_package
     public partial struct ViewType {}
     public partial struct splitter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸembed() => builtin.initPackage(typeof(embed_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhtmlꓸtemplate() => builtin.initPackage(typeof(html.template_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸprofile() => builtin.initPackage(typeof(go.@internal.profile_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() => builtin.initPackage(typeof(go.@internal.trace_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

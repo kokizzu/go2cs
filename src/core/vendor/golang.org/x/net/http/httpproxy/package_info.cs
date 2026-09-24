@@ -63,7 +63,7 @@ using static go.vendor.golang.org.x.net.http.httpproxy_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpproxy/proxy.go", "proxy.cs", "AI0BtAHyAAcQooKAgrYAAhoACwSmgtaigoKkgoKmgpSClqaCgpaCuICCtoKUrLKClIKClIKUgoKCgoKohIKCgriCgqamgoCCpICCpqKCgpaCgoKogIKCuIKClJSCpqaAgoKmlN6ClIKCgpSAgqQACRaygoCCpIKClKqgpAAJFIKUpoKCgqYADRqC7oIABxCCgpQACBSCgpSClA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http/httpproxy/proxy.go", "proxy.cs", "AFe0AfIABxCigoCCtgACGgALBKaC1qKCgqSCgqaClIKWpoKCloK4gIK2gpSssoKUgoKUgpSCgoKCgqiEgoKCuIKCpqaCgIKkgIKmooKCloKCgqiAgoK4goKUlIKmpoCCgqaU3oKUgoKClICCpAAJFrKCgIKkgoKUqqCkAAkUgpSmgoKCpgANGoLuggAHEIKClAAIFIKClIKU")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.net.http;
@@ -86,4 +86,22 @@ public static partial class httpproxy_package
     internal partial struct ipMatch {}
     public partial struct Config {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() => builtin.initPackage(typeof(go.net.netip_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸidna() => builtin.initPackage(typeof(go.vendor.golang.org.x.net.idna_package));
+    // </ImportInitializers>
 }

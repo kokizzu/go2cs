@@ -9,17 +9,11 @@ using io = io_package;
 
 partial class hash_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 // Hash is the common interface implemented by all hash functions.
 //
 // Hash implementations in the standard library (e.g. [hash/crc32] and
-// [crypto/sha256]) implement the [encoding.BinaryMarshaler] and
-// [encoding.BinaryUnmarshaler] interfaces. Marshaling a hash implementation
+// [crypto/sha256]) implement the [encoding.BinaryMarshaler], [encoding.BinaryAppender]
+// and [encoding.BinaryUnmarshaler] interfaces. Marshaling a hash implementation
 // allows its internal state to be saved and used for additional processing
 // later, without having to re-write the data previously written to the hash.
 // The hash state may contain portions of the input in its original form,

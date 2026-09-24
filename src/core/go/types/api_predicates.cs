@@ -6,8 +6,7 @@
 // This file implements exported type predicates.
 namespace go.go;
 
-using errors = global::go.@internal.types.errors_package;
-using token = global::go.go.token_package;
+using errors = @internal.types.errors_package;
 
 partial class types_package {
 
@@ -24,7 +23,7 @@ public static bool AssertableTo(ж<Interface> ᏑV, ΔType T) {
     if (!isValid(T.Underlying())) {
         return false;
     }
-    return (((ж<Checker>)nil)).newAssertableTo(nopos, new InterfaceжΔType(ᏑV), T, nil);
+    return (((ж<Checker>)nil)).newAssertableTo(new InterfaceжΔType(ᏑV), T, nil);
 }
 
 // AssignableTo reports whether a value of type V is assignable to a variable
@@ -64,7 +63,7 @@ public static bool Implements(ΔType V, ж<Interface> ᏑT) {
     if (!isValid(V.Underlying())) {
         return false;
     }
-    return (((ж<Checker>)nil)).implements(nopos, V, new InterfaceжΔType(ᏑT), false, nil);
+    return (((ж<Checker>)nil)).implements(V, new InterfaceжΔType(ᏑT), false, nil);
 }
 
 // Satisfies reports whether type V satisfies the constraint T.
@@ -72,7 +71,7 @@ public static bool Implements(ΔType V, ж<Interface> ᏑT) {
 // The behavior of Satisfies is unspecified if V is Typ[Invalid] or an uninstantiated
 // generic type.
 public static bool Satisfies(ΔType V, ж<Interface> ᏑT) {
-    return (((ж<Checker>)nil)).implements(nopos, V, new InterfaceжΔType(ᏑT), true, nil);
+    return (((ж<Checker>)nil)).implements(V, new InterfaceжΔType(ᏑT), true, nil);
 }
 
 // Identical reports whether x and y are identical types.

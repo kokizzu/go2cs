@@ -9,12 +9,6 @@ using go.sync;
 
 partial class syscall_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 // origRlimitNofile, if non-nil, is the original soft RLIMIT_NOFILE.
 internal static ж<atomic.Pointer<Rlimit>> ᏑorigRlimitNofile = new StandardBox<atomic.Pointer<Rlimit>>(default(atomic.Pointer<Rlimit>));
 internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimitNofile.Value;
@@ -36,11 +30,17 @@ internal static ref atomic.Pointer<Rlimit> origRlimitNofile => ref ᏑorigRlimit
 [GoInit] internal static void init() {
     ref var lim = ref heap(new Rlimit(), out var Ꮡlim);
     {
-        var err = Getrlimit(RLIMIT_NOFILE, Ꮡlim); if (err == default! && lim.Cur != lim.Max) {
+        var err = Getrlimit(RLIMIT_NOFILE, Ꮡlim); if (err == default! && lim.Max > 0 && lim.Cur < lim.Max - 1) {
             ᏑorigRlimitNofile.Store(Ꮡlim);
             ref var nlim = ref heap<Rlimit>(out var Ꮡnlim);
             nlim = lim;
-            nlim.Cur = nlim.Max;
+            // We set Cur to Max - 1 so that we are more likely to
+            // detect cases where another process uses prlimit
+            // to change our resource limits. The theory is that
+            // using prlimit to change to Cur == Max is more likely
+            // than using prlimit to change to Cur == Max - 1.
+            // The place we check for this is in exec_linux.go.
+            nlim.Cur = nlim.Max - 1;
             adjustFileLimit(ref nlim);
             setrlimit(RLIMIT_NOFILE, Ꮡnlim);
         }

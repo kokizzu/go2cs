@@ -6,9 +6,9 @@
 // See malloc.go for overview.
 namespace go;
 
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -26,7 +26,7 @@ partial class runtime_package {
 // smashed by freeing and reallocating.
 //
 // Consider marking fixalloc'd types not in heap by embedding
-// runtime/internal/sys.NotInHeap.
+// internal/runtime/sys.NotInHeap.
 [GoType] partial struct fixalloc {
     internal uintptr size;
     internal Action<@unsafe.Pointer, @unsafe.Pointer> first;   // called first time p is returned

@@ -49,7 +49,7 @@ using static go.runtime.coverage_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/coverage/coverage.go", "coverage.cs", "ABccogACENIAAhLiAAIU8gACEuIAAhLi")]
+[assembly: go.GoPositionMap("runtime/coverage/coverage.go", "coverage.cs", "AA4gogACENIAAhLiAAIU8gACEuIAAhLi")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;
@@ -65,4 +65,15 @@ public static partial class coverage_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcfile() => builtin.initPackage(typeof(@internal.coverage.cfile_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

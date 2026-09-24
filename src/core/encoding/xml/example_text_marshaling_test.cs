@@ -69,7 +69,7 @@ internal static readonly @string sizesSizeSmallSizeSizeˢ = """
 	</sizes>
 """u8;
 
-[GoType("dyn")] partial struct Example_textMarshalXML_inventory {
+[GoType("dyn")] internal partial struct Example_textMarshalXML_inventory {
     [GoTag(@"xml:""size""")]
     public slice<Size> Sizes;
 }

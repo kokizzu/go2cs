@@ -8,50 +8,15 @@ namespace go.crypto;
 
 using crypto = crypto_package;
 using boring = go.crypto.@internal.boring_package;
+using ecdh = go.crypto.@internal.fips140.ecdh_package;
 using subtle = go.crypto.subtle_package;
 using errors = errors_package;
 using io = io_package;
-using sync = sync_package;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class ecdh_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 [GoType] partial interface ΔCurve {
     // GenerateKey generates a random PrivateKey.
@@ -85,13 +50,6 @@ partial class ecdh_package {
     // The private method also allow us to expand the ECDH interface with more
     // methods in the future without breaking backwards compatibility.
     (slice<byte>, error) ecdh(ж<PrivateKey> local, ж<ΔPublicKey> remote);
-    // privateKeyToPublicKey converts a PrivateKey to a PublicKey. It's exposed
-    // as the PrivateKey.PublicKey method.
-    //
-    // This method always succeeds: for X25519, the zero key can't be
-    // constructed due to clamping; for NIST curves, it is rejected by
-    // NewPrivateKey.
-    ж<ΔPublicKey> privateKeyToPublicKey(ж<PrivateKey> _);
 }
 
 // PublicKey is an ECDH public key, usually a peer's ECDH share sent over the wire.
@@ -103,6 +61,7 @@ partial class ecdh_package {
     internal ΔCurve curve;
     internal slice<byte> publicKey;
     internal ж<boring.PublicKeyECDH> boring;
+    internal ж<ecdhꓸPublicKey> fips;
 }
 
 // Bytes returns a copy of the encoding of the public key.
@@ -140,11 +99,9 @@ partial class ecdh_package {
 [GoType] partial struct PrivateKey {
     internal ΔCurve curve;
     internal slice<byte> privateKey;
-    internal ж<boring.PrivateKeyECDH> boring;
-    // publicKey is set under publicKeyOnce, to allow loading private keys with
-    // NewPrivateKey without having to perform a scalar multiplication.
     internal ж<ΔPublicKey> publicKey;
-    internal sync.Once publicKeyOnce;
+    internal ж<boring.PrivateKeyECDH> boring;
+    internal ж<ecdh.PrivateKey> fips;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -156,6 +113,8 @@ private static readonly @string cryptoEcdhPrivateKeyAndˢ = "crypto/ecdh: privat
 // For NIST curves, this performs ECDH as specified in SEC 1, Version 2.0,
 // Section 3.3.1, and returns the x-coordinate encoded according to SEC 1,
 // Version 2.0, Section 2.3.5. The result is never the point at infinity.
+// This is also known as the Shared Secret Computation of the Ephemeral Unified
+// Model scheme specified in NIST SP 800-56A Rev. 3, Section 6.1.2.2.
 //
 // For [X25519], this performs ECDH as specified in RFC 7748, Section 6.1. If
 // the result is the all-zero value, ECDH returns an error.
@@ -196,35 +155,14 @@ public static (slice<byte>, error) ECDH(this ж<PrivateKey> Ꮡk, ж<ΔPublicKey
     return k.curve;
 }
 
-public static ж<ΔPublicKey> PublicKey(this ж<PrivateKey> Ꮡk) {
-    ref var k = ref Ꮡk.DerefOrNull();
-
-    Ꮡk.of(PrivateKey.ᏑpublicKeyOnce).Do(() => {
-        if (Ꮡk.Value.boring != nil){
-            // Because we already checked in NewPrivateKey that the key is valid,
-            // there should not be any possible errors from BoringCrypto,
-            // so we turn the error into a panic.
-            // (We can't return it anyhow.)
-            var (kpub, err) = Ꮡk.Value.boring.PublicKey();
-            if (err != default!) {
-                throw panic("boringcrypto: " + err.Error());
-            }
-            Ꮡk.Value.publicKey = Ꮡ(new ΔPublicKey(
-                curve: Ꮡk.Value.curve,
-                publicKey: kpub.Bytes(),
-                boring: kpub
-            ));
-        } else {
-            Ꮡk.Value.publicKey = Ꮡk.Value.curve.privateKeyToPublicKey(Ꮡk);
-        }
-    });
+[GoRecv] public static ж<ΔPublicKey> PublicKey(this ref PrivateKey k) {
     return k.publicKey;
 }
 
 // Public implements the implicit interface of all standard library private
 // keys. See the docs of [crypto.PrivateKey].
-public static cryptoꓸPublicKey Public(this ж<PrivateKey> Ꮡk) {
-    return Ꮡk.PublicKey().OrTypedNil();
+[GoRecv] public static cryptoꓸPublicKey Public(this ref PrivateKey k) {
+    return k.PublicKey().OrTypedNil();
 }
 
 } // end ecdh_package

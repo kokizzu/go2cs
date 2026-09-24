@@ -54,8 +54,8 @@ using static go.go.build.constraint_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/build/constraint/expr.go", "expr.cs", "AENapIKmgqaA/qSCpoKCpLSmgP6klIKCpoKmgoKAgqSmggAHEKSUgoKmgqaCgoCCpKaCAAgSgs6igIKkgIKkqqKC2rSClIKWgpaCzIKClgAMINKCgIKAgoKkuIKCgpTs0oKClKzSgoKUrNKCgpSCgoKClJTcAAgEgpKCgIKAgqS2goKUgpaCgpSUgoIABRLigoKUgoKClJSCgoKmgpSCgoKmgoKCgqaCgpaCgoKqooLatIKUgpaClJSEgpTMgoKW2JiyhIKCgqKCgoKUgoKUgpSUgqaClICCpKaClICCpKaClKyygpSCgqb+2IaSgoKCgoKktLaUzIKCgqaCgoKUmJKCgoKCgoKUlJSWrLKmpICSpKSClKSCgoKUgpSkgoKClIKUvKKAgoKCpKqigIKCgqQ=")]
-[assembly: global::go.GoPositionMap("go/build/constraint/vers.go", "vers.cs", "ABM8ABICgoKUgpTaoqSkgoKUpIKClKSklJSClIKClJS+soKUrLKClA==")]
+[assembly: global::go.GoPositionMap("go/build/constraint/expr.go", "expr.cs", "ACtapIKmgqaA/qSCpoKCpLSmgP6klIKCpoKmgoKAgqSmggAHEKSUgoKmgqaCgoCCpKaCAAgSgs6igIKkgIKkqqKC2rSClIKWgpaCzIKClgAMINKCgIKAgoKkuIKCgpTs0oKClKzSgoKUrNKCgpSCgoKClJTcAAgEgpKCgIKAgqS2goKUgpaCgpSUgoIABRLigoKUgoKClJSCgoKmgpSCgoKmgoKCgqaCgpaCgoKqooLatIKUgpaClJSEgpTMgoKW2JiyhIKCgqKCgoKUgoKUgpSUgqaClICCpKaClICCpKaClKyygpSCgqb+2IaSgoKCgoKktLaUzIKCgqaCgoKUmJKCgoKCgoKUlJSWrLKmpICSpKSClKSCgoKUgpSkgoKClIKUvKKAgoKCpKqigIKCgqQ=", "214-222:1;280-287:1")]
+[assembly: global::go.GoPositionMap("go/build/constraint/vers.go", "vers.cs", "AA08ABICgoKUgpTaoqSkgoKUpIKClKSklJSClIKClJS+soKUrLKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.go.build;
@@ -78,4 +78,18 @@ public static partial class constraint_package
     public partial struct SyntaxError {}
     public partial struct TagExpr {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

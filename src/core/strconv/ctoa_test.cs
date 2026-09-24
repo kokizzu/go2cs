@@ -9,7 +9,7 @@ using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
-[GoType("dyn")] partial struct TestFormatComplex_tests {
+[GoType("dyn")] internal partial struct TestFormatComplex_tests {
     internal complex128 c;
     internal byte fmt;
     internal nint prec;

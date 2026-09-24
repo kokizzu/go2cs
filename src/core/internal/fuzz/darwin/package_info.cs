@@ -48,6 +48,7 @@ using static go.@internal.fuzz_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b506172656e7420737472696e673b205061746820737472696e673b2044617461205b5d627974653b2056616c756573205b5d616e793b2047656e65726174696f6e20696e743b2049735365656420626f6f6c7d", "CorpusEntryᴛ1")]
 [assembly: GoTypeAlias("CorpusEntry", "go.@internal.fuzz_package.CorpusEntryᴛ1")]
 // </ExportedTypeAliases>
 
@@ -80,18 +81,18 @@ using static go.@internal.fuzz_package;
 
 // <GoSourcePositionMaps>
 [assembly: global::go.GoPositionMap("internal/fuzz/counters_supported.go", "counters_supported.cs", "AAoiwoKC")]
-[assembly: global::go.GoPositionMap("internal/fuzz/coverage.go", "coverage.cs", "ABccooKuwoKigoKCgryigpSCgoKCpoKUgoKUqqKCgpSqooKCpqqigoKmpoKCgpQ=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/encoding.go", "encoding.cs", "AEgwwoKUpoIACgS0AAwaAAoWxoKUxgADHAANApTK5NS2qJKClIKClIKClIKigoKUgoKUlAAKBoKCgoKUgoKUgpSEgIKClIKClIKClIKClKaCgIKCgpSUpKS2goKUgoKClIKklMqYgIKUgpaCtJKUgpSUxKaUtIKUxLiApIKUtIKUpLaClIKClIKClIKUgpSkgpSkgpSkgpSCpIKUtIKUgoKUpIKUgoKUpNqSntKkgqSCpIKktMqSlIKkgqSCpIKktA==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/fuzz.go", "fuzz.cs", "AIgBqgEADgKAgqSClIKUlJaCgpaCgoK4gpKWkoKygoKClKi4lIKUgpSCgrqCooKUgoKClIIABxKCgoKEgoKCgoKCpoKCsoKClIKClN6CgpKUgpSCloKCgpaCgoKW+LiCgrLakpSEgoKCgoKUgqaClMqCgsiCgoLKggAHEraCggAGEIKCgoKC/gAIEqamgoKCgpSCgrqUgoKCggALGoIACxaCgoKCAAgUuLYAFiCCpoKmggAIGOKCsoKClIKCgpSCgILalIKUABlCooKWAIEBxgKUgoKmAAgSgIKkgoKCgrqCgriCgqaCgqaUhIKCgoKUgoKClqaCgoKmgoKCgoKUtpSCgoKUpoIAAhoACgKmlIKmlJaCgpTKgpSmgpaCgoKUgoKmqJKCqqKCvKKCAAYQgpbKqqKmlIKClISClIKkgpSCgriCgoKmqqKCAAIgAA0CrLKClIKCgoKUqqKoggACENKAgqSCgoCm7ICCpAAJFIKCgpSuwoKCpJSCgtyClIKCgpSCgoKClJSClKaCgoKUgIKkqqKClIKClIKCpq7igoKAgqSAgoKkpoKmgoKCpgAYMoKmooI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mem.go", "mem.cs", "ADF2tNr0goKUooKCuoKAgriC6JKqooKCqJKCrLKCgpSCAAIS4oKClA==")]
+[assembly: global::go.GoPositionMap("internal/fuzz/coverage.go", "coverage.cs", "AAscooKuwoKigoKCgryigpSCgoKCpoKUgoKUqqKCgpSqooKCpqqigoKmpoKCgpQ=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/encoding.go", "encoding.cs", "ABgwwoKUpoIACgS0AAwaAAoWxoKUxgADHAANApTK5NS2qJKClIKClIKClIKigoKUgoKUlAAKBoKCgoKUgoKUgpSEgIKClIKClIKClIKClKaCgIKCgpSUpKS2goKUgoKClIKklMqYgIKUgpaCtJKUgpSUxKaUtIKUxLiApIKUtIKUpLaClIKClIKClIKUgpSkgpSkgpSkgpSCpIKUtIKUgoKUpIKUgoKUpNqSntKkgqSCpIKktMqSlIKkgqSCpIKktA==")]
+[assembly: global::go.GoPositionMap("internal/fuzz/fuzz.go", "fuzz.cs", "AE2qAQAOAoCCpIKUgpSUloKCloKCgriCkpaSgrKCgoKUqLiUgpSClIKCuoKigpSCgoKUggAHEoKCgoSCgoKCgoKmgoKygoKUgoKU3oKCkpSClIKWgoKCloKCgpb4uIKCstqSlISCgoKCgpSCpoKUyoKCyIKCgsqCAAcStoKCAAYQgoKCgoL+AAgSpqaCgoKClIKCupSCgoKCAAsaggALFoKCgoIACBS4tgAWIIKmgqaCAAgY4oKygoKUgoKClIKAgtqUgpQAGUKigpYAgQHGApSCgqYACBKAgqSCgoKCuoKCuIKCpoKCppSEgoKCgpSCgoKWpoKCgqaCgoKCgpS2lIKCgpSmggACGgAKAqaUgqaUloKClMqClKaCloKCgpSCgqaokoKqooK8ooIABhCClsqqoqaUgoKUhIKUgqSClIKCuIKCgqaqooIAAiAADQKssoKUgoKCgpSqoqiCAAIQ0oCCpIKCgKbsgIKkAAkUgoKClK7CgoKklIKC3IKUgoKClIKCgoKUlIKUpoKCgpSAgqSqooKUgoKUgoKmruKCgoCCpICCgqSmgqaCgoKmABgygqaigg==", "119-144:1;149-164:2;184-194:3")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mem.go", "mem.cs", "ADF2tNr0goKUooKCuoKAgriC6JKqooKCqJKCrLKCgpSCAAIS4oKClA==", "72-77:1")]
 [assembly: global::go.GoPositionMap("internal/fuzz/minimize.go", "minimize.cs", "AAkWgqai3JaCgoKUgoKmuoKClIKCgoKmgqaogoKCgpSCgoKmgoLMgoKCloKClKY=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/mutator.go", "mutator.cs", "ABgmgqaCpoKClKqigKSkpNoACRCogpS0tLS0tLS0tLS0gsbExIKUgpSClIK0gpSClIKUgsTIgoKCgpaSlJSUgqaSlJSUgtqCgoKClpKUlJaCppKUlJSC2oKCgpaSlIKUlIKmkpSClJSCpoKSlIKUlIKmkpSCAB040pKCgpSWgoKAgoIADyCCgpSC")]
+[assembly: global::go.GoPositionMap("internal/fuzz/mutator.go", "mutator.cs", "ABImgqaCpoKClKqigKSkpNoACRCogpS0tLS0tLS0tLS0gsbExIKUgpSClIK0gpSClIKUgsTIgoKCgpaSlJSUgqaSlJSUgtqCgoKClpKUlJaCppKUlJSC2oKCgpaSlIKUlIKmkpSClJSCpoKSlIKUlIKmkpSCAB040pKCgpSWgoKAgoIADyCCgpSC", "259-264:1")]
 [assembly: global::go.GoPositionMap("internal/fuzz/mutators_byteslice.go", "mutators_byteslice.cs", "AAoQsoKUgoKCgqrCgoKClIKCgpSqwoKUgoKClLiClKamppSCgqiygpSCgoKUgoKosoKUgoKosoKUuIKosoKUgoKClIKosoKUgoKClJSosoKUgoKUgoKCqLKClIKClIKCgqiygpSCgpSCgoKqwoKUgoKqwoKUgoKCqsKClIKCgqiygpQACBKCgpSCgoKClKiygpSCgoKClKiygpSCgoLKgoKUqLKClIKCgsqCgpSmgsqClIKCgoKCgg==")]
-[assembly: global::go.GoPositionMap("internal/fuzz/pcg.go", "pcg.cs", "ADZagoKCgpKClKaokoKCgIKkgoKCgoKCpoKCprKCpoKCqJKCgqqigpQAAhDSgoKCgoKCgoKmqJKokgAKFrI=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/pcg.go", "pcg.cs", "AC9YgoKCgpKClKaokoKCgIKkgoKCgoKCpoKCprKCpoKCqJKCgqqigpQAAhDSgoKCgoKCgoKmqJIAChay")]
 [assembly: global::go.GoPositionMap("internal/fuzz/queue.go", "queue.cs", "ABcugqaCgoKClIKCgpSCpoKClIKCpoKClIKCgoKmgoKUpoI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/sys_posix.go", "sys_posix.cs", "AB8kgoKCgoKWqqiypoKUgoKmqqKCgoL4soKCgoKClIKClIKCgpSCgqqigoKUgqyygoKUggACHAALAgABEqQ=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/sys_posix.go", "sys_posix.cs", "ABMkgoKCgoKWqqiypoKUgoKmqqKCgoL4soKCgoKClIKClIKCgpSCgqqigoKUgqyygoKUggACHAALAgABEqQ=")]
 [assembly: global::go.GoPositionMap("internal/fuzz/trace.go", "trace.cs", "AAowAAwCoqKkoqKipKI=")]
-[assembly: global::go.GoPositionMap("internal/fuzz/worker.go", "worker.cs", "ADt+goKClIKCAAoWkoKClIIAAhoADQSUgoCCuNaCkpSogpKUAAoWlICmqMr8goKUgpSUppSA3KSmyoKUAAkUuJLK3IKmggAHEgAFEgAKAoKCgqbKgpSC3AAHEAAIFIKWAA4WggACFgAKAoKUgIKkgIKCgpSUpqQAAhoADwKClIKChIKCAAgUgoKUkoKCgpSSloCCgoLcgoKCgoSCgpYABhgACwKClKakloKCggAIDoKSgpaCuJaCgraCgoKCqIKWgoKogoKoAAwgAAoCkoKUxoKUkoKC6ACBAa4CAAwCgoKCgoCCgpS4gpS0tLSmgIIAEzYAEAKCgoKUlJKQlIKCgqSCgpKClIKCloKCgpSChKaygoKCgoKClJSClJaCgoKClIKClJaCpKSCgpSEgoKCgpSCgoKUggAKDNKSkJKCkJKCgpSCgoKCyoKCgoKCgoLugpS4AAUQAAkCkpKCgqiCzIKCgoK2lMzCgpS0tLSCgoKCgoKCuJSmgpSClJS0xKSmooKqogAQJIKs8oKogIKCyoCCgqQADhwACwKChJKClICSgoKClIKCgoKUgoKWgoKCgoKCloKClMqUtLS0lJaUgoKCuoKCgqaCgoK4goKCAAgIAAsCgoSCgpSCgoKClIKEgoKClIKClJCShIKUhIKCgpSClIKCpoSCgtymqOjSgoKCgtqigoKAgqQADyCigIKkiKKCooKWtKQ=")]
+[assembly: global::go.GoPositionMap("internal/fuzz/worker.go", "worker.cs", "ADB+goKClIKCAAoWkoKClIIAAhoADQSUgoCCuNaCkpSogpKUAAoWlICmqMr8goKUgpSUppSA3KSmyoKUAAkUuJLK3IKmggAHEgAFEgAKAoKCgqbKgpSC3AAHEAAIFIKWAA4WggACFgAKAoKUgIKkgIKCgpSUpqQAAhoADwKClIKChIKCAAgUgoKUkoKCgpSSloCCgoLcgoKCgoSCgpYABhgACwKClKakloKCggAIDoKSgpaCuJaCgraCgoKCqIKWgoKogoKoAAwgAAoCkoKUxoKUkoKC6ACBAa4CAAwCgoKCgoCCgpS4gpS0tLSmgIIAEzYAEAKCgoKUlJKQlIKCgqSCgpKClIKCloKCgpSChKaygoKCgoKClJSClJaCgoKClIKClJaCpKSCgpSEgoKCgpSCgoKUggAKDNKSkJKCkJKCgpSCgoKCyoKCgoKCgoLugpS4AAUQAAkCkpKCgqiCzIKCgoK2lMzCgpS0tLSCgoKCgoKCuJSmgpSClJS0xKSmooKqogAQJIKsAAgCgqiAgoLKgIKCpAAOHAALAoKEkoKUgJKCgoKUgoKCgpSCgpaCgoKCgoKWgoKUypS0tLSUlpSCgoK6goKCpoKCgriCgoIACAgACwKChIKClIKCgoKUgoSCgoKUgoKUkJKEgpSEgoKClIKUgoKmhIKC3Kao6OKCgoKC2qKCgoCCpAAPIKKAgqSIooKigpa0pA==", "386-389:1;426-429:1;491-499:1;492-494:1.1;715-715:1;724-727:2;741-743:3;744-759:4;805-805:1;807-807:2;855-858:1;881-912:2;996-996:1;1100-1100:1;1184-1187:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -136,4 +137,39 @@ public static partial class fuzz_package
     public partial struct minimizeArgs {}
     public partial struct pingArgs {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(global::go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(global::go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(global::go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(global::go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(global::go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

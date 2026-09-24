@@ -7,9 +7,7 @@ namespace go.go;
 using bytes = bytes_package;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
-using typeparams = global::go.go.@internal.typeparams_package;
 using global::go.go;
-using global::go.go.@internal;
 using io = io_package;
 
 partial class types_package {
@@ -25,12 +23,13 @@ public static @string ExprString(ast.Expr x) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string literalˢ = " literal)"u8;
-internal static readonly @string structˢ2 = "struct{"u8;
-internal static readonly @string interfaceˢ2 = "interface{"u8;
-internal static readonly @string mapˢ2 = "map["u8;
-internal static readonly @string chanˢ2 = "chan<- "u8;
-internal static readonly @string chanˢ3 = "<-chan "u8;
-internal static readonly @string chanˢ4 = "chan "u8;
+internal static readonly @string structˢ = "struct{"u8;
+internal static readonly @string funcˢ = "func"u8;
+internal static readonly @string interfaceˢ = "interface{"u8;
+internal static readonly @string mapˢ = "map["u8;
+internal static readonly @string chanˢ = "chan<- "u8;
+internal static readonly @string chanˢ2 = "<-chan "u8;
+internal static readonly @string chanˢ3 = "chan "u8;
 
 // WriteExpr writes the (possibly shortened) string representation for x to buf.
 // Shortened representations are suitable for user interfaces but may not
@@ -93,10 +92,10 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     case ж<ast.IndexExpr> _:
     case ж<ast.IndexListExpr> _: {
         var xΔ1 = x;
-        var ix = typeparams.UnpackIndexExpr(xΔ1);
-        WriteExpr(Ꮡbuf, (~ix).X);
+        var ix = unpackIndexedExpr(xΔ1);
+        WriteExpr(Ꮡbuf, (~ix).x);
         buf.WriteByte((rune)'[');
-        writeExprList(Ꮡbuf, (~ix).Indices);
+        writeExprList(Ꮡbuf, (~ix).indices);
         buf.WriteByte((rune)']');
         break;
     }
@@ -164,7 +163,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         break;
     }
     case ж<ast.StructType> xΔ1: {
-        buf.WriteString(structˢ2);
+        buf.WriteString(structˢ);
         writeFieldList(Ꮡbuf, (~(~xΔ1).Fields).List, "; "u8, false);
         buf.WriteByte((rune)'}');
         break;
@@ -175,13 +174,13 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         break;
     }
     case ж<ast.InterfaceType> xΔ1: {
-        buf.WriteString(interfaceˢ2);
+        buf.WriteString(interfaceˢ);
         writeFieldList(Ꮡbuf, (~(~xΔ1).Methods).List, "; "u8, true);
         buf.WriteByte((rune)'}');
         break;
     }
     case ж<ast.MapType> xΔ1: {
-        buf.WriteString(mapˢ2);
+        buf.WriteString(mapˢ);
         WriteExpr(Ꮡbuf, (~xΔ1).Key);
         buf.WriteByte((rune)']');
         WriteExpr(Ꮡbuf, (~xΔ1).Value);
@@ -191,13 +190,13 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         @string s = default!;
         var exprᴛ1 = (~xΔ1).Dir;
         if (exprᴛ1 == ast.SEND) {
-            s = chanˢ2;
+            s = chanˢ;
         }
         else if (exprᴛ1 == ast.RECV) {
-            s = chanˢ3;
+            s = chanˢ2;
         }
         else { /* default: */
-            s = chanˢ4;
+            s = chanˢ3;
         }
 
         buf.WriteString(s);

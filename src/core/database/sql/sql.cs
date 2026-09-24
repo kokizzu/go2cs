@@ -20,6 +20,7 @@ using driver = go.database.sql.driver_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
+using maps = maps_package;
 using rand = math.rand.rand_package;
 using reflect = reflect_package;
 using runtime = runtime_package;
@@ -31,46 +32,11 @@ using time = time_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
 using go.database.sql;
 using go.sync;
+using iter = iter_package;
 using math.rand;
 using ꓸꓸꓸany = Span<any>;
 
 partial class sql_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() {
-    builtin.initPackage(typeof(math.rand.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
 
 internal static ж<sync.RWMutex> ᏑdriversMu = new StandardBox<sync.RWMutex>(default(sync.RWMutex));
 internal static ref sync.RWMutex driversMu => ref ᏑdriversMu.Value;
@@ -130,12 +96,7 @@ public static slice<@string> Drivers() {
     try {
         ᏑdriversMu.RLock();
         defer(ᏑdriversMu.RUnlock, ref ᒐ);
-        var list = new slice<@string>(0, len(drivers));
-        foreach (var (name, _) in drivers) {
-            list = append(list, name);
-        }
-        slices.Sort<slice<@string>, @string>(list);
-        return list;
+        return slices.Sorted(maps.Keys<map<@string, driver.Driver>, @string, driver.Driver>(drivers));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
@@ -506,6 +467,8 @@ public static (driverꓸValue, error) Value(this NullTime n) {
 //	} else {
 //	   // NULL value
 //	}
+//
+// T should be one of the types accepted by [driver.Value].
 [GoType] partial struct Null<T> {
     public T V;
     public bool Valid;
@@ -526,7 +489,19 @@ public static (driverꓸValue, error) Value<T>(this Null<T> n) {
     if (!n.Valid) {
         return (default!, default!);
     }
-    return (n.V, default!);
+    var v = ((any)n.V);
+    // See issue 69728.
+    {
+        var (valuer, ok) = v._<driver.Valuer>(ᐧ); if (ok) {
+            var (val, err) = callValuerValue(valuer);
+            if (err != default!) {
+                return (val, err);
+            }
+            v = val;
+        }
+    }
+    // See issue 69837.
+    return driver.DefaultParameterConverter.ConvertValue(v);
 }
 
 // Scanner is an interface used by [Rows.Scan].

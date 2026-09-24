@@ -7,12 +7,10 @@ namespace go.go;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
-using typeparams = global::go.go.@internal.typeparams_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using strings = strings_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
-using global::go.go.@internal;
 using token = global::go.go.token_package;
 
 partial class types_package {
@@ -32,24 +30,13 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
 
     x.mode = invalid;
     x.expr = new ast.IdentжExpr(Ꮡe);
-    // Note that we cannot use check.lookup here because the returned scope
-    // may be different from obj.Parent(). See also Scope.LookupParent doc.
-    var (scope, obj) = check.scope.LookupParent(e.Name, check.pos);
+    var (scope, obj) = Ꮡcheck.of(Checker.Ꮡenvironment).lookupScope(e.Name);
     var exprᴛ1 = obj;
     if (AreEqual(exprᴛ1, default!)) {
         if (e.Name == "_"u8){
-            // Blank identifiers are never declared, but the current identifier may
-            // be a placeholder for a receiver type parameter. In this case we can
-            // resolve its type and object from Checker.recvTParamMap.
-            {
-                var tpar = check.recvTParamMap[Ꮡe]; if (tpar != nil){
-                    x.mode = typexpr;
-                    x.typ = new TypeParamжΔType(tpar);
-                } else {
-                    Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidBlank, cannotUseAsValueOrTypeˢ);
-                }
-            }
-        } else {
+            Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidBlank, cannotUseAsValueOrTypeˢ);
+        } else 
+        if (isValidName(e.Name)) {
             Ꮡcheck.errorf(new ast_Identжpositioner(Ꮡe), UndeclaredName, "undefined: %s"u8, e.Name);
         }
         return;
@@ -79,7 +66,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
         {
             var (v, _) = obj._<ж<Var>>(ᐧ); if (v != nil && (~v).pkg == check.pkg) {
                 /* see Checker.use1 */
-                v.Value.used = true;
+                check.usedVars[v] = true;
             }
         }
         return;
@@ -87,13 +74,16 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
     // Type-check the object.
     // Only call Checker.objDecl if the object doesn't have a type yet
     // (in which case we must actually determine it) or the object is a
-    // TypeName and we also want a type (in which case we might detect
-    // a cycle which needs to be reported). Otherwise we can skip the
-    // call and avoid a possible cycle error in favor of the more
-    // informative "not a type/value" error that this function's caller
-    // will issue (see go.dev/issue/25790).
+    // TypeName from the current package and we also want a type (in which case
+    // we might detect a cycle which needs to be reported). Otherwise we can skip
+    // the call and avoid a possible cycle error in favor of the more informative
+    // "not a type/value" error that this function's caller will issue (see
+    // go.dev/issue/25790).
+    //
+    // Note that it is important to avoid calling objDecl on objects from other
+    // packages, to avoid races: see issue #69912.
     var typ = obj.Type();
-    if (typ == default! || gotType && wantType) {
+    if (typ == default! || (gotType && wantType && obj.Pkg() == check.pkg)) {
         Ꮡcheck.objDecl(obj, Ꮡdef);
         typ = obj.Type(); // type must have been assigned by Checker.objDecl
     }
@@ -104,7 +94,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
     // we only have to mark variables, see *Var case below).
     {
         var pkgName = check.dotImportMap[new dotImportKey(scope, obj.Name())]; if (pkgName != nil) {
-            pkgName.Value.used = true;
+            check.usedPkgNames[pkgName] = true;
         }
     }
     switch (obj.type()) {
@@ -143,7 +133,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
             // It's ok to mark non-local variables, but ignore variables
             // from other packages to avoid potential race conditions with
             // dot-imported variables.
-            objΔ1.Value.used = true;
+            check.usedVars[objΔ1] = true;
         }
         check.addDeclDep(new VarжObject(objΔ1));
         if (!isValid(typ)) {
@@ -237,6 +227,10 @@ internal static ΔType definedType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<Typ
 // genericType is like typ but the type must be an (uninstantiated) generic
 // type. If cause is non-nil and the type expression was a valid type but not
 // generic, cause will be populated with a message describing the error.
+//
+// Note: If the type expression was invalid and an error was reported before,
+// cause will not be populated; thus cause alone cannot be used to determine
+// if an error occurred.
 internal static ΔType genericType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<@string> Ꮡcause) {
     ref var check = ref Ꮡcheck.DerefOrNull();
     ref var cause = ref Ꮡcause.DerefOrNull();
@@ -345,8 +339,8 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
         case ж<ast.IndexExpr> _:
         case ж<ast.IndexListExpr> _: {
             var e = e0;
-            var ix = typeparams.UnpackIndexExpr(e);
-            Ꮡcheck.verifyVersionf(inNode(e, (~ix).Lbrack), go1_18, "type instantiation"u8);
+            var ix = unpackIndexedExpr(e);
+            Ꮡcheck.verifyVersionf(inNode(e, (~ix).lbrack), go1_18, "type instantiation"u8);
             T = Ꮡcheck.instantiatedType(ix, Ꮡdef); goto ᒐdone;
         }
         case ж<ast.ParenExpr> e: {
@@ -398,6 +392,13 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             typΔ8.Value.@base = new BasicжΔType(Typ[Invalid]); // avoid nil base in invalid recursive type declaration
             setDefType(Ꮡdef, new PointerжΔType(typΔ8));
             typΔ8.Value.@base = Ꮡcheck.varType((~e).X);
+            if (!isValid((~typΔ8).@base)) {
+                // If typ.base is invalid, it's unlikely that *base is particularly
+                // useful - even a valid dereferenciation will lead to an invalid
+                // type again, and in some cases we get unexpected follow-on errors
+                // (e.g., go.dev/issue/49005). Return an invalid type instead.
+                T = new BasicжΔType(Typ[Invalid]); goto ᒐdone;
+            }
             T = new PointerжΔType(typΔ8); goto ᒐdone;
         }
         case ж<ast.FuncType> e: {
@@ -479,11 +480,6 @@ internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
     if (Ꮡdef != nil) {
         switch (def.typ.type()) {
         case ж<Alias> t: {
-            if (!AreEqual((~t).fromRHS, Typ[Invalid]) && !AreEqual((~t).fromRHS, typ)) {
-                // t.fromRHS should always be set, either to an invalid type
-                // in the beginning, or to typ in certain cyclic declarations.
-                throw panic(sprintf(nil, default!, true, "t.fromRHS = %s, typ = %s\n"u8, (~t).fromRHS, typ));
-            }
             t.Value.fromRHS = typ;
             break;
         }
@@ -506,7 +502,11 @@ internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string instantiatingTypeSWithSˢ = "-- instantiating type %s with %s"u8;
 
-internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡix, ж<TypeName> Ꮡdef) {
+[GoType("dyn")] internal partial interface instantiatedType_type {
+    ж<TypeName> Obj();
+}
+
+internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<indexedExpr> Ꮡix, ж<TypeName> Ꮡdef) {
     ΔType res = default!;
     GoFrame ᒐ = default;
     try {
@@ -514,7 +514,7 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
         ref var ix = ref Ꮡix.DerefOrNull();
 
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.X, ix.Indices);
+            Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.x, ix.indices);
             check.indent++;
             defer(() => {
                 Ꮡcheck.Value.indent--;
@@ -526,56 +526,61 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
             setDefType(Ꮡdef, res);
         }, ref ᒐ);
         ref var cause = ref heap(new @string(), out var Ꮡcause);
-        var gtyp = Ꮡcheck.genericType(ix.X, Ꮡcause);
+        var typ = Ꮡcheck.genericType(ix.x, Ꮡcause);
         if (cause != ""u8) {
-            Ꮡcheck.errorf(new ast_Exprᴠpositioner(ix.Orig), NotAGenericType, invalidOp + "%s (%s)", ix.Orig, cause);
+            Ꮡcheck.errorf(new ast_Exprᴠpositioner(ix.orig), NotAGenericType, invalidOp + "%s (%s)", ix.orig, cause);
         }
-        if (!isValid(gtyp)) {
-            res = gtyp; goto ᒐdone; // error already reported
+        if (!isValid(typ)) {
+            res = typ; goto ᒐdone; // error already reported
         }
+        // typ must be a generic Alias or Named type (but not a *Signature)
+        {
+            var (_, ok) = typ._<ж<ΔSignature>>(ᐧ); if (ok) {
+                throw panic("unexpected generic signature");
+            }
+        }
+        var gtyp = typ._<ΔgenericType>();
         // evaluate arguments
-        var targs = Ꮡcheck.typeList(ix.Indices);
+        var targs = Ꮡcheck.typeList(ix.indices);
         if (targs == default!) {
             res = new BasicжΔType(Typ[Invalid]); goto ᒐdone;
         }
-        {
-            var (origΔ1, _) = gtyp._<ж<Alias>>(ᐧ); if (origΔ1 != nil) {
-                res = Ꮡcheck.instance(ix.Pos(), new AliasжΔgenericType(origΔ1), targs, nil, check.context()); goto ᒐdone;
-            }
+        // create instance
+        // The instance is not generic anymore as it has type arguments, but unless
+        // instantiation failed, it still satisfies the genericType interface because
+        // it has type parameters, too.
+        var ityp = Ꮡcheck.instance(ix.Pos(), gtyp, targs, nil, check.context());
+        var (inst, _) = ityp._<ΔgenericType>(ᐧ);
+        if (inst == default!) {
+            res = new BasicжΔType(Typ[Invalid]); goto ᒐdone;
         }
-        var orig = asNamed(gtyp);
-        if (orig == nil) {
-            throw panic(fmt.Sprintf("%v: cannot instantiate %v"u8, ix.Pos(), gtyp));
-        }
-        // create the instance
-        var inst = asNamed(Ꮡcheck.instance(ix.Pos(), new NamedжΔgenericType(orig), targs, nil, check.context()));
-        // orig.tparams may not be set up, so we need to do expansion later.
+        // For Named types, orig.tparams may not be set up, so we need to do expansion later.
         var instʗ1 = inst;
+        var targsʗ1 = targs;
         check.later(() => {
             // This is an instance from the source, not from recursive substitution,
             // and so it must be resolved during type-checking so that we can report
             // errors.
-            Ꮡcheck.Value.recordInstance(Ꮡix.Value.Orig, instʗ1.TypeArgs().list(), new NamedжΔType(instʗ1));
-            if (Ꮡcheck.validateTArgLen(Ꮡix.Value.Pos(), (~(~instʗ1).obj).name, instʗ1.TypeParams().Len(), instʗ1.TypeArgs().Len())) {
+            Ꮡcheck.Value.recordInstance(Ꮡix.Value.orig, targsʗ1, instʗ1);
+            @string name = instʗ1._<instantiatedType_type>().Obj().Value.name;
+            var tparams = instʗ1.TypeParams().list();
+            if (Ꮡcheck.validateTArgLen(Ꮡix.Value.Pos(), name, len(tparams), len(targsʗ1))) {
+                // check type constraints
                 {
-                    var (i, err) = Ꮡcheck.verify(Ꮡix.Value.Pos(), instʗ1.TypeParams().list(), instʗ1.TypeArgs().list(), Ꮡcheck.Value.context()); if (err != default!){
+                    var (i, err) = Ꮡcheck.verify(Ꮡix.Value.Pos(), instʗ1.TypeParams().list(), targsʗ1, Ꮡcheck.Value.context()); if (err != default!){
                         // best position for error reporting
                         tokenꓸPos pos = Ꮡix.Value.Pos();
-                        if (i < len(Ꮡix.Value.Indices)) {
-                            pos = Ꮡix.Value.Indices[i].Pos();
+                        if (i < len(Ꮡix.Value.indices)) {
+                            pos = Ꮡix.Value.indices[i].Pos();
                         }
                         Ꮡcheck.softErrorf(((atPos)pos), InvalidTypeArg, "%v"u8, err);
                     } else {
-                        Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, Ꮡix.Value.Pos(), instʗ1.TypeParams().list(), instʗ1.TypeArgs().list(), Ꮡix.Value.Indices);
+                        Ꮡcheck.of(Checker.Ꮡmono).recordInstance(Ꮡcheck.Value.pkg, Ꮡix.Value.Pos(), tparams, targsʗ1, Ꮡix.Value.indices);
                     }
                 }
             }
-            // TODO(rfindley): remove this call: we don't need to call validType here,
-            // as cycles can only occur for types used inside a Named type declaration,
-            // and so it suffices to call validType from declared types.
-            Ꮡcheck.validType(instʗ1);
-        }).describef(new typeparams_IndexExprжpositioner(Ꮡix), "resolve instance %s"u8, inst.OrTypedNil());
-        res = new NamedжΔType(inst);
+        }).describef(new indexedExprжpositioner(Ꮡix), "verify instantiation %s"u8, inst);
+        res = inst;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

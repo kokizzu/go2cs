@@ -11,12 +11,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
 // https://golang.org/issue/638
 // https://primes.utm.edu/lists/small/small3.html
 // ECC primes: https://tools.ietf.org/html/draft-ladd-safecurves-02

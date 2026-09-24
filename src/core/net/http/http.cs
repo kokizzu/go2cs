@@ -15,10 +15,75 @@ using vendor.golang.org.x.net.http;
 
 partial class http_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
+// Protocols is a set of HTTP protocols.
+// The zero value is an empty set of protocols.
+//
+// The supported protocols are:
+//
+//   - HTTP1 is the HTTP/1.0 and HTTP/1.1 protocols.
+//     HTTP1 is supported on both unsecured TCP and secured TLS connections.
+//
+//   - HTTP2 is the HTTP/2 protcol over a TLS connection.
+//
+//   - UnencryptedHTTP2 is the HTTP/2 protocol over an unsecured TCP connection.
+[GoType] partial struct Protocols {
+    internal uint8 bits;
+}
+
+internal static UntypedInt protoHTTP1 => /* 1 << iota */ 1;
+internal static UntypedInt protoHTTP2 => 2;
+internal static UntypedInt protoUnencryptedHTTP2 => 4;
+
+// HTTP1 reports whether p includes HTTP/1.
+public static bool HTTP1(this Protocols p) {
+    return (uint8)(p.bits & (uint8)protoHTTP1) != 0;
+}
+
+// SetHTTP1 adds or removes HTTP/1 from p.
+[GoRecv] public static void SetHTTP1(this ref Protocols p, bool ok) {
+    p.setBit(protoHTTP1, ok);
+}
+
+// HTTP2 reports whether p includes HTTP/2.
+public static bool HTTP2(this Protocols p) {
+    return (uint8)(p.bits & (uint8)protoHTTP2) != 0;
+}
+
+// SetHTTP2 adds or removes HTTP/2 from p.
+[GoRecv] public static void SetHTTP2(this ref Protocols p, bool ok) {
+    p.setBit(protoHTTP2, ok);
+}
+
+// UnencryptedHTTP2 reports whether p includes unencrypted HTTP/2.
+public static bool UnencryptedHTTP2(this Protocols p) {
+    return (uint8)(p.bits & (uint8)protoUnencryptedHTTP2) != 0;
+}
+
+// SetUnencryptedHTTP2 adds or removes unencrypted HTTP/2 from p.
+[GoRecv] public static void SetUnencryptedHTTP2(this ref Protocols p, bool ok) {
+    p.setBit(protoUnencryptedHTTP2, ok);
+}
+
+[GoRecv] internal static void setBit(this ref Protocols p, uint8 bit, bool ok) {
+    if (ok){
+        p.bits |= (uint8)(bit);
+    } else {
+        p.bits &= unchecked((uint8)~(uint8)(bit));
+    }
+}
+
+public static @string String(this Protocols p) {
+    slice<@string> s = default!;
+    if (p.HTTP1()) {
+        s = append(s, "HTTP1"u8);
+    }
+    if (p.HTTP2()) {
+        s = append(s, "HTTP2"u8);
+    }
+    if (p.UnencryptedHTTP2()) {
+        s = append(s, "UnencryptedHTTP2"u8);
+    }
+    return "{"u8 + strings.Join(s, ","u8) + "}"u8;
 }
 
 [GoType("[0]Action")] partial struct incomparable;
@@ -173,6 +238,61 @@ internal static io.ReadCloser _ᴛ8ʗ = NoBody;
     // Push returns ErrNotSupported if the client has disabled push or if push
     // is not supported on the underlying connection.
     error Push(@string target, ж<PushOptions> opts);
+}
+
+// HTTP2Config defines HTTP/2 configuration parameters common to
+// both [Transport] and [Server].
+[GoType] partial struct HTTP2Config {
+    // MaxConcurrentStreams optionally specifies the number of
+    // concurrent streams that a peer may have open at a time.
+    // If zero, MaxConcurrentStreams defaults to at least 100.
+    public nint MaxConcurrentStreams;
+    // MaxDecoderHeaderTableSize optionally specifies an upper limit for the
+    // size of the header compression table used for decoding headers sent
+    // by the peer.
+    // A valid value is less than 4MiB.
+    // If zero or invalid, a default value is used.
+    public nint MaxDecoderHeaderTableSize;
+    // MaxEncoderHeaderTableSize optionally specifies an upper limit for the
+    // header compression table used for sending headers to the peer.
+    // A valid value is less than 4MiB.
+    // If zero or invalid, a default value is used.
+    public nint MaxEncoderHeaderTableSize;
+    // MaxReadFrameSize optionally specifies the largest frame
+    // this endpoint is willing to read.
+    // A valid value is between 16KiB and 16MiB, inclusive.
+    // If zero or invalid, a default value is used.
+    public nint MaxReadFrameSize;
+    // MaxReceiveBufferPerConnection is the maximum size of the
+    // flow control window for data received on a connection.
+    // A valid value is at least 64KiB and less than 4MiB.
+    // If invalid, a default value is used.
+    public nint MaxReceiveBufferPerConnection;
+    // MaxReceiveBufferPerStream is the maximum size of
+    // the flow control window for data received on a stream (request).
+    // A valid value is less than 4MiB.
+    // If zero or invalid, a default value is used.
+    public nint MaxReceiveBufferPerStream;
+    // SendPingTimeout is the timeout after which a health check using a ping
+    // frame will be carried out if no frame is received on a connection.
+    // If zero, no health check is performed.
+    public time.Duration SendPingTimeout;
+    // PingTimeout is the timeout after which a connection will be closed
+    // if a response to a ping is not received.
+    // If zero, a default of 15 seconds is used.
+    public time.Duration PingTimeout;
+    // WriteByteTimeout is the timeout after which a connection will be
+    // closed if no data can be written to it. The timeout begins when data is
+    // available to write, and is extended whenever any bytes are written.
+    public time.Duration WriteByteTimeout;
+    // PermitProhibitedCipherSuites, if true, permits the use of
+    // cipher suites prohibited by the HTTP/2 spec.
+    public bool PermitProhibitedCipherSuites;
+    // CountError, if non-nil, is called on HTTP/2 errors.
+    // It is intended to increment a metric for monitoring.
+    // The errType contains only lowercase letters, digits, and underscores
+    // (a-z, 0-9, _).
+    public Action<@string> CountError;
 }
 
 } // end http_package

@@ -18,11 +18,6 @@ global using osꓸFileInfo = go.io.fs_package.FileInfo;
 global using osꓸFileMode = go.io.fs_package.FileMode;
 global using osꓸPathError = go.io.fs_package.PathError;
 global using osꓸSignal = go.os_package.ΔSignal;
-global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
-global using reflectꓸKind = go.reflect_package.ΔKind;
-global using reflectꓸMethod = go.reflect_package.ΔMethod;
-global using reflectꓸType = go.reflect_package.ΔType;
-global using reflectꓸValue = go.reflect_package.ΔValue;
 global using runtimeꓸError = go.runtime_package.ΔError;
 global using textprotoꓸError = go.net.textproto_package.ΔError;
 global using timeꓸLocation = go.time_package.ΔLocation;
@@ -67,9 +62,9 @@ using static global::go.net.http.cgi_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/cgi/child_test.go", "child_test.cs", "AEAkggAMGoKClICSpICSpICSpICCpICSpIKUgJKkgJKkgJKkgpSClICS+IIACRSCgpSAkqSC6ILugoKUgpSAkviCAAgSgoKUgpSAksiCAAcQgoKUgJIADQiCABQyspKCyoKClICCpIKCgIKkgg==", "184-206:1")]
-[assembly: go.GoPositionMap("net/http/cgi/host_test.go", "host_test.cs", "AF06tIKClqaCgoKClIKmpoKCgoLWxoKCgoKCgpS0tIKCgoKmtoKClIKCgqaCpoL4goK4ABImhICSpICS+IKCuAASKIKCgoKmgpKClIK4ytaCgrgABxDWgoK47qaCgqbcAAYYsoKmyqyAggAICoKCuO4ADAaCgoy47qaC6JKC/riCgoCSAAkKgoK4goCSpICS+IKCgoKUyrgABhDyhLiClIKClIKCgpSCgpSSgoKCloKUgoSCgoKCgpQACQyigoKCgoK46IKCksqmhIKCuKbWgoKEkgAIEtzmgoKCzIKCgoCSAAkIggAJGoKCgg==", "260-264:1;348-351:1")]
-[assembly: go.GoPositionMap("net/http/cgi/integration_test.go", "integration_test.cs", "ACo2ooS4ABImhICSpICSAAkSggAKELKClIKClIKU2qKEuIKCgoKEgoLsooS4poKAkgAIDKKEuKaCAAgGgoS4ABQysqKCgoKAggAJDpDSgNKApIK4poKC", "179-186:1")]
+[assembly: go.GoPositionMap("net/http/cgi/child_test.go", "child_test.cs", "ABwkggAMGoKClICSpICSpICSpICCpICSpIKUgJKkgJKkgJKkgpSClICS+IIACRSCgpSAkqSC6ILugoKUgpSAkviCAAgSgoKUgpSAksiCAAcQgoKUgJIADQiCABQyspKCyoKClICCpIKCgIKkgg==", "184-206:1")]
+[assembly: go.GoPositionMap("net/http/cgi/host_test.go", "host_test.cs", "ACE6tIKClqaCgoKClIKmpoKCgoLWxoKCgoKCgpS0tIKCgoKmtoKClIKCgqaCpoL4goK4ABImhICSpICS+IKCuAASKIKCgoKmgpKClIK4ytaCgrgABxDWgoK47qaCgqbcAAYYsoKmyqyAggAICoKCuO4ADAaCgoy47qaC6JKC/riCgoCSAAkKgoK4goCSpICS+IKCgoKUyrgABhDyhLiClIKClIKCgpSCgpSSgoKCloKUgoSCgoKCgpQACQyigoKCgoK46IKCksqmhIKCuKbWgoKEkgAIEtzmgoKCzIKCgoCSAAkIggAJGoKCgg==", "260-264:1;348-351:1")]
+[assembly: go.GoPositionMap("net/http/cgi/integration_test.go", "integration_test.cs", "AB42ooS4ABImhICSpICSAAkSggAKELKClIKClIKU2qKEuIKCgoKEgoLsooS4poKAkgAIDKKEuKaCAAgGgoS4ABQysqKCgoKAggAJDpDSgNKApIK4poKC", "179-186:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -85,4 +80,38 @@ public static partial class cgi_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptest() => builtin.initPackage(typeof(go.net.http.httptest_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.net.http.cgi_package));
+    }
 }

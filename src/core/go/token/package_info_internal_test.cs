@@ -13,6 +13,7 @@ using static go.go.token_package;
 using static go.go.token_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b66696c656e616d6520737472696e673b20736f75726365205b5d627974653b2073697a6520696e743b206c696e6573205b5d696e747d", "testsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -29,9 +30,9 @@ using static go.go.token_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/token/position_test.go", "position_test.cs", "AA8egoKUgpSClIL4goKUgoKCABQmgoKCgpSUpqKCgoKClIKCgriCgoKCpqaCgoKUgqiCgpSClIKogoKCpoKClKiAgqSClIKUloKUlIKClPiCgoKUgoKmgoKCgoK4goKCgqaUgoKCgpSClILMkoKClICCyIKCgoKClIKCgs6igoKUgoKCgoKCooKUpqqigqyigpSWsoKClJaCAAoGggACFIKCgpaCgoKCgoKCmKKCloKCgqiCgoKUgoKClIKClILogoKCgoSCgoKCAAoKgoKCgoKCgoSSgIK2koKAgJKCqIKCgoKWgoKCloKCggAIBoKaAESUAbKSgoKClILctIKCgrqCgoKWgIKkgIKkgIK4gIKkgIK4goCCpIKAgqiSgoKAgqaCgII=")]
-[assembly: global::go.GoPositionMap("go/token/serialize_test.go", "serialize_test.cs", "AA8g8pSogoKChIKWgpaCgoKUgpSClIKCgqaCgoLM1oKChoCCgqSChoCCgqSAgsiCgpSCgpSCgoKCgqY=")]
-[assembly: global::go.GoPositionMap("go/token/token_test.go", "token_test.cs", "ABASogAKILKSgII=")]
+[assembly: global::go.GoPositionMap("go/token/position_test.go", "position_test.cs", "AA8egoKUgpSClIL4goKUgoKCABQmgoKCgpSUpqKCgoKClIKCgriCgoKCpqaCgoKUgqiCgpSClIKogoKCpoKClKiAgqSClIKUloKUlIKClPiCgoKUgoKmgoKCgoK4goKCgqaUgoKCgpSClILMkoKClICCyIKCgoKClIKCgs6igoKUgoKCgoKCooKUpqqigqyigpSWsoKClJaCAAoGggAKFIKCgpaCgoKCgoKCmKKCloKCgqiCgoKUgoKClIKClILogoKCgoSCgoKCAAoKgoKCgoKCgoSSgIK2koKAgJKCqIKCgoKWgoKCloKCggAIBoKaAESUAbKSgoKClILctIKCgrqCgoKWgIKkgIKkgIK4gIKkgIK4goCCpIKAgqiSgoKAgqaCgII=", "182-188:1;234-239:1;254-259:1;261-267:2;356-360:1;361-367:2;363-363:2.1;469-478:1;485-489:1")]
+[assembly: global::go.GoPositionMap("go/token/serialize_test.go", "serialize_test.cs", "AA8g8pSogoKChIKWgpaCgoKUgpSClIKCgqaCgoLM1oKChoCCgqSChoCCgqSAgsiCgpSCgpSCgoKCgqY=", "67-69:1;75-77:2")]
+[assembly: global::go.GoPositionMap("go/token/token_test.go", "token_test.cs", "ABASogAKILKSgII=", "27-31:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -47,4 +48,20 @@ public static partial class token_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() => builtin.initPackage(typeof(encoding.gob_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    // </ImportInitializers>
 }

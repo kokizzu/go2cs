@@ -28,6 +28,15 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!-- //go:embed payloads. LogicalName is `go.embed/<import-path>[_test]/<path>`, which the
+       emitted static field initializers read back through embed's ΔEmbed* helpers. An
+       EmbeddedResource rather than a copied file: //go:embed promises the bytes are IN the
+       assembly, which is what survives a single-file publish and Native AOT. -->
+  <ItemGroup Label="GoEmbeddedResources">
+    <EmbeddedResource Include="static/trace_viewer_full.html" LogicalName="go.embed/internal/trace/traceviewer/static/trace_viewer_full.html" />
+    <EmbeddedResource Include="static/webcomponents.min.js" LogicalName="go.embed/internal/trace/traceviewer/static/webcomponents.min.js" />
+  </ItemGroup>
+
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
        $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">

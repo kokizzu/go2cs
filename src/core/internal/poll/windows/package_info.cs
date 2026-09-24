@@ -57,17 +57,17 @@ using static go.@internal.poll_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/poll/errno_windows.go", "errno_windows.cs", "ABQoopSk2g==")]
-[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "AB0wwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
-[assembly: go.GoPositionMap("internal/poll/fd_fsync_windows.go", "fd_fsync_windows.cs", "AAkU0oCCpII=")]
-[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "ADRqAA4CgoKClIKClILOooKCgqaCgqaCpoKClIKClM6igoKClIKCzqKigoKCgoKUgoKClIKCgpSClIKCuIKCpoKClAAEEMKigoKCgoKUgoKClIKCgqaCgpSCgpTMopjCgpSssoKUqsKClKyygrzCgpSssoI=")]
-[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "ABooxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
-[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "ABEgooKUqNKAgqSC2LKAgqSC3LKAgqSC3uKAgqSCggAFFPKCgoI=")]
-[assembly: go.GoPositionMap("internal/poll/fd_windows.go", "fd_windows.cs", "ACtIwoKClJKCkoKClIKCpu6CgoKUABc0goKCgriigpSUooKClIKClILOooKUpqKCgoSChIKCgoIABhDigpaUgoKmgpakuqTWgoKUlIKUlKaCuMaUlKaCgoKSlMoAM4YB8oKWlKSkqqSkhIIACxiUgpSClJSClqSCgsqUkpKCgoK2goKCgoKCpqKCuIKClqS0goKqwoKUgqaCpoIABxLSgIKkhIKWgoKCgoKUpIK4toKmgoKGgqaClAAHELKClriCloKCgpSCgoKUgoKCgoKCgpSCgpSUgoK4lIKCgqiCgoKCkoKUlJSCqNKUuICCpISCloKCgoKUgsiCgoKCgqaClNjSgpSClICCpIKCgoKClIKUgoKUgtjSgpSClICCpIKCgoKClIKUgoKUgtjSgpSClICCpIKCgoKClIKUgoKUgtjSgIKkgoKCloKCgoKUgoKClKSCuLaCpoKUgoKYgoKUlNqigoKCgpaCgoKUgoKasoKCgpSCgoKCgoKClKao0pS4gIKkhIKCgoKUhIKCgoKUgsiCgoKUgpTY4oKUgIKkgoKUgoKGgoKC2NKAgqSElIKCgoaWgoKCgpSCgoKGgoKUlNjSgIKkhJSCgoaWgoKCgpSCgoaCgpSU2NKAgqSElIKChpaCgoKClIKChoKClJTc0oKChubEgoKWgoKogoKClqrCgIKkhIKCgoKCloKCAAYQgoKUuAAIDPKClICCpISChNjSgIKkhIKAgqSCgpSUgpaCgtjSgIKkgtjSgIKkgtjSgIKkgtjSgIKkgoKCuoKCgpSGtvzSgIKkhIKoAA1SgpSCpIK0utKAgqSEgpaCgoKUgoKChoKCgpTY0oCCpISCloKCgpSCgoKGgoKU2NKAgqSEgpaCgoKUgoKChoKClAAICNKCloCCpISCgoKClIKClIKUhtjSgpaAgqSEgoKClIKCgobY0oKWgIKkhIKCgpSCgoKGAAkGgoKCloKCgIKk")]
-[assembly: go.GoPositionMap("internal/poll/sendfile_windows.go", "sendfile_windows.cs", "AAoaAAgCgpSUlICCpoCCpISCloKClqSCgqaAgr60goKCloKChIaClrqAgqaClg==")]
-[assembly: go.GoPositionMap("internal/poll/sockopt.go", "sockopt.cs", "AAoY0oCCpILY4oCCpILY0oCCpILY0oCCpII=")]
-[assembly: go.GoPositionMap("internal/poll/sockopt_windows.go", "sockopt_windows.cs", "AAkU0oCCpII=")]
-[assembly: go.GoPositionMap("internal/poll/sockoptip.go", "sockoptip.cs", "AAoY0oCCpILY0oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/errno_windows.go", "errno_windows.cs", "AA4oopSk2g==")]
+[assembly: go.GoPositionMap("internal/poll/fd.go", "fd.cs", "ABcwwKSAooAADh6SgpQADRzAooCigO6SgoKCgpSCgg==")]
+[assembly: go.GoPositionMap("internal/poll/fd_fsync_windows.go", "fd_fsync_windows.cs", "AAkU4oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/fd_mutex.go", "fd_mutex.cs", "AC5qAA4CgoKClIKClIIABkyigoKClIKCAAisAaKYwoKUrLKClKrCgpSs0oK8woKUrNKC")]
+[assembly: go.GoPositionMap("internal/poll/fd_poll_runtime.go", "fd_poll_runtime.cs", "AA8oxJKSkpKSkpKSAAgQooKCgpSCpoKClIKokoKUpoKClIKmgqaC1oKClIKmgqaCpoKClKaCAAwYgpSkpKSkgqiSqJKokqbCgoKCgqaAgqSCgpSCAAUeAAwC")]
+[assembly: go.GoPositionMap("internal/poll/fd_posix.go", "fd_posix.cs", "AAsgooKUqOKAgqSC2MKAgqSC3MKAgqSC3vKAgqSCggAFFPKCgoLMkoKCgg==", "38-40:1;49-51:1")]
+[assembly: go.GoPositionMap("internal/poll/fd_windows.go", "fd_windows.cs", "ACBIwoKClJKCkoKClIKCpu6CgoKUABc0goKCgriigpSUooKClIKClILOooKUpqKCgoSChIKCgoIABhDigpaUgoKmgpakuqTWgoKUlIKUlKaCuMaUlKaCgoKSlMoAM4YB8oKWlKSkqqSkhIIACxiUgpSClJSClqSCgsqUkpKCgoK2goKCgoKCpqKCuIKClqS0goKqwoKUgqaCpoIABxLygIKkhIKWgoKCgoKUpIK4toKmgoKGgqaClAAHELKClriCloKCgpSCgoKUgoKCgoKCgpSCgpSUgoK4lIKCgqiCgoKCkoKUlJSCqNKUuICCpISCloKCgoKUgsiCgoKCgqaClNjigpSClICCpIKCgoKClIKUgoKUgtjigpSClICCpIKCgoKClIKUgoKUgtjigpSClICCpIKCgoKClIKUgoKUgtjygIKkgoKCloKCgoKUgoKClKSCuLaCpoKUgoKYgoKUlNqigoKCgpaCgoKUgoKasoKCgpSCgoKCgoKClKao0pS4gIKkhIKCgoKUhIKCgoKUgsiCgoKUgpTY8oKUgIKkgoKUgoKGgoKC2OKAgqSElIKCgoaWgoKCgpSCgoKGgoKUlNjigIKkhJSCgoaWgoKCgpSCgoaCgpSU2OKAgqSElIKChpaCgoKClIKChoKClJTc0oKChubEgoKWgoKogoKClqrSgIKkhIKCgoKCloKCAAYQgoKUuAAIDAAJAoKUgIKkhIKE2OKAgqSEgoCCpIKClJSCloKC2OKAgqSC2OKAgqSC2OKAgqSC2OKAgqSCgoK6goKClIa2/OKAgqSEgqgADVKClIKkgrS64oCCpISCloKCgpSCgoKGgoKClNjigIKkhIKWgoKClIKCgoaCgpTY4oCCpISCloKCgpSCgoKGgoKUAAgI4oKWgIKkhIKCgoKUgoKUgpSG2OKCloCCpISCgoKUgoKChtjigpaAgqSEgoKClIKCgoYACQaCgoKWgoKAgqQ=", "438-440:1;581-587:1;610-616:1;639-645:1;695-697:1;808-810:1;829-831:1;844-846:2;867-869:1;881-883:2;904-906:1;918-920:2;936-938:1;946-948:1;1090-1092:1;1186-1188:1;1216-1218:1;1245-1247:1;1279-1281:1;1304-1306:1;1329-1331:1")]
+[assembly: go.GoPositionMap("internal/poll/sendfile_windows.go", "sendfile_windows.cs", "AAoaAAgCgpSUlICCpoCCpISCloKClqSCgqaAgr60goKCloKChIaClrqAgqaClg==", "14-16:1;66-68:2")]
+[assembly: go.GoPositionMap("internal/poll/sockopt.go", "sockopt.cs", "AAoY4oCCpILY8oCCpILY4oCCpILY4oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/sockopt_windows.go", "sockopt_windows.cs", "AAkU4oCCpII=")]
+[assembly: go.GoPositionMap("internal/poll/sockoptip.go", "sockoptip.cs", "AAoY4oCCpILY4oCCpII=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -91,4 +91,22 @@ public static partial class poll_package
     public partial struct String {}
     public partial struct errNetClosing {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(go.@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

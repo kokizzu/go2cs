@@ -584,6 +584,31 @@ func importInitName(importPath string) string {
 	return name.String()
 }
 
+// goTypeDescriptorRefPattern matches a PACKAGE-QUALIFIED type reference inside a [GoType("…")] descriptor: a
+// `_package`-suffixed class path (`time_package.`, `@internal.godebug_package.`, `go.token_package.`) that begins
+// at the descriptor's start or right after a descriptor delimiter (`num:`, `[`, `]`, `<`, `(`, `,`, whitespace,
+// `*`). A reference already written `global::go.…` never matches: the character before its `go.` is `:`.
+var goTypeDescriptorRefPattern = regexp.MustCompile(`(^|num:|[\[\]<(,\s*])((?:@?[\p{L}_][\p{L}\p{N}_]*\.)*@?[\p{L}_][\p{L}\p{N}_]*` + PackageSuffix + `\.)`)
+
+// rootGoTypeDescriptor roots every package-qualified type reference in a [GoType("…")] descriptor at the
+// global namespace: `@internal.godebug_package.Setting` -> `global::go.@internal.godebug_package.Setting`.
+//
+// go2cs-gen writes the descriptor verbatim as a type reference into the generated `<X>.g.cs`, a file inside
+// the DECLARING package's namespace. A package-qualified name is written relative to the ROOT namespace, but
+// C# binds its first segment inner-to-outer from the declaring namespace, so a sibling namespace of an
+// enclosing one captures it: from `go.crypto.@internal.fips140deps` the leading `@internal` of
+// `@internal.godebug_package.Setting` binds to `go.crypto.@internal`, not `go.@internal`
+// (crypto/internal/fips140deps/godebug, CS0234 x5 at the H5 tree -- H7 red 1, COORD 89c281d32). The generator
+// cannot root the string itself: a leading `go.` is ambiguous there (`go.token_package` is go/token under the
+// root, not a root-level `token_package`), and only the converter holds the package path. So the rule is taken
+// at the writers: a package-qualified descriptor reference is emitted ROOTED, always, at every [GoType] writer,
+// whether or not today's corpus shadows it. The -tests bridge already writes this form
+// (`[GoType("global::go.net.http_package.ΔHeader")]`) and go2cs-gen already consumes it. Same-package names
+// and file-alias forms carry no `_package.` segment and pass through unchanged; the function is idempotent.
+func rootGoTypeDescriptor(descriptor string) string {
+	return goTypeDescriptorRefPattern.ReplaceAllString(descriptor, "${1}global::"+RootNamespace+".${2}")
+}
+
 // rootQualified prefixes ns with the root namespace, using `global::go.` instead of a bare `go.`
 // whenever a `go.go` namespace shadows the root. That happens two ways: the CURRENT package is
 // itself a `go/*` stdlib package (go/token, go/ast, go/doc, go/build, … land in
@@ -777,6 +802,99 @@ func rootQualifyIfAmbiguous(ns string) string {
 	}
 
 	return ns
+}
+
+// qualifyPackageReference is rootQualifyIfAmbiguous for a package reference emitted INTO this
+// file's body, where one more binder applies: the file's own `using <namespace>;` directives.
+//
+// C# looks a simple name up level by level from the file's namespace outward, and at each level it
+// consults that namespace's MEMBERS first and then the using directives declared there. A file-scoped
+// `namespace go.runtime;` whose body carries `using @internal;` therefore finds the converted
+// internal/sync's `go.@internal.sync_package` BEFORE the root `go.sync_package` it meant: runtime/pprof's
+// embedded `sync.Mutex` compiled as internal/sync's Mutex, and net/http's test sources the same way
+// through `using global::go.@internal;` (go1.24 added internal/sync). Nothing reported it -- both types
+// are named Mutex and both lock.
+//
+// Only a SINGLE-SEGMENT class reference is exposed: a using imports a namespace's TYPES, never its
+// nested namespaces, so `text.tabwriter_package` cannot be captured this way. A class the file's own
+// namespace declares is found before any using, and rootQualifyIfAmbiguous already answers the
+// enclosing-namespace shadows. A using-alias TARGET is resolved as if the file had no usings at all,
+// which is why packageUsingAlias and the import alias keep calling rootQualifyIfAmbiguous directly.
+func (v *Visitor) qualifyPackageReference(ns string) string {
+	if qualified := rootQualifyIfAmbiguous(ns); qualified != ns {
+		return qualified
+	}
+
+	firstSeg := ns
+
+	if dot := strings.Index(ns, "."); dot != -1 {
+		firstSeg = ns[:dot]
+	}
+
+	if !strings.HasSuffix(firstSeg, PackageSuffix) || packageQualifiedNamespaces[packageNamespace+"."+firstSeg] {
+		return ns
+	}
+
+	for _, usings := range []HashSet[string]{v.requiredUsings, v.methodNamespaceUsings} {
+		for using := range usings {
+			if namespace, ok := resolveUsingNamespace(using); ok && packageQualifiedNamespaces[namespace+"."+firstSeg] {
+				return rootQualified(ns)
+			}
+		}
+	}
+
+	return ns
+}
+
+// resolveUsingNamespace answers the namespace a file-level `using <namespace>;` entry imports, or
+// false for an entry that is not one (`static …`, `alias = …`) or names no namespace of this
+// compilation's go.* closure (System.*). A relative name binds innermost-first from the file's
+// namespace, exactly as the using directive itself does.
+func resolveUsingNamespace(using string) (string, bool) {
+	if strings.ContainsAny(using, " =") {
+		return "", false
+	}
+
+	if rooted, ok := strings.CutPrefix(using, "global::"); ok {
+		return rooted, packageChildNamespaces[rooted]
+	}
+
+	for prefix := packageNamespace; prefix != ""; {
+		if candidate := prefix + "." + using; packageChildNamespaces[candidate] {
+			return candidate, true
+		}
+
+		dot := strings.LastIndex(prefix, ".")
+
+		if dot == -1 {
+			break
+		}
+
+		prefix = prefix[:dot]
+	}
+
+	return "", false
+}
+
+// collectMethodNamespaceUsings records, before a file's body is visited, every namespace
+// addMethodPackageNamespaceUsing will add to it while the body is visited -- the one `using` source
+// that lands AFTER package references are already emitted (imports are the first declarations of every
+// Go file, so their usings are all in place before any other declaration). A superset is harmless:
+// qualifyPackageReference only spells a reference in full on a hit, which is always correct.
+func (v *Visitor) collectMethodNamespaceUsings(file *ast.File) {
+	v.methodNamespaceUsings = HashSet[string]{}
+
+	ast.Inspect(file, func(node ast.Node) bool {
+		if selectorExpr, ok := node.(*ast.SelectorExpr); ok {
+			if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodVal {
+				if namespace, ok := v.methodPackageNamespace(sel.Obj().Pkg()); ok {
+					v.methodNamespaceUsings.Add(namespace)
+				}
+			}
+		}
+
+		return true
+	})
 }
 
 // packageUsingAlias returns the canonical C# using alias and target namespace for a Go import path,

@@ -11,18 +11,6 @@ using static go.text.template.parse_package;
 
 partial class parse_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 internal static ж<bool> debug = flag.Bool("debug"u8, false, "show the errors produced by the main tests"u8);
 
 [GoType] internal partial struct numberTest {
@@ -424,7 +412,7 @@ public static void TestParseWithComments(ж<testing.T> Ꮡt) {
             new("comment trim right"u8, "{{/* hi */ -}}\n\n\ty"u8, noError, @"{{/* hi */}}""y"""u8),
             new("comment trim left and right"u8, "x \r\n\t{{- /* */ -}}\n\n\ty"u8, noError, @"""x""{{/* */}}""y"""u8)
         }.array();
-        foreach (var (_, vᴛ1) in tests) {
+        foreach (var (_, vᴛ1) in tests.ΔRangeSnapshot()) {
             ref var test = ref heap(new parseTest(), out var Ꮡtest);
             test = vᴛ1;
 

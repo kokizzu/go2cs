@@ -59,6 +59,7 @@ partial class url_internal_test_package {
 // host and port subcomponents; IPv4 address in RFC 3986
 // host subcomponent; IPv6 address in RFC 3986
 // host and port subcomponents; IPv6 address in RFC 3986
+// valid IPv6 host with port and path
 // host subcomponent; IPv6 address with zone identifier in RFC 6874
 // alphanum zone identifier
 // host and port subcomponents; IPv6 address with zone identifier in RFC 6874
@@ -410,6 +411,15 @@ internal static slice<URLTest> urltests = new URLTest[]{
         ""u8
     ),
     new(
+        "https://[2001:db8::1]:8443/test/path"u8,
+        Ꮡ(new URL(
+            Scheme: "https"u8,
+            Host: "[2001:db8::1]:8443"u8,
+            Path: "/test/path"u8
+        )),
+        ""u8
+    ),
+    new(
         "http://[fe80::1%25en0]/"u8,
         Ꮡ(new URL(
             Scheme: "http"u8,
@@ -693,6 +703,13 @@ internal static readonly @string pathThatLooksSchemeRelative = "//not.a.user@not
 // described in RFC 4007, but are not valid as address
 // literals with IPv6 zone identifiers in URIs as described in
 // RFC 6874.
+// Tests exercising RFC 3986 compliance
+// full IPv6 address
+// compressed IPv6 address
+// link-local address with zone ID (interface name)
+// link-local address with zone ID (interface index)
+// compressed IPv6 address with path
+// link-local with zone, path, and query
 
 [GoType("dyn")] partial struct parseRequestURLTestsᴛ1 {
     internal @string url;
@@ -724,7 +741,22 @@ internal static slice<parseRequestURLTestsᴛ1> parseRequestURLTests = new parse
     new("http://[fe80::%31%25en0]/"u8, false),
     new("http://[fe80::%31%25en0]:8080/"u8, false),
     new("http://[fe80::1%en0]/"u8, false),
-    new("http://[fe80::1%en0]:8080/"u8, false)
+    new("http://[fe80::1%en0]:8080/"u8, false),
+    new("https://[1:2:3:4:5:6:7:8]"u8, true),
+    new("https://[2001:db8::a:b:c:d]"u8, true),
+    new("https://[fe80::1%25eth0]"u8, true),
+    new("https://[fe80::abc:def%254]"u8, true),
+    new("https://[2001:db8::1]/path"u8, true),
+    new("https://[fe80::1%25eth0]/path?query=1"u8, true),
+    new("https://[::ffff:192.0.2.1]"u8, true),
+    new("https://[:1] "u8, false),
+    new("https://[1:2:3:4:5:6:7:8:9]"u8, false),
+    new("https://[1::1::1]"u8, false),
+    new("https://[1:2:3:]"u8, false),
+    new("https://[ffff::127.0.0.4000]"u8, false),
+    new("https://[0:0::test.com]:80"u8, false),
+    new("https://[2001:db8::test.com]"u8, false),
+    new("https://[test.com]"u8, false)
 }.slice();
 
 public static void TestParseRequestURI(ж<testing.T> Ꮡt) {
@@ -1559,6 +1591,65 @@ public static void TestParseQuery(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+
+[GoType("dyn")] internal partial struct TestParseQueryLimits_type {
+    internal nint @params;
+    internal @string godebug;
+    internal bool wantErr;
+}
+
+public static void TestParseQueryLimits(ж<testing.T> Ꮡt) {
+    foreach (var (_, test) in new TestParseQueryLimits_type[]{new(
+        @params: 10,
+        wantErr: false
+    ), new(
+        @params: defaultMaxParams,
+        wantErr: false
+    ), new(
+        @params: defaultMaxParams + 1,
+        wantErr: true
+    ), new(
+        @params: 10,
+        godebug: "urlmaxqueryparams=9"u8,
+        wantErr: true
+    ), new(
+        @params: defaultMaxParams + 1,
+        godebug: "urlmaxqueryparams=0"u8,
+        wantErr: false
+    )
+    }.slice()) {
+        Ꮡt.Setenv(godebugˢ, test.godebug);
+        var want = new Values(new map<@string, slice<@string>>{});
+        ref var b = ref heap(new strings.Builder(), out var Ꮡb);
+        foreach (var i in range(test.@params)) {
+            if (i > 0) {
+                Ꮡb.WriteString("&"u8);
+            }
+            @string p = fmt.Sprintf("p%v"u8, i);
+            Ꮡb.WriteString(p);
+            want[p] = new @string[]{""u8}.slice();
+        }
+        @string query = b.String();
+        var (got, err) = ParseQuery(query);
+        {
+            var (gotErr, wantErr) = (err != default!, test.wantErr); if (gotErr != wantErr) {
+                Ꮡt.Errorf("GODEBUG=%v ParseQuery(%v params) = %v, want error: %v"u8, test.godebug, test.@params, err, wantErr);
+            }
+        }
+        if (err != default!) {
+            continue;
+        }
+        {
+            nint gotΔ1 = len(got);
+            nint wantΔ1 = test.@params; if (gotΔ1 != wantΔ1) {
+                Ꮡt.Errorf("GODEBUG=%v ParseQuery(%v params): got %v params, want %v"u8, test.godebug, test.@params, gotΔ1, wantΔ1);
+            }
+        }
+    }
+}
+
 [GoType] public partial struct RequestURITest {
     internal ж<global::go.net.url_package.URL> url;
     internal @string @out;
@@ -1754,8 +1845,30 @@ public static void TestParseErrors(ж<testing.T> Ꮡt) {
 
         new("cache_object:foo"u8, true),
         new("cache_object:foo/bar"u8, true),
-        new("cache_object/:foo/bar"u8, false)
+        new("cache_object/:foo/bar"u8, false),
+        new("http://[192.168.0.1]/"u8, true), // IPv4 in brackets
+
+        new("http://[192.168.0.1]:8080/"u8, true), // IPv4 in brackets with port
+
+        new("http://[::ffff:192.168.0.1]/"u8, false), // IPv4-mapped IPv6 in brackets
+
+        new("http://[::ffff:192.168.0.1000]/"u8, true), // Out of range IPv4-mapped IPv6 in brackets
+
+        new("http://[::ffff:192.168.0.1]:8080/"u8, false), // IPv4-mapped IPv6 in brackets with port
+
+        new("http://[::ffff:c0a8:1]/"u8, false), // IPv4-mapped IPv6 in brackets (hex)
+
+        new("http://[not-an-ip]/"u8, true), // invalid IP string in brackets
+
+        new("http://[fe80::1%foo]/"u8, true), // invalid zone format in brackets
+
+        new("http://[fe80::1"u8, true), // missing closing bracket
+
+        new("http://fe80::1]/"u8, true), // missing opening bracket
+
+        new("http://[test.com]/"u8, true)
     }.slice();
+    // domain name in brackets
     foreach (var (_, tt) in tests) {
         var (u, err) = Parse(tt.@in);
         if (tt.wantErr) {
@@ -2007,6 +2120,8 @@ public static void TestURLHostnameAndPort(ж<testing.T> Ꮡt) {
 internal static encodingPkg.BinaryMarshaler _ᴛ1ʗ = new url_test_package.url_URLжBinaryMarshaler(((ж<global::go.net.url_package.URL>)nil));
 
 internal static encodingPkg.BinaryUnmarshaler _ᴛ2ʗ = new url_test_package.url_URLжBinaryUnmarshaler(((ж<global::go.net.url_package.URL>)nil));
+
+internal static encodingPkg.BinaryAppender _ᴛ3ʗ = new url_test_package.url_URLжBinaryAppender(((ж<global::go.net.url_package.URL>)nil));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httpsWwwGoogleComXYZˢ = "https://www.google.com/x?y=z"u8;

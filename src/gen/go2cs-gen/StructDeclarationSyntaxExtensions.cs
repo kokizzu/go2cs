@@ -10,6 +10,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static go2cs.Common;
 using static go2cs.Symbols;
 
 namespace go2cs;
@@ -642,6 +643,112 @@ public static class StructDeclarationSyntaxExtensions
                        (firstParam.Type?.ToString() ?? "") == boxType;
             })
             .Select(method => method.Identifier.Text), StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// RETURN TYPES of the direct-ж primaries <see cref="GetBoxReceiverMethodNames(string, Compilation)"/>
+    /// names, keyed by method name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The name-only form above is everything the forwarding RECEIVER needs, and it was everything
+    /// anyone needed until a member's DECLARED result turned out to be an interface the forwarded Go
+    /// method does not return (crypto/mlkem's projected constraint — see
+    /// <c>AdapterImplTemplate.ForwardResultWraps</c>). Deciding that requires the forwarded method's
+    /// return type, and a direct-ж primary is invisible to <c>GetExtensionMethods</c>, so there was
+    /// nowhere to read it from.
+    /// </para>
+    /// <para>
+    /// ⚠ The spelling is <c>GlobalQualify(ToDisplayString())</c> — the SAME pair of helpers
+    /// <c>GetReturnType</c> applies to a <c>MethodInfo</c>'s return type and that the interface side
+    /// composes with. That is deliberate and load-bearing: the caller compares the two strings, and a
+    /// comparison between two spellings of one type is the defect class this generator has already
+    /// paid for on its adapter names.
+    /// </para>
+    /// </remarks>
+    public static Dictionary<string, string> GetBoxReceiverMethodReturnTypes(string typeName, Compilation compilation)
+    {
+        string boxType = $"ж<{typeName}>";
+        Dictionary<string, string> returnTypes = new(StringComparer.Ordinal);
+
+        foreach (SyntaxTree tree in compilation.SyntaxTrees)
+        {
+            SemanticModel? semanticModel = null;
+
+            foreach (MethodDeclarationSyntax method in tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                if (!method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.StaticKeyword)) || method.ParameterList.Parameters.Count == 0)
+                    continue;
+
+                ParameterSyntax? firstParam = method.ParameterList.Parameters.FirstOrDefault();
+
+                if (firstParam is null || !firstParam.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ThisKeyword)) ||
+                    (firstParam.Type?.ToString() ?? "") != boxType)
+                    continue;
+
+                semanticModel ??= compilation.GetSemanticModel(tree);
+
+                ITypeSymbol? returnSymbol = semanticModel.GetTypeInfo(method.ReturnType).Type;
+
+                if (returnSymbol is not null)
+                    returnTypes[method.Identifier.Text] = GlobalQualify(returnSymbol.ToDisplayString());
+            }
+        }
+
+        return returnTypes;
+    }
+
+    /// <summary>
+    /// The SYMBOL-side twin of <see cref="GetBoxReceiverMethodReturnTypes"/>, for a struct this
+    /// compilation does not declare.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠⚠ WITHOUT THIS, A FOREIGN STRUCT HAS NO FORWARDED RETURN TYPES AT ALL and the projected-result
+    /// wrap is never even considered: both of its sources are gated on the struct's DECLARATION —
+    /// <c>GetExtensionMethods</c> takes a <c>StructDeclarationSyntax</c> and the syntax scan above
+    /// takes its identifier — and a foreign struct has neither. The wrap loop takes its first
+    /// <c>continue</c> on the lookup and the member forwards bare.
+    /// </para>
+    /// <para>
+    /// ⚠ THAT, NOT THE WRAP MAP'S BOUND, IS WHAT crypto/mlkem's CS0266 ×2 ACTUALLY REACHED. R reported
+    /// the map's assembly bound as the cause (mailbox <c>d6d2970a2</c> §2) from an elimination over
+    /// the map's own filters, and the elimination was sound about the map and silent about whether the
+    /// lookup ran at all — it did not. Measured, one compilation, both before and after that bound was
+    /// lifted: the LOCAL projected pair wraps and the FOREIGN one stays bare, which no change to the
+    /// map can explain. The bound still had to be lifted — a foreign pair the map does not hold cannot
+    /// be named once the lookup does run — so the two changes are consecutive gates, not alternatives.
+    /// </para>
+    /// <para>
+    /// Bounded to the struct's OWN package class, which is where the converter emits a Go
+    /// pointer-receiver method's box extension, and matched on the box by the same
+    /// <c>named.Name == PointerPrefix</c> test the member scan below already uses rather than a second
+    /// spelling of it. The return type takes the same <c>GlobalQualify(ToDisplayString())</c> pair as
+    /// its syntax twin, because the caller compares the two strings.
+    /// </para>
+    /// </remarks>
+    public static Dictionary<string, string> GetForeignBoxReceiverMethodReturnTypes(ITypeSymbol structType)
+    {
+        Dictionary<string, string> returnTypes = new(StringComparer.Ordinal);
+
+        if (structType.ContainingType is not INamedTypeSymbol packageClass)
+            return returnTypes;
+
+        foreach (IMethodSymbol method in packageClass.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (!method.IsExtensionMethod || method.Parameters.Length == 0)
+                continue;
+
+            if (method.Parameters[0].Type is not INamedTypeSymbol { TypeArguments.Length: 1 } box || box.Name != PointerPrefix)
+                continue;
+
+            if (!SymbolEqualityComparer.Default.Equals(box.TypeArguments[0], structType))
+                continue;
+
+            returnTypes[method.Name] = GlobalQualify(method.ReturnType.ToDisplayString());
+        }
+
+        return returnTypes;
     }
 
     /// <summary>

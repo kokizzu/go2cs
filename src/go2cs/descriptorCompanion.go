@@ -215,6 +215,48 @@ func computeDescriptorCompanionParams(fn *types.Func, typeParams *types.TypePara
 	return found
 }
 
+// calleeReadsDescriptorName reports whether a call's callee gains COMPANION type parameters, which
+// is the one reason a well-typed Go call that C# would otherwise infer must still render an
+// EXPLICIT type-argument list.
+//
+// ⚠ THE COMPANION IS INVISIBLE TO EVERY GO-SIDE PREDICATE, and that is why this one has to exist.
+// The other gates in convCallExpr's disjunction all reason over the Go SIGNATURE —
+// calleeHasConstraintOnlyTypeParam over where a type parameter appears in the parameter types,
+// calleeTypeParamUnsuppliedByCall over which positions the call actually supplied. A companion
+// appears in NO Go signature at all: it is minted on the C# side, sits in no parameter position by
+// construction, and C# can therefore never infer it. So a call Go infers perfectly emits
+// `testComparable(Ꮡt, (int64)2)` against `testComparable<T, Tᴺ>` — CS0411, the declaration right
+// and the call site short by one.
+//
+// MEASURED at hash/maphash on the 1.24.13 corpus: CS0411 ×42 over three generic functions
+// (testComparable, testWriteComparable, benchmarkComparable), each reading `reflect.TypeFor[T]()` on
+// its OWN type parameter, each called with Go inference.
+//
+// ⚠⚠ AND `unique` — the package this mechanism was BUILT for — HAS THE SAME DEFECT, which a
+// one-axis A/B found and an assumption of mine had explained away. I first wrote here that unique's
+// call sites are explicit and therefore already fine. They are not: `testHandle(Ꮡt, …)` emitted
+// BARE for all eleven, so the companion the declaration mints was never supplied there either. It
+// did not surface as a corpus failure because a package's TEST half is not built by the stdlib
+// solution — only a `-tests` run reaches it, and nothing had run one on unique since the mechanism
+// landed. The A/B is what says so: eleven call sites gain their argument, and `testEface` gains the
+// DESCRIPTOR CARRIER (`testHandle<testEface, testEfaceᴅ>`), which is the erasure this whole file
+// exists to defeat. So the mechanism has never had a working INFERRED call site anywhere, and the
+// hop only made that visible by adding a package whose tests the roster builds.
+//
+// The remedy is this predicate and nothing more: renderedTypeArgs ALREADY appends the companion, so
+// flagging the call is the whole of it. Deliberately NOT a general "infer harder" rule — the list
+// comes from go/types' own instantiation, at exactly the sites where a C#-side parameter makes
+// inference impossible.
+func (v *Visitor) calleeReadsDescriptorName(funIdent *ast.Ident) bool {
+	funcObj, isFunc := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !isFunc {
+		return false
+	}
+
+	return len(v.descriptorCompanionParams(funcObj)) > 0
+}
+
 // isReflectTypeForSelector reports whether expr names `reflect.TypeFor` — the reflection surface's
 // static-type entry point, and the only converted callable whose result a Go body reads a TYPE NAME
 // out of. Resolved through the object rather than the written qualifier so an import rename

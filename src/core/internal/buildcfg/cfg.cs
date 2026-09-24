@@ -21,46 +21,16 @@ using path;
 
 partial class buildcfg_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 public static @string GOROOT = os.Getenv("GOROOT"u8); // cached for efficiency
 public static @string GOARCH;
 internal static void initᴛGOARCH() { GOARCH = envOr("GOARCH"u8, defaultGOARCH); }
 public static @string GOOS;
 internal static void initᴛGOOS() { GOOS = envOr("GOOS"u8, defaultGOOS); }
 public static @string GO386;
-internal static void initᴛGO386() { GO386 = envOr("GO386"u8, defaultGO386); }
+internal static void initᴛGO386() { GO386 = envOr("GO386"u8, DefaultGO386); }
 public static nint GOAMD64;
 internal static void initᴛGOAMD64() { GOAMD64 = goamd64(); }
-public static goarmFeatures GOARM;
+public static GoarmFeatures GOARM;
 internal static void initᴛGOARM() { GOARM = goarm(); }
 public static Goarm64Features GOARM64;
 internal static void initᴛGOARM64() { GOARM64 = goarm64(); }
@@ -78,6 +48,8 @@ public static slice<@string> ToolTags;
 internal static void initᴛToolTags() { ToolTags = toolTags(); }
 public static @string GO_LDSO;
 internal static void initᴛGO_LDSO() { GO_LDSO = defaultGO_LDSO; }
+public static @string GOFIPS140;
+internal static void initᴛGOFIPS140() { GOFIPS140 = gofips140(); }
 public static @string Version;
 internal static void initᴛVersion() { Version = version; }
 
@@ -106,7 +78,7 @@ internal static readonly @string goamd64ˢ = "GOAMD64"u8;
 
 internal static nint goamd64() {
     {
-        @string v = envOr(goamd64ˢ, defaultGOAMD64);
+        @string v = envOr(goamd64ˢ, DefaultGOAMD64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "v1"u8) {
             return 1;
@@ -123,15 +95,61 @@ internal static nint goamd64() {
     }
 
     Error = fmt.Errorf("invalid GOAMD64: must be v1, v2, v3, v4"u8);
-    return (nint)(defaultGOAMD64[len("v")] - (rune)'0');
+    return (nint)(DefaultGOAMD64[len("v")] - (rune)'0');
 }
 
-[GoType] public partial struct goarmFeatures {
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string gofips140ˢ = "GOFIPS140"u8;
+
+internal static @string gofips140() {
+    @string v = envOr(gofips140ˢ, DefaultGOFIPS140);
+    var exprᴛ1 = v;
+    if (exprᴛ1 == "off"u8 || exprᴛ1 == "latest"u8 || exprᴛ1 == "inprocess"u8 || exprᴛ1 == "certified"u8) {
+        return v;
+    }
+
+    if (isFIPSVersion(v)) {
+        return v;
+    }
+    Error = fmt.Errorf("invalid GOFIPS140: must be off, latest, inprocess, certified, or vX.Y.Z"u8);
+    return DefaultGOFIPS140;
+}
+
+// isFIPSVersion reports whether v is a valid FIPS version,
+// of the form vX.Y.Z or vX.Y.Z-hash.
+internal static bool isFIPSVersion(@string v) {
+    if (!strings.HasPrefix(v, "v"u8)) {
+        return false;
+    }
+    (v, var ok) = skipNum(v[(int)(len("v"))..]);
+    if (!ok || !strings.HasPrefix(v, "."u8)) {
+        return false;
+    }
+    (v, ok) = skipNum(v[(int)(len("."))..]);
+    if (!ok || !strings.HasPrefix(v, "."u8)) {
+        return false;
+    }
+    (v, ok) = skipNum(v[(int)(len("."))..]);
+    var hasHash = strings.HasPrefix(v, "-"u8) && len(v) == len("-") + 8;
+    return ok && (v == ""u8 || hasHash);
+}
+
+// skipNum skips the leading text matching [0-9]+
+// in s, returning the rest and whether such text was found.
+internal static (@string rest, bool ok) skipNum(@string s) {
+    nint i = 0;
+    while (i < len(s) && (rune)'0' <= s[i] && s[i] <= (rune)'9') {
+        i++;
+    }
+    return (s[(int)(i)..], i > 0);
+}
+
+[GoType] partial struct GoarmFeatures {
     public nint Version;
     public bool SoftFloat;
 }
 
-public static @string String(this goarmFeatures g) {
+public static @string String(this GoarmFeatures g) {
     @string armStr = strconv.Itoa(g.Version);
     if (g.SoftFloat){
         armStr += ",softfloat"u8;
@@ -144,12 +162,12 @@ public static @string String(this goarmFeatures g) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string goarmˢ = "GOARM"u8;
 
-internal static goarmFeatures /*g*/ goarm() {
-    goarmFeatures g = default!;
+internal static GoarmFeatures /*g*/ goarm() {
+    GoarmFeatures g = default!;
 
     @string softFloatOpt = ",softfloat"u8;
     @string hardFloatOpt = ",hardfloat"u8;
-    @string def = defaultGOARM;
+    @string def = DefaultGOARM;
     if (GOOS == "android"u8 && GOARCH == "arm"u8) {
         // Android arm devices always support GOARM=7.
         def = "7"u8;
@@ -244,7 +262,7 @@ public static (Goarm64Features g, error e) ParseGoarm64(@string v) {
         e = fmt.Errorf("invalid GOARM64: must start with v8.{0-9} or v9.{0-5} and may optionally end in %q and/or %q"u8, // LSE extension is mandatory starting from 8.1
 
             lseOpt, cryptoOpt);
-        g.Version = defaultGOARM64;
+        g.Version = DefaultGOARM64;
     }
 
     return (g, e);
@@ -256,7 +274,7 @@ internal static readonly @string goarm64ˢ = "GOARM64"u8;
 internal static Goarm64Features /*g*/ goarm64() {
     Goarm64Features g = default!;
 
-    (g, Error) = ParseGoarm64(envOr(goarm64ˢ, defaultGOARM64));
+    (g, Error) = ParseGoarm64(envOr(goarm64ˢ, DefaultGOARM64));
     return g;
 }
 
@@ -291,7 +309,7 @@ internal static readonly @string gomipsˢ = "GOMIPS"u8;
 
 internal static @string gomips() {
     {
-        @string v = envOr(gomipsˢ, defaultGOMIPS);
+        @string v = envOr(gomipsˢ, DefaultGOMIPS);
         var exprᴛ1 = v;
         if (exprᴛ1 == "hardfloat"u8 || exprᴛ1 == "softfloat"u8) {
             return v;
@@ -299,7 +317,7 @@ internal static @string gomips() {
     }
 
     Error = fmt.Errorf("invalid GOMIPS: must be hardfloat, softfloat"u8);
-    return defaultGOMIPS;
+    return DefaultGOMIPS;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -307,7 +325,7 @@ internal static readonly @string gomips64ˢ = "GOMIPS64"u8;
 
 internal static @string gomips64() {
     {
-        @string v = envOr(gomips64ˢ, defaultGOMIPS64);
+        @string v = envOr(gomips64ˢ, DefaultGOMIPS64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "hardfloat"u8 || exprᴛ1 == "softfloat"u8) {
             return v;
@@ -315,7 +333,7 @@ internal static @string gomips64() {
     }
 
     Error = fmt.Errorf("invalid GOMIPS64: must be hardfloat, softfloat"u8);
-    return defaultGOMIPS64;
+    return DefaultGOMIPS64;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -323,7 +341,7 @@ internal static readonly @string goppc64ˢ = "GOPPC64"u8;
 
 internal static nint goppc64() {
     {
-        @string v = envOr(goppc64ˢ, defaultGOPPC64);
+        @string v = envOr(goppc64ˢ, DefaultGOPPC64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "power8"u8) {
             return 8;
@@ -337,7 +355,7 @@ internal static nint goppc64() {
     }
 
     Error = fmt.Errorf("invalid GOPPC64: must be power8, power9, power10"u8);
-    return (nint)(defaultGOPPC64[len("power")] - (rune)'0');
+    return (nint)(DefaultGOPPC64[len("power")] - (rune)'0');
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -345,7 +363,7 @@ internal static readonly @string goriscv64ˢ = "GORISCV64"u8;
 
 internal static nint goriscv64() {
     {
-        @string vΔ1 = envOr(goriscv64ˢ, defaultGORISCV64);
+        @string vΔ1 = envOr(goriscv64ˢ, DefaultGORISCV64);
         var exprᴛ1 = vΔ1;
         if (exprᴛ1 == "rva20u64"u8) {
             return 20;
@@ -356,7 +374,7 @@ internal static nint goriscv64() {
     }
 
     Error = fmt.Errorf("invalid GORISCV64: must be rva20u64, rva22u64"u8);
-    @string v = defaultGORISCV64[(int)(len("rva"))..];
+    @string v = DefaultGORISCV64[(int)(len("rva"))..];
     nint i = strings.IndexFunc(v, (rune r) => r < (rune)'0' || r > (rune)'9');
     var (year, _) = strconv.Atoi(v[..(int)(i)]);
     return year;

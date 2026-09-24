@@ -10,9 +10,10 @@ namespace go.crypto;
 using bytes = bytes_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
+using cryptotest = go.crypto.@internal.cryptotest_package;
 using testing = testing_package;
 using go.crypto;
-using static go.crypto.cipher_internal_test_package;
+using go.crypto.@internal;
 
 partial class cipher_test_package {
 
@@ -65,7 +66,14 @@ internal static void initᴛcbcAESTests() { cbcAESTests = new cbcAESTestsᴛ1[]{
     )
 }.slice(); }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string aesˢ = "aes"u8;
+
 public static void TestCBCEncrypterAES(ж<testing.T> Ꮡt) {
+    cryptotest.TestAllImplementations(Ꮡt, aesˢ, testCBCEncrypterAES);
+}
+
+internal static void testCBCEncrypterAES(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in cbcAESTests) {
         var (c, err) = aes.NewCipher(test.key);
         if (err != default!) {
@@ -83,6 +91,10 @@ public static void TestCBCEncrypterAES(ж<testing.T> Ꮡt) {
 }
 
 public static void TestCBCDecrypterAES(ж<testing.T> Ꮡt) {
+    cryptotest.TestAllImplementations(Ꮡt, aesˢ, testCBCDecrypterAES);
+}
+
+internal static void testCBCDecrypterAES(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in cbcAESTests) {
         var (c, err) = aes.NewCipher(test.key);
         if (err != default!) {

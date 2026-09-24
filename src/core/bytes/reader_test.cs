@@ -13,13 +13,7 @@ using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-[GoType("dyn")] partial struct TestReader_tests {
+[GoType("dyn")] internal partial struct TestReader_tests {
     internal int64 off;
     internal nint seek;
     internal nint n;
@@ -82,7 +76,7 @@ public static void TestReadAfterBigSeek(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReaderAt_tests {
+[GoType("dyn")] internal partial struct TestReaderAt_tests {
     internal int64 off;
     internal nint n;
     internal @string want;
@@ -295,16 +289,16 @@ public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_nErr {
+[GoType("dyn")] internal partial struct TestReaderCopyNothing_nErr {
     internal int64 n;
     internal error err;
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_justReader {
+[GoType("dyn")] internal partial struct TestReaderCopyNothing_justReader {
     public io_package.Reader Reader;
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_justWriter {
+[GoType("dyn")] internal partial struct TestReaderCopyNothing_justWriter {
     public io_package.Writer Writer;
 }
 

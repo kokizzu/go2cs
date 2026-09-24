@@ -8,6 +8,54 @@ their full text.
 
 ---
 
+## September 24, 2026 — The converted standard library moves to Go 1.24.13, and 218 packages validate against it
+
+**go2cs now converts Go 1.24.13's standard library**, and the validated roster crossed the hop
+re-derived, not carried: **218 of the 230 testable standard-library packages validate their own
+Go 1.24.13 test suites in C#** — **56,974 matching verdicts** against `go test -json`, with **283**
+divergences disclosed by exact failure signature — and, measured against the 224 packages a faithful
+managed conversion can honestly validate at all, **97.3%**. On Linux, 187 of the 216 applicable rows
+validate at their own Linux counts, at 53,048 matching verdicts. Every validated row is proved by a
+run at Go 1.24.13.
+
+The count rises by fourteen from the Go 1.23.12 record's 204 while the testable set grows by fifteen,
+so both percentages dip — 97.6% to 97.3% of the implementable set, 94.9% to 94.8% of the testable
+one. **One package validated at Go 1.23.12 is not validated at Go 1.24.13: `net/http`.** It matches
+1,370 of its 1,387 verdicts, and all 17 divergences trace to tests run under Go 1.24's new
+`internal/synctest`, the runtime support behind the experimental `testing/synctest`, which go2cs does
+not yet support; it still ships as `go.net.http`. Go 1.24 moved ten validated packages to new import
+paths, and their tests validate under the packages that now hold them. Counting those, twenty-five
+rows join, among them `unique` and Go 1.24's new `crypto/hkdf`, `crypto/mlkem`, `crypto/pbkdf2`,
+`crypto/sha3` and `weak`. Six implementable packages are not yet validated: `reflect`, `runtime`,
+`runtime/pprof`, `net/http/pprof`, `net/http` and Go 1.24's new `internal/synctest`.
+
+On Linux the count falls from 198 to 187: the relocated packages' tests are not yet run on Linux at
+their new paths, and `go/internal/srcimporter` has no Linux result, because Go's own test of it fails
+on the Linux reference machine; it stays validated on Windows. The verdict total doubles because Go's
+suites grew — `crypto/cipher` alone matches 27,272 verdicts, against 13 at Go 1.23.12 — so verdict
+totals do not compare across Go releases.
+
+Converted programs get Go 1.24's APIs — `os.Root`, `weak.Pointer`, `crypto/mlkem` and
+`strings.Lines`, among others — and `//go:embed` support. go2cs itself now builds with Go 1.24.13, and
+a `-recurse=nuget` conversion needs its module to resolve to Go 1.24; to stay on Go 1.23, build the
+converter at the `nuget-1.23.12.3` tag with Go 1.23.12 and use the 1.23.12.3 packages. Go 1.24's
+FIPS 140-3 module converts and its tests validate, but go2cs makes no FIPS 140-3 claim: the module's
+integrity self-check hashes a binary layout that a .NET assembly does not have, so under
+`GODEBUG=fips140=on` the converted check reports success without verifying anything.
+
+Fifty-one package IDs are new, six of them for packages a Go program can import: `go.crypto.fips140`,
+`go.crypto.hkdf`, `go.crypto.mlkem`, `go.crypto.pbkdf2`, `go.crypto.sha3` and `go.weak`. Fourteen end
+at 1.23.12.3, their last release, because Go 1.24 moved or deleted their packages; none is importable
+outside the standard library, and each stays restorable at 1.23.12.3 and is never unlisted.
+
+The converted standard library publishes as **NuGet 1.24.13.1** — 344 packages, author-signed, still
+targeting .NET 10 — with every proof page frozen at `validation/1.24.13.1` for the badges the packed
+READMEs link, and the exact shipped tree browsable at the `nuget-1.24.13.1` tag. The Go 1.23.12
+record stays frozen as it shipped, at `validation/1.23.12.3`.
+
+*Full story: [The converted standard library moves to Go 1.24.13](news/2026-09-24-stdlib-moves-to-go-1-24-13.md)
+· tag `nuget-1.24.13.1`*
+
 ## September 7, 2026 — The Go 1.23.12 record closes at its anchor; the corpus hops to Go 1.24
 
 **The Go 1.23.12 validation record is closed.** It stands at **204 of the 215 testable

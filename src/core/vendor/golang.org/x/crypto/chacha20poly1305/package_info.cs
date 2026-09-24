@@ -53,8 +53,8 @@ using static go.vendor.golang.org.x.crypto.chacha20poly1305_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305.go", "chacha20poly1305.cs", "AChQkoKUgoKmgqaCpoKCloKWyoKClIKUgpau8oCClIKkgg==")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305_generic.go", "chacha20poly1305_generic.cs", "ACcegoKAgoKCyIKCgqaCgoKCloKCgoKEgoKCgoKEpoKChIKCgoSCgoKChIKClIKClJaC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305.go", "chacha20poly1305.cs", "ABtQkoKUgoKmgqaCpoKCloKWyoKClIKUgpau8oCClIKkgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305_generic.go", "chacha20poly1305_generic.cs", "AA8egoKAgoKCyIKCgqaCgoKCloKCgoKEgoKCgoKEpoKChIKCgoSCgoKChIKClIKClJaC")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/chacha20poly1305_noasm.go", "chacha20poly1305_noasm.cs", "AAgSgqaC")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/crypto/chacha20poly1305/xchacha20poly1305.go", "xchacha20poly1305.cs", "ABEw4oKUgoKmgqaCpoKCAAYQgpaCgpaChKaCgpSClIKWgoKWgoQ=")]
 // </GoSourcePositionMaps>
@@ -74,4 +74,19 @@ public static partial class chacha20poly1305_package
     [GoValueClone("key")] internal partial struct chacha20poly1305 {}
     [GoValueClone("key")] internal partial struct xchacha20poly1305 {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20() => builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.chacha20_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸinternalꓸalias() => builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.@internal.alias_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸinternalꓸpoly1305() => builtin.initPackage(typeof(go.vendor.golang.org.x.crypto.@internal.poly1305_package));
+    // </ImportInitializers>
 }

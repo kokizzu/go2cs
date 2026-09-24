@@ -5,9 +5,9 @@
 namespace go;
 
 using abi = @internal.abi_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 using ꓸꓸꓸtraceArg = Span<runtime_package.traceArg>;
 
 partial class runtime_package {
@@ -72,7 +72,7 @@ internal static traceEv traceEvExperimentalBatch => 49; // start of extra data [
 // See the comment on traceWriter about style for more details as to why
 // this type and its methods are structured the way they are.
 [GoType] partial struct traceEventWriter {
-    internal traceWriter w;
+    internal traceLocker tl;
 }
 
 // eventWriter creates a new traceEventWriter. It is the main entrypoint for writing trace events.
@@ -89,63 +89,25 @@ internal static traceEv traceEvExperimentalBatch => 49; // start of extra data [
 //
 // In this case, the default status should be traceGoBad or traceProcBad to help identify bugs sooner.
 internal static traceEventWriter eventWriter(this traceLocker tl, traceGoStatus goStatus, traceProcStatus procStatus) {
-    var w = tl.writer();
     {
         var pp = (~tl.mp).p.ptr(); if (pp != nil && !pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).statusWasTraced(tl.gen) && pp.of(runtime_package.Δp.Ꮡtrace).of(pTraceState.ᏑtraceSchedResourceState).acquireStatus(tl.gen)) {
-            w = w.writeProcStatus((uint64)(~pp).id, procStatus, (~pp).trace.inSweep);
+            tl.writer().writeProcStatus((uint64)(~pp).id, procStatus, (~pp).trace.inSweep).end();
         }
     }
     {
         var gp = tl.mp.Value.curg; if (gp != nil && !gp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).statusWasTraced(tl.gen) && gp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).acquireStatus(tl.gen)) {
-            w = w.writeGoStatus((uint64)(~gp).goid, (int64)(~tl.mp).procid, goStatus, (~gp).inMarkAssist, 0);
+            tl.writer().writeGoStatus((uint64)(~gp).goid, (int64)(~tl.mp).procid, goStatus, (~gp).inMarkAssist, 0).end();
         }
     }
     /* no stack */
-    return new traceEventWriter(w);
+    return new traceEventWriter(tl);
 }
 
-// commit writes out a trace event and calls end. It's a helper to make the
-// common case of writing out a single event less error-prone.
-internal static void commit(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
+// event writes out a trace event.
+internal static void @event(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
     var args = argsʗp.slice();
 
-    e = e.write(ev, args.ꓸꓸꓸ);
-    e.end();
-}
-
-// write writes an event into the trace.
-internal static traceEventWriter write(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
-    var args = argsʗp.slice();
-
-    e.w = e.w.@event(ev, args.ꓸꓸꓸ);
-    return e;
-}
-
-// end finishes writing to the trace. The traceEventWriter must not be used after this call.
-internal static void end(this traceEventWriter e) {
-    e.w.end();
-}
-
-// traceEventWrite is the part of traceEvent that actually writes the event.
-internal static traceWriter @event(this traceWriter w, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
-    var args = argsʗp.sslice();
-
-    // Make sure we have room.
-    (w, _) = w.ensure(1 + (len(args) + 1) * (nint)traceBytesPerNumber);
-    // Compute the timestamp diff that we'll put in the trace.
-    var ts = traceClockNow();
-    if (ts <= (~w.traceBuf).lastTime) {
-        ts = (~w.traceBuf).lastTime + 1;
-    }
-    var tsDiff = (uint64)(ts - (~w.traceBuf).lastTime);
-    w.traceBuf.Value.lastTime = ts;
-    // Write out event.
-    w.@byte((byte)ev);
-    w.varint(tsDiff);
-    foreach (var (_, arg) in args) {
-        w.varint((uint64)arg);
-    }
-    return w;
+    e.tl.writer().@event(ev, args.ꓸꓸꓸ).end();
 }
 
 // stack takes a stack trace skipping the provided number of frames.

@@ -20,30 +20,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class gccgoimporter_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() {
-    builtin.initPackage(typeof(global::go.go.constant_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸscanner() {
-    builtin.initPackage(typeof(text.scanner_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 [GoType] partial struct parser {
     internal ж<scanner.Scanner> scanner;
     internal @string version;                   // format version
@@ -221,7 +197,7 @@ internal static readonly object unexpectedEofˢ = (@string)"unexpected EOF"u8;
         break;
     }
     default: {
-        pkgpath = strings.Join(parts[0..(int)(len(parts) - 1)], // unqualified name
+        pkgpath = strings.Join(parts[..(int)(len(parts) - 1)], // unqualified name
  // qualified name, which may contain periods
  "."u8);
         name = parts[len(parts) - 1];

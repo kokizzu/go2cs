@@ -6,7 +6,6 @@ namespace go.go;
 
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
-using importer = global::go.go.importer_package;
 using parser = global::go.go.parser_package;
 using token = global::go.go.token_package;
 using types = global::go.go.types_package;
@@ -20,12 +19,6 @@ using global::go.go;
 using static global::go.go.types_internal_test_package;
 
 partial class types_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(global::go.@internal.godebug_package));
-}
 
 internal static void testEval(ж<testing.T> Ꮡt, ж<token.FileSet> Ꮡfset, ж<types.Package> Ꮡpkg, tokenꓸPos pos, @string expr, typesꓸType typ, @string typStr, @string valStr) {
     var (gotTv, err) = Eval(Ꮡfset, Ꮡpkg, pos, expr);
@@ -203,7 +196,7 @@ public static void TestEvalPos(ж<testing.T> Ꮡt) {
         files = append(files, @file);
     }
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new Config(Importer: importer.Default());
+    conf = new Config(Importer: defaultImporter(fset));
     var (pkg, err) = Ꮡconf.Check("p"u8, fset, files, nil);
     if (err != default!) {
         Ꮡt.Fatal(err);
@@ -274,7 +267,7 @@ func f(a int, s string) S {
         Ꮡt.Fatal(err);
     }
     ref var conf = ref heap<types.Config>(out var Ꮡconf);
-    conf = new Config(Importer: importer.Default());
+    conf = new Config(Importer: defaultImporter(fset));
     (var pkg, err) = Ꮡconf.Check("p"u8, fset, new ж<ast.File>[]{f}.slice(), nil);
     if (err != default!) {
         Ꮡt.Fatal(err);

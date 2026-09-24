@@ -2,14 +2,14 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-8%2F8_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/image.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/image@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/image) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/image)
+[![Tests](https://img.shields.io/badge/Tests-8%2F8_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/image.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/image@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/image) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/image)
 
 Package image implements a basic 2-D image library.
 
 The fundamental interface is called \[Image]. An \[Image] contains colors, which are described in the image/color package.
 
-Values of the \[Image] interface are created either by calling functions such as \[NewRGBA] and \[NewPaletted], or by calling \[Decode] on an [io.Reader](https://pkg.go.dev/io@go1.23.12#Reader) containing image data in a format such as GIF, JPEG or PNG. Decoding any particular image format requires the prior registration of a decoder function. Registration is typically automatic as a side effect of initializing that format's package so that, to decode a PNG image, it suffices to have
+Values of the \[Image] interface are created either by calling functions such as \[NewRGBA] and \[NewPaletted], or by calling \[Decode] on an [io.Reader](https://pkg.go.dev/io@go1.24.13#Reader) containing image data in a format such as GIF, JPEG or PNG. Decoding any particular image format requires the prior registration of a decoder function. Registration is typically automatic as a side effect of initializing that format's package so that, to decode a PNG image, it suffices to have
 
 	import _ "image/png"
 

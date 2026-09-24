@@ -156,7 +156,7 @@
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
     <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
-    <ProjectReference Include="$(go2csPath)core/crypto/md5/crypto.md5.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha256/crypto.sha256.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/binary/encoding.binary.csproj" />
     <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />

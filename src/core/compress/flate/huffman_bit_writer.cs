@@ -189,9 +189,7 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     ref var litEnc = ref ᏑlitEnc.DerefOrNull();
     ref var offEnc = ref ᏑoffEnc.DerefOrNull();
 
-    foreach (var (i, _) in w.codegenFreq) {
-        w.codegenFreq[i] = 0;
-    }
+    clear(w.codegenFreq[..]);
     // Note that we are using codegen both as a temporary variable for holding
     // a copy of the frequencies, and as the place where we put the result.
     // This is fine because the output is always shorter than the input used
@@ -507,12 +505,8 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     nint numLiterals = default!;
     nint numOffsets = default!;
 
-    foreach (var (i, _) in w.literalFreq) {
-        w.literalFreq[i] = 0;
-    }
-    foreach (var (i, _) in w.offsetFreq) {
-        w.offsetFreq[i] = 0;
-    }
+    clear(w.literalFreq);
+    clear(w.offsetFreq);
     foreach (var (_, t) in tokens) {
         if (t < matchType) {
             w.literalFreq[(nint)(t.literal())]++;
@@ -595,9 +589,7 @@ internal static ж<huffmanEncoder> huffOffset;
         return;
     }
     // Clear histogram
-    foreach (var (i, _) in w.literalFreq) {
-        w.literalFreq[i] = 0;
-    }
+    clear(w.literalFreq);
     // Add everything as literals
     histogram(input, w.literalFreq);
     w.literalFreq[endBlockMarker] = 1;

@@ -46,6 +46,18 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
+  <!-- reflect.StructOf mints synthesized structs into the fixed-name dynamic assembly
+       go2cs.SynthesizedStructs, and a Go test that calls StructOf over a type declared in its OWN
+       package hands it a field type internal to THIS assembly. Without the grant that type cannot be
+       loaded from there: CreateType throws a bare TypeLoadException naming nothing, and the
+       half-built TypeBuilder then poisons the synthesis assembly for every later GetTypes().
+       Measured — reflect's TestStructOfExportRules fails on
+       `S1 : TestStructOfExportRules_S1  asm=reflect.tests  public=False`, which the production-side
+       grant cannot reach because the type lives HERE. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
+  </ItemGroup>
+
   <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
        an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
@@ -68,6 +80,22 @@
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
   <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
        recompiled into the test assembly alongside the converted test sources; nothing else in the
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
@@ -86,75 +114,75 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="../../testdata/Isaac.Newton-Opticks.txt" Link="go2cs_shared_fixtures/up2/testdata/Isaac.Newton-Opticks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../testdata/e.txt" Link="go2cs_shared_fixtures/up1/testdata/e.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="deflate.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="deflate_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="deflatefast.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dict_decoder.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="dict_decoder_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flate_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="huffman_bit_writer.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="huffman_bit_writer_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="huffman_code.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="inflate.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="inflate_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="reader_test.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-null-max.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-pi.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-1k.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-limit.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-max.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-rand-max.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-shifts.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text-shift.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-text.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.dyn.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.golden" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.in" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.wb.expect" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/huffman-zero.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/null-long-match.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="testdata/null-long-match.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="token.go" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="writer_test.go" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../testdata/Isaac.Newton-Opticks.txt" Link="go2cs_shared_fixtures/up2/testdata/Isaac.Newton-Opticks.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="../testdata/e.txt" Link="go2cs_shared_fixtures/up1/testdata/e.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="deflate.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="deflate_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="deflatefast.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dict_decoder.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dict_decoder_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="flate_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="huffman_bit_writer.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="huffman_bit_writer_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="huffman_code.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="inflate.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="inflate_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="reader_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-null-max.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-pi.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-1k.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-limit.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-max.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-rand-max.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-shifts.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text-shift.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-text.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.dyn.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.golden" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.in" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.wb.expect" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/huffman-zero.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/null-long-match.dyn.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/null-long-match.wb.expect-noinput" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="token.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="writer_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -166,6 +194,7 @@
     <ProjectReference Include="$(go2csPath)core/flag/flag.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/sync/internal.sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />

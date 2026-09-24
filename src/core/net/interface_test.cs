@@ -221,7 +221,7 @@ internal static (ж<routeStats>, error) validateInterfaceUnicastAddrs(slice<glob
             }
             var (prefixLen, maxPrefixLen) = (~ifaΔ1).Mask.Size();
             if ((~ifaΔ1).IP.To4() != default!) {
-                if (0 >= prefixLen || prefixLen > 8 * IPv4len || maxPrefixLen != 8 * IPv4len) {
+                if (0 >= prefixLen || prefixLen > (nint)(8 * IPv4len) || maxPrefixLen != (nint)(8 * IPv4len)) {
                     return (default!, fmt.Errorf("unexpected prefix length: %d/%d for %#v"u8, prefixLen, maxPrefixLen, ifaΔ1.OrTypedNil()));
                 }
                 if ((~ifaΔ1).IP.IsLoopback() && prefixLen < 8) {
@@ -231,10 +231,10 @@ internal static (ж<routeStats>, error) validateInterfaceUnicastAddrs(slice<glob
                 stats.Value.ipv4++;
             }
             if ((~ifaΔ1).IP.To16() != default! && (~ifaΔ1).IP.To4() == default!) {
-                if (0 >= prefixLen || prefixLen > 8 * IPv6len || maxPrefixLen != 8 * IPv6len) {
+                if (0 >= prefixLen || prefixLen > (nint)(8 * IPv6len) || maxPrefixLen != (nint)(8 * IPv6len)) {
                     return (default!, fmt.Errorf("unexpected prefix length: %d/%d for %#v"u8, prefixLen, maxPrefixLen, ifaΔ1.OrTypedNil()));
                 }
-                if ((~ifaΔ1).IP.IsLoopback() && prefixLen != 8 * IPv6len) {
+                if ((~ifaΔ1).IP.IsLoopback() && prefixLen != (nint)(8 * IPv6len)) {
                     // see RFC 4291
                     return (default!, fmt.Errorf("unexpected prefix length: %d/%d for %#v"u8, prefixLen, maxPrefixLen, ifaΔ1.OrTypedNil()));
                 }

@@ -46,14 +46,14 @@ public static (slice<byte>, error) GobEncode(this ж<ΔInt> Ꮡx) {
     return default!;
 }
 
+// AppendText implements the [encoding.TextAppender] interface.
+public static (slice<byte> text, error err) AppendText(this ж<ΔInt> Ꮡx, slice<byte> b) {
+    return (Ꮡx.Append(b, 10), default!);
+}
+
 // MarshalText implements the [encoding.TextMarshaler] interface.
 public static (slice<byte> text, error err) MarshalText(this ж<ΔInt> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
-    if (Ꮡx == nil) {
-        return (slice<byte>("<nil>"u8), default!);
-    }
-    return (x.abs.itoa(x.neg, 10), default!);
+    return Ꮡx.AppendText(default!);
 }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.

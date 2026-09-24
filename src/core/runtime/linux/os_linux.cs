@@ -31,6 +31,10 @@ internal static UntypedInt sigPerThreadSyscall => /* _SIGRTMIN + 1 */ 33;
     // needPerThreadSyscall indicates that a per-thread syscall is required
     // for doAllThreadsSyscall.
     internal atomic.Uint8 needPerThreadSyscall;
+    // This is a pointer to a chunk of memory allocated with a special
+    // mmap invocation in vgetrandomGetState().
+    internal uintptr vgetrandomState;
+    internal uint32 waitsema; // semaphore for parking on locks
 }
 
 //go:noescape
@@ -313,6 +317,8 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
 internal static bool secureMode;
 
 internal static nint /*pairs*/ sysauxv(slice<uintptr> auxv) {
+    // Process the auxiliary vector entries provided by the kernel when the
+    // program is executed. See getauxval(3).
     nint i = default!;
     for (; auxv[i] != _AT_NULL; i += 2) {
         var (tag, val) = (auxv[i], auxv[i + 1]);
@@ -327,8 +333,12 @@ internal static nint /*pairs*/ sysauxv(slice<uintptr> auxv) {
             secureMode = val == 1;
         }
 
-        // The kernel provides a pointer to 16-bytes
-        // worth of random data.
+        // The kernel provides a pointer to 16 bytes of cryptographically
+        // random data. Note that in cgo programs this value may have
+        // already been used by libc at this point, and in particular glibc
+        // and musl use the value as-is for stack and pointer protector
+        // cookies from libc_start_main and/or dl_start. Also, cgo programs
+        // may use the value after we do.
         archauxv(tag, val);
         vdsoauxv(tag, val);
     }
@@ -367,12 +377,15 @@ internal static void osinit() {
     ncpu = getproccount();
     physHugePageSize = getHugePageSize();
     osArchInit();
+    vgetrandomInit();
 }
 
 internal static ж<slice<byte>> Ꮡurandom_dev = new StandardBox<slice<byte>>(slice<byte>("/dev/urandom\x00"u8));
 internal static ref slice<byte> urandom_dev => ref Ꮡurandom_dev.ValueSlot;
 
 internal static nint readRandom(slice<byte> r) {
+    // Note that all supported Linux kernels should provide AT_RANDOM which
+    // populates startupRand, so this fallback should be unreachable.
     var fd = open(Ꮡ(urandom_dev, 0), 0, /* O_RDONLY */
  0);
     var n = read(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(r, 0)), (int32)len(r));
@@ -423,8 +436,11 @@ internal static void unminit() {
     getg().Value.m.Value.procid = 0;
 }
 
-// Called from exitm, but not from drop, to undo the effect of thread-owned
+// Called from mexit, but not from dropm, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
+//
+// This always runs without a P, so //go:nowritebarrierrec is required.
+//go:nowritebarrierrec
 internal static void mdestroy(ref m mp) {
 }
 
@@ -667,7 +683,7 @@ internal static void setThreadCPUProfiler(int32 hz) {
     // spend shows up as a 10% chance of one sample (for an expected value of
     // 0.1 samples), and so that "two and six tenths" periods of CPU spend show
     // up as a 60% chance of 3 samples and a 40% chance of 2 samples (for an
-    // expected value of 2.6). Set the initial delay to a value in the unifom
+    // expected value of 2.6). Set the initial delay to a value in the uniform
     // random distribution between 0 and the desired period. And because "0"
     // means "disable timer", add 1 so the half-open interval [0,period) turns
     // into (0,period].

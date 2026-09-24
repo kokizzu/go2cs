@@ -57,7 +57,10 @@ internal static @string call(Func<@string> f) {
 }
 
 internal static @string viaFieldMethodValue(this ж<widget> Ꮡw) {
-    return call(() => Ꮡw.Value.id.render());
+    ref var w = ref Ꮡw.DerefOrNull();
+
+    var recvʗ1 = w.id;
+    return call(() => recvʗ1.render());
 }
 
 internal static @string viaBareMethodValue(this ж<widget> Ꮡw) {

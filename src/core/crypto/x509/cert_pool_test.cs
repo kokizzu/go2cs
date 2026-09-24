@@ -8,12 +8,6 @@ using static go.crypto.x509_package;
 
 partial class x509_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 [GoType("dyn")] internal partial struct TestCertPoolEqual_tests {
     internal @string name;
     internal ж<global::go.crypto.x509_package.CertPool> a;

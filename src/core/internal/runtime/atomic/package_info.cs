@@ -49,7 +49,7 @@ using static go.@internal.runtime.atomic_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/runtime/atomic/atomic_amd64.go", "atomic_amd64.cs", "AAkiAAoCAAQWwqrCqsKqwqimpqampqjCqKampqampqampqrGpqampqamrA==")]
+[assembly: go.GoPositionMap("internal/runtime/atomic/atomic_amd64.go", "atomic_amd64.cs", "AAkiAAoCAAQWwqrCqsKqwqimpqampqaowqimpqampqampqaqxqampqampqw=")]
 [assembly: go.GoPositionMap("internal/runtime/atomic/stubs.go", "stubs.cs", "AAoYpqampqampqamqsampqam")]
 [assembly: go.GoPositionMap("internal/runtime/atomic/types.go", "types.cs", "ABEosqyyAAIQ0q7CAAIU8gANIrKssgACENKuwgACFPIAChyyrLIAAhTyAAIU8gAKHLKssoKClAAKHLIAAhgACQKssgACGAAJAgACENIAAhoACgKuwgACFPIAAhTyAAIU8gANIrKssgACENKuwgACFPIAChyyAAIYAAkCrLIAAhgACQIAAhDSrsIAAhTyAAwgspKs0gAQKLIAAhgACQKokqwABBwADAKssqYABhSyAAIYAAkCrLIAAh4ADAKuwgAKFrI=")]
 [assembly: go.GoPositionMap("internal/runtime/atomic/types_64bit.go", "types_64bit.cs", "AAgkAAkCAAIYAAkC")]
@@ -81,4 +81,13 @@ public static partial class atomic_package
     public partial struct Uintptr {}
     public partial struct UnsafePointer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

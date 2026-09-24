@@ -153,7 +153,10 @@ internal static void netpollBreak() {
 internal static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
 
 // netpoll checks for ready network connections.
-// Returns list of goroutines that become runnable.
+// Returns a list of goroutines that become runnable,
+// and a delta to add to netpollWaiters.
+// This must never return an empty list with a non-zero delta.
+//
 // delay < 0: blocks indefinitely
 // delay == 0: does not block, just polls
 // delay > 0: block for up to that many nanoseconds

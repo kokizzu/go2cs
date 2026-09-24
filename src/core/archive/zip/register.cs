@@ -11,12 +11,6 @@ using compress;
 
 partial class zip_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸflate() {
-    builtin.initPackage(typeof(compress.flate_package));
-}
-
 // type Compressor is a methodless func type — rendered inline as its base delegate
 
 // type Decompressor is a methodless func type — rendered inline as its base delegate
@@ -149,7 +143,7 @@ internal static ref sync.Map decompressors => ref Ꮡdecompressors.Value; // map
 [GoInit] internal static void init() {
     Ꮡcompressors.Store(Store, new Func<io.Writer, (io.WriteCloser, error)>((io.Writer w) => (new nopCloserжWriteCloser(Ꮡ(new nopCloser(w))), default!)));
     Ꮡcompressors.Store(Deflate, new Func<io.Writer, (io.WriteCloser, error)>((io.Writer w) => (newFlateWriter(w), default!)));
-    Ꮡdecompressors.Store(Store, new Func<io.Reader, io.ReadCloser>(io.NopCloser));
+    Ꮡdecompressors.Store(Store, NilSafeDelegateConversion<Func<io.Reader, io.ReadCloser>, Func<io.Reader, io.ReadCloser>>(io.NopCloser));
     Ꮡdecompressors.Store(Deflate, new Func<io.Reader, io.ReadCloser>(newFlateReader));
 }
 

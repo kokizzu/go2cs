@@ -7,20 +7,14 @@
 namespace go.go;
 
 using constant = global::go.go.constant_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using unicode = unicode_package;
 using ast = global::go.go.ast_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
 
 // conversion type-checks the conversion T(x).
 // The result is in x.
@@ -73,12 +67,12 @@ internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     }
     case {} when constArg && isTypeParam(T): {
         var constConvertibleToʗ1 = constConvertibleTo;
-        ok = Unalias(T)._<ж<TypeParam>>().underIs((ΔType u) => {
-            // x is convertible to T if it is convertible
-            // to each specific type in the type set of T.
-            // If T's type set is empty, or if it doesn't
-            // have specific types, constant x cannot be
-            // converted.
+        ok = underIs(T, // x is convertible to T if it is convertible
+ // to each specific type in the type set of T.
+ // If T's type set is empty, or if it doesn't
+ // have specific types, constant x cannot be
+ // converted.
+ (ΔType u) => {
             // u is nil if there are no specific type terms
             if (u == default!) {
                 Ꮡcause.Value = Ꮡcheck.sprintf("%s does not contain specific types"u8, T);
@@ -231,7 +225,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             switch (Tu.type()) {
             case ж<Array> a: {
                 if (Identical(s.Elem(), a.Elem())) {
-                    if (Ꮡcheck == nil || Ꮡcheck.allowVersion(new operandжpositioner(Ꮡx), go1_20)) {
+                    if (Ꮡcheck == nil || check.allowVersion(go1_20)) {
                         return true;
                     }
                     // check != nil
@@ -247,7 +241,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
                 {
                     var (aΔ1, _) = under(a.Elem())._<ж<Array>>(ᐧ); if (aΔ1 != nil) {
                         if (Identical(s.Elem(), aΔ1.Elem())) {
-                            if (Ꮡcheck == nil || Ꮡcheck.allowVersion(new operandжpositioner(Ꮡx), go1_17)) {
+                            if (Ꮡcheck == nil || check.allowVersion(go1_17)) {
                                 return true;
                             }
                             // check != nil
@@ -285,7 +279,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
         var Tpʗ1 = Tp;
         var Vpʗ1 = Vp;
         var errorfʗ1 = errorf;
-        return Vp.@is((ж<term> VΔ4) => {
+        return Vp.@is((ж<Δterm> VΔ4) => {
             if (VΔ4 == nil) {
                 return false; // no specific types
             }
@@ -293,7 +287,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
             var Tpʗ2 = Tpʗ1;
             var Vpʗ2 = Vpʗ1;
             var errorfʗ2 = errorfʗ1;
-            return Tpʗ1.@is((ж<term> TΔ4) => {
+            return Tpʗ1.@is((ж<Δterm> TΔ4) => {
                 if (TΔ4 == nil) {
                     return false; // no specific types
                 }
@@ -311,7 +305,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
         var Vpʗ3 = Vp;
         var errorfʗ3 = errorf;
         var origTʗ1 = origT;
-        return Vp.@is((ж<term> VΔ5) => {
+        return Vp.@is((ж<Δterm> VΔ5) => {
             if (VΔ5 == nil) {
                 return false; // no specific types
             }
@@ -326,7 +320,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
     case {} when Tp != nil: {
         var Tpʗ3 = Tp;
         var errorfʗ4 = errorf;
-        return Tp.@is((ж<term> TΔ5) => {
+        return Tp.@is((ж<Δterm> TΔ5) => {
             if (TΔ5 == nil) {
                 return false; // no specific types
             }

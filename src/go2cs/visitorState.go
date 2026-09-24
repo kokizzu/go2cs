@@ -209,6 +209,7 @@ type Visitor struct {
 	packageImports        *strings.Builder
 	importQueue           HashSet[string]
 	requiredUsings        HashSet[string]
+	methodNamespaceUsings HashSet[string] // see collectMethodNamespaceUsings
 	typeAliasDeclarations *strings.Builder
 	// emittedClassName is the `partial class <name>` this FILE's declarations are emitted into —
 	// `<pkg>_package`, or the per-variant override under -tests (visitFile computes it; this is the
@@ -269,9 +270,17 @@ type Visitor struct {
 	// functions referencing the identical anonymous-struct shape purely through their own
 	// signatures/call sites could never unify (CS1503: runtime's
 	// testTracebackArgs2/testTracebackArgs5, the traceback pre-pass sizing census). Toggled around
-	// exactly the three call sites that reach a signature or call-argument position
-	// (visitFuncDecl's parameter/result loops, convCallExpr's argument classification) — never
-	// left set across an intervening visit.
+	// exactly the four call sites that reach a signature, call-argument or written TYPE-ARGUMENT
+	// position (visitFuncDecl's parameter/result loops, convCallExpr's argument classification, and
+	// liftExplicitAnonStructTypeArgs) — never left set across an intervening visit.
+	//
+	// ⚠ The type-argument position was added 2026-09-20 and is the one the original three did not
+	// enumerate. It is the same property for the same reason — `F[struct{ f int }]()` written in two
+	// functions is ONE Go type — but it failed differently: a call-argument miss unified two lifts
+	// badly (CS1503), while a type-argument miss left the reference with no C# name at all, so the
+	// deferred marker resolved to raw Go text and the `-tests` gate refused the package outright.
+	// See liftExplicitAnonStructTypeArgs for the measured shape and the three-step resolution that
+	// makes the registry the only route from that position.
 	liftAtCallBoundary bool
 	// heapIntrinsicShadowed reports that a Go DECLARATION named `heap` is visible where the
 	// current function's heap-box emissions land, so each of them must spell golib's boxing

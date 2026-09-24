@@ -12,6 +12,9 @@ using static go.go.types_package;
 using static go.go.types_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b54797065506172616d732829202a676f2f74797065732e54797065506172616d4c6973747d", "TestInstanceInfo_typeᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b2073726320737472696e673b2073696720737472696e677d", "builtinCallsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b73726320737472696e673b206f626a20737472696e673b2077616e7420737472696e673b20616c69617320626f6f6c7d", "testObjectsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -28,12 +31,12 @@ using static go.go.types_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/types/context_test.go", "context_test.cs", "ABccooIACRzSlIKUlIKUlIKClpaCgILKgILKgIK4gII=")]
+[assembly: global::go.GoPositionMap("go/types/context_test.go", "context_test.cs", "ABEcooIACRzSlIKUlIKUlIKClpaCgILKgILKgIK4gII=")]
 [assembly: global::go.GoPositionMap("go/types/errors_test.go", "errors_test.cs", "ABAYgoKCgIKmgoKAgqaCgoCCAAgIggAGEoKC")]
-[assembly: global::go.GoPositionMap("go/types/sizeof_test.go", "sizeof_test.cs", "ABcakoQAHUiCgoKClII=")]
-[assembly: global::go.GoPositionMap("go/types/termlist_test.go", "termlist_test.cs", "ABMgkoKCgoKUpoKCuIIAChaAgtqCAAgSgoKCyoIACRSCgoIACAqCAA0ggoKCAAgKggAPJoKCgoIACAqCABEqgoKCggAJCoIAChyCgoKCAAkKggAMIIKCgoIACQqCABY0goKCggAJCoIAESqCgoKC")]
-[assembly: global::go.GoPositionMap("go/types/token_test.go", "token_test.cs", "ACI6hJKCuJSCgoKCgg==")]
-[assembly: global::go.GoPositionMap("go/types/typeset_test.go", "typeset_test.cs", "AB0cgoLoggAXOIKCgoKYkoKCqIKClIKCqIKC")]
+[assembly: global::go.GoPositionMap("go/types/sizeof_test.go", "sizeof_test.cs", "ABEakoQAHUiCgoKClII=")]
+[assembly: global::go.GoPositionMap("go/types/termlist_test.go", "termlist_test.cs", "AA0gkoKCgoKUpoKCuIIAChaAgtqCAAgSgoKCyoIACRSCgoIACAqCAA0ggoKCAAgKggAPJoKCgoIACAqCABEqgoKCggAJCoIAChyCgoKCAAkKggAMIIKCgoIACQqCABY0goKCggAJCoIAESqCgoKC")]
+[assembly: global::go.GoPositionMap("go/types/token_test.go", "token_test.cs", "ABw6hJKCuJSCgoKCgg==")]
+[assembly: global::go.GoPositionMap("go/types/typeset_test.go", "typeset_test.cs", "ABEcgoLoggAXOIKCgoKYkoKCqIKClIKCqIKC")]
 [assembly: global::go.GoPositionMap("go/types/typeterm_test.go", "typeterm_test.cs", "ABAgggANGoKCgILagoKClKaCgoKUpoIADyCCgoKCgIK2goCC2qIAH0KCgoKCgoCC2oIAESSCgoKCgIK2goCC2oIACRSCgoKCgILaggASJoKCgoKAgtqCAAsYgoKCgoCCtoKAgg==")]
 [assembly: global::go.GoPositionMap("go/types/util_test.go", "util_test.cs", "AA8igKSgooA=")]
 // </GoSourcePositionMaps>
@@ -51,4 +54,43 @@ public static partial class types_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() => builtin.initPackage(typeof(global::go.go.build_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸformat() => builtin.initPackage(typeof(global::go.go.format_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸimporter() => builtin.initPackage(typeof(global::go.go.importer_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸscanner() => builtin.initPackage(typeof(global::go.go.scanner_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() => builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸdiff() => builtin.initPackage(typeof(global::go.@internal.diff_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(global::go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(global::go.@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtypesꓸerrors() => builtin.initPackage(typeof(global::go.@internal.types.errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(global::go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

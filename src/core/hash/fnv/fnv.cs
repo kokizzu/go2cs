@@ -21,24 +21,6 @@ using math;
 
 partial class fnv_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(math.bits_package));
-}
-
 [GoType("num:uint32")] partial struct sum32;
 
 [GoType("num:uint32")] partial struct sum32a;
@@ -268,32 +250,32 @@ public static hash.Hash New128a() {
 
 [GoRecv] internal static slice<byte> Sum(this ref sum32 s, slice<byte> @in) {
     var v = (uint32)(s);
-    return byteorder.BeAppendUint32(@in, v);
+    return byteorder.BEAppendUint32(@in, v);
 }
 
 [GoRecv] internal static slice<byte> Sum(this ref sum32a s, slice<byte> @in) {
     var v = (uint32)(s);
-    return byteorder.BeAppendUint32(@in, v);
+    return byteorder.BEAppendUint32(@in, v);
 }
 
 [GoRecv] internal static slice<byte> Sum(this ref sum64 s, slice<byte> @in) {
     var v = (uint64)(s);
-    return byteorder.BeAppendUint64(@in, v);
+    return byteorder.BEAppendUint64(@in, v);
 }
 
 [GoRecv] internal static slice<byte> Sum(this ref sum64a s, slice<byte> @in) {
     var v = (uint64)(s);
-    return byteorder.BeAppendUint64(@in, v);
+    return byteorder.BEAppendUint64(@in, v);
 }
 
 [GoRecv] internal static slice<byte> Sum(this ref sum128 s, slice<byte> @in) {
-    var ret = byteorder.BeAppendUint64(@in, s.Value[0]);
-    return byteorder.BeAppendUint64(ret, s.Value[1]);
+    var ret = byteorder.BEAppendUint64(@in, s.Value[0]);
+    return byteorder.BEAppendUint64(ret, s.Value[1]);
 }
 
 [GoRecv] internal static slice<byte> Sum(this ref sum128a s, slice<byte> @in) {
-    var ret = byteorder.BeAppendUint64(@in, s.Value[0]);
-    return byteorder.BeAppendUint64(ret, s.Value[1]);
+    var ret = byteorder.BEAppendUint64(@in, s.Value[0]);
+    return byteorder.BEAppendUint64(ret, s.Value[1]);
 }
 
 internal static readonly @string magic32 = "fnv\x01"u8;
@@ -306,48 +288,66 @@ internal const nint marshaledSize32 = /* len(magic32) + 4 */ 8;
 internal const nint marshaledSize64 = /* len(magic64) + 8 */ 12;
 internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
-[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum32 s) {
-    var b = new slice<byte>(0, marshaledSize32);
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum32 s, slice<byte> b) {
     b = append(b, magic32.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, (uint32)(s));
+    b = byteorder.BEAppendUint32(b, (uint32)(s));
+    return (b, default!);
+}
+
+[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum32 s) {
+    return s.AppendBinary(new slice<byte>(0, marshaledSize32));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum32a s, slice<byte> b) {
+    b = append(b, magic32a.ꓸꓸꓸ);
+    b = byteorder.BEAppendUint32(b, (uint32)(s));
     return (b, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum32a s) {
-    var b = new slice<byte>(0, marshaledSize32);
-    b = append(b, magic32a.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, (uint32)(s));
+    return s.AppendBinary(new slice<byte>(0, marshaledSize32));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum64 s, slice<byte> b) {
+    b = append(b, magic64.ꓸꓸꓸ);
+    b = byteorder.BEAppendUint64(b, (uint64)(s));
     return (b, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum64 s) {
-    var b = new slice<byte>(0, marshaledSize64);
-    b = append(b, magic64.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint64(b, (uint64)(s));
+    return s.AppendBinary(new slice<byte>(0, marshaledSize64));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum64a s, slice<byte> b) {
+    b = append(b, magic64a.ꓸꓸꓸ);
+    b = byteorder.BEAppendUint64(b, (uint64)(s));
     return (b, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum64a s) {
-    var b = new slice<byte>(0, marshaledSize64);
-    b = append(b, magic64a.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint64(b, (uint64)(s));
+    return s.AppendBinary(new slice<byte>(0, marshaledSize64));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum128 s, slice<byte> b) {
+    b = append(b, magic128.ꓸꓸꓸ);
+    b = byteorder.BEAppendUint64(b, s.Value[0]);
+    b = byteorder.BEAppendUint64(b, s.Value[1]);
     return (b, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum128 s) {
-    var b = new slice<byte>(0, marshaledSize128);
-    b = append(b, magic128.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint64(b, s.Value[0]);
-    b = byteorder.BeAppendUint64(b, s.Value[1]);
+    return s.AppendBinary(new slice<byte>(0, marshaledSize128));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref sum128a s, slice<byte> b) {
+    b = append(b, magic128a.ꓸꓸꓸ);
+    b = byteorder.BEAppendUint64(b, s.Value[0]);
+    b = byteorder.BEAppendUint64(b, s.Value[1]);
     return (b, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref sum128a s) {
-    var b = new slice<byte>(0, marshaledSize128);
-    b = append(b, magic128a.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint64(b, s.Value[0]);
-    b = byteorder.BeAppendUint64(b, s.Value[1]);
-    return (b, default!);
+    return s.AppendBinary(new slice<byte>(0, marshaledSize128));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -361,7 +361,7 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize32) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s = ((sum32)byteorder.BeUint32(b[4..]));
+    s = ((sum32)byteorder.BEUint32(b[4..]));
     return default!;
 }
 
@@ -372,7 +372,7 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize32) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s = ((sum32a)byteorder.BeUint32(b[4..]));
+    s = ((sum32a)byteorder.BEUint32(b[4..]));
     return default!;
 }
 
@@ -383,7 +383,7 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize64) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s = ((sum64)byteorder.BeUint64(b[4..]));
+    s = ((sum64)byteorder.BEUint64(b[4..]));
     return default!;
 }
 
@@ -394,7 +394,7 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize64) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s = ((sum64a)byteorder.BeUint64(b[4..]));
+    s = ((sum64a)byteorder.BEUint64(b[4..]));
     return default!;
 }
 
@@ -405,8 +405,8 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize128) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s.Value[0] = byteorder.BeUint64(b[4..]);
-    s.Value[1] = byteorder.BeUint64(b[12..]);
+    s.Value[0] = byteorder.BEUint64(b[4..]);
+    s.Value[1] = byteorder.BEUint64(b[12..]);
     return default!;
 }
 
@@ -417,8 +417,8 @@ internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid
     if (len(b) != marshaledSize128) {
         return errors.New(hashFnvInvalidHashStateˢ2);
     }
-    s.Value[0] = byteorder.BeUint64(b[4..]);
-    s.Value[1] = byteorder.BeUint64(b[12..]);
+    s.Value[0] = byteorder.BEUint64(b[4..]);
+    s.Value[1] = byteorder.BEUint64(b[12..]);
     return default!;
 }
 

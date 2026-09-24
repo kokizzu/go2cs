@@ -15,7 +15,6 @@ global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
 global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
 global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
 global using abiꓸKind = go.@internal.abi_package.ΔKind;
-global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
 global using abiꓸName = go.@internal.abi_package.ΔName;
 global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
 global using runtimeꓸError = go.runtime_package.ΔError;
@@ -71,26 +70,26 @@ using static go.syscall_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("syscall/bpf_bsd.go", "bpf_bsd.cs", "AAsgkqiSqJKCgoKUqLKCgpSokoKCgpSosoKClKiygoKUqJKCgpQABxKSgoKClKiSgoKCgpSokoKCgpSokoKClKiSgoKClKiygoKUqJKCgoKCgpSokoKCgpSClKiSgoKClKiygoKU")]
-[assembly: go.GoPositionMap("syscall/dirent.go", "dirent.cs", "ABQikoKUgpSmgpSkpKSkyIKUpKSkpAAEEOKCgoKCgpSCgoKCuJKUgoKClIKCgoK4gpSCgpQ=")]
-[assembly: go.GoPositionMap("syscall/env_unix.go", "env_unix.cs", "ABlAtJKCgoKCgoCC3KTcooSChICCgqSC1sKCgpaChIKClIKCgqbmooKClIKCuIKCgrqChIKCgpSClIKC1qKEgoSClILWooKCgoKCgqY=")]
-[assembly: go.GoPositionMap("syscall/exec_libc2.go", "exec_libc2.cs", "ACxQopIAARoADQYADxS6goKCgpSUqIKCgoKWlIK8goCCgsqCgoK6lIKCqKaCgoKClKiCgsyWgoKCuoCCgoKClIKCgqaCgpSCgsqCgoLMgoKUgoKUlIKUgpSCgpKUgpSCgpSUgpSCuoKCgpSmgoKUuIKCAAYQgqiCgoK6goKCuoKouoSSgro=")]
-[assembly: go.GoPositionMap("syscall/exec_unix.go", "exec_unix.cs", "AE6QAdKCgpSCrLKCgoKUlIKCgoKCgpSmgKSigoKUgpSClJSCAB4wwoKCgoSClIKCqIKClIKClIKCloKWgoKCgqaCgoKCzIKUgpaWgIKCuIKCgoKClJaCgoKCpoKCgpSCuoKCqISoqJKowoKoogAJErKCgpSCgpSCgpSEgoKWgpTstpTagg==")]
+[assembly: go.GoPositionMap("syscall/dirent.go", "dirent.cs", "AA4ikoKUgpSmgpSkpKSkyIKUpKSkpAAEEOKCgoKCgpSCgoKCuJKUgoKClIKCgoK4gpSCgpQ=")]
+[assembly: go.GoPositionMap("syscall/env_unix.go", "env_unix.cs", "ABNAtJKCgoKCgoCC3KTcooSChICCgqSC1sKCgpaChIKClIKCgqbmooKClIKCuIKCgrqChIKCgpSClIKC1qKEgoSClILWooKCgoKCgqY=")]
+[assembly: go.GoPositionMap("syscall/exec_libc2.go", "exec_libc2.cs", "ACZQopIAARoADQYADxS6goKCgpSUqIKCgoKWlIK8goCCgsqCgoK6lIKCqKaCgoKClKiigsyWgqKCuoCCgoKClIKCgqaCgpSCgsqCooLMgoKUgoKUlIKUgpSCgpKUgpSCgpSUgpSCuoKCgpSmgoKUuIKCAAYQgqiCgoK6goKCuoLI6oSygro=")]
+[assembly: go.GoPositionMap("syscall/exec_unix.go", "exec_unix.cs", "AEGQAdKCgpSCrLKCgoKUlIKCgoKCgpSmgKSigoKUgpSClJSCAByKApKowoKoog==")]
 [assembly: go.GoPositionMap("syscall/flock_bsd.go", "flock_bsd.cs", "AAoYkoI=")]
 [assembly: go.GoPositionMap("syscall/forkpipe.go", "forkpipe.cs", "AAgWooKClIKClIKmgqaC")]
-[assembly: go.GoPositionMap("syscall/rlimit.go", "rlimit.cs", "ABU8AA4CgoCCgpKCgsiCppQ=")]
+[assembly: go.GoPositionMap("syscall/rlimit.go", "rlimit.cs", "AA88AA4CgoCCggAHEISCyIKmlA==")]
 [assembly: go.GoPositionMap("syscall/rlimit_darwin.go", "rlimit_darwin.cs", "AAsUtoKClII=")]
 [assembly: go.GoPositionMap("syscall/route_bsd.go", "route_bsd.cs", "AA4okoKmyOyCpoKUqJKClIKClIKCgoIAFQoAAhqOgoKUgoKClKiSlIKUgqSClIKkAAcWABUogoK4lIKCpIKClJSkgoKkgpKUlAAEEtKUkoCCpIKUgoCCpAAaNoKCgoKCgpSClIKClIKkgoKUgoKkgoKUgrYACxiCgoKUgoKUggALGIKCgoKCgpSClIKClIKkgoKUgoKkgoKUgrau4pKCgoKCgpSAgpSkpoKUrsKCgpQ=")]
 [assembly: go.GoPositionMap("syscall/route_darwin.go", "route_darwin.cs", "AAkSopSCpIKkgqSCpAALGIKCgoKClIKUgoKUgqSCgpSCpIKClIK2")]
 [assembly: go.GoPositionMap("syscall/sockcmsg_unix.go", "sockcmsg_unix.cs", "AAwioqqipqIACBaigoKCgoKUgoKUpoKCgpSqwoKCgoKCgoKUqsKClIKUgoKClA==")]
 [assembly: go.GoPositionMap("syscall/sockcmsg_unix_other.go", "sockcmsg_unix_other.cs", "AAockqiWqsK4kpaSuA==")]
 [assembly: go.GoPositionMap("syscall/syscall.go", "syscall.cs", "ACBK8oKClKyygpSCggACENCqsoKClAAHEJKokqiSqJKqopai")]
-[assembly: go.GoPositionMap("syscall/syscall_bsd.go", "syscall_bsd.cs", "ABIsgoKCgpSCgpQAAhQACAKCgpSCqIKWgoKClIKClKaCgpaCgpSmisIADyiApIKClKaApIKCgpSmgKSApICkgoKUpoCo0oKCgpQAAhoACwKClIKCgoKCgqaigpSCgoKCgoKCpqKCgoKUgoKClKaigpSCgoKCgoKCgqailIKCgoKCgoKCgoKmgoKUjILCpoKmgqaCgoKCgqaCgoKCgoKkpsKCkoKClMqClIKCgpSmsoKSgILIgoKUqrKCkoKmspKCpoKCkoKmgoKSgqaCgpKCpoKCkoKuAAgCgoKCgoKClIKUgoKUgpSCgoCCpIKCqsKCgoKCgoKUgpSCgpSClIKCgIKkgpSqkpKClIKUprSCgqiSgIKkgqiCgIK4gpSmtIKCqJKCgIKkgpSqkoKUpoKClIKCuMiqkoKUAA0cgqaC")]
-[assembly: go.GoPositionMap("syscall/syscall_darwin.go", "syscall_darwin.cs", "ABIokpKSAA8iwgAAEvKUgoKCuoCCpKaCpoKmgqaAooCosoKUgoKCgpSmsoKCgoKUgoKClKYAASoADgAAAsIBAF4CprKCgoKUppjCgoKClKYADRCSggAHEoKClIKCgpSEgoKCgoKClIKUgoKClILKpoKCgriSgpboopKSkpI=")]
-[assembly: go.GoPositionMap("syscall/syscall_darwin_amd64.go", "syscall_darwin_amd64.cs", "AAsYgqaCAAIYAAoCgoKmgqaCpoKmsqSEhIKUpprE")]
-[assembly: go.GoPositionMap("syscall/syscall_unix.go", "syscall_unix.cs", "ACFEkoCCpAAKGOKCqIKCqJaCgoKC5tKCqIKCgoKCqICCpIIACCaCgoKCpqaClKSkpKSmgqaCAAoaopSkpKSkzqSCgoKCpqaygoKClIKmgpSClKaygpSCgoKmlIKUgpSClKaygoKClIKmgpSClKaygpSCgpSClIKUABw6ooKClKaigoKUprKCkoCCpKaigpKCpsKCkoCCpIKUprKCkoCCpIKCgoKmsoKSgIKkgoKCgoKm0oKCgpSCgoKCptKCgoKUgoKCgoKm4oKUgpSmooKmooKCgoKCpqaigoKUpqKCgpSmooKClKaigoKUpqKYgoKCpqaipoKipqKmgqaCpoKmgqaCgoKUpqKmsoKUgqaygoKCgpSmgoKU")]
+[assembly: go.GoPositionMap("syscall/syscall_bsd.go", "syscall_bsd.cs", "ABIsgoKCgpSCgpQAAhQACAKCgpSCqIKWgoKClIKClKaCgpaCgpSmisIADyiApIKClKaApIKCgpSmgKSApICkgoKUpoCo0oKCgpQAD1CigoKClIKCgpSmooKUgoKCgoKCgoIACMoBsoKSgqaykoKmgoKSgqaCgpKCpoKCkoKmgoKSggAHTMKCgoKCgoKUgpSCgpSClIKCgIKkgpSqkpKClIKUprSCgqiSgIKkgqiCgIK4gpSmtIKCqJKCgIKkgpSqkoKUpoKClIKCuMiqkoKUAA0cgqaC")]
+[assembly: go.GoPositionMap("syscall/syscall_darwin.go", "syscall_darwin.cs", "ABIokpKSAA8iwgAAEvKUgoKCuoCCpKaCpoKmgqaAooCosoKUgoKCgpSmsoKCgoKUooKClKYAASoADgAAAsIBAF4CprKCgoKUppjCooKClKYADRCSggAHEoKClIKCgpSEgoKCgoKClIKUgoKClILKpoKCgriSgpboopKSkpI=")]
+[assembly: go.GoPositionMap("syscall/syscall_darwin_amd64.go", "syscall_darwin_amd64.cs", "AAsYgqaCAAIYAAoCgoKmgqaCpoKmsqSkhIKUpprE")]
+[assembly: go.GoPositionMap("syscall/syscall_unix.go", "syscall_unix.cs", "ABtEkoCCpAAKGOKCqIKCqJaCgoKC5tKCqIKCgoKCqICCpIIACCaCgoKCpqaClKSkpKSmgqaCAAoaopSkpKSkzqSCgoKCpqaygoKClIKmgpSClKaygpSCgoKmlIKUgpSClKaygoKClIKmgpSClKaygpSCgpSClIKUACJsooKSggAEHrKCkoCCpIKCgoKmsoKSgIKkgoKCgoKm0oKCgpSCgoKCptKCgoKUgoKCgoKm4oKUgpSmooIABB6igoKUpqKCgpSmooKClKaigoKUAAQioqaCoqaipoKmgqaCpoKmgoKClKaiprKClIKmsoKCgoKUpoKClA==")]
 [assembly: go.GoPositionMap("syscall/time_nofake.go", "time_nofake.cs", "AAoWlA==")]
 [assembly: go.GoPositionMap("syscall/timestruct.go", "timestruct.cs", "AAgUkKaSgoKCgpSosKaSgoKCgoKU")]
-[assembly: go.GoPositionMap("syscall/zsyscall_darwin_amd64.go", "zsyscall_darwin_amd64.cs", "AAwcwoKCgpSmnMKCgpSmnNKCgoKUppzSgoKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgpSmnMKCgpSmnMKCgpSmnMKCgpSmnMKCgpSmnNKCgpSUgoKClKacwoKClJSCgpSmnNKCgoKUppzSgoKClKac0oKCgpSmnMKCgoKUgoKUppzCgoKUppzSgoKClKac0oKCgpSqsoKClKacwoKClKqygoKUppzCgoKClIKClKacwoKClKacwoKCgpSCgpSmnMKCgpSmnMKCgoKUgoKUppzCgoKClIKClKacwoKCgpSCgpSmnMKCgoKUgoKUppzCgoKClIKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgoKUgoKClIKClKacwoKClKacwoKClKacwoKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgpSmnMKCgqacwoKCppzCgoKmnMKCgqac0oKCgpSmnMKCgqacwoKCppzCgoKmnNKCgoKUppzCgoKUppzCgoKUppzSgoKClKacwoKCppzCgoKmnNKCgoKUppzCgoKClIKClKacwoKCgpSCgoKUgoKUppzCgoKUppzCgoKClIKClKacwoKCgpSCgpSmnMKCgoKUgoKUppzCgoKUlIKClKacwoKClKacwoKClJSCgpSmnMKCgpSUgoKUppzCgoKUlIKClKacwoKClKac0oKCgpSCgoKUppzSgoKClIKCgpSmnNKCgpSUgoKClKac0oKClJSCgoKUppzSgoKUlIKCgpSmnMKCgqac0oKCgpSCgpSUgoKClKacwoKCgpSCgoKUgoKUppzCgoKClIKClKacwoKCgpSCgpSmnNKCgoKUppzCgoKUppzCgoKUppzCgoKUppzCgoKUppzCgoKClIKClKacwoKClKacwoKClKacwoKClKacwoKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgpSmnMKCgoKUgoKClIKClKacwoKClKacwoKCgpSCgpSmnMKCgqacwoKCgpSCgpSmnMKCgoKUgoKUppzCgoKClIKClKac0oKClJSCgoKUppzSgoKUlIKCgpSmnNKCgoKUppzCgoKUppzSgoKClKacwoKClKacwoKClKacwoKClJSCgpSmnMKCgoKUgoKUppzSgoKClIKCgpSmnNKCgpSUgoKClKacwoKClKacwoKClKacwoKClKacwoKCgpSCgpSmnMKCgoKUgoKUppzCgoKClIKClKacwoKCgpSCgpSmnuKClIKClKY=")]
+[assembly: go.GoPositionMap("syscall/zsyscall_darwin_amd64.go", "zsyscall_darwin_amd64.cs", "AAwcwqKCgpSmnMKigpSmnNLCgoKUppzSwoKClKacwqKClKacwqKClKac0oKCgpSmnMLCgpSmnMKigpSmnMLCgpSmnMLCgpSmnMKCgpSmnMKigpSmnNKCgpSU4oKClKacwoKClJTCgpSmnNKigoKUppzSooKClKac0uKCgpSmnMKCgoKUwoKUppzCooKUppzSgoKClKac0qKCgpSqsoKClKacwqKClAAFGpzCgoKClMKClKacwoKClKacwoKCgpSigpSmnMLCgpSmnMKCgoKUooKUppzCgoKClKKClKacwoKCgpSigpSmnMKCgoKUooKUppzCgoKClKKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgoKUgoKClMKClKacwoKClKacwoKClKacwoKClKacwoKClKacwoKClKac0oKCgpSmnMKCgpSmnMKCgpSmnMKCgqacwoKCppzCgoKmnMKCgqac0oKCgpSmnMKCgqacwoKCppzCgoKmnNKCgoKUppzCooKUppzCooKUppzSgoKClKacwoKCppzCgoKmnNKCgoKUppzCgoKClKKClKacwoKCgpSCgoKUwoKUppzCgoKUppzCgoKClKKClKacwoKCgpSigpSmnMKCgoKUooKUppzCgoKUlKKClKacwoKClKacwoKClJSigpSmnMKCgpSUooKUppzCgoKUlKKClKacwoKClKac0oKCgpSigoKUppzSgoKClKKCgpSmnNKCgpSUooKClKac0oKClJSigoKUppzSgoKUlKKCgpSmnMLCgqac0oKCgpSCgpSUwoKClKacwoKCgpSCgoKUwoKUppzCgoKClKKClKacwoKCgpSigpSmnNKCgoKUppzCAAgCgpSmnMKCgpSmnMKCgpSmnMKCgpSmnMKCgoKUooKUppzCgoKUppzCgoKUppzCgoKUppzCgoKUppzCgoKUppzCooKUppzSgoKClKacwqKClKacwoKClKacwoKCgpSCgoKUwoKUppzCgoKUppzCgoKClKKClKacwoKCppzCgoKClKKClKacwoKCgpSigpSmnMKCgoKUooKUppzSgoKUlKKCgpSmnNKCgpSUooKClKac0oKCgpSmnMKCgpSmnNKCgoKUppzC4oKUppzCgoKUppzCgoKUlAAIAoKUppzCgoKClKKClKac0oKCgpSigoKUppzSgoKUlKKCgpSmnMKigpSmnMKigpSmnMKigpSmnMKCgoKUwoKUppzCgoKClMKClKacwoKCgpTCgpSmnMKCgoKUwoKUpp7igpSCgpSm")]
 // </GoSourcePositionMaps>
 
 // Dynamically imported C entry points are recorded here, one `GoCgoImportDynamic` attribute
@@ -316,4 +315,21 @@ public static partial class syscall_package
     public partial struct _Socklen {}
     public partial struct ΔSignal {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() => builtin.initPackage(typeof(@internal.abi_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() => builtin.initPackage(typeof(@internal.oserror_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

@@ -12,12 +12,6 @@ using go.@internal.runtime;
 
 partial class atomic_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
 public static void TestAnd32(ж<testing.T> Ꮡt) {
     // Basic sanity check.
     ref var x = ref heap<uint32>(out var Ꮡx);

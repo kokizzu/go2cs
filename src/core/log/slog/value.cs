@@ -11,16 +11,11 @@ using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 using io = io_package;
 using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 
 partial class slog_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
 
 // A Value can represent any Go value, but unlike type any,
 // it can represent most small values without an allocation.
@@ -154,7 +149,7 @@ public static Value BoolValue(bool v) {
 
 [GoType("ж<timeꓸLocation>")] partial class timeLocation;
 
-[GoType("time_package.Time")] partial struct timeTime;
+[GoType("global::go.time_package.Time")] partial struct timeTime;
 
 // TimeValue returns a [Value] for a [time.Time].
 // It discards the monotonic portion.
@@ -511,7 +506,7 @@ public static bool Equal(this Value v, Value w) {
         return AreEqual(v.any, w.any); // may panic if non-comparable
     }
     if (exprᴛ1 == KindGroup) {
-        return slices.EqualFunc<slice<Attr>, slice<Attr>, Attr, Attr>(v.group(), w.group(), (Func<Attr, Attr, bool>)(Equal));
+        return slices.EqualFunc<slice<Attr>, slice<Attr>, Attr, Attr>(v.group(), w.group(), ((Func<Attr, Attr, bool>)(Equal)));
     }
     { /* default: */
         throw panic(fmt.Sprintf("bad kind: %s"u8, k1));
@@ -613,7 +608,7 @@ public static Value /*rv*/ Resolve(this Value v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string noStackˢ = "(no stack)"u8;
 
-internal static @string stack(nint skip, nint nFrames) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string stack(nint skip, nint nFrames) {
     var pcs = new slice<uintptr>(nFrames + 1);
     nint n = runtime.Callers(skip + 1, pcs);
     if (n == 0) {

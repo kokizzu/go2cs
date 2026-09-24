@@ -306,11 +306,26 @@ public static void ExampleURL_IsAbs() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string httpsExampleOrgˢ = "https://example.org"u8;
+internal static readonly @string httpsExampleComFooBarˢ = "https://example.com/foo/bar"u8;
+internal static readonly @string bazˢ = "baz"u8;
+internal static readonly @string quxˢ = "qux"u8;
 
 // Output:
 // false
 // true
+public static void ExampleURL_JoinPath() {
+    var (u, err) = url.Parse(httpsExampleComFooBarˢ);
+    if (err != default!) {
+        log.Fatal(err);
+    }
+    fmt.Println(u.JoinPath(bazˢ, quxˢ).OrTypedNil());
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string httpsExampleOrgˢ = "https://example.org"u8;
+
+// Output:
+// https://example.com/foo/bar/baz/qux
 public static void ExampleURL_MarshalBinary() {
     var (u, _) = url.Parse(httpsExampleOrgˢ);
     var (b, err) = u.MarshalBinary();

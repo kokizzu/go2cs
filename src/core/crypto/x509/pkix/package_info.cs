@@ -54,7 +54,7 @@ using static go.crypto.x509.pkix_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/x509/pkix/pkix.go", "pkix.cs", "AEZQooKCgoKUgoKWgoKCgoKClpaChIKElLa2toKUqKgAMGjSgoKWgoKCgpaCgpS0tLS0tLS0tAASLsKCloKCgpYAAh4ADgKCgoKCgoKCgpSClIKWqqKmgoKCgpb6poKqooKCpgANHpI=")]
+[assembly: go.GoPositionMap("crypto/x509/pkix/pkix.go", "pkix.cs", "AChQooKCgoKUgoKWgoKCgoKClpaChIKElLa2toKUqKgAMGjSgoKWgoKCgpaCgpS0tLS0tLS0tAASLsKCloKCgpYAAh4ADgKCgoKCgoKCgpSClIKWqqKmgoKCgpb6poKqooKCpgANHpI=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.x509;
@@ -80,4 +80,18 @@ public static partial class pkix_package
     public partial struct RevokedCertificate {}
     public partial struct TBSCertificateList {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() => builtin.initPackage(typeof(encoding.asn1_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

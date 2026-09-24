@@ -9,7 +9,6 @@ using race = @internal.race_package;
 using Δio = io_package;
 using Δmath = math_package;
 using reflect = reflect_package;
-using Δruntime = runtime_package;
 using strings = strings_package;
 using Δtesting = testing_package;
 using time = time_package;
@@ -20,48 +19,6 @@ using static go.fmt_internal_test_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class fmt_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
 
 [GoType("bool")] partial struct renamedBool;
 
@@ -178,6 +135,20 @@ internal static readonly @string stringPˢ = "String(p)"u8;
     return stringPˢ;
 }
 
+public delegate nint Fn();
+
+public static @string String(this Fn fn) {
+    return "String(fn)"u8;
+}
+
+internal static Fn fnValue;
+
+// U is a type with two unexported function fields.
+[GoType] partial struct U {
+    internal Func<@string> u;
+    internal Fn fn;
+}
+
 internal static ж<array<renamedUint8>> Ꮡbarray = new StandardBox<array<renamedUint8>>(new renamedUint8[]{1, 2, 3, 4, 5}.array());
 internal static ref array<renamedUint8> barray => ref Ꮡbarray.Value;
 
@@ -260,6 +231,26 @@ internal static void Format(this writeStringFormatter sf, fmt.State f, rune c) {
 // Stringer applies only to string formats.
 // Stringer applies to the extracted value.
 // go syntax
+// functions
+// simple function
+// method expression
+// method value
+// method of function type
+// variable of function type with String method
+// array of function type with String method
+// method value from function type
+// unexported function field
+// unexported field of function type with String method
+// functions with go syntax
+// simple function
+// method expression
+// method value
+// method of function type
+// variable of function type with String method
+// array of function type with String method
+// method value from function type
+// unexported function field
+// unexported field of function type with String method
 // Whole number floats are printed without decimals. See Issue 27634.
 // Only print []byte and []uint8 as type []byte if they appear at the top level.
 // slices with other formats
@@ -863,7 +854,6 @@ internal static slice<fmtTestsᴛ1> fmtTests = new fmtTestsᴛ1[]{
     new("%s"u8, reflect.ValueOf(((I)23)), @"<23>"u8),
     new("%#v"u8, new A(1, 2, "a"u8, new nint[]{1, 2}.slice()), @"fmt_test.A{i:1, j:0x2, s:""a"", x:[]int{1, 2}}"u8),
     new("%#v"u8, @new<byte>(), "(*uint8)(0xPTR)"u8),
-    new("%#v"u8, TestFmtInterface, "(func(*testing.T))(0xPTR)"u8),
     new("%#v"u8, new channel<nint>(0), "(chan int)(0xPTR)"u8),
     new("%#v"u8, (uint64)(18446744073709551615UL), "0xffffffffffffffff"u8),
     new("%#v"u8, (nint)(1000000000), "1000000000"u8),
@@ -885,6 +875,50 @@ internal static slice<fmtTestsᴛ1> fmtTests = new fmtTestsᴛ1[]{
     new("%#v"u8, slice<int32>(default!), "[]int32(nil)"u8),
     new("%#v"u8, 1.2345678D, "1.2345678"u8),
     new("%#v"u8, (float32)1.2345678F, "1.2345678"u8),
+    new("%v"u8, TestFmtInterface, "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(TestFmtInterface), "0xPTR"u8),
+    new("%v"u8, ((Func<G, @string>)(GoString)), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(((Func<G, @string>)(GoString))), "0xPTR"u8),
+    new("%v"u8, () => ((G)23).GoString(), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(() => ((G)23).GoString()), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(((G)23)).Method(0), "0xPTR"u8),
+    new("%v"u8, ((Func<Fn, @string>)(String)), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(((Func<Fn, @string>)(String))), "0xPTR"u8),
+    new("%v"u8, (fnValue).OrTypedNilFunc(), "String(fn)"u8),
+    new("%v"u8, reflect.ValueOf((fnValue).OrTypedNilFunc()), "String(fn)"u8),
+    new("%v"u8, new Fn[]{fnValue}.array(), "[String(fn)]"u8),
+    new("%v"u8, reflect.ValueOf(new Fn[]{fnValue}.array()), "[String(fn)]"u8),
+    new("%v"u8, () => fnValue.String(), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf(() => fnValue.String()), "0xPTR"u8),
+    new("%v"u8, reflect.ValueOf((fnValue).OrTypedNilFunc()).Method(0), "0xPTR"u8),
+    new("%v"u8, (new U(nil).u).OrTypedNilFunc(), "<nil>"u8),
+    new("%v"u8, reflect.ValueOf((new U(nil).u).OrTypedNilFunc()), "<nil>"u8),
+    new("%v"u8, reflect.ValueOf(new U(nil)).Field(0), "<nil>"u8),
+    new("%v"u8, (new U(fn: fnValue).fn).OrTypedNilFunc(), "String(fn)"u8),
+    new("%v"u8, reflect.ValueOf((new U(fn: fnValue).fn).OrTypedNilFunc()), "String(fn)"u8),
+    new("%v"u8, reflect.ValueOf(new U(fn: fnValue)).Field(1), "<nil>"u8),
+    new("%#v"u8, TestFmtInterface, "(func(*testing.T))(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(TestFmtInterface), "(func(*testing.T))(0xPTR)"u8),
+    new("%#v"u8, ((Func<G, @string>)(GoString)), "(func(fmt_test.G) string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(((Func<G, @string>)(GoString))), "(func(fmt_test.G) string)(0xPTR)"u8),
+    new("%#v"u8, () => ((G)23).GoString(), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(() => ((G)23).GoString()), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(((G)23)).Method(0), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, ((Func<Fn, @string>)(String)), "(func(fmt_test.Fn) string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(((Func<Fn, @string>)(String))), "(func(fmt_test.Fn) string)(0xPTR)"u8),
+    new("%#v"u8, (fnValue).OrTypedNilFunc(), "(fmt_test.Fn)(nil)"u8),
+    new("%#v"u8, reflect.ValueOf((fnValue).OrTypedNilFunc()), "(fmt_test.Fn)(nil)"u8),
+    new("%#v"u8, new Fn[]{fnValue}.array(), "[1]fmt_test.Fn{(fmt_test.Fn)(nil)}"u8),
+    new("%#v"u8, reflect.ValueOf(new Fn[]{fnValue}.array()), "[1]fmt_test.Fn{(fmt_test.Fn)(nil)}"u8),
+    new("%#v"u8, () => fnValue.String(), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf(() => fnValue.String()), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, reflect.ValueOf((fnValue).OrTypedNilFunc()).Method(0), "(func() string)(0xPTR)"u8),
+    new("%#v"u8, (new U(nil).u).OrTypedNilFunc(), "(func() string)(nil)"u8),
+    new("%#v"u8, reflect.ValueOf((new U(nil).u).OrTypedNilFunc()), "(func() string)(nil)"u8),
+    new("%#v"u8, reflect.ValueOf(new U(nil)).Field(0), "(func() string)(nil)"u8),
+    new("%#v"u8, (new U(fn: fnValue).fn).OrTypedNilFunc(), "(fmt_test.Fn)(nil)"u8),
+    new("%#v"u8, reflect.ValueOf((new U(fn: fnValue).fn).OrTypedNilFunc()), "(fmt_test.Fn)(nil)"u8),
+    new("%#v"u8, reflect.ValueOf(new U(fn: fnValue)).Field(1), "(fmt_test.Fn)(nil)"u8),
     new("%#v"u8, 1.0D, "1"u8),
     new("%#v"u8, 1000000.0D, "1e+06"u8),
     new("%#v"u8, (float32)1.0F, "1"u8),
@@ -1303,9 +1337,8 @@ internal static slice<reorderTestsᴛ1> reorderTests = new reorderTestsᴛ1[]{
 public static void TestReorder(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, tt) in reorderTests) {
         @string s = Sprintf(tt.fmt, tt.val.ꓸꓸꓸ);
-        if (s != tt.@out){
+        if (s != tt.@out) {
             Ꮡt.Errorf("Sprintf(%q, %v) = <%s> want <%s>"u8, tt.fmt, tt.val, s, tt.@out);
-        } else {
         }
     }
 }
@@ -1517,6 +1550,7 @@ internal static ref bytes.Buffer mallocBuf => ref ᏑmallocBuf.Value;
 internal static ж<nint> mallocPointer; // A pointer so we know the interface value won't allocate.
 
 // large buffer (>64KB)
+// not constant
 // large buffer (>64KB)
 // If the interface value doesn't need to allocate, amortized allocation overhead should be zero.
 
@@ -1524,6 +1558,10 @@ internal static ж<nint> mallocPointer; // A pointer so we know the interface va
     internal nint count;
     internal @string desc;
     internal Action fn;
+}
+
+[GoType("dyn")] internal partial struct mallocTest_P {
+    internal nint x, y;
 }
 internal static slice<mallocTestᴛ1> mallocTest = new mallocTestᴛ1[]{
     new(0, @"Sprintf("""")"u8, () => {
@@ -1562,6 +1600,20 @@ internal static slice<mallocTestᴛ1> mallocTest = new mallocTestᴛ1[]{
         mallocBuf.Reset();
         Fprintf(new fmt_test_package.bytes_BufferжWriter(ᏑmallocBuf), "%x"u8, (nint)((1 << (int)(16))));
     }),
+    new(1, @"Fprintf(buf, ""%x"")"u8, () => {
+        mallocBuf.Reset();
+        nint i = (1 << (int)(16));
+        Fprintf(new fmt_test_package.bytes_BufferжWriter(ᏑmallocBuf), "%x"u8, i);
+    }),
+    new(4, @"Fprintf(buf, ""%v"")"u8, () => {
+        mallocBuf.Reset();
+        var s = new nint[]{1, 2}.slice();
+        Fprintf(new fmt_test_package.bytes_BufferжWriter(ᏑmallocBuf), "%v"u8, s);
+    }),
+    new(1, @"Fprintf(buf, ""%v"")"u8, () => {
+        mallocBuf.Reset();
+        Fprintf(new fmt_test_package.bytes_BufferжWriter(ᏑmallocBuf), "%v"u8, new mallocTest_P(1, 2));
+    }),
     new(2, @"Fprintf(buf, ""%80000s"")"u8, () => {
         mallocBuf.Reset();
         Fprintf(new fmt_test_package.bytes_BufferжWriter(ᏑmallocBuf), "%80000s"u8, (@string)"hello"u8);
@@ -1576,17 +1628,12 @@ internal static bytes.Buffer _ᴛ1ʗ;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
-internal static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
 internal static readonly object skippingMallocCountUnderˢ = (@string)"skipping malloc count under race detector"u8;
 
 public static void TestCountMallocs(ж<Δtesting.T> Ꮡt) {
     switch (ᐧ) {
     case {} when Δtesting.Short(): {
         Ꮡt.Skip(skippingMallocCountInˢ);
-        break;
-    }
-    case {} when Δruntime.GOMAXPROCS(0) is > 1: {
-        Ꮡt.Skip(skippingGomaxprocs1ˢ);
         break;
     }
     case {} when race.Enabled: {
@@ -1663,13 +1710,13 @@ public static void TestFlagParser(ж<Δtesting.T> Ꮡt) {
 internal static readonly @string abcˢ = "abc"u8;
 internal static readonly @string defˢ = "def"u8;
 
-[GoType("dyn")] partial struct TestStructPrinter_T {
+[GoType("dyn")] internal partial struct TestStructPrinter_T {
     internal @string a;
     internal @string b;
     internal nint c;
 }
 
-[GoType("dyn")] partial struct TestStructPrinter_type {
+[GoType("dyn")] internal partial struct TestStructPrinter_type {
     internal @string fmt;
     internal @string @out;
 }
@@ -1988,10 +2035,10 @@ internal static @string hideFromVet(@string s) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sSSSSˢ = "%s %s %s %s %s"u8;
 
-[GoType("dyn")] partial struct TestNilDoesNotBecomeTyped_A {
+[GoType("dyn")] internal partial struct TestNilDoesNotBecomeTyped_A {
 }
 
-[GoType("dyn")] partial struct TestNilDoesNotBecomeTyped_B {
+[GoType("dyn")] internal partial struct TestNilDoesNotBecomeTyped_B {
 }
 
 public static void TestNilDoesNotBecomeTyped(ж<Δtesting.T> Ꮡt) {
@@ -2080,7 +2127,7 @@ public static void TestFormatterFlags(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestParsenum_testCases {
+[GoType("dyn")] internal partial struct TestParsenum_testCases {
     internal @string s;
     internal nint start, end;
     internal nint num;

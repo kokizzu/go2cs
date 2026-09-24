@@ -12,6 +12,7 @@ using static go.go.doc_package;
 using static go.go.doc_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b74787420737472696e673b2066736c20696e743b2073796e20737472696e677d", "testsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -29,8 +30,8 @@ using static go.go.doc_internal_test_package;
 
 // <GoSourcePositionMaps>
 [assembly: global::go.GoPositionMap("go/doc/comment_test.go", "comment_test.cs", "ACceooKCgpSClIQABxaAgqSAgqSAgqSAgqaEgoKAgqaCgoCCpoCC")]
-[assembly: global::go.GoPositionMap("go/doc/doc_test.go", "doc_test.cs", "ACQ+goLKtoKCgqaCgpSCgIKklKaCgoKClKaCggAIFJSCgoKClLyCgoKogqKCgoKUgoKogpiSgIKkloKCgoK6goKoggAKDIKAkoCSgAAJBoKCgoKUgoKWgpSCgpSCqJSCgoqogpKClILKgoKUgg==")]
-[assembly: global::go.GoPositionMap("go/doc/example_internal_test.go", "example_internal_test.cs", "ABogggAuqAGSgoKClIKCgoKCpoI=")]
+[assembly: global::go.GoPositionMap("go/doc/doc_test.go", "doc_test.cs", "ACQ+goLKtoKCgqaCgpSCgIKklKaCgoKClKaCggAIFJSCgoKClLyCgoKogqKCgoKUgoKogpiSgIKkloKCgoK6goKoggAKDIKAkoCSgAAJBoKCgoKUgoKWgpSCgpSCqJSCgoqogpKClILKgoKUgg==", "89-91:1;103-145:2;150-150:1;151-151:2;152-152:3;178-189:1;192-199:2")]
+[assembly: global::go.GoPositionMap("go/doc/example_internal_test.go", "example_internal_test.cs", "ABogggBeqAGSgoKClIKCgoKCpoI=", "101-118:1")]
 [assembly: global::go.GoPositionMap("go/doc/synopsis_test.go", "synopsis_test.cs", "ACxSgoKCgpSCgg==")]
 // </GoSourcePositionMaps>
 
@@ -47,4 +48,33 @@ public static partial class doc_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸdoc() => builtin.initPackage(typeof(global::go.go.doc_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸformat() => builtin.initPackage(typeof(global::go.go.format_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸprinter() => builtin.initPackage(typeof(global::go.go.printer_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸdiff() => builtin.initPackage(typeof(@internal.diff_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtxtar() => builtin.initPackage(typeof(@internal.txtar_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(global::go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() => builtin.initPackage(typeof(text.template_package));
+    // </ImportInitializers>
 }

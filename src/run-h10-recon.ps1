@@ -612,6 +612,175 @@ function Get-TailLines([string] $Path, [int] $MaxLines = 400, [int] $MaxBytes = 
     return @($lines)
 }
 
+# ---------------------------------------------------------------------------------------------------
+# THE PER-ROW INVOCATION: ITS DEADLINE AND ITS EXECUTION PIN, BUILT IN ONE PLACE
+#
+# ⚠⚠ TWO DEFECTS, ONE BUILDER (COORD's ruling, LEDGER 2026-09-22 16:17 (a); G's finding at 14:52).
+#   (1) THE DEADLINE. The row loop read `$rowTimeout = $Floors[$row]` whenever a floor existed, so the
+#       derived floor REPLACED an asked -TestTimeout and LOWERED every raise: crypto/tls ran at 30m
+#       when 60m was asked, net/http at 60m when 90m was. The sweep's rule is the LONGER of the two --
+#       `$raisesTheFloor` in run-validated-sweep.ps1: the ask wins only when it parses, the floor
+#       parses, and the ask is strictly longer; the floor wins otherwise, including every case where
+#       the comparison cannot be made. A floor is a floor, never an override.
+#   (2) THE EXECUTION PIN. The call passed `-test-config $TestConfig` and an EMPTY extra, so a row the
+#       roster annotates `execution: release-tiered` ran UNTIERED -- the measured cause of
+#       internal/godebug's TestCmdBisect and net/http's TestRegisterErr//a, both Release+TC0-only
+#       residuals (CENSUS-release-tc0-delta.md section 2). The sweep's bank path maps a row's
+#       annotation through Get-RosterExecutionArgs; this does the same, through the same function.
+#
+# ⚠ BOTH RULES ARE DERIVED FROM THE TREE, NEVER COPIED -- the floors' own discipline, below.
+# ConvertTo-GoDuration is taken from the tree's run-validated-sweep.ps1 by PARSING it (the AST, not a
+# regex), so "longer" here is the sweep's own reading of a Go duration; Get-RosterExecutionArgs and
+# the roster reader are dot-sourced from the tree's src/_roster.ps1. A per-run COPY of this script
+# (floor 4) carries neither, which is why both are read from -Tree and not from beside the script;
+# only -SelfTest, whose -Tree may be a dummy, falls back to the directory this script sits in.
+#
+# ⚠ AN UNANNOTATED ROW'S INVOCATION IS CHARACTER-FOR-CHARACTER THE ONE IT ALWAYS WAS: `-test-config
+# $TestConfig`, which at the default Release is what the sweep's empty argument list leaves the
+# converter to choose. There is deliberately NO sweep-wide override here: the sweep's explicit
+# -TestConfig is an A/B that supersedes annotations and makes its run NOT bank-eligible, and this
+# wrapper BANKS -- so an annotated row always runs under the configuration its own roster line
+# declares, whatever -TestConfig says. Every driver passes `-TestConfig 'Release'` explicitly, so
+# copying the sweep's "an explicit -TestConfig overrides" predicate would have kept the defect live.
+function Resolve-InstrumentSource([string] $Relative) {
+    $candidates = @()
+    if ($Tree) { $candidates += (Join-Path $Tree $Relative) }
+    if ($SelfTest -and $PSScriptRoot) { $candidates += (Join-Path $PSScriptRoot (Split-Path -Leaf $Relative)) }
+    foreach ($c in $candidates) { if (Test-Path -LiteralPath $c -PathType Leaf) { return $c } }
+    return $null
+}
+
+$InstrumentSweep    = Resolve-InstrumentSource 'src/run-validated-sweep.ps1'
+$InstrumentRoster   = Resolve-InstrumentSource 'src/_roster.ps1'
+$InstrumentProblems = @()
+# ⚠ DOT-SOURCED AT SCRIPT SCOPE, and that is why this is top-level code and not a function: a
+# definition dot-sourced inside a function dies with the function's scope. `if` and `try` open no
+# scope in PowerShell, so the definitions below land where the row loop can call them.
+if ($InstrumentSweep) {
+    $parseTokens = $null; $parseErrors = $null
+    $sweepAst = [System.Management.Automation.Language.Parser]::ParseInput(
+        [System.IO.File]::ReadAllText($InstrumentSweep), [ref] $parseTokens, [ref] $parseErrors)
+    $durationAst = $sweepAst.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'ConvertTo-GoDuration'
+    }, $true)
+    if ($durationAst) { . ([scriptblock]::Create($durationAst.Extent.Text)) }
+    else { $InstrumentProblems += "'$InstrumentSweep' defines no ConvertTo-GoDuration -- the deadline rule cannot be derived" }
+} else {
+    $InstrumentProblems += "no src/run-validated-sweep.ps1 under -Tree '$Tree' -- the deadline rule is derived from it"
+}
+if ($InstrumentRoster) {
+    try { . $InstrumentRoster }
+    catch { $InstrumentProblems += "dot-sourcing '$InstrumentRoster' threw: $($_.Exception.Message)" }
+} else {
+    $InstrumentProblems += "no src/_roster.ps1 under -Tree '$Tree' -- the execution pins are derived from it"
+}
+foreach ($needed in @('ConvertTo-GoDuration', 'Get-RosterExecutionArgs', 'Get-ValidatedRosterRows')) {
+    if (-not (Get-Command -Name $needed -CommandType Function -ErrorAction SilentlyContinue)) {
+        $InstrumentProblems += "the derived function '$needed' is not defined"
+    }
+}
+
+# The sweep's `$raisesTheFloor`: the same three conditions, in the same order. An empty $Floor is a
+# row with no floor, which runs at the ask exactly as the sweep's un-tabled rows do.
+function Resolve-RowDeadline([string] $Asked, [string] $Floor) {
+    if (-not $Floor) { return $Asked }
+    $floorTs = ConvertTo-GoDuration $Floor
+    $askedTs = ConvertTo-GoDuration $Asked
+    $raisesTheFloor = ($null -ne $askedTs) -and ($null -ne $floorTs) -and ($askedTs -gt $floorTs)
+    if ($raisesTheFloor) { return $Asked }
+    return $Floor
+}
+
+# The row's roster execution pin as converter arguments; `-test-config $Config` for a row that carries
+# none -- including a row the roster does not bank at all (a successor or a candidate).
+function Get-RowExecutionArgs([string] $Row, $RosterByName, [string] $Config) {
+    if ($null -ne $RosterByName -and $RosterByName.ContainsKey($Row) -and $RosterByName[$Row].Execution) {
+        return @(Get-RosterExecutionArgs $RosterByName[$Row].Execution)
+    }
+    return @('-test-config', $Config)
+}
+
+# THE WHOLE ARGUMENT LIST, so the arm below asserts the argv the converter actually receives rather
+# than a value the call site might not use. Order unchanged from the call it replaces.
+function Get-RowConverterArgs([string] $Deadline, [string[]] $ExecArgs, [string] $Go2csPath,
+                              [string[]] $Extra, [string] $GoDir, [string] $OutDir) {
+    return @('-tests', '-test-action', 'all') + @($ExecArgs) +
+           @('-test-timeout', $Deadline, '-go2cspath', $Go2csPath) + @($Extra) + @($GoDir, $OutDir)
+}
+
+# ⚠⚠ THE ARM, AND ITS FIRST CASE OF EACH HALF IS THE ONE THAT WAS RED. Measured against the base's
+# behaviour (the blob this commit replaces, 158ce37f6c): the floor-replaces-ask rule returns 30m for
+# the first deadline case and 60m for the second, and the empty-extra call returns `-test-config
+# Release` for the tiered row. The remaining cases are the controls that already held -- which is
+# exactly why the base's self-test read PASSED over both defects.
+function Test-RowInvocationContract {
+    Write-Host '  row invocation contract (the deadline and the execution pin):'
+    if ($InstrumentProblems.Count -gt 0) {
+        foreach ($p in $InstrumentProblems) { Write-Host "    CANNOT RUN: $p" }
+        return $false
+    }
+    Write-Host "    derived from      : $InstrumentSweep (ConvertTo-GoDuration, by its AST)"
+    Write-Host "                        $InstrumentRoster (Get-RosterExecutionArgs + the roster reader)"
+    $ok = $true
+    $deadlineCases = @(
+        @('60m',   '30m', '60m', 'an asked RAISE survives its floor (crypto/tls)'),
+        @('90m',   '60m', '90m', 'an asked RAISE survives its floor (net/http)'),
+        @('30m',   '60m', '60m', 'a floor RAISES a shorter ask'),
+        @('30m',   '30m', '30m', 'equal -- the floor, unchanged'),
+        @('1h',    '40m', '1h',  'compared as DURATIONS, not as strings'),
+        @('30m',   '',    '30m', 'no floor -- the ask'),
+        @('bogus', '40m', '40m', 'an unreadable ask -- the floor (the safe branch)')
+    )
+    foreach ($c in $deadlineCases) {
+        $got  = Resolve-RowDeadline $c[0] $c[1]
+        $pass = [string]::Equals([string] $got, $c[2], [System.StringComparison]::Ordinal)
+        if (-not $pass) { $ok = $false }
+        Write-Host ("    asked {0,-6} floor {1,-5} -> {2,-6} (want {3,-4}) {4,-6} {5}" -f `
+            $c[0], $(if ($c[1]) { $c[1] } else { '-' }), $got, $c[2], $(if ($pass) { 'ok' } else { 'FAILED' }), $c[3])
+    }
+
+    # The pin half, over a FIXTURE roster read by the tree's own reader: the annotation grammar is
+    # _roster.ps1's, and a fixture row that did not parse would make the tiered case read like a
+    # wrapper defect. The separator is spelled by code point, as _roster.ps1 spells it.
+    $dot = [string][char]0x00B7
+    $fixture = @(
+        "| [``fx/tiered``](https://x/t) | 5 |  | Pinned. $dot execution: release-tiered $dot [proof](p.md) |",
+        "| [``fx/tc0``](https://x/c) | 4 |  | Pinned. $dot execution: release-tc0 $dot [proof](p.md) |",
+        "| [``fx/plain``](https://x/p) | 3 |  | Unpinned. $dot [proof](p.md) |"
+    )
+    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("recon-roster-" + [guid]::NewGuid().ToString('N') + ".md")
+    try {
+        [System.IO.File]::WriteAllLines($tmp, [string[]] $fixture)
+        $byName = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([System.StringComparer]::Ordinal)
+        foreach ($r in @(Get-ValidatedRosterRows -Path $tmp)) { $byName[$r.Package] = $r }
+    } finally { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }
+    if ($byName.Count -ne 3) { Write-Host "    the fixture roster parsed $($byName.Count) of 3 rows -- the pin half cannot be read"; return $false }
+    $pinCases = @(
+        @('fx/tiered', '-test-config Release -test-tiered', 'release-tiered: the opt-OUT, tiering back ON'),
+        @('fx/tc0',    '-test-config Release',              'release-tc0'),
+        @('fx/plain',  '-test-config Release',              'unannotated -- -TestConfig, as always'),
+        @('fx/absent', '-test-config Release',              'not on the roster (a successor) -- -TestConfig')
+    )
+    foreach ($c in $pinCases) {
+        $got  = (@(Get-RowExecutionArgs $c[0] $byName 'Release')) -join ' '
+        $pass = [string]::Equals($got, $c[1], [System.StringComparison]::Ordinal)
+        if (-not $pass) { $ok = $false }
+        Write-Host ("    {0,-10} -> {1,-34} {2,-6} {3}" -f $c[0], $got, $(if ($pass) { 'ok' } else { 'FAILED' }), $c[2])
+    }
+
+    # The composition: the argv a pinned, floored row hands the converter when a raise is asked.
+    $argv = (@(Get-RowConverterArgs (Resolve-RowDeadline '60m' '30m') @(Get-RowExecutionArgs 'fx/tiered' $byName 'Release') `
+                                    'T/src' @() 'G/src/fx/tiered' 'T/src/core/fx/tiered')) -join ' '
+    $wantArgv = '-tests -test-action all -test-config Release -test-tiered -test-timeout 60m -go2cspath T/src G/src/fx/tiered T/src/core/fx/tiered'
+    $pass = [string]::Equals($argv, $wantArgv, [System.StringComparison]::Ordinal)
+    if (-not $pass) { $ok = $false }
+    Write-Host ("    argv {0}" -f $(if ($pass) { 'ok' } else { 'FAILED' }))
+    Write-Host "      got : $argv"
+    if (-not $pass) { Write-Host "      want: $wantArgv" }
+    return $ok
+}
+
 $goVer = Join-Path $GoRoot 'VERSION'
 # ⚠⚠ -SelfTest RUNS HERE, AND THE PLACEMENT IS THE POINT. Every function it calls is defined
 # above (`Test-SummaryContract`, and now `Assert-OrdinalJsonReader` with the whole reader chain it
@@ -632,10 +801,13 @@ if ($SelfTest) {
     # ⚠ CAPTURED BEFORE THE CANARY FOR THE ORDER REASON ABOVE: every arm reports in one invocation,
     # and no arm's refusal is able to exit ahead of another arm's failure.
     $okX = Test-VerdictCrossCheckContract
+    # The deadline and the pin, captured before the canary for the same order reason.
+    $okR = Test-RowInvocationContract
     Assert-OrdinalJsonReader
-    if ($ok -and $okX) { Write-Host '  SELF-TEST PASSED -- the summary-line contract, the verdict cross-check contract AND the ordinal-reader canary'; exit 0 }
+    if ($ok -and $okX -and $okR) { Write-Host '  SELF-TEST PASSED -- the summary-line contract, the verdict cross-check contract, the row invocation contract AND the ordinal-reader canary'; exit 0 }
     if (-not $ok)  { Deny 'the summary-line contract FAILED its self-test -- the parse and its controls disagree' }
-    Deny 'the verdict cross-check contract FAILED its self-test -- see the case list above'
+    if (-not $okX) { Deny 'the verdict cross-check contract FAILED its self-test -- see the case list above' }
+    Deny 'the row invocation contract FAILED its self-test -- a deadline that is not the LONGER of the floor and the ask, or a row run without its roster execution pin; see the case list above'
 }
 
 if (-not (Test-Path -LiteralPath $GoRoot)) { Deny "no GOROOT at '$GoRoot'" }
@@ -708,11 +880,14 @@ foreach ($m in [regex]::Matches($tableText, "'([^']+)'\s*=\s*'([^']+)'")) { $Flo
 # ⚠ A derivation that reads ZERO entries is the silent-empty shape the generator documents (a
 # non-greedy match yielding 6 of 11, then 1, then 0). An empty table would silently give every row
 # the default floor and under-run the long ones.
-if ($Floors.Count -lt 5) { Deny "derived only $($Floors.Count) deadline floor(s) from run-validated-sweep.ps1 -- the table is 11 rows; refusing to run on a floor set that did not parse" }
+if ($Floors.Count -lt 5) { Deny "derived only $($Floors.Count) deadline floor(s) from run-validated-sweep.ps1 -- the table carries well over five; refusing to run on a floor set that did not parse" }
 
 # ⚠ THE FAN-OUT: a relocated row's floor is inherited by its SUCCESSOR(S) (e0d5121e2 section 1).
 # `crypto/internal/mlkem768` is a floor row AND one of the ten relocated paths, and it fans out to
 # two successors -- so its floor must reach both or they run at the default and are killed short.
+# (2026-09-22, H10 step 5: the sweep's table now keys the two successors DIRECTLY and no longer
+# carries mlkem768, so at trees from that commit on this map inherits nothing for it -- a direct
+# entry is never overwritten below. The map stays for a -Tree that predates the re-key.)
 # ⚠⚠ THIS IS A COPY, AND IT IS LABELLED AS ONE. Owner: C1. Source of record: C1's relocation table,
 # ruled the map of record at `350a301a` and seated at `4de76ded06`. The first cut of this file carried
 # a ten-entry copy that C2 measured already wrong in four ways (one row absent, one target wrong, two
@@ -771,6 +946,29 @@ if ($orphanFloors.Count -gt 0) {
 }
 Write-Host "  deadline floors   : $($Floors.Count) derived from the sweep ($inherited inherited by a floored relocation)"
 
+# ---------------------------------------------------------------- the deadline rule and the pins
+# The two derived rules (see THE PER-ROW INVOCATION above) refuse the leg by name if either failed to
+# load, and the comparator is proved on two literals before any row trusts it: a parse that returned
+# nothing for both would hand every floored row its floor and read as working.
+if ($InstrumentProblems.Count -gt 0) { Deny ("the per-row invocation cannot be derived from the tree: " + ($InstrumentProblems -join '; ')) }
+if ((Resolve-RowDeadline '60m' '30m') -ne '60m' -or (Resolve-RowDeadline '30m' '60m') -ne '60m') {
+    Deny "the deadline rule failed its own control (60m over a 30m floor, and a 60m floor over a 30m ask) -- ConvertTo-GoDuration from '$InstrumentSweep' does not order two durations"
+}
+$rosterPath = Join-Path $Tree 'docs/ValidatedTestPackages.md'
+if (-not (Test-Path -LiteralPath $rosterPath)) { Deny "no roster at '$rosterPath' -- every row's execution pin is read from it" }
+$rosterRows = @()
+try { $rosterRows = @(Get-ValidatedRosterRows -Path $rosterPath) }
+catch { Deny "the roster at '$rosterPath' did not parse: $($_.Exception.Message)" }
+# ⚠ A roster read of ZERO rows is the silent-empty shape again: every pinned row would run unpinned.
+if ($rosterRows.Count -eq 0) { Deny "the roster at '$rosterPath' parsed ZERO rows -- refusing to run every row unpinned" }
+$RosterByName = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([System.StringComparer]::Ordinal)
+foreach ($r in $rosterRows) { $RosterByName[$r.Package] = $r }
+$pinnedRoster = @($rosterRows | Where-Object { $_.Execution })
+$pinnedHere   = @($rows | Where-Object { $RosterByName.ContainsKey($_) -and $RosterByName[$_].Execution })
+Write-Host ("  execution pins    : {0} of {1} roster row(s) carry one; {2} in this list{3}" -f $pinnedRoster.Count, $rosterRows.Count,
+    $pinnedHere.Count, $(if ($pinnedHere.Count) { ' -- ' + (($pinnedHere | ForEach-Object { "$_ [$($RosterByName[$_].Execution)]" }) -join ', ') } else { '' }))
+Write-Host "  asked deadline    : $TestTimeout  (a floored row runs at the LONGER of this and its floor)"
+
 Write-Host ''
 Write-Host "  rows in list      : $($rows.Count)"
 Write-Host "  output            : $Out"
@@ -824,9 +1022,19 @@ foreach ($row in $rows) {
 
     if ($DryRun -and $i -gt 1) { Write-Host '     (dry run: stopping after one row)'; break }
 
-    # The row's own deadline floor where it has one, the sweep's default otherwise.
-    $rowTimeout = $TestTimeout
-    if ($Floors.ContainsKey($row)) { $rowTimeout = $Floors[$row]; Write-Host "     floor: $rowTimeout (derived)" }
+    # The row's deadline: the LONGER of its derived floor and the asked -TestTimeout (the sweep's
+    # `$raisesTheFloor`), never the floor in place of the ask. Its execution config: the row's roster
+    # pin where it carries one, -TestConfig otherwise. Both are printed, so a row's evidence says
+    # which budget and which configuration it ran under.
+    $rowFloor = ''
+    if ($Floors.ContainsKey($row)) { $rowFloor = $Floors[$row] }
+    $rowTimeout = Resolve-RowDeadline $TestTimeout $rowFloor
+    if ($rowFloor) { Write-Host "     deadline: $rowTimeout  (floor $rowFloor derived, asked $TestTimeout -- the longer)" }
+    $rowExec = @(Get-RowExecutionArgs $row $RosterByName $TestConfig)
+    if ($RosterByName.ContainsKey($row) -and $RosterByName[$row].Execution) {
+        Write-Host "     execution: $($RosterByName[$row].Execution) (roster pin) -> $($rowExec -join ' ')"
+    }
+    $convArgs = @(Get-RowConverterArgs $rowTimeout $rowExec (Join-Path $Tree 'src') $extra $goDir $outDir)
 
     # ⚠⚠ THE CONVERTER'S STDERR IS A TERMINATING ERROR UNDER Stop, AND FAILING IS THE MEASUREMENT.
     # `GitTry` above carries this exact diagnosis for git: in 5.1 a native command's stderr becomes a
@@ -859,8 +1067,8 @@ foreach ($row in $rows) {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $output = & $converter -tests -test-action all -test-config $TestConfig -test-timeout $rowTimeout `
-                               -go2cspath (Join-Path $Tree 'src') @extra $goDir $outDir 2>&1
+        # The argv is Get-RowConverterArgs', the one the self-test's argv case asserts.
+        $output = & $converter @convArgs 2>&1
         # CAPTURED ON THE VERY NEXT LINE, before anything touches $? or a pipe. Floor 7, and the fault
         # five lanes hit in one night.
         $rc = $LASTEXITCODE

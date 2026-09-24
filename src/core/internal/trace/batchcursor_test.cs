@@ -12,30 +12,6 @@ using static go.@internal.trace_package;
 
 partial class trace_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 public static void TestHeap(ж<testing.T> Ꮡt) {
     slice<ж<global::go.@internal.trace_package.batchCursor>> heap = default!;
     // Insert a bunch of values into the heap.
@@ -103,7 +79,7 @@ public static void TestHeap(ж<testing.T> Ꮡt) {
         heap = heapRemove(heap, 0);
         checkHeap(Ꮡt, heap);
     }
-    if (!slices.IsSortedFunc<slice<ж<global::go.@internal.trace_package.batchCursor>>, ж<global::go.@internal.trace_package.batchCursor>>(removed, (Func<ж<global::go.@internal.trace_package.batchCursor>, ж<global::go.@internal.trace_package.batchCursor>, nint>)(global::go.@internal.trace_package.compare))) {
+    if (!slices.IsSortedFunc<slice<ж<global::go.@internal.trace_package.batchCursor>>, ж<global::go.@internal.trace_package.batchCursor>>(removed, ((Func<ж<global::go.@internal.trace_package.batchCursor>, ж<global::go.@internal.trace_package.batchCursor>, nint>)(global::go.@internal.trace_package.compare)))) {
         Ꮡt.Fatalf("heap elements not removed in sorted order, got: %s"u8, heapDebugString(removed));
     }
 }

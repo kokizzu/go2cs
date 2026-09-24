@@ -6,25 +6,13 @@
 // they are running.
 namespace go.runtime;
 
-using poll = go.@internal.poll_package;
+using poll = @internal.poll_package;
 using os = os_package;
 using runtime = runtime_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
-using go.@internal;
+using @internal;
 
 partial class debug_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
-    builtin.initPackage(typeof(go.@internal.poll_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
 
 // PrintStack prints to standard error the stack trace returned by runtime.Stack.
 public static void PrintStack() {
@@ -68,7 +56,7 @@ public static error SetCrashOutput(ж<os.File> Ꮡf, CrashOptions opts) {
         // The runtime will write to this file descriptor from
         // low-level routines during a panic, possibly without
         // a G, so we must call f.Fd() eagerly. This creates a
-        // danger that that the file descriptor is no longer
+        // danger that the file descriptor is no longer
         // valid at the time of the write, because the caller
         // (incorrectly) called f.Close() and the kernel
         // reissued the fd in a later call to open(2), leading

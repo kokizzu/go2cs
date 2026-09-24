@@ -156,9 +156,9 @@
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
     <ProjectReference Include="$(go2csPath)core/bufio/bufio.csproj" />
-    <ProjectReference Include="$(go2csPath)core/crypto/md5/crypto.md5.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/binary/encoding.binary.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core/hash/fnv/hash.fnv.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/internal.coverage.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/slicereader/internal.coverage.slicereader.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/stringtab/internal.coverage.stringtab.csproj" />

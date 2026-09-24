@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.net;
 
+using io = io_package;
 using fs = global::go.io.fs_package;
 using log = log_package;
 using Δhttp = global::go.net.http_package;
@@ -45,6 +46,9 @@ internal static (slice<fs.FileInfo> fis, error err) Readdir(this dotFileHidingFi
         if (!strings.HasPrefix(@file.Name(), "."u8)) {
             fis = append(fis, @file);
         }
+    }
+    if (err == default! && n > 0 && len(fis) == 0) {
+        err = io.EOF;
     }
     return (fis, err);
 }

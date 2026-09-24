@@ -90,11 +90,10 @@ namespace go;
 
 using goos = @internal.goos_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -293,7 +292,7 @@ internal static void init(this ж<scavengerState> Ꮡs) {
     if (s.g != nil) {
         @throw(scavengerStateIsAlreadyˢ);
     }
-    lockInit(ref nonnil(ref s).@lock, lockRankScavenge);
+    lockInit(Ꮡs.of(scavengerState.Ꮡlock), lockRankScavenge);
     s.g = getg();
     s.timer = @new<timer>();
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {

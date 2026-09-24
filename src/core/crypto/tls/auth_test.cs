@@ -4,23 +4,13 @@
 namespace go.crypto;
 
 using crypto = crypto_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using testing = testing_package;
 using go.crypto;
+using go.crypto.tls.@internal;
 using static go.crypto.tls_package;
 
 partial class tls_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
 
 [GoType("dyn")] internal partial struct TestSignatureSelection_tests {
     internal ж<global::go.crypto.tls_package.Certificate> cert;
@@ -73,6 +63,10 @@ public static void TestSignatureSelection(ж<testing.T> Ꮡt) {
         new(ecdsaCert, new global::go.crypto.tls_package.SignatureScheme[]{ECDSAWithP384AndSHA384}.slice(), VersionTLS12, ECDSAWithP384AndSHA384, signatureECDSA, crypto.SHA384)
     }.slice();
     foreach (var (testNo, test) in tests) {
+        if (fips140tls.Required() && (test.expectedHash == crypto.SHA1 || test.expectedSigAlg == Ed25519)) {
+            Ꮡt.Logf("skipping test[%d] - not compatible with TLS FIPS mode"u8, testNo);
+            continue;
+        }
         var (sigAlg, err) = selectSignatureScheme(test.tlsVersion, ref (test.cert).DerefOrNull(), test.peerSigAlgs);
         if (err != default!) {
             Ꮡt.Errorf("test[%d]: unexpected selectSignatureScheme error: %v"u8, testNo, err);

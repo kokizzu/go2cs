@@ -79,14 +79,14 @@ using static go.encoding.gob_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/gob/dec_helpers.go", "dec_helpers.cs", "AD9olIKUpqKSlJSCgpSUlJSmlIKUpqKSlJSCgpSUlIKClKaUgpSmopKUlIKClJSUgoKUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSUgpSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSCgoKUgqaCgpSClKaUgpSmopKUlIKClJSUuJSmlIKUpqKSlJSCgpSUlIKClJSmlIKUpqKSlJSCgpSUlIKClJSmlIKUpqKSlJSCgpSUlJSmlIKUpqKSlJSCgpSUlIKClJSqooKCgoKClIKC")]
-[assembly: go.GoPositionMap("encoding/gob/decode.go", "decode.cs", "AEJagoKClIKmgoKUpoKClIKCpoKmgqiSgqaCgqrCgoKClJSCpqKCpoKq4oKCgpSCgpSCgoKUgoKClKaClIKqwoKClIKUgoKUgoK4gpSCqqKCgpSssoKClAAMHrKqwoIAAhwACwKCgpSUqLKowoKClKjCgoKUqMKCgpSowoKClKjCgoKUqMKCgpSosoKosoIAAhDSgq7CgoKCpoKUqtKqwqzigoKs0oKCrNKCgpSCgoKUgoKCgty4goKUgoKAgqSmgoCCAAUQ0oKCpoKClIKCqLKCgpSCgpQACx7ygoKCgpSCAAUQAAkCgoKCgoKClJKUkpSCgoKUgoKmggAIDtKCgoKCgoKUkpSCgpSCguzigoKCgoKUgtiygpSCgoKCgpSmgoKClIKUgoKUvtKAgqSokoKCloKu4oKClIKCgoKCgoKCgoKC6rKCgoKUurKAgqSosoKCgoKCvMKCgoKClKaUgoKClJSUqLKs9IKSlIKUgoKUlIKUgqaCgpSWgoK4lIKCgriCpqjUgoKUgoKUgoKCpoKClKrkgoKUgoKUgoKUlKSkpIK6xIKClIKClAAgRMKUgrqAgqSCgoKClIKUgKSCgoKCgsK4goKCgoLCyIKCgpSCgIKUpIKCgrLKgpKClKS2ktiClPzkgoCSgriAgqSSgoKmgpSmgpS0goKiyIKCgoKiyIKCksqCkpSkyILYgpTawoKCpIKmgqSClJSuwoCCpIKC7oaUkpSAqqSkpKSkpKSSlIKkgpSCppKWkoCCpKSCpAACUwAFXtKCgoCUpNrygoKCgoKUgpSUgoKCgqiSgoKCgoKCqgAKAoKCgoKUpoCClIKClKSClIKClIKCgpSUlIKCgpSClIKClNjigoKCgpSAlIKCgoK2AAgS0oKAlIKCgoKUlIK2qNKUgoKmgoKCgoKUgoKAgoKEgpSU+rKCgoKUgoKUAAYSgpKUgqSCpKSClpSkpKSuwg==", "855-857:1;865-867:2;884-886:3;895-898:4;900-902:5;917-917:1;932-934:2;945-947:3;954-956:4;961-963:5;971-974:6;977-979:7;1000-1006:1")]
-[assembly: go.GoPositionMap("encoding/gob/decoder.go", "decoder.cs", "ADVaspSAgqSCgoKChNjEgoKogoKCps60goKClIKClIKokpSWkoKCgrqSgoKUpqKCgpSmooKClAAFGAALAoKCgsqClLiClKaCgtyCgoKUlJQABRQACQKClKaCgpQABRIACgKCtriChIKCgoKU")]
+[assembly: go.GoPositionMap("encoding/gob/dec_helpers.go", "dec_helpers.cs", "ADNolIKUpqKSlJSCgpSUlJSmlIKUpqKSlJSCgpSUlIKClKaUgpSmopKUlIKClJSUgoKUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSUgpSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSUppSClKaikpSUgoKUlJSCgpSUppSClKaikpSUgoKUlJSCgoKUgqaCgpSClKaUgpSmopKUlIKClJSUuJSmlIKUpqKSlJSCgpSUlIKClJSmlIKUpqKSlJSCgpSUlIKClJSmlIKUpqKSlJSCgpSUlJSmlIKUpqKSlJSCgpSUlIKClJSqooKCgoKClIKC")]
+[assembly: go.GoPositionMap("encoding/gob/decode.go", "decode.cs", "ACpagoKClIKmgoKUpoKClIKCpoKmgqiSgqaCgqrCgoKClJSCpqKCpoKq4oKCgpSCgpSCgoKUgoKClKaClIKqwoKClIKUgoKUgoK4gpSCqqKCgpSssoKClAAMHrKqwoIAAhwACwKCgpSUqLKowoKClKjCgoKUqMKCgpSowoKClKjCgoKUqMKCgpSosoKosoIAAhDSgq7CgoKCpoKUqtKqwqzigoKs0oKCrNKCgpSCgoKUgoKCgty4goKUgoKAgqSmgoCCAAUQ0oKCpoKClIKCqLKCgpSCgpQACx7ygoKCgpSCAAUQAAkCgoKCgoKClJKUkpSCgoKUgoKmggAIDtKCgoKCgoKUkpSCgpSCguzigoKCgoKUgtiygpSCgoKCgpSmgoKClIKUgoKUvtKAgqSokoKCloKu4oKClIKCgoKCgoKCgoKC6rKCgoKUurKAgqSosoKCgoKCvMKCgoKClKaUgoKClJSUqLKs9IKSlIKUgoKUlIKUgqaCgpSWgoK4lIKCgriCpqjUgoKUgoKUgoKCpoKClKrkgoKUgoKUgoKUlKSkpIK6xIKClIKClAAgRMKUgrqAgqSCgoKClIKUgKSCgoKCgsK4goKCgoLCyIKCgpSCgIKUpIKCgrLKgpKClKS2ktiClPzkgoCSgriAgqSSgoKmgpSmgpS0goKiyIKCgoKiyIKCksqCkpSkyILYgpTawoKCpIKmgqSClJSuwoCCpIKC7oaUkpSAqqSkpKSkpKSSlIKkgpSCppKWkoCCpKSCpAACUwAFXtKCgoCUpNrygoKCgoKUgpSUgoKCgqiSgoKCgoKCqgAKAoKCgoKUpoCClIKClKSClIKClIKCgpSUlIKCgpSClIKClNjigoKCgpSAlIKCgoK2AAgS0oKAlIKCgoKUlIK2qNKUgoKmgoKCgoKUgoKAgoKEgpSU+rKCgoKUgoKUAAYSgpKUgqSCpKSClpSkpKSuwg==", "855-857:1;865-867:2;884-886:3;895-898:4;900-902:5;917-917:1;932-934:2;945-947:3;954-956:4;961-963:5;971-974:6;977-979:7;1000-1006:1")]
+[assembly: go.GoPositionMap("encoding/gob/decoder.go", "decoder.cs", "AClaspSAgqSCgoKChNjEgoKogoKCps60goKClIKClIKokpSWkoKCgrqSgoKUpqKCgpSmooKClAAFGAALAoKCgsqClLiClKaCgtyCgoKUlJQABRQACQKClKaCgpQABRIACwKCtriChIKCgoKU")]
 [assembly: go.GoPositionMap("encoding/gob/enc_helpers.go", "enc_helpers.cs", "ADBmlIKUpqKClJSCgoKUuKaUgpSmooKUlIKCgoKCpqaUgpSmooKUlIKCgoKCpqaUgpSmooKUlIKCgqamlIKUpqKClJSCgoKmppSClKaigpSUgoKmppSClKaigpSUgoKmppSClKaigpSUgoKmppSClKaigpSUgoKmppSClKaigpSUgoKmppSClKaigpSUgoKCpqaUgpSmooKUlIKCpqaUgpSmooKUlIKCpqaUgpSmooKUlIKCpqaUgpSmooKUlIKCpqaUgpSmooKUlIKCpg==")]
-[assembly: go.GoPositionMap("encoding/gob/encode.go", "encode.cs", "ADNYgoLIgqaCgqaCpoKmgqaCgpS4soKCgpSUgoKCgpSmooIAAhLigoKWgoKErLKCgpSUAAwgwoKCAAMcAAoCgoKUlKiygoKCgpTMsoKCgrqygoKCAAMU4oKosoKCgoK80oKCgoKCgrzCgoKCgrzCgoKCgrzCAAweopSkpKjSgoKmgoKClILq0oKUgoKCgoKUgpSCgpSCpuqygoKCgoKClIKCgpSCpuqSgpSClKiygoKCgoKCgpQAAhAACgaCgpSCgoKCgpaCgoKUloKUlKaCgoKCgpSCgoKCgpSq9oKUlKSkpIKUgoKCggAWMqKUgriAgqSCgoKCgpSClIC0goKWkoKigpSCyJKCooK2goLGgpSCuJKCkpSCtoKClILYgpSosoKCpIKmgpKUgpSUgpSClKiSgoKCgoKUgoKCgpSCgpSClJSCgpSokoKClIKClKa0gpSCgoKCgpSCgpTWwoKCgoKUgpSClA==", "511-517:1;522-525:2;529-537:3;542-547:4;549-555:5;575-588:1")]
-[assembly: go.GoPositionMap("encoding/gob/encoder.go", "encoder.cs", "ACBEkoKCgoKokqiSqJKmgpLq6IKUgoKmgpSClJSCgoK88oCCpIKCgriUgoKCqIKCpoCkgoLIpIK0qLKCpqiAvKKWxsbGtgACJQAILKyyrAAIBoKClICUgoLKgoKCgpTc1NzygpSCuoKWhIKCloKCgoSCgoKogoKWgg==")]
-[assembly: go.GoPositionMap("encoding/gob/error.go", "error.cs", "ABwuwqiSqsKAgoKClA==")]
-[assembly: go.GoPositionMap("encoding/gob/type.go", "type.cs", "AENYsoCC3oKC3IKCgoKUgqSUgpSWgIKiggAIEoCCooIABxCCAAok8oKUpoKClICCgpKUgqSmlIKmqqKCgpQAFTCCgpSmgoKUppSClIKCpoKClNiSgpSokoKUAAsYgKSApICkgqaAADY+lIKCgoKCgoSogIKkgoIACRSCgqa0goKmgoKUgqaA/oKCgqaCpoAACRKCgqa0goKmgoKUgoKCpoAACBCCgqa0poKUpoKClIKmgAANGqKClICCpIKCgpSCpoCkgqaCAAIQAAgEgpSCkoKCyoCmpqampqampoKCkoIAARQACAKmgoKCgpSCgpSCqJKUgoKCgpSCpoKCgoKCgpSCgoKClIKC3IKUlKYACAqSgqyygriCgpSClqqiggACENKCgpSCgpSmgoKCvKKCgoKUgoKCABcwooKClJSkpKSkpKSkABgwgoCCpIKmgoKUlICCpKrCgoSAgqaCgpSEgoKClIKUpKSklIKApKSmkrbIgIKCuIKCgpSCgtiSgoKUACJKopSWvICCuICCggAEFPSCqIKCgIIAECK2goKUqKaCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgqaCgg==", "459-463:1")]
+[assembly: go.GoPositionMap("encoding/gob/encode.go", "encode.cs", "AC1YgoLIgqaCgqaCpoKmgqaCgpS4soKCgpSUgoKCgpSmooIAAhLigoKWgoKErLKCgpSUAAwgwoKCAAMcAAoCgoKUlKiygoKCgpTMsoKCgrqygoKCAAMU4oKosoKCgoK80oKCgoKCgrzCgoKCgrzCgoKCgrzCAAweopSkpKjSgoKmgoKClILq0oKUgoKCgoKUgpSCgpSCpuqygoKCgoKClIKCgpSCpuqSgpSClKiygoKCgoKCgpQAAhAACgaCgpSCgoKCgpaCgoKUloKUlKaCgoKCgpSCgoKCgpSq9oKUlKSkpIKUgoKCggAWMqKUgriAgqSCgoKCgpSClIC0goKWkoKigpSCyJKCooK2goLGgpSCuJKCkpSCtoKClILYgpSosoKCpIKmgpKUgpSUgpSClKiSgoKCgoKUgoKCgpSCgpSClJSCgpSokoKClIKClKbUgpSCgoKCgpSCgpTWwoKCgoKUgpSClA==", "511-517:1;522-525:2;529-537:3;542-547:4;549-555:5;575-588:1")]
+[assembly: go.GoPositionMap("encoding/gob/encoder.go", "encoder.cs", "ACBEkoKCgoKokqiSqJKmgpLq6IKUgoKmgpSClJSCgoK88oCCpIKCgriUgoKCqIKCpoCkgoLIpIK0qLKCpqiAvKKWxsbGtgACJQAILKyyrAAIBoKClICUgoLKgoKCgpTc1NwACAKClIK6gpaEgoKWgoKChIKCgqiCgpaC")]
+[assembly: go.GoPositionMap("encoding/gob/error.go", "error.cs", "ABYuwqiSqsKAgoKClA==")]
+[assembly: go.GoPositionMap("encoding/gob/type.go", "type.cs", "ACxasoCC3oKC3IKCgoKUgqSUgpSWgIKiggAIEoCCooIABxCCAAok8oKUpoKClICCgpKUgqSmlIKmqqKCgpQAFTCCgpSmgoKUppSClIKCpoKClNiSgpSokoKUAAsYgKSApICkgqaAADY+lIKCgoKCgoSogIKkgoIACRSCgqa0goKmgoKUgqaA/oKCgqaCpoAACRKCgqa0goKmgoKUgoKCpoAACBCCgqa0poKUpoKClIKmgAANGqKClICCpIKCgpSCpoCkgqaCAAIQAAgEgpSCkoKCyoCmpqampqampoKCkoIAARQACAKmgoKCgpSCgpSCqJKUgoKCgpSCpoKCgoKCgpSCgoKClIKC3IKUlKYACAqSgqyygriCgpSClqqiggACENKCgpSCgpSmgoKCvKKCgoKUgoKCABcwooKClJSkpKSkpKSkABgwgoCCpIKmgoKUlICCpKrCgoSAgqaCgpSEgoKClIKUpKSklIKApKSmkrbIgIKCuIKCgoLYkoKClAAiSqKUlryAgriAgoIABBT0gqiCgoCCABAitoKClKimgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKmgoI=", "460-464:1")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -135,4 +135,28 @@ public static partial class gob_package
     public partial struct structType {}
     public partial struct typeId {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(go.encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

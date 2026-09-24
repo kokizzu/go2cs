@@ -3,14 +3,14 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using reflect = reflect_package;
+using slices = slices_package;
 using static strings_package;
 using testing = testing_package;
 using static go.strings_internal_test_package;
 
 partial class strings_test_package {
 
-[GoType("dyn")] partial struct TestFinderNext_testCases {
+[GoType("dyn")] internal partial struct TestFinderNext_testCases {
     internal @string pat, text;
     internal nint index;
 }
@@ -42,7 +42,7 @@ public static void TestFinderNext(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFinderCreation_testCases {
+[GoType("dyn")] internal partial struct TestFinderCreation_testCases {
     internal @string pattern;
     internal array<nint> bad = new(256);
     internal slice<nint> suf;
@@ -85,7 +85,7 @@ public static void TestFinderCreation(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("boyerMoore(%q) bad['%c']: got %d want %d"u8, tc.pattern, i, got, want);
             }
         }
-        if (!reflect.DeepEqual(good, tc.suf)) {
+        if (!slices.Equal<slice<nint>, nint>(good, tc.suf)) {
             Ꮡt.Errorf("boyerMoore(%q) got %v want %v"u8, tc.pattern, good, tc.suf);
         }
     }

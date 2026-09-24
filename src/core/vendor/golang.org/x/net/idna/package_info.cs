@@ -56,8 +56,8 @@ using static go.vendor.golang.org.x.net.idna_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/idna10.0.0.go", "idna10.0.0.cs", "AEJcABACqJIABBbSgL7CgLqigAADENKmgpSCgoKClAAEFNKAvsKCggADHAAKAoAAAxTygLqigoKCgoIAAxgACAKCgoIAGj6CggADGAAKAoKCrsKuwpKC6qKCgpSUgpSClIKUgpQANnaAooLKgKKCqsKCgoKmgtyClIKCgqaClJSCgoKCppSCgoKUuLamgoKCgriCgpKCgoKUgpSCgriClIKClIKmpuiCgqbEgpSCgoKUlLqCxJSmgoK4gpSkpsIAARDCgoKCgoKCgpSUgoKClJSkgoKUpIKkppKklJSCpoKCppQACxiCgoKmgqaCgpSmgoKUgoKClKiSgoKCpoKCyoKClNyClIKUtoKUtoK4tKaigriCgoKUgIKklAA3hgGigoKUlIKClIKmgpSUgoKCpoKUgoKCgqSUgoKUgIKkgpSClKaCgoKm")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/punycode.go", "punycode.cs", "ACY+gKaSgpSCgpSClIKCgqaCgoKCgoKUgoKUgoKClIKCpJSClIKCpoKUgoKCgoKUgoKClAACENKCgoKCgoKClKaCgpSCgoKCgqaCgpSCgoKCgpSUgpSCgoKCpJSClIKUgoKCgpSClKiSgoKUpoKUpKSkpoKUpKSokoKUlIKCgoKU")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/idna10.0.0.go", "idna10.0.0.cs", "AB5cABACqJIABBbSgL7CgLqigAADENKmgpSCgoKClAAEFNKAvsKCggADHAAKAoAAAxTygLqigoKCgoIAAxgACAKCgoIAGj6CggADGAAKAoKCrsKuwpKC6qKCgpSUgpSClIKUgpQANnaAooLKgKKCqsKCgoKmgtyClIKCgqaClJSCgoKCppSCgoKUuLamgoKCgriCgpKCgoKUgpSCgriClIKClIKmpuiCgqbEgpSCgoKUlLqCxJSmgoK4gpSkpsIAARDCgoKCgoKCgpSUgoKClJSkgoKUpIKkppKklJSCpoKCppQACxiCgoKmgqaCgpSmgoKUgoKClKiSgoKCpoKCyoKClNyClIKUtoKUtoK4tKaigriCgoKUgIKklAA3hgGigoKUlIKClIKmgpSUgoKCpoKUgoKCgqSUgoKUgIKkgpSClKaCgoKm", "64-64:1;72-72:1;78-78:1;87-101:1;110-110:1;118-121:1;135-135:1;146-146:1;152-158:1;170-174:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/punycode.go", "punycode.cs", "ACA+gKaSgpSCgpSClIKCgqaCgoKCgoKUgoKUgoKClIKCpJSClIKCpoKUgoKCgoKUgoKClAACENKCgoKCgoKClKaCgpSCgoKCgqaCgpSCgoKCgpSUgpSCgoKCpJSClIKUgoKCgpSClKiSgoKUpoKUpKSkpoKUpKSokoKUlIKCgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/tables15.0.0.go", "tables15.0.0.cs", "AIgCuAiygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSC")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie.go", "trie.cs", "AB1CwoKCgoKCgoKClIKUpg==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/idna/trie13.0.0.go", "trie13.0.0.cs", "AAkaooKCgpSClJSCgqY=")]
@@ -88,4 +88,20 @@ public static partial class idna_package
     public partial struct Profile {}
     public partial struct options {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸsecureꓸbidirule() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.secure.bidirule_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸunicodeꓸbidi() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.unicode.bidi_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸunicodeꓸnorm() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.unicode.norm_package));
+    // </ImportInitializers>
 }

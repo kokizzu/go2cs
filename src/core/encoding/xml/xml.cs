@@ -24,18 +24,6 @@ using go.unicode;
 
 partial class xml_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 // A SyntaxError represents a syntax error in the XML input stream.
 [GoType] partial struct SyntaxError {
     public @string Msg;
@@ -1102,8 +1090,9 @@ Input:
             goto break_Input;
         }
         // <![CDATA[ section ends with ]]>.
-        // It is an error for ]]> to appear in ordinary text.
-        if (b0 == (rune)']' && b1 == (rune)']' && b == (rune)'>') {
+        // It is an error for ]]> to appear in ordinary text,
+        // but it is allowed in quoted strings.
+        if (quote < 0 && b0 == (rune)']' && b1 == (rune)']' && b == (rune)'>') {
             if (cdata) {
                 trunc = 2;
                 goto break_Input;

@@ -758,6 +758,16 @@ func constraintHasPointerTerm(typeParam *types.TypeParam) bool {
 	return interfaceHasPointerTerm(iface, 0)
 }
 
+// constraintIsMethodSetWithPointerNamedUnion is isMethodSetWithPointerNamedUnion asked of a type parameter's
+// constraint. getGenericDefinition's pointer-constraint WARNING consults it, so the one shape the declaration and the
+// proxy now emit on purpose (fips140's `Point[P]`, RED 8) stops reporting "emission may not compile": that warning
+// named RED 8 at every site since the hop (29 for 29, crypto/elliptic 0), and after the cure its correct count is 0.
+func constraintIsMethodSetWithPointerNamedUnion(typeParam *types.TypeParam) bool {
+	iface, ok := typeParam.Constraint().Underlying().(*types.Interface)
+
+	return ok && isMethodSetWithPointerNamedUnion(iface)
+}
+
 func interfaceHasPointerTerm(iface *types.Interface, depth int) bool {
 	if depth > 8 {
 		return false
@@ -767,7 +777,20 @@ func interfaceHasPointerTerm(iface *types.Interface, depth int) bool {
 		switch embedded := iface.EmbeddedType(i).(type) {
 		case *types.Union:
 			for j := range embedded.Len() {
-				if _, ok := embedded.Term(j).Type().(*types.Pointer); ok {
+				term := embedded.Term(j).Type()
+
+				if _, ok := term.(*types.Pointer); ok {
+					return true
+				}
+
+				// ⚠ A UNION TERM CAN ITSELF BE A NAMED CONSTRAINT INTERFACE, and the pointer then
+				// sits one level further in: runtime's `mapBenchmarkElemType interface {
+				// mapBenchmarkKeyType | []int32 }` reaches `*int32` only through the first term.
+				// Testing each term for *types.Pointer alone made this function answer FALSE for a
+				// type set that plainly mentions a pointer — against its own doc comment — so the
+				// warning above under-reported and the constraint arm that consults it kept
+				// `new()` on 14 of the row's 28 sites. Recurse, under the same depth cap.
+				if nested, ok := term.Underlying().(*types.Interface); ok && interfaceHasPointerTerm(nested, depth+1) {
 					return true
 				}
 			}
@@ -982,6 +1005,14 @@ func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList
 			continue
 		}
 
+		// A pointer argument against a NON-self-referential method-set constraint, reached only
+		// as a func RESULT, renders as the constraint itself: the call site projects each such
+		// delegate through the pointer adapter (see funcResultProjection).
+		if _, constraint, ok := v.funcResultProjection(funIdent, typeArgs, i); ok {
+			names = append(names, v.getCSharpTypeName(constraint))
+			continue
+		}
+
 		names = append(names, v.getCSharpTypeName(typeArgs.At(i)))
 	}
 
@@ -1192,7 +1223,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 			}
 
 			v.showWarning("@getGenericDefinition - pointer-core constraint `%s` on generic type `%s` is not erased (no stdlib precedent); emission may not compile", v.getAliasQualifiedTypeName(pointer, false), srcType.String())
-		} else if constraintHasPointerTerm(typeParam) {
+		} else if constraintHasPointerTerm(typeParam) && !constraintIsMethodSetWithPointerNamedUnion(typeParam) {
 			v.showWarning("@getGenericDefinition - approximate/union/method-carrying pointer constraint `%s` on `%s` is not erased; emission may not compile", typeParam.Constraint().String(), srcType.String())
 		}
 
@@ -1309,7 +1340,33 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 						// corpus witness), and nothing needed it: golib `@new<T>` constructs via
 						// the runtime and no comparable-constrained body constructs its parameter.
 						continue
-					} else if v.constraintTypeSetIsInexpressible(constraint) {
+					} else if !isMethodSetWithPointerNamedUnion(iface) && v.constraintTypeSetIsInexpressible(constraint) && interfaceHasPointerTerm(iface, 0) {
+						// ⚠ THE SAME INEXPRESSIBLE TYPE SET, but with a POINTER term in it — and the
+						// arm below keeps `new()` on the stated premise that "a composite type set
+						// admits no pointer type argument, every term is a value type". runtime's
+						// `mapBenchmarkKeyType = int32 | int64 | string | smallType | mediumType |
+						// bigType | *int32` falsifies exactly that premise: the value terms
+						// instantiate fine and the POINTER term instantiates at `ж<int32>`, which
+						// is `public abstract partial class ж<T>` — and CS0310 wants a non-abstract
+						// type with a public parameterless constructor. 22 of them in one row, and
+						// no golib change can reach it, because the abstractness is what makes a Go
+						// pointer a reference at all.
+						//
+						// So this takes the `comparable` arm's answer above rather than the one
+						// below, for that arm's own reason, quoted because it is the same sentence:
+						// "a Go pointer type argument now instantiates at the abstract ж<T>, which
+						// no constructor constraint can admit". Emit NO C# constraint: Go's checker
+						// validated every instantiation before conversion, so the clause has
+						// nothing left to enforce, and the breadcrumb cannot ride alone (`where K :
+						// /* name */` is a constraint clause with no constraint).
+						//
+						// The predicate is the one the WARNING at the head of this function already
+						// uses — interfaceHasPointerTerm, through constraintHasPointerTerm — so
+						// this is that warning's shape finally acted on rather than a second
+						// spelling of it. The warning has been right at every one of these sites
+						// and the emission ignored it.
+						continue
+					} else if !isMethodSetWithPointerNamedUnion(iface) && v.constraintTypeSetIsInexpressible(constraint) {
 						// A union whose terms are all COMPOSITE Go types — runtime/pprof's
 						// `[T runtime.StackRecord | runtime.MemProfileRecord |
 						// runtime.BlockProfileRecord]`. Every earlier arm in this chain has been
@@ -1358,7 +1415,13 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 							constraintName = fmt.Sprintf("%s %s", originalConstraint, typeConstraint)
 						}
 					}
-				} else if isMethodSetBeyondComparable(iface) {
+				} else if isMethodSetBeyondComparable(iface) || isMethodSetWithPointerNamedUnion(iface) {
+					// A method set beside a pointer-to-named union (fips140's `Point[P]`) takes this arm
+					// too: visitInterfaceType emits it as a pure method set with the union as a comment, and
+					// constraintProxyFor admits it on the same predicate, so the declaration and the proxy
+					// agree. Left in the composite-union arm above it rendered `/* Point[P] */ new()`, which
+					// neither the box nor the proxy (no parameterless constructor) satisfies — CS0310 (RED 8).
+					//
 					// A REGULAR method-set interface (a pure method set, no type-term unions —
 					// go/ast's `Node` in `walkList[N Node]`) is emitted arity-0 by
 					// visitInterfaceType, NOT as the generic CRTP form that union+method
@@ -1561,7 +1624,7 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 
 	iface, ok := constraintNamed.Underlying().(*types.Interface)
 
-	if !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
+	if !ok || iface.NumMethods() == 0 || !(iface.IsMethodSet() || isMethodSetWithPointerNamedUnion(iface)) {
 		return "", false
 	}
 
@@ -1585,6 +1648,58 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 	// ImplementGenerator's `elementType.Name + PointerPrefix + interfaceDef.Name`.
 	proxyName := elemNamed.Obj().Name() + PointerPrefix + interfaceOrigin.Obj().Name()
 
+	// A FOREIGN constraint interface: the package that declares it OWNS the proxy. It records the pair wherever it closes
+	// the constraint over the element, and ImplementGenerator makes that proxy public when both sides are, so a consumer
+	// names THE OWNER'S proxy through the interface package's C# qualifier and records none of its own. A second record
+	// here would mint a second class of the same simple name in this assembly, which the owner's signatures do not accept:
+	// crypto/ecdsa passing crypto/internal/fips140/ecdsa's `P224()` result to its own generics was CS1503 x16, and the
+	// record itself spelled the interface by its Go import path, a parse error (RED 8, COORD a4eb648a6 g2a/g2b). The
+	// qualifier is the interface's C# spelling, resolved by getScopeCheckedTypeName: the file-local alias (`ecdsa.`) only when
+	// this file imports the interface's package, else the fully-qualified C# name -- a consumer can reach a foreign constraint
+	// through a THIRD package without importing the interface's own, and an unimported alias names nothing (CS0246). A
+	// fully-qualified name that still carries the Go import path goes through convertToCSFullTypeName, so it never reaches C#.
+	// No resolvable qualifier declines, leaving the box: an honest CS0310 rather than a proxy name that exists nowhere.
+	if interfaceOrigin.Obj().Pkg() != v.pkg {
+		qualified := v.getScopeCheckedTypeName(interfaceOrigin)
+
+		if idx := strings.Index(qualified, "["); idx >= 0 {
+			qualified = qualified[:idx]
+		}
+
+		if strings.Contains(qualified, "/") {
+			qualified = convertToCSFullTypeName(qualified)
+		}
+
+		// The separator is an ASCII dot for a package-qualified C# name — but an imported TYPE ALIAS
+		// spells it with TypeAliasDot (`ecdhꓸCurve`), because a C# identifier cannot carry a `.`:
+		// getAliasedTypeName mints the alias form as ReplaceAll(name, ".", TypeAliasDot), so such a
+		// qualifier holds NO ascii dot at all. Splitting on the ascii dot alone therefore finds -1 and
+		// declines — and declines SILENTLY, which is the half that matters: the site drops to the box
+		// with no diagnostic, leaving the reader of the emitted C# an unexplained CS0310.
+		//
+		// Take whichever separator appears LAST and carry its WIDTH with it. TypeAliasDot is THREE
+		// bytes in UTF-8, so the `+1` advance that is correct for an ascii dot would slice mid-rune
+		// here and hand back a corrupt qualifier that still compiles. Same alias-aware pairing
+		// convCallExpr.go already uses (`Contains(name, ".") || Contains(name, TypeAliasDot)`).
+		sep, dot := ".", strings.LastIndex(qualified, ".")
+
+		if aliasDot := strings.LastIndex(qualified, TypeAliasDot); aliasDot > dot {
+			sep, dot = TypeAliasDot, aliasDot
+		}
+
+		// The decline WARNS rather than falling silent, and the warning is scoped to THIS path on a
+		// measurement rather than a preference: over crypto/ecdh, crypto/ecdsa and both fips140
+		// siblings the shape declines above fire 210 and 10 times ("this is not the shape"), while this
+		// one fires ZERO — so warning on those would flood stderr, and warning here costs nothing and
+		// names a case the reader would otherwise have to diagnose from a bare CS0310.
+		if dot <= 0 {
+			v.showWarning("@constraintProxyFor - foreign constraint `%s` has no resolvable qualifier; the proxy is declined and the box is left in place (emission may not compile)", qualified)
+			return "", false
+		}
+
+		return qualified[:dot+len(sep)] + proxyName, true
+	}
+
 	// Register the (element, interface) pair so package_info emits the ConstraintProxy record.
 	// The interface name drops its type-parameter DECLARATION (`point[T any]` → `point`): the
 	// record's `GoImplement<element, point<element>>` closes it over the element placeholder.
@@ -1600,10 +1715,10 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 
 	interfaceFullName := v.getFullyQualifiedTypeName(interfaceOrigin, false)
 
-	// Strip the type-parameter DECLARATION only — getFullyQualifiedTypeName already yields the interface's
-	// C# reference form (bare `nistPoint` for a local interface, `pkg_package.Iface` cross-package),
-	// so it must NOT go through convertToCSFullTypeName (which would root-qualify the bare local name
-	// to the wrong `go.nistPoint`). qualifyLocalTypeRef handles final qualification at emission.
+	// Strip the type-parameter DECLARATION only. The interface is LOCAL by construction here (a foreign one returned
+	// above without a record), so getFullyQualifiedTypeName yields its bare C# name (`nistPoint`), and it must NOT go
+	// through convertToCSFullTypeName (which would root-qualify the bare local name to the wrong `go.nistPoint`).
+	// qualifyLocalTypeRef handles final qualification at emission.
 	if idx := strings.Index(interfaceFullName, "["); idx >= 0 {
 		interfaceFullName = interfaceFullName[:idx]
 	}
@@ -1666,6 +1781,475 @@ func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.Typ
 	}
 
 	return v.constraintProxyFor(typeParams.At(i), typeArgs.At(i))
+}
+
+// funcResultProjection reports whether type-parameter position `k` of the generic FUNCTION
+// `funIdent` names is instantiated by a POINTER whose box cannot satisfy the emitted constraint,
+// in the one reach the delegate projection can carry: the type parameter appears in the callee's
+// signature ONLY as the sole result of niladic func parameters. crypto/internal/fips140's
+// `hmac.New[H fips140.Hash](h func() H, key []byte)` called as `hmac.New(sha256.New, key)` is
+// the shape — `New<ж<sha256.Digest>>` against `where H : fips140.Hash` is CS0311, because the
+// box does not implement the interface, its generated pointer adapter does. The type argument
+// becomes the constraint and each such argument is widened through the adapter (`widen<ж<Digest>,
+// Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0))`) — the delegate twin of the
+// slice-element projection go/ast's walkList already takes.
+//
+// The type argument may also be a DECLARED INTERFACE that satisfies the constraint by method set
+// but does not nominally derive from it (RED 4): crypto/hkdf's `hkdf.Extract(fh, …)` with `fh :=
+// fips140hash.UnwrapNew(h)`, a `func() hash.Hash`, against `Extract[H fips140.Hash]` — `hash.Hash`
+// and `fips140.Hash` are SIBLINGS (identical method sets, no embedding edge), so `Extract<hash.Hash>`
+// is CS0311 exactly as the box was. The converter emits Go interface embedding as C# interface
+// inheritance, so "nominally derives" is "the constraint is the argument or sits in its transitive
+// embedding closure"; either declines. Otherwise the wrap is the INTERFACE adapter the generator
+// already mints for the pair (`new hash_HashᴠHash(elemᴛ0)`), chosen by convertToInterfaceType.
+//
+// Returns the type argument (a pointer or an interface) and the INSTANTIATED constraint. A
+// self-referential constraint is the constraint proxy's (see constraintProxyFor) and declines here;
+// a constraint parameterized by a SIBLING type parameter is instantiated over the call's own type
+// arguments. Any other reach of the type parameter declines — a bare `H` parameter or a result
+// mentioning `H` would each observe the substituted interface where Go has the argument's own type.
+//
+// ⚠ This is the LOCAL test. The sibling-constraint rule — another type parameter's constraint naming
+// this one — moved to funcResultProjection below when it was relaxed on 2026-09-20, because whether
+// it refuses now depends on whether that sibling ALSO projects, which this function cannot ask
+// without recursing. Call funcResultProjection unless you ARE the sibling test.
+func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, types.Type, bool) {
+	if funIdent == nil || typeArgs == nil {
+		return nil, nil, nil, false
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, nil, nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() || k >= typeArgs.Len() {
+		return nil, nil, nil, false
+	}
+
+	typeParams := sig.TypeParams()
+	typeParam := typeParams.At(k)
+
+	arg := typeArgs.At(k)
+
+	if !funcResultProjectableArg(arg) {
+		return nil, nil, nil, false
+	}
+
+	constraint := typeParam.Constraint()
+
+	if iface, ok := constraint.Underlying().(*types.Interface); !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
+		return nil, nil, nil, false
+	}
+
+	// The form the GO-level Implements test is asked about: the constraint closed over the call's own
+	// TYPE ARGUMENTS. It diverges from `constraint` only when a sibling's projection is substituted
+	// below, and the two must not be confused — see the note at the second Instantiate.
+	checkConstraint := constraint
+
+	// A parameterized constraint: decline the self-referential one, instantiate the rest over
+	// the call's type arguments (a sibling parameter's argument, or a concrete type).
+	if constraintNamed, ok := constraint.(*types.Named); ok && constraintNamed.TypeArgs().Len() > 0 {
+		args := make([]types.Type, constraintNamed.TypeArgs().Len())
+		checkArgs := make([]types.Type, constraintNamed.TypeArgs().Len())
+
+		for j := range args {
+			arg := constraintNamed.TypeArgs().At(j)
+			rawArg := arg
+
+			if tp, ok := arg.(*types.TypeParam); ok {
+				if tp == typeParam {
+					return nil, nil, nil, false
+				}
+
+				if index := tp.Index(); index < typeParams.Len() && typeParams.At(index) == tp && index < typeArgs.Len() {
+					arg = typeArgs.At(index)
+					rawArg = typeArgs.At(index)
+
+					// ⚠ If that sibling ALSO projects, close over its PROJECTION rather than its
+					// box. Closing over the box is the half-state crypto/mlkem emitted:
+					// `decapsulationKey<ж<EncapsulationKey768>>` names the very box the projection
+					// exists to avoid, and C# then fails the nominal bound exactly as before.
+					if projected, ok := v.siblingProjectedConstraint(funIdent, typeArgs, index); ok {
+						arg = projected
+					} else if funcResultProjectableArg(arg) {
+						// ⚠ THE HALF-STATE, refused: the sibling's argument is the shape a
+						// projection would carry (a boxed pointer or an interface) and it did NOT
+						// project, so closing over it would name the box inside this constraint —
+						// `decapsulationKey<ж<EncapsulationKey768>>`, which fails the nominal bound
+						// exactly as the unprojected argument did. A refusal leaves the row failing
+						// to compile; a box-closed constraint would compile against the wrong bound.
+						// A sibling whose argument is concrete (`keyed[int]`) is not this case and
+						// closes over the concrete type as it always has.
+						return nil, nil, nil, false
+					}
+				}
+			}
+
+			for m := range typeParams.Len() {
+				if typeMentionsTypeParam(arg, typeParams.At(m), map[types.Type]bool{}) {
+					return nil, nil, nil, false
+				}
+			}
+
+			args[j] = arg
+			checkArgs[j] = rawArg
+		}
+
+		instantiated, err := types.Instantiate(nil, constraintNamed.Origin(), args, false)
+
+		if err != nil {
+			return nil, nil, nil, false
+		}
+
+		// ⚠ TWO instantiations, and the distinction is load-bearing.
+		//
+		// `checked` closes over the call's own TYPE ARGUMENTS, which is what Go says the constraint
+		// is; `constraint` closes over the sibling's PROJECTION, which is what C# must render.
+		// Testing Implements against the PROJECTED form asks the wrong question and refuses a valid
+		// row: `*digest` implements `keyedNamed[*digest]` because its method is `encapKey() *digest`,
+		// and it does NOT implement `keyedNamed[named]` — no Go type does, since Go has no return
+		// covariance. Substituting first and testing second made mlkem's `D` refuse locally, which
+		// then made `E` refuse through the sibling rule, which is how the whole pair went dark.
+		checked, err := types.Instantiate(nil, constraintNamed.Origin(), checkArgs, false)
+
+		if err != nil {
+			return nil, nil, nil, false
+		}
+
+		constraint = instantiated
+		checkConstraint = checked
+	}
+
+	iface, ok := checkConstraint.Underlying().(*types.Interface)
+
+	if !ok || !types.Implements(arg, iface) || interfaceNominallyDerives(arg, checkConstraint) {
+		return nil, nil, nil, false
+	}
+
+	// The reach: every parameter that mentions the type parameter is exactly `func() H`, at
+	// least one does, no result mentions it, and no other type parameter's constraint names it.
+	reached := false
+
+	for j := range sig.Params().Len() {
+		paramType := sig.Params().At(j).Type()
+
+		if !typeMentionsTypeParam(paramType, typeParam, map[types.Type]bool{}) {
+			continue
+		}
+
+		if sig.Variadic() && j == sig.Params().Len()-1 {
+			return nil, nil, nil, false
+		}
+
+		if _, ok := funcResultPositionOf(paramType, typeParam); !ok {
+			return nil, nil, nil, false
+		}
+
+		reached = true
+	}
+
+	if !reached || typeMentionsTypeParam(sig.Results(), typeParam, map[types.Type]bool{}) {
+		return nil, nil, nil, false
+	}
+
+	return arg, constraint, checkConstraint, true
+}
+
+// siblingProjectedConstraint reports the constraint a sibling type parameter PROJECTS to, for use as
+// the closed-over form when another constraint names it.
+//
+// ⚠ BOUNDED TO AN UNPARAMETERIZED SIBLING CONSTRAINT, and the bound is what makes this safe rather
+// than merely convenient: funcResultProjectionLocal's own parameterized-constraint block is what
+// calls this, so a sibling whose constraint were ALSO parameterized could ask the question back and
+// recurse without limit (`A f[B]`, `B g[A]`). A sibling with no type arguments cannot reach that
+// block, so the call is one level deep by construction rather than by a visited set.
+//
+// crypto/mlkem is exactly this shape — `D decapsulationKey[E]` over `E encapsulationKey`, and
+// `encapsulationKey` takes no type arguments. A deeper chain keeps the box here, and the outer
+// parameter then refuses through the half-state rule in funcResultProjection, which is the safe
+// direction: a refusal is a row that still fails to compile, where a wrong closure is a row that
+// compiles against the wrong bound.
+func (v *Visitor) siblingProjectedConstraint(funIdent *ast.Ident, typeArgs *types.TypeList, index int) (types.Type, bool) {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || index >= sig.TypeParams().Len() {
+		return nil, false
+	}
+
+	if named, ok := sig.TypeParams().At(index).Constraint().(*types.Named); ok && named.TypeArgs().Len() > 0 {
+		return nil, false
+	}
+
+	_, constraint, _, ok := v.funcResultProjectionLocal(funIdent, typeArgs, index)
+
+	if !ok {
+		return nil, false
+	}
+
+	return constraint, true
+}
+
+// funcResultProjection reports whether type argument `k` projects, applying the SIBLING-CONSTRAINT
+// rule on top of the local test above.
+//
+// The rule used to refuse outright whenever ANOTHER type parameter's constraint MENTIONED this one:
+// projecting `E` while `D decapsulationKey[E]` kept its box would leave D's constraint closed over
+// the very box the projection exists to avoid. That refusal was right about the HALF-STATE and wrong
+// as a verdict — crypto/mlkem is exactly two such parameters and BOTH project, so the coherent state
+// was available and simply never reached (CS0311 ×4 at the version tip, measured).
+//
+// ⚠ Relaxed 2026-09-20: a type parameter MAY project when every constraint that mentions it ALSO
+// projects, and that constraint is then closed over the mentioning parameter's PROJECTED form. If any
+// mentioning sibling does NOT project, this one still refuses — the half-state is the red, and
+// `siblingCall` pins it.
+//
+// The sibling test calls the LOCAL form, never this one, so the check is one level deep and cannot
+// recurse: two parameters that mention each other each ask whether the other projects LOCALLY, and
+// neither asks the question back.
+func (v *Visitor) funcResultProjectionChecked(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, types.Type, bool) {
+	arg, constraint, checkConstraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, k)
+
+	if !ok {
+		return nil, nil, nil, false
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, nil, nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() {
+		return nil, nil, nil, false
+	}
+
+	typeParams := sig.TypeParams()
+	typeParam := typeParams.At(k)
+
+	for m := range typeParams.Len() {
+		if m == k || !typeMentionsTypeParam(typeParams.At(m).Constraint(), typeParam, map[types.Type]bool{}) {
+			continue
+		}
+
+		if _, _, _, siblingProjects := v.funcResultProjectionLocal(funIdent, typeArgs, m); !siblingProjects {
+			return nil, nil, nil, false
+		}
+	}
+
+	return arg, constraint, checkConstraint, true
+}
+
+// funcResultProjectionArg maps argument `i` of a generic FUNCTION call onto funcResultProjection:
+// the parameter must be a `func() H` whose type parameter's position projects.
+func (v *Visitor) funcResultProjectionArgChecked(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, types.Type, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil {
+		return nil, nil, nil, false
+	}
+
+	sig := v.info.ObjectOf(funIdent).(*types.Func).Type().(*types.Signature)
+
+	if i >= sig.Params().Len() || (sig.Variadic() && i == sig.Params().Len()-1) {
+		return nil, nil, nil, false
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok {
+		return nil, nil, nil, false
+	}
+
+	// Which of the call's type parameters this func parameter projects through. The shape check
+	// lives in funcResultPositionOf, which accepts the Go constructor idiom `func(args…) (T, error)`
+	// and still refuses the two shapes that cannot be wrapped.
+	for k := range typeParams.Len() {
+		if _, ok := funcResultPositionOf(paramSig, typeParams.At(k)); ok {
+			return v.funcResultProjectionChecked(funIdent, typeArgs, k)
+		}
+	}
+
+	return nil, nil, nil, false
+}
+
+// funcResultProjection is funcResultProjectionChecked with the CHECKED constraint dropped — the form
+// every caller that only RENDERS or DECIDES takes, and the one the negative controls exercise.
+//
+// The checked form exists for the single caller that must ask a SATISFACTION question of the
+// constraint as GO closed it rather than as C# renders it (convertToProjectedInterfaceType). Keeping
+// that caller on its own entry point is what stops the projected form leaking into a types.Implements
+// test somewhere else: this seat's first cut asked exactly that question of the projected form and
+// refused a valid row, because Go has no return covariance.
+func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
+	arg, constraint, _, ok := v.funcResultProjectionChecked(funIdent, typeArgs, k)
+
+	return arg, constraint, ok
+}
+
+// funcResultProjectionArg is funcResultProjectionArgChecked with the CHECKED constraint dropped; see
+// funcResultProjection for why the two entry points are kept apart.
+func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, bool) {
+	arg, constraint, _, ok := v.funcResultProjectionArgChecked(funIdent, typeArgs, i)
+
+	return arg, constraint, ok
+}
+
+// funcResultProjectionResultIndex reports which RESULT of argument `i`'s func parameter carries the
+// projected type parameter. The emission needs it to convert that one result and pass the others
+// through: `func() H` is index 0, and the Go constructor idiom `func(args…) (H, error)` is also 0
+// with an `error` beside it — but the index is READ rather than assumed, because nothing in the
+// shape requires the type parameter to come first.
+func (v *Visitor) funcResultProjectionResultIndex(funIdent *ast.Ident, i int) (int, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil {
+		return 0, false
+	}
+
+	sig, ok := v.info.ObjectOf(funIdent).(*types.Func).Type().(*types.Signature)
+
+	if !ok || i >= sig.Params().Len() {
+		return 0, false
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok {
+		return 0, false
+	}
+
+	for k := range typeParams.Len() {
+		if position, ok := funcResultPositionOf(paramSig, typeParams.At(k)); ok {
+			return position, true
+		}
+	}
+
+	return 0, false
+}
+
+// funcResultPositionOf reports the INDEX of the result that IS `tp`, and whether exactly one result
+// is. It replaced isFuncResultOf, which required `func() tp` exactly — niladic, one result.
+//
+// ⚠ Neither of those requirements bears on whether the RESULT projects, and together they refused the
+// Go CONSTRUCTOR idiom: crypto/mlkem reaches its type parameter through
+// `newEncapsulationKey func([]byte) (E, error)` and was refused on both clauses, so its four call
+// sites emitted an explicit type-argument list naming the boxes — CS0311 ×4, measured live at the
+// version tip. The parameter list is the caller's business; a trailing `error` is the idiom and
+// mentions no type parameter.
+//
+// The POSITION is returned rather than assumed to be 0, because the emission has to convert that one
+// result and pass the others through untouched.
+//
+// Two shapes are still refused, and both for a reason rather than a definition:
+//
+//	TWO results ARE tp    `func() (H, H)` — which one the adapter should wrap is not recoverable.
+//	a result MENTIONS tp  `func() ([]H, error)` — a slice of the box is not the box, and the
+//	                      element projection is a different mechanism with its own wrapping.
+func funcResultPositionOf(typ types.Type, tp *types.TypeParam) (int, bool) {
+	sig, ok := typ.Underlying().(*types.Signature)
+
+	if !ok || sig.Results().Len() == 0 {
+		return 0, false
+	}
+
+	position := -1
+
+	for r := range sig.Results().Len() {
+		resultType := sig.Results().At(r).Type()
+
+		if result, isParam := types.Unalias(resultType).(*types.TypeParam); isParam && result == tp {
+			if position >= 0 {
+				return 0, false
+			}
+
+			position = r
+
+			continue
+		}
+
+		if typeMentionsTypeParam(resultType, tp, map[types.Type]bool{}) {
+			return 0, false
+		}
+	}
+
+	if position < 0 {
+		return 0, false
+	}
+
+	return position, true
+}
+
+// funcResultProjectableArg reports whether a type argument is a kind funcResultProjection can carry:
+// a POINTER to a named type (its box needs the pointer adapter, RED 3) or a DECLARED interface with
+// methods (a sibling of the constraint needs the interface adapter, RED 4). An anonymous interface
+// has no generated adapter class, and an empty one satisfies no method-set constraint.
+func funcResultProjectableArg(arg types.Type) bool {
+	switch t := types.Unalias(arg).(type) {
+	case *types.Pointer:
+		_, ok := types.Unalias(t.Elem()).(*types.Named)
+		return ok
+	case *types.Named:
+		iface, ok := t.Underlying().(*types.Interface)
+		return ok && iface.NumMethods() > 0
+	}
+
+	return false
+}
+
+// interfaceNominallyDerives reports whether an INTERFACE type argument already satisfies `constraint`
+// nominally in the emitted C#: it IS the constraint, or the constraint sits in its transitive
+// embedding closure (Go interface embedding is emitted as C# interface inheritance). A pointer argument
+// never derives nominally — its box implements nothing — so it reports false.
+func interfaceNominallyDerives(arg, constraint types.Type) bool {
+	named, ok := types.Unalias(arg).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	if _, isIface := named.Underlying().(*types.Interface); !isIface {
+		return false
+	}
+
+	seen := map[types.Type]bool{}
+	pending := []types.Type{named}
+
+	for len(pending) > 0 {
+		current := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+
+		if types.Identical(current, constraint) {
+			return true
+		}
+
+		if seen[current] {
+			continue
+		}
+
+		seen[current] = true
+
+		if iface, ok := types.Unalias(current).Underlying().(*types.Interface); ok {
+			for i := range iface.NumEmbeddeds() {
+				if embedded, ok := types.Unalias(iface.EmbeddedType(i)).(*types.Named); ok {
+					pending = append(pending, embedded)
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // typeMentionsTypeParam reports whether `typ` uses `target` anywhere in its structure. Used to
@@ -1891,6 +2475,53 @@ func isPredeclaredComparable(t types.Type) bool {
 	obj := named.Obj()
 
 	return obj != nil && obj.Pkg() == nil && obj.Name() == "comparable"
+}
+
+// isMethodSetWithPointerNamedUnion reports whether iface is a method set PLUS embedded unions whose
+// every term is a pointer to a NAMED type, with no tilde and nothing else embedded — Go 1.24's
+// crypto/internal/fips140 `Point[P]` constraints (ecdh, ecdsa), which open with
+// `*nistec.P224Point | *nistec.P256Point | *nistec.P384Point | *nistec.P521Point` beside the method
+// list crypto/elliptic's `nistPoint[T]` carries alone.
+//
+// The union restricts nothing a C# type can observe: visitInterfaceType emits it as a comment line
+// and the partial interface as a pure method set, so a proxy implementing that interface is exactly
+// the nistPoint proxy. IsMethodSet() answering false over the union was refusing on a Go-side property
+// the emission had already dropped (RED 8, C2 sizing 0d6cd77a2, COORD 7bc9d58d4 candidate (a)).
+//
+// Deliberately narrow: an approximate term (`~*T`), a non-pointer term, a pointer to an unnamed type,
+// or any embedded interface keeps the method-set refusal.
+func isMethodSetWithPointerNamedUnion(iface *types.Interface) bool {
+	if iface == nil || iface.NumMethods() == 0 || iface.NumEmbeddeds() == 0 {
+		return false
+	}
+
+	for i := range iface.NumEmbeddeds() {
+		union, ok := iface.EmbeddedType(i).(*types.Union)
+
+		if !ok {
+			return false
+		}
+
+		for j := range union.Len() {
+			term := union.Term(j)
+
+			if term.Tilde() {
+				return false
+			}
+
+			ptr, ok := types.Unalias(term.Type()).(*types.Pointer)
+
+			if !ok {
+				return false
+			}
+
+			if _, ok := types.Unalias(ptr.Elem()).(*types.Named); !ok {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // isMethodSetBeyondComparable reports whether iface is a pure METHOD SET once an embedded

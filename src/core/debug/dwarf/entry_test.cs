@@ -53,6 +53,7 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
 // containing that PC.
 [GoType] partial struct wantRange {
     internal uint64 pc;
+    [GoArrayDims(2)]
     internal slice<array<uint64>> ranges;
 }
 
@@ -64,30 +65,30 @@ internal static readonly @string testdataLineGccZstdElfˢ = "testdata/line-gcc-z
 
 public static void TestReaderSeek(ж<testing.T> Ꮡt) {
     var want = new wantRange[]{
-        new(0x40059d, new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice()),
-        new(0x400600, new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice()),
-        new(0x400601, new array<uint64>[]{new uint64[]{0x400601, 0x400611}.array()}.slice()),
-        new(0x4005f0, new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice()), // loop test
+        new(0x40059d, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice(), 2)),
+        new(0x400600, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice(), 2)),
+        new(0x400601, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400601, 0x400611}.array()}.slice(), 2)),
+        new(0x4005f0, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40059d, 0x400601}.array()}.slice(), 2)), // loop test
 
         new(0x10, default!),
         new(0x400611, default!)
     }.slice();
     testRanges(Ꮡt, testdataLineGccElfˢ, want);
     want = new wantRange[]{
-        new(0x401122, new array<uint64>[]{new uint64[]{0x401122, 0x401166}.array()}.slice()),
-        new(0x401165, new array<uint64>[]{new uint64[]{0x401122, 0x401166}.array()}.slice()),
-        new(0x401166, new array<uint64>[]{new uint64[]{0x401166, 0x401179}.array()}.slice())
+        new(0x401122, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401122, 0x401166}.array()}.slice(), 2)),
+        new(0x401165, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401122, 0x401166}.array()}.slice(), 2)),
+        new(0x401166, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401166, 0x401179}.array()}.slice(), 2))
     }.slice();
     testRanges(Ꮡt, testdataLineGccDwarf5Elfˢ, want);
     want = new wantRange[]{
-        new(0x401130, new array<uint64>[]{new uint64[]{0x401130, 0x40117e}.array()}.slice()),
-        new(0x40117d, new array<uint64>[]{new uint64[]{0x401130, 0x40117e}.array()}.slice()),
+        new(0x401130, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401130, 0x40117e}.array()}.slice(), 2)),
+        new(0x40117d, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401130, 0x40117e}.array()}.slice(), 2)),
         new(0x40117e, default!)
     }.slice();
     testRanges(Ꮡt, testdataLineClangDwarf5ˢ, want);
     want = new wantRange[]{
-        new(0x401126, new array<uint64>[]{new uint64[]{0x401126, 0x40116a}.array()}.slice()),
-        new(0x40116a, new array<uint64>[]{new uint64[]{0x40116a, 0x401180}.array()}.slice())
+        new(0x401126, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401126, 0x40116a}.array()}.slice(), 2)),
+        new(0x40116a, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40116a, 0x401180}.array()}.slice(), 2))
     }.slice();
     testRanges(Ꮡt, testdataLineGccZstdElfˢ, want);
 }
@@ -97,10 +98,10 @@ internal static readonly @string testdataRangesElfˢ = "testdata/ranges.elf"u8;
 
 public static void TestRangesSection(ж<testing.T> Ꮡt) {
     var want = new wantRange[]{
-        new(0x400500, new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice()),
-        new(0x400400, new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice()),
-        new(0x400548, new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice()),
-        new(0x400407, new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice()),
+        new(0x400500, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice(), 2)),
+        new(0x400400, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice(), 2)),
+        new(0x400548, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice(), 2)),
+        new(0x400407, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400500, 0x400549}.array(), new uint64[]{0x400400, 0x400408}.array()}.slice(), 2)),
         new(0x400408, default!),
         new(0x400449, default!),
         new(0x4003ff, default!)
@@ -113,12 +114,12 @@ internal static readonly @string testdataRnglistxElfˢ = "testdata/rnglistx.elf"
 
 public static void TestRangesRnglistx(ж<testing.T> Ꮡt) {
     var want = new wantRange[]{
-        new(0x401000, new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice()),
-        new(0x40101c, new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice()),
+        new(0x401000, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice(), 2)),
+        new(0x40101c, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice(), 2)),
         new(0x40101d, default!),
         new(0x40101f, default!),
-        new(0x401020, new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice()),
-        new(0x40102b, new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice()),
+        new(0x401020, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice(), 2)),
+        new(0x40102b, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401020, 0x40102c}.array(), new uint64[]{0x401000, 0x40101d}.array()}.slice(), 2)),
         new(0x40102c, default!)
     }.slice();
     testRanges(Ꮡt, testdataRnglistxElfˢ, want);
@@ -149,14 +150,15 @@ internal static void testRanges(ж<testing.T> Ꮡt, @string name, slice<wantRang
     }
 }
 
-[GoType("dyn")] partial struct TestReaderRanges_subprograms {
+[GoType("dyn")] internal partial struct TestReaderRanges_subprograms {
     internal @string name;
+    [GoArrayDims(2)]
     internal slice<array<uint64>> ranges;
 }
 
-[GoType("[]TestReaderRanges_subprograms")] partial struct TestReaderRanges_subprogramsᴛ1;
+[GoLocalName("subprograms")] [GoType("[]TestReaderRanges_subprograms")] internal partial struct TestReaderRanges_subprogramsᴛ1;
 
-[GoType("dyn")] partial struct TestReaderRanges_tests {
+[GoType("dyn")] internal partial struct TestReaderRanges_tests {
     internal @string filename;
     internal TestReaderRanges_subprogramsᴛ1 subprograms;
 }
@@ -166,34 +168,34 @@ public static void TestReaderRanges(ж<testing.T> Ꮡt) {
         new(
             "testdata/line-gcc.elf"u8,
             new TestReaderRanges_subprogramsᴛ1(new TestReaderRanges_subprograms[]{
-                new("f1"u8, new array<uint64>[]{new uint64[]{0x40059d, 0x4005e7}.array()}.slice()),
-                new("main"u8, new array<uint64>[]{new uint64[]{0x4005e7, 0x400601}.array()}.slice()),
-                new("f2"u8, new array<uint64>[]{new uint64[]{0x400601, 0x400611}.array()}.slice())
+                new("f1"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40059d, 0x4005e7}.array()}.slice(), 2)),
+                new("main"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x4005e7, 0x400601}.array()}.slice(), 2)),
+                new("f2"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x400601, 0x400611}.array()}.slice(), 2))
             }.slice())
         ),
         new(
             "testdata/line-gcc-dwarf5.elf"u8,
             new TestReaderRanges_subprogramsᴛ1(new TestReaderRanges_subprograms[]{
-                new("main"u8, new array<uint64>[]{new uint64[]{0x401147, 0x401166}.array()}.slice()),
-                new("f1"u8, new array<uint64>[]{new uint64[]{0x401122, 0x401147}.array()}.slice()),
-                new("f2"u8, new array<uint64>[]{new uint64[]{0x401166, 0x401179}.array()}.slice())
+                new("main"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401147, 0x401166}.array()}.slice(), 2)),
+                new("f1"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401122, 0x401147}.array()}.slice(), 2)),
+                new("f2"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401166, 0x401179}.array()}.slice(), 2))
             }.slice())
         ),
         new(
             "testdata/line-clang-dwarf5.elf"u8,
             new TestReaderRanges_subprogramsᴛ1(new TestReaderRanges_subprograms[]{
-                new("main"u8, new array<uint64>[]{new uint64[]{0x401130, 0x401144}.array()}.slice()),
-                new("f1"u8, new array<uint64>[]{new uint64[]{0x401150, 0x40117e}.array()}.slice()),
-                new("f2"u8, new array<uint64>[]{new uint64[]{0x401180, 0x401197}.array()}.slice())
+                new("main"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401130, 0x401144}.array()}.slice(), 2)),
+                new("f1"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401150, 0x40117e}.array()}.slice(), 2)),
+                new("f2"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401180, 0x401197}.array()}.slice(), 2))
             }.slice())
         ),
         new(
             "testdata/line-gcc-zstd.elf"u8,
             new TestReaderRanges_subprogramsᴛ1(new TestReaderRanges_subprograms[]{
                 new("f2"u8, default!),
-                new("main"u8, new array<uint64>[]{new uint64[]{0x40114b, 0x40116a}.array()}.slice()),
-                new("f1"u8, new array<uint64>[]{new uint64[]{0x401126, 0x40114b}.array()}.slice()),
-                new("f2"u8, new array<uint64>[]{new uint64[]{0x40116a, 0x401180}.array()}.slice())
+                new("main"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40114b, 0x40116a}.array()}.slice(), 2)),
+                new("f1"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x401126, 0x40114b}.array()}.slice(), 2)),
+                new("f2"u8, GoReflect.WithElemDims(new array<uint64>[]{new uint64[]{0x40116a, 0x401180}.array()}.slice(), 2))
             }.slice())
         )
     }.slice();
@@ -230,7 +232,7 @@ public static void TestReaderRanges(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct Test64Bit_tests {
+[GoType("dyn")] internal partial struct Test64Bit_tests {
     internal @string name;
     internal slice<byte> info;
     internal nint addrSize;

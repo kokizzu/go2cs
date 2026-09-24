@@ -10,39 +10,7 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-// This implementation depends on OS-specific implementations of
-//
-//	func semacreate(mp *m)
-//		Create a semaphore for mp, if it does not already have one.
-//
-//	func semasleep(ns int64) int32
-//		If ns < 0, acquire m's semaphore and return 0.
-//		If ns >= 0, try to acquire m's semaphore for at most ns nanoseconds.
-//		Return 0 if the semaphore was acquired, -1 if interrupted or timed out.
-//
-//	func semawakeup(mp *m)
-//		Wake up mp, which is or will soon be sleeping on its semaphore.
 internal static uintptr locked => 1;
-
-internal static UntypedInt active_spin => 4;
-
-internal static UntypedInt active_spin_cnt => 30;
-
-internal static UntypedInt passive_spin => 1;
-
-// go2cs generated this placeholder — func mutexContended is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-internal static void @lock(ж<mutex> Ꮡl) {
-    lockWithRank(Ꮡl, getLockRank(Ꮡl));
-}
-
-// go2cs generated this placeholder — func lock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-internal static void unlock(ж<mutex> Ꮡl) {
-    unlockWithRank(Ꮡl);
-}
-
-// go2cs generated this placeholder — func unlock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // One-time notifications.
 internal static void noteclear(ж<note> Ꮡn) {

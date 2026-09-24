@@ -14,25 +14,14 @@ using os = os_package;
 using exec = global::go.os.exec_package;
 using reflect = reflect_package;
 using Δruntime = runtime_package;
-using sync = sync_package;
+using sync = global::go.sync_package;
 using time = time_package;
 using crypto;
 using encoding;
+using global::go;
 using global::go.os;
 
 partial class fuzz_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 internal static time.Duration workerFuzzDuration => /* 100 * time.Millisecond */ 100000000;
 internal static time.Duration workerTimeoutDuration => /* 1 * time.Second */ 1000000000;
@@ -727,7 +716,7 @@ internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
 }
 
 // chainedMutations is how many mutations are applied before the worker
-// resets the input to it's original state.
+// resets the input to its original state.
 // NOTE: this number was picked without much thought. It is low enough that
 // it seems to create a significant diversity in mutated inputs. We may want
 // to consider looking into this more closely once we have a proper performance

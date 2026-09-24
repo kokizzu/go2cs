@@ -7,7 +7,7 @@ namespace go;
 using context = context_package;
 using poll = @internal.poll_package;
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 using time = time_package;
@@ -87,11 +87,11 @@ internal static (syscall.Sockaddr rsa, error ret) connect(this ж<netFD> Ꮡfd, 
                         (rsa, ret) = (default!, errΔ2); goto ᒐdone;
                     }
                 }
-                Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+                runtime.KeepAlive(Ꮡfd.OrTypedNil());
                 (rsa, ret) = (default!, default!); goto ᒐdone;
             }
             else if (AreEqual(exprᴛ1, syscall.EINVAL)) { matchᴛ1 = true;
-                if (Δruntime.GOOS == "solaris"u8 || Δruntime.GOOS == "illumos"u8) {
+                if (runtime.GOOS == "solaris"u8 || runtime.GOOS == "illumos"u8) {
                     // On Solaris and illumos we can see EINVAL if the socket has
                     // already been accepted and closed by the server.  Treat this
                     // as a successful connection--writes to the socket will see
@@ -216,7 +216,7 @@ internal static (syscall.Sockaddr rsa, error ret) connect(this ж<netFD> Ꮡfd, 
                 }
             }
 
-            Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+            runtime.KeepAlive(Ꮡfd.OrTypedNil());
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

@@ -11,12 +11,6 @@ using go.@internal;
 
 partial class buildcfg_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 // ExperimentFlags represents a set of GOEXPERIMENT flags relative to a baseline
 // (platform-default) experiment configuration.
 [GoType] partial struct ExperimentFlags {
@@ -79,11 +73,21 @@ public static (ж<ExperimentFlags>, error) ParseGOEXPERIMENT(@string goos, @stri
         regabiSupported = true;
     }
 
+    bool haveXchg8 = default!;
+    var exprᴛ2 = goarch;
+    if (exprᴛ2 == "386"u8 || exprᴛ2 == "amd64"u8 || exprᴛ2 == "arm"u8 || exprᴛ2 == "arm64"u8 || exprᴛ2 == "ppc64le"u8 || exprᴛ2 == "ppc64"u8) {
+        haveXchg8 = true;
+    }
+
     ref var baseline = ref heap<goexperiment.Flags>(out var Ꮡbaseline);
     baseline = new goexperiment.Flags(
         RegabiWrappers: regabiSupported,
         RegabiArgs: regabiSupported,
-        CoverageRedesign: true
+        CoverageRedesign: true,
+        AliasTypeParams: true,
+        SwissMap: true,
+        SpinbitMutex: haveXchg8,
+        SyncHashTrieMap: true
     );
     // Start with the statically enabled set of experiments.
     var flags = Ꮡ(new ExperimentFlags(

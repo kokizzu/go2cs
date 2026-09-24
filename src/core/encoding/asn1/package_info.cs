@@ -71,9 +71,9 @@ using static go.encoding.asn1_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/asn1/asn1.go", "asn1.cs", "AF9SgP6ArNKCgsyUtLS2rsKClIKUgpSq0oKClJSClIKCqIKCqqKAgqSCgpSClM6igIKkgpSCgpSCgoKUggAMHqKClIKCqqKCgpaCgoKClqjCgoKUgoaClIKCAAwisoKUgoKopoKChIKCgpSWrOKCgrrMgoKUgoKUgpaCgoKClJSCAAYeAAkCgoKmgoKUgqaCgpSCgoKUgpSmgqrChIKCgoKUgpaAgoKmlJaq0oKEgIKmgIKmrsKCgqaokgACEPKCgoKmggALIrIAAjAADgKCgoKmgq7C3sKClN7CgqiAgqaCgoKWAA8sAAoCpoKClIKCgoKogoKCpoKCpoKClIKClKaCgoKUgoKCgpSCgqaClIKClIK4goKorOKCgoK6goKCgoKUmqbmgoKUgoKUgpSCgoKCgoKmAAsgotzigpaCgpSogIKCgoKUgoKUgoKClKSkpKSkpKSkpKSk6oKClIKUpoKClIKCgpSCgpSCtoKCpoKClIK4goKUlKiCgoLegoKUxsyCloKWgoKEgoKCloKCgpaCgoKoloKClJSUgoKUgpaUgqSCpIKkgoKUgqSCgpSCpIKkgoKUgpSApIKClIKkgoKClJSCgpSUpoSSgoKohIKWgoKCgpSCgqykgrKCgpSCgpSCpIKUpKSkpKykpuSClLSCqqKUpqzSgpSCgpSClAACkAEARQIACxKCgpaClKrCgoKUgoKU")]
+[assembly: go.GoPositionMap("encoding/asn1/asn1.go", "asn1.cs", "ACxWgP6ArNKCgsyUtLS2rsKClIKUgpSq0oKClJSClIKCqIKCqqKAgqSCgpSClM6igIKkgpSCgpSCgoKUggAMHqKClIKCqqKCgpaCgoKClqjCgoKUgoaClIKCAAwisqaCgoSCgoKUlqzigoK6zIKClIKClIKWgoKCgpSUggAGHgAJAoKCpoKClIKmgoKUgoKClIKUpoKqwoSCgoKClIKWgIKCppSWqtKChICCpoCCpq7CgoKmqJIAAhDygoKCpoIACyKyAAIwAA4CgoKCpoKuwt7CgpTewoKogIKmgoKClgAPLAAKAqaCgpSCgoKCqIKCgqaCgqaCgpSCgpSmgoKClIKCgoKUgoKmgpSCgpSCuIKCqKzigoKCuoKCgoKClJqm5oKClIKClIKUgoKCgpSCgoKCgoKCpgALIKLc4oKWgoKUqICCgoKClIKClIKCgpSkpKSkpKSkpKSkpKTqgoKUgpSmgoKUgoKClIKClIK2goKmgoKUgriCgpSUqIKCgt6CgpTGzIKWgpaCgoSCgoKWgoKCloKCgqiWgoKUlJSCgpSClpSCpIKkgqSCgpSCpIKClIKkgqSCgpSClICkgoKUgqSCgoKUlIKClJSmhJKCgqiEgpaCgoKClIKCrKSCsoKClIKClIKkgpSkpKSkrKSm5IKUtIKqopSmrNKClIKClIKUAAKQAQBFAgALEoKCloKUqsKCgpSCgpQ=")]
 [assembly: go.GoPositionMap("encoding/asn1/common.go", "common.cs", "AGm8AQAIAoKCgpS0goLGtLS0tLS0goKCxoKCgsa0goLGgoLGxtqilKSkpKSkpJSkpKSClIKUpKQ=")]
-[assembly: go.GoPositionMap("encoding/asn1/marshal.go", "marshal.cs", "ACtCgqaCyoKmgoLcgqaCgtyCgoKUpoKCgoLcgoKClKYACBKCgoIABxKEgoKCAAsYgqaCgsqChIKCloKClqaChIK4goKWgoKWpoKEgoKCgpaWpqKClsqCgoKClIKUtpSCppS4goSClqaigoKClKaCgoKUgoKClIKWgoKClJbKgqaCgoLcgoKClKaCgoK4goKWpoLugqimgoKCqKaCgoKopoKmgqaC7oKCpqKEgoKWpqKEgoKWpoKElLS0pqaCgoKWhKaChIKEhIKChISUpLS2goKWgoSmgoKClKailKSCgpSkpKSmgKSClKSkhIKCqISCgpqigoLKlpaApKSkgoKCgqjWgoKWhICkpKSEgoKCqIKU1pSkpKTY1qKCpoKWgpaCgoSC3oKCqIKCgpaEgoSWgoKWgpaClpS4goKClIK4toK4goKUAAYQgpaEgoKWhIKCgqSUloKEhITeqJaEAAIcAAsCqqKCgpSCgg==")]
+[assembly: go.GoPositionMap("encoding/asn1/marshal.go", "marshal.cs", "AB9CgqaCyoKmgoLcgqaCgtyCgoKUpoKCgoLcgoKClKYACBKCgoIABxKEgoKCAAsYgqaCgsqChIKCloKClqaChIK4goKWgoKWpoKEgoKCgpaWpqKClsqCgoKClIKUtpSCppS4goSClqaigoKClKaCgoKUgoKClIKWgoKClJbKgqaCgoLcgoKClKaCgoK4goKWpoLugqimgoKCqKaCgoKopoKmgqaC7oKCpqKEgoKWpqKEgoKWpoKElLS0pqaCgoKWhKaChIKEhIKChISUpLS2goKWgoSmgoKClKailKSCgpSkpKSmgKSClKSkhIKCqISCgpqigoLKlpaApKSkgoKCgqjWgoKWhICkpKSEgoKCqIKU1pSkpKTY1qKCpoKWgpaCgoSC3oKCqIKCgpaEgoSWgoKWgpaClpS4goKClIK4toK4goKUAAYQgpaEgoKWhIKCgqSUloKEhITeqJaEAAIcAAsCqqKCgpSCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -112,4 +112,25 @@ public static partial class asn1_package
     public partial struct StructuralError {}
     public partial struct SyntaxError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(go.math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

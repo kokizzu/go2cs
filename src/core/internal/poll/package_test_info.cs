@@ -33,6 +33,7 @@ using go;
 using static global::go.@internal.poll_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6e20696e743b20657272206572726f723b206664202a696e7465726e616c2f706f6c6c2e46443b206578706563746564206572726f727d", "eofErrorTestsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -49,13 +50,13 @@ using static global::go.@internal.poll_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/poll/error_stub_test.go", "error_stub_test.cs", "AB8egqaC")]
-[assembly: go.GoPositionMap("internal/poll/error_test.go", "error_test.cs", "ADEggqKCgpS4hIKCgIIACAqCgoCCpICCpICCpICCpA==", "17-33:1")]
-[assembly: go.GoPositionMap("internal/poll/fd_mutex_test.go", "fd_mutex_test.cs", "ACcggoSClIKWgpSCloKUgriCgoKWgpSClIKUgriCgoKCgpKCgpS4gqTWgoLmtoKUguiCooKCpsaCgJKAkoCUgICAkoCAgJKAgICmgoKCgoL2ooKCgpSCgpSCqIKC6KKCgoKClIKCgoKCgrKSlIKClIKClIKCxoKClpKClIKCgoLGgoKWkoKUgoKCggAKDIKCpoKUgg==", "66-72:1;98-105:1;99-103:1.1;108-108:2;109-109:3;110-110:4;112-112:5;113-113:6;114-114:7;126-138:1;159-209:1;160-162:1.1")]
-[assembly: go.GoPositionMap("internal/poll/fd_posix_test.go", "fd_posix_test.cs", "ACtIgoKCgg==")]
-[assembly: go.GoPositionMap("internal/poll/fd_windows_test.go", "fd_windows_test.cs", "ADA8woKEAAkOgoKEpsKChILawoKClIKUpqKCgpSCgpSUgoIACQiCgqLugoCCloLGlIKUgoIACwyigoKUkoKCgpSEgpKClKaCgpSEgAAIFKamgII=", "88-114:1")]
-[assembly: go.GoPositionMap("internal/poll/read_test.go", "read_test.cs", "ABEegoKCgoKCooKCgIKCpPq4goKUyOyCgoKClIKU", "16-34:1;21-30:1.1")]
-[assembly: go.GoPositionMap("internal/poll/writev_test.go", "writev_test.cs", "ABkaggAkUoKSgoI=")]
+[assembly: go.GoPositionMap("internal/poll/error_stub_test.go", "error_stub_test.cs", "AA0egqaC")]
+[assembly: go.GoPositionMap("internal/poll/error_test.go", "error_test.cs", "ABMggqKCgpS4hIKCgIIACAqCgoCCpICCpICCpICCpA==", "17-33:1")]
+[assembly: go.GoPositionMap("internal/poll/fd_mutex_test.go", "fd_mutex_test.cs", "ABUggoSClIKWgpSCloKUgriCgoKWgpSClIKUgriCgoKCgpKCgpS4gqTWgoLmtoKUguiCooKCpsaCgJKAkoCUgICAkoCAgJKAgICmgoKCgoL2ooKCgpSCgpSCqIKC6KKCgoKClIKCgoKCgrKSlIKClIKClIKCxoKClpKClIKCgoLGgoKWkoKUgoKCggAKDIKCpoKUgg==", "66-72:1;98-105:1;99-103:1.1;108-108:2;109-109:3;110-110:4;112-112:5;113-113:6;114-114:7;126-138:1;159-209:1;160-162:1.1")]
+[assembly: go.GoPositionMap("internal/poll/fd_posix_test.go", "fd_posix_test.cs", "ACVIgoKCgg==")]
+[assembly: go.GoPositionMap("internal/poll/fd_windows_test.go", "fd_windows_test.cs", "AB88woKEAAkOgoKEpsKChILawoKClIKUpqKCgpSCgpSUgoIACQiCgqLugoCCloLGlIKUgoIACwyigoKUkoKCgpSEgpKClKaCgpSEgAAIFKamgII=", "88-114:1")]
+[assembly: go.GoPositionMap("internal/poll/read_test.go", "read_test.cs", "ABIegoKCgoKCooKCgIKCpPq4goKUyOyCgoKClIKU", "16-34:1;21-30:1.1")]
+[assembly: go.GoPositionMap("internal/poll/writev_test.go", "writev_test.cs", "ABMaggAkUoKSgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -75,4 +76,36 @@ public static partial class poll_test_package
     internal partial struct eofErrorTestsᴛ1 {}
     internal partial struct loggedFD {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() => builtin.initPackage(typeof(go.@internal.poll_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.@internal.poll_package));
+    }
 }

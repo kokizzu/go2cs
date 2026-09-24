@@ -122,10 +122,22 @@ public class TestChdirLifecycleTests
     }
 
     // Go 1.24's Chdir sets PWD on POSIX and DELIBERATELY DOES NOT on windows/plan9 -- its switch
-    // says so in a comment ("Windows and Plan 9 do not use the PWD variable"), and that omission has
-    // a second consequence I was careful about when writing the host: Setenv is what enforces
-    // "cannot be used in parallel tests", so on Windows Go performs NO parallel check in Chdir at
-    // all. That care was reasoning, not a test, until this arm.
+    // says so in a comment ("Windows and Plan 9 do not use the PWD variable"). This arm asserts that
+    // omission, which is a decision and not an accident.
+    //
+    // ⚠ CORRECTED 2026-09-16, and the correction is this commit's own subject. This comment used to
+    // claim a second consequence: "Setenv is what enforces 'cannot be used in parallel tests', so on
+    // Windows Go performs NO parallel check in Chdir at all." That is FALSE at 1.24.13, measured:
+    // T.Chdir is `t.checkParallel(); t.common.Chdir(dir)` (testing.go:1628), so the check runs
+    // UNCONDITIONALLY, on every GOOS, BEFORE the directory is touched and independently of the PWD
+    // write. And T.Chdir DOES NOT EXIST at 1.23.12 -- zero declarations in that GOROOT's testing.go --
+    // so the sentence was never describing an older Go: it described THIS HOST's own shape, where the
+    // only parallel check Chdir reached was the one inside its non-Windows Setenv("PWD", ...) call,
+    // and it attributed that shape to Go. The host is now Go's shape, so the claim is wrong twice over.
+    //
+    // ⚠ The ARM below is unaffected and is NOT edited: it asserts PWD behaviour, which was right then
+    // and is right now. What was wrong is the justification beside it -- and prose is what the next
+    // reader believes when deciding whether an arm still covers what it was written for.
     //
     // ⚠ IT ASSERTS SOMETHING REAL ON BOTH PLATFORMS RATHER THAN SKIPPING ON ONE. A guard that
     // skipped on Windows would be inert on the only host that runs it today, and the Windows half is

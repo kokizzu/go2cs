@@ -8,31 +8,16 @@ using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using godebug = global::go.@internal.godebug_package;
-using static global::go.@internal.types.errors_package;
-using strings = strings_package;
+using godebug = @internal.godebug_package;
+using static @internal.types.errors_package;
 using atomic = global::go.sync.atomic_package;
-using errors = global::go.@internal.types.errors_package;
-using global::go.@internal;
+using @internal;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using global::go.sync;
-using io = io_package;
-using reflect = reflect_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(global::go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(global::go.sync.atomic_package));
-}
 
 // nopos, noposn indicate an unknown position
 internal static tokenꓸPos nopos;
@@ -91,20 +76,41 @@ internal static bool aliasAny() {
 // type-checked.
 [GoType] partial struct environment {
     internal ж<declInfo> decl;           // package-level declaration whose init expression/function body is checked
-    internal ж<ΔScope> scope;            // top-most scope for lookups
-    internal tokenꓸPos pos;              // if valid, identifiers are looked up as if at position pos (used by Eval)
+    internal ж<ΔScope> scope;              // top-most scope for lookups
+    internal goVersion version;              // current accepted language version; changes across files
     internal constant.Value iota;         // value of iota in a constant declaration; nil otherwise
     internal positioner errpos;             // if set, identifier position of a constant with inherited initializer
     internal bool inTParamList;                   // set if inside a type parameter list
-    internal ж<ΔSignature> sig;        // function signature if inside a function; nil otherwise
+    internal ж<ΔSignature> sig;          // function signature if inside a function; nil otherwise
     internal map<ж<ast.CallExpr>, bool> isPanic; // set of panic call expressions (used for termination check)
     internal bool hasLabel;                   // set if a function makes use of labels (only ~1% of functions); unused outside functions
     internal bool hasCallOrRecv;                   // set if an expression contains a function call or channel receive operation
+    // go/types only
+    internal tokenꓸPos exprPos; // if valid, identifiers are looked up as if at position pos (used by CheckExpr, Eval)
 }
 
-// lookup looks up name in the current environment and returns the matching object, or nil.
+// lookupScope looks up name in the current environment and if an object
+// is found it returns the scope containing the object and the object.
+// Otherwise it returns (nil, nil).
+//
+// Note that obj.Parent() may be different from the returned scope if the
+// object was inserted into the scope and already had a parent at that
+// time (see Scope.Insert). This can only happen for dot-imported objects
+// whose parent is the scope of the package that exported them.
+[GoRecv] internal static (ж<ΔScope>, Object) lookupScope(this ref environment env, @string name) {
+    for (var s = env.scope; s != nil; s = s.Value.parent) {
+        {
+            var obj = s.Lookup(name); if (obj != default! && (!env.exprPos.IsValid() || cmpPos(obj.scopePos(), env.exprPos) <= 0)) {
+                return (s, obj);
+            }
+        }
+    }
+    return (default!, default!);
+}
+
+// lookup is like lookupScope but it only returns the object (or nil).
 [GoRecv] internal static Object lookup(this ref environment env, @string name) {
-    var (_, obj) = env.scope.LookupParent(name, env.pos);
+    var (_, obj) = env.lookupScope(name);
     return obj;
 }
 
@@ -126,6 +132,7 @@ internal static bool aliasAny() {
 
 // An action describes a (delayed) action.
 [GoType] partial struct action {
+    internal goVersion version;   // applicable language version
     internal Action f;      // action to be executed
     internal ж<actionDesc> desc; // action description; may be nil, requires debug to be set
 }
@@ -158,7 +165,6 @@ internal static bool aliasAny() {
     internal ж<token.FileSet> fset;
     internal ж<Package> pkg;
     public partial ref ж<ΔInfo> Info { get; }
-    internal goVersion version;              // accepted language version
     internal uint64 nextID;                 // unique Id for type parameters (first valid Id is 1)
     internal map<Object, ж<declInfo>> objMap; // maps package-level objects and (non-interface) methods to declaration info
     internal map<importKey, ж<Package>> impMap; // maps (import path, source directory) to (complete or fake) package
@@ -178,12 +184,13 @@ internal static bool aliasAny() {
     // (initialized by Files, valid only for the duration of check.Files;
     // maps and lists are allocated on demand)
     internal slice<ж<ast.File>> files;       // package files
-    internal map<ж<ast.File>, @string> versions; // maps files to version strings (each file has an entry); shared with Info.FileVersions if present
+    internal map<ж<ast.File>, @string> versions; // maps files to goVersion strings (each file has an entry); shared with Info.FileVersions if present; may be unaltered Config.GoVersion
     internal slice<ж<PkgName>> imports;        // list of imported packages
     internal map<dotImportKey, ж<PkgName>> dotImportMap; // maps dot-imported objects to the package they were dot-imported through
-    internal map<ж<ast.Ident>, ж<TypeParam>> recvTParamMap; // maps blank receiver type parameters to their type
     internal map<ж<TypeName>, bool> brokenAliases;   // set of aliases with broken (not yet determined) types
     internal map<ж<Union>, ж<_TypeSet>> unionTypeSets; // computed type sets for union types
+    internal map<ж<Var>, bool> usedVars;        // set of used variables
+    internal map<ж<PkgName>, bool> usedPkgNames;    // set of used package names
     internal monoGraph mono;                 // graph for detecting non-monomorphizable instantiation loops
     internal error firstErr;                 // first error encountered
     internal map<ж<TypeName>, slice<ж<Func>>> methods; // maps package scope type names to associated non-blank (non-interface) methods
@@ -261,7 +268,7 @@ internal static bool aliasAny() {
 // via action.describef for debugging, if desired.
 [GoRecv] internal static ж<action> later(this ref Checker check, Action f) {
     nint i = len(check.delayed);
-    check.delayed = append(check.delayed, new action(f: f));
+    check.delayed = append(check.delayed, new action(version: check.version, f: f));
     return Ꮡ(check.delayed, i);
 }
 
@@ -318,9 +325,10 @@ public static ж<Checker> NewChecker(ж<Config> Ꮡconf, ж<token.FileSet> Ꮡfs
         fset: Ꮡfset,
         pkg: Ꮡpkg,
         Info: Ꮡinfo,
-        version: asGoVersion(conf.GoVersion),
         objMap: new map<Object, ж<declInfo>>(),
-        impMap: new map<importKey, ж<Package>>()
+        impMap: new map<importKey, ж<Package>>(),
+        usedVars: new map<ж<Var>, bool>(),
+        usedPkgNames: new map<ж<PkgName>, bool>()
     ));
 }
 
@@ -333,6 +341,8 @@ internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> fi
     ref var check = ref Ꮡcheck.DerefOrNull();
 
     // start with a clean slate (check.Files may be called multiple times)
+    // TODO(gri): what determines which fields are zeroed out here, vs at the end
+    // of checkFiles?
     check.files = default!;
     check.imports = default!;
     check.dotImportMap = default!;
@@ -342,6 +352,12 @@ internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> fi
     check.delayed = default!;
     check.objPath = default!;
     check.cleaners = default!;
+    // We must initialize usedVars and usedPkgNames both here and in NewChecker,
+    // because initFiles is not called in the CheckExpr or Eval codepaths, yet we
+    // want to free this memory at the end of Files ('used' predicates are
+    // only needed in the context of a given file).
+    check.usedVars = new map<ж<Var>, bool>();
+    check.usedPkgNames = new map<ж<PkgName>, bool>();
     // determine package name and collect valid files
     var pkg = check.pkg;
     foreach (var (_, @file) in files) {
@@ -373,10 +389,10 @@ internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> fi
         versions = new map<ж<ast.File>, @string>();
     }
     check.versions = versions;
-    var pkgVersionOk = check.version.isValid();
-    if (pkgVersionOk && len(files) > 0 && check.version.cmp(go_current) > 0) {
+    goVersion pkgVersion = asGoVersion((~check.conf).GoVersion);
+    if (pkgVersion.isValid() && len(files) > 0 && pkgVersion.cmp(go_current) > 0) {
         Ꮡcheck.errorf(new ast_Fileжpositioner(files[0]), TooNew, "package requires newer Go version %v (application built with %v)"u8,
-            check.version, go_current);
+            pkgVersion, go_current);
     }
     // determine Go version for each file
     foreach (var (_, @file) in check.files) {
@@ -542,9 +558,10 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
         check.dotImportMap = default!;
         check.pkgPathMap = default!;
         check.seenPkgMap = default!;
-        check.recvTParamMap = default!;
         check.brokenAliases = default!;
         check.unionTypeSets = default!;
+        check.usedVars = default!;
+        check.usedPkgNames = default!;
         check.ctxt = default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
@@ -554,7 +571,8 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string delayedPˢ = "-- delayed %p"u8;
 
-// TODO(rFindley) There's more memory we should release at this point.
+// TODO(gri): shouldn't the cleanup above occur after the bailout?
+// TODO(gri) There's more memory we should release at this point.
 
 // processDelayed processes all delayed actions pushed after top.
 internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
@@ -566,6 +584,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
     // are processed in a delayed fashion) that may
     // add more actions (such as nested functions), so
     // this is a sufficiently bounded process.
+    goVersion savedVersion = check.version;
     for (nint i = top; i < len(check.delayed); i++) {
         var a = Ꮡ(check.delayed, i);
         if ((~check.conf)._Trace) {
@@ -575,6 +594,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
                 Ꮡcheck.trace(nopos, delayedPˢ, ((~a).f).OrTypedNilFunc());
             }
         }
+        check.version = a.Value.version; // reestablish the effective Go version captured earlier
         (~a).f(); // may append to check.delayed
         if ((~check.conf)._Trace) {
             fmt.Println();
@@ -582,6 +602,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
     }
     assert(top <= len(check.delayed)); // stack must not have shrunk
     check.delayed = check.delayed[..(int)(top)];
+    check.version = savedVersion;
 }
 
 // cleanup runs cleanup for all collected cleaners.
@@ -593,151 +614,22 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
     check.cleaners = default!;
 }
 
-[GoRecv] internal static void record(this ref Checker check, ж<operand> Ꮡx) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
-    // convert x into a user-friendly set of values
-    // TODO(gri) this code can be simplified
-    ΔType typ = default!;
-    constant.Value val = default!;
-    var exprᴛ1 = x.mode;
-    if (exprᴛ1 == invalid) {
-        typ = new BasicжΔType(Typ[Invalid]);
-    }
-    else if (exprᴛ1 == novalue) {
-        typ = new TupleжΔType(((ж<Tuple>)nil));
-    }
-    else if (exprᴛ1 == constant_) {
-        typ = x.typ;
-        val = x.val;
-    }
-    else { /* default: */
-        typ = x.typ;
-    }
-
-    assert(x.expr != default! && typ != default!);
-    if (isUntyped(typ)){
-        // delay type and value recording until we know the type
-        // or until the end of type checking
-        check.rememberUntyped(x.expr, false, x.mode, typ._<ж<Basic>>(), val);
-    } else {
-        check.recordTypeAndValue(x.expr, x.mode, typ, val);
-    }
+// go/types doesn't support recording of types directly in the AST.
+// dummy function to match types2 code.
+[GoRecv] internal static void recordTypeAndValueInSyntax(this ref Checker check, ast.Expr x, operandMode mode, ΔType typ, constant.Value val) {
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string vSTypeSIsTypedˢ = "%v: %s (type %s) is typed"u8;
+// nothing to do
 
-internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-
-    if (!debug && check.Types == default!) {
-        return; // nothing to do
-    }
-    foreach (var (x, info) in check.untyped) {
-        if (debug && isTyped(new BasicжΔType(info.typ))) {
-            Ꮡcheck.dump(vSTypeSIsTypedˢ, x.Pos(), x, info.typ.OrTypedNil());
-            throw panic("unreachable");
-        }
-        check.recordTypeAndValue(x, info.mode, new BasicжΔType(info.typ), info.val);
-    }
+// go/types doesn't support recording of types directly in the AST.
+// dummy function to match types2 code.
+[GoRecv] internal static void recordCommaOkTypesInSyntax(this ref Checker check, ast.Expr x, ΔType t0, ΔType t1) {
 }
 
-[GoRecv] internal static void recordTypeAndValue(this ref Checker check, ast.Expr x, operandMode mode, ΔType typ, constant.Value val) {
-    assert(x != default!);
-    assert(typ != default!);
-    if (mode == invalid) {
-        return; // omit
-    }
-    if (mode == constant_) {
-        assert(val != default!);
-        // We check allBasic(typ, IsConstType) here as constant expressions may be
-        // recorded as type parameters.
-        assert(!isValid(typ) || allBasic(typ, IsConstType));
-    }
-    {
-        var m = check.Types; if (m != default!) {
-            m[x] = new TypeAndValue(mode, typ, val);
-        }
-    }
-}
+// nothing to do
 
-[GoRecv] internal static void recordBuiltinType(this ref Checker check, ast.Expr f, ж<ΔSignature> Ꮡsig) {
-    // f must be a (possibly parenthesized, possibly qualified)
-    // identifier denoting a built-in (including unsafe's non-constant
-    // functions Add and Slice): record the signature for f and possible
-    // children.
-    while (ᐧ) {
-        check.recordTypeAndValue(f, Δbuiltinᴛ, new ΔSignatureжΔType(Ꮡsig), default!);
-        switch (f.type()) {
-        case ж<ast.Ident> _:
-        case ж<ast.SelectorExpr> _: {
-            var p = f;
-            return; // we're done
-        }
-        case ж<ast.ParenExpr> p: {
-            f = p.Value.X;
-            break;
-        }
-        default: {
-            var p = f;
-            throw panic("unreachable");
-            break;
-        }}
-    }
-}
-
-// recordCommaOkTypes updates recorded types to reflect that x is used in a commaOk context
-// (and therefore has tuple type).
-[GoRecv] internal static void recordCommaOkTypes(this ref Checker check, ast.Expr x, slice<ж<operand>> a) {
-    assert(x != default!);
-    assert(len(a) == 2);
-    if ((~a[0]).mode == invalid) {
-        return;
-    }
-    var (t0, t1) = (a[0].Value.typ, a[1].Value.typ);
-    assert(isTyped(t0) && isTyped(t1) && (allBoolean(t1) || AreEqual(t1, universeError)));
-    {
-        var m = check.Types; if (m != default!) {
-            while (ᐧ) {
-                var tv = m[x];
-                assert(tv.Type != default!); // should have been recorded already
-                tokenꓸPos pos = x.Pos();
-                tv.Type = new TupleжΔType(NewTuple(
-                    NewVar(pos, check.pkg, ""u8, t0),
-                    NewVar(pos, check.pkg, ""u8, t1)));
-                m[x] = tv;
-                // if x is a parenthesized expression (p.X), update p.X
-                var (p, _) = x._<ж<ast.ParenExpr>>(ᐧ);
-                if (p == nil) {
-                    break;
-                }
-                x = p.Value.X;
-            }
-        }
-    }
-}
-
-// recordInstance records instantiation information into check.Info, if the
-// Instances map is non-nil. The given expr must be an ident, selector, or
-// index (list) expr with ident or selector operand.
-//
-// TODO(rfindley): the expr parameter is fragile. See if we can access the
-// instantiated identifier in some other way.
-[GoRecv] internal static void recordInstance(this ref Checker check, ast.Expr expr, slice<ΔType> targs, ΔType typ) {
-    var ident = instantiatedIdent(expr);
-    assert(ident != nil);
-    assert(typ != default!);
-    {
-        var m = check.Instances; if (m != default!) {
-            m[ident] = new Instance(newTypeList(targs), typ);
-        }
-    }
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string instantiatedIdentNotˢ = "instantiated ident not found; please report: "u8;
-
+// instantiatedIdent determines the identifier of the type instantiated in expr.
+// Helper function for recordInstance in recording.go.
 internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
     ast.Expr selOrIdent = default!;
     switch (expr.type()) {
@@ -755,6 +647,7 @@ internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
         selOrIdent = e;
         break;
     }}
+    // only exists in go/ast, not syntax
     switch (selOrIdent.type()) {
     case ж<ast.Ident> x: {
         return x;
@@ -762,62 +655,8 @@ internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
     case ж<ast.SelectorExpr> x: {
         return (~x).Sel;
     }}
-    // extra debugging of #63933
-    ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    Ꮡbuf.WriteString(instantiatedIdentNotˢ);
-    ast.Fprint(new strings_BuilderжWriter(Ꮡbuf), token.NewFileSet(), expr, new Func<@string, reflectꓸValue, bool>(ast.NotNilFilter));
-    throw panic(buf.String());
-}
-
-[GoRecv] internal static void recordDef(this ref Checker check, ж<ast.Ident> Ꮡid, Object obj) {
-    assert(Ꮡid != nil);
-    {
-        var m = check.Defs; if (m != default!) {
-            m[Ꮡid] = obj;
-        }
-    }
-}
-
-[GoRecv] internal static void recordUse(this ref Checker check, ж<ast.Ident> Ꮡid, Object obj) {
-    assert(Ꮡid != nil);
-    assert(obj != default!);
-    {
-        var m = check.Uses; if (m != default!) {
-            m[Ꮡid] = obj;
-        }
-    }
-}
-
-[GoRecv] internal static void recordImplicit(this ref Checker check, ast.Node node, Object obj) {
-    assert(node != default!);
-    assert(obj != default!);
-    {
-        var m = check.Implicits; if (m != default!) {
-            m[node] = obj;
-        }
-    }
-}
-
-[GoRecv] internal static void recordSelection(this ref Checker check, ж<ast.SelectorExpr> Ꮡx, SelectionKind kind, ΔType recv, Object obj, slice<nint> index, bool indirect) {
-    ref var x = ref Ꮡx.DerefOrNull();
-
-    assert(obj != default! && (recv == default! || len(index) > 0));
-    check.recordUse(x.Sel, obj);
-    {
-        var m = check.Selections; if (m != default!) {
-            m[Ꮡx] = Ꮡ(new Selection(kind, recv, obj, index, indirect));
-        }
-    }
-}
-
-[GoRecv] internal static void recordScope(this ref Checker check, ast.Node node, ж<ΔScope> Ꮡscope) {
-    assert(node != default!);
-    assert(Ꮡscope != nil);
-    {
-        var m = check.Scopes; if (m != default!) {
-            m[node] = Ꮡscope;
-        }
-    }
+    // extra debugging of go.dev/issue/63933
+    throw panic(sprintf(nil, default!, true, "instantiated ident not found; please report: %s"u8, expr));
 }
 
 } // end types_package

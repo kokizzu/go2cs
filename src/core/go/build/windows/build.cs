@@ -10,11 +10,12 @@ using ast = global::go.go.ast_package;
 using constraint = global::go.go.build.constraint_package;
 using Δdoc = global::go.go.doc_package;
 using token = global::go.go.token_package;
-using buildcfg = global::go.@internal.buildcfg_package;
-using godebug = global::go.@internal.godebug_package;
-using goroot = global::go.@internal.goroot_package;
-using goversion = global::go.@internal.goversion_package;
-using platform = global::go.@internal.platform_package;
+using buildcfg = @internal.buildcfg_package;
+using godebug = @internal.godebug_package;
+using goroot = @internal.goroot_package;
+using goversion = @internal.goversion_package;
+using platform = @internal.platform_package;
+using syslist = @internal.syslist_package;
 using io = io_package;
 using fs = global::go.io.fs_package;
 using os = os_package;
@@ -28,7 +29,7 @@ using strings = strings_package;
 using unicode = unicode_package;
 using utf8 = global::go.unicode.utf8_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
-using global::go.@internal;
+using @internal;
 using global::go.go;
 using global::go.go.build;
 using global::go.io;
@@ -38,144 +39,6 @@ using global::go.unicode;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class build_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸbuildꓸconstraint() {
-    builtin.initPackage(typeof(global::go.go.build.constraint_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸdoc() {
-    builtin.initPackage(typeof(global::go.go.doc_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() {
-    builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(global::go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgoroot() {
-    builtin.initPackage(typeof(global::go.@internal.goroot_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸplatform() {
-    builtin.initPackage(typeof(global::go.@internal.platform_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(global::go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸexec() {
-    builtin.initPackage(typeof(global::go.os.exec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(global::go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(global::go.unicode.utf8_package));
-}
 
 // A Context specifies the supporting context for a build.
 [GoType] partial struct Context {
@@ -2193,7 +2056,7 @@ internal static readonly @string goexperimentBoringcryptoˢ = "goexperiment.bori
     if (ctxt.GOOS == "ios"u8 && name == "darwin"u8) {
         return true;
     }
-    if (name == "unix"u8 && unixOS[ctxt.GOOS]) {
+    if (name == "unix"u8 && syslist.UnixOS[ctxt.GOOS]) {
         return true;
     }
     if (name == "boringcrypto"u8) {
@@ -2254,14 +2117,14 @@ internal static readonly @string goexperimentBoringcryptoˢ = "goexperiment.bori
         }
     }
     nint n = len(l);
-    if (n >= 2 && knownOS[l[n - 2]] && knownArch[l[n - 1]]) {
+    if (n >= 2 && syslist.KnownOS[l[n - 2]] && syslist.KnownArch[l[n - 1]]) {
         if (allTags != default!) {
             // In case we short-circuit on l[n-1].
             allTags[l[n - 2]] = true;
         }
         return ctxt.matchTag(l[n - 1], allTags) && ctxt.matchTag(l[n - 2], allTags);
     }
-    if (n >= 1 && (knownOS[l[n - 1]] || knownArch[l[n - 1]])) {
+    if (n >= 1 && (syslist.KnownOS[l[n - 1]] || syslist.KnownArch[l[n - 1]])) {
         return ctxt.matchTag(l[n - 1], allTags);
     }
     return true;

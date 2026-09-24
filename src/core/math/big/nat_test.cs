@@ -13,12 +13,6 @@ using static go.math.big_package;
 
 partial class big_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 
 [GoType("dyn")] partial struct cmpTestsᴛ1 {
     internal global::go.math.big_package.nat x, y;
@@ -134,19 +128,19 @@ internal static readonly @string mulSymmetricˢ = "mul symmetric"u8;
 public static void TestFunNN(ж<testing.T> Ꮡt) {
     foreach (var (_, a) in sumNN) {
         var arg = a;
-        testFunNN(Ꮡt, addˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.add)), arg);
+        testFunNN(Ꮡt, addˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.add))), arg);
         arg = new argNN(a.z, a.y, a.x);
-        testFunNN(Ꮡt, addSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.add)), arg);
+        testFunNN(Ꮡt, addSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.add))), arg);
         arg = new argNN(a.x, a.z, a.y);
-        testFunNN(Ꮡt, subˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.sub)), arg);
+        testFunNN(Ꮡt, subˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.sub))), arg);
         arg = new argNN(a.y, a.z, a.x);
-        testFunNN(Ꮡt, subSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.sub)), arg);
+        testFunNN(Ꮡt, subSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.sub))), arg);
     }
     foreach (var (_, a) in prodNN) {
         var arg = a;
-        testFunNN(Ꮡt, mulˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.mul)), arg);
+        testFunNN(Ꮡt, mulˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.mul))), arg);
         arg = new argNN(a.z, a.y, a.x);
-        testFunNN(Ꮡt, mulSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.mul)), arg);
+        testFunNN(Ꮡt, mulSymmetricˢ, new Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>(((Func<global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat, global::go.math.big_package.nat>)(global::go.math.big_package.mul))), arg);
     }
 }
 

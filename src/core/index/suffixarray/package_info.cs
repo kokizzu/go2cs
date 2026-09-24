@@ -51,7 +51,7 @@ using static go.index.suffixarray_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("index/suffixarray/sais.go", "sais.cs", "AHmAArKClAACFgAIAoKogpSCggABEOKCgpTegqaCgoKCgoKCAAgSlJSClgACFgAIAoKUgpaCgoKUqqKCgoKCgoIAAxDCgoKCgoKCAAMyABUChIKCABk2goKCgqSWgoKCggANHoKUAAIcAAwEggAWMoKCggAHEoKCgoSCgpSUlIKUzIKCgpaCgoKUggADIAANBIIAEyyChIKCgpSUgpSCgt6CgoKCloKCgpSCAAMwABQCABEmqIKCgoKCpKiCgoKUgpKmgoIABB4ACgKCgoKUgoKUlJSUgoKCgoKmlIKCgoKClAACHAALAoKCgoKCAAQSwgAnUoKClJSCgpTMggACFgAIAoKWgoKCgqSWgrqCggADEMKCzIKCgoKEgoKClJaCgoKCggAEFvSCAAkYgoKCqIKCgoSCgpQAChiCgoKAgriCgoKUgriUgoSChIKCpqiCAAcSgoKCgIK4goKClII=")]
 [assembly: go.GoPositionMap("index/suffixarray/sais2.go", "sais2.cs", "AAgSgoKUpoKCqIKUgoIAARDigoKU3oKmgoKCgoKCggAIEpSUgpamgoKogpSCggABEOKCgpTegqaCgoKCgoKCAAgSlJSClqaCgqiClIKCAAEQ4oKClN6CpoKCgoKCgoIACBKUlIKWpoKClIKWgoKClKaCgpSCloKClKaCgpSCloKClKaCgoKCgoKCuIKCgoKCuIKCgoKCuIKCgoKCgoK4goKCgoK4goKCgoK4goSCggAZNoKCgoKkloKCgoIADR6ClKaChIIAGTaCgoKCpJaCgoKCAA0egpSmgoSCABk2goKCgqSWgoKCggANHoKUppSCABYygoKCAAcSgoKChIKClJSUgpTMgoKCloKCgpSCuJQAFjKCgoIABxKCgoKEgoKUlJSClMyCgoKWgoKClIK4lAAWMoKCggAHEoKCgoSCgpSUlIKUzIKCgpaCgoKUgriUggATLIKEgoKClJSClIKC3oKCgoKWgoKClIK4lAATLIKEgoKClJSClIKC3oKCgoKWgoKClIK4lAATLIKEgoKClJSClIKC3oKCgoKWgoKClIK4ggARJqiCgoKCgqSogoKClIKSpoKCyoIAEyyCgoKCpKiCgoKUlILKggATLIKCgoKkqIKCgpSUgsqCgoKClIKClJSUlIKCgoKCppSCgoKCgpSmgoKCgpSCgpSUlJSCgoKCgqaUgoKCgoKUpoKCgoKUgoKUlJSUgoKCgoKmlIKCgoKClKaCgoKCgoLKggAnUoKClJSCgpTMgqaCgpaCgoKCpJaCuoKCuIKCloKCgoKkloK6goK4goKWgoKCgqSWgrqCgriCgsyCgoKChIKCgpSWgoKCgoLKgsyCgoKChIKCgpSWgoKCgoLKgsyCgoKChIKCgpSWgoKCgoLKlIIACRiCgoKogoKChIKClAAKGIKCgoCCuIKCgpSCuJQACRiCgoKogoKChIKClAAKGIKCgoCCuIKCgpSCuJQACRiCgoKogoKChIKClAAKGIKCgoCCuIKCgpSCuJSChIKEgoKmqIIABxKCgoKAgriCgoKUgriUhIKEgoKmqIIABxKCgoKAgriCgoKUgriUhIKEgoKmqIIABxKCgoKAgriCgoKUgg==")]
-[assembly: go.GoPositionMap("index/suffixarray/suffixarray.go", "suffixarray.cs", "AGBggqaCgpSmgoKUuIKClKqigoKClIKUqJKCgqiSgoKq5IKCgqiWgs7UkoKClJSUloCCuIKCgpbMpJaCgpSClJamgoKCgpS4gqiAgriCgoKClJSopJaAgriAgriCgoKClJSqoqaCquakkgACEPKCgoKCpoKCgoKmgsoAAhIADAaCloK67pKCgpSCgoKCgoKCpoKCgoKCgqaCpqaClN6WkoKClIKCgoKClJSCgoKCpqamgpQ=")]
+[assembly: go.GoPositionMap("index/suffixarray/suffixarray.go", "suffixarray.cs", "ADBggqaCgpSmgoKUuIKClKqigoKClIKUqJKCgqiSgoKq5IKCgqiWgs7UkoKClJSUloCCuIKCgpbMpJaCgpSClJamgoKCgpS4gqiAgriCgoKClJSopJaAgriAgriCgoKClJSqoqaCquakkgACEPKCgoKCpoKCgoKmgsoAAhIADAaCloK67pKCgpSCgoKCgoKCpoKCgoKCgqaCpqaClN6WkoKClIKCgoKClJSCgoKCpqamgpQ=", "246-246:1;248-248:2")]
 // </GoSourcePositionMaps>
 
 namespace go.index;
@@ -69,4 +69,21 @@ public static partial class suffixarray_package
     internal partial struct ints {}
     public partial struct Index {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    // </ImportInitializers>
 }

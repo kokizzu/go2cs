@@ -78,8 +78,24 @@ var packageImportLeadingSegments map[string]bool
 
 // computeImportAliasRenames populates the two maps above for the package being converted.
 // packageNS is the emission namespace of the current package (e.g. "go", "go.@internal").
-func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS string, corpusRoot string, goos string) {
+// includeSiblingClosure selects the COMPILATION UNIT the maps describe. The production `.cs` of a
+// package compiles into the production assembly, whose reference closure is the package's own; the
+// converted `_test.go` variants compile into the test assembly, whose closure is the UNION with the
+// test half. One map set cannot serve both: computed with the union and applied to the production
+// files, it Δ-renames a production alias against a collision only the test assembly has (measured
+// 2026-09-22 on `regexp`: `using io` -> `using Δio` with `io/fs` absent from `regexp.csproj`'s
+// closure and present in `regexp.tests.csproj`'s), which compiles but is not what the production
+// unit means and rewrites tracked corpus bytes on every -tests run.
+//
+// The one case where the production files DO belong to the test assembly is testProjectRecompile,
+// which makes them compile items of it; there the union IS the production unit's closure and the
+// caller passes true.
+func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS string, corpusRoot string, goos string, includeSiblingClosure bool) {
 	closure := make(map[string]bool)
+
+	// The loader's closure packages themselves, not only their paths: a package this one reaches
+	// only through a TYPE is qualified by its NAME, so the rename below must be able to test it.
+	closurePackages := make(map[string]*types.Package)
 
 	var walk func(p *types.Package)
 
@@ -87,6 +103,7 @@ func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS 
 		for _, imp := range p.Imports() {
 			if !closure[imp.Path()] {
 				closure[imp.Path()] = true
+				closurePackages[imp.Path()] = imp
 				walk(imp)
 			}
 		}
@@ -96,8 +113,11 @@ func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS 
 
 	// Fold in the sibling compilation unit's closure (the _test.go half under -tests) so the
 	// namespace maps describe the ASSEMBLY the emitted C# compiles into, not just this package.
-	for _, path := range siblingClosureImportPaths {
-		closure[path] = true
+	// Gated on the unit: see includeSiblingClosure on the signature above.
+	if includeSiblingClosure {
+		for _, path := range siblingClosureImportPaths {
+			closure[path] = true
+		}
 	}
 
 	// Fold in the CORPUS reference closure of every package this one IMPORTS, for the same reason
@@ -187,6 +207,22 @@ func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS 
 			if collides(alias) {
 				packageImportAliasRenames[alias] = ShadowVarMarker + alias
 			}
+		}
+	}
+
+	// Packages the package reaches only TRANSITIVELY are qualified by their name too: a type from one
+	// (an inferred type argument, a func result) is recorded by collectTypePackages, visitFile supplies
+	// its canonical using, and both that using and every type reference read importQualifier. Testing
+	// only the two populations above left such a name bare where it collides — crypto/internal/hpke
+	// never imports crypto/internal/fips140, yet names fips140.Hash, and `using fips140 = …` inside
+	// go.crypto.@internal collides with the go.crypto.@internal.fips140 child its fips140/hkdf import
+	// makes visible (CS0576). Keyed by name exactly as an import is, so an import and a type reach of
+	// the same name cannot disagree. Leading segments are NOT recorded: a transitive package binds no
+	// using unless a file references it, and rootQualifyIfAmbiguous must not change for the ones it
+	// never does.
+	for _, closurePackage := range closurePackages {
+		if name := closurePackage.Name(); collides(name) {
+			packageImportAliasRenames[name] = ShadowVarMarker + name
 		}
 	}
 }

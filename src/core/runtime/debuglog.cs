@@ -11,15 +11,24 @@
 //
 // This facility can be enabled by passing -tags debuglog when
 // building. Without this tag, dlog calls compile to nothing.
+//
+// Implementation notes
+//
+// There are two implementations of the dlog interface: dloggerImpl and
+// dloggerFake. dloggerFake is a no-op implementation. dlogger is type-aliased
+// to one or the other depending on the debuglog build tag. However, both types
+// always exist and are always built. This helps ensure we compile as much of
+// the implementation as possible in the default build configuration, while also
+// enabling us to achieve good test coverage of the real debuglog implementation
+// even when the debuglog build tag is not set.
 namespace go;
 
 using abi = @internal.abi_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -31,9 +40,6 @@ internal static UntypedInt debugLogBytes => /* 16 << 10 */ 16384;
 // debugLogStringLimit is the maximum number of bytes in a string.
 // Above this, the string will be truncated with "..(n more bytes).."
 internal static UntypedInt debugLogStringLimit => /* debugLogBytes / 8 */ 2048;
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
 
 // dlog returns a debug logger. The caller can use methods on the
 // returned logger to add values, which will be space-separated in the
@@ -52,10 +58,23 @@ internal static readonly @string failedToAllocateDebugLogˢ = "failed to allocat
 //
 //go:nosplit
 //go:nowritebarrierrec
-internal static ж<dlogger> dlog() {
-    if (!dlogEnabled) {
-        return default!;
-    }
+internal static dlogger dlog() {
+    // dlog1 is defined to either dlogImpl or dlogFake.
+    return dlog1();
+}
+
+//go:nosplit
+//go:nowritebarrierrec
+internal static dloggerFake dlogFake() {
+    return new dloggerFake(nil);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
+
+//go:nosplit
+//go:nowritebarrierrec
+internal static ж<dloggerImpl> dlogImpl() {
     // Get the time.
     var (tick, nano) = ((uint64)cputicks(), (uint64)nanotime());
     // Try to get a cached logger.
@@ -63,10 +82,10 @@ internal static ж<dlogger> dlog() {
     // If we couldn't get a cached logger, try to get one from the
     // global pool.
     if (l == nil) {
-        var allp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
-        var all = (ж<dlogger>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
+        var allp = ᏑallDloggers.Reinterpret<ж<dloggerImpl>, uintptr>();
+        var all = (ж<dloggerImpl>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
         for (var l1 = all; l1 != nil; l1 = l1.Value.allLink) {
-            if (l1.of(dlogger.Ꮡowned).Load() == 0 && l1.of(dlogger.Ꮡowned).CompareAndSwap(0, 1)) {
+            if (l1.of(dloggerImpl.Ꮡowned).Load() == 0 && l1.of(dloggerImpl.Ꮡowned).CompareAndSwap(0, 1)) {
                 l = l1;
                 break;
             }
@@ -76,17 +95,17 @@ internal static ж<dlogger> dlog() {
     if (l == nil) {
         // Use sysAllocOS instead of sysAlloc because we want to interfere
         // with the runtime as little as possible, and sysAlloc updates accounting.
-        l = (ж<dlogger>)(uintptr)(sysAllocOS(/* unsafe.Sizeof(dlogger{}) */ (uintptr)16480));
+        l = (ж<dloggerImpl>)(uintptr)(sysAllocOS(/* unsafe.Sizeof(dloggerImpl{}) */ (uintptr)16480));
         if (l == nil) {
             @throw(failedToAllocateDebugLogˢ);
         }
-        l.Value.w.r.data = l.of(dlogger.Ꮡw).of(debugLogWriter.Ꮡdata);
-        l.of(dlogger.Ꮡowned).Store(1);
+        l.Value.w.r.data = l.of(dloggerImpl.Ꮡw).of(debugLogWriter.Ꮡdata);
+        l.of(dloggerImpl.Ꮡowned).Store(1);
         // Prepend to allDloggers list.
-        var headp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
+        var headp = ᏑallDloggers.Reinterpret<ж<dloggerImpl>, uintptr>();
         while (ᐧ) {
             var head = atomic.Loaduintptr(headp);
-            l.Value.allLink = (ж<dlogger>)(uintptr)((@unsafe.Pointer)head);
+            l.Value.allLink = (ж<dloggerImpl>)(uintptr)((@unsafe.Pointer)head);
             if (atomic.Casuintptr(headp, head, (uintptr)l)) {
                 break;
             }
@@ -97,32 +116,32 @@ internal static ж<dlogger> dlog() {
     // bytes of delta in the record header.
     const uint64 deltaLimit = /* 1<<(3*7) - 1 */ 2097151; // ~2ms between sync packets
     if (tick - (~l).w.tick > deltaLimit || nano - (~l).w.nano > deltaLimit) {
-        l.of(dlogger.Ꮡw).writeSync(tick, nano);
+        l.of(dloggerImpl.Ꮡw).writeSync(tick, nano);
     }
     // Reserve space for framing header.
-    l.of(dlogger.Ꮡw).ensure(debugLogHeaderSize);
+    l.of(dloggerImpl.Ꮡw).ensure(debugLogHeaderSize);
     l.Value.w.write += debugLogHeaderSize;
     // Write record header.
-    l.of(dlogger.Ꮡw).uvarint(tick - (~l).w.tick);
-    l.of(dlogger.Ꮡw).uvarint(nano - (~l).w.nano);
+    l.of(dloggerImpl.Ꮡw).uvarint(tick - (~l).w.tick);
+    l.of(dloggerImpl.Ꮡw).uvarint(nano - (~l).w.nano);
     var gp = getg();
     if (gp != nil && (~gp).m != nil && (~(~gp).m).p != 0){
-        l.of(dlogger.Ꮡw).varint((int64)(~(~(~gp).m).p.ptr()).id);
+        l.of(dloggerImpl.Ꮡw).varint((int64)(~(~(~gp).m).p.ptr()).id);
     } else {
-        l.of(dlogger.Ꮡw).varint(-1);
+        l.of(dloggerImpl.Ꮡw).varint(-1);
     }
     return l;
 }
 
-// A dlogger writes to the debug log.
+// A dloggerImpl writes to the debug log.
 //
-// To obtain a dlogger, call dlog(). When done with the dlogger, call
+// To obtain a dloggerImpl, call dlog(). When done with the dloggerImpl, call
 // end().
-[GoType] partial struct dlogger {
+[GoType] partial struct dloggerImpl {
     internal sys.NotInHeap _;
     internal debugLogWriter w;
     // allLink is the next dlogger in the allDloggers list.
-    internal ж<dlogger> allLink;
+    internal ж<dloggerImpl> allLink;
     // owned indicates that this dlogger is owned by an M. This is
     // accessed atomically.
     internal atomic.Uint32 owned;
@@ -131,19 +150,24 @@ internal static ж<dlogger> dlog() {
 // allDloggers is a list of all dloggers, linked through
 // dlogger.allLink. This is accessed atomically. This is prepend only,
 // so it doesn't need to protect against ABA races.
-internal static ж<ж<dlogger>> ᏑallDloggers = new StandardBox<ж<dlogger>>(default(ж<dlogger>));
-internal static ref ж<dlogger> allDloggers => ref ᏑallDloggers.ValueSlot;
+internal static ж<ж<dloggerImpl>> ᏑallDloggers = new StandardBox<ж<dloggerImpl>>(default(ж<dloggerImpl>));
+internal static ref ж<dloggerImpl> allDloggers => ref ᏑallDloggers.ValueSlot;
+
+// A dloggerFake is a no-op implementation of dlogger.
+[GoType] partial struct dloggerFake {
+}
+
+//go:nosplit
+internal static void end(this dloggerFake l) {
+}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string recordTooLargeˢ = "record too large"u8;
 
 //go:nosplit
-internal static void end(this ж<dlogger> Ꮡl) {
+internal static void end(this ж<dloggerImpl> Ꮡl) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return;
-    }
     // Fill in framing header.
     var size = l.w.write - l.w.r.end;
     if (!l.w.writeFrameAt(l.w.r.end, size)) {
@@ -156,7 +180,7 @@ internal static void end(this ж<dlogger> Ꮡl) {
         return;
     }
     // Return the logger to the global pool.
-    Ꮡl.of(dlogger.Ꮡowned).Store(0);
+    Ꮡl.of(dloggerImpl.Ꮡowned).Store(0);
 }
 
 internal static UntypedInt debugLogUnknown => /* 1 + iota */ 1;
@@ -173,12 +197,14 @@ internal static UntypedInt debugLogPC => 11;
 internal static UntypedInt debugLogTraceback => 12;
 
 //go:nosplit
-internal static ж<dlogger> b(this ж<dlogger> Ꮡl, bool x) {
+internal static dloggerFake b(this dloggerFake l, bool x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> b(this ж<dloggerImpl> Ꮡl, bool x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     if (x){
         l.w.@byte(debugLogBoolTrue);
     } else {
@@ -188,97 +214,150 @@ internal static ж<dlogger> b(this ж<dlogger> Ꮡl, bool x) {
 }
 
 //go:nosplit
-internal static ж<dlogger> i(this ж<dlogger> Ꮡl, nint x) {
+internal static dloggerFake i(this dloggerFake l, nint x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> i(this ж<dloggerImpl> Ꮡl, nint x) {
     return Ꮡl.i64((int64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> i8(this ж<dlogger> Ꮡl, int8 x) {
+internal static dloggerFake i8(this dloggerFake l, int8 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> i8(this ж<dloggerImpl> Ꮡl, int8 x) {
     return Ꮡl.i64((int64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> i16(this ж<dlogger> Ꮡl, int16 x) {
+internal static dloggerFake i16(this dloggerFake l, int16 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> i16(this ж<dloggerImpl> Ꮡl, int16 x) {
     return Ꮡl.i64((int64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> i32(this ж<dlogger> Ꮡl, int32 x) {
+internal static dloggerFake i32(this dloggerFake l, int32 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> i32(this ж<dloggerImpl> Ꮡl, int32 x) {
     return Ꮡl.i64((int64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> i64(this ж<dlogger> Ꮡl, int64 x) {
+internal static dloggerFake i64(this dloggerFake l, int64 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> i64(this ж<dloggerImpl> Ꮡl, int64 x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogInt);
     l.w.varint(x);
     return Ꮡl;
 }
 
 //go:nosplit
-internal static ж<dlogger> u(this ж<dlogger> Ꮡl, nuint x) {
+internal static dloggerFake u(this dloggerFake l, nuint x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> u(this ж<dloggerImpl> Ꮡl, nuint x) {
     return Ꮡl.u64((uint64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> uptr(this ж<dlogger> Ꮡl, uintptr x) {
+internal static dloggerFake uptr(this dloggerFake l, uintptr x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> uptr(this ж<dloggerImpl> Ꮡl, uintptr x) {
     return Ꮡl.u64((uint64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> u8(this ж<dlogger> Ꮡl, uint8 x) {
+internal static dloggerFake u8(this dloggerFake l, uint8 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> u8(this ж<dloggerImpl> Ꮡl, uint8 x) {
     return Ꮡl.u64((uint64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> u16(this ж<dlogger> Ꮡl, uint16 x) {
+internal static dloggerFake u16(this dloggerFake l, uint16 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> u16(this ж<dloggerImpl> Ꮡl, uint16 x) {
     return Ꮡl.u64((uint64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> u32(this ж<dlogger> Ꮡl, uint32 x) {
+internal static dloggerFake u32(this dloggerFake l, uint32 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> u32(this ж<dloggerImpl> Ꮡl, uint32 x) {
     return Ꮡl.u64((uint64)x);
 }
 
 //go:nosplit
-internal static ж<dlogger> u64(this ж<dlogger> Ꮡl, uint64 x) {
+internal static dloggerFake u64(this dloggerFake l, uint64 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> u64(this ж<dloggerImpl> Ꮡl, uint64 x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogUint);
     l.w.uvarint(x);
     return Ꮡl;
 }
 
 //go:nosplit
-internal static ж<dlogger> hex(this ж<dlogger> Ꮡl, uint64 x) {
+internal static dloggerFake hex(this dloggerFake l, uint64 x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> hex(this ж<dloggerImpl> Ꮡl, uint64 x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogHex);
     l.w.uvarint(x);
     return Ꮡl;
+}
+
+//go:nosplit
+internal static dloggerFake p(this dloggerFake l, any x) {
+    return l;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string notAPointerTypeˢ = "not a pointer type"u8;
 
 //go:nosplit
-internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any xʗp) {
+internal static ж<dloggerImpl> p(this ж<dloggerImpl> Ꮡl, any xʗp) {
     ref var l = ref Ꮡl.DerefOrNull();
 
     ref var x = ref heap(xʗp, out var Ꮡx);
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogPtr);
     if (x == default!){
         l.w.uvarint(0);
@@ -297,12 +376,14 @@ internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any xʗp) {
 }
 
 //go:nosplit
-internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
+internal static dloggerFake s(this dloggerFake l, @string x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> s(this ж<dloggerImpl> Ꮡl, @string x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     var strData = @unsafe.StringData(x);
     var datap = Ꮡfirstmoduledata;
     if (len(x) > 4 && (~datap).etext <= (uintptr)strData && (uintptr)strData < (~datap).end){
@@ -334,24 +415,28 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
 }
 
 //go:nosplit
-internal static ж<dlogger> pc(this ж<dlogger> Ꮡl, uintptr x) {
+internal static dloggerFake pc(this dloggerFake l, uintptr x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> pc(this ж<dloggerImpl> Ꮡl, uintptr x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogPC);
     l.w.uvarint((uint64)x);
     return Ꮡl;
 }
 
 //go:nosplit
-internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
+internal static dloggerFake traceback(this dloggerFake l, slice<uintptr> x) {
+    return l;
+}
+
+//go:nosplit
+internal static ж<dloggerImpl> traceback(this ж<dloggerImpl> Ꮡl, slice<uintptr> x) {
     ref var l = ref Ꮡl.DerefOrNull();
 
-    if (!dlogEnabled) {
-        return Ꮡl;
-    }
     l.w.@byte(debugLogTraceback);
     l.w.uvarint((uint64)len(x));
     foreach (var (_, pc) in x) {
@@ -697,30 +782,33 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
     return true;
 }
 
+// printDebugLog prints the debug log.
+internal static void printDebugLog() {
+    if (dlogEnabled) {
+        printDebugLogImpl();
+    }
+}
+
 // Prepare read state for all logs.
-[GoType("dyn")] internal partial struct printDebugLog_readState {
+[GoType("dyn")] internal partial struct printDebugLogImpl_readState {
     internal partial ref debugLogReader debugLogReader { get; }
     internal bool first;
     internal uint64 lost;
     internal uint64 nextTick;
 }
 
-[GoType("dyn")] internal partial struct printDebugLog_best {
+[GoType("dyn")] internal partial struct printDebugLogImpl_best {
     internal uint64 tick;
     internal nint i;
 }
 
-// printDebugLog prints the debug log.
-internal static unsafe void printDebugLog() {
-    if (!dlogEnabled) {
-        return;
-    }
+internal static unsafe void printDebugLogImpl() {
     // This function should not panic or throw since it is used in
     // the fatal panic path and this may deadlock.
     printlock();
     // Get the list of all debug logs.
-    var allp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
-    var all = (ж<dlogger>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
+    var allp = ᏑallDloggers.Reinterpret<ж<dloggerImpl>, uintptr>();
+    var all = (ж<dloggerImpl>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
     // Count the logs.
     nint n = 0;
     for (var l = all; l != nil; l = l.Value.allLink) {
@@ -738,7 +826,7 @@ internal static unsafe void printDebugLog() {
         printunlock();
         return;
     }
-    var state = new slice<printDebugLog_readState>(new ReadOnlySpan<printDebugLog_readState>((printDebugLog_readState*)(uintptr)(state1), (int)(n)));
+    var state = new slice<printDebugLogImpl_readState>(new ReadOnlySpan<printDebugLogImpl_readState>((printDebugLogImpl_readState*)(uintptr)(state1), (int)(n)));
     {
         var l = all;
         foreach (var (i, _) in state) {
@@ -746,14 +834,14 @@ internal static unsafe void printDebugLog() {
             s.Value.debugLogReader = l.Value.w.r;
             s.Value.first = true;
             s.Value.lost = l.Value.w.r.begin;
-            s.Value.nextTick = s.of(printDebugLog_readState.ᏑdebugLogReader).peek();
+            s.Value.nextTick = s.of(printDebugLogImpl_readState.ᏑdebugLogReader).peek();
             l = l.Value.allLink;
         }
     }
     // Print records.
     while (ᐧ) {
         // Find the next record.
-        printDebugLog_best best = default!;
+        printDebugLogImpl_best best = default!;
         best.tick = ~(uint64)0;
         foreach (var (i, _) in state) {
             if (state[i].nextTick < best.tick) {
@@ -774,7 +862,7 @@ internal static unsafe void printDebugLog() {
             print((@string)" <<\n"u8);
             s.Value.first = false;
         }
-        var (end, _, nano, Δp) = s.of(printDebugLog_readState.ᏑdebugLogReader).header();
+        var (end, _, nano, Δp) = s.of(printDebugLogImpl_readState.ᏑdebugLogReader).header();
         var oldEnd = s.Value.end;
         s.Value.end = end;
         print((@string)"["u8);
@@ -791,7 +879,7 @@ internal static unsafe void printDebugLog() {
             if (i > 0) {
                 print((@string)" "u8);
             }
-            if (!s.of(printDebugLog_readState.ᏑdebugLogReader).printVal()) {
+            if (!s.of(printDebugLogImpl_readState.ᏑdebugLogReader).printVal()) {
                 // Abort this P log.
                 print((@string)"<aborting P log>"u8);
                 end = oldEnd;
@@ -802,7 +890,7 @@ internal static unsafe void printDebugLog() {
         // Move on to the next record.
         s.Value.begin = end;
         s.Value.end = oldEnd;
-        s.Value.nextTick = s.of(printDebugLog_readState.ᏑdebugLogReader).peek();
+        s.Value.nextTick = s.of(printDebugLogImpl_readState.ᏑdebugLogReader).peek();
     }
     printunlock();
 }

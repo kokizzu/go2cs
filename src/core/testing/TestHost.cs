@@ -76,8 +76,59 @@ public static class TestHost
     /// </summary>
     public static DateTime? PackageDeadlineUtc { get; private set; }
 
+    // ⚠ THE MANAGED REFERENCE CLOSURE IS LOADED ONCE, AT START -- the Go-faithful shape of a statically
+    // linked binary (COORD ruling 2026-09-22, option (a)). A Go test binary carries every package it
+    // links from its first instruction; the CLR binds an assembly lazily, on the first JIT that needs
+    // it, on whatever thread and under whatever TOKEN that thread holds then. os/user's
+    // TestImpersonatedSelf/0 is the measured case: it ImpersonateSelf(SecurityAnonymous)s, Go expects
+    // current() to FAIL, and the failure path's syscall.Errno.Error -> itoa.Itoa was the process's FIRST
+    // touch of internal.itoa -- bound under an anonymous token that cannot open the image file, so the
+    // row read FileNotFoundException where Go reads the expected error. The DLL was there all along
+    // (the single-file publish and the loose build directory failed identically).
+    //
+    // MANAGED ASSEMBLIES ONLY: native DLLs stay lazy, because Go loads its Windows DLLs lazily too
+    // (LazyDLL / LazyProc), so a native load under an impersonated token is parity, not a defect.
+    // Assembly.Load binds an image and runs NOTHING -- no type initializer, no module initializer -- so
+    // no package's init order moves. A name that does not resolve (a facade satisfied by type
+    // forwarding, a reference only a trimmed-away path needed) is skipped: the preload changes WHEN a
+    // bind happens, and is never a new place a run can fail.
+    internal static int PreloadManagedReferenceClosure(Assembly? root)
+    {
+        if (root is null)
+            return 0;
+
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase) { root.FullName ?? "" };
+        Stack<Assembly> pending = new();
+        pending.Push(root);
+        int loaded = 0;
+
+        while (pending.Count > 0)
+        {
+            foreach (AssemblyName name in pending.Pop().GetReferencedAssemblies())
+            {
+                if (!seen.Add(name.FullName))
+                    continue;
+
+                try
+                {
+                    pending.Push(Assembly.Load(name));
+                    loaded++;
+                }
+                catch (Exception ex) when (ex is FileNotFoundException or FileLoadException or BadImageFormatException)
+                {
+                }
+            }
+        }
+
+        return loaded;
+    }
+
     public static int Run(TestRegistry registry, string[] args)
     {
+        // Before anything else, so no test -- on any thread, under any token -- is the first to bind an
+        // assembly of this binary's closure. See PreloadManagedReferenceClosure.
+        PreloadManagedReferenceClosure(Assembly.GetEntryAssembly());
+
         // The go2cs runtime allocation counter is off by default, and this is the ONLY thing that
         // turns it on: testing.AllocsPerRun is its only reader, so a converted application that
         // never runs a test must not pay for it. Enabled at the very top of the run rather than
@@ -410,6 +461,30 @@ public static class TestHost
             catch
             {
                 // Per-test cleanup failures are reported; final process cleanup is best effort.
+            }
+
+            try
+            {
+                // THE JUNCTION FALLBACK'S GODEBUG LIVES EXACTLY AS LONG AS THE JUNCTIONS DO, and this
+                // is the line after which they are gone. Placed AFTER the teardown above rather than
+                // inside it, and in a guard of its own, because the two fail independently: a sandbox
+                // that will not delete (a toolchain child's handles outlive it, which go/build's suite
+                // does every run) must not also strand a process-wide setting.
+                //
+                // The fixture programs are covered even though they ran long before this point: a
+                // child's environment is COPIED at spawn, so a program already running keeps the value
+                // it was handed and no later restore can retract it — and every such program was
+                // started, and waited on, by a test body that this finally is unwinding. What the
+                // restore actually protects is the NEXT host: the in-process guard tier runs many in
+                // one process, and both os (os_windows_test.cs:39,167) and path/filepath
+                // (path_windows_test.cs:576,590,621,668) read `winsymlink` through internal/godebug,
+                // whose reader observes the CLR store this run would otherwise have left set. Nothing
+                // to put back is the common case and costs a bool test.
+                PackageAncestry.RestoreJunctionGodebug();
+            }
+            catch
+            {
+                // Best effort, exactly like the teardown above it.
             }
         }
     }
@@ -753,13 +828,33 @@ public static class TestHost
     /// inherits.
     /// </summary>
     /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
-    private static void PublishEnvironmentVariable(string name, string? value)
+    // INTERNAL rather than private for PackageAncestry's junction fallback, which has the same
+    // two-environment problem for the same reason: the variable it sets must reach a CLR child (the
+    // toolchain probe) AND a converted child (a fixture program started through os/exec).
+    internal static void PublishEnvironmentVariable(string name, string? value)
     {
         // A null value CLEARS on both sides: that is what the TZ restore asks for when the run
         // inherited no TZ at all, and leaving a stale "UTC" behind would be a different bug from
         // the one this method exists to fix.
+        //
+        // THE CLR STORE IS WRITTEN FIRST, and that ordering is now load-bearing rather than
+        // incidental: PackageAncestry's junction fallback decides whether it has already acted by
+        // RE-READING this store, and the converted half below is the half that can fail. Were the two
+        // swapped, a throwing converted write would leave the CLR store unchanged, the next host in
+        // the process would read no setting, and it would append a second winsymlink=0 to a value
+        // that already carried one. One ordering away.
         Environment.SetEnvironmentVariable(name, value);
+        SetConvertedEnvironmentVariable(name, value);
+    }
 
+    /// <summary>
+    /// Sets an environment variable in the converted <c>syscall</c> package's environment ALONE —
+    /// the half of <see cref="PublishEnvironmentVariable"/> that a caller restoring two separately
+    /// captured values has to be able to aim on its own.
+    /// </summary>
+    /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
+    internal static void SetConvertedEnvironmentVariable(string name, string? value)
+    {
         try
         {
             Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
@@ -793,7 +888,59 @@ public static class TestHost
         {
             // A failure here costs this one variable and nothing else: the run continues, and
             // whatever reads it behaves exactly as it did before this was published.
+            //
+            // A WARNING, not a refusal — INHERITED and deliberately left that way. T.Setenv publishes
+            // through here too, so promoting a half-application to a throw would change the contract
+            // of a member converted tests call directly, which is a different change from this one.
+            // The consequence to know: after this line the two stores DISAGREE about `name`, and this
+            // stderr line is the only tell that they do.
             Console.Error.WriteLine($"testing: could not publish {name} to the converted environment: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Reads an environment variable from the converted <c>syscall</c> package's environment — the
+    /// counterpart of <see cref="SetConvertedEnvironmentVariable"/>, for a caller that must put back
+    /// what it found rather than what the CLR store happened to hold.
+    /// </summary>
+    /// <returns>true when that environment holds <paramref name="name"/>; false when it does not, and
+    /// false when there is no converted <c>syscall</c> loaded to ask — which are the same answer for
+    /// a restore, because a store that cannot be read was never written either.</returns>
+    internal static bool TryGetConvertedEnvironmentVariable(string name, out string? value)
+    {
+        value = null;
+
+        try
+        {
+            Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
+
+            if (syscallPackage is null)
+                return false;
+
+            // Go's syscall.Getenv returns (value, found), so the converted form is a two-field tuple
+            // and the FOUND half is the one that distinguishes "set to empty" from "not set" — the
+            // distinction a restore turns into Setenv-with-empty versus Unsetenv.
+            MethodInfo? getenv = syscallPackage.GetMethod(
+                "Getenv",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: [typeof(@string)],
+                modifiers: null);
+
+            if (getenv?.Invoke(null, [(@string)name]) is not ValueTuple<@string, bool> result)
+                return false;
+
+            if (!result.Item2)
+                return false;
+
+            value = result.Item1;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Same bargain as the writer above: unreadable costs this one variable, and the run goes on.
+            Console.Error.WriteLine($"testing: could not read {name} from the converted environment: {ex.Message}");
+            return false;
         }
     }
 

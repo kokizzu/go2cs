@@ -75,7 +75,7 @@ public static partial class godebug_package
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸinternalꓸbisect() => builtin.initPackage(typeof(go.@internal.bisect_package));
     [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() => builtin.initPackage(typeof(go.@internal.godebugs_package));
-    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
     [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
     // </ImportInitializers>
 }

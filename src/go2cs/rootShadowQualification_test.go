@@ -95,10 +95,15 @@ func TestGlobalQualifyRootedForcesGlobalUnderRootShadow(t *testing.T) {
 }
 
 // Blocker A(a): the shadow gate is computed from the import closure of the package being
-// converted. Under -tests the PRODUCTION sources are recompiled into the test assembly, so the
-// gate has to see the union of the production and _test.go closures — computeImportAliasRenames
-// folds siblingClosureImportPaths in for exactly that reason. Without the union the production
-// half emitted bare `go.` prefixes into an assembly that does contain `go.go`.
+// converted. Where the PRODUCTION sources are recompiled into the test assembly
+// (testProjectRecompile), the gate has to see the union of the production and _test.go closures —
+// computeImportAliasRenames folds siblingClosureImportPaths in for exactly that reason. Without the
+// union the production half emitted bare `go.` prefixes into an assembly that does contain `go.go`.
+//
+// This is the CAPABILITY test: the fold registers the shadow when the caller asks for the union.
+// WHICH unit asks is the caller's decision and is covered by TestProductionUnitExcludesSiblingClosure
+// — under either reference model the production `.cs` compiles into the production assembly alone,
+// so it must NOT see the union.
 func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	previous := siblingClosureImportPaths
 	t.Cleanup(func() { siblingClosureImportPaths = previous })
@@ -115,7 +120,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 
 	// Production-only closure: no go/* package, so no shadow.
 	siblingClosureImportPaths = nil
-	computeImportAliasRenames(nil, production, packageNamespace, "", "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "", true)
 
 	if rootNamespaceShadowed() {
 		t.Fatal("production-only closure reported a go.go root shadow")
@@ -125,7 +130,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	setShadowState(t, "go.math.rand", nil)
 	packageQualifiedNamespaces = map[string]bool{}
 	siblingClosureImportPaths = []string{"go/format"}
-	computeImportAliasRenames(nil, production, packageNamespace, "", "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "", true)
 
 	if !rootNamespaceShadowed() {
 		t.Fatal("sibling test closure importing go/format did not register the go.go root shadow")
@@ -285,5 +290,80 @@ func TestSiblingTestDeclaratorsContributeAliasShadow(t *testing.T) {
 	// The fold is a REFERENCE-spelling concern only: it must never register a symbol rename.
 	if nameCollisions["bits"] {
 		t.Fatal("the sibling fold must not turn a test declarator into a package-scoped rename")
+	}
+}
+
+// A package reference emitted into a file's body is also exposed to the file's own `using
+// <namespace>;` directives, which C# consults at the file's namespace level BEFORE moving out to the
+// root: go1.24's internal/sync put `go.@internal.sync_package` where runtime/pprof (namespace
+// go.runtime, `using @internal;`) and net/http's test sources (namespace go.net,
+// `using global::go.@internal;`) found it first, so an embedded `sync.Mutex` compiled as internal/sync's
+// Mutex. qualifyPackageReference spells such a reference from the root; everything else stays as it was.
+//
+// RED PROOF: at the parent the three colliding arms read the bare `sync_package.Mutex` (the reference
+// went through rootQualifyIfAmbiguous alone, which never sees a using); the controls read the same
+// before and after.
+func TestPackageReferenceShadowedByFileUsingIsRootQualified(t *testing.T) {
+	previousQualified := packageQualifiedNamespaces
+	t.Cleanup(func() { packageQualifiedNamespaces = previousQualified })
+
+	// The closure both measured files compile against: the root sync, the converted internal/sync
+	// beside internal/abi under go.@internal, and bytes, which nothing shadows.
+	closure := func() {
+		packageQualifiedNamespaces = map[string]bool{
+			"go.sync_package":              true,
+			"go.bytes_package":             true,
+			"go.@internal.sync_package":    true,
+			"go.@internal.abi_package":     true,
+			"go.runtime.pprof_package":     true,
+			"go.net.http_package":          true,
+			"go.@internal.godebug_package": true,
+		}
+	}
+
+	visitor := func(required []string, method []string) *Visitor {
+		return &Visitor{requiredUsings: NewHashSet(required), methodNamespaceUsings: NewHashSet(method)}
+	}
+
+	cases := []struct {
+		name      string
+		namespace string
+		required  []string
+		method    []string
+		ref       string
+		want      string
+	}{
+		// runtime/pprof's shape: a RELATIVE using, resolved from go.runtime outward to go.@internal.
+		{"relative using shadows (runtime/pprof)", "go.runtime", []string{"@internal", "text"}, nil, "sync_package.Mutex", "go.sync_package.Mutex"},
+		// net/http's test shape: a ROOTED using.
+		{"rooted using shadows (net/http tests)", "go.net", []string{"global::go.@internal", "global::go.net"}, nil, "sync_package.Mutex", "go.sync_package.Mutex"},
+		// A using that lands only while the body is visited (a method call into an internal package):
+		// the pre-pass is what makes it visible to a reference emitted before it.
+		{"method-derived using shadows", "go.runtime", nil, []string{"@internal"}, "sync_package.Mutex", "go.sync_package.Mutex"},
+		// Controls: a name the imported namespace does not declare, and a file with no using at all.
+		{"non-colliding name unchanged", "go.runtime", []string{"@internal"}, nil, "bytes_package.Buffer", "bytes_package.Buffer"},
+		{"no using unchanged", "go.runtime", nil, nil, "sync_package.Mutex", "sync_package.Mutex"},
+		// A static or alias entry imports no namespace, and System.* is no namespace of the closure.
+		{"static and alias entries ignored", "go.runtime", []string{"static go.@internal.sync_package", "sync = sync_package", "System.Runtime.CompilerServices"}, nil, "sync_package.Mutex", "sync_package.Mutex"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			setShadowState(t, tc.namespace, map[string]bool{"go.@internal": true, "go.runtime": true, "go.net": true})
+			closure()
+
+			if got := visitor(tc.required, tc.method).qualifyPackageReference(tc.ref); got != tc.want {
+				t.Errorf("qualifyPackageReference(%q) in %s with usings %v + %v = %q, want %q", tc.ref, tc.namespace, tc.required, tc.method, got, tc.want)
+			}
+		})
+	}
+
+	// An alias TARGET is resolved as if the file had no usings, so it must keep binding bare: the
+	// alias path never consults them, whatever the file imports.
+	setShadowState(t, "go.runtime", map[string]bool{"go.@internal": true, "go.runtime": true})
+	closure()
+
+	if _, target := packageUsingAlias("sync"); target != "sync_package" {
+		t.Errorf("packageUsingAlias(\"sync\") target = %q, want the bare \"sync_package\" (an alias target ignores the file's usings)", target)
 	}
 }

@@ -34,7 +34,7 @@ internal static class Go2CsTestHost
         registry.Add("TestGlob", fs_test_package.TestGlob, "glob_test.go", 27);
         registry.Add("TestGlobError", fs_test_package.TestGlobError, "glob_test.go", 50);
         registry.Add("TestGlobMethod", fs_test_package.TestGlobMethod, "glob_test.go", 73);
-        registry.Add("TestIssue51617", fs_test_package.TestIssue51617, "walk_test.go", 122);
+        registry.Add("TestIssue51617", fs_test_package.TestIssue51617, "walk_test.go", 113);
         registry.Add("TestReadDir", fs_test_package.TestReadDir, "readdir_test.go", 20);
         registry.Add("TestReadDirPath", fs_test_package.TestReadDirPath, "readdir_test.go", 104);
         registry.Add("TestReadFile", fs_test_package.TestReadFile, "readfile_test.go", 38);

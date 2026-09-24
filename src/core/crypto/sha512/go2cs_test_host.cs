@@ -9,25 +9,17 @@ internal static class Go2CsTestHost
     {
         TestRegistry registry = new("crypto/sha512", new string[]
         {
-            "fallback_test.go",
             "sha512.go",
             "sha512_test.go",
-            "sha512block.go",
-            "sha512block_amd64.go",
-            "sha512block_arm64.go",
-            "sha512block_decl.go",
-            "sha512block_generic.go",
-            "sha512block_s390x.go",
         });
-        registry.Add("TestAllocations", sha512_internal_test_package.TestAllocations, "sha512_test.go", 896);
-        registry.Add("TestBlockGeneric", sha512_internal_test_package.TestBlockGeneric, "sha512_test.go", 826);
-        registry.Add("TestBlockSize", sha512_internal_test_package.TestBlockSize, "sha512_test.go", 818);
-        registry.Add("TestGolden", sha512_internal_test_package.TestGolden, "sha512_test.go", 682);
-        registry.Add("TestGoldenMarshal", sha512_internal_test_package.TestGoldenMarshal, "sha512_test.go", 722);
-        registry.Add("TestLargeHashes", sha512_internal_test_package.TestLargeHashes, "sha512_test.go", 875);
-        registry.Add("TestMarshalMismatch", sha512_internal_test_package.TestMarshalMismatch, "sha512_test.go", 769);
-        registry.Add("TestSHA512Hash", sha512_internal_test_package.TestSHA512Hash, "sha512_test.go", 913);
-        registry.Add("TestSize", sha512_internal_test_package.TestSize, "sha512_test.go", 799);
+        registry.Add("TestAllocations", sha512_internal_test_package.TestAllocations, "sha512_test.go", 903);
+        registry.Add("TestBlockSize", sha512_internal_test_package.TestBlockSize, "sha512_test.go", 840);
+        registry.Add("TestGolden", sha512_internal_test_package.TestGolden, "sha512_test.go", 680);
+        registry.Add("TestGoldenMarshal", sha512_internal_test_package.TestGoldenMarshal, "sha512_test.go", 726);
+        registry.Add("TestHash", sha512_internal_test_package.TestHash, "sha512_test.go", 943);
+        registry.Add("TestLargeHashes", sha512_internal_test_package.TestLargeHashes, "sha512_test.go", 882);
+        registry.Add("TestMarshalMismatch", sha512_internal_test_package.TestMarshalMismatch, "sha512_test.go", 791);
+        registry.Add("TestSize", sha512_internal_test_package.TestSize, "sha512_test.go", 821);
         return TestHost.Run(registry, args);
     }
 }

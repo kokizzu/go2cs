@@ -12,6 +12,7 @@ using static go.text.template_package;
 using static go.text.template_internal_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6120696e743b206220737472696e677d", "Δtype")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -32,8 +33,8 @@ using static go.text.template_internal_test_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/template/exec_test.go", "exec_test.cs", "AJcBvgGCAA0WooKUAAkOooKUADVessYAEyKypqKmooKCgqiSpoKmgqaCpoKCgqaCgoKUzJKClKiS1oKClKaCAKMDggeCpoKmgqaiqJKClIKSgpSU2JLYkqiSpqKCgpSmgqaigpSCgpSmgqaCprKCyAANGoKCgoKUlIKClIKClIK0graSxoKCyoIAFxaCgoKCgoKCgoKSlJKUlJSUgoKUgoKClIIACAySgoKCgpSCgqSClAAMGpKCgpSCgoKUgoKCAAkMgNaShriChIKC+IIACRiCgoIAFTiCACNIgoKUgpSCgpSCgqaCgoKUgoIACAiUlIKCgoIACwqUgoKCgpSCgoKmgoKUgoKClIKCgqaCguiCgoKUgoKCAJoBiAKCggAKIoKCgoKUgoKCgpSCgpSCAAwKgqaCgpSUgoKUgoKCpoKCgoKUgoKCpoKCgoKUgoKCpoKCgqaCgoL8ooKClIKCAAkUggAIBrSCgpSCgpSCpoKClIKClIKClIKCuIKmgu6CuoLKgsqCuKKCgpTeAAkGgryCgpSSgpaCgIKkgIKmgoCCpICCAA4IogAoWrKSkoKCgpSCAAkMgoKUkoKCgpSCgrjcuIKSgoKClIIADAruAB9IgpKCAAcUgoKClJSCgpSCAAsMspSmAB9KgoKCgpSCgqSClAALCqIAMG6CgoKClIKCpIKUAAgMlJKCgoKUgoKUgqiCgoKCmJKCgoKClIIACAqSgpKCgoKkAAgKkoSCgpaCgpaChIKCwoKCgoKUgoL8AA4Koo6ClJSClII=")]
-[assembly: go.GoPositionMap("text/template/multi_test.go", "multi_test.cs", "ADxiooKClIK0graSlLSClJKClIKCgoKUgoIAHkKUgoKUgoKUAAgGgoKClIKCgpTmgoKClIKClIKCgpQACAaChIKCgqiCgoKClJaCgoKClAAMFIKCgpTWgoKClAAMFJSCgpSCgpSkgoKUgoKmgoKUgqiSgoKUgqaCgoKUguiUgoKUgoKmgoKUgoKWkoKClIL6koKCgoKUggAIBoKCgoCCpICCpICC+pKCAAgIkoKClIKClIKCAAoItIKEgpSClIKWgoKClIKmgvimgoCCpICCpICCAAoIggAHGoKEmIKCgqaCgIKCpIIACRDa+IKCgoKUgoKCpoKCgsySgoKUgg==")]
+[assembly: go.GoPositionMap("text/template/exec_test.go", "exec_test.cs", "AGLAAYIADRaigpQACQ6igpQANV6yxgATIrKmoqaigoKCqJKmgqaCpoKmgoKCpoKCgpTMkoKUqJLWgoKUpoIAuwO4B4KCgoLcgoKCggAHEKKCgoKU1oKmgqaCpqKokoKUgpKClJTYktiSqJKmooKClKaCpqKClIKClKaCpoKmsoLIAA0agoKCgpSUgoKUgoKUgrSCtpLGgoLKggAXFoKCgoKCgoKCgpKUkpSUlJSCgpSCgoKUggAIDJKCgoKClIKCpIKUABIakoKClIKCgpSCgoIACQyA1pKGuIKEgoL4ggAJGIKCggAhOIIAI0iCgpSClIKClIKCpoKCgpSCggAICJSUgoKCggALCpSCgoKClIKCgqaCgpSCgoKUgoKCpoKC6IKCgpSCgoIAmgGIAoKCAAoigoKCgpSCgoKClIKClIIADAqCpoKClJSCgpSCgoKmgoKCgpSCgoKmgoKCgpSCgoKmgoKCpoKCgvyigoKUgoIACRSCAAgGtIKClIKClIKmgoKUgoKUgoKUgoK4gqaC7oK6gsqCyoK4ooKClN4ACQaCvIKClJKCloKAgqSAgqaCgIKkgIIADgiiAChaspKSgoKClIIACQyCgpSSgoKClIKCuNy4gpKCgoKUggAMCu4AH0iCkoIABxSCgoKUlIKClIIACwyylKYAH0qCgoKClIKCpIKUAAsKogAwboKCgoKUgoKkgpQACAyUkoKCgpSCgpSCqIKCgoKYkoKCgoKUggAICpKCkoKCgqQACAqShIKCloKCloKEgoLCgoKCgpSCgvwADgqijoKUlIKUgg==", "737-743:1;747-753:1;789-794:1;850-850:1;996-998:1;1498-1500:1;1591-1601:1;1691-1693:1;1720-1722:1;1871-1871:1;1923-1935:1")]
+[assembly: go.GoPositionMap("text/template/multi_test.go", "multi_test.cs", "ADBiooKClIK0graSlLSClJKClIKCgoKUgoIAJEKUgoKUgoKUAAgGgoKClIKCgpTmgoKClIKClIKCgpQACAaChIKCgqiCgoKClJaCgoKClAAMFIKCgpTWgoKClAAMFJSCgpSCgpSkgoKUgoKmgoKUgqiSgoKUgqaCgoKUguiUgoKUgoKmgoKUgoKWkoKClIL6koKCgoKUggAIBoKCgoCCpICCpICC+pKCAAgIkoKClIKClIKCAAoItIKEgpSClIKWgoKClIKmgvimgoCCpICCpICCAAoIggAHGoKEmIKCgqaCgIKCpIIACRDa+IKCgoKUgoKCpoKCgsySgoKUgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.text;
@@ -49,4 +50,30 @@ public static partial class template_internal_test_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() => builtin.initPackage(typeof(go.text.template_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() => builtin.initPackage(typeof(go.text.template.parse_package));
+    // </ImportInitializers>
 }

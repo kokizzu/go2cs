@@ -75,11 +75,11 @@ internal static void embeddedLocalTypes() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string sevenˢ = "seven"u8;
 
-[GoLocalName("myTime")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_myTime;
+[GoLocalName("myTime")] [GoType("global::go.time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_myTime;
 
-[GoLocalName("myDur")] [GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypes_myDur;
+[GoLocalName("myDur")] [GoType("global::go.time_package.Duration")] internal partial struct foreignUnderlyingLocalTypes_myDur;
 
-[GoLocalName("inner")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_inner;
+[GoLocalName("inner")] [GoType("global::go.time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_inner;
 
 internal static void foreignUnderlyingLocalTypes() {
     var m = new map<ж<foreignUnderlyingLocalTypes_myTime>, @string>();
@@ -96,9 +96,9 @@ internal static void foreignUnderlyingLocalTypes() {
     }
 }
 
-[GoLocalName("myTime")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypesAgain_myTime;
+[GoLocalName("myTime")] [GoType("global::go.time_package.Time")] internal partial struct foreignUnderlyingLocalTypesAgain_myTime;
 
-[GoLocalName("myDur")] [GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypesAgain_myDur;
+[GoLocalName("myDur")] [GoType("global::go.time_package.Duration")] internal partial struct foreignUnderlyingLocalTypesAgain_myDur;
 
 internal static void foreignUnderlyingLocalTypesAgain() {
     var t = @new<foreignUnderlyingLocalTypesAgain_myTime>();

@@ -80,7 +80,7 @@ public static partial class metrics_package
     // item of the project guarantees.
 
     // <ImportInitializers>
-    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() => builtin.initPackage(typeof(go.@internal.godebugs_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() => builtin.initPackage(typeof(@internal.godebugs_package));
     [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
     [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
     // </ImportInitializers>

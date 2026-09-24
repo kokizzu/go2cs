@@ -94,8 +94,13 @@ func (v *Visitor) visitFile(file *ast.File) {
 	packageClassName := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
 	if v.options.testClassNameOverride != "" {
 		packageClassName = v.options.testClassNameOverride
-		productionClassName := getSanitizedImport(v.options.testProductionName + PackageSuffix)
-		v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+productionClassName)))
+
+		// A TEST-ONLY package under test emitted no production class, so there is none to import
+		// here — the directive would be CS0234 in every emitted test file (productionClassEmitted).
+		if !v.options.testProductionAbsent {
+			productionClassName := getSanitizedImport(v.options.testProductionName + PackageSuffix)
+			v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+productionClassName)))
+		}
 	}
 	if v.options.testWhiteboxReference && v.options.testExternalVariant {
 		v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+v.options.testInternalBridgeName)))
@@ -108,6 +113,8 @@ func (v *Visitor) visitFile(file *ast.File) {
 
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)
+
+	v.collectMethodNamespaceUsings(file)
 
 	for _, decl := range file.Decls {
 		v.visitDecl(decl)

@@ -6,17 +6,11 @@ namespace go;
 
 using byteorder = @internal.byteorder_package;
 using goarch = @internal.goarch_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 // readInt returns the size-bytes unsigned integer in native byte order at offset off.
 internal static (uint64 u, bool ok) readInt(slice<byte> b, uintptr off, uintptr size) {
@@ -35,13 +29,13 @@ internal static uint64 readIntBE(slice<byte> b, uintptr size) {
         return (uint64)b[0];
     }
     if (exprᴛ1 == 2) {
-        return (uint64)byteorder.BeUint16(b);
+        return (uint64)byteorder.BEUint16(b);
     }
     if (exprᴛ1 == 4) {
-        return (uint64)byteorder.BeUint32(b);
+        return (uint64)byteorder.BEUint32(b);
     }
     if (exprᴛ1 == 8) {
-        return (uint64)byteorder.BeUint64(b);
+        return (uint64)byteorder.BEUint64(b);
     }
     { /* default: */
         throw panic("syscall: readInt with unsupported size");
@@ -55,13 +49,13 @@ internal static uint64 readIntLE(slice<byte> b, uintptr size) {
         return (uint64)b[0];
     }
     if (exprᴛ1 == 2) {
-        return (uint64)byteorder.LeUint16(b);
+        return (uint64)byteorder.LEUint16(b);
     }
     if (exprᴛ1 == 4) {
-        return (uint64)byteorder.LeUint32(b);
+        return (uint64)byteorder.LEUint32(b);
     }
     if (exprᴛ1 == 8) {
-        return (uint64)byteorder.LeUint64(b);
+        return (uint64)byteorder.LEUint64(b);
     }
     { /* default: */
         throw panic("syscall: readInt with unsupported size");
@@ -90,8 +84,8 @@ public static (nint consumed, nint count, slice<@string> newnames) ParseDirent(s
             break;
         }
         // See src/os/dir_unix.go for the reason why this condition is
-        // excluded on wasip1.
-        if (ino == 0 && Δruntime.GOOS != "wasip1"u8) {
+        // excluded on wasip1 and linux.
+        if (ino == 0 && runtime.GOOS != "linux"u8 && runtime.GOOS != "wasip1"u8) {
             // File absent in directory.
             continue;
         }

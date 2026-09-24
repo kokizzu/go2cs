@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/runtime/pprof@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/runtime/pprof) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/runtime/pprof)
+[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](https://go2cs.net/ValidatedTestPackages.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/runtime/pprof@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/runtime/pprof) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/runtime/pprof)
 
 Package pprof writes runtime profiling data in the format expected by the pprof visualization tool.
 
@@ -41,7 +41,10 @@ To add equivalent profiling support to a standalone program, add code like the f
 	        }
 	        defer f.Close() // error handling omitted for example
 	        runtime.GC() // get up-to-date statistics
-	        if err := pprof.WriteHeapProfile(f); err != nil {
+	        // Lookup("allocs") creates a profile similar to go test -memprofile.
+	        // Alternatively, use Lookup("heap") for a profile
+	        // that has inuse_space as the default index.
+	        if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
 	            log.Fatal("could not write memory profile: ", err)
 	        }
 	    }

@@ -38,10 +38,10 @@ internal static class Go2CsTestHost
         registry.Add("TestContextCancelBetweenNextAndErr", sql_internal_test_package.TestContextCancelBetweenNextAndErr, "sql_test.go", 4522);
         registry.Add("TestContextCancelDuringRawBytesScan", sql_internal_test_package.TestContextCancelDuringRawBytesScan, "sql_test.go", 4437);
         registry.Add("TestContextCancelDuringScan", sql_internal_test_package.TestContextCancelDuringScan, "sql_test.go", 4547);
-        registry.Add("TestConversions", sql_internal_test_package.TestConversions, "convert_test.go", 212);
+        registry.Add("TestConversions", sql_internal_test_package.TestConversions, "convert_test.go", 213);
         registry.Add("TestCursorFake", sql_internal_test_package.TestCursorFake, "sql_test.go", 1450);
-        registry.Add("TestDecimal", sql_internal_test_package.TestDecimal, "convert_test.go", 571);
-        registry.Add("TestDriverArgs", sql_internal_test_package.TestDriverArgs, "convert_test.go", 434);
+        registry.Add("TestDecimal", sql_internal_test_package.TestDecimal, "convert_test.go", 575);
+        registry.Add("TestDriverArgs", sql_internal_test_package.TestDriverArgs, "convert_test.go", 438);
         registry.Add("TestDriverArgsWrapsErrors", sql_internal_test_package.TestDriverArgsWrapsErrors, "sql_test.go", 4404);
         registry.Add("TestDriverPanic", sql_internal_test_package.TestDriverPanic, "sql_test.go", 99);
         registry.Add("TestDrivers", sql_internal_test_package.TestDrivers, "fakedb_test.go", 217);
@@ -60,6 +60,8 @@ internal static class Go2CsTestHost
         registry.Add("TestIssue4902", sql_internal_test_package.TestIssue4902, "sql_test.go", 1969);
         registry.Add("TestIssue6081", sql_internal_test_package.TestIssue6081, "sql_test.go", 3600);
         registry.Add("TestIssue6651", sql_internal_test_package.TestIssue6651, "sql_test.go", 1749);
+        registry.Add("TestIssue69728", sql_internal_test_package.TestIssue69728, "sql_test.go", 5032);
+        registry.Add("TestIssue69837", sql_internal_test_package.TestIssue69837, "sql_test.go", 5009);
         registry.Add("TestManyErrBadConn", sql_internal_test_package.TestManyErrBadConn, "sql_test.go", 2681);
         registry.Add("TestMaxIdleConns", sql_internal_test_package.TestMaxIdleConns, "sql_test.go", 2023);
         registry.Add("TestMaxIdleTime", sql_internal_test_package.TestMaxIdleTime, "sql_test.go", 3979);
@@ -76,7 +78,7 @@ internal static class Go2CsTestHost
         registry.Add("TestNullInt16Param", sql_internal_test_package.TestNullInt16Param, "sql_test.go", 1838);
         registry.Add("TestNullInt32Param", sql_internal_test_package.TestNullInt32Param, "sql_test.go", 1826);
         registry.Add("TestNullInt64Param", sql_internal_test_package.TestNullInt64Param, "sql_test.go", 1814);
-        registry.Add("TestNullString", sql_internal_test_package.TestNullString, "convert_test.go", 284);
+        registry.Add("TestNullString", sql_internal_test_package.TestNullString, "convert_test.go", 285);
         registry.Add("TestNullStringParam", sql_internal_test_package.TestNullStringParam, "sql_test.go", 1790);
         registry.Add("TestNullTimeParam", sql_internal_test_package.TestNullTimeParam, "sql_test.go", 1886);
         registry.Add("TestOpenConnector", sql_internal_test_package.TestOpenConnector, "sql_test.go", 4215);
@@ -94,7 +96,7 @@ internal static class Go2CsTestHost
         registry.Add("TestQueryRow", sql_internal_test_package.TestQueryRow, "sql_test.go", 779);
         registry.Add("TestQueryRowClosingStmt", sql_internal_test_package.TestQueryRowClosingStmt, "sql_test.go", 1712);
         registry.Add("TestQueryRowNilScanDest", sql_internal_test_package.TestQueryRowNilScanDest, "sql_test.go", 1958);
-        registry.Add("TestRawBytesAllocs", sql_internal_test_package.TestRawBytesAllocs, "convert_test.go", 335);
+        registry.Add("TestRawBytesAllocs", sql_internal_test_package.TestRawBytesAllocs, "convert_test.go", 336);
         registry.Add("TestRawBytesReuse", sql_internal_test_package.TestRawBytesReuse, "sql_test.go", 4625);
         registry.Add("TestRowErr", sql_internal_test_package.TestRowErr, "sql_test.go", 829);
         registry.Add("TestRowsCloseError", sql_internal_test_package.TestRowsCloseError, "sql_test.go", 2632);
@@ -130,8 +132,8 @@ internal static class Go2CsTestHost
         registry.Add("TestTxStmtPreparedOnce", sql_internal_test_package.TestTxStmtPreparedOnce, "sql_test.go", 1100);
         registry.Add("TestTypedString", sql_internal_test_package.TestTypedString, "sql_test.go", 4756);
         registry.Add("TestUnsupportedOptions", sql_internal_test_package.TestUnsupportedOptions, "sql_test.go", 493);
-        registry.Add("TestUserDefinedBytes", sql_internal_test_package.TestUserDefinedBytes, "convert_test.go", 408);
-        registry.Add("TestValueConverters", sql_internal_test_package.TestValueConverters, "convert_test.go", 313);
+        registry.Add("TestUserDefinedBytes", sql_internal_test_package.TestUserDefinedBytes, "convert_test.go", 412);
+        registry.Add("TestValueConverters", sql_internal_test_package.TestValueConverters, "convert_test.go", 314);
         return TestHost.Run(registry, args);
     }
 }

@@ -163,6 +163,7 @@
     <ProjectReference Include="$(go2csPath)core/internal/coverage/stringtab/internal.coverage.stringtab.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/coverage/uleb128/internal.coverage.uleb128.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/maps/maps.csproj" />
     <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
     <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
   </ItemGroup>

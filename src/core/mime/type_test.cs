@@ -3,10 +3,12 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using reflect = reflect_package;
+using asan = @internal.asan_package;
+using slices = slices_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using testing = testing_package;
+using @internal;
 using static go.mime_package;
 
 partial class mime_internal_test_package {
@@ -177,7 +179,7 @@ public static void TestExtensionsByType(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("ExtensionsByType(%q) = %q, %v; want error substring %q"u8, tt.typ, got, err, tt.wantErr);
                 continue;
             }
-            if (!reflect.DeepEqual(got, tt.want)) {
+            if (!slices.Equal<slice<@string>, @string>(got, tt.want)) {
                 Ꮡt.Errorf("ExtensionsByType(%q) = %q; want %q"u8, tt.typ, got, tt.want);
             }
         }
@@ -187,10 +189,14 @@ public static void TestExtensionsByType(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly object testAllocatesMoreWithˢ = (@string)"test allocates more with -asan; see #70079"u8;
 internal static readonly @string htmlˢ3 = ".html"u8;
 internal static readonly @string htMLˢ = ".HtML"u8;
 
 public static void TestLookupMallocs(ж<testing.T> Ꮡt) {
+    if (asan.Enabled) {
+        Ꮡt.Skip(testAllocatesMoreWithˢ);
+    }
     var n = testing.AllocsPerRun(10000, () => {
         TypeByExtension(htmlˢ3);
         TypeByExtension(htMLˢ);
@@ -268,7 +274,7 @@ public static void TestExtensionsByType2(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("ExtensionsByType(%q): %v"u8, tt.typ, err);
                 continue;
             }
-            if (!reflect.DeepEqual(got, tt.want)) {
+            if (!slices.Equal<slice<@string>, @string>(got, tt.want)) {
                 Ꮡt.Errorf("ExtensionsByType(%q) = %q; want %q"u8, tt.typ, got, tt.want);
             }
         }

@@ -8,11 +8,10 @@ using cpu = @internal.cpu_package;
 using goarch = @internal.goarch_package;
 using goos = @internal.goos_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -133,11 +132,11 @@ internal static void stackinit() {
     }
     foreach (var (i, _) in stackpool) {
         stackpool[i].item.span.init();
-        lockInit(ref stackpool[i].item.mu, lockRankStackpool);
+        lockInit(Ꮡstackpool.at<stackpoolᴛ1>(i).of(stackpoolᴛ1.Ꮡitem).of(stackpoolItem.Ꮡmu), lockRankStackpool);
     }
     foreach (var (i, _) in stackLarge.free) {
         stackLarge.free[i].init();
-        lockInit(ref stackLarge.@lock, lockRankStackLarge);
+        lockInit(ᏑstackLarge.of(stackLargeᴛ1.Ꮡlock), lockRankStackLarge);
     }
 }
 
@@ -385,7 +384,7 @@ internal static Δstack @stackalloc(uint32 n) {
         v = (@unsafe.Pointer)s.@base();
     }
     if (traceAllocFreeEnabled()) {
-        var Δtrace = traceTryAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             Δtrace.GoroutineStackAlloc((uintptr)v, (uintptr)n);
             traceRelease(Δtrace);
@@ -440,7 +439,7 @@ internal static void stackfree(Δstack stk) {
         return;
     }
     if (traceAllocFreeEnabled()) {
-        var Δtrace = traceTryAcquire();
+        var Δtrace = traceAcquire();
         if (Δtrace.ok()) {
             Δtrace.GoroutineStackFree((uintptr)v);
             traceRelease(Δtrace);
@@ -701,21 +700,11 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ref adjustinfo adjinfo) 
                 // we call into morestack.)
                 continue;
             }
-            var ptrdata = obj.ptrdata();
-            var gcdata = obj.gcdata();
-            ж<mspan> s = default!;
-            if (obj.useGCProg()) {
-                // See comments in mgcmark.go:scanstack
-                s = materializeGCProg(ptrdata, gcdata);
-                gcdata = (ж<byte>)(uintptr)((@unsafe.Pointer)(~s).startAddr);
-            }
-            for (var iΔ1 = (uintptr)0; iΔ1 < ptrdata; iΔ1 += goarch.PtrSize) {
-                if ((byte)((addb(gcdata, iΔ1 / (uintptr)(8 * goarch.PtrSize)).Value >> (int)(((uintptr)(iΔ1 / (uintptr)goarch.PtrSize & 7)))) & 1) != 0) {
+            var (ptrBytes, gcData) = obj.gcdata();
+            for (var iΔ1 = (uintptr)0; iΔ1 < ptrBytes; iΔ1 += goarch.PtrSize) {
+                if ((byte)((addb(gcData, iΔ1 / (uintptr)(8 * goarch.PtrSize)).Value >> (int)(((uintptr)(iΔ1 / (uintptr)goarch.PtrSize & 7)))) & 1) != 0) {
                     adjustpointer(ref adjinfo, (@unsafe.Pointer)(Δp + iΔ1));
                 }
-            }
-            if (s != nil) {
-                dematerializeGCProg(s);
             }
         }
     }
@@ -1275,24 +1264,14 @@ internal static void freeStackSpans() {
     // if non-negative, offset from argp
     internal int32 off;
     internal int32 size;
-    internal int32 _ptrdata;  // ptrdata, or -ptrdata is GC prog is used
+    internal int32 ptrBytes;
     internal uint32 gcdataoff; // offset to gcdata from moduledata.rodata
 }
 
-[GoRecv] internal static bool useGCProg(this ref stackObjectRecord r) {
-    return r._ptrdata < 0;
-}
-
-[GoRecv] internal static uintptr ptrdata(this ref stackObjectRecord r) {
-    var x = r._ptrdata;
-    if (x < 0) {
-        return (uintptr)(-x);
-    }
-    return (uintptr)x;
-}
-
-// gcdata returns pointer map or GC prog of the type.
-internal static ж<byte> gcdata(this ж<stackObjectRecord> Ꮡr) {
+// gcdata returns the number of bytes that contain pointers, and
+// a ptr/nonptr bitmask covering those bytes.
+// Note that this bitmask might be larger than internal/abi.MaxPtrmaskBytes.
+internal static (uintptr, ж<byte>) gcdata(this ж<stackObjectRecord> Ꮡr) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     var ptr = (uintptr)(uintptr)@unsafe.Pointer.FromRef(ref r);
@@ -1307,7 +1286,7 @@ internal static ж<byte> gcdata(this ж<stackObjectRecord> Ꮡr) {
     // you may have made a copy of a stackObjectRecord.
     // You must use the original pointer.
     var res = (~mod).rodata + (uintptr)r.gcdataoff;
-    return (ж<byte>)(uintptr)((@unsafe.Pointer)res);
+    return ((uintptr)r.ptrBytes, (ж<byte>)(uintptr)((@unsafe.Pointer)res));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

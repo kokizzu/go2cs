@@ -13,10 +13,10 @@ internal static class Go2CsTestHost
             "boring_test.go",
             "equal_test.go",
             "example_test.go",
+            "fips.go",
             "notboring.go",
             "pkcs1v15.go",
             "pkcs1v15_test.go",
-            "pss.go",
             "pss_test.go",
             "rsa.go",
             "rsa_export_test.go",
@@ -26,37 +26,40 @@ internal static class Go2CsTestHost
         {
             "testdata",
         });
-        registry.Add("Test2DecryptOAEP", rsa_test_package.Test2DecryptOAEP, "rsa_test.go", 692);
-        registry.Add("Test3PrimeKeyGeneration", rsa_test_package.Test3PrimeKeyGeneration, "rsa_test.go", 42);
-        registry.Add("Test4PrimeKeyGeneration", rsa_test_package.Test4PrimeKeyGeneration, "rsa_test.go", 55);
-        registry.Add("TestAllocations", rsa_test_package.TestAllocations, "rsa_test.go", 134);
-        registry.Add("TestDecryptOAEP", rsa_test_package.TestDecryptOAEP, "rsa_test.go", 657);
+        registry.Add("Test2DecryptOAEP", rsa_test_package.Test2DecryptOAEP, "rsa_test.go", 855);
+        registry.Add("Test3PrimeKeyGeneration", rsa_test_package.Test3PrimeKeyGeneration, "rsa_test.go", 53);
+        registry.Add("Test4PrimeKeyGeneration", rsa_test_package.Test4PrimeKeyGeneration, "rsa_test.go", 67);
+        registry.Add("TestAllocations", rsa_test_package.TestAllocations, "rsa_test.go", 167);
+        registry.Add("TestDecryptOAEP", rsa_test_package.TestDecryptOAEP, "rsa_test.go", 820);
         registry.Add("TestDecryptPKCS1v15", rsa_test_package.TestDecryptPKCS1v15, "pkcs1v15_test.go", 56);
-        registry.Add("TestEMSAPSS", rsa_test_package.TestEMSAPSS, "pss_test.go", 24);
-        registry.Add("TestEncryptDecryptOAEP", rsa_test_package.TestEncryptDecryptOAEP, "rsa_test.go", 717);
-        registry.Add("TestEncryptOAEP", rsa_test_package.TestEncryptOAEP, "rsa_test.go", 637);
-        registry.Add("TestEncryptPKCS1v15", rsa_test_package.TestEncryptPKCS1v15, "pkcs1v15_test.go", 80);
-        registry.Add("TestEncryptPKCS1v15DecrypterSessionKey", rsa_test_package.TestEncryptPKCS1v15DecrypterSessionKey, "pkcs1v15_test.go", 155);
-        registry.Add("TestEncryptPKCS1v15SessionKey", rsa_test_package.TestEncryptPKCS1v15SessionKey, "pkcs1v15_test.go", 141);
-        registry.Add("TestEqual", rsa_test_package.TestEqual, "equal_test.go", 15);
-        registry.Add("TestEverything", rsa_test_package.TestEverything, "rsa_test.go", 161);
-        registry.Add("TestGnuTLSKey", rsa_test_package.TestGnuTLSKey, "rsa_test.go", 97);
-        registry.Add("TestImpossibleKeyGeneration", rsa_test_package.TestImpossibleKeyGeneration, "rsa_test.go", 86);
-        registry.Add("TestInvalidPSSSaltLength", rsa_test_package.TestInvalidPSSSaltLength, "pss_test.go", 285);
-        registry.Add("TestKeyGeneration", rsa_test_package.TestKeyGeneration, "rsa_test.go", 26);
-        registry.Add("TestNPrimeKeyGeneration", rsa_test_package.TestNPrimeKeyGeneration, "rsa_test.go", 68);
-        registry.Add("TestNonZeroRandomBytes", rsa_test_package.TestNonZeroRandomBytes, "pkcs1v15_test.go", 171);
-        registry.Add("TestOverlongMessagePKCS1v15", rsa_test_package.TestOverlongMessagePKCS1v15, "pkcs1v15_test.go", 231);
-        registry.Add("TestPSS513", rsa_test_package.TestPSS513, "pss_test.go", 239);
-        registry.Add("TestPSSGolden", rsa_test_package.TestPSSGolden, "pss_test.go", 79);
-        registry.Add("TestPSSNilOpts", rsa_test_package.TestPSSNilOpts, "pss_test.go", 192);
-        registry.Add("TestPSSOpenSSL", rsa_test_package.TestPSSOpenSSL, "pss_test.go", 170);
-        registry.Add("TestPSSSigning", rsa_test_package.TestPSSSigning, "pss_test.go", 201);
-        registry.Add("TestShortPKCS1v15Signature", rsa_test_package.TestShortPKCS1v15Signature, "pkcs1v15_test.go", 300);
-        registry.Add("TestShortSessionKey", rsa_test_package.TestShortSessionKey, "pkcs1v15_test.go", 261);
-        registry.Add("TestSignPKCS1v15", rsa_test_package.TestSignPKCS1v15, "pkcs1v15_test.go", 198);
-        registry.Add("TestUnpaddedSignature", rsa_test_package.TestUnpaddedSignature, "pkcs1v15_test.go", 239);
-        registry.Add("TestVerifyPKCS1v15", rsa_test_package.TestVerifyPKCS1v15, "pkcs1v15_test.go", 216);
+        registry.Add("TestEncryptDecryptOAEP", rsa_test_package.TestEncryptDecryptOAEP, "rsa_test.go", 880);
+        registry.Add("TestEncryptOAEP", rsa_test_package.TestEncryptOAEP, "rsa_test.go", 800);
+        registry.Add("TestEncryptPKCS1v15", rsa_test_package.TestEncryptPKCS1v15, "pkcs1v15_test.go", 82);
+        registry.Add("TestEncryptPKCS1v15DecrypterSessionKey", rsa_test_package.TestEncryptPKCS1v15DecrypterSessionKey, "pkcs1v15_test.go", 158);
+        registry.Add("TestEncryptPKCS1v15SessionKey", rsa_test_package.TestEncryptPKCS1v15SessionKey, "pkcs1v15_test.go", 143);
+        registry.Add("TestEqual", rsa_test_package.TestEqual, "equal_test.go", 14);
+        registry.Add("TestEverything", rsa_test_package.TestEverything, "rsa_test.go", 191);
+        registry.Add("TestGnuTLSKey", rsa_test_package.TestGnuTLSKey, "rsa_test.go", 129);
+        registry.Add("TestHashOverride", rsa_test_package.TestHashOverride, "pss_test.go", 266);
+        registry.Add("TestImpossibleKeyGeneration", rsa_test_package.TestImpossibleKeyGeneration, "rsa_test.go", 100);
+        registry.Add("TestInvalidPSSSaltLength", rsa_test_package.TestInvalidPSSSaltLength, "pss_test.go", 242);
+        registry.Add("TestKeyGeneration", rsa_test_package.TestKeyGeneration, "rsa_test.go", 27);
+        registry.Add("TestKeyTooSmall", rsa_test_package.TestKeyTooSmall, "rsa_test.go", 398);
+        registry.Add("TestNPrimeKeyGeneration", rsa_test_package.TestNPrimeKeyGeneration, "rsa_test.go", 81);
+        registry.Add("TestNonZeroRandomBytes", rsa_test_package.TestNonZeroRandomBytes, "pkcs1v15_test.go", 175);
+        registry.Add("TestOverlongMessagePKCS1v15", rsa_test_package.TestOverlongMessagePKCS1v15, "pkcs1v15_test.go", 237);
+        registry.Add("TestPSS513", rsa_test_package.TestPSS513, "pss_test.go", 195);
+        registry.Add("TestPSSGolden", rsa_test_package.TestPSSGolden, "pss_test.go", 26);
+        registry.Add("TestPSSNilOpts", rsa_test_package.TestPSSNilOpts, "pss_test.go", 141);
+        registry.Add("TestPSSOpenSSL", rsa_test_package.TestPSSOpenSSL, "pss_test.go", 117);
+        registry.Add("TestPSSSigning", rsa_test_package.TestPSSSigning, "pss_test.go", 150);
+        registry.Add("TestPSmallerThanQ", rsa_test_package.TestPSmallerThanQ, "rsa_test.go", 1057);
+        registry.Add("TestShortPKCS1v15Signature", rsa_test_package.TestShortPKCS1v15Signature, "pkcs1v15_test.go", 299);
+        registry.Add("TestShortSessionKey", rsa_test_package.TestShortSessionKey, "pkcs1v15_test.go", 270);
+        registry.Add("TestSignPKCS1v15", rsa_test_package.TestSignPKCS1v15, "pkcs1v15_test.go", 202);
+        registry.Add("TestTinyKeyGeneration", rsa_test_package.TestTinyKeyGeneration, "rsa_test.go", 112);
+        registry.Add("TestUnpaddedSignature", rsa_test_package.TestUnpaddedSignature, "pkcs1v15_test.go", 246);
+        registry.Add("TestVerifyPKCS1v15", rsa_test_package.TestVerifyPKCS1v15, "pkcs1v15_test.go", 221);
         return TestHost.Run(registry, args);
     }
 }

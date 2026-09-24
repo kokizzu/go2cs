@@ -19,36 +19,6 @@ using io = io_package;
 
 partial class printer_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(global::go.unicode.utf8_package));
-}
-
 // Formatting issues:
 // - better comment formatting for /*-style comments at the end of a line (e.g. a declaration)
 //   when the comment spans multiple lines; if such a comment is just two lines, formatting is
@@ -406,7 +376,7 @@ internal static void parameters(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfiel
                 Ꮡp.print(token.COMMA);
                 Ꮡp.linebreak(closing, 0, ignore, true);
             } else 
-            if (mode == typeTParam && Ꮡfields.NumFields() == 1 && combinesWithName((~fields.List[0]).Type)) {
+            if (mode == typeTParam && Ꮡfields.NumFields() == 1 && combinesWithName(stripParensAlways((~fields.List[0]).Type))) {
                 // A type parameter list [P T] where the name P and the type expression T syntactically
                 // combine to another valid (value) expression requires a trailing comma, as in [P *T,]
                 // (or an enclosing interface as in [P interface(*T)]), so that the type parameter list
@@ -426,7 +396,7 @@ internal static void parameters(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfiel
 // combinesWithName reports whether a name followed by the expression x
 // syntactically combines to another valid (value) expression. For instance
 // using *T for x, "name *T" syntactically appears as the expression x*T.
-// On the other hand, using  P|Q or *P|~Q for x, "name P|Q" or name *P|~Q"
+// On the other hand, using  P|Q or *P|~Q for x, "name P|Q" or "name *P|~Q"
 // cannot be combined into a valid (value) expression.
 internal static bool combinesWithName(ast.Expr x) {
     switch (x.type()) {
@@ -437,12 +407,9 @@ internal static bool combinesWithName(ast.Expr x) {
         return combinesWithName((~xΔ1).X) && !isTypeElem((~xΔ1).Y);
     }
     case ж<ast.ParenExpr> xΔ1: {
-        throw panic("unexpected parenthesized expression");
-        break;
+        return !isTypeElem((~xΔ1).X);
     }}
     // name *x.X combines to name*x.X if x.X is not a type element
-    // name(x) combines but we are making sure at
-    // the call site that x is never parenthesized.
     return false;
 }
 

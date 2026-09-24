@@ -13,12 +13,6 @@ using go.@internal.runtime;
 
 partial class atomic_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 internal static void runParallel(nint N, nint iter, Action f) {
     GoFrame ᒐ = default;
     try {
@@ -439,7 +433,7 @@ private static readonly object badEscapeAnalysisOfˢ = (@string)"Bad escape anal
 public static void TestStorepNoWB(ж<testing.T> Ꮡt) {
     ref var p = ref heap(new array<ж<nint>>(2), out var Ꮡp);
     foreach (var (i, _) in p) {
-        atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡp.at<ж<nint>>(i)), new @unsafe.Pointer(@new<nint>()));
+        atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡp.at<ж<nint>>(i)), @unsafe.Pointer.FromPinnedBox(@new<nint>()));
     }
     if (p[0] == p[1]) {
         Ꮡt.Error(badEscapeAnalysisOfˢ);

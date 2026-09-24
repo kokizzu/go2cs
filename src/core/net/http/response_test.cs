@@ -28,6 +28,7 @@ partial class http_internal_test_package {
 
 [GoType] internal partial struct respTest {
     public @string Raw;
+    public @string RawOut;
     public global::go.net.http_package.Response Resp;
     public @string Body;
 }
@@ -72,6 +73,7 @@ internal static ж<global::go.net.http_package.Request> dummyReq11(@string metho
 internal static slice<respTest> respTests = new respTest[]{
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -89,6 +91,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.1 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -104,6 +107,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.1 204 No Content\r\n"u8 + "\r\n"u8 + "Body should not be read!\n"u8,
+        "HTTP/1.1 204 No Content\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "204 No Content"u8,
             StatusCode: 204,
@@ -118,6 +122,7 @@ internal static slice<respTest> respTests = new respTest[]{
         ""u8
     ),
     new(
+        "HTTP/1.0 200 OK\r\n"u8 + "Content-Length: 10\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         "HTTP/1.0 200 OK\r\n"u8 + "Content-Length: 10\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
@@ -137,6 +142,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "\r\n"u8 + "0a\r\n"u8 + "Body here\n\r\n"u8 + "09\r\n"u8 + "continued\r\n"u8 + "0\r\n"u8 + "\r\n"u8,
+        "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "\r\n"u8 + "13\r\n"u8 + "Body here\ncontinued\r\n"u8 + "0\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -153,6 +159,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Trailer: Content-MD5, Content-Sources\r\n"u8 + "Content-Length: 10\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Content-Length: 10\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -172,6 +179,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "Content-Length: 10\r\n"u8 + "\r\n"u8 + "0a\r\n"u8 + "Body here\n\r\n"u8 + "0\r\n"u8 + "\r\n"u8,
+        "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "\r\n"u8 + "a\r\n"u8 + "Body here\n\r\n"u8 + "0\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -187,6 +195,7 @@ internal static slice<respTest> respTests = new respTest[]{
         "Body here\n"u8
     ),
     new(
+        "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "\r\n"u8,
         "HTTP/1.1 200 OK\r\n"u8 + "Transfer-Encoding: chunked\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
@@ -204,6 +213,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -219,6 +229,7 @@ internal static slice<respTest> respTests = new respTest[]{
         ""u8
     ),
     new(
+        "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
         "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
@@ -236,6 +247,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "\r\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -251,6 +263,7 @@ internal static slice<respTest> respTests = new respTest[]{
         ""u8
     ),
     new(
+        "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 0\r\n"u8 + "\r\n"u8,
         "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 0\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
@@ -269,6 +282,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.0 303 \r\n\r\n"u8,
+        "HTTP/1.0 303 \r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "303 "u8,
             StatusCode: 303,
@@ -284,6 +298,7 @@ internal static slice<respTest> respTests = new respTest[]{
     ),
     new(
         "HTTP/1.0 303\r\n\r\n"u8,
+        "HTTP/1.0 303 303\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "303"u8,
             StatusCode: 303,
@@ -305,6 +320,7 @@ Content-Type: multipart/byteranges; boundary=18a75608c8f47cef
 
 some body
 """u8,
+        "HTTP/1.1 206 Partial Content\r\n"u8 + "Connection: close\r\n"u8 + "Content-Type: multipart/byteranges; boundary=18a75608c8f47cef\r\n"u8 + "\r\n"u8 + "some body"u8,
         new Response(
             Status: "206 Partial Content"u8,
             StatusCode: 206,
@@ -322,6 +338,7 @@ some body
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -338,6 +355,7 @@ some body
     ),
     new(
         "HTTP/1.1 206 Partial Content\r\n"u8 + "Content-Type: text/plain; charset=utf-8\r\n"u8 + "Accept-Ranges: bytes\r\n"u8 + "Content-Range: bytes 0-5/1862\r\n"u8 + "Content-Length: 6\r\n\r\n"u8 + "foobar"u8,
+        "HTTP/1.1 206 Partial Content\r\n"u8 + "Content-Length: 6\r\n"u8 + "Accept-Ranges: bytes\r\n"u8 + "Content-Range: bytes 0-5/1862\r\n"u8 + "Content-Type: text/plain; charset=utf-8\r\n"u8 + "\r\n"u8 + "foobar"u8,
         new Response(
             Status: "206 Partial Content"u8,
             StatusCode: 206,
@@ -357,6 +375,7 @@ some body
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 256\r\n"u8 + "Connection: keep-alive, close\r\n"u8 + "\r\n"u8,
+        "HTTP/1.1 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -375,6 +394,7 @@ some body
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 256\r\n"u8 + "Connection: keep-alive\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8,
+        "HTTP/1.1 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "Content-Length: 256\r\n"u8 + "\r\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -393,6 +413,7 @@ some body
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Transfer-Encoding: bogus\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -408,6 +429,7 @@ some body
     ),
     new(
         "HTTP/1.0 200 OK\r\n"u8 + "Transfer-Encoding: bogus\r\n"u8 + "Content-Length: 10\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
+        "HTTP/1.0 200 OK\r\n"u8 + "Connection: close\r\n"u8 + "Content-Length: 10\r\n"u8 + "\r\n"u8 + "Body here\n"u8,
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -425,6 +447,7 @@ some body
     ),
     new(
         "HTTP/1.1 200 OK\r\n"u8 + "Content-Encoding: gzip\r\n"u8 + "Content-Length: 23\r\n"u8 + "Connection: keep-alive\r\n"u8 + "Keep-Alive: timeout=7200\r\n\r\n"u8 + ((@string)(new byte[]{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x73, 0xf3, 0xf7, 0x07, 0x00, 0xab, 0x27, 0xd4, 0x1a, 0x03, 0x00, 0x00, 0x00})),
+        "HTTP/1.1 200 OK\r\n"u8 + "Content-Length: 23\r\n"u8 + "Connection: keep-alive\r\n"u8 + "Content-Encoding: gzip\r\n"u8 + "Keep-Alive: timeout=7200\r\n\r\n"u8 + ((@string)(new byte[]{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x73, 0xf3, 0xf7, 0x07, 0x00, 0xab, 0x27, 0xd4, 0x1a, 0x03, 0x00, 0x00, 0x00})),
         new Response(
             Status: "200 OK"u8,
             StatusCode: 200,
@@ -445,6 +468,7 @@ some body
     ),
     new(
         "HTTP/1.0  401 Unauthorized\r\n"u8 + "Content-type: text/html\r\n"u8 + "WWW-Authenticate: Basic realm=\"\"\r\n\r\n"u8 + "Your Authentication failed.\r\n"u8,
+        "HTTP/1.0 401 Unauthorized\r\n"u8 + "Connection: close\r\n"u8 + "Content-Type: text/html\r\n"u8 + "Www-Authenticate: Basic realm=\"\"\r\n"u8 + "\r\n"u8 + "Your Authentication failed.\r\n"u8,
         new Response(
             Status: "401 Unauthorized"u8,
             StatusCode: 401,
@@ -501,10 +525,20 @@ public static void TestWriteResponse(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("#%d: %v"u8, i, err);
             continue;
         }
-        err = resp.Write(io.Discard);
+        ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
+        err = resp.Write(new http_test_package.bytes_BufferжWriter(Ꮡbuf));
         if (err != default!) {
             Ꮡt.Errorf("#%d: %v"u8, i, err);
             continue;
+        }
+        {
+            @string got = Ꮡbuf.String();
+            @string want = tt.RawOut; if (got != want) {
+                Ꮡt.Errorf("#%d: response differs; got:\n----\n%v\n----\nwant:\n----\n%v\n----\n"u8,
+                    i,
+                    strings.ReplaceAll(got, "\r"u8, "\\r"u8),
+                    strings.ReplaceAll(want, "\r"u8, "\\r"u8));
+            }
         }
     }
 }

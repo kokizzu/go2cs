@@ -3,17 +3,11 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using atomic = sync.atomic_package;
+using atomic = go.sync.atomic_package;
 using @unsafe = unsafe_package;
-using sync;
+using go.sync;
 
 partial class sync_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
 
 // Cond implements a condition variable, a rendezvous point
 // for goroutines waiting for or announcing the occurrence

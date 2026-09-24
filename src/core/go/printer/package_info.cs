@@ -63,10 +63,10 @@ using static go.go.printer_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/printer/comment.go", "comment.cs", "AB8epKKCgoKCAAkUlKSCgoKCgqaCgpSClKaWgpiShIKWkoK4mJKCgoKCpJSUyoK4gtz8+oK6goKUgoKUgoKmqqKCgoKClIK4")]
-[assembly: global::go.GoPositionMap("go/printer/gobuild.go", "gobuild.cs", "AB8agoIACBSClIKCpoKCgriClISCzIKkloKWkoKCgpSClNrGgriClIKmgoKCgoKCgpSCgoK4loKGkoKCgpSClIKAgqaCggACENKklKaCgoKUgpSmgoKUgoKUpoI=")]
-[assembly: global::go.GoPositionMap("go/printer/nodes.go", "nodes.cs", "ADNcABsCgoKCgoKClIKCpt7ygpSU2oKUlILKggAIGrSCgpSCgpQABBoACgKCgoKCgpSCppaCgoKElIKmgpSUgpQABRCCgrqCgoKozIKWgoLezIKCgoKUgrgABhCCgoKUgoKCqIK4gpSCgriCgoKC3IKCpoKo3IKCgpSWgoKWlpSCgoKUlJSCloKClpQACRiykoKUgoKCgoK4gpSCuIKUppSkpu6CpoK6gIKC7LiCqIIAAhDSlqSo1Kqi9KSkpJSmooKUgpSUgoKUgpSClLiigoKUgoKmpoKClIKClpKCgpSCpoLWsoKCgoKElJSCgoKCyIKCgoKClJSUgpSkgoKCpqaCgoK6goKCgpaEgoKUgoKClIKCgpSCgoKmgpSCgpSCgpSCgpSmgoKUgrqCgoKCgpS4goKUlIKClIKCpoKUlIKClIKogoKs4pS0tpSmlIKCgqaUppSCgoK2ksiUpMamgoKClIKClJSClKaCgoKUpoKCgpQAAk4AJwKCuIKCgpaEgoKClIKCgoKmgoKmgpSCgriCguaihJS2toKClLaCgoK2gpSCgoKmgsiClIKCpoKUlMiClLaChIKCxoCmlIKCgti2goKCgoKUlIK4koKCgoK6ooKCgoK4koKCgoKWkoKCgoKCgoK4gqaCgoKUgoKmgqaCtoKagpS0pKKUgoKWgoKCgoKCgqaUgoKCypKUgoKCiIbSmKKCgraCgsiCgpSCtoK2graCtoKCgraUpKSCgqSCxgAEGAAKAoKUgsySAAEehICyyJKClKSkpKQAAz2AgoKmgoKCAAU0poKAgqSCqtKCgoCCgoKCgpSkgoKmgqaCggACEgAIAoKUgoKUgKamlIK4goKClIKUtoK6woKCgoKCpoKUpJSmgoC4gpakkpSmlIK2poKAgqSmgoKClIKCyoKUgoKClIKCgoKCuIK+6IKCgpSCgoKCgqaUlJSUptaihJS2AAYSgoKCwoCCgoKCgqaktoK2goKCgoK2goKCtoKClIKCgoK2graCtoKC3IKmgpTagoKCyLaCgoKCgqS6soL6goKUlIKCtoKCtoKCgoKUgoKCtoKClJSCgraCgpSCgoKUyIKCtoKCgqaCgpSCgpSCgoLGAAQ+ABsChJKCgrqCgoKCgpSCppSCpoKmlJamooKCgoKClIKUgoKClIKClLgACRKClJKCAAkWgpSCgoK6goKU3NKUgoKClIKCtoKUgoKCgpSCgpS2goKClIKUlIKUgsbIsoKChJSCgoCCgqaCgoKClIKmgoKClIKmpIK4AAoWgoKCgoK4gq4ACgqAgqaCupKCgIKklIKUqJKAgoCCxqjCgoKUlJSmgoKClIKUlAACEAAKAoKogpSEgoKCgoKCgoKClJSUgoKCloKU3LKClKaygoK4goKClIKC1qKUgrS0xM7CgpS0pKaigoKCAAcQpoKCuJS4soKCgoKC")]
-[assembly: global::go.GoPositionMap("go/printer/printer.go", "printer.cs", "AHHGAaKCgoK+xIKClJSAgraCpoKCgoKAgoKCguyssqr0gpaCgoKUlN7irsKmlKaSgoKkqJKCgoKUloKClIK6toKCqIKCqqLKlLSCyJSWgqiCgoKCgoKUggACGgAKAoKClJbKlsqWgpSWgoKUgJSCuLaCgoKCgoKUgpaClgACEgAIApSWlIKWpoKUgoKWgqiCpuSClKaCgriUzIKCgpaCpqziAAEQ4raCpIKUloKCgpIABhCCuoKWuM6igoKmqJKCgpSokgACENKCABQugoKCgoKUgoKUzIKCzIKAlIIACBKC3IKClIKUpoKCgoKUlKaCuO6CgoKUgpTKqIKCytKChIKmgJKogoKklIK6AAYQgoKoqIKCgpSCAAcWAAkCgpbMwoKUgpTIloKClqiSgoKmAAUQAAkCgoKCgrqChKaUgpSCpoKCgriCgoKUlgAKFoKKgpTKhpS6gtikgoDYpIKSggADEgALDIKClKTagq7CpqKUpKSkpKSkpoKCAAYcAA0ChJKClrimxpaCtsiUgriClIKCypSCtoKCtoKCgraC7oKUgpSElqS4goKCxqK4grqClIKUgoKClIK6goKWggADEAAIApSmlKiSlKSkpKSkpJSmgpSkpKSkgsaCtqakkoCCgqaUgoKUgsqAgqSAgoCC6oKClIKClIK0lLiWhJaUuICipLS0uKKAgra0tMSmhIIAGDKCggAJFgAIDIKCsoKUlJSkgqSCgqSCgsaCgraUgoKkgoKCtoKCxqSCpoSUgqYAJGaCggAJFKa0gpao9IKSgIK2gqjMloKEgoKWgoKClqiAgriAgqYADBzCrsI=")]
+[assembly: global::go.GoPositionMap("go/printer/comment.go", "comment.cs", "AA0epKKCgoKCAAkUlKSCgoKCgqaCgpSClKaWgpiShIKWkoK4mJKCgoKCpJSUyoK4gtz8+oK6goKUgoKUgoKmqqKCgoKClIK4")]
+[assembly: global::go.GoPositionMap("go/printer/gobuild.go", "gobuild.cs", "AA0agoIACBSClIKCpoKCgriClISCzIKkloKWkoKCgpSClNrGgriClIKmgoKCgoKCgpSCgoK4loKGkoKCgpSClIKAgqaCggACENKklKaCgoKUgpSmgoKUgoKUpoI=")]
+[assembly: global::go.GoPositionMap("go/printer/nodes.go", "nodes.cs", "ABVcABsCgoKCgoKClIKCpt7ygpSU2oKUlILKggAIGrSCgpSCgpQABBoACgKCgoKCgpSCppaCgoKElIKmgpSUgpQABRCCgrqCgoKozIKWgoLezIKCgoKUgrgABhCCgoKUgoKCqIK4gpSCgriCgoKC3IKCpoKo3IKCgpSWgoKWlpSCgoKUlJSCloKClpQACRiykoKUgoKCgoK4gpSCuIKUppSkpu6CpoK6gIKC7LiCqIIAAhDSlqSkpKqi9KSkpJSmooKUgpSUgoKUgpSClLiigoKUgoKmpoKClIKClpKCgpSCpoLWsoKCgoKElJSCgoKCyIKCgoKClJSUgpSkgoKCpqaCgoK6goKCgpaEgoKUgoKClIKCgpSCgoKmgpSCgpSCgpSCgpSmgoKUgrqCgoKCgpS4goKUlIKClIKCpoKUlIKClIKogoKs4pS0tpSmlIKCgqaUppSCgoK2ksiUpMamgoKClIKClJSClKaCgoKUpoKCgpQAAk4AJwKCuIKCgpaEgoKClIKCgoKmgoKmgpSCgriCguaihJS2toKClLaCgoK2gpSCgoKmgsiClIKCpoKUlMiClLaChIKCxoCmlIKCgti2goKCgoKUlIK4koKCgoK6ooKCgoK4koKCgoKWkoKCgoKCgoK4gqaCgoKUgoKmgqaCtoKagpS0pKKUgoKWgoKCgoKCgqaUgoKCypKUgoKCiIbSmKKCgraCgsiCgpSCtoK2graCtoKCgraUpKSCgqSCxgAEGAAKAoKUgsySAAEehICyyJKClKSkpKQAAz2AgoKmgoKCAAU0poKAgqSCqtKCgoCCgoKCgpSkgoKmgqaCggACEgAIAoKUgoKUgKamlIK4goKClIKUtoK6woKCgoKCpoKUpJSmgoC4gpakkpSmlIK2poKAgqSmgoKClIKCyoKUgoKClIKCgoKCuIK+6IKCgpSCgoKCgqaUlJSUptaihJS2AAYSgoKCwoCCgoKCgqaktoK2goKCgoK2goKCtoKClIKCgoK2graCtoKC3IKmgpTagoKCyLaCgoKCgqS6soL6goKUlIKCtoKCtoKCgoKUgoKCtoKClJSCgraCgpSCgoKUyIKCtoKCgqaCgpSCgpSCgoLGAAQ+ABsChJKCgrqCgoKCgpSCppSCpoKmlJamooKCgoKClIKUgoKClIKClLgACRKClJKCAAkWgpSCgoK6goKU3NKUgoKClIKCtoKUgoKCgpSCgpS2goKClIKUlIKUgsbIsoKChJSCgoCCgqaCgoKClIKmgoKClIKmpIK4AAoWgoKCgoK4gq4ACgqAgqaCupKCgIKklIKUqJKAgoCCxqjCgoKUlJSmgoKClIKUlAACEAAKAoKogpSEgoKCgoKCgoKClJSUgoKCloKU3LKClKaygoK4goKClIKC1qKUgrS0xM7CgpS0pKaigoKCAAcQpoKCuJS4soKCgoKC", "1251-1264:1;1578-1584:1;1878-1880:1")]
+[assembly: global::go.GoPositionMap("go/printer/printer.go", "printer.cs", "AFnGAaKCgoK+xIKClJSAgraCpoKCgoKAgoKCguyssqr0gpaCgoKUlN7irsKmlKaSgoKkqJKCgoKUloKClIK6toKCqIKCqqLKlLSCyJSWgqiCgoKCgoKUggACGgAKAoKClJbKlsqWgpSWgoKUgJSCuLaCgoKCgoKUgpaClgACEgAIApSWlIKWpoKUgoKWgqiCpuSClKaCgriUzIKCgpaCpqziAAEQ4raCpIKUloKCgpIABhCCuoKWuM6igoKmqJKCgpSokgACENKCABQugoKCgoKUgoKUzIKCzIKAlIIACBKC3IKClIKUpoKCgoKUlKaCuO6CgoKUgpTKqIKCytKChIKmgJKogoKklIK6AAYQgoKoqIKCgpSCAAcWAAkCgpbMwoKUgpTIloKClqiSgoKmAAUQAAkCgoKCgrqChKaUgpSCpoKCgriCgoKUlgAKFoKKgpTKhpS6gtikgoDYpIKSggADEgALDIKClKTagq7CpqKUpKSkpKSkpoKCAAYcAA0ChJKClrimxpaCtsiUgriClIKCypSCtoKCtoKCgraC7oKUgpSElqS4goKCxqK4grqClIKUgoKClIK6goKWggADEAAIApSmlKiSlKSkpKSkpJSmgpSkpKSkgsaCtqakkoCCgqaUgoKUgsqAgqSAgoCC6oKClIKClIK0lLiWhJaUuICipLS0uKKAgra0tMSmhIIAGDKCggAJFgAIDIKCsoKUlJSkgqSCgqSCgsaCgraUgoKkgoKCtoKCxqSCpoSUgqYAJGaCggAJFKa0gpao9IKSgIK2gqjMloKEgoKWgoKClqiAgriAgqYADBzCrsI=", "154-156:1;637-637:1")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -93,4 +93,28 @@ public static partial class printer_package
     public partial struct Config {}
     public partial struct Mode {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸbuildꓸconstraint() => builtin.initPackage(typeof(global::go.go.build.constraint_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸdocꓸcomment() => builtin.initPackage(typeof(global::go.go.doc.comment_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtabwriter() => builtin.initPackage(typeof(text.tabwriter_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

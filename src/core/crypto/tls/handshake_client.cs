@@ -8,10 +8,12 @@ using context = context_package;
 using crypto = crypto_package;
 using ecdsa = go.crypto.ecdsa_package;
 using ed25519 = go.crypto.ed25519_package;
+using mlkem = go.crypto.@internal.fips140.mlkem_package;
+using tls13 = go.crypto.@internal.fips140.tls13_package;
 using hpke = go.crypto.@internal.hpke_package;
-using mlkem768 = go.crypto.@internal.mlkem768_package;
 using rsa = go.crypto.rsa_package;
 using subtle = go.crypto.subtle_package;
+using fips140tls = go.crypto.tls.@internal.fips140tls_package;
 using Δx509 = go.crypto.x509_package;
 using errors = errors_package;
 using fmt = fmt_package;
@@ -20,23 +22,21 @@ using byteorder = go.@internal.byteorder_package;
 using godebug = go.@internal.godebug_package;
 using io = io_package;
 using net = net_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
 using ecdh = go.crypto.ecdh_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
+using go.crypto.tls.@internal;
 using go.sync;
 using math;
 
 partial class tls_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸmlkem768() {
-    builtin.initPackage(typeof(go.crypto.@internal.mlkem768_package));
-}
 
 [GoType] partial struct clientHandshakeState {
     internal ж<Conn> c;
@@ -57,12 +57,13 @@ internal static readonly @string tlsEitherServerNameOrˢ = "tls: either ServerNa
 internal static readonly @string tlsInvalidNextProtosˢ = "tls: invalid NextProtos value"u8;
 internal static readonly @string tlsNextProtosValuesTooˢ = "tls: NextProtos values too large"u8;
 internal static readonly @string tlsNoSupportedVersionsˢ = "tls: no supported versions satisfy MinVersion and MaxVersion"u8;
+internal static readonly @string tlsNoSupportedEllipticˢ = "tls: no supported elliptic curves for ECDHE"u8;
 internal static readonly @string tlsCurvePreferencesˢ = "tls: CurvePreferences includes unsupported curve"u8;
 internal static readonly @string tlsMinVersionMustBeˢ = "tls: MinVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
 internal static readonly @string tlsMaxVersionMustBeˢ = "tls: MaxVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
 internal static readonly @string tlsˢ = "tls: EncryptedClientHelloConfigList contains no valid configs"u8;
 
-internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, error) makeClientHello(this ж<Conn> Ꮡc) {
+internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echClientContext>, error) makeClientHello(this ж<Conn> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
     var config = c.config;
@@ -158,38 +159,48 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         if (len((~hello).supportedVersions) == 1) {
             hello.Value.cipherSuites = default!;
         }
+        if (fips140tls.Required()){
+            hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13FIPS);
+        } else 
         if (hasAESGCMHardwareSupport){
             hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13);
         } else {
             hello.Value.cipherSuites = appendꓸꓸꓸ((~hello).cipherSuites, defaultCipherSuitesTLS13NoAES);
         }
+        if (len((~hello).supportedCurves) == 0) {
+            return (default!, default!, default!, errors.New(tlsNoSupportedEllipticˢ));
+        }
         ref var curveID = ref heap<CurveID>(out var ᏑcurveID);
-        curveID = config.curvePreferences(maxVersion)[0];
+        curveID = (~hello).supportedCurves[0];
         keyShareKeys = Ꮡ(new keySharePrivateKeys(curveID: curveID));
-        if (curveID == x25519Kyber768Draft00){
+        // Note that if X25519MLKEM768 is supported, it will be first because
+        // the preference order is fixed.
+        if (curveID == X25519MLKEM768){
             (keyShareKeys.Value.ecdhe, err) = generateECDHEKey(config.rand(), X25519);
             if (err != default!) {
                 return (default!, default!, default!, err);
             }
-            var seed = new slice<byte>(mlkem768.SeedSize);
+            var seed = new slice<byte>(mlkem.SeedSize);
             {
                 var (_, errΔ2) = io.ReadFull(config.rand(), seed); if (errΔ2 != default!) {
                     return (default!, default!, default!, errΔ2);
                 }
             }
-            (keyShareKeys.Value.kyber, err) = mlkem768.NewKeyFromSeed(seed);
+            (keyShareKeys.Value.mlkem, err) = mlkem.NewDecapsulationKey768(seed);
             if (err != default!) {
                 return (default!, default!, default!, err);
             }
-            // For draft-tls-westerbaan-xyber768d00-03, we send both a hybrid
-            // and a standard X25519 key share, since most servers will only
-            // support the latter. We reuse the same X25519 ephemeral key for
-            // both, as allowed by draft-ietf-tls-hybrid-design-09, Section 3.2.
+            var mlkemEncapsulationKey = (~keyShareKeys).mlkem.EncapsulationKey().Bytes();
+            var x25519EphemeralKey = (~keyShareKeys).ecdhe.PublicKey().Bytes();
             hello.Value.keyShares = new keyShare[]{
-                new(group: x25519Kyber768Draft00, data: appendꓸꓸꓸ((~keyShareKeys).ecdhe.PublicKey().Bytes(),
-                    (~keyShareKeys).kyber.EncapsulationKey())),
-                new(group: X25519, data: (~keyShareKeys).ecdhe.PublicKey().Bytes())
+                new(group: X25519MLKEM768, data: appendꓸꓸꓸ(mlkemEncapsulationKey, x25519EphemeralKey))
             }.slice();
+            // If both X25519MLKEM768 and X25519 are supported, we send both key
+            // shares (as a fallback) and we reuse the same X25519 ephemeral
+            // key, as allowed by draft-ietf-tls-hybrid-design-09, Section 3.2.
+            if (slices.Contains((~hello).supportedCurves, X25519)) {
+                hello.Value.keyShares = append((~hello).keyShares, new keyShare(group: X25519, data: x25519EphemeralKey));
+            }
         } else {
             {
                 var (_, ok) = curveForCurveID(curveID); if (!ok) {
@@ -213,7 +224,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         }
         hello.Value.quicTransportParameters = p;
     }
-    ж<echContext> ech = default!;
+    ж<echClientContext> ech = default!;
     if ((~c.config).EncryptedClientHelloConfigList != default!) {
         if ((~c.config).MinVersion != 0 && (~c.config).MinVersion < VersionTLS13) {
             return (default!, default!, default!, errors.New(tlsMinVersionMustBeˢ));
@@ -229,7 +240,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         if (echConfig == nil) {
             return (default!, default!, default!, errors.New(tlsˢ));
         }
-        ech = Ꮡ(new echContext(config: echConfig));
+        ech = Ꮡ(new echClientContext(config: echConfig));
         hello.Value.encryptedClientHello = new byte[]{1}.slice(); // indicate inner hello
         // We need to explicitly set these 1.2 fields to nil, as we do not
         // marshal them when encoding the inner hello, otherwise transcripts
@@ -248,7 +259,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         }
         (ech.Value.kdfID, ech.Value.aeadID) = (suite.KDFID, suite.AEADID);
         var info = appendꓸꓸꓸ(slice<byte>("tls ech\x00"u8), (~(~ech).config).raw);
-        (ech.Value.encapsulatedKey, ech.Value.hpkeContext, errΔ4) = hpke.SetupSender((~(~ech).config).KemID, suite.KDFID, suite.AEADID, echPK.OrTypedNil(), info);
+        (ech.Value.encapsulatedKey, ech.Value.hpkeContext, errΔ4) = hpke.SetupSender((~(~ech).config).KemID, suite.KDFID, suite.AEADID, echPK, info);
         if (errΔ4 != default!) {
             return (default!, default!, default!, errΔ4);
         }
@@ -256,7 +267,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
     return (hello, keyShareKeys, ech, default!);
 }
 
-[GoType] partial struct echContext {
+[GoType] partial struct echClientContext {
     internal ж<echConfig> config;
     internal ж<hpke.Sender> hpkeContext;
     internal slice<byte> encapsulatedKey;
@@ -265,6 +276,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
     internal uint16 kdfID;
     internal uint16 aeadID;
     internal bool echRejected;
+    internal slice<byte> retryConfigs;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -338,12 +350,16 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
         if ((~hello).earlyData) {
             var suite = cipherSuiteTLS13ByID((~session).cipherSuite);
             var transcript = (~suite).hash.New();
+            var transcriptHello = hello;
+            if (ech != nil) {
+                transcriptHello = ech.Value.innerHello;
+            }
             {
-                var errΔ3 = transcriptMsg(new clientHelloMsgжhandshakeMessage(hello), new hash_HashᴠtranscriptHash(transcript)); if (errΔ3 != default!) {
+                var errΔ3 = transcriptMsg(new clientHelloMsgжhandshakeMessage(transcriptHello), new hash_HashᴠtranscriptHash(transcript)); if (errΔ3 != default!) {
                     err = errΔ3; goto ᒐdone;
                 }
             }
-            var earlyTrafficSecret = suite.deriveSecret(earlySecret, clientEarlyTrafficLabel, transcript);
+            var earlyTrafficSecret = earlySecret.ClientEarlyTrafficSecret(new hash_HashᴠHash(transcript));
             c.quicSetWriteSecret(QUICEncryptionLevelEarly, (~suite).id, earlyTrafficSecret);
         }
         // serverHelloMsg is not included in the transcript
@@ -399,9 +415,9 @@ internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Contex
     ᒐdone: return Ꮡerr.ValueSlot;
 }
 
-internal static (ж<SessionState> session, slice<byte> earlySecret, slice<byte> binderKey, error err) loadSession(this ж<Conn> Ꮡc, ж<clientHelloMsg> Ꮡhello) {
+internal static (ж<SessionState> session, ж<tls13.EarlySecret> earlySecret, slice<byte> binderKey, error err) loadSession(this ж<Conn> Ꮡc, ж<clientHelloMsg> Ꮡhello) {
     ж<SessionState> session = default!;
-    slice<byte> earlySecret = default!;
+    ж<tls13.EarlySecret> earlySecret = default!;
     slice<byte> binderKey = default!;
     error err = default!;
 
@@ -446,9 +462,6 @@ internal static (ж<SessionState> session, slice<byte> earlySecret, slice<byte> 
     if (!versOk) {
         return (default!, default!, default!, default!);
     }
-    // Check that the cached server certificate is not expired, and that it's
-    // valid for the ServerName. This should be ensured by the cache key, but
-    // protect the application from a faulty ClientSessionCache implementation.
     if (c.config.time().After((~(~session).peerCertificates[0]).NotAfter)) {
         // Expired certificate, delete the entry.
         (~c.config).ClientSessionCache.Put(cacheKey, nil);
@@ -461,8 +474,20 @@ internal static (ж<SessionState> session, slice<byte> earlySecret, slice<byte> 
         }
         {
             var errΔ1 = (~session).peerCertificates[0].VerifyHostname((~c.config).ServerName); if (errΔ1 != default!) {
+                // This should be ensured by the cache key, but protect the
+                // application from a faulty ClientSessionCache implementation.
                 return (default!, default!, default!, default!);
             }
+        }
+        var opts = new Δx509.VerifyOptions(
+            CurrentTime: c.config.time(),
+            Roots: (~c.config).RootCAs,
+            KeyUsages: new Δx509.ExtKeyUsage[]{Δx509.ExtKeyUsageServerAuth}.slice()
+        );
+        if (!anyValidVerifiedChain((~session).verifiedChains, opts)) {
+            // No valid chains, delete the entry.
+            (~c.config).ClientSessionCache.Put(cacheKey, nil);
+            return (default!, default!, default!, default!);
         }
     }
     if ((~session).version != VersionTLS13) {
@@ -520,8 +545,8 @@ internal static (ж<SessionState> session, slice<byte> earlySecret, slice<byte> 
     hello.pskIdentities = new pskIdentity[]{identity}.slice();
     hello.pskBinders = new slice<byte>[]{new slice<byte>((~cipherSuite).hash.Size())}.slice();
     // Compute the PSK binders. See RFC 8446, Section 4.2.11.2.
-    earlySecret = cipherSuite.extract((~session).secret, default!);
-    binderKey = cipherSuite.deriveSecret(earlySecret, resumptionBinderLabel, default!);
+    earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~cipherSuite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~session).secret);
+    binderKey = earlySecret.ResumptionBinderKey();
     var transcript = (~cipherSuite).hash.New();
     {
         var errΔ2 = computeAndUpdatePSK(Ꮡhello, binderKey, transcript, cipherSuite.finishedHash); if (errΔ2 != default!) {
@@ -672,11 +697,11 @@ internal static readonly @string tlsServerChoseAnˢ = "tls: server chose an unco
             return errors.New(tlsServerChoseAnˢ);
         }
     }
-    if ((~(~hs.c).config).CipherSuites == default! && !needFIPS() && rsaKexCiphers[(~hs.suite).id]) {
+    if ((~(~hs.c).config).CipherSuites == default! && !fips140tls.Required() && rsaKexCiphers[(~hs.suite).id]) {
         tlsrsakex.Value(); // ensure godebug is initialized
         tlsrsakex.IncNonDefault();
     }
-    if ((~(~hs.c).config).CipherSuites == default! && !needFIPS() && tdesCiphers[(~hs.suite).id]) {
+    if ((~(~hs.c).config).CipherSuites == default! && !fips140tls.Required() && tdesCiphers[(~hs.suite).id]) {
         tls3des.Value(); // ensure godebug is initialized
         tls3des.IncNonDefault();
     }
@@ -747,12 +772,12 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
     if (ok) {
         err = keyAgreement.processServerKeyExchange((~c).config, hs.hello, hs.serverHello, (~c).peerCertificates[0], skx);
         if (err != default!) {
-            c.sendAlert(alertUnexpectedMessage);
+            c.sendAlert(alertIllegalParameter);
             return err;
         }
         if (len((~skx).key) >= 3 && (~skx).key[0] == 3) {
             /* named curve */
-            c.Value.curveID = ((CurveID)byteorder.BeUint16((~skx).key[1..]));
+            c.Value.curveID = ((CurveID)byteorder.BEUint16((~skx).key[1..]));
         }
         (msg, err) = c.readHandshake(new ΔfinishedHashжtranscriptHash(Ꮡhs.of(clientHandshakeState.ᏑfinishedHash)));
         if (err != default!) {
@@ -976,7 +1001,7 @@ internal static readonly @string tlsServerAdvertisedˢ = "tls: server advertised
 internal static readonly @string tlsServerSelectedˢ2 = "tls: server selected unadvertised ALPN protocol"u8;
 
 // checkALPN ensure that the server's choice of ALPN protocol is compatible with
-// the protocols that we advertised in the Client Hello.
+// the protocols that we advertised in the ClientHello.
 internal static error checkALPN(slice<@string> clientProtos, @string serverProto, bool quic) {
     if (serverProto == ""u8) {
         if (quic && len(clientProtos) > 0) {
@@ -1164,8 +1189,12 @@ internal static error verifyServerCertificate(this ж<Conn> Ꮡc, slice<slice<by
             foreach (var (_, cert) in certs[1..]) {
                 opts.Intermediates.AddCert(cert);
             }
-            error err = default!;
-            (c.verifiedChains, err) = certs[0].Verify(opts);
+            var (chains, err) = certs[0].Verify(opts);
+            if (err != default!) {
+                Ꮡc.sendAlert(alertBadCertificate);
+                return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: err)));
+            }
+            (c.verifiedChains, err) = fipsAllowedChains(chains);
             if (err != default!) {
                 Ꮡc.sendAlert(alertBadCertificate);
                 return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: err)));
@@ -1182,8 +1211,12 @@ internal static error verifyServerCertificate(this ж<Conn> Ꮡc, slice<slice<by
         foreach (var (_, cert) in certs[1..]) {
             opts.Intermediates.AddCert(cert);
         }
-        error err = default!;
-        (c.verifiedChains, err) = certs[0].Verify(opts);
+        var (chains, err) = certs[0].Verify(opts);
+        if (err != default!) {
+            Ꮡc.sendAlert(alertBadCertificate);
+            return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: err)));
+        }
+        (c.verifiedChains, err) = fipsAllowedChains(chains);
         if (err != default!) {
             Ꮡc.sendAlert(alertBadCertificate);
             return new CertificateVerificationErrorжerror(Ꮡ(new CertificateVerificationError(UnverifiedCertificates: certs, Err: err)));

@@ -2,7 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using iter = iter_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 
 partial class main_package {
 
@@ -82,7 +82,7 @@ internal static iter.Seq<nint> panicCleanupSeq() {
 
 internal static iter.Seq<nint> goexitSeq() {
     return (Func<nint, bool> yield) => {
-        Δruntime.Goexit();
+        runtime.Goexit();
     };
 }
 

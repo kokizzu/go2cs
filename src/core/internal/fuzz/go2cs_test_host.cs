@@ -33,7 +33,7 @@ internal static class Go2CsTestHost
             "worker_test.go",
         });
         registry.Add("TestByteRoundTrip", fuzz_internal_test_package.TestByteRoundTrip, "encoding_test.go", 294);
-        registry.Add("TestByteSliceMutators", fuzz_internal_test_package.TestByteSliceMutators, "mutators_byteslice_test.go", 56);
+        registry.Add("TestByteSliceMutators", fuzz_internal_test_package.TestByteSliceMutators, "mutators_byteslice_test.go", 51);
         registry.Add("TestInt8RoundTrip", fuzz_internal_test_package.TestInt8RoundTrip, "encoding_test.go", 309);
         registry.Add("TestMinimizeFlaky", fuzz_internal_test_package.TestMinimizeFlaky, "minimize_test.go", 165);
         registry.Add("TestMinimizeInput", fuzz_internal_test_package.TestMinimizeInput, "minimize_test.go", 21);

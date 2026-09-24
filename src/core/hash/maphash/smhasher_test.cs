@@ -101,6 +101,7 @@ internal static ж<hashSet> newHashSet() {
 }
 
 [GoRecv] internal static void check(this ref hashSet s, ж<testing.T> Ꮡt) {
+    Ꮡt.Helper();
     var list = s.list;
     slices.Sort<slice<uint64>, uint64>(list);
     nint collisions = 0;
@@ -269,6 +270,7 @@ public static void TestSmhasherSparse(ж<testing.T> Ꮡt) {
 internal static void sparse(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, nint n, nint k) {
     ref var h = ref Ꮡh.DerefOrNull();
 
+    Ꮡt.Helper();
     var b = new slice<byte>(n / 8);
     setbits(Ꮡh, b, 0, k);
     h.check(Ꮡt);
@@ -310,6 +312,7 @@ public static void TestSmhasherPermutation(ж<testing.T> Ꮡt) {
 internal static void permutation(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, slice<uint32> s, nint n) {
     ref var h = ref Ꮡh.DerefOrNull();
 
+    Ꮡt.Helper();
     var b = new slice<byte>(n * 4);
     genPerm(Ꮡh, b, s, 0);
     h.check(Ꮡt);
@@ -388,12 +391,13 @@ public static void TestSmhasherAvalanche(ж<testing.T> Ꮡt) {
 internal static void avalancheTest1(ж<testing.T> Ꮡt, key k) {
     ref var t = ref Ꮡt.DerefOrNull();
 
+    Ꮡt.Helper();
     UntypedInt REP = 100000;
     var r = rand.New(rand.NewSource(1234));
     nint n = k.bits();
     // grid[i][j] is a count of whether flipping
     // input bit i affects output bit j.
-    var grid = new slice<array<nint>>(n, () => new(64));
+    var grid = GoReflect.WithElemDims(new slice<array<nint>>(n, () => new(64)), 64);
     for (nint z = 0; z < REP; z++) {
         // pick a random key, hash it
         k.random(r);
@@ -452,7 +456,7 @@ internal static void windowed(ж<testing.T> Ꮡt, key k) {
     UntypedInt BITS = 16;
     var h = newHashSet();
     for (nint r = 0; r < k.bits(); r++) {
-        for (nint i = 0; i < (1 << (int)(BITS)); i++) {
+        for (nint i = 0; i < (nint)((1 << (int)(BITS))); i++) {
             k.clear();
             for (nint j = 0; j < BITS; j++) {
                 if ((nint)(i.Rsh((nuint)j) & 1) != 0) {
@@ -485,6 +489,7 @@ public static void TestSmhasherText(ж<testing.T> Ꮡt) {
 internal static void text(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, @string prefix, @string suffix) {
     ref var h = ref Ꮡh.DerefOrNull();
 
+    Ꮡt.Helper();
     const nint N = 4;
     @string S = "ABCDEFGHIJKLMNOPQRSTabcdefghijklmnopqrst0123456789"u8;
     const nint L = /* len(S) */ 50;

@@ -49,7 +49,7 @@ using static go.text.tabwriter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/tabwriter/tabwriter.go", "tabwriter.cs", "AH3eAeiAgoKUpsqAgoCC/pKCgoKCgoIAJoQBAA8CgpSCgoKCgpSUlISEqJKCgoKCgpSUAAgSgoKClIK4goKClAAFEIKUgqaCgoKUgqjKooKCloSClJaUgriCkoKCgraClIK6poKmpq7igoKChIIACBSCloKCgoKCppSAgraCzIK6goKCqKiSgqiSggAKGJKUpKQABBDClIKC2LSCqqKCgoKCptKAgpSUgIKCpAAHEMLaAAgCgoLsxIKUlKiCAAcQAAoCloKClJaCgoKCpILcgpTegoKCkpSopIKCgtyUgoKUgoLMgoLaog==")]
+[assembly: go.GoPositionMap("text/tabwriter/tabwriter.go", "tabwriter.cs", "AGveAeiAgoKUpsqAgoCC/pKCgoKCgoIAJoQBAA8CgpSCgoKCgpSUlISEqJKCgoKCgpSUAAgSgoKClIK4goKClAAFEIKUgqaCgoKUgqjKooKCloSClJaUgriCkoKCgraClIK6poKmpq7igoKChIIACBSCloKCgoKCppSAgraCzIK6goKCqKiSgqiSggAKGJKUpKQABBDClIKC2LSCqqKCgoKCptKAgpSUgIKCpAAHEMLaAAgCgoLsxIKUlKiCAAcQAAoCloKClJaCgoKCpILcgpTegoKCkpSopIKCgtyUgoKUgoLMgoLaog==")]
 // </GoSourcePositionMaps>
 
 namespace go.text;
@@ -68,4 +68,16 @@ public static partial class tabwriter_package
     internal partial struct osError {}
     [GoValueClone("padbytes")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

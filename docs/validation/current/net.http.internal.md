@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/http/internal` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `be58eb4aa`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**14 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**14 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -33,11 +35,15 @@ comparison — it is the evidence behind the `net/http/internal` row in
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/net/http/internal/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestChunkReaderAllocs` | `alloc-profile` | exact-count AllocsPerRun assert (fails above 1.5, i.e. wants 1): the measured loop constructs a fresh reader every iteration, and the converted NewChunkedReader emits TWO managed objects where Go allocates one - the box Ꮡ(new chunkedReader(r: br)), which is the direct analogue of Go's &chunkedReader{}, plus a chunkedReaderжReader interface shell, because C# has no two-word interface value and the shell IS the itab+data fused into an object (docs/phase4/DESIGN-iface-shell-caching.md section 2). Measured 2 objects/run against Go's 1, deterministically. Not amortizable for this shape: P3's per-referent shell cache is keyed on the ж-box and this loop mints a new reader each iteration, so a fresh shell is required regardless - the same doc rules that nothing removes the shell allocation short of IDynamicInterfaceCastable. Distinct from alloc-count-semantics: go2cs's counter is a true object count here (a lower bound on the real total), not an incomparable byte-derived shim, so the divergence is a genuine profile difference and is disclosed as one |
+| `TestChunkReaderAllocs` | `deferred` | exact-count AllocsPerRun assert (fails above 1.5, i.e. wants 1): the measured loop constructs a fresh reader every iteration, and the converted NewChunkedReader emits TWO managed objects where Go allocates one - the box Ꮡ(new chunkedReader(r: br)), which is the direct analogue of Go's &chunkedReader{}, plus a chunkedReaderжReader interface shell, because C# has no two-word interface value and the shell IS the itab+data fused into an object (docs/phase4/DESIGN-iface-shell-caching.md section 2). Measured 2 objects/run against Go's 1, deterministically. Not amortizable for this shape: P3's per-referent shell cache is keyed on the ж-box and this loop mints a new reader each iteration, so a fresh shell is required regardless - the same doc rules that nothing removes the shell allocation short of IDynamicInterfaceCastable. Distinct from alloc-count-semantics: go2cs's counter is a true object count here (a lower bound on the real total), not an incomparable byte-derived shim, so the divergence is a genuine profile difference and is disclosed as one. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. The 2026-08-25 ATTRIBUTION above is SUPERSEDED: the two counted objects are the box at chunked.cs:33 (the direct analogue of Go's &chunkedReader{}, Go's own allocation) and `chunkedReader.buf`, an `array<byte> buf = new(2)` field (chunked.cs:40), which is the excess. The chunkedReaderжReader shell at :33 and the per-read bufio shell at :114 are UNCOUNTED (AllocationCounter.cs:50-53). The shell's structural ruling itself stands. |

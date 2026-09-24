@@ -13,6 +13,7 @@ using static go.net.netip_package;
 using static go.net.netip_test_package;
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6e616d6520737472696e673b20697020737472696e677d", "parseBenchInputsᴛ1")]
 // </ExportedTypeAliases>
 
 // <InterfaceImplementations>
@@ -47,6 +48,7 @@ public static partial class netip_test_package
     internal partial interface netipTypeCmp {}
     internal partial struct BenchmarkBinaryMarshalRoundTrip_tests {}
     internal partial struct BenchmarkPrefixMasking_tests {}
+    internal partial struct TestAddrAppendText_tests {}
     [GoValueClone("@in")] internal partial struct TestAddrFrom16_tests {}
     internal partial struct TestAddrFromSlice_tests {}
     internal partial struct TestAddrLessCompare_tests {}
@@ -54,13 +56,13 @@ public static partial class netip_test_package
     internal partial struct TestAddrPortCompare_tests {}
     internal partial struct TestAddrPortMarshalTextString_tests {}
     internal partial struct TestAddrPortMarshalUnmarshalBinary_tests {}
+    internal partial struct TestAddrPortString_tests {}
     internal partial struct TestAddrStringAllocs_tests {}
     internal partial struct TestAddrWellKnown_tests {}
     [GoValueClone("want")] internal partial struct TestAs4_tests {}
     internal partial struct TestAsSlice_tests {}
     internal partial struct TestIPProperties_tests {}
     internal partial struct TestIPStringExpanded_tests {}
-    internal partial struct TestInvalidAddrPortString_tests {}
     internal partial struct TestIs4AndIs6_tests {}
     internal partial struct TestIs4In6_tests {}
     internal partial struct TestParseAddr_type {}
@@ -80,4 +82,25 @@ public static partial class netip_test_package
     [GoValueClone("ip4")] internal partial struct ip4i {}
     internal partial struct parseBenchInputsᴛ1 {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(go.encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸflag() => builtin.initPackage(typeof(flag_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() => builtin.initPackage(typeof(@internal.testenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸunique() => builtin.initPackage(typeof(unique_package));
+    // </ImportInitializers>
 }

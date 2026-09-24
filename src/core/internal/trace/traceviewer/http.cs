@@ -15,18 +15,6 @@ using net;
 
 partial class traceviewer_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸembed() {
-    builtin.initPackage(typeof(embed_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() {
-    builtin.initPackage(typeof(net.http_package));
-}
-
 public static httpꓸHandler MainHandler(slice<View> views) {
     var viewsʗ1 = views;
     return new http_HandlerFuncᴠΔHandler(new http.HandlerFunc((http.ResponseWriter w, ж<http.Request> _) => {
@@ -445,7 +433,7 @@ function onTraceViewerImportFail() {
 """u8;
 
 //go:embed static/trace_viewer_full.html static/webcomponents.min.js
-internal static embed.FS staticContent;
+internal static embed.FS staticContent = go.embed_package.ΔEmbedFS(typeof(traceviewer_package).Assembly, "go.embed/internal/trace/traceviewer/", ["static/", "static/trace_viewer_full.html", "static/webcomponents.min.js"]);
 
 public static httpꓸHandler StaticHandler() {
     return http.FileServer(http.FS(new embed_FSᴠFS(staticContent)));

@@ -26,96 +26,6 @@ using go.path;
 
 partial class zip_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhashꓸcrc32() {
-    builtin.initPackage(typeof(go.hash.crc32_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal static ж<godebug.Setting> zipinsecurepath = godebug.New("zipinsecurepath"u8);
 
 public static error ErrFormat = errors.New("zip: not a valid zip file"u8);
@@ -995,7 +905,18 @@ internal static void initFileList(this ж<Reader> Ꮡr) {
                     continue;
                 }
             }
-            for (@string dir = path.Dir(name); dir != "."u8; dir = path.Dir(dir)) {
+            @string dir = name;
+            while (ᐧ) {
+                {
+                    nint idxΔ3 = strings.LastIndex(dir, "/"u8); if (idxΔ3 < 0){
+                        break;
+                    } else {
+                        dir = dir[..(int)(idxΔ3)];
+                    }
+                }
+                if (dirs[dir]) {
+                    break;
+                }
                 dirs[dir] = true;
             }
             nint idx = len(Ꮡr.Value.fileList);
@@ -1070,14 +991,8 @@ public static (fs.File, error) Open(this ж<Reader> Ꮡr, @string name) {
 internal static (@string dir, @string elem, bool isDir) split(@string name) {
     bool isDir = default!;
 
-    if (len(name) > 0 && name[len(name) - 1] == (rune)'/') {
-        isDir = true;
-        name = name[..(int)(len(name) - 1)];
-    }
-    nint i = len(name) - 1;
-    while (i >= 0 && name[i] != (rune)'/') {
-        i--;
-    }
+    (name, isDir) = strings.CutSuffix(name, "/"u8);
+    nint i = strings.LastIndexByte(name, (rune)'/');
     if (i < 0) {
         return (".", name, isDir);
     }

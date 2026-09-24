@@ -8,25 +8,15 @@ using rand = crypto.rand_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using io = io_package;
+using maps = maps_package;
 using textproto = net.textproto_package;
 using slices = slices_package;
 using strings = strings_package;
 using crypto;
+using iter = iter_package;
 using net;
 
 partial class multipart_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // A Writer generates multipart messages.
 [GoType] partial struct Writer {
@@ -132,12 +122,7 @@ public static (io.Writer, error) CreatePart(this ж<Writer> Ꮡw, textproto.MIME
     } else {
         fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "--%s\r\n"u8, w.boundary);
     }
-    var keys = new slice<@string>(0, len(header));
-    foreach (var (k, _) in header) {
-        keys = append(keys, k);
-    }
-    slices.Sort<slice<@string>, @string>(keys);
-    foreach (var (_, k) in keys) {
+    foreach (var (_, k) in slices.Sorted(maps.Keys<textproto.MIMEHeader, @string, slice<@string>>(header))) {
         foreach (var (_, v) in header[k]) {
             fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "%s: %s\r\n"u8, k, v);
         }

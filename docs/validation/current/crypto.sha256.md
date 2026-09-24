@@ -6,50 +6,55 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/sha256` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**23 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**22 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
 | `TestAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestBlockGeneric` | pass | pass |
 | `TestBlockSize` | pass | pass |
 | `TestCgo` | pass | pass |
 | `TestGolden` | pass | pass |
 | `TestGoldenMarshal` | pass | pass |
 | `TestGoldenMarshal/224` | pass | pass |
 | `TestGoldenMarshal/256` | pass | pass |
+| `TestHash` | pass | pass |
+| `TestHash/SHA-224` | pass | pass |
+| `TestHash/SHA-224/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-224/ResetState` | pass | pass |
+| `TestHash/SHA-224/StatefulWrite` | pass | pass |
+| `TestHash/SHA-224/SumAppend` | pass | pass |
+| `TestHash/SHA-224/WriteWithoutError` | pass | pass |
+| `TestHash/SHA-256` | pass | pass |
+| `TestHash/SHA-256/OutOfBoundsRead` | pass | pass |
+| `TestHash/SHA-256/ResetState` | pass | pass |
+| `TestHash/SHA-256/StatefulWrite` | pass | pass |
+| `TestHash/SHA-256/SumAppend` | pass | pass |
+| `TestHash/SHA-256/WriteWithoutError` | pass | pass |
 | `TestLargeHashes` | pass | pass |
 | `TestMarshalTypeMismatch` | pass | pass |
-| `TestSHA256Hash` | pass | pass |
-| `TestSHA256Hash/SHA-224` | pass | pass |
-| `TestSHA256Hash/SHA-224/OutOfBoundsRead` | pass | pass |
-| `TestSHA256Hash/SHA-224/ResetState` | pass | pass |
-| `TestSHA256Hash/SHA-224/StatefulWrite` | pass | pass |
-| `TestSHA256Hash/SHA-224/SumAppend` | pass | pass |
-| `TestSHA256Hash/SHA-224/WriteWithoutError` | pass | pass |
-| `TestSHA256Hash/SHA-256` | pass | pass |
-| `TestSHA256Hash/SHA-256/OutOfBoundsRead` | pass | pass |
-| `TestSHA256Hash/SHA-256/ResetState` | pass | pass |
-| `TestSHA256Hash/SHA-256/StatefulWrite` | pass | pass |
-| `TestSHA256Hash/SHA-256/SumAppend` | pass | pass |
-| `TestSHA256Hash/SHA-256/WriteWithoutError` | pass | pass |
 | `TestSize` | pass | pass |
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/crypto/sha256/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [8]uint32 state and [64]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface |
+| `TestAllocations` | `deferred` | want-zero AllocsPerRun assert: Sum copies the digest (`d0 := *d`) so the caller can keep writing, and that copy must deep-copy the digest's [8]uint32 state and [64]byte block — golib's array<T> is a struct over a heap T[], so the copy is two managed allocations where Go's is stack-resident; Write/Sum also allocate through the hash.Hash interface surface. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. 46 per run = 36 + 4 + 4 + 2. The measured closure mints a source-generated hash.Hash shell for every New* call on every run (sha256_test.cs:322/:328; sha256.cs:40/:51): 2 per run, UNCOUNTED (AllocationCounter.cs:50-53), ruled structural on 2026-08-25. |
 
 ## Excluded declarations
 

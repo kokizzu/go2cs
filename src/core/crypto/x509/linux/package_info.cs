@@ -53,6 +53,10 @@ using static go.crypto.x509_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("63727970746f2f783530392e7075624b6579457175616c", "alreadyInChain_pubKeyEqual")]
+[assembly: GoDynamicTypeLift("696e746572666163657b457175616c2863727970746f2e5075626c69634b65792920626f6f6c7d", "alreadyInChain_pubKeyEqual")]
+[assembly: GoDynamicTypeLift("7374727563747b616c676f2063727970746f2f783530392e5369676e6174757265416c676f726974686d3b206e616d6520737472696e673b206f696420656e636f64696e672f61736e312e4f626a6563744964656e7469666965723b20706172616d7320656e636f64696e672f61736e312e52617756616c75653b207075624b6579416c676f2063727970746f2f783530392e5075626c69634b6579416c676f726974686d3b20686173682063727970746f2e486173683b20697352534150535320626f6f6c7d", "signatureAlgorithmDetailsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6578744b657955736167652063727970746f2f783530392e4578744b657955736167653b206f696420656e636f64696e672f61736e312e4f626a6563744964656e7469666965727d", "extKeyUsageOIDsᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -83,19 +87,18 @@ using static go.crypto.x509_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/x509/cert_pool.go", "cert_pool.cs", "AFOAAZIABRDCgpSokoKoktyCgoKUopSCAAIcAAsCgIKmAAcU0oIAARIACAKCgoKUgpS2tMiCgpSCgoKCprKClKiygpQAAhTygqiCloLKAAcSAAgCgoKCgpSClpKCgpSIgpSClJSWAAIQ8oKClKjCgpSClKKCpgACEPKClA==")]
-[assembly: go.GoPositionMap("crypto/x509/notboring.go", "notboring.cs", "AAgSgA==")]
-[assembly: go.GoPositionMap("crypto/x509/oid.go", "oid.cs", "AEM4koK2goKWgriClIKoqJKCloKCloKCgpSmgoKUpoKCgoKClJSmooKUpoKCloKCgoKUlKiSqJKmuIKCgqiagoKClISagIKkgIKmgpaChISCgoKCgpSWgqiSqJKCgpSCqLamwoKCpoKClIKmgoKUgoKClIKUpoKssoKUgqaUgpKCppKCqIKCgqaUgqiokoKCqs6CgoKCgqaCgpSClIKCgoKClIKCgoKClJSCgoKCgoKClIKmlIKmpoKErISCgpaChIKCgoKUgpSClIKo")]
-[assembly: go.GoPositionMap("crypto/x509/parser.go", "parser.cs", "AHtGogAJMAAMApSkgoKmpIKUpIKYgJKmgoKClqSCgpSkgoKmpAAICsKCloKCgoKClIKCgpSCgpSCgoKUgoKClJaW5oKSgpSClIKCgpSCgvaigpSCxoLGpKaigoKUgoKW9oKCgpSCgqaCgpSCABQGgoKCkpiiloKClIKUgpaClIKWuKSCgoKUgoKUgoKUyqiilIKUqKKUtIKClAAHEJKIlISUpPiCgoKWgoKCptaigoKUgoKmkoKCuuaigpSCgoKClICCuPbigpSCgIKkpIKAgqSkgoCCpIKClIKAgraklKTIluaUlJSCgoKUgoKUlNaigoKClIKCgpSAgpS21qKCgpSCgoKClIKClJSokoSCgoKWlpTmuOYAECCCopKKlsqWwoKSgoSWvpSCgIKmgsqUgIKkpoKUlIK2gramgpamgoCCqqKAgsiCgpSAgramgoCCpoKWgsqUgIKkpriWgIKkgIKkhAAKBoKCgoSClIKCxoKClIK0goKWlMiCggAEIJIACwKUgoKClIKCgpSClIKUgoKUgoKU2oKCxoKCyKSUgoKClLSCgpSCgoCC6viUlJKClIKCgpSCgpSClIKUlLTqloKoABkKgoTIgpSCgpamgpSCgpaClIK4goKWgoKUgoKUpoSCgpqygpSClIKClISCgpSCgoKUhIKClIKCloKClIKCgpSEgoKUgoKUgoKUkoKUgoKClILIgqiCgpSClIKCgoKUgoKClIKCgpSCgpSCgpSClIKCzIKClIQABRDSgoKUgpSqooKCgoKUgpQADBKihMiClIKClqaClIKCloKClIKUgpaCgpqygpSClIKClISCgpSEgoKUgoKClISCgpSCgoKogoKClIKUgoKUgoKWgoKUgoKUgoKClIKCgoKUgoKUgoKCpqiCyqiCgoKUgoKUgoKClIKClIKCgraCgoKmqA==")]
-[assembly: go.GoPositionMap("crypto/x509/pem_decrypt.go", "pem_decrypt.cs", "AHekAbKCgoSCgoKCgoKUAAUSAAgCggANJAAOAoKCloKCloKClIKClIK6goKCloKWgoIABhCCgpSCgpSClIKCpgACFPKCgpSCgILIgoKClIKCuJSClIQACRSCgoKCpqaCgoKCpg==")]
-[assembly: go.GoPositionMap("crypto/x509/pkcs1.go", "pkcs1.cs", "ADZesoKCgpSCgIKkgIKkloKWgpaCuoKCgoKCgpS6goKUhAACEPKEgoKWAAoYgoKCgpaC/LKCgoKAgqSUgpaClIKWAAUS0rg=")]
-[assembly: go.GoPositionMap("crypto/x509/pkcs8.go", "pkcs8.cs", "ACJGAAwCgoCCgIKkgIKkpJSCgpSmgoKAgqSCgpSmgIKkgoCCpICCpKaAgqSCgIKktgAHFvKElLi2goKUgoKU3ICC2KaCgpS2gqaCgIK2goKUgoKU3ICC+pY=")]
+[assembly: go.GoPositionMap("crypto/x509/cert_pool.go", "cert_pool.cs", "ADuAAZIABRDCgpSokoKoktyCgoKUopSCAAIcAAsCgIKmAAcU0oIAARIACAKCgoKUgpS2tMiCgpSCgoKCprKClKiygpQAAhTygqiCloLKAAcSAAgCgoKCgpSClpKCgpSIgpSClJSWAAIQ8oKClKjCgpSClKKCpgACEPKClA==", "184-186:1;239-246:1;240-244:1.1;291-293:1")]
+[assembly: go.GoPositionMap("crypto/x509/oid.go", "oid.cs", "ABk4koK2goKWgriClIKoqJKCloKCloKCgpSmgoKUpoKCgoKClJSmooKUpoKCloKCgoKUlKiSqJKokqa4goKCqJqCgoKUhJqAgqSAgqaCloKEhIKCgoKClJaCqJKokqiSgoKUgqi2psKCgqaCgpSCpoKClIKCgpSClKaCrLKClIKmlIKSgqaSgqiCgoKmlIKoqJKCgqrOgoKCgoKmgoKUgpSCgoKCgpSCgoKCgpSUgoKCgoKCgpSCppSCpqaChKyEgoKWgoSCgoKClIKUgpSCqA==")]
+[assembly: go.GoPositionMap("crypto/x509/parser.go", "parser.cs", "ACdGogAJMAAMApSkgoKmpIKUpIKYgJKmgoKClqSCgpSkgoKmpAAICsKCloKCgoKClIKCgpSCgpSCgoKUgoKClJaW5oKSgpSClIKCgpSCgvaigpSCxoLGpKaigoKUgoKW9oKCgpSCgqaCgpSCABQGgoKCkpiiloKClIKUgpaClIKWuKSCgoKUgoKUgoKUyqiilIKUqKKUtIKClAAHEJKIlISUpPiCgoKWgoKCptaigoKUgoKmkoKCuuaigpSCgoKClICCuPbigpSCgIKkpIKAgqSkgoCCpIKClIKUpJSkyJbmlJSUgoKClIKClJTWooKCgpSCgoKUgIKUttaigoKClIKCgoKUgpSCgoKUlKiShIKCgpaWlOa45gAQIIKikoqWypbCgpKChJa+lIKAgqaClKaClJSCtoK2poKWpoKAgqqigIK2gqamgoCCpoKWgpSmuJaAgqSAgqSEAA8GooKChIKUgoLGgoKUgrSCgpaUyIKCAAQgkgALApSCgoKUgoKClIKUgpSCgpSCgpTagoLGkoKUgoKClJSClJSCgoKUlIKUxoKCxqSUgoKClLSCgpSCgoCC6JKClIKCkoaUxoKClLb4lJSSgpSCgoKUgoKUgpSClJS06paCqAAZCoKEyIKUgoKWpoKUgoKWgpSCuIKCloKClIKClKaEgoKasoKUgpSCgpSEgoKUgoKClISCgpSCgpaCgpSCgoKUhIKClIKClIKClJKClIKCgpSCyIKogoKUgpSCgoKClIKCgpSCgoKUgoKUgoKUgpSCgsyCgpSEAAUQ0oKClIKUqqKCgoKClIKUAAwSooTIgpSCgpamgpSCgpaCgpSClIKWgoKasoKUgpSCgpSEgoKUhIKClIKCgpSEgoKUgoKCqIKCgpSClIKClIKCloKClIKClIKCgpSCgoKClIKClIKCgqaogsqogoKClIKClIKCgpSCgpSCgoK2goKCpqiqAAwYgrqCAAYSgoKWgpSUgoKClILcqA==", "375-412:1;542-633:1")]
+[assembly: go.GoPositionMap("crypto/x509/pem_decrypt.go", "pem_decrypt.cs", "AFOkAbKCgoSCgoKCgoKUAAUSAAgCggANJAAOAoKCloKCloKClIKClIK6goKCloKWgoIABhCCgpSCgpSClIKCpgACFPKCgpSCgILIgoKClIKCuJSClIQACRSCgoKCpqaCgoKCpg==")]
+[assembly: go.GoPositionMap("crypto/x509/pkcs1.go", "pkcs1.cs", "ADts4oKCgpSCgIKkgIKkloKWiJaCuoKCgoKCgoKCgpS6goCmgoKCgoKAgoK4pgACGAALAoSCgpYAChiCgoKCloL8soKCgoCCpJSCloKUgpYABRLSuA==")]
+[assembly: go.GoPositionMap("crypto/x509/pkcs8.go", "pkcs8.cs", "ACJMAA8CgoCCgIKkgIKkpJSCgpSmgoKAgqSCgpSmgIKkgoCCpICCpKaAgqSCgIKktgAHGgAJAoSUuIKAgqS2goKUgoKU3ICC2KaCgpS2gqaCgIK2goKUgoKU3ICC+pY=")]
 [assembly: go.GoPositionMap("crypto/x509/root.go", "root.cs", "ACE8ooKCgtaigoKCggAIJgARAoK6hIKEgpSEgoKUlA==")]
 [assembly: go.GoPositionMap("crypto/x509/root_linux.go", "root_linux.cs", "ACIygoI=")]
-[assembly: go.GoPositionMap("crypto/x509/root_unix.go", "root_unix.cs", "ACQ4gqaChIKAgqaCgoKCgpSCqIKAyqaCgoKClJSCgoK6gpaqooKClIKCgqaqooKUgg==")]
+[assembly: go.GoPositionMap("crypto/x509/root_unix.go", "root_unix.cs", "ABI4gqaChIKAgqaCgoKCgpSCqIKAyqaCgoKClJSCgoK6gpaqooKClIKCgqaqooKUgg==")]
 [assembly: go.GoPositionMap("crypto/x509/sec1.go", "sec1.cs", "ACVKsgAFEPKCgpbaooKUggAHFMIAChbigoCCgIKkgIKkpIKWgoKUlIKWgoKClIKChKiCgpTMgoQ=")]
-[assembly: go.GoPositionMap("crypto/x509/verify.go", "verify.cs", "AFGMAYKUpKSkpKSkpKSkAAwUgoSCloKAlIKUgoKUpqaClAAQHIKCgoKCgpSmlAAKEIKCgpSmgAAsbOKCloQAChaCgoKClIKElLiSlIiClAAEJAAJBvqClISegtKUAAIUgqbYgt6ChqiClLqAgqaCgqrCgoCCgpSCgrbKlJaClJaClLqmpoKCgpS6pgAJEoKCloKCgoLegIKmpoKCloKAgrimpoKWgoIABRCCgoKWgoKWhJaCgqgAAhAABxCEgoKWgoKCgpaCqISCgpaCgoSCgIKmgqiClgAJCtKCloKCgqiCgpSC7N6CgpSUgoKohIKCgqaCgpSCgoKWgJjIgoCCpoCYyIKCgpaAmMiCgIKmgJj+loIAEyyCloKCgqi4lgACRgAnBoKUgoKClIK6poKClIK4grqCgoKogoKWgoKCqIKClIKCqIKWgqaogoKCqIKWpoKCgoIABhDSirKCgqiCgpSClIKygoKmgqSUgqYACxLCmpKCloKUgoKCloCCgoKUpoKCgoKUloKAgoKClLiUpIKCuIKUgpaClIKWpoCigKqygpSClKaWgpSUuJSCgpSClIKUgpSmlKimgoKUpoKChIKWgoSCloKClIKorMSCgqaClIKCqIKWgoKCpgACGAAMBIKClICmgoKmpoKE3IKCpoK6poKChIKWvIKCgpSWgpSohIKCgpaCgqiCgoL6")]
-[assembly: go.GoPositionMap("crypto/x509/x509.go", "x509.cs", "AFmOAQAIAoKAgoCCpKSk1sKUuIKUhrSCopSClIKCgoKClLSCtIKClIKClIKCgoKU1pYAAhgACQKCgoSAgqYABhCCAEOGAYKCgqamgoKCpqaCgoKmABEogoKUAJQBiAKCpoKogoKCpryCgIKmgoCCAAcQipaUpKSmAAg+spSkpKSkABo0gpSkpKSkpoKUpKSkpqaClKSkpKYAXrQBsoKCpqaygoKmAGr8AYKCgpQACxCCprKClKaCrgALDISWgpaClgACFPKmgqaCgoKmpoIACA7CgoSCgoKCqKSCtqaSgpSUpIKUgoKmlIKUgpTGgpSClKSClIKUlKzSggAICoIAK06CgoKCrLKEgoSCgpSoABIyooKCpqqigoKAgqSUgoCCpJSUgoKUlIKCgIKklKaClIKoyrKShISCgpSWhIKClJaCgoKUloKCgoKUloKCgoKUloSCgoLKgsqCgpSWhLiCgoKUloKEgoKUloqChIKCgoKClqKEgoCCpoKCuoKiorqCgIKmgoK6goCCpoKCupaCgpaCgpaCooKSqIKSuoKClJaEhIKC7paCgpTOpoKEgoKEgoKWgoKC1oKEgoKAgpS4hIKCpoK4gpSCgtaChIKigoKykpKCgpTKgpLMgoKmgoSEgoKWzKaCgpYACAyygoKEpIK2gpSkpKTYgsaWgpaCgoKUgpbepoKCkoKCgpaCgsyCgqiAgqYAE4YBAD8CgoKWggAGEIKWgpaCgpaCgpSCloKCloKCloKCloLKgpiGgqSmgoKWggAJFoKClISCgpYADSjigoKCptyygoCCpKQAAhDygoKWgoKogqKClgAIFIKCgoKClJaCgpSEgoKWAESWAaKCgoKUgoKUgpSokoKCgqaCpgAMCqSMgoKCgJSmgpaCgIKkgoKClJSWAAgsABYCgoKWgoKWgoKCgpaCgqiCgoKCzIKUgoK6hIKCqIKEgqaWAAYQgoKogoK6ggADEIKCloKAgqaWgoKCgqgADBqCgpSEgoKWAAYSooSCgqSW1oIACh6CgoKCqIKAgqSmhICCpoKUgoLaqJIAggGSAgAPAoKUgpSClIKUgpSCloKClqaUgqKCyoKCgpSClt6CgoKUuoKCgpbMgpSogoKWgIKkgoKogoKWABEigpaCloKCuoSCgpYABhLChJaCloKW")]
+[assembly: go.GoPositionMap("crypto/x509/verify.go", "verify.cs", "AD2UAYKUpKSkpKSkpKSkgoKUpAAMFIKChIKWgoCUgpSClIKClKaClKaClAAQHIKCgoKCgpSmlAAKEIKCgpSmgAA9lgHigpaEAAoWgoKCgpSChJS4kpSIgpQABCQACQb6gpSEnoLSlAACFIKm2ILegoaogpS6gIKmgoKqwoKCgIKClIKCtsqUloKUloKUuqamgoKClLqmAAkSgoKWgoKCgt6AgqamgoKWgoCCuKamgpaCgoKCgpSWgoIABRCCgoKWgoKCgoKUloSWgoKWgoKoAAIQAAcQhIKCloKCgoKWgqiEgoKWgoKEgoCCpoKogpYACQrSgpaCgoKogoKUguzegoKUlIKCAAwcgoSEgoKCpoKilIKCgpaAuMiCgpaAuMiCgoKWgLjIgoCCpoCY/paCABMsgpaCgoKoAAJGACcGgpSCgoKUgrqmgoKUgriCuoKCgqiCgpaCgoKogoKUgoKohIKCgoKUloKWgqaogpaChIKCgoKUloKCgoKUlIKUgpamgoKCggAGENKKsoKCqIKCyoKUgrKCgqaCpJSCpgALEsKakoKWgpSCgoKWgIKCgpSmgoKCgpSWgoCCgoKUuJSkgoK4gpSCloKUgpamgKKAqrKClIKUppaClJS4lIKClIKUgpSClKaUqKaCgpSmgoKEgpaChIKWgoKUgqisxIKCpoKUgoKogpaCgoKmAAIYAAwEgoKUgKaCgqamgoTcgoKmgrqmgoKEgpa8goKClJaClKiEgoKCloKCqIKCgvqmgoKClAAKGILcgoKUAAwYguzcoqaCgpSmgoKUpoKClKaCpoKmgoKClIKUgpSmgoKCgoKWgoKC3KaCgoKCgpTcgoKCgqiCpgAJFoKohIKigpSClIKWgoK4gpaChJaCqIKWgoSWgoSCqIKUgIK2ggAHEoKCgoKCgrqCuoSUlISCgpSUppaolICCopSCgv6UgoKUgpSCuoKUgqaCzIKogpikgpSAgsqCgqaUlIKCuIKCuoKW", "689-750:1;699-701:1.1;712-714:1.2;726-728:1.3;739-741:1.4;1008-1057:1")]
+[assembly: go.GoPositionMap("crypto/x509/x509.go", "x509.cs", "AEiQAQAIAoKAgoCCpKSk1sKUuIKUhrSCopSClIKCgoKClLSCtIKClIKClIKCgoKU1pYAAhgACQKCgoSAgqYABhCCAEOGAYKCgqamgoKCpqaCgoKmABEogoKUAJQBiAKCpoKogoKCpryCgIKmgoCCAAcQipaUpKSmAAg+spSkpKSkABo0gpSkpKSkpoKUpKSkpqaClKSkpKYAXrQBsoKCpqaygoKmALEBkAOCAAsQgqaygpSmgq4ACwyEloKWgpYAAhTypoKmgoKCpqaC6sKChIKCgoKopIK2ppKUpIKUgoKmlIKUgpTGgpSClKSClIKUlKzSggAICoIAK06CgoKCrLKEgoSCgpSoABIyooKCpqqigoKAgqSUgoCCpJSUgoKUlIKCgIKklKaClIKoyrKShISCgpSWhIKClJaCgoKUloKCgoKUloKCgoKUloSCgoLKgsqCgpSWhLiCgoKUloKEgoKUloqChIKCgoKClqKEgoCCpoKCuoKiorqCgIKmgoK6goCCpoKCupaCgpaCgpaCooKSqIKSuoKClJaEhIKC7paCgpTOpoKEgoKEgoKWgoKC1oKEgoKAgpS4hIKCpoK4gpSCgtaChIKigoKykpKCgpTKgpLMgoKmgoSEgoKWzKaCgpYACAyygoKEpIK2gpSkpKTYgsaWgpaCgoKUgpbepoKCkoKCgpaCgsyCgqiAgqYADYwBAEICgoKWgsqCgoKCgtyAggAJFIKWgpaCgpaCgpSCloKCloKCloKCloLKgpiGgqSmgoKWggAJFoKClISCgpYADSjigoKCptyygoCCpKQAAhDygoKWgoKogqKClgAIFIKCgoKClJaCgpSEgoKWAESWAaKCgoKUgoKUgpSokoKCgqaCpgAMCqSMgoKCgJSmgpaCgIKkgoKClJSWAAgsABYCgoKWgoKWgoKCgpaCgqiCgoKCzIKUgoK6hIKCqIKEgqaWAAYQgoKogoK6ggADEIKCloKAgqaWgoKCgqgADBqCgpSEgoKWAAYSooSCgqSW1oIACh6CgoKCqIKAgqSmhICCpoKUgoLaqJIAggGSAgAPAoKUgpSClIKUgpSCloKClqaUgqKCyoKCgpSClt6CgoKUuoKCgpbMgpSogoKWgIKkgoKogoKWABEigpaCloKCuoSCgpYABhLChJaCloKW", "1285-1291:1;1293-1341:2;1301-1305:2.1;1302-1304:2.1.1;1309-1313:2.2;1310-1312:2.2.1;1321-1325:2.3;1322-1324:2.3.1;1333-1337:2.4;1334-1336:2.4.1;1354-1366:3;1356-1358:3.1;1362-1364:3.2;1459-1480:1;1463-1471:1.1;1464-1470:1.1.1;1475-1477:1.2")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -110,7 +113,6 @@ public static partial class x509_package
     // via declarations below.
 
     // <TypeAccessibility>
-    [GoLocalName("privateKey")] internal partial interface CreateCertificate_privateKey {}
     [GoLocalName("pubKeyEqual")] internal partial interface alreadyInChain_pubKeyEqual {}
     internal partial struct AppendCertsFromPEM_lazyCert {}
     internal partial struct CreateCertificateRequest_attr {}
@@ -130,6 +132,8 @@ public static partial class x509_package
     internal partial struct pkcs1PublicKey {}
     internal partial struct pkcs8 {}
     internal partial struct pkixPublicKey {}
+    internal partial struct policyGraph {}
+    internal partial struct policyGraphNode {}
     internal partial struct policyInformation {}
     internal partial struct potentialParent {}
     internal partial struct pssParameters {}
@@ -149,6 +153,7 @@ public static partial class x509_package
     public partial struct KeyUsage {}
     public partial struct OID {}
     public partial struct PEMCipher {}
+    public partial struct PolicyMapping {}
     public partial struct PublicKeyAlgorithm {}
     public partial struct RevocationList {}
     public partial struct RevocationListEntry {}
@@ -165,4 +170,57 @@ public static partial class x509_package
     public partial struct tbsCertificateRequest {}
     public partial struct validity {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸaes() => builtin.initPackage(typeof(go.crypto.aes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸdes() => builtin.initPackage(typeof(go.crypto.des_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸdsa() => builtin.initPackage(typeof(go.crypto.dsa_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() => builtin.initPackage(typeof(go.crypto.ecdh_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdsa() => builtin.initPackage(typeof(go.crypto.ecdsa_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() => builtin.initPackage(typeof(go.crypto.ed25519_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() => builtin.initPackage(typeof(go.crypto.elliptic_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() => builtin.initPackage(typeof(go.crypto.md5_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrsa() => builtin.initPackage(typeof(go.crypto.rsa_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() => builtin.initPackage(typeof(go.crypto.sha1_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(go.crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() => builtin.initPackage(typeof(go.crypto.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸpkix() => builtin.initPackage(typeof(go.crypto.x509.pkix_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸasn1() => builtin.initPackage(typeof(encoding.asn1_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() => builtin.initPackage(typeof(encoding.hex_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸpem() => builtin.initPackage(typeof(encoding.pem_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(go.math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() => builtin.initPackage(typeof(go.net.netip_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸcryptobyte() => builtin.initPackage(typeof(vendor.golang.org.x.crypto.cryptobyte_package));
+    // </ImportInitializers>
 }

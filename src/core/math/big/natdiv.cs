@@ -616,7 +616,7 @@ internal static (nat q, nat r) divLarge(this nat z, nat u, nat uIn, nat vIn) {
     var v = vp.ValueSlot;
     shlVU(v, vIn, shift);
     u = u.make(len(uIn) + 1);
-    u[len(uIn)] = shlVU(u[0..(int)(len(uIn))], uIn, shift);
+    u[len(uIn)] = shlVU(u[..(int)(len(uIn))], uIn, shift);
     // The caller should not pass aliased z and u, since those are
     // the two different outputs, but correct just in case.
     if (alias(z, u)) {
@@ -648,15 +648,13 @@ internal static void divBasic(this nat q, nat u, nat v) {
     // Set up for divWW below, precomputing reciprocal argument.
     Word vn1 = v[n - 1];
     Word rec = reciprocalWord(vn1);
+    // Invent a leading 0 for u, for the first iteration.
+    // Invariant: ujn == u[j+n] in each iteration.
+    Word ujn = ((Word)0);
     // Compute each digit of quotient.
     for (nint j = m; j >= 0; j--) {
         // Compute the 2-by-1 guess q̂.
-        // The first iteration must invent a leading 0 for u.
         Word qhat = ((Word)_M);
-        Word ujn = default!;
-        if (j + n < len(u)) {
-            ujn = u[j + n];
-        }
         // ujn ≤ vn1, or else q̂ would be more than one digit.
         // For ujn == vn1, we set q̂ to the max digit M above.
         // Otherwise, we compute the 2-by-1 guess.
@@ -701,6 +699,7 @@ internal static void divBasic(this nat q, nat u, nat v) {
             }
             qhat--;
         }
+        ujn = u[j + n - 1];
         // Save quotient digit.
         // Caller may know the top digit is zero and not leave room for it.
         if (j == m && m == len(q) && qhat == 0) {
@@ -875,7 +874,7 @@ internal static void divRecursiveStep(this nat z, nat u, nat v, nint depth, ж<n
     if (qhatv.cmp(u.norm()) > 0) {
         throw panic("impossible");
     }
-    Word c = subVV(u[0..(int)(len(qhatv))], u[0..(int)(len(qhatv))], qhatv);
+    Word c = subVV(u[..(int)(len(qhatv))], u[..(int)(len(qhatv))], qhatv);
     if (c > 0) {
         c = subVW(u[(int)(len(qhatv))..], u[(int)(len(qhatv))..], c);
     }

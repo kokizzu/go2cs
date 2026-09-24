@@ -107,8 +107,18 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("could not marshal: %v"u8, err);
             continue;
         }
+        (var stateAppend, err) = h._<encoding.BinaryAppender>().AppendBinary(new slice<byte>(4, 32));
+        if (err != default!) {
+            Ꮡt.Errorf("could not marshal: %v"u8, err);
+            continue;
+        }
+        stateAppend = stateAppend[4..];
         if (((sstring)state) != g.halfState) {
             Ꮡt.Errorf("checksum(%q) state = %q, want %q"u8, g.@in, state, g.halfState);
+            continue;
+        }
+        if (((sstring)stateAppend) != g.halfState) {
+            Ꮡt.Errorf("checksum(%q) state = %q, want %q"u8, g.@in, stateAppend, g.halfState);
             continue;
         }
         {

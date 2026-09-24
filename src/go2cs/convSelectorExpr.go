@@ -978,8 +978,17 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								if arrayType, ok := named.Underlying().(*types.Array); ok {
 									elemTypeName := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 
+									// The base renders in POINTER context so it yields the BOX, exactly as the
+									// `&x[i]` arm in convUnaryExpr does: a deref-aliased pointer receiver or
+									// parameter (`ref var table = ref Ꮡtable.DerefOrNull();`) otherwise renders
+									// the value alias `table`, a `ref [N]E` wrapper with no `at` — CS1061 ×3 on
+									// crypto/internal/fips140/nistec's `func (table *p256Table) Compute`, new at
+									// 1.24 (`table[0].Set(q)`). A box-valued local is spelled the same either way.
+									boxIdentContext := DefaultIdentContext()
+									boxIdentContext.isPointer = true
+
 									return fmt.Sprintf("%s.at<%s>(%s).%s",
-										v.convExpr(indexExpr.X, nil), elemTypeName,
+										v.convExpr(indexExpr.X, []ExprContext{boxIdentContext}), elemTypeName,
 										v.convExpr(indexExpr.Index, nil),
 										v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 								}
@@ -1318,6 +1327,43 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 					if snapshotName == "" && v.receiverExprIsAutoDerefdPointee(selectorExpr) {
 						if sel := v.info.Selections[selectorExpr]; sel != nil && sel.Kind() == types.MethodVal && len(sel.Index()) == 1 {
 							snapshotName = v.hoistReceiverTemp(selectorExpr.X, !v.exprIsDerefAliasedPointer(selectorExpr.X))
+						}
+					}
+
+					// A receiver expression that is a CHAIN rooting at a REF-LOWERED ident — the
+					// enclosing method's `[GoRecv] this ref T` receiver, or a deref-aliased pointer
+					// parameter. NEITHER arm above sees it: it is not a bare ident, so the snapshot
+					// arm declines, and it is VALUE-typed, so there is no auto-deref'd pointee to
+					// hoist. Rendered live it puts the ref ALIAS inside the wrapper, and a ref local
+					// cannot be captured by a lambda (**CS1628**) — crypto/tls's `hs.suite.hash.New`,
+					// nine sites across handshake_{client,server}_tls13 (3 + 6, measured at the base).
+					//
+					// The remedy is the hoist that already exists — hoistReceiverEvaluation's
+					// non-ident tail takes this same route on the ASSIGNMENT path — and it needs no
+					// new machinery here: hoistReceiverTemp writes into hoistedDecls and names itself
+					// through getCapturedVarName, both live at these sites (measured: neither is nil,
+					// which is what the argument arm's earlier decline had been mistaken for). The
+					// temp is also what Go's semantics ask for independently of the capture — a method
+					// value saves its receiver when it is EVALUATED, not when the resulting func is
+					// called — so the once-evaluation is the fix and the capture cure is a consequence.
+					//
+					// `deref` is FALSE: the chain is already value-typed, and the `~` hops inside its
+					// rendering belong to the pointer FIELDS it crosses rather than to this receiver,
+					// so a `~` on top would deref a non-pointer (CS0023).
+					//
+					// Two narrowings, each matching the arm above rather than invented here. The ROOT
+					// must be ref-lowered: the identical chain shape rooted at a pointer LOCAL renders
+					// its box, captures perfectly well and compiles today (crypto/tls's own
+					// `(~suite).hash.New` in sendSessionTicket is exactly that) — do not move what is
+					// not broken. And a PROMOTED method (selection depth > 1) reaches its receiver
+					// through the `.of(…)` hop machinery, so it keeps its existing emission.
+					if snapshotName == "" {
+						if _, recvIsIdent := selectorExpr.X.(*ast.Ident); !recvIsIdent {
+							if root := refChainRootIdent(selectorExpr.X); root != nil && v.exprIsDerefAliasedPointer(root) {
+								if sel := v.info.Selections[selectorExpr]; sel != nil && sel.Kind() == types.MethodVal && len(sel.Index()) == 1 {
+									snapshotName = v.hoistReceiverTemp(selectorExpr.X, false)
+								}
+							}
 						}
 					}
 

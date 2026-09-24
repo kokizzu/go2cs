@@ -56,12 +56,12 @@ using static go.go.doc_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/doc/comment.go", "comment.cs", "ABdAABQCgoKCggACNAAXAoLK")]
-[assembly: global::go.GoPositionMap("go/doc/doc.go", "doc.cs", "AH3yAeKCgoKCAA4igoKChKaCgoLKgoKUlIKCgoK4goKCgoCCpJQABzQAGQSClILIgqKUtLi4goKClICktLQABxCCgoKuwoKUgoKUAAIU8oKUAAIU8oCCgpSkgpSuwgAFFOYAAhDyAAIQ8gACFAAJAg==")]
-[assembly: global::go.GoPositionMap("go/doc/example.go", "example.cs", "AE9mABECgoKCgoKCgIKCpIKClIKCgoKUgpSAgqSSlIKClKIACxi4gpSmhsyygJSCgIKClJSCgpTGrLKClJKUguqihKaogoSClIKUgoKC2IKUtIIACBCWgoKusrqCkoKCppaCgoKUppSCgoKUgqbGlJKSgoKCzIKYkoKAgsqCgsyWgpSCxoLc6pbMgoKChIaaAAYcAAsMgoKChILClIKihIKCgraqsqqylJaCgoLMpoKWhIKGssaClIKCtIKUggAHHgAIAoKUtISSgpSCxoKe0oKUkoKCgoKCgriCyJSCppKClJTapoKCpoCCgqSUqqKCgoKUqKSClIqigoKClJSCptq0goKYkqKAlJKCgqSokoKCgqrUgoKoyoKCgqjSgpSSgoKUgpSUAAIcAA0CgqaCgoKClJSCgpSCgoKUlIKClLrugoKClIKClIKCuoIAAxbSgoKUgpSUAAISAAkCgpSClIKmgoI=")]
+[assembly: global::go.GoPositionMap("go/doc/comment.go", "comment.cs", "AAtAABQCgoKCggACNAAXAoLK")]
+[assembly: global::go.GoPositionMap("go/doc/doc.go", "doc.cs", "AGXyAeKCgoKCAA4igoKChKaCgoLKgoKUlIKCgoK4goKCgoCCpJQABzQAGQSClILIgqKUtLi4goKClICktLQABxCCgoKuwoKUgoKUAAIU8oKUAAIU8oCCgpSkgpSuwgAFFOYAAhDyAAIQ8gACFAAJAg==")]
+[assembly: global::go.GoPositionMap("go/doc/example.go", "example.cs", "ACtmABECgoKCgoKCgIKCpIKClIKCgoKUgpSAgqSSlIKClKIACxi4gpSmhsyygJSCgIKClJSCgpTGrLKClJKUguqihKaogoSClIKUgoKC2IKUtIIACBCKsrqCkoKCppaCgoKUppSCgoKUgqbGlJKSgoKCuoKCzIKYkoKAgsqCgsyWgpSCxoLc6pbMgoKChIaaAAYcAAsMgoKChILClIKihIKCgraqsqqylJaCgoLMpoKWhIKGssaClIKCtIKUggAHHgAIAoKUtISSgpSCxoKe0oKUkoKCgoKCgriCyJSCppKClJTapoKCpoCCgqSUqqKCgoKUqKSClIqigoKClJSCptq0goKYkqKAlJKCgqSokoKCgqrUgoKoyoKCgqjSgpSSgoKUgpSUAAIcAA0CgqaCgoKClJSCgpSCgoKUlIKClLrugoKClIKClIKCuoIAAxbSgoKUgpSUAAISAAkCgpSClIKmgoI=", "108-110:1;205-212:1;313-315:2;316-318:3;347-375:1;377-383:2;495-503:1;524-526:1;681-683:1")]
 [assembly: global::go.GoPositionMap("go/doc/exports.go", "exports.cs", "AAwgooKCgoKmyoKCgoK4goKClLSAgqSAgsaClKrCgoKUpqiSgoKmqJKCgoKCgJSAgsaCgqaClK7ygpSCgoKCgJSCgoLaggAHEKaCgpSCtoKCgqaClIKosoKCAAQQssjExJLGkoLGtILGgoK0gsaCtMiClqSS7oKCpoKCgtyAooKkgpTGrLKUpICU/KaChqKCgpSUlJS6goKCgqamgpSCrNSosoKCgoKm")]
 [assembly: global::go.GoPositionMap("go/doc/filter.go", "filter.cs", "AAwWooKCgoLKpoKClIKC2IKYlKLGguqmgoKCgoKmpoKCgoKCpqaCgoKCgqaCgoKClIKCpqqigoKCgg==")]
-[assembly: global::go.GoPositionMap("go/doc/reader.go", "reader.cs", "ABtA8pSkpraSgoKCgoKClIK21oKAgqSu4pKA3LaSgpSAgqSU7oK+0oKCgpSUAAYY0pSkpKSAptaklAAxcoKuwoKUgIK23IKu8oKClICCgoKkpsaCgoKUpoKClKaCgpSCpqgACAqCgoKCgoKClIKWgJLa1JSmgpSClIKogqiCgpSAgrjcgtyowoKUgrSkgpSowoKCupaClJSCgpSKsoKCgsySqMSCqJSmlIKmlICC/rqCgoKCgoCmpICCppSAgoKCggAIDoKCuqrCgpSCgoK4AAYWooKCgoKClIKCuICCpKiSgoDKkoKCAAoe0oKCgoKCgpSmgszUgoKCuoKUlpKAgoCCgoKCgoKmgoKUgoKkAAkQtvyAgqSUgoDKAAoWAAoQgoK4xIKCgoKCgqiCgoKUloKCgpSWgoK6goKAggAGEsKCqJKSgoKCgoKUlpKWkpaSgpSEqLKC3IKUgqaCpqiSlJQABxKCggAEEsKCgoTulKamgpSAguyCAAQQooKCgoKUgqiSgoCCtqaCgoKCgoKmhIKCgpSWpoKCgoIACBKWiKaCgpSmgoKClMyC9oKGqqKCgpSuwgA3drKOgoKAgoKCyIKAgqQ=")]
+[assembly: global::go.GoPositionMap("go/doc/reader.go", "reader.cs", "ABtA8pSkpraSgoKCgoKClIK21oKAgqSu4pKA3LaSgpSAgqSU7oK+0oKCgpSUAAYY0pSkpKSAptaklAAxcoKuwoKUgIK23IKu8oKClICCgoKkpsaCgoKUpoKClKaCgpSCpqgACAqCgoKCgoKClIKWgJLa1JSmgpSClIKogqiCgpSAgrjcgtyowoKUgrSkgpSowoKCupaClJSCgpSKsoKCgsySqMSCqJSmlIKmlICC/rqCgoKCgoCmpICCppSAgoKCggAIDoKCuqrCgpSCgoK4AAYWooKCgoKClIKCuICCpKiSgoDKkoKCAAoe0oKCgoKCgpSmgszUgoKCuoKUlpKAgoCCgoKCgoKmgoKUgoKkAAkQtvyAgqSUgoDKAAoWAAoQgoK4xIKCgoKCgqiCgoKUloKCgpSWgoK6goKAggAGEsKCqJKSgoKCgoKUlpKWkpaSgpSEqLKC3IKUgqaCpqiSlJQABxKCggAEEsKCgoTulKamgpSAguyCAAQQooKCgoKUgqiSgoCCtqaCgoKCgoKmhIKCgpSWpoKCgoIACBKWiKaCgpSmgoKClMyC9oKGqqKCgpSuwgA3drKOgoKAgoKCyIKAgqQ=", "852-858:1;879-881:1;909-911:1;990-995:1")]
 [assembly: global::go.GoPositionMap("go/doc/synopsis.go", "synopsis.cs", "AAwgsqKigpSClIKUlK7CggANKAAIAoKCgoKmgoKCgpSAgqSC")]
 // </GoSourcePositionMaps>
 
@@ -89,4 +89,25 @@ public static partial class doc_package
     public partial struct Type {}
     public partial struct Value {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸdocꓸcomment() => builtin.initPackage(typeof(global::go.go.doc.comment_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸlazyregexp() => builtin.initPackage(typeof(@internal.lazyregexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

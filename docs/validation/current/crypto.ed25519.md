@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `crypto/ed25519` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-23 · converter `f95f88866`*
 
-**8 matched · 1 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**9 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/crypto/ed25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ed25519).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 ## Verdicts
 
@@ -19,6 +21,7 @@ comparison — it is the evidence behind the `crypto/ed25519` row in
 | `TestCryptoSigner` | pass | pass |
 | `TestEd25519Vectors` | pass | pass |
 | `TestEqual` | pass | pass |
+| `TestGenerateKey` | pass | pass |
 | `TestGolden` | pass | pass |
 | `TestMalleability` | pass | pass |
 | `TestSignVerify` | pass | pass |
@@ -27,14 +30,18 @@ comparison — it is the evidence behind the `crypto/ed25519` row in
 
 ## Disclosed divergences
 
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+A disclosed divergence is a specific Go assertion this conversion does not satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
 hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/crypto/ed25519/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
+The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed
+CLR *can* meet, pinned against the named plan that will retire it; every other class is one it
+*provably cannot* satisfy.
+
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: the run loop builds seed/message slices, derives a key, signs and verifies -- every step allocates in the managed model (golib slices, ж boxes, edwards25519 scalar/point state) where Go's escape analysis and fixed-size arrays keep the whole round on the stack |
+| `TestAllocations` | `deferred` | want-zero AllocsPerRun assert: the run loop builds seed/message slices, derives a key, signs and verifies -- every step allocates in the managed model (golib slices, ж boxes, edwards25519 scalar/point state) where Go's escape analysis and fixed-size arrays keep the whole round on the stack. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O1): alloc-profile -> deferred. The relabel census's STRUCTURAL proposal (CENSUS c8e6ca9034:95) is refused: the entry is a MIXTURE, and its edwards25519 share moves with crypto/internal/fips140test's to deferred (X(3)). |
 
 ## Excluded declarations
 

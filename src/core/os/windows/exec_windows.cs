@@ -5,7 +5,7 @@ namespace go;
 
 using errors = errors_package;
 using windows = @internal.syscall.windows_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 using @internal.syscall;
@@ -92,7 +92,7 @@ internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) {
             if (e != default!) {
                 return NewSyscallError(duplicateHandleˢ, e);
             }
-            Δruntime.KeepAlive(Ꮡp.OrTypedNil());
+            runtime.KeepAlive(Ꮡp.OrTypedNil());
             defer(syscall.CloseHandle, terminationHandle, ref ᒐ);
             e = syscall.TerminateProcess(terminationHandle, 1);
             return NewSyscallError(terminateProcessˢ, e);
@@ -116,7 +116,7 @@ internal static error release(this ж<Process> Ꮡp) {
         }
     }
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡp.OrTypedNil(), default!);
+    runtime.SetFinalizer(Ꮡp.OrTypedNil(), default!);
     return default!;
 }
 

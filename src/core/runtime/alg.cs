@@ -6,8 +6,10 @@ namespace go;
 using abi = @internal.abi_package;
 using cpu = @internal.cpu_package;
 using goarch = @internal.goarch_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -32,7 +34,7 @@ internal static uintptr memhash128(@unsafe.Pointer Δp, uintptr h) {
 
 //go:nosplit
 internal static uintptr memhash_varlen(@unsafe.Pointer Δp, uintptr h) {
-    var ptr = getclosureptr();
+    var ptr = sys.GetClosurePtr();
     var size = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(ptr + /* unsafe.Sizeof(h) */ (uintptr)8));
     return memhash(Δp, h, size);
 }
@@ -55,8 +57,6 @@ internal static ref bool useAeshash => ref ᏑuseAeshash.Value;
 //   - github.com/outcaste-io/ristretto
 //   - github.com/puzpuzpuz/xsync/v2
 //   - github.com/puzpuzpuz/xsync/v3
-//   - github.com/segmentio/parquet-go
-//   - github.com/parquet-go/parquet-go
 //   - github.com/authzed/spicedb
 //   - github.com/pingcap/badger
 //
@@ -66,28 +66,8 @@ internal static ref bool useAeshash => ref ᏑuseAeshash.Value;
 //go:linkname memhash
 internal static partial uintptr memhash(@unsafe.Pointer Δp, uintptr h, uintptr s);
 
-// memhash32 should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/segmentio/parquet-go
-//   - github.com/parquet-go/parquet-go
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname memhash32
 internal static partial uintptr memhash32(@unsafe.Pointer Δp, uintptr h);
 
-// memhash64 should be an internal detail,
-// but widely used packages access it using linkname.
-// Notable members of the hall of shame include:
-//   - github.com/segmentio/parquet-go
-//   - github.com/parquet-go/parquet-go
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname memhash64
 internal static partial uintptr memhash64(@unsafe.Pointer Δp, uintptr h);
 
 // strhash should be an internal detail,
@@ -96,7 +76,6 @@ internal static partial uintptr memhash64(@unsafe.Pointer Δp, uintptr h);
 //   - github.com/aristanetworks/goarista
 //   - github.com/bytedance/sonic
 //   - github.com/bytedance/go-tagexpr/v2
-//   - github.com/cloudwego/frugal
 //   - github.com/cloudwego/dynamicgo
 //   - github.com/v2fly/v2ray-core/v5
 //

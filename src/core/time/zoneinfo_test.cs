@@ -92,7 +92,7 @@ public static void TestVersion3(ж<Δtesting.T> Ꮡt) {
     finally { ᒐ.Run(); }
 }
 
-[GoType("dyn")] partial struct TestFirstZone_type {
+[GoType("dyn")] internal partial struct TestFirstZone_type {
     internal @string zone;
     internal int64 unix;
     internal @string want1;
@@ -298,7 +298,7 @@ public static void TestLoadLocationFromTZDataSlim(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTzset_type {
+[GoType("dyn")] internal partial struct TestTzset_type {
     internal @string inStr;
     internal int64 inEnd;
     internal int64 inSec;
@@ -331,7 +331,7 @@ public static void TestTzset(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTzsetName_type {
+[GoType("dyn")] internal partial struct TestTzsetName_type {
     internal @string @in;
     internal @string name;
     internal @string @out;
@@ -356,7 +356,7 @@ public static void TestTzsetName(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTzsetOffset_type {
+[GoType("dyn")] internal partial struct TestTzsetOffset_type {
     internal @string @in;
     internal nint off;
     internal @string @out;
@@ -384,7 +384,7 @@ public static void TestTzsetOffset(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestTzsetRule_type {
+[GoType("dyn")] internal partial struct TestTzsetRule_type {
     internal @string @in;
     internal global::go.time_internal_test_package.Rule r;
     internal @string @out;

@@ -11,24 +11,6 @@ using io = io_package;
 
 partial class debug_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // exported from runtime.
 internal static partial @string modinfo();
 
@@ -93,6 +75,7 @@ public static (ж<BuildInfo> info, bool ok) ReadBuildInfo() {
 //   - GOARCH: the architecture target
 //   - GOAMD64/GOARM/GO386/etc: the architecture feature level for GOARCH
 //   - GOOS: the operating system target
+//   - GOFIPS140: the frozen FIPS 140-3 module version, if any
 //   - vcs: the version control system for the source tree where the build ran
 //   - vcs.revision: the revision identifier for the current commit or checkout
 //   - vcs.time: the modification time associated with vcs.revision, in RFC3339 format
@@ -118,6 +101,7 @@ internal static bool quoteValue(@string value) {
 private static readonly @string modˢ = "mod"u8;
 private static readonly @string depˢ = "dep"u8;
 
+// String returns a string representation of a [BuildInfo].
 [GoRecv] public static @string String(this ref BuildInfo bi) {
     var buf = @new<strings.Builder>();
     if (bi.GoVersion != ""u8) {
@@ -163,12 +147,12 @@ private static readonly @string depˢ = "dep"u8;
     return buf.String();
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pathˢ = "path\t"u8;
-private static readonly @string modˢ2 = "mod\t"u8;
-private static readonly @string depˢ2 = "dep\t"u8;
-private static readonly @string buildˢ = "build\t"u8;
-
+// ParseBuildInfo parses the string returned by [*BuildInfo.String],
+// restoring the original BuildInfo,
+// except that the GoVersion field is not set.
+// Programs should normally not call this function,
+// but instead call [ReadBuildInfo], [debug/buildinfo.ReadFile],
+// or [debug/buildinfo.Read].
 public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
     ж<BuildInfo> bi = default!;
     error err = default!;
@@ -180,11 +164,11 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 err = fmt.Errorf("could not parse Go build info: line %d: %w"u8, lineNum, err);
             }
         }, ref ᒐ);
-        @string pathLine = pathˢ;
-        @string modLine = modˢ2;
-        @string depLine = depˢ2;
+        @string pathLine = "path\t"u8;
+        @string modLine = "mod\t"u8;
+        @string depLine = "dep\t"u8;
         @string repLine = "=>\t"u8;
-        @string buildLine = buildˢ;
+        @string buildLine = "build\t"u8;
         @string newline = "\n"u8;
         @string tab = "\t"u8;
         (Module, error) readModuleLine(slice<@string> elem) {
@@ -215,7 +199,7 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
             switch (ᐧ) {
             case {} when strings.HasPrefix(line, pathLine): {
                 @string elem = line[(int)(len(pathLine))..];
-                bi.Value.Path = ((@string)elem);
+                bi.Value.Path = elem;
                 break;
             }
             case {} when strings.HasPrefix(line, modLine): {
@@ -246,9 +230,9 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                     (bi, err) = (default!, fmt.Errorf("replacement with no module on previous line"u8)); goto ᒐdone;
                 }
                 last.Value.Replace = Ꮡ(new Module(
-                    Path: ((@string)elem[0]),
-                    Version: ((@string)elem[1]),
-                    Sum: ((@string)elem[2])
+                    Path: elem[0],
+                    Version: elem[1],
+                    Sum: elem[2]
                 ));
                 last = default!;
                 break;

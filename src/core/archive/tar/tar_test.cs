@@ -9,11 +9,13 @@ using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using io = io_package;
 using fs = go.io.fs_package;
+using maps = maps_package;
 using math = math_package;
 using os = os_package;
 using path = path_package;
 using filepath = go.path.filepath_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using time = time_package;
@@ -107,10 +109,6 @@ internal static readonly @string unexpectedSeekOperationˢ = "unexpected Seek op
     f.pos += s;
     f.ops = f.ops[1..];
     return (f.pos, default!);
-}
-
-internal static bool equalSparseEntries(slice<global::go.archive.tar_package.sparseEntry> x, slice<global::go.archive.tar_package.sparseEntry> y) {
-    return (len(x) == 0 && len(y) == 0) || reflect.DeepEqual(x, y);
 }
 
 [GoType("dyn")] internal partial struct TestSparseEntries_vectors {
@@ -209,12 +207,12 @@ public static void TestSparseEntries(ж<testing.T> Ꮡt) {
         if (!v.wantValid) {
             continue;
         }
-        var gotAligned = alignSparseEntries(append(new global::go.archive.tar_package.sparseEntry[]{}.slice(), v.@in.ꓸꓸꓸ), v.size);
-        if (!equalSparseEntries(gotAligned, v.wantAligned)) {
+        var gotAligned = alignSparseEntries(appendꓸꓸꓸ(new global::go.archive.tar_package.sparseEntry[]{}.slice(), v.@in), v.size);
+        if (!slices.Equal<slice<global::go.archive.tar_package.sparseEntry>, global::go.archive.tar_package.sparseEntry>(gotAligned, v.wantAligned)) {
             Ꮡt.Errorf("test %d, alignSparseEntries():\ngot  %v\nwant %v"u8, i, gotAligned, v.wantAligned);
         }
-        var gotInverted = invertSparseEntries(append(new global::go.archive.tar_package.sparseEntry[]{}.slice(), v.@in.ꓸꓸꓸ), v.size);
-        if (!equalSparseEntries(gotInverted, v.wantInverted)) {
+        var gotInverted = invertSparseEntries(appendꓸꓸꓸ(new global::go.archive.tar_package.sparseEntry[]{}.slice(), v.@in), v.size);
+        if (!slices.Equal<slice<global::go.archive.tar_package.sparseEntry>, global::go.archive.tar_package.sparseEntry>(gotInverted, v.wantInverted)) {
             Ꮡt.Errorf("test %d, inverseSparseEntries():\ngot  %v\nwant %v"u8, i, gotInverted, v.wantInverted);
         }
     }
@@ -837,7 +835,7 @@ public static void TestHeaderAllowedFormats(ж<testing.T> Ꮡt) {
         if (formats != v.formats) {
             Ꮡt.Errorf("test %d, allowedFormats(): got %v, want %v"u8, i, formats, v.formats);
         }
-        if ((global::go.archive.tar_package.Format)(formats & FormatPAX) > 0 && !reflect.DeepEqual(paxHdrs, v.paxHdrs) && !(len(paxHdrs) == 0 && len(v.paxHdrs) == 0)) {
+        if ((global::go.archive.tar_package.Format)(formats & FormatPAX) > 0 && !maps.Equal<map<@string, @string>, map<@string, @string>, @string, @string>(paxHdrs, v.paxHdrs) && !(len(paxHdrs) == 0 && len(v.paxHdrs) == 0)) {
             Ꮡt.Errorf("test %d, allowedFormats():\ngot  %v\nwant %s"u8, i, paxHdrs, v.paxHdrs);
         }
         if ((formats != FormatUnknown) && (err != default!)) {

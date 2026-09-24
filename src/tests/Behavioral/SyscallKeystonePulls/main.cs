@@ -4,7 +4,7 @@ using fmt = fmt_package;
 using exec = os.exec_package;
 using user = os.user_package;
 using filepath = path.filepath_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using strings = strings_package;
 using os;
 using path;
@@ -39,7 +39,7 @@ internal static void Main() {
     }
     (_, err) = exec.LookPath(noSuchExecutableGo2csˢ);
     fmt.Println(lookPathMissingErrorˢ, err != default!);
-    if (Δruntime.GOOS != "darwin"u8) {
+    if (runtime.GOOS != "darwin"u8) {
         fmt.Println(doneˢ);
         return;
     }

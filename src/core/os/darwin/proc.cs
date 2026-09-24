@@ -5,7 +5,7 @@
 namespace go;
 
 using testlog = @internal.testlog_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -15,7 +15,7 @@ partial class os_package {
 public static slice<@string> Args;
 
 [GoInit] internal static void init() {
-    if (Δruntime.GOOS == "windows"u8) {
+    if (runtime.GOOS == "windows"u8) {
         // Initialized in exec_windows.go.
         return;
     }
@@ -23,7 +23,7 @@ public static slice<@string> Args;
 }
 
 internal static slice<@string> runtime_args() {
-    return Δruntime.os_runtime_args();
+    return runtime.os_runtime_args();
 }
 
 // in package runtime

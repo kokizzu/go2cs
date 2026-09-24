@@ -35,11 +35,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"go2cs/internal/releasestamp"
 )
 
 const (
-	validationDocsDirName    = "validation"
-	validationCurrentDirName = "current"
+	// The layout constants are ALIASES: internal/releasestamp owns where a published release is
+	// recorded, so the emitter here and the H2 counter guard (which cannot import main) read one
+	// definition. Spelling them again here keeps every existing use site unchanged.
+	validationDocsDirName    = releasestamp.DocsDirName
+	validationCurrentDirName = releasestamp.CurrentDirName
 	validationIndexFileName  = "index.md"
 
 	// proofProvenancePrefix identifies the ONE volatile line of a proof page. Everything else is
@@ -298,27 +303,43 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		// clause is selected by what this package's manifest actually contains — so pages without a
 		// platform-skip row keep their exact wording, and the page that has one cannot state
 		// something false about itself.
-		hasPlatformSkip := false
+		hasPlatformSkip, hasDeferred := false, false
 
 		for _, name := range disclosed {
-			if disclosure, pinned := disclosures[name]; pinned && disclosure.Class == platformSkipClass {
-				hasPlatformSkip = true
-				break
+			if disclosure, pinned := disclosures[name]; pinned {
+				hasPlatformSkip = hasPlatformSkip || disclosure.Class == platformSkipClass
+				hasDeferred = hasDeferred || disclosure.Class == deferredClass
 			}
+		}
+
+		// "Provably cannot" is FALSE of a deferred entry: that class is an assertion the CLR CAN meet,
+		// pinned against the named plan that will (see deferredClass). So a page that discloses one
+		// states the weaker claim every class shares and lets the Class column say which kind each
+		// entry is; a page with no deferred entry keeps its wording byte for byte.
+		claim := "the managed CLR *provably cannot* satisfy"
+
+		if hasDeferred {
+			claim = "this conversion does not satisfy"
 		}
 
 		page.WriteString("\n## Disclosed divergences\n\n")
 
 		if hasPlatformSkip {
-			page.WriteString("A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — never\n")
+			fmt.Fprintf(&page, "A disclosed divergence is a specific Go assertion %s — never\n", claim)
 			page.WriteString("a tolerance, and never a test skipped to make a row pass. Each one is pinned by exact signature in the package's\n")
 		} else {
-			page.WriteString("A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not\n")
+			fmt.Fprintf(&page, "A disclosed divergence is a specific Go assertion %s — not\n", claim)
 			page.WriteString("a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's\n")
 		}
 		fmt.Fprintf(&page, "hand-owned [`go2cs_test_disclosures.json`](%s/blob/master/src/core/%s/go2cs_test_disclosures.json);\n",
 			go2csRepositoryURL, provenance.importPath)
 		page.WriteString("a disclosed test that fails any *other* way is still a hard mismatch.\n\n")
+
+		if hasDeferred {
+			page.WriteString("The **Class** column says which kind each one is: a `deferred` entry is an assertion the managed\n")
+			page.WriteString("CLR *can* meet, pinned against the named plan that will retire it; every other class is one it\n")
+			page.WriteString("*provably cannot* satisfy.\n\n")
+		}
 		page.WriteString("| Test | Class | Pinned reason |\n")
 		page.WriteString("|:--|:--|:--|\n")
 

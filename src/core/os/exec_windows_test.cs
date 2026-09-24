@@ -7,13 +7,13 @@ namespace go;
 using testenv = @internal.testenv_package;
 using Δio = io_package;
 using static os_package;
-using filepath = path.filepath_package;
+using filepath = go.path.filepath_package;
 using Δsync = sync_package;
 using Δtesting = testing_package;
 using @internal;
 using exec = go.os.exec_package;
 using go.os;
-using path;
+using go.path;
 using static go.os_internal_test_package;
 using Δos = os_package;
 
