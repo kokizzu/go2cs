@@ -855,11 +855,14 @@ every NuGet package, and knowing which is which explains what works where:
 2. **Platform-neutral converted packages** (~305 of ~340) contain no platform-varying code at all —
    their IL behaves identically on any OS .NET supports. This is why `fmt`-class programs — the
    Tour of Go, for instance — run correctly on Linux from today's packages.
-3. **Platform-varying converted packages** (the 37) select their platform at BUILD time, faithful
-   to Go's build-tag model — and today's published emission is `windows/amd64`. Reaching their
-   platform-entangled behavior on another OS (local timezones, sockets, the `syscall` surface)
-   follows Windows semantics or fails; this is the wall above, not a portability defect in the
-   layers below it.
+3. **Platform-varying converted packages** select their platform at BUILD time, faithful to Go's
+   build-tag model. Each ships one flavor per supported platform — `win-x64` and `linux-x64` — and,
+   from packages 1.24.13.2, a consumer both compiles and runs against the flavor of the platform its
+   conversion targeted (go.lib selects the compile asset; the runtime selects the loaded one). On a
+   platform with no shipped flavor (macOS, other architectures) the Windows flavor is what compiles and
+   loads, and its platform-entangled behavior (local timezones, sockets, the `syscall` surface) follows
+   Windows semantics or fails; that is the remaining wall, not a portability defect in the layers
+   below it.
 
 **Validation is per-target.** Every row in
 [`ValidatedTestPackages.md`](ValidatedTestPackages.md) is a `windows/amd64` verdict; a Linux
@@ -879,7 +882,7 @@ so Go-faithful per-platform semantics never fork the package graph.
 | Full-conversion error count | build-error buckets | ✅ **0** |
 | Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight**. The roster's own header carries the current count, verdict total and disclosure total, recomputed from its table — read it there rather than here, so this row cannot go stale against it |
 | Assembly-backed implementations | Phase 5 external-declaration ledger | ◻ Phase 5 planned — gated by Phase 4 validation |
-| Linux / multi-target | Platforms section above | ◻ converts + runs `fmt`/`os`/`time`-class programs; `syscall` surface in progress |
+| Linux / multi-target | Platforms section above | ◻ converts on Windows and Linux; a module reaching `golang.org/x/sys/unix` (the README walkthrough) builds and runs on `linux/amd64` with go2cs packages ≥ 1.24.13.2 and a converter from a checkout that includes them; the wider operational `syscall` surface and a Linux validation roster are in progress |
 
 ## Reference: open converter items (`src/go2cs/ToDo.md`)
 
