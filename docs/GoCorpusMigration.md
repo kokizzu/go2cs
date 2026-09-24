@@ -3034,7 +3034,8 @@ leads:** where a brief and this block disagree, the brief stops and quotes both.
    - CNR, with CHANGED empty, or classified by §4 with zero T5;
    - the stdlib on all three flavours by H7 as amended;
    - GolibTests and the full behavioral suite, each EQUAL by name to step 3's control;
-   - `go2cs.slnx`, which is owed after the golib/runtime API changes this hop made;
+   - `go2cs.slnx`, which is owed after the golib/runtime API changes this hop made, built with
+     `-p:go2csPath=<repo>/src/` whenever the configuration is not Debug (R-B16, below);
    - the steady-state sweep of every banked row whose production the regen moved, capped. The rest go
      to §6's full sweep. If the closing box cannot run a row, list it: it is run elsewhere at the close
      head before the STAMP, or deferred to §6 by a named ruling.
@@ -3118,6 +3119,50 @@ term. The figures belong to the close STAMP that reads them, not to this block.
    only when the overlay adds its per-GOOS copy for ALL THREE targets. Any other absent-in-stage file
    stops the seat. The instance predicted at this hop is `src/core/os/exec.cs`, from batch 3's
    measured footprint that was never committed (ledger 2026-09-22 02:36).
+
+**AMENDED 2026-09-24 (C1, the post-close docs seat, on the close STAMP fa18863b94) -- FOUR LESSONS
+FROM THE CLOSE SEAT ITSELF.** The seat stopped three times and each stop was ruled (ledger 2026-09-23
+18:11, 18:39, 21:43). Each lesson is a step for the next hop, with the ref that fixes its cause.
+
+4. **The staging seeder carries the whole `docs/validation` tree (R-B13; fix 781c1c3c31).** The
+   `-stdlib` and `-platform-census` staging roots are seeded by one seeder (`seedCensusRoot`,
+   `platformCensus.go`). The README emitter resolves the published stamp from the snapshot directories
+   under `docs/validation`, so a root seeded with `docs/validation/current` alone reads no stamp and
+   every package README loses BOTH repository badge lines. On a tree without the fix, restore the
+   stripped READMEs from the committed tree as a NAMED class after the overlay; with it, the regen
+   writes them byte-identical. Either way, the check after a regen is that no README lost a badge line.
+5. **Go's own `//go:embed` payloads outside `testdata` are admitted by repoguard from the csproj that
+   embeds them (R-B14; fix de436207c9, merged at the close as f0ada4471e).** A regen can land a Go
+   payload outside `testdata` for the first time (at this hop, `internal/trace/traceviewer`'s
+   `trace_viewer_full.html`, whose JavaScript regex reads as a network path). repoguard admits a payload
+   only when a tracked csproj under `src/core` names it as a converter-minted
+   `<EmbeddedResource ... LogicalName="go.embed/...">`, and still runs its denied-token pass on it; the
+   bash census mirrors it (33f5f11297). A payload the census refuses is a GUARD gap to route, never a
+   hand edit of Go's bytes and never a pathspec exclusion.
+6. **The multi-target csproj merge keeps every group that follows the reference block (R-B15; fix
+   ae813db069).** When the merge re-renders a staged csproj, the renderer replaces the platform
+   reference block by its own extent. Before the fix it cut from the block header to `</Project>` and
+   dropped any group after it; at this hop that was log/syslog's shared-LICENSE `<None>` item, restored
+   as a named class. On a tree without the fix, diff every merged csproj against the committed one for a
+   lost non-reference group; with it, all 22 L3 csprojs round-trip byte-identically.
+7. **A non-Debug build of `go2cs.slnx` is pinned to the tree (R-B16).** Every behavioral csproj sets
+   `go2csPath` to `$(USERPROFILE)/go2cs/` when the configuration is not Debug, even inside the solution,
+   so step 9's `go2cs.slnx` build and §6's row carry `-p:go2csPath=<repo>/src/`. The pinned build is the
+   reading of record; an unpinned one measures the deploy root (`.claude/rules/harness-gates.md`, *Build
+   context and the `$(go2csPath)` root*).
+
+<!-- Provenance of the four lessons, 2026-09-24 (C1, docs only; no gate named here was run to write
+     them). R-B13: ledger 2026-09-23 18:11 (922994cec3) -- the regen's arm B stripped both badges from
+     337 package READMEs; restored as class (v); fix 781c1c3c31 accepted 18:23 for the post-close batch
+     (red-first TestSeedCensusRootCarriesThePublishedStampTheBadgesRead). R-B14: ledger 18:39
+     (1a328f3ee8) -- TestNoFleetIdentifiersInTrackedFiles red on two arms in one payload,
+     src/core/internal/trace/traceviewer/static/trace_viewer_full.html:6244; C2's admit de436207c9
+     accepted 18:56 and merged by the close as f0ada4471e; the census mirror 33f5f11297 is on master.
+     R-B15: ledger 18:39 and 19:01 (ae813db069) -- the renderer, not the merge note; log/syslog restored
+     as class (vi); accepted for the post-close batch. R-B16: ledger 21:43 (mailbox 00133ee238) --
+     15,240 CS0246/CS0234 across 695 behavioral projects unpinned, rc 0 with 925 assemblies pinned; 698
+     of 699 behavioral csprojs carry the Configuration-keyed fallback at fa18863b94. The close STAMP is
+     ledger 22:30 (35d9a46970). -->
 
 <!-- Provenance, 2026-09-23 (COORD, written by a docs-only sub-agent on the i7 at the batch-8g stamp
      faaa8fe999). The order and the gates are condensed from the close brief's PART B (B1-B12) and from
@@ -3602,7 +3647,7 @@ frame schedules it **once per ladder** plus coordinator discretion, not once per
 | `check-no-regression.ps1` | **yes**, at H4 and per converter-touching commit. It re-transpiles **unconditionally** and is the authoritative drift instrument — **never add an up-to-date skip to it** |
 | `go2cs-stdlib.slnx`, every buildable target-OS flavor | **yes**, at H7 |
 | master folded into the release branch | **once**, at H7a — sized, predicted, and scored; H6's retired-hand-own step re-run after it as the closing check |
-| `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members |
+| `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members. In any non-Debug configuration pin `-p:go2csPath=<repo>/src/`, or every behavioral project resolves the machine deploy root instead of the tree (R-B16, H10's close amendment) |
 | full behavioral suite (four phases) | **yes**, at H9 and at the parity gate |
 | seeded full reconvert | **once** per phase — H4a's bundle and H5. Never twice into one staging root |
 | multi-target emission + platform census | **yes**, at H8 |
