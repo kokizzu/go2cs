@@ -5,6 +5,8 @@
 // that can be found in the LICENSE file.
 
 using System;
+using System.Diagnostics;
+using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using static go.builtin;
@@ -42,6 +44,25 @@ public class NamedSliceLenCapAllocationTests
     // The warm-up count clears tier 0: its unoptimized code keeps the wrapper's own interface cast
     // (`((IArray)m_value).Length`) as a real box, so the measurement window must see optimized code.
     private const int WarmupCount = 50_000;
+
+    // A JIT-optimizer-disabled (Debug) build never leaves unoptimized code, whatever the warm-up, so the
+    // wrapper's cast stays a real box and the three allocation guards read the old 56/56/112 B figures
+    // at Debug even with the constrained overloads in place (measured, COORD's i7 GolibTests Debug leg).
+    // They report INCONCLUSIVE there, never green and never red, when either assembly that holds the
+    // boxing is such a build: sort's (sort.IntSlice's own Length/Capacity) and golib's (the len/cap
+    // overloads). The AliasOverlapRaceTests precedent; run `dotnet test -c Release` for the live guard.
+    private static void RequireOptimizedMeasurement()
+    {
+        foreach (Assembly assembly in new[] { typeof(sort_package.IntSlice).Assembly, typeof(slice<nint>).Assembly })
+        {
+            if (assembly.GetCustomAttribute<DebuggableAttribute>()?.IsJITOptimizerDisabled == true)
+            {
+                Assert.Inconclusive($"{assembly.GetName().Name} is a JIT-optimizer-disabled (Debug) build: its " +
+                    "wrapper's interface cast is a real box there, so this allocation guard measures nothing; " +
+                    "run dotnet test -c Release for the live guard");
+            }
+        }
+    }
 
     private static sort_package.IntSlice Named(int length, int capacity) =>
         new slice<nint>(length, capacity);
@@ -107,6 +128,8 @@ public class NamedSliceLenCapAllocationTests
     [TestMethod]
     public void LenOfNamedSliceAllocatesNothing()
     {
+        RequireOptimizedMeasurement();
+
         long bytes = MeasureNamedLen(Named(40, 64), out long sum);
 
         Assert.AreEqual(40L * LoopCount, sum, "len of a named slice did not return its length");
@@ -118,6 +141,8 @@ public class NamedSliceLenCapAllocationTests
     [TestMethod]
     public void CapOfNamedSliceAllocatesNothing()
     {
+        RequireOptimizedMeasurement();
+
         long bytes = MeasureNamedCap(Named(40, 64), out long sum);
 
         Assert.AreEqual(64L * LoopCount, sum, "cap of a named slice did not return its capacity");
@@ -129,6 +154,8 @@ public class NamedSliceLenCapAllocationTests
     [TestMethod]
     public void LenAndCapOfSliceTypeParameterAllocateNothing()
     {
+        RequireOptimizedMeasurement();
+
         long bytes = MeasureGenericHeadroom(Named(40, 64), out long sum);
 
         Assert.AreEqual(24L * LoopCount, sum, "cap(s) - len(s) over a type parameter read the wrong window");
