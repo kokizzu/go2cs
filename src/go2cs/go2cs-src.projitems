@@ -22,6 +22,8 @@
     <None Include="$(MSBuildThisFileDirectory)argParse_test.go" />
     <None Include="$(MSBuildThisFileDirectory)arrayCloneOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)arrayDimsNilCargo.go" />
+    <None Include="$(MSBuildThisFileDirectory)asmTrampolines.go" />
+    <None Include="$(MSBuildThisFileDirectory)asmTrampolines_test.go" />
     <None Include="$(MSBuildThisFileDirectory)assemblyScopedAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)astTypeSyntax.go" />
     <None Include="$(MSBuildThisFileDirectory)autoSiblingOperations.go" />
