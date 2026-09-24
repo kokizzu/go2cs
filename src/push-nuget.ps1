@@ -279,8 +279,9 @@ function Get-GoSourceBadgeVerification {
 #                   that goes stale independently of the table beside it
 #   test projects   src\core\**\*.tests.csproj
 #
-# plus the three the identities need to NAME their other terms: the roster's exclusion ledger, the
-# population of record for the pinned Go release, and docs\validation\index.md's rows.
+# plus the four the identities need to NAME their other terms: the roster's exclusion ledger, the
+# pages its ROWS' [proof] links resolve to, the population of record for the pinned Go release, and
+# docs\validation\index.md's rows. (The README-less rows come from the same README walk as the badges.)
 #
 # THIS WAS A SET EQUALITY until 2026-09-23 -- "four independent derivations of ONE set, the banked
 # packages" -- and the H10 close amendment REFUTED that by design (docs\GoCorpusMigration.md, "THE
