@@ -2409,6 +2409,11 @@ func (v *Visitor) linknameForwardArgName(param *types.Var, i int, dupBlank bool,
 // mismatch is bridged through `uintptr` — an integer/uintptr parameter is passed `(uintptr)p`, and
 // an integer/uintptr result is returned `(LocalType)(uintptr)r`. Non-integer params/results
 // (pointers, slices, strings) are the same golib type on both sides and pass through directly.
+//
+// That compatibility is the CALLER's precondition, never checked here. A linkname pull has it by Go's
+// own link-time contract. A pure-JMP assembly trampoline (funcAsmTrampolineForward) proves only an
+// identical FRAME, which two DIFFERENT pointer types satisfy (x/sys/unix's gettimeofday takes its own
+// *Timeval and jumps to syscall's), so that caller checks types.Identical before it reaches here.
 func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias string, targetFunc string) {
 	params := signature.Params()
 	dupBlank := hasDuplicateBlankParams(params) || bodyUsesBlankDiscard(v.currentFuncDecl)

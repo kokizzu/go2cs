@@ -12,9 +12,11 @@ import (
 	"go/ast"
 	"go/build"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -32,42 +34,36 @@ import (
 //
 // go-isatty's ioctl reached that stub inside fatih/color's type initializer, so the README
 // walkthrough's app died with a TypeInitializationException on Linux (COORD sizing 2026-09-24, gap 3).
-// A JMP trampoline is Go's own statement that the two functions are the same function, so the
-// faithful conversion is a FORWARDER: the linkname pull's emission (writeLinknameForwarder), which
-// already bridges exactly this frame-identical shape.
+// The faithful conversion of such a trampoline is a FORWARDER: the linkname pull's emission
+// (writeLinknameForwarder), which already bridges this frame-identical shape.
+//
+// A jump is only proof of an identical FRAME, not of identical Go types, so the forwarder is emitted
+// only when the local and target signatures are types.Identical. The counterexample is real:
+// x/sys/unix's `TEXT ·gettimeofday(SB)` jumps to syscall·gettimeofday, but declares
+// `gettimeofday(tv *Timeval)` over its OWN unix.Timeval, and a forwarder passing a ж<unix.Timeval>
+// into syscall's ж<syscall.Timeval> is CS1503 that takes the whole package down. Such a pair keeps its
+// stub. A cross-package target must also be EXPORTED: the forwarder compiles into another assembly,
+// and nothing here widens the target package's surface.
 //
 // SCOPE: packages OUTSIDE the converted standard library. The corpus governs its own assembly with
-// hand-owned implementations and a curated stub census; 442 pure-JMP trampolines fall on the corpus
-// flavors (internal/runtime/atomic, the hand-owned sync/atomic, darwin's libc trampolines, math/big,
-// crypto/x509/internal/macos), and emitting forwarders there would collide with the hand-owned
-// partial implementations. A third-party package has no hand-owns: every bodyless function there is
-// a throwing stub today, so a forwarder can only replace a certain failure with the target's behavior.
+// hand-owned implementations and a curated stub census, and pure-JMP trampolines do fall on the corpus
+// flavors (internal/runtime/atomic and the hand-owned sync/atomic); a forwarder there would collide
+// with a hand-owned partial implementation. A third-party package has no hand-owns: every bodyless
+// function there is a throwing stub today, so a forwarder can only replace a certain failure.
 //
-// A target must be callable from the trampoline's assembly: an EXPORTED function, or one registered
-// in asmTrampolineTargets. The registry exists because assembly may jump to an UNEXPORTED function of
-// another package with no `//go:linkname` handle at all (x/sys/unix jumps to syscall·gettimeofday),
-// which packageFuncAccess then has to emit `public` so a different assembly can call it. It is
-// curated for the same reason linknameForwardTargets is: publicizing every symbol some assembly
-// somewhere jumps to would widen the corpus surface for calls that are never emitted.
-//
-// A trampoline whose body is anything else (x/sys/unix's SyscallNoError issues a raw SYSCALL) is not a
-// forwarder and keeps its stub.
-var asmTrampolineTargets = map[string]bool{
-	// golang.org/x/sys/unix asm_linux_amd64.s: `TEXT ·gettimeofday(SB) ... JMP syscall·gettimeofday(SB)`.
-	"syscall.gettimeofday": true,
-}
+// A block whose body is anything else (x/sys/unix's SyscallNoError issues a raw SYSCALL), or whose
+// instructions sit under a preprocessor conditional, is not a forwarder and keeps its stub.
 
 // asmTextRE matches a TEXT directive for a function of THIS package (`·Name`); asmJumpRE the single
 // jump that makes a block a trampoline (`JMP` on amd64, `B` or `JMP` on arm64).
 var (
-	asmTextRE         = regexp.MustCompile(`^TEXT\s+·([A-Za-z_][A-Za-z0-9_]*)\(SB\)`)
-	asmJumpRE         = regexp.MustCompile(`^(?:JMP|B)\s+([^\s(]*·[A-Za-z_][A-Za-z0-9_]*)\(SB\)$`)
-	asmLabel          = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*:$`)
-	asmBlockCommentRE = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	asmTextRE = regexp.MustCompile(`^TEXT\s+·([A-Za-z_][A-Za-z0-9_]*)\(SB\)`)
+	asmJumpRE = regexp.MustCompile(`^(?:JMP|B)\s+([^\s(]*·[A-Za-z_][A-Za-z0-9_]*)\(SB\)$`)
+	asmLabel  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*:$`)
 )
 
-// asmTrampolineIndexes caches, per package directory and target platform, the local function name of
-// every pure-JMP trampoline mapped to its target as `<import path>.<func>` (an empty import path for
+// asmTrampolineIndexes caches, per package directory and build configuration, the local function name
+// of every pure-JMP trampoline mapped to its target as `<import path>.<func>` (an empty import path for
 // a jump within the same package).
 var (
 	asmTrampolineIndexes     = map[string]map[string]string{}
@@ -78,7 +74,7 @@ var (
 // assembly trampoline and returns what writeLinknameForwarder needs to call its target: the target
 // package's alias ("" for the same package, which calls it unqualified) and the target's C# name.
 func (v *Visitor) funcAsmTrampolineForward(funcDecl *ast.FuncDecl) (alias string, targetFunc string, ok bool) {
-	if funcDecl.Body != nil || funcDecl.Recv != nil || funcDecl.Name == nil || v.fset == nil || v.pkg == nil {
+	if funcDecl.Body != nil || funcDecl.Recv != nil || funcDecl.Name == nil || v.fset == nil || v.pkg == nil || v.info == nil {
 		return "", "", false
 	}
 
@@ -96,16 +92,66 @@ func (v *Visitor) funcAsmTrampolineForward(funcDecl *ast.FuncDecl) (alias string
 
 	dot := strings.LastIndex(target, ".")
 	pkgPath, name := target[:dot], target[dot+1:]
+	samePackage := pkgPath == "" || pkgPath == v.pkg.Path()
 
-	if pkgPath == "" || pkgPath == v.pkg.Path() {
-		return "", getSanitizedFunctionName(name), true
-	}
-
-	if !token.IsExported(name) && !asmTrampolineTargets[target] {
+	if !samePackage && !token.IsExported(name) {
 		return "", "", false
 	}
 
+	localFunc, isFunc := v.info.Defs[funcDecl.Name].(*types.Func)
+	targetObj := asmTrampolineTargetObject(v.pkg, pkgPath, name, samePackage)
+	targetFn, isTargetFunc := targetObj.(*types.Func)
+
+	if !isFunc || !isTargetFunc || !types.Identical(localFunc.Type(), targetFn.Type()) {
+		return "", "", false
+	}
+
+	if samePackage {
+		// A same-package target is converted in THIS package, where Phase A may lower its pointer
+		// parameters to `ref T` while the forwarder passes the box: keep the stub rather than emit a
+		// call its callee no longer accepts.
+		if signatureHasRefLoweredParam(v, targetFn) || signatureHasRefLoweredParam(v, localFunc) {
+			return "", "", false
+		}
+
+		return "", getSanitizedFunctionName(name), true
+	}
+
 	return v.linknameTargetAlias(pkgPath), getSanitizedFunctionName(name), true
+}
+
+// asmTrampolineTargetObject resolves a trampoline's target in the package's own scope or in one of its
+// DIRECT imports. A target in a package the trampoline's package does not import has no type
+// information here, so it is not resolved and the trampoline keeps its stub.
+func asmTrampolineTargetObject(pkg *types.Package, pkgPath string, name string, samePackage bool) types.Object {
+	if samePackage {
+		return pkg.Scope().Lookup(name)
+	}
+
+	for _, imported := range pkg.Imports() {
+		if imported.Path() == pkgPath {
+			return imported.Scope().Lookup(name)
+		}
+	}
+
+	return nil
+}
+
+// signatureHasRefLoweredParam reports whether Phase A lowered any parameter of fn.
+func signatureHasRefLoweredParam(v *Visitor, fn *types.Func) bool {
+	signature, ok := fn.Type().(*types.Signature)
+
+	if !ok {
+		return false
+	}
+
+	for i := 0; i < signature.Params().Len(); i++ {
+		if v.paramIsRefLowered(signature.Params().At(i)) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // isGoRootSourceDir reports whether dir is inside GOROOT's source tree, i.e. a standard-library package.
@@ -116,11 +162,24 @@ func isGoRootSourceDir(dir string, goRoot string) bool {
 
 	rel, err := filepath.Rel(filepath.Join(goRoot, "src"), dir)
 
-	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+}
+
+// asmBuildContext is the go/build context the conversion selects assembly with: the target platform,
+// the -tags set and the LOADER toolchain's release tags (loaderReleaseTags), with cgo following go's
+// own default of enabled only for a native, cgo-capable build.
+func asmBuildContext(sourceDir string, targetPlatform string, buildTags []string) build.Context {
+	context := build.Default
+	context.GOOS, context.GOARCH, _ = strings.Cut(targetPlatform, "/")
+	context.BuildTags = append([]string(nil), buildTags...)
+	context.ReleaseTags = loaderReleaseTags(sourceDir)
+	context.CgoEnabled = build.Default.CgoEnabled && context.GOOS == runtime.GOOS && context.GOARCH == runtime.GOARCH
+
+	return context
 }
 
 // asmTrampolineIndex parses the package directory's assembly files that the target platform builds,
-// once per (directory, platform).
+// once per (directory, platform, tags).
 func asmTrampolineIndex(sourceDir string, targetPlatform string, buildTags []string) map[string]string {
 	key := sourceDir + "|" + targetPlatform + "|" + strings.Join(buildTags, ",")
 
@@ -140,9 +199,7 @@ func asmTrampolineIndex(sourceDir string, targetPlatform string, buildTags []str
 		return index
 	}
 
-	context := build.Default
-	context.GOOS, context.GOARCH, _ = strings.Cut(targetPlatform, "/")
-	context.BuildTags = buildTags
+	context := asmBuildContext(sourceDir, targetPlatform, buildTags)
 
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".s") {
@@ -170,19 +227,58 @@ func asmTrampolineIndex(sourceDir string, targetPlatform string, buildTags []str
 	return index
 }
 
+// stripAsmComments removes `//` and `/* */` comments in ONE left-to-right pass, so whichever opens
+// first wins: a `/*` inside a line comment opens nothing, and a `//` inside a block comment ends
+// nothing. Newlines are kept so line structure survives.
+func stripAsmComments(source string) string {
+	var out strings.Builder
+
+	for i := 0; i < len(source); i++ {
+		switch {
+		case strings.HasPrefix(source[i:], "//"):
+			for i < len(source) && source[i] != '\n' {
+				i++
+			}
+
+			if i < len(source) {
+				out.WriteByte('\n')
+			}
+		case strings.HasPrefix(source[i:], "/*"):
+			end := strings.Index(source[i+2:], "*/")
+
+			if end < 0 {
+				return out.String()
+			}
+
+			for _, c := range source[i : i+2+end+2] {
+				if c == '\n' {
+					out.WriteByte('\n')
+				}
+			}
+
+			i += 2 + end + 1
+		default:
+			out.WriteByte(source[i])
+		}
+	}
+
+	return out.String()
+}
+
 // parseAsmTrampolines returns every TEXT block of assembly source whose only instruction is a jump to a
-// Go function, as the local function name mapped to `<import path>.<func>`. Comments, blank lines,
-// preprocessor lines and labels are not instructions; anything else is, and disqualifies the block.
+// Go function, as the local function name mapped to `<import path>.<func>`. Blank lines, labels and
+// comments are not instructions; anything else is, and disqualifies the block. So does a
+// preprocessor conditional inside a block: which instruction it keeps depends on a macro this reader
+// does not evaluate.
 func parseAsmTrampolines(source string) map[string]string {
 	result := map[string]string{}
 
-	source = asmBlockCommentRE.ReplaceAllString(source, "")
-
 	var name string
 	var instructions []string
+	conditional := false
 
 	flush := func() {
-		if name != "" && len(instructions) == 1 {
+		if name != "" && !conditional && len(instructions) == 1 {
 			if match := asmJumpRE.FindStringSubmatch(instructions[0]); match != nil {
 				symbol := match[1]
 				separator := strings.Index(symbol, "·")
@@ -193,17 +289,25 @@ func parseAsmTrampolines(source string) map[string]string {
 			}
 		}
 
-		name, instructions = "", nil
+		name, instructions, conditional = "", nil, false
 	}
 
-	for _, line := range strings.Split(source, "\n") {
-		if comment := strings.Index(line, "//"); comment >= 0 {
-			line = line[:comment]
-		}
-
+	for _, line := range strings.Split(stripAsmComments(source), "\n") {
 		line = strings.TrimSpace(line)
 
-		if line == "" || strings.HasPrefix(line, "#") {
+		if line == "" {
+			continue
+		}
+
+		if strings.HasPrefix(line, "#") {
+			// #if/#ifdef/#ifndef/#elif/#else/#endif inside a block makes its instruction list
+			// macro-dependent; #include and #define do not.
+			directive := strings.TrimSpace(line[1:])
+
+			if name != "" && (strings.HasPrefix(directive, "if") || strings.HasPrefix(directive, "el") || strings.HasPrefix(directive, "endif")) {
+				conditional = true
+			}
+
 			continue
 		}
 

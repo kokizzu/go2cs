@@ -278,14 +278,6 @@ func packageFuncAccess(goIDName string, isFreeFunction bool) string {
 		return "public"
 	}
 
-	// A function a FOREIGN pure-JMP assembly trampoline jumps to (asmTrampolineTargets): the forwarder
-	// the trampoline becomes compiles into another assembly, and assembly needs no `//go:linkname`
-	// handle to reach an unexported symbol (x/sys/unix jumps to syscall·gettimeofday), so the curated
-	// registry alone is the authorization, as it is for the push arm above.
-	if isFreeFunction && asmTrampolineTargets[currentPackagePath+"."+goIDName] {
-		return "public"
-	}
-
 	// A forward row's DEFINITION under another name (linknameForwardDefinitions: time's
 	// legacyAbsClock for the symbol time.absClock) is what the puller's forwarder calls, so it is
 	// public for the same reason. Go authorizes the pull with the definition's own two-arg directive
