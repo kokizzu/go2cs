@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -222,6 +223,80 @@ func fleetIsUpstreamFixture(path string) bool {
 		strings.HasSuffix(p, ".test")
 }
 
+// fleetEmbedResourceRe matches one //go:embed payload item exactly as the converter mints it
+// (embedResourceItemLines in src/go2cs/embedDirective.go): Include first, then a LogicalName carrying
+// the `go.embed/` prefix nothing but that emitter writes. Submatch 1 is the Include value, relative
+// to the project file's directory, slash-separated and XML-escaped.
+var fleetEmbedResourceRe = regexp.MustCompile(`<EmbeddedResource Include="([^"]+)" LogicalName="go\.embed/[^"]+" />`)
+
+var fleetXMLAttributeUnescaper = strings.NewReplacer("&lt;", "<", "&gt;", ">", "&quot;", `"`, "&apos;", "'", "&amp;", "&")
+
+// fleetEmbedPayloads returns the //go:embed PAYLOADS among the tracked paths: every file a tracked
+// project file under src/core/ names as a converter-minted `<EmbeddedResource>` item, outside
+// testdata/ (which fleetIsUpstreamFixture already admits).
+//
+// A payload is Go's own bytes carried verbatim, which is exactly what a testdata fixture is. It is the
+// one way upstream bytes reach the corpus OUTSIDE a testdata directory: Go 1.24's
+// internal/trace/traceviewer embeds static/trace_viewer_full.html, whose JavaScript regex source
+// reads, escaped, as a UNC host (2 structural hits the day the H10 close's regen staged it). So it is
+// admitted the way a fixture is: the STRUCTURAL pass is skipped, and the denied-token pass still runs.
+//
+// DERIVED FROM THE TRACKED PROJECT FILES, NOT COMPARED TO GOROOT. A byte-equality check would make a
+// tree guard depend on a toolchain: this runs under the plain `go test ./...` on every lane, including
+// boxes where the pinned GOROOT is not materialised, and across a hop the committed payload and the
+// pinned GOROOT legitimately differ until the corpus is regenerated. The project files are in the
+// tree being scanned, and they are the same derivation the close's -text pins read.
+//
+// THE TEETH, each one a way a hand-edit cannot widen this:
+//   - the project file must be tracked and under src/core/ (the converter's output tree);
+//   - the item must carry the converter's `go.embed/` LogicalName, in the order it emits;
+//   - the Include must resolve INSIDE the project file's own directory (no "..", no absolute path);
+//   - only paths in the scanned list are ever consulted, so an item naming an untracked file admits
+//     nothing.
+//
+// It fails CLOSED: an emitter format change that this regex stops matching derives nothing, and the
+// payload is then scanned like any other file and refused -- a red guard, never a silent admit.
+func fleetEmbedPayloads(root string, rel []string) map[string]bool {
+	payloads := map[string]bool{}
+
+	for _, p := range rel {
+		if !strings.HasPrefix(p, "src/core/") || !strings.HasSuffix(p, ".csproj") {
+			continue
+		}
+
+		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
+		if err != nil {
+			continue
+		}
+
+		dir := path.Dir(p)
+
+		for _, m := range fleetEmbedResourceRe.FindAllSubmatch(content, -1) {
+			include := fleetXMLAttributeUnescaper.Replace(string(m[1]))
+
+			if strings.Contains(include, "\\") || path.IsAbs(include) {
+				continue
+			}
+
+			clean := path.Clean(include)
+
+			if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
+				continue
+			}
+
+			payload := path.Join(dir, clean)
+
+			if fleetIsUpstreamFixture(payload) {
+				continue
+			}
+
+			payloads[payload] = true
+		}
+	}
+
+	return payloads
+}
+
 func fleetHash(s string) string {
 	sum := sha256.Sum256([]byte(strings.ToLower(s)))
 	return hex.EncodeToString(sum[:])
@@ -280,12 +355,19 @@ func fleetIsPlaceholder(seg string) bool {
 // package global so the positive control can drive the denied-token pass with a synthetic entry,
 // exercising this exact code path without any test spelling a real identifier.
 func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string]string) []fleetFinding {
+	return scanFleetContent(path, content, denied, fleetIsUpstreamFixture(path))
+}
+
+// scanFleetContent is scanFleetIdentifiers with the upstream-data decision made by the caller:
+// scanFleetTree also admits the //go:embed payloads its tracked project files name (see
+// fleetEmbedPayloads), which no predicate on the path alone can know.
+func scanFleetContent(path string, content []byte, denied map[int]map[string]string, upstream bool) []fleetFinding {
 	if bytes.IndexByte(content, 0) >= 0 {
 		return nil // binary
 	}
 	var out []fleetFinding
 	clearedTokens := fleetClearedTokenFiles[path] != ""
-	structural := !fleetIsUpstreamFixture(path)
+	structural := !upstream
 
 	// Lines are walked in place rather than through strings.Split: this runs over every tracked
 	// file in the repository, and materialising a slice of every line of the converted corpus cost
@@ -518,13 +600,14 @@ func fleetTokenDenied(tok []byte, denied map[int]map[string]string) bool {
 func scanFleetTree(root string, rel []string, denied map[int]map[string]string) ([]fleetFinding, int) {
 	var out []fleetFinding
 	read := 0
+	payloads := fleetEmbedPayloads(root, rel)
 	for _, p := range rel {
 		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
 		if err != nil {
 			continue // unreadable or a submodule entry; never a pass by omission, see the count assert
 		}
 		read++
-		out = append(out, scanFleetIdentifiers(p, content, denied)...)
+		out = append(out, scanFleetContent(p, content, denied, fleetIsUpstreamFixture(p) || payloads[p])...)
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].Path != out[j].Path {
@@ -1118,6 +1201,163 @@ func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestFleetIdentifierEmbedPayloadsAreAdmittedAsFixtures controls the //go:embed payload admit
+// (fleetEmbedPayloads). The payload line is the SHAPE Go 1.24's traceviewer ships at
+// static/trace_viewer_full.html:6244 -- a JavaScript regex whose escaped character class reads as a
+// UNC host -- assembled at run time so this file carries no hit of its own.
+//
+// RED at 47e088d3d7: the payload arm fires [network-path] and [network-path-split], exactly the two
+// hits the H10 close's regen reported. Every other arm is a refusal that must SURVIVE the admit: the
+// same bytes anywhere the tracked project files do not name as a converter-minted payload.
+func TestFleetIdentifierEmbedPayloadsAreAdmittedAsFixtures(t *testing.T) {
+	const controlToken = "zzcontrolaccount"
+	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
+
+	bs := `\`
+	regexLine := "const r=new RegExp('addr=(" + bs + bs + "[" + bs + bs + "da-fA-F" + bs + bs + "-]+" + bs + bs + "])');\n"
+
+	const pkg = "src/core/internal/trace/traceviewer"
+	item := func(include, logical string) string {
+		return "<Project>\r\n  <ItemGroup Label=\"GoEmbeddedResources\">\r\n    <EmbeddedResource Include=\"" + include +
+			"\" LogicalName=\"" + logical + "\" />\r\n  </ItemGroup>\r\n</Project>\r\n"
+	}
+	minted := item("static/viewer.html", "go.embed/internal/trace/traceviewer/static/viewer.html")
+
+	scan := func(t *testing.T, files map[string]string) []fleetFinding {
+		t.Helper()
+		dir := t.TempDir()
+		var rel []string
+		for p, content := range files {
+			full := filepath.Join(dir, filepath.FromSlash(p))
+			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			rel = append(rel, p)
+		}
+		got, read := scanFleetTree(dir, rel, denied)
+		if read != len(files) {
+			t.Fatalf("the arm scanned %d of %d files -- it measured nothing", read, len(files))
+		}
+		return got
+	}
+	hitsIn := func(got []fleetFinding, p string) []fleetFinding {
+		var out []fleetFinding
+		for _, f := range got {
+			if f.Path == p {
+				out = append(out, f)
+			}
+		}
+		return out
+	}
+	hasKind := func(got []fleetFinding, kind string) bool {
+		for _, f := range got {
+			if f.Kind == kind {
+				return true
+			}
+		}
+		return false
+	}
+
+	// The control that makes every admit below mean something: the line IS a structural hit.
+	t.Run("the regex shape is a structural hit on its own", func(t *testing.T) {
+		got := scan(t, map[string]string{"docs/phase4/CONTROL-record.md": regexLine})
+		if !hasKind(got, "network-path") || !hasKind(got, "network-path-split") {
+			t.Fatalf("the fixture line does not reproduce the payload's two hits: %v", got)
+		}
+	})
+
+	t.Run("a converter-minted payload is admitted", func(t *testing.T) {
+		got := scan(t, map[string]string{pkg + "/internal.trace.traceviewer.csproj": minted, pkg + "/static/viewer.html": regexLine})
+		if len(got) != 0 {
+			t.Errorf("a //go:embed payload named by its tracked project file was refused: %v", got)
+		}
+	})
+
+	t.Run("the same bytes at a path no item names are refused", func(t *testing.T) {
+		stray := pkg + "/static/other.html"
+		got := scan(t, map[string]string{pkg + "/internal.trace.traceviewer.csproj": minted, pkg + "/static/viewer.html": regexLine, stray: regexLine})
+		if !hasKind(hitsIn(got, stray), "network-path") {
+			t.Errorf("a NON-payload file carrying the payload's bytes was admitted: %v", got)
+		}
+		if len(hitsIn(got, pkg+"/static/viewer.html")) != 0 {
+			t.Errorf("the named payload beside it was refused: %v", got)
+		}
+	})
+
+	t.Run("an item without the converter's go.embed LogicalName admits nothing", func(t *testing.T) {
+		got := scan(t, map[string]string{pkg + "/x.csproj": item("static/viewer.html", "viewer.html"), pkg + "/static/viewer.html": regexLine})
+		if !hasKind(got, "network-path") {
+			t.Errorf("a hand-shaped EmbeddedResource item admitted a file: %v", got)
+		}
+	})
+
+	t.Run("an item reaching outside its project directory admits nothing", func(t *testing.T) {
+		outside := "src/core/internal/trace/viewer.html"
+		got := scan(t, map[string]string{
+			pkg + "/x.csproj": item("../viewer.html", "go.embed/internal/trace/traceviewer/../viewer.html"),
+			outside:           regexLine,
+		})
+		if !hasKind(hitsIn(got, outside), "network-path") {
+			t.Errorf("an item escaping its package directory admitted a file: %v", got)
+		}
+	})
+
+	t.Run("a project file outside src/core admits nothing", func(t *testing.T) {
+		probe := "docs/phase4/probes/p"
+		got := scan(t, map[string]string{
+			probe + "/p.csproj":           item("static/viewer.html", "go.embed/p/static/viewer.html"),
+			probe + "/static/viewer.html": regexLine,
+		})
+		if !hasKind(got, "network-path") {
+			t.Errorf("a project file outside the converted tree admitted a file: %v", got)
+		}
+	})
+
+	// THE SAME TEETH AS TESTDATA: only the structural pass is skipped.
+	t.Run("the denied-token pass still runs over a payload", func(t *testing.T) {
+		got := scan(t, map[string]string{pkg + "/internal.trace.traceviewer.csproj": minted, pkg + "/static/viewer.html": "owner " + controlToken + "\n" + regexLine})
+		if !hasKind(got, "denied-token") {
+			t.Errorf("a denied token inside an admitted payload did not fire: %v", got)
+		}
+		if hasKind(got, "network-path") {
+			t.Errorf("the structural pass ran over an admitted payload: %v", got)
+		}
+	})
+}
+
+// TestFleetEmbedPayloadDerivationReadsTheTree keeps the derivation honest against the REAL emitter
+// format: the two payloads tracked since the //go:embed shape was ruled (2026-09-22) must be derived
+// from their project files. If the emitter's item format drifts, the admit derives nothing and fails
+// closed; this names that as the cause instead of leaving a payload refusal to be read as a leak.
+func TestFleetEmbedPayloadDerivationReadsTheTree(t *testing.T) {
+	root := repoRootFromPackageDir(t)
+
+	out, err := exec.Command("git", "-C", root, "ls-files", "-z", "src/core").Output()
+	if err != nil {
+		t.Fatalf("git ls-files failed in %s: %v", root, err)
+	}
+	var files []string
+	for _, p := range strings.Split(string(out), "\x00") {
+		if p != "" {
+			files = append(files, p)
+		}
+	}
+
+	payloads := fleetEmbedPayloads(root, files)
+	for _, want := range []string{
+		"src/core/embed/internal/embedtest/concurrency.txt",
+		"src/core/crypto/internal/fips140test/acvp_capabilities.json",
+	} {
+		if !payloads[want] {
+			t.Errorf("the //go:embed payload %s was not derived from its project file (derived %d) -- "+
+				"has the emitter's <EmbeddedResource> format moved?", want, len(payloads))
+		}
 	}
 }
 
