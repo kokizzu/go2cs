@@ -462,7 +462,7 @@ func compareEmissionToSeed(artifacts map[string]artifactState, seed map[string]a
 // repository's own layout — `<stage>/src/core`, `<stage>/src/version.props`, `<stage>/docs/validation`
 // — because that is the shape the converter's two upward walks expect (the project-reference root is
 // the directory holding `core/golib`; the README validation badge reads `version.props` from that
-// root and `docs/validation/current` from its SIBLING `docs`). Returns the number of files copied.
+// root and `docs/validation` from its SIBLING `docs`). Returns the number of files copied.
 func seedCensusRoot(seedRoot, stageRoot string) (int, error) {
 	outputRoot := filepath.Join(stageRoot, "src")
 	copied := 0
@@ -486,11 +486,16 @@ func seedCensusRoot(seedRoot, stageRoot string) (int, error) {
 
 	copied += n
 
-	n, err = copyDirTree(filepath.Join(filepath.Dir(seedRoot), "docs", validationDocsDirName, validationCurrentDirName),
-		filepath.Join(stageRoot, "docs", validationDocsDirName, validationCurrentDirName))
+	// ALL of docs/validation, not only current/. The proof counts live in current/, but the stamp both
+	// repository badges carry is resolved from the write-once snapshot directories BESIDE it
+	// (publishedPackageVersion -> releasestamp.PublishedStamp, since 8fa5cc2e7d). A current-only seed
+	// held no snapshot, so the stamp resolved to "" and the Tests and Source·C# badges were dropped from
+	// every staged README: 337 of them in the H10 close's three-target regen (archive/tar lost both).
+	n, err = copyDirTree(filepath.Join(filepath.Dir(seedRoot), "docs", validationDocsDirName),
+		filepath.Join(stageRoot, "docs", validationDocsDirName))
 
 	if err != nil {
-		return copied, fmt.Errorf("failed to seed validation proof counts: %w", err)
+		return copied, fmt.Errorf("failed to seed the validation record: %w", err)
 	}
 
 	copied += n
