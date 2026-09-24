@@ -1586,8 +1586,10 @@ for ($i = 0; $i -lt $readmeLines.Count; $i++) {
 }
 
 # Vacuity control, same shape as 2d's and for the same reason: if the heading is renamed or the
-# archive line moves, every figure below reads '(not found)' and fails by name -- but this states it
-# in one line, so the report names the CAUSE rather than five symptoms of it.
+# archive line moves, the required headline below reads '(not found)' and fails by name (and every
+# optional figure reads absent) -- but this states it in one line, so the report names the CAUSE
+# rather than a symptom of it. Kept unchanged by the 2026-09-24 short-block change: an unlocated block
+# must still fail, or every figure would read absent and pass.
 Assert-Equal 'README featured NEWS block located (vacuity control: heading through archive line)' $true `
     (($newsStart -ge 0) -and ($newsEnd -gt $newsStart))
 
@@ -1596,44 +1598,78 @@ if ($newsStart -ge 0 -and $newsEnd -gt $newsStart) {
     $newsText = (($readmeLines[$newsStart..$newsEnd]) -join ' ') -replace '\s+', ' '
 }
 
-function Get-NewsFigure {
+# ONE FIGURE REQUIRED, THE REST CHECKED IF PRESENT (owner order 2026-09-24). The featured block becomes
+# a SHORT high-level summary with fewer statistics, and the full detail lives in docs/NEWS.md. Until
+# then this arm REQUIRED all five figures, so an absent one read '(not found)' and failed, and a short
+# block could not pass. What the guard still promises is unchanged: NO STALE FIGURE ON THE FRONT PAGE.
+#   - the headline `N of the M testable` is REQUIRED: it is the one figure the owner keeps on the
+#     front page, and an absent one fails as '(not found)', exactly as before;
+#   - every OTHER figure is checked IF ITS PHRASING APPEARS: stated, it must equal the roster, whole
+#     and by name, as before; unstated, the arm prints `(absent -- not stated in the block)` and
+#     passes, because a figure the block does not state cannot be stale there.
+# A figure with two parts (the implementable denominator and its percentage) is compared on the
+# parts the block states; a part it does not state reads `(absent)` in the printout.
+# The price is stated rather than hidden: a figure whose PHRASING drifts reads as absent, not stale.
+# The phrasings below are the block's own; a re-worded figure needs its pattern re-worded with it,
+# and the unconditional printout below is where a reader sees an expected figure reading absent.
+function Get-NewsFigurePart {
     param([string] $Text, [string] $Pattern, [int] $Group = 1)
 
-    # A miss returns a token that can never equal a roster figure, so it fails loudly rather than
-    # colliding with a real value the way a numeric sentinel would.
+    # $null for a phrasing the block does not contain -- which the caller turns into '(not found)'
+    # for the REQUIRED figure (a token that can never equal a roster figure, so it fails loudly) and
+    # into an absent reading for the others.
     if ($Text -match $Pattern) { return (($Matches[$Group]) -replace ',', '') }
-    return '(not found)'
+    return $null
 }
 
 $bankedPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable'
 $linuxPattern = '(\d+)\s+of\s+the\s+(\d+)\s+applicable\s+rows'
 
 $newsFigures = @(
-    @{ Name = 'banked / testable packages'
-       Readme = ((Get-NewsFigure $newsText $bankedPattern) + '/' + (Get-NewsFigure $newsText $bankedPattern 2))
-       Roster = "$($rows.Count)/$testable" }
-    @{ Name = 'matching verdicts'
-       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+matching\s+verdicts')
-       Roster = "$columnTotal" }
-    @{ Name = 'disclosed divergences'
-       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+divergences\s+disclosed')
-       Roster = "$columnDisclosed" }
-    @{ Name = 'implementable denominator / pct'
-       Readme = ((Get-NewsFigure $newsText 'denominator\s+is\s+\*{0,2}(\d+)\b') + '/' +
-                 (Get-NewsFigure $newsText 'roster\s+at\s+\*{0,2}([\d.]+)\s*%'))
-       Roster = "$implementable/$honestLivePct" }
-    @{ Name = 'linux rows'
-       Readme = ((Get-NewsFigure $newsText $linuxPattern) + '/' + (Get-NewsFigure $newsText $linuxPattern 2))
-       Roster = "$($linuxRows.Count)/$($rows.Count - $linuxNaRows.Count)" }
+    @{ Name = 'banked / testable packages'; Required = $true
+       Parts = @(@{ Pattern = $bankedPattern; Group = 1; Roster = "$($rows.Count)" }
+                 @{ Pattern = $bankedPattern; Group = 2; Roster = "$testable" }) }
+    @{ Name = 'matching verdicts'; Required = $false
+       Parts = @(@{ Pattern = '([\d,]+)\s+matching\s+verdicts'; Group = 1; Roster = "$columnTotal" }) }
+    @{ Name = 'disclosed divergences'; Required = $false
+       Parts = @(@{ Pattern = '([\d,]+)\s+divergences\s+disclosed'; Group = 1; Roster = "$columnDisclosed" }) }
+    @{ Name = 'implementable denominator / pct'; Required = $false
+       Parts = @(@{ Pattern = 'denominator\s+is\s+\*{0,2}(\d+)\b'; Group = 1; Roster = "$implementable" }
+                 @{ Pattern = 'roster\s+at\s+\*{0,2}([\d.]+)\s*%'; Group = 1; Roster = "$honestLivePct" }) }
+    @{ Name = 'linux rows'; Required = $false
+       Parts = @(@{ Pattern = $linuxPattern; Group = 1; Roster = "$($linuxRows.Count)" }
+                 @{ Pattern = $linuxPattern; Group = 2; Roster = "$($rows.Count - $linuxNaRows.Count)" }) }
 )
 
-# Printed UNCONDITIONALLY, pass or fail. A comparison whose inputs are never shown is one nobody can
-# tell apart from a comparison that did not happen.
+# Printed UNCONDITIONALLY, pass or fail, every figure including the absent ones. A comparison whose
+# inputs are never shown is one nobody can tell apart from a comparison that did not happen.
 Write-Host ''
 Write-Host 'README featured NEWS block vs the roster header:' -ForegroundColor Cyan
 foreach ($figure in $newsFigures) {
-    Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, $figure.Readme, $figure.Roster)
-    Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" $figure.Roster $figure.Readme
+    # A List, not a pipeline: a pipeline drops the $null that marks an absent part and shifts the rest.
+    $readings = New-Object System.Collections.Generic.List[object]
+    foreach ($part in $figure.Parts) { $readings.Add((Get-NewsFigurePart $newsText $part.Pattern $part.Group)) }
+    $rosterShown = (@($figure.Parts | ForEach-Object { $_.Roster }) -join '/')
+    $stated = @($readings | Where-Object { $null -ne $_ }).Count
+
+    if ($stated -eq 0 -and -not $figure.Required) {
+        Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, '(absent -- not stated in the block)', $rosterShown)
+        continue
+    }
+
+    $readmeShown = (@(for ($p = 0; $p -lt $readings.Count; $p++) {
+                if ($null -ne $readings[$p]) { $readings[$p] } elseif ($figure.Required) { '(not found)' } else { '(absent)' } }) -join '/')
+    Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, $readmeShown, $rosterShown)
+
+    # Compared on the parts that bind: every part of the required figure, the stated parts of the rest.
+    $expected = @()
+    $actual = @()
+    for ($p = 0; $p -lt $readings.Count; $p++) {
+        if ($null -eq $readings[$p] -and -not $figure.Required) { continue }
+        $expected += $figure.Parts[$p].Roster
+        $actual += $(if ($null -ne $readings[$p]) { $readings[$p] } else { '(not found)' })
+    }
+    Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" ($expected -join '/') ($actual -join '/')
 }
 
 # ---- 2f. a row's cells agree with its OWN page at the pin (ruled 2026-09-22) ----------------------
