@@ -1240,6 +1240,50 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// The n zero elements of Go's <c>make([]T, n)</c>, as the operand of a spread that consumes them
+    /// at once -- <c>append(x, make([]T, n)...)</c>, which Go's compiler grows in place (extendslice)
+    /// without ever allocating the make. A length and nothing else: no backing exists to allocate.
+    /// Only <see cref="makeꓸꓸꓸ{T}(nint)"/> constructs one, and only the appendꓸꓸꓸ overloads below
+    /// consume it, so converted code never names the type.
+    /// </summary>
+    public readonly struct ZeroElements<T>
+    {
+        internal readonly nint Length;
+
+        internal ZeroElements(nint length) => Length = length;
+    }
+
+    /// <summary>
+    /// <c>make([]T, n)</c> written as the operand of an append spread: <c>append(x, make([]T, n)...)</c>
+    /// is emitted <c>appendꓸꓸꓸ(x, makeꓸꓸꓸ&lt;T&gt;(n))</c> -- the spread glyph rides on make as it rides on
+    /// append -- and allocates at most once, as in Go (REC-C §B). The length is validated exactly as
+    /// the slice constructor validates a make's, so a bad length panics with Go's own message.
+    /// </summary>
+    public static ZeroElements<T> makeꓸꓸꓸ<T>(nint length)
+    {
+        if (length < 0 || (!GoZeroSizeFacts<T>.IsZeroSize && length > Array.MaxLength))
+            throw RuntimeErrorPanic.MakeSliceLenOutOfRange();
+
+        return new ZeroElements<T>(length);
+    }
+
+    /// <summary>
+    /// <c>append(x, make([]T, n)...)</c>: grow x by n zero elements (see <see cref="makeꓸꓸꓸ{T}(nint)"/>).
+    /// </summary>
+    public static slice<T> appendꓸꓸꓸ<T>(slice<T> slice, ZeroElements<T> elems)
+    {
+        return go.slice<T>.AppendZeroed(slice, elems.Length);
+    }
+
+    /// <summary>
+    /// The constrained form of <see cref="appendꓸꓸꓸ{T}(slice{T}, ZeroElements{T})"/>.
+    /// </summary>
+    public static S appendꓸꓸꓸ<S, T>(S s, ZeroElements<T> elems) where S : ISlice<T>, ISliceWrap<S, T>
+    {
+        return S.Wrap(go.slice<T>.AppendZeroed(new slice<T>(s), elems.Length));
+    }
+
+    /// <summary>
     /// Full (3-index) sub-slice of a constrained slice type parameter, preserving its type —
     /// Go's <c>s[low:high:max]</c> on a named slice type. All three bounds are real: Go's grammar
     /// requires the high bound in a full slice expression, and the converter emits <c>0</c> for an

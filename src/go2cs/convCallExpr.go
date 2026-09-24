@@ -2898,6 +2898,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				if operandIsSlice {
 					callExprContext.spreadArgAsSlice = true
 
+					// EXTENDSLICE (REC-C §B): `append(x, make([]T, n)...)` grows x in place in Go --
+					// the compiler never allocates the make. The operand renders as the length-only
+					// `makeꓸꓸꓸ<T>(n)`, which golib's appendꓸꓸꓸ consumes without a backing of its own.
+					if operand, ok := v.appendOfMakeOperand(callExpr.Args[1]); ok {
+						callExprContext.replacementArgs = []string{"", operand}
+					}
+
 					// A constrained DESTINATION (`append(s, v...)` over `S ~[]E`) binds the
 					// S-generic ISlice overload, whose element type never infers from a
 					// constraint surface — emit both type arguments explicitly.
@@ -4537,6 +4544,63 @@ func (v *Visitor) recordConversionPackageUsing(t types.Type) {
 // — so it binds the golib `slice<T>(nint,nint)` / `map<K,V>(nint)` / `channel<T>(nint)` constructor rather
 // than falling onto `slice<T>(T[])` or failing `nuint`→`nint` (CS1503). A plain int / untyped constant
 // binds directly and is left alone (no golden churn).
+// appendOfMakeOperand recognises the operand of Go's EXTENDSLICE shape, `append(x, make([]T, n)...)`
+// (docs/phase4/DESIGN-slice-idiom-allocations.md §B), and returns its length-only rendering
+// `makeꓸꓸꓸ<T>(n)`. Go's compiler grows x in place for exactly this shape (walk's isAppendOfMake):
+// a DIRECT make of a slice with a length and NO capacity argument. Anything else keeps the ordinary
+// make-then-append emission, so each refusal below is one the make would otherwise have to honour:
+//
+//   - a capacity argument (Go does not recognise it either);
+//   - an element type whose zero value must be CONSTRUCTED (arrayElemFactory): golib fills the new
+//     elements with default(T), which is not that zero value;
+//   - an element carrying fixed-array dimension cargo (withSliceElemDims), which only the made slice
+//     can carry.
+//
+// A make bound to a name, or any spread of something other than a direct make, never reaches here.
+func (v *Visitor) appendOfMakeOperand(arg ast.Expr) (string, bool) {
+	mk, ok := unparenthesize(arg).(*ast.CallExpr)
+
+	if !ok || len(mk.Args) != 2 || mk.Ellipsis.IsValid() {
+		return "", false
+	}
+
+	fn, ok := unparenthesize(mk.Fun).(*ast.Ident)
+
+	if !ok || fn.Name != "make" {
+		return "", false
+	}
+
+	if builtin, ok := v.info.Uses[fn].(*types.Builtin); !ok || builtin.Name() != "make" {
+		return "", false
+	}
+
+	madeType := v.info.TypeOf(mk.Args[0])
+
+	if madeType == nil {
+		return "", false
+	}
+
+	var sliceType *types.Slice
+
+	if tp, ok := types.Unalias(madeType).(*types.TypeParam); ok {
+		sliceType = typeParamSliceCore(tp)
+	} else {
+		sliceType, _ = madeType.Underlying().(*types.Slice)
+	}
+
+	if sliceType == nil {
+		return "", false
+	}
+
+	if v.arrayElemFactory(sliceType.Elem()) != "" || len(sliceElemArrayDims(madeType)) > 0 {
+		return "", false
+	}
+
+	elemTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceType.Elem(), false))
+
+	return fmt.Sprintf("make%s<%s>(%s)", EllipsisOperator, elemTypeName, v.makeLenArgs(mk.Args[1:2])), true
+}
+
 func (v *Visitor) makeLenArgs(args []ast.Expr) string {
 	parts := make([]string, len(args))
 

@@ -1409,6 +1409,72 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return Append(slice, (ReadOnlySpan<T>)elems.ꓸꓸꓸ);
     }
 
+    // REC-C §B (docs/phase4/DESIGN-slice-idiom-allocations.md), Go's EXTENDSLICE:
+    // `append(x, make([]T, n)...)` grows x by n zero elements without materialising the make --
+    // Go's compiler recognises the shape and never allocates it, which is why slices.Grow can say
+    // "this expression allocates only once". The converter emits `appendꓸꓸꓸ(x, makeꓸꓸꓸ<T>(n))`
+    // for it, landing here.
+    //
+    // Every arm mirrors what `Append(x, <n zeroes>)` does today, so the rewrite moves no cap() and no
+    // aliasing: the zero-size arm is Append(ISlice)'s (including its exact-need guard for the giant
+    // lengths only zero-size elements reach), a nil x gets an exact-length backing as the span core
+    // gives it, the in-place arm writes the n elements of the SHARED backing -- to zero, as Go clears
+    // them (the region beyond len may hold stale values from an earlier, longer window) -- and the
+    // growing arm takes CalculateNewCapacity and detaches, as the span core does. The one thing that
+    // differs is the make's own backing, which no longer exists.
+    internal static slice<T> AppendZeroed(in slice<T> slice, nint count)
+    {
+        if (count == 0)
+            return slice;
+
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+        {
+            nint zeroLength = slice.m_length + count;
+
+            if (slice != nil && count <= slice.Available)
+                return new slice<T>(GoZeroSizeFacts<T>.Storage, slice.m_low, slice.m_low + zeroLength, slice.m_low + slice.m_capacity);
+
+            nint zeroCapacity = slice == nil ? count : CalculateNewCapacity(slice, zeroLength);
+
+            if (zeroCapacity < zeroLength)
+                zeroCapacity = zeroLength;
+
+            return new slice<T>(GoZeroSizeFacts<T>.Storage, 0, zeroLength, zeroCapacity);
+        }
+
+        T[] newArray;
+
+        if (slice == nil)
+        {
+            newArray = AllocationCounter.NewArray<T>(count);
+            return new slice<T>(newArray);
+        }
+
+        if (count <= slice.Available)
+        {
+            if (slice.m_nativeBase != 0)
+            {
+                unsafe
+                {
+                    new Span<T>(slice.NativeElementPointer(slice.m_length), (int)count).Clear();
+                }
+
+                return new slice<T>(slice.m_nativeBase, slice.m_low, slice.High + count, slice.m_low + slice.m_capacity);
+            }
+
+            Array.Clear(slice.m_array, (int)slice.High, (int)count);
+
+            return new slice<T>(slice.m_array, slice.m_low, slice.High + count, slice.m_low + slice.m_capacity);
+        }
+
+        nint newCapacity = CalculateNewCapacity(slice, slice.Length + count);
+        newArray = AllocationCounter.NewArray<T>(newCapacity);
+
+        slice.ToSpan().CopyTo(newArray);
+
+        return new slice<T>(newArray, 0, slice.Length + count);
+    }
+
     public static slice<T> Append(in slice<T> slice, params T[] elems)
     {
         return Append(slice, elems.AsSpan());
