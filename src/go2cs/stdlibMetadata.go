@@ -53,8 +53,10 @@ var (
 // goos names the platform the conversion emits for. A package whose metadata varies by platform
 // (layout L3, no flat package_info.cs) records each non-reference flavor as its own
 // `<name>@<goos>` section, and that section wins; every other package, and the reference flavor,
-// reads the unqualified one. This is the embedded-record mirror of platformPackageInfoPath, which
-// makes the same choice for a converted-source tree on disk.
+// reads the unqualified one. This is the embedded-record COUNTERPART of platformPackageInfoPath, not
+// an exact mirror: both let a flat copy win and both prefer the target GOOS's copy, but the on-disk
+// reader asks whether a per-GOOS folder exists while this one asks whether a flavor section was
+// recorded, and only this one falls back to the reference flavor when the target has none.
 func stdLibExportedMetadata(packageName string, goos string) ([]string, bool) {
 	stdLibMetadataOnce.Do(func() {
 		stdLibMetadataSections = parseStdLibMetadata(stdLibMetadataAsset)

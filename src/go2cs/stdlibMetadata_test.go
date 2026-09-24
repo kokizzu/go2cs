@@ -32,6 +32,13 @@ func TestStdLibMetadataAssetFileName(t *testing.T) {
 		t.Errorf("stdlibmeta.PackageInfoFileName = %q, converter's PackageInfoFileName = %q — the generator would scan the wrong file",
 			stdlibmeta.PackageInfoFileName, PackageInfoFileName)
 	}
+
+	// The unqualified section describes the flavor $(GoTargetOS) defaults to; the two constants are
+	// duplicated across a package boundary and must not drift apart.
+	if stdlibmeta.ReferenceGOOS != platformDefaultTargetOS {
+		t.Errorf("stdlibmeta.ReferenceGOOS = %q, converter's platformDefaultTargetOS = %q — the unqualified section would describe the wrong flavor",
+			stdlibmeta.ReferenceGOOS, platformDefaultTargetOS)
+	}
 }
 
 // TestStdLibMetadataInSync is the drift guard for the committed stdlib-metadata.txt: it
@@ -317,11 +324,152 @@ func TestStdLibExportedMetadataSelectsTheTargetFlavor(t *testing.T) {
 	}
 
 	// A package with ONE flat package_info.cs has no flavor sections: every GOOS reads the same record.
-	fmtWindows, _ := stdLibExportedMetadata("fmt", stdlibmeta.ReferenceGOOS)
-	fmtLinux, _ := stdLibExportedMetadata("fmt", "linux")
+	fmtWindows, windowsOK := stdLibExportedMetadata("fmt", stdlibmeta.ReferenceGOOS)
+	fmtLinux, linuxOK := stdLibExportedMetadata("fmt", "linux")
+
+	if !windowsOK || !linuxOK {
+		t.Fatalf("fmt must be recorded for every GOOS (windows %v, linux %v)", windowsOK, linuxOK)
+	}
 
 	if strings.Join(fmtWindows, "\n") != strings.Join(fmtLinux, "\n") {
 		t.Error("fmt has a flat package_info.cs, yet its linux record differs from its windows one")
+	}
+}
+
+// TestStdLibExportedMetadataReadsAFlavorOnlyRecord is the POSITIVE arm for a package with NO reference
+// (windows) copy at all: internal/runtime/syscall is linux-only, so its only record is the `@linux`
+// section. Before the record carried non-reference flavors a linux conversion found nothing and fell
+// back to the derive-from-declarations path.
+func TestStdLibExportedMetadataReadsAFlavorOnlyRecord(t *testing.T) {
+	lines, ok := stdLibExportedMetadata("internal.runtime.syscall", "linux")
+
+	if !ok {
+		t.Fatal("a linux lookup of internal.runtime.syscall found no record: flavor-only sections are not consumed")
+	}
+
+	if len(lines) == 0 || lines[0] != "// <ExportedTypeAliases>" {
+		t.Errorf("internal.runtime.syscall@linux does not read as a package_info record: %q", lines)
+	}
+
+	if _, ok := stdLibExportedMetadata("internal.runtime.syscall", stdlibmeta.ReferenceGOOS); ok {
+		t.Error("internal.runtime.syscall answered a windows lookup, but the package has no windows flavor")
+	}
+}
+
+// TestStdLibMetadataCollectFlatWins pins the generator's precedence on a synthetic tree: a package with
+// a FLAT package_info.cs is recorded once, unqualified, whatever per-GOOS copies sit beside it (the
+// converter reads flat first on disk too), and a package with ONLY per-GOOS copies records the
+// reference flavor unqualified and every other flavor as `<name>@<goos>`.
+func TestStdLibMetadataCollectFlatWins(t *testing.T) {
+	root := t.TempDir()
+
+	write := func(rel string, content string) {
+		t.Helper()
+
+		path := filepath.Join(root, filepath.FromSlash(rel))
+
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	record := func(alias string) string {
+		return "// <ExportedTypeAliases>\n[assembly: GoTypeAlias(\"" + alias + "\", \"Δ" + alias + "\")]\n// </ExportedTypeAliases>\n"
+	}
+
+	// flatpkg: a flat copy AND per-GOOS copies. Flat wins for every flavor.
+	write("flatpkg/flatpkg.csproj", "<Project />")
+	write("flatpkg/package_info.cs", record("Flat"))
+	write("flatpkg/windows/package_info.cs", record("WindowsCopy"))
+	write("flatpkg/linux/package_info.cs", record("LinuxCopy"))
+
+	// splitpkg: per-GOOS copies only.
+	write("splitpkg/splitpkg.csproj", "<Project />")
+	write("splitpkg/windows/package_info.cs", record("Windows"))
+	write("splitpkg/linux/package_info.cs", record("Linux"))
+
+	sections, err := stdlibmeta.Collect(root)
+
+	if err != nil {
+		t.Fatalf("Collect: %v", err)
+	}
+
+	want := map[string]string{
+		"flatpkg":        "Flat",
+		"splitpkg":       "Windows",
+		"splitpkg@linux": "Linux",
+	}
+
+	for name, alias := range want {
+		if !strings.Contains(strings.Join(sections[name], "\n"), "\""+alias+"\"") {
+			t.Errorf("section %q should carry the %s record; got %q", name, alias, sections[name])
+		}
+	}
+
+	for _, name := range []string{"flatpkg@linux", "flatpkg@windows", "splitpkg@windows"} {
+		if _, exists := sections[name]; exists {
+			t.Errorf("section %q must not exist: %q", name, sections[name])
+		}
+	}
+
+	if len(sections) != len(want) {
+		t.Errorf("collected %d sections, want %d: %v", len(sections), len(want), sections)
+	}
+}
+
+// TestRecurseNuGetPinsTheCompileRidToTheTarget drives the EMISSION of the -recurse=nuget build props: the
+// compile-surface default must name the platform the tree was converted FOR, not be left to the build
+// host. Without it a linux conversion built on windows (or under WSL from a windows conversion)
+// compiled one flavor's metadata against another flavor's assembly.
+func TestRecurseNuGetPinsTheCompileRidToTheTarget(t *testing.T) {
+	cases := map[string]string{
+		"linux/amd64":   "linux-x64",
+		"windows/amd64": "win-x64",
+		"darwin/amd64":  "",
+	}
+
+	for target, rid := range cases {
+		root := t.TempDir()
+
+		NewModuleConverter(Options{
+			go2csPath:         filepath.Join(root, "runtime"),
+			recurseOutputRoot: root,
+			recurse:           true,
+			nugetRefs:         true,
+			targetPlatform:    target,
+		}).generateRecurseBuildFiles()
+
+		props := readGenerated(t, filepath.Join(root, "Directory.Build.props"))
+
+		if rid == "" {
+			if strings.Contains(props, "<GoCompileRuntimeIdentifier>") {
+				t.Errorf("%s: no go.* flavor ships for this GOOS, yet the props pin a compile RID:\n%s", target, props)
+			}
+
+			continue
+		}
+
+		for _, line := range []string{
+			"<PropertyGroup Condition=\"'$(GoCompileRuntimeIdentifier)' == ''\">",
+			"<GoCompileRuntimeIdentifier>" + rid + "</GoCompileRuntimeIdentifier>",
+		} {
+			if !strings.Contains(props, line) {
+				t.Errorf("%s: the props lack %q:\n%s", target, line, props)
+			}
+		}
+	}
+
+	// Local project references compile against source, never a go.* package: no pin there.
+	root := t.TempDir()
+
+	NewModuleConverter(Options{go2csPath: filepath.Join(root, "runtime"), recurseOutputRoot: root, recurse: true, targetPlatform: "linux/amd64"}).generateRecurseBuildFiles()
+
+	if props := readGenerated(t, filepath.Join(root, "Directory.Build.props")); strings.Contains(props, "GoCompileRuntimeIdentifier") {
+		t.Errorf("a project-reference conversion pinned a go.* compile RID:\n%s", props)
 	}
 }
 

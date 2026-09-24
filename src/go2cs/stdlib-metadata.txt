@@ -9,6 +9,10 @@
 #
 # Format: '##<dotted package name>' opens a section; its lines are the matching
 # package_info.cs lines verbatim, so the converter's existing parsers read them unchanged.
+# A package whose metadata varies by platform (no flat package_info.cs) keeps its
+# windows flavor in the unqualified section and every other flavor in its own
+# '##<dotted package name>@<goos>' section; a conversion for <goos> reads that section and
+# falls back to the unqualified one. Counts are of SECTIONS, not packages.
 #
 # Regenerate with `go generate .` from src/go2cs; never hand-edit.
 

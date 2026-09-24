@@ -85,13 +85,18 @@ var header = []string{
 	"#",
 	"# Format: '##<dotted package name>' opens a section; its lines are the matching",
 	"# " + PackageInfoFileName + " lines verbatim, so the converter's existing parsers read them unchanged.",
+	"# A package whose metadata varies by platform (no flat " + PackageInfoFileName + ") keeps its",
+	"# " + ReferenceGOOS + " flavor in the unqualified section and every other flavor in its own",
+	"# '##<dotted package name>" + FlavorSeparator + "<goos>' section; a conversion for <goos> reads that section and",
+	"# falls back to the unqualified one. Counts are of SECTIONS, not packages.",
 	"#",
 	"# Regenerate with `go generate .` from src/go2cs; never hand-edit.",
 }
 
 // Generate walks convertedRoot for package_info.cs files and returns the asset content, the
-// number of package sections written, and any error. Output is deterministic: sections are
-// sorted by package name and each carries its matched lines verbatim in file order.
+// number of sections written (a package with per-GOOS flavors writes one per flavor), and any
+// error. Output is deterministic: sections are sorted by name and each carries its matched lines
+// verbatim in file order.
 func Generate(convertedRoot string) ([]byte, int, error) {
 	sections, err := Collect(convertedRoot)
 
