@@ -514,7 +514,9 @@ func (a *refLoweringAnalysis) isLinknameExposed(name string) bool {
 
 	qualified := refCanonicalPkgPath(a.pkg.Path()) + "." + name
 
-	if linknameForwardTargets[qualified] || linknamePushSources[qualified] || linknameForwardDefinitionSources[qualified] {
+	// asmTrampolineTargets: a foreign pure-JMP assembly trampoline forwards to this function's EXACT
+	// frame (asmTrampolines.go), so its signature must not be lowered out from under the forwarder.
+	if linknameForwardTargets[qualified] || linknamePushSources[qualified] || linknameForwardDefinitionSources[qualified] || asmTrampolineTargets[qualified] {
 		return true
 	}
 
