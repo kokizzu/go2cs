@@ -386,10 +386,21 @@ $editableSites = @(
     }
     @{
         File = 'docs/README.md'; Class = 'DOC-STATEMENT'
-        Find = '\*\*\[Go {OLD}\]\(https://go\.dev/dl/\)\*\*'
+        Find = '\*\*\[Go {OLD}\]\(https://go\.dev/dl/\)\*\*(?= \(for the reference)'
         Replace = '**[Go {NEW}](https://go.dev/dl/)**'
         Expect = 1
         Note = 'the "Try it yourself" prerequisite -- a visitor installs this exact release or the sweep refuses'
+    }
+    # The Requirements line names the same link shape since 2026-09-24 (it read "Go 1.23+" until the
+    # docs Go-version seat), so each site carries a lookahead that tells the two apart. The lookaheads
+    # are ASCII-only on purpose: this script is BOM-less and Windows PowerShell 5.1 reads it as ANSI,
+    # which would misread a literal em dash -- \u2014 is the regex escape for the one that follows.
+    @{
+        File = 'docs/README.md'; Class = 'DOC-STATEMENT'
+        Find = '\*\*\[Go {OLD}\]\(https://go\.dev/dl/\)\*\*(?= \u2014 the converter is a Go program)'
+        Replace = '**[Go {NEW}](https://go.dev/dl/)**'
+        Expect = 1
+        Note = 'the Requirements line -- the exact release go2cs is built with (src/go2cs/go.mod)'
     }
     @{
         File = 'docs/ValidatedTestPackages.md'; Class = 'DOC-STATEMENT'
@@ -403,6 +414,8 @@ $editableSites = @(
         Find = 'packages whose Go {OLD} sources define'
         Replace = 'packages whose Go {NEW} sources define'
         Expect = 1
+        Retired = 'e43b8f3cda'
+        RetiredNote = "that commit deleted the anchored line (074a12c4ae:docs/ValidatedTestPackages.md:139); the surviving denominator sentence is singular and never matched, and re-anchoring it would pair the new release with the old release's figure"
         Note = "the denominator's definition (its VALUE is re-derived at H3/H10; only the release moves here)"
     }
     @{

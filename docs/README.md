@@ -108,22 +108,22 @@ public static bool IsAdult(this Person p) {
 ### Real standard-library conversions, side by side
 
 The goal — *reads like Go* — is easiest to judge on real code. Below are converted standard-library files
-next to their original **Go 1.23.12** source, in order of increasing richness:
+next to their original **Go 1.24.13** source, in order of increasing richness:
 
-| Package | Go 1.23.12 source | Converted C# | What it shows |
+| Package | Go 1.24.13 source | Converted C# | What it shows |
 |:--|:--|:--|:--|
-| `errors` | [errors.go](https://github.com/golang/go/blob/go1.23.12/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
-| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.23.12/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
-| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.23.12/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
-| `sort` | [search.go](https://github.com/golang/go/blob/go1.23.12/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
-| `strings` | [reader.go](https://github.com/golang/go/blob/go1.23.12/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
-| `container/list` | [list.go](https://github.com/golang/go/blob/go1.23.12/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
+| `errors` | [errors.go](https://github.com/golang/go/blob/go1.24.13/src/errors/errors.go) | [errors.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/errors/errors.cs) | Error values and an unexported type satisfying the `error` interface. |
+| `cmp` | [cmp.go](https://github.com/golang/go/blob/go1.24.13/src/cmp/cmp.go) | [cmp.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/cmp/cmp.cs) | Generics with an ordered-type constraint. |
+| `unicode/utf8` | [utf8.go](https://github.com/golang/go/blob/go1.24.13/src/unicode/utf8/utf8.go) | [utf8.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8.cs) | Constants keeping Go's hex/binary literal formatting; arrays and structs. |
+| `sort` | [search.go](https://github.com/golang/go/blob/go1.24.13/src/sort/search.go) | [search.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/sort/search.cs) | Binary search driven by a `func(int) bool` closure. |
+| `strings` | [reader.go](https://github.com/golang/go/blob/go1.24.13/src/strings/reader.go) | [reader.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/reader.cs) | A struct with receiver methods, tuple returns, and interface implementation. |
+| `container/list` | [list.go](https://github.com/golang/go/blob/go1.24.13/src/container/list/list.go) | [list.cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/container/list/list.cs) | A doubly-linked list — pointers and receiver methods. |
 
 Browse the whole set under [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core).
 
 ## Features
 
-go2cs converts the full Go language surface — the same converter that emits the 302 packages above:
+go2cs converts the full Go language surface except Go 1.24's generic type aliases (`type A[P any] = …`), which it does not yet support — the same converter that emits the packages above:
 
 **Types & values**
 
@@ -169,7 +169,7 @@ maps to C# (with [`ConversionStrategies-Reference.md`](ConversionStrategies-Refe
 - **[.NET 10.0 SDK](https://dotnet.microsoft.com/download)** — to build and run the converted C#. Converted
   projects target `net10.0`, the framework named by
   [`src/Directory.Build.props`](https://github.com/ritchiecarroll/go2cs/blob/master/src/Directory.Build.props).
-- **[Go 1.23+](https://go.dev/dl/)** — the converter is a Go program, and it uses the Go toolchain to load
+- **[Go 1.24.13](https://go.dev/dl/)** — the converter is a Go program, and it uses the Go toolchain to load
   and type-check the source being converted. Make sure your Go environment is set up (`GOROOT`/`GOPATH`)
   and the source you want to convert already builds with `go build`.
 
@@ -280,13 +280,13 @@ func main() {
 }
 ```
 
-Next, pin the app to a **Go 1.23-compatible** dependency set and confirm it builds as Go.
+Next, pin the app to a **Go 1.24-compatible** dependency set and confirm it builds as Go.
 
-> **NOTE:** _go2cs is built with **Go 1.23**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.23**. `fatih/color` v1.19+ and current `golang.org/x/sys` require Go 1.25, which would fail step 2 with_ `package requires newer Go version go1.25`_; pin as shown._
+> **NOTE:** _go2cs is built with **Go 1.24.13**, so its type-checker only reads modules whose `go` directive — and their dependencies' — is **≤ 1.24.13**. `fatih/color` v1.19+ and current `golang.org/x/sys` require Go 1.25, which would fail step 2 with_ `package requires newer Go version go1.25`_; pin as shown._
 >
 > _The `GOTOOLCHAIN=local` below is what makes that error appear at all. Left unset, Go **silently downloads and re-execs** whichever newer toolchain a `go`/`toolchain` directive asks for, so the build succeeds against a standard library go2cs has no published packages for. go2cs detects the switch and says so, but pinning the toolchain keeps the whole round-trip on one Go release, which is what you want._
 
-First pin the toolchain, so Go uses the 1.23 you have instead of fetching the newer one a dependency asks
+First pin the toolchain, so Go uses the Go 1.24.13 you have instead of fetching the newer one a dependency asks
 for — the one command whose syntax is shell-specific:
 
 ```powershell
@@ -300,8 +300,8 @@ export GOTOOLCHAIN=local     # bash / zsh
 Then, in either shell:
 
 ```shell
-go get github.com/fatih/color@v1.18.0   # a Go 1.23-era release (v1.19+ requires Go 1.25)
-go mod tidy                             # download color + its (Go 1.23-era) dependencies
+go get github.com/fatih/color@v1.18.0   # a Go 1.24-compatible release (v1.19+ requires Go 1.25)
+go mod tidy                             # download color + its (Go 1.24-compatible) dependencies
 go build ./...                          # baseline: confirm it compiles as Go first
 ```
 
@@ -441,7 +441,7 @@ or a `-p:go2csPath` build global if the runtime root later moves.
 | Path | Contents |
 |:--|:--|
 | `src/go2cs/` | The converter (written in Go, using `go/ast` + `go/types`). |
-| `src/core/` | The converted Go standard library — 302 packages, with `unsafe` and `testing` hand-written rather than converted. Everything (tests, tour, NuGet) builds against this one tree. |
+| `src/core/` | The converted Go standard library — every package, with `unsafe` and `testing` hand-written rather than converted. Everything (tests, tour, NuGet) builds against this one tree. |
 | `src/core/golib/` | The C# runtime library (`slice`, `map`, `channel`, `@string`, built-ins, type aliases). |
 | `src/core/go2cs/` | Shared `Symbols` project — the canonical marker glyphs used by the runtime and the generators. |
 | `src/gen/go2cs-gen/` | Roslyn source generators (interface implementation, receiver overloads, struct embedding). |
@@ -478,7 +478,7 @@ Every validated package ships its **converted C# test sources** next to the prod
 [`src/core`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core) (for example,
 [`unicode/utf8/utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/unicode/utf8/utf8_test.cs)),
 so you can read the exact C# that runs — and re-run the validation yourself. You need
-**[Go 1.23.12](https://go.dev/dl/)** (for the reference `go test` run), the
+**[Go 1.24.13](https://go.dev/dl/)** (for the reference `go test` run), the
 **[.NET 10 SDK](https://dotnet.microsoft.com/download)**, and `go2cs` on your `PATH` (see
 [installing the converter](#installing-the-converter)):
 
@@ -506,9 +506,11 @@ converted `.cs` in place; the Go source copies and run manifests it stages are g
 command validates every other package on the table — substitute its GOROOT source path and its
 `src/core/<pkg>` path in the two arguments.
 
-A few packages carry a **disclosed divergence**: a Go test asserting something a managed runtime provably
-cannot satisfy — an exact allocation count (Go's `testing.AllocsPerRun`, reached through compiler escape
-analysis), or a collectibility check Go answers from per-safepoint liveness maps. Rather than skip those
+A few packages carry a **disclosed divergence**: a Go test asserting something the converted runtime does
+not satisfy — an allocation count Go meets through compiler escape analysis, or a collectibility check Go
+answers from per-safepoint liveness maps. Some of these a managed runtime provably cannot satisfy; others
+— marked `deferred`, such as `unicode/utf8`'s own zero-allocation `TestRuneCountNonASCIIAllocation` — it
+can, and each of those is pinned against the named plan that will retire it. Rather than skip those
 tests, each affected package pins the divergence in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json)
 that the differential oracle matches by *exact failure signature* — any other failure is still a hard
@@ -521,13 +523,13 @@ _Everyone asks:_ how fast is the transpiled C# compared to the original Go — i
 memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _usually
 slower than native Go, [but not always](Background.md#why-convert-go-to-c)_: maps and the optimized
 [stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go or
-faster in both C# variants**. Most compute-shaped code — channels included — sits within a small
+faster in both C# variants** (as measured against go1.23.1, 2026-08-25). Most compute-shaped code — channels included — sits within a small
 multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
 the [ref struct](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/ref-struct)
 based stack string and [stack slice](ConversionStrategies.md#slices-and-arrays) work already landed, broad
 optimization is targeted for _after_ Phase 4 — the parity rows show the ceiling, not the finish line.
 
-Newer Go and .NET versions are planned; a validated baseline comes first.
+Newer Go and .NET releases follow the same way: each hop re-derives every roster row from that release's own test sources — see the [Roadmap](Roadmap.md).
 
 ## Milestones
 

@@ -1,7 +1,7 @@
 <!-- {% raw %} — Jekyll/Liquid guard: this doc contains {{ sequences (Go template/composite syntax) that Liquid would otherwise parse or silently eat. Keep the matching endraw as the final line. -->
 # Validated Test Packages
 
-Each package below has its own Go 1.23.12 `_test.go` suite converted to C#, built against the
+Each package below has its own Go 1.24.13 `_test.go` suite converted to C#, built against the
 converted standard library, run under the Go-semantics test host, and differentially compared —
 verdict for verdict — against a clean `go test -json` baseline. A row appears only when *every*
 `Test` function's result matches `go test`; a package that almost passes never appears, which is
@@ -65,7 +65,7 @@ once its remedy lands, because the arithmetic below moves when it goes.
 - **`host-limit`** — a test's premise rests on a property of the test *binary* that the converted
   host's deployment shape structurally lacks. The bar: an entry must name a structural property of
   the deployment shape, never an unimplemented-but-fixable defect — and every entry is written to
-  retire itself when the shape gains its named property. **One entry holds the class**:
+  retire itself when the shape gains its named property. **Its founding entry**:
   `crypto/tls`'s `TestBogoSuite` — BoringSSL's runner spawns the host once per case inside Go's
   own 10-minute test-binary wall. The ReadyToRun rung was measured 2026-08-28: with 0.74 s shim
   startup the runner completes the WHOLE configuration — 3,242 cases, zero failures, `ok` end to
@@ -167,9 +167,9 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > **Linux: 187 of 216 applicable rows validated at their Linux counts** — 53,048 matching verdicts · 162 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
-set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
-302 eligible verdicts on Linux where Windows offers 298, and `path/filepath` 54 where Windows offers
-61. The **Tests** and **Disclosed** columns are the Windows record for the Go 1.23.12 era; a row that
+set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `path/filepath` offers
+54 eligible verdicts on Linux where Windows offers
+61. The **Tests** and **Disclosed** columns are the Windows record for the Go 1.24.13 era; a row that
 has validated on another OS records that OS's own arithmetic as a `linux: N + D` annotation at the
 end of its *What it exercises* cell — the matching count, then the disclosed count when there is
 one. Counts are never averaged, blended, or footnoted away: the sweep validates a row against its
@@ -236,12 +236,12 @@ leveling re-sweep re-annotated the rows it moved.
 | [`context`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/context) | 57 | 1 | Cancellation trees over real channel rendezvous — parent/child propagation, `Done` broadcast, `AfterFunc` registration races, `t.Deadline`-driven tree cancellation, value chains named through the reflectlite bridge; alloc-count disclosure. · linux: 57 + 1 · [proof](validation/current/context.md) |
 | [`crypto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto) | 6 | | The root `crypto` package's cross-cipher invariants — every stream mode's out-of-bounds-write guard (CFB/CTR/OFB/RC4) and the `purego` build-tag assertion the converted corpus is built under. · linux: 6 · · [proof](validation/current/crypto.md) |
 | [`crypto/aes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/aes) | 57 | | AES over the `purego` generic implementation — key expansion, the S-box and Te/Td round tables, GF(2⁸) `mul`/`powx`, known-answer encrypt/decrypt vectors, and the CBC/CTR/GCM interface-upgrade probes. · linux: 57 · [proof](validation/current/crypto.aes.md) |
-| [`crypto/cipher`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/cipher) | 27272 | | Go's block-cipher MODES over the converted AES — CBC/CFB/CTR/OFB encrypt and decrypt against the NIST SP 800-38A vectors, GCM authenticated encryption including the counter-wrap edge, invalid tag sizes, empty plaintext, and the tag-failure path that must overwrite its output buffer. `TestGCMAsm` is the founding `platform-skip` row: Go passes on a build with a distinct assembly GCM, the converted corpus takes gcm_test.go's own skip because it has no assembly codepaths at all. ⚠ **SCOPED OFF WINDOWS AT go1.24.13 (2026-09-22, H10 manifest re-sign):** the windows record now reads `TestGCMAsm` pass on BOTH sides, so its pin absorbs nothing there and is scoped to linux and darwin; the 1.23.12-era `linux: 13 + 1` annotation still claims it until the linux axis re-runs at 1.24.13. · linux: 27272 · [proof](validation/current/crypto.cipher.md) |
+| [`crypto/cipher`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/cipher) | 27272 | | Go's block-cipher MODES over the converted AES — CBC/CFB/CTR/OFB encrypt and decrypt against the NIST SP 800-38A vectors, GCM authenticated encryption including the counter-wrap edge, invalid tag sizes, empty plaintext, and the tag-failure path that must overwrite its output buffer. `TestGCMAsm` is the founding `platform-skip` row: Go passes on a build with a distinct assembly GCM, the converted corpus takes gcm_test.go's own skip because it has no assembly codepaths at all. ⚠ **SCOPED OFF WINDOWS AT go1.24.13 (2026-09-22, H10 manifest re-sign):** the windows record now reads `TestGCMAsm` pass on BOTH sides, so its pin absorbs nothing there and is scoped to linux and darwin; the 1.23.12-era `linux: 13 + 1` annotation still claims it until the linux axis re-runs at 1.24.13. ⚠ **RE-READ ON LINUX AT go1.24.13 (2026-09-23, `971d919113`):** the linux axis now reads the annotation below, with nothing disclosed, which retires the `13 + 1` reading. · linux: 27272 · [proof](validation/current/crypto.cipher.md) |
 | [`crypto/des`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/des) | 55 | | DES and Triple-DES — the initial/final permutation bit shuffles, the substitution tables, semi-weak key pairs, and the full known-answer vector matrix. · linux: 55 · [proof](validation/current/crypto.des.md) |
 | [`crypto/dsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/dsa) | 4 | | DSA over the converted `math/big` — FIPS 186-3 parameter generation at all four key sizes (a probabilistic prime search run to completion), sign/verify round-trips, the bad-public-key rejection, and the degenerate-key signing contract. · linux: 4 · [proof](validation/current/crypto.dsa.md) |
 | [`crypto/ecdh`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdh) | 47 | | ECDH key agreement over P-256/P-384/P-521 and X25519 — key generation, the `Bytes`/`NewPublicKey`/`NewPrivateKey` encoding round-trips, shared-secret agreement across curves, the low-order and non-canonical X25519 rejections, and the `crypto.PublicKey`/`crypto.PrivateKey` interface witnesses. · linux: 47 · · [proof](validation/current/crypto.ecdh.md) |
 | [`crypto/ecdsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ecdsa) | 77 | | ECDSA sign/verify over the four NIST curves AND the generic `big.Int` `CurveParams` path — the NIST CAVP vector matrix, nonce safety, negative and zero-hash inputs, r±n signature rejection, `ASN1` encoding via `crypto/x509`, and `randomPoint`. · linux: 77 · [proof](validation/current/crypto.ecdsa.md) |
-| [`crypto/ed25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ed25519) | 9 | 1 | Ed25519 over the converted `crypto/internal/edwards25519` — sign/verify round-trips in the plain, pre-hashed (Ed25519ph) and context (Ed25519ctx) modes with wrong-message/wrong-key rejection, `crypto.Signer` through the interface surface, the RFC 8032 golden vectors (`sign.input.gz`), the project's extended edge-case vector set (non-canonical A/R encodings, small-order components, mixed-order points), key equality, and signature-malleability rejection — the package whose `crypto.Signer(private)` cast named the local-value→foreign-interface record gap; alloc-profile disclosure. · linux: 9 + 1 · · [proof](validation/current/crypto.ed25519.md) |
+| [`crypto/ed25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/ed25519) | 9 | 1 | Ed25519 over the converted `crypto/internal/fips140/ed25519` (on `crypto/internal/fips140/edwards25519`) — sign/verify round-trips in the plain, pre-hashed (Ed25519ph) and context (Ed25519ctx) modes with wrong-message/wrong-key rejection, `crypto.Signer` through the interface surface, the RFC 8032 golden vectors (`sign.input.gz`), the project's extended edge-case vector set (non-canonical A/R encodings, small-order components, mixed-order points), key equality, and signature-malleability rejection — the package whose `crypto.Signer(private)` cast named the local-value→foreign-interface record gap; alloc-profile disclosure. · linux: 9 + 1 · · [proof](validation/current/crypto.ed25519.md) |
 | [`crypto/elliptic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/elliptic) | 82 | | The NIST curves over the generic `CurveParams` `big.Int` path as well as the optimized field implementations — point addition/doubling/scalar-multiplication agreement between the two, on-curve and off-curve predicates, the point-at-infinity contract, `Marshal`/`Unmarshal` compressed and uncompressed round-trips, and the base-point multiplication vectors. · linux: 82 · [proof](validation/current/crypto.elliptic.md) |
 | [`crypto/hkdf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hkdf) | 3 |  | RFC 5869 extract-and-expand over the real hash — the derivation matrix, the output-length ceiling `HKDF` refuses past, and the FIPS service indicator. · [proof](validation/current/crypto.hkdf.md) |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. · linux: 172 · [proof](validation/current/crypto.hmac.md) |
@@ -264,7 +264,7 @@ leveling re-sweep re-annotated the rows it moved.
 | [`crypto/pbkdf2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/pbkdf2) | 5 |  | PBKDF2 over real HMAC-SHA-1 and HMAC-SHA-256 — the RFC 6070 vectors, the maximum and zero key-length boundaries, and the FIPS service indicator. · [proof](validation/current/crypto.pbkdf2.md) |
 | [`crypto/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rand) | 314 | 1 | Cryptographically secure random integers over the real `math/big` arithmetic — `Int`'s rejection-sampled bit-mask loop across the whole modulus matrix, `Prime` generation and its degenerate bit-length errors, the `Read`/`Reader` surface, and the empty-max panic contract. The one disclosure is `TestAllocations`' want-zero `AllocsPerRun` over a 32-byte `make` plus `rand.Read`: two golib-site objects per run where Go's escape analysis keeps the buffer on the stack — **deferred**, not structural, because the run's own unit note reports a COUNT in Go's own units and nothing in the CLR's object model requires an allocation on that path. · linux: 314 + 1 · [proof](validation/current/crypto.rand.md) |
 | [`crypto/rc4`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rc4) | 75 | | RC4 keystream golden vectors across every key length, and the in-place `XORKeyStream` block matrix. · linux: 75 · [proof](validation/current/crypto.rc4.md) |
-| [`crypto/rsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rsa) | 568 | 1 | RSA end to end over the converted `math/big` and `crypto/internal/bigmod` — key generation at every size including multi-prime, PKCS#1 v1.5 and OAEP encrypt/decrypt with and without a blinding source, PSS sign/verify across every salt-length mode against the OpenSSL and RSA-Labs golden vectors, key validation and the small-key/overlong/unpadded rejection paths, and the several-hundred-case `TestEverything` matrix over the key-size × hash × scheme cross-product; alloc-profile disclosure. · linux: 568 + 1 · [proof](validation/current/crypto.rsa.md) |
+| [`crypto/rsa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/rsa) | 568 | 1 | RSA end to end over the converted `math/big`, `crypto/internal/fips140/rsa` and `crypto/internal/fips140/bigmod` — key generation at every size including multi-prime, PKCS#1 v1.5 and OAEP encrypt/decrypt with and without a blinding source, PSS sign/verify across every salt-length mode against the OpenSSL and RSA-Labs golden vectors, key validation and the small-key/overlong/unpadded rejection paths, and the several-hundred-case `TestEverything` matrix over the key-size × hash × scheme cross-product; alloc-profile disclosure. · linux: 568 + 1 · [proof](validation/current/crypto.rsa.md) |
 | [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. · linux: 13 + 1 · [proof](validation/current/crypto.sha1.md) |
 | [`crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha256) | 22 | 1 | SHA-224/256 golden vectors and `cryptotest.TestHash`'s stateful-write matrix. · linux: 22 + 1 · [proof](validation/current/crypto.sha256.md) |
 | [`crypto/sha3`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/sha3) | 18 | 5 | SHA-3 and SHAKE end to end — the hash and XOF matrices, unaligned and one-byte-at-a-time writes, `cSHAKE` accumulation, binary marshal/unmarshal of a partial state, and the FIPS service indicator. The five disclosed verdicts are the `TestAllocations` family — `/New`, `/NewSHAKE`, `/Sum`, `/SumSHAKE` pinned **deferred** at 18/16/16/13 golib objects per run against a want of zero, plus their parent by aggregation: a mechanism can be named (the sponge state object and the closures' non-escaping byte slices), so the excess is reducible bridge work rather than a structural floor. · [proof](validation/current/crypto.sha3.md) |
@@ -440,6 +440,9 @@ leveling re-sweep re-annotated the rows it moved.
 | [`weak`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/weak) | 6 | |  ⚠ **BANKED BY INHERITANCE AT go1.24.13 (2026-09-20, H10 roster seat):** this row carries the **1.23.12 anchor** of `internal/weak`, which retires with the hop. PRINCIPAL by verdict majority: its source's sole successor, so the arc is 1:1. The anchor is not a run of this package under its own name — the driver re-banks it at the tip. The proof link is the SOURCE's record, unmoved and unrenamed. ⚠ **OWN 1.24.13 PAGE LINKED (2026-09-22):** the FIRST proof link is this package's own run at go1.24.13 (H10 pass 1, converter `c6fdbe73c`), 6 matched and 0 disclosed, the figures in this row's cells. The second is the anchor above, kept as provenance: its figures are the 1.23.x run's, not this row's. · [proof](validation/current/weak.md) · [proof](validation/current/internal.weak.md) |
 
 ## The H10 relocation map
+
+> **Recorded 2026-09-20, before the H10 close.** Since the close (2026-09-23) the banked columns carry
+> each row's go1.24.13 figures, and master carries the 1.23.12 anchor only until the version cutover.
 
 <!-- Drafted by C1 2026-09-20 from the H10 pre-staging census (mailbox 7a5d2af28), the successor map
      (49ddc38cd) and the conversion-only pre-stage of the twelve successors (506ab57d9). Ruled at
@@ -661,26 +664,24 @@ runbook, and nothing here is banked.
 
 ## Excluded packages
 
-The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Six of those cannot be validated *at all* — five because a property of the target
-stands in the way that no amount of converter effort changes, and one (E4) because its comparison runs
+The naive denominator above — 230 — counts every converted package whose Go 1.24.13 test files, on the
+corpus axis (windows/amd64, `-tags purego,math_big_pure_go`), declare a `Test` function. Six of those
+cannot be validated *at all* — two because a property of the target stands in the way that no amount of
+converter effort changes, and four (E4) because their comparison runs
 cleanly and validates nothing. Both denominators are always reported and nothing disappears quietly — every
 exclusion is carried here with its class, its mechanism and the measurement that put it there,
 exactly as every disclosure is pinned by exact failure signature.
 
-> **This release's record is closed.** By owner ruling of 2026-09-07 the corpus moves to the next Go
-> release rather than driving this one to 100%, so the figures above are the **Go 1.23.12 anchor** —
-> a frozen record of what this release reached, not a running total. The reasoning changes what the
+> **The Go 1.23.12 record is closed.** By owner ruling of 2026-09-07 the corpus moved to Go 1.24.13
+> rather than driving 1.23.12 to 100%, so that release's figures — 204 / 215 — are the **Go 1.23.12
+> anchor**, frozen in [its snapshot](validation/1.23.12.3/ValidatedTestPackages.md) rather than carried
+> as a running total; the figures above are Go 1.24.13's own. The reasoning changes what the
 > percentage *means*, so it is worth stating: the metric is **package-based, not content-based**, and
 > a row is all-or-nothing — a package matching most of its verdicts still scores **zero**, exactly as
-> one matching none of them does. What holds each of the five packages left here back differs, and
-> there is no single reason to state: `reflect` is measured and under active converter and runtime
-> work; `runtime` is measured only as far as a host-killing crash — `TestCrashWhileTracing`, at index
-> 104 of its 883 verdicts — which leaves everything after it unread; `unique` is measured at 19 of its
-> 20 verdicts under the configuration of record and waits on a ruled runtime-model arc; and
-> `runtime/pprof` and `net/http/pprof` are each measured on two hosts and held by a capability or
-> classification ruling. All five re-validate against the next release, where a hop re-derives every
-> row from scratch in any case.
+> one matching none of them does. Of the five packages that record left unbanked, `unique` has since
+> banked at Go 1.24.13; `reflect`, `runtime`, `runtime/pprof` and `net/http/pprof` are among the six
+> candidates in [The 230 at the H10 close](#the-230-at-the-h10-close-go12413-2026-09-23), each with
+> where it stands.
 
 **The admission bar is the disclosure bar's sibling, and it is strict**: a package is excluded only
 when validation is **provably meaningless or impossible — never merely hard**, unimplemented, or

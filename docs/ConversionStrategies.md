@@ -14,7 +14,7 @@ of **[Roslyn](Glossary.md#roslyn) source generators** (`src/gen/go2cs-gen/`) tha
 directly (interface satisfaction, receiver overloads, struct-embedding promotion, named-type operators).
 
 > The C# snippets below are drawn from the actual converted standard library (`src/core/`,
-> Go 1.23.12) wherever possible, paired with their original Go source. A few use small illustrative
+> Go 1.24.13) wherever possible, paired with their original Go source. A few use small illustrative
 > programs where that reads more clearly. Glyphs you will see throughout: **`ж<T>`** a heap "box"
 > (pointer, read "zhe"), **`Ꮡ`** address-of, **`Δ`** a disambiguation rename (read "delta"),
 > **`@string`** the Go string type, **`default!`** = `nil` in value position, and a handful of
@@ -128,7 +128,7 @@ module directly; see
 A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
 `.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
 `windows`. Files identical on every platform stay flat, so this touches only the packages that genuinely
-vary: **37** of 307. A package whose *imports* also differ by platform — **21** of them, `os` reaching
+vary: **37** of 344. A package whose *imports* also differ by platform — **22** of them, `os` reaching
 `internal/syscall/windows` on Windows and `internal/syscall/unix` elsewhere — states its common references
 once and selects the rest the same way:
 
@@ -1636,7 +1636,7 @@ parameter](ConversionStrategies-Reference.md#a-pointer-parameter-whose-every-use
 An **ENTRY alias** — the `ref` a pointer RECEIVER or pointer PARAMETER binds on the way in — must not use
 `Value`. Go permits calling a method through a nil `*T`, and equally permits *passing* one: the body RUNS,
 and the panic happens only where it dereferences the pointee. That is why `os`'s fifteen nil-tolerant
-`*File` methods return `ErrInvalid` instead of panicking, and why `internal/concurrent`'s
+`*File` methods return `ErrInvalid` instead of panicking, and why `internal/sync`'s
 `newIndirectNode(nil)` — which merely stores its argument — is not an error at all. So every entry alias
 uses `DerefOrNull()`, which binds a *null ref* for a nil box: legal to hold, and it faults on first use,
 so the panic is deferred to Go's own point rather than raised at entry (or, as a shared `default(T)`
@@ -1831,7 +1831,7 @@ for the atomics), the reflection bridge (`reflect`/`internal/reflectlite` carry 
 plus a synthetic descriptor stamped with the real `System.Type`), `sync.Pool`'s eface ring (a single
 `any?` slot with `null` as the empty sentinel), `sync.Cond`'s copy detector (compares root-allocation
 identity instead of a GC-unsound stored address),
-[`internal/weak.Pointer`](ConversionStrategies-Reference.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
+[`weak.Pointer`](ConversionStrategies-Reference.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
 (a short `WeakReference` over the `ж<T>` box, with a `ConditionalWeakTable` standing in for the runtime's
 canonical per-address weak handle so two weak pointers to one object still compare equal), `time`'s runtime timers (one dedicated thread servicing
 a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
@@ -1851,9 +1851,10 @@ layer for real wherever .NET exposes the same instructions the `.s` file issues 
 other.**
 
 **Reinterpreting one array as an array of a different element type is the smallest member of the same
-family, and it needs no OS at all.** `crypto/subtle` views a `[]byte` as `[]uintptr` to XOR a word at a
-time; `golang.org/x/crypto/sha3` views its `[25]uint64` sponge state as `[200]byte` to absorb and
-squeeze. Both are ordinary managed storage on both sides, and neither view exists in the managed model —
+family, and it needs no OS at all.** `crypto/internal/fips140/subtle` views a `[]byte` as `[]uintptr` to
+XOR a word at a time; `crypto/internal/fips140/sha3` views its `[200]byte` sponge state as `[25]uint64`
+to run the Keccak permutation. Both are ordinary managed storage on both sides, and neither view exists
+in the managed model —
 a `slice<T>`/`array<T>` is a window on a real `T[]`, and there is no `U[]` view over a `V[]`. Each file
 is hand-owned and takes the same remedy: `MemoryMarshal.Cast`/`AsBytes` over the storage's own span,
 which is a genuine *aliasing* view, so writes through it land. Where such a reinterpret is left
