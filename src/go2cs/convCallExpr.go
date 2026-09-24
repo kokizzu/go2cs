@@ -4532,18 +4532,6 @@ func (v *Visitor) recordConversionPackageUsing(t types.Type) {
 	}
 }
 
-// isRawAddressPointerConversion reports whether callExpr is a pointer-type conversion `(*T)(p)` whose
-// RESULT is a pointer type and whose SOURCE is a raw address — an unsafe.Pointer or a uintptr. Such a
-// conversion reinterprets the raw address as a `*T` (golib `ж<T>`); because `unsafe.Pointer` is the golib
-// `Pointer : ж<uintptr>`, a direct `(ж<T>)p` needs two chained user-defined conversions (Pointer→uintptr→
-// ж<T>) that C# rejects (CS0030), so the caller routes it through uintptr instead. Excludes the pointer-to-
-// named-type value conversion (arg is a *types.Pointer, handled separately) — only a genuine raw-address
-// source (Basic UnsafePointer/Uintptr) qualifies.
-// makeLenArgs renders the length/capacity/size-hint arguments of a `make(T, len[, cap])` call (slice, map,
-// or chan), casting any argument whose Go type is an integer with no implicit C# conversion to nint to nint
-// — so it binds the golib `slice<T>(nint,nint)` / `map<K,V>(nint)` / `channel<T>(nint)` constructor rather
-// than falling onto `slice<T>(T[])` or failing `nuint`→`nint` (CS1503). A plain int / untyped constant
-// binds directly and is left alone (no golden churn).
 // appendOfMakeOperand recognises the operand of Go's EXTENDSLICE shape, `append(x, make([]T, n)...)`
 // (docs/phase4/DESIGN-slice-idiom-allocations.md §B), and returns its length-only rendering
 // `makeꓸꓸꓸ<T>(n)`. Go's compiler grows x in place for exactly this shape (walk's isAppendOfMake):
@@ -4601,6 +4589,18 @@ func (v *Visitor) appendOfMakeOperand(arg ast.Expr) (string, bool) {
 	return fmt.Sprintf("make%s<%s>(%s)", EllipsisOperator, elemTypeName, v.makeLenArgs(mk.Args[1:2])), true
 }
 
+// isRawAddressPointerConversion reports whether callExpr is a pointer-type conversion `(*T)(p)` whose
+// RESULT is a pointer type and whose SOURCE is a raw address — an unsafe.Pointer or a uintptr. Such a
+// conversion reinterprets the raw address as a `*T` (golib `ж<T>`); because `unsafe.Pointer` is the golib
+// `Pointer : ж<uintptr>`, a direct `(ж<T>)p` needs two chained user-defined conversions (Pointer→uintptr→
+// ж<T>) that C# rejects (CS0030), so the caller routes it through uintptr instead. Excludes the pointer-to-
+// named-type value conversion (arg is a *types.Pointer, handled separately) — only a genuine raw-address
+// source (Basic UnsafePointer/Uintptr) qualifies.
+// makeLenArgs renders the length/capacity/size-hint arguments of a `make(T, len[, cap])` call (slice, map,
+// or chan), casting any argument whose Go type is an integer with no implicit C# conversion to nint to nint
+// — so it binds the golib `slice<T>(nint,nint)` / `map<K,V>(nint)` / `channel<T>(nint)` constructor rather
+// than falling onto `slice<T>(T[])` or failing `nuint`→`nint` (CS1503). A plain int / untyped constant
+// binds directly and is left alone (no golden churn).
 func (v *Visitor) makeLenArgs(args []ast.Expr) string {
 	parts := make([]string, len(args))
 

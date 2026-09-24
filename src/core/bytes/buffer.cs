@@ -270,7 +270,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) {
             // we could rely purely on append to determine the growth rate.
             c = 2 * cap(b);
         }
-        var b2 = appendꓸꓸꓸ(slice<byte>(default!), new slice<byte>(c));
+        var b2 = appendꓸꓸꓸ(slice<byte>(default!), makeꓸꓸꓸ<byte>(c));
         nint i = copy(b2, b);
         return b2[..(int)(i)];
     }

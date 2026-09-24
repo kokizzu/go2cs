@@ -18,6 +18,7 @@
     <None Include="$(MSBuildThisFileDirectory)anonStructPublicization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)appendOfMake_test.go" />
     <None Include="$(MSBuildThisFileDirectory)archExclusive_test.go" />
     <None Include="$(MSBuildThisFileDirectory)argParse_test.go" />
     <None Include="$(MSBuildThisFileDirectory)arrayCloneOperations.go" />

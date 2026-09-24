@@ -73,7 +73,7 @@ internal const nint marshaledSize = /* len(magic256) + 8*4 + chunk + 8 */ 108;
     b = byteorder.BEAppendUint32(b, d.h[6]);
     b = byteorder.BEAppendUint32(b, d.h[7]);
     b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
-    b = appendꓸꓸꓸ(b, new slice<byte>(len(d.x) - d.nx));
+    b = appendꓸꓸꓸ(b, makeꓸꓸꓸ<byte>(len(d.x) - d.nx));
     b = byteorder.BEAppendUint64(b, d.len);
     return (b, default!);
 }

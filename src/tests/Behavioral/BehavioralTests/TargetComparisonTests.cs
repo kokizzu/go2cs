@@ -94,6 +94,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckAppendNilSliceElement() => CheckTarget("AppendNilSliceElement");
 
     [TestMethod]
+    public void CheckAppendOfMake() => CheckTarget("AppendOfMake");
+
+    [TestMethod]
     public void CheckAppendUntypedConst() => CheckTarget("AppendUntypedConst");
 
     [TestMethod]

@@ -174,7 +174,7 @@ public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
         // the slice up to the next storage class.
         // This is what Grow does but we don't call Grow because
         // that might copy the values twice.
-        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), make<S>(n + m - i));
+        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), makeꓸꓸꓸ<E>(n + m - i));
         copy(subslice<S, E>(s2, i), v);
         copy(subslice<S, E>(s2, i + m), subslice<S, E>(s, i));
         return s2;
@@ -293,7 +293,7 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
     nint tot = len(subslice<S, E>(s, 0, i)) + len(v) + len(subslice<S, E>(s, j));
     if (tot > cap(s)) {
         // Too big to fit, allocate and copy over.
-        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), make<S>(tot - i)); // See Insert
+        var s2 = appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, i), makeꓸꓸꓸ<E>(tot - i)); // See Insert
         copy(subslice<S, E>(s2, i), v);
         copy(subslice<S, E>(s2, i + len(v)), subslice<S, E>(s, j));
         return s2;
@@ -438,7 +438,7 @@ public static S Grow<S, E>(S s, nint n)
     {
         n -= cap(s) - len(s); if (n > 0) {
             // This expression allocates only once (see test).
-            s = subslice<S, E>(appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, cap(s)), new slice<E>(n)), 0, len(s));
+            s = subslice<S, E>(appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, cap(s)), makeꓸꓸꓸ<E>(n)), 0, len(s));
         }
     }
     return s;
