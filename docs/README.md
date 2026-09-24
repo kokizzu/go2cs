@@ -381,7 +381,7 @@ or pull in a package go2cs cannot yet handle — and under plain `-recurse` that
 actually came for. `-recurse=module` narrows the **scope** to the input module's own packages:
 
 ```shell
-cd path/to/myapp
+cd path/to/colordemo
 go2cs -recurse=module . csharp
 ```
 
@@ -391,11 +391,13 @@ the full run would have converted it — but never converted, so nothing about i
 converter prints the referenced-but-unconverted list when it finishes:
 
 ```text
-Closure: 214 packages discovered — converting 9 app, referencing 118 third-party + 87 stdlib (0 skipped)
+Closure: 73 packages discovered — converting 1 app, referencing 4 third-party + 67 stdlib (1 skipped)
 ...
-Third-party packages referenced but NOT converted (-recurse=module): 118
-  google.golang.org/api/googleapi
-  ...
+Third-party packages referenced but NOT converted (-recurse=module): 4
+  github.com/fatih/color
+  github.com/mattn/go-colorable
+  github.com/mattn/go-isatty
+  golang.org/x/sys/windows
 ```
 
 Those references are unresolved until something is written at those paths, so the generated solution does
@@ -458,7 +460,7 @@ Contributors: see [`CLAUDE.md`](../CLAUDE.md) for an architecture overview and
 The converter builds idiomatic C# for the full range of Go language features, gated by 519 Go-vs-C#
 behavioral regression projects — each transpiled, compiled, byte-compared against a committed golden and,
 where it is a runnable program, executed with its stdout compared against the Go original's. The entire Go
-standard library (302 packages, Go 1.23.12) compiles cleanly as .NET assemblies.
+standard library (342 packages, Go 1.24.13) compiles cleanly as .NET assemblies.
 
 The converted standard library reproduces **Go built with `-tags purego`** — a managed runtime cannot
 execute Go's hand-written `.s` assembly, so the portable pure-Go variants of the asm-backed crypto and hash
@@ -495,7 +497,7 @@ go2cs.exe -tests -test-action all \
 Expected final line:
 
 ```text
-Validated 14 tests against go test (0 skipped identically on both sides, 37 disclosed-unsupported declarations excluded).
+Validated 14 tests against go test (0 skipped identically on both sides, 1 disclosed-divergent (deferred), 47 disclosed-unsupported declarations excluded).
 ```
 
 The command converts the `_test.go` files to C#, generates a test host, builds it against the converted

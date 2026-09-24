@@ -875,7 +875,7 @@ so Go-faithful per-platform semantics never fork the package graph.
 |---|---|---|
 | Baseline + tests build clean | `dotnet build src/go2cs.slnx` | ✅ green |
 | Behavioral suite passing | `BehavioralTests` / `BehavioralRunner` | ✅ 555 projects transpile+compile+golden, 529 output-compared (2026-08-10) |
-| Full packages compiling | `src/go2cs-stdlib.slnx` (307 projects since layout L3) | ✅ **302 / 302** packages (2026-07-10, `51ba5d9cf`) |
+| Full packages compiling | `src/go2cs-stdlib.slnx` (344 projects at Go 1.24.13) | ✅ **342 / 342** packages (2026-09-23, `fa18863b9`) |
 | Full-conversion error count | build-error buckets | ✅ **0** |
 | Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight**. The roster's own header carries the current count, verdict total and disclosure total, recomputed from its table — read it there rather than here, so this row cannot go stale against it |
 | Assembly-backed implementations | Phase 5 external-declaration ledger | ◻ Phase 5 planned — gated by Phase 4 validation |
