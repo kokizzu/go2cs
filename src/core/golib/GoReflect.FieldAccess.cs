@@ -772,7 +772,8 @@ public static partial class GoReflect
         while (capacity < length + extra)
             capacity *= 2;
 
-        E[] backing = new E[capacity];
+        // Go's Value.Grow reaches growslice here, which mallocs the new backing; so is this one charged.
+        E[] backing = AllocationCounter.NewArray<E>(capacity);
 
         // Block copy, not an element loop: the demonstrated consumer (encoding/gob's decUint8Slice)
         // grows buffers past internal/saferio's 10 MiB chunk, where a per-element ref indexer walk

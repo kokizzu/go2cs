@@ -7,6 +7,8 @@
 // ReSharper disable CheckNamespace
 // ReSharper disable InconsistentNaming
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -229,6 +231,26 @@ public static class AllocationCounter
             t_count++;
 
         return source.ToArray();
+    }
+
+    /// <summary>
+    /// Materializes <paramref name="source"/> into a freshly allocated array and charges it.
+    /// </summary>
+    /// <remarks>
+    /// The array <c>Enumerable.ToArray</c> returns is charged; the growth buffers it fills and discards
+    /// on the way are BCL-internal and, like every other BCL internal, deliberately uncharged. An empty
+    /// source is charged nothing: <c>Enumerable.ToArray</c> returns <c>Array.Empty&lt;T&gt;()</c> for
+    /// it, so no object reaches the heap, the rule <see cref="CopyOf{T}"/> applies to an empty span.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T[] Materialize<T>(IEnumerable<T> source)
+    {
+        T[] result = source.ToArray();
+
+        if (s_enabled && result.Length > 0)
+            t_count++;
+
+        return result;
     }
 
     /// <summary>

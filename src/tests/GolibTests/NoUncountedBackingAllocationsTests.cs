@@ -17,7 +17,7 @@ namespace GolibTests;
 
 /// <summary>
 /// The guard <c>AllocationCounter</c>'s documentation names: every raw array backing golib creates goes
-/// through <c>AllocationCounter</c> (NewArray / CopyOf / Utf8ToBytes), or it is on a NAMED allow-list.
+/// through <c>AllocationCounter</c> (NewArray / CopyOf / Materialize / Utf8ToBytes), or it is on a NAMED allow-list.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,9 +29,11 @@ namespace GolibTests;
 /// </para>
 /// <list type="bullet">
 ///   <item><description>
-///     <see cref="Unclassified"/>, the (b) block: Go-visible backings that are NOT YET classified. Each may be
-///     a real undercount against Go or by-design; classifying and routing them is a follow-on seat, and this
-///     block is exactly its population.
+///     <see cref="ByDesign"/>, the (b) block: allocations on a Go construct's path where Go's OWN construct
+///     allocates nothing (a compiler stack temp, <c>runtime.zerobase</c>), so charging them would report a
+///     malloc Go does not make. Each reason cites Go's source for the equivalent construct. The block began
+///     as V-fix 11's 21 unclassified sites; the follow-on seat routed the real undercounts and the sites
+///     whose charge the scan could not see, and these five are what remained.
 ///   </description></item>
 ///   <item><description>
 ///     <see cref="Infrastructure"/>, the (c) block: allocations that are not Go-visible backings at all
@@ -40,7 +42,7 @@ namespace GolibTests;
 /// </list>
 /// <para>
 /// A NEW raw site fails the guard until it is routed or allow-listed by name, and an allow-list entry that no
-/// longer matches any site fails too, so the follow-on's population stays one exact list. The scan is
+/// longer matches any site fails too, so each block stays one exact list. The scan is
 /// textual on purpose: it reads the source the golib assembly is built from, located through this file's own
 /// compile-time path.
 /// </para>
@@ -48,31 +50,15 @@ namespace GolibTests;
 [TestClass]
 public class NoUncountedBackingAllocationsTests
 {
-    // (b) UNCLASSIFIED, follow-on: Go-visible backings not yet classified as a real undercount or by-design.
+    // (b) BY-DESIGN: Go's own construct allocates nothing here; the reason cites where Go keeps it instead.
     // Key: "<golib-relative path>|<normalized source line>". Duplicates are listed once per occurrence.
-    private static readonly string[] Unclassified =
+    private static readonly (string Site, string Reason)[] ByDesign =
     [
-        "GoReflect.FieldAccess.cs|E[] backing = new E[capacity];",
-        "GoReflect.Select.cs|SelectOp[] ops = new SelectOp[channels.Length];",
-        "GoReflect.TypeLayout.cs|s = new slice<T>(new T[0]);",
-        "array.cs|return new array<T>(source.ToArray());",
-        "array.cs|return source.ToArray().array(length);",
-        "array.cs|return source.ToArray().array(length, elementFactory);",
-        "builtin.cs|TWide[] result = new TWide[source.Length];",
-        "builtin.cs|return (slice<T>)slice.Append(elems.Cast<object>().ToArray())!;",
-        "channel.cs|ChanCore[] lockOrder = cores.ToArray();",
-        "channel.cs|int[] pollOrder = new int[liveCount];",
-        "map.cs|KeyValuePair<TKey, TValue>[] entries = count == 0 ? [] : new KeyValuePair<TKey, TValue>[count];",
-        "runtime/PinnedBuffer.cs|public byte[] Source => ToSpan().ToArray();",
-        "slice.cs|return Append(elems.Cast<T>().ToArray());",
-        "slice.cs|return new array<T>(value.ToArray());",
-        "slice.cs|return source.ToArray().slice(low, high, max);",
-        "slice.cs|return value.ToArray();",
-        "sslice.cs|return ToSpan().ToArray();",
-        "string.cs|public @string(in slice<byte> value) : this(value.ToArray()) { }",
-        "string.cs|public @string(in slice<char> value) : this(value.ToArray()) { }",
-        "string.cs|return ((IEnumerable<char>)value).ToArray();",
-        "string.cs|return new slice<char>(((IEnumerable<char>)value).ToArray());",
+        ("GoReflect.TypeLayout.cs|s = new slice<T>(new T[0]);", "a zero-length backing: Go's mallocgc answers size 0 with &zerobase and no malloc (runtime/malloc.go); the fresh object exists only as the dims table's identity key"),
+        ("builtin.cs|return (slice<T>)slice.Append(elems.Cast<object>().ToArray())!;", "the ISlice bridge's staging array: Go's append is a builtin that writes the elements in place, with no staging array"),
+        ("channel.cs|ChanCore[] lockOrder = cores.ToArray();", "select scratch: Go's select statement keeps its lock/poll order in a compiler stack temp (cmd/compile/internal/walk/select.go, order TempAt)"),
+        ("channel.cs|int[] pollOrder = new int[liveCount];", "select scratch: Go's select statement keeps its lock/poll order in a compiler stack temp (cmd/compile/internal/walk/select.go, order TempAt)"),
+        ("map.cs|KeyValuePair<TKey, TValue>[] entries = count == 0 ? [] : new KeyValuePair<TKey, TValue>[count];", "the range snapshot: Go's range over a map keeps its iterator in a compiler stack temp (cmd/compile/internal/walk/order.go, Prealloc newTemp)"),
     ];
 
     // (c) INFRASTRUCTURE: not a Go-visible backing; the reason names what the array is.
@@ -131,7 +117,7 @@ public class NoUncountedBackingAllocationsTests
             Assert.Inconclusive($"golib source not found at {root}; this guard reads the source tree it was built from");
 
         List<string> found = ScanGolib(root);
-        List<string> allowed = Unclassified.Concat(Infrastructure.Select(entry => entry.Site)).ToList();
+        List<string> allowed = ByDesign.Concat(Infrastructure).Select(entry => entry.Site).ToList();
 
         List<string> unlisted = MultisetMinus(found, allowed);
         List<string> stale = MultisetMinus(allowed, found);
@@ -141,7 +127,7 @@ public class NoUncountedBackingAllocationsTests
         if (unlisted.Count > 0)
         {
             message.AppendLine($"{unlisted.Count} raw backing allocation(s) in golib bypass AllocationCounter and are not allow-listed; " +
-                "route each through AllocationCounter.NewArray/CopyOf/Utf8ToBytes, or list it BY NAME in Unclassified (b) or Infrastructure (c):");
+                "route each through AllocationCounter.NewArray/CopyOf/Materialize/Utf8ToBytes, or list it BY NAME, with its reason, in ByDesign (b) or Infrastructure (c):");
 
             foreach (string site in unlisted)
                 message.AppendLine($"    \"{site}\",");
@@ -160,10 +146,10 @@ public class NoUncountedBackingAllocationsTests
     }
 
     [TestMethod]
-    public void InfrastructureEntriesCarryAReason()
+    public void AllowListEntriesCarryAReason()
     {
-        foreach ((string site, string reason) in Infrastructure)
-            Assert.IsFalse(string.IsNullOrWhiteSpace(reason), $"infrastructure entry without a reason: {site}");
+        foreach ((string site, string reason) in ByDesign.Concat(Infrastructure))
+            Assert.IsFalse(string.IsNullOrWhiteSpace(reason), $"allow-list entry without a reason: {site}");
     }
 
     // The scanner must be able to fail: each raw form is found in live code, and none is found inside a

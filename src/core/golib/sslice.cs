@@ -1,4 +1,4 @@
-// Copyright © 2026 The go2cs Authors. All rights reserved.
+// Copyright ï¿½ 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
@@ -52,7 +52,7 @@ public ref struct sslice<T>
 
     public T[] ToArray()
     {
-        return ToSpan().ToArray();
+        return AllocationCounter.CopyOf<T>(ToSpan());
     }
 
     public slice<T> ToSlice()
