@@ -673,7 +673,7 @@ exclusion is carried here with its class, its mechanism and the measurement that
 exactly as every disclosure is pinned by exact failure signature.
 
 > **The Go 1.23.12 record is closed.** By owner ruling of 2026-09-07 the corpus moved to Go 1.24.13
-> rather than driving 1.23.12 to 100%, so that release's figures — 204 / 215 — are the **Go 1.23.12
+> rather than driving 1.23.12 to 100%, so that release's figures — 204 / 215 as of 2026-09-07 — are the **Go 1.23.12
 > anchor**, frozen in [its snapshot](validation/1.23.12.3/ValidatedTestPackages.md) rather than carried
 > as a running total; the figures above are Go 1.24.13's own. The reasoning changes what the
 > percentage *means*, so it is worth stating: the metric is **package-based, not content-based**, and
