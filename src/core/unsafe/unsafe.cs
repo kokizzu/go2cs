@@ -1111,7 +1111,7 @@ public static ж<byte> StringData(@string str) {
     // (backing, absolute index) pair, so two calls over one string still answer equal and two
     // distinct backings still answer unequal — guarded by the StringDataIdentity behavioral test,
     // whose sub-string arm covers point 2.
-    return Ꮡ(str.Slice(0, str.Length), 0);
+    return Ꮡ(str.UnsafeBackingWindow(), 0);
 }
 
 } // end unsafe_package

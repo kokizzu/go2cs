@@ -35,8 +35,14 @@ public interface IByteSeq<T> : IByteSeq
     // variadic — `append(dst, src[lo:hi]...)` in encoding/json's generic appendString — where the
     // sub-slice is typed as the constraint type parameter again. A type parameter has no members of
     // its own, so the spread `ꓸꓸꓸ` must live on the constraint interface for `src[lo..hi].ꓸꓸꓸ` to
-    // bind. Both members already expose it: slice<T> as Span<T>, @string as Span<byte>.
-    Span<T> ꓸꓸꓸ { get; }
+    // bind.
+    //
+    // READ-ONLY, because one member is a string: a `string | []byte` body may only read what it
+    // spreads (Go gives it no way to write through a string), and an @string's bytes may be shared
+    // with every other string windowing the same backing, so a writable span here would let one
+    // write corrupt them all. slice<T> keeps its own writable Span<T> spread and implements this
+    // member explicitly.
+    ReadOnlySpan<T> ꓸꓸꓸ { get; }
 }
 
 // The SELF-REFERENTIAL form, and the one the converter emits as the constraint

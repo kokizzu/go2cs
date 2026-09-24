@@ -102,7 +102,41 @@ public readonly struct @string :
 
     public @string(in ReadOnlySpan<rune> value) : this(value.ToUTF8Bytes()) { }
 
-    public @string(in slice<byte> value) : this(value.ToArray()) { }
+    // Go's `string(b)` for a []byte. A one-byte result reads a static table and allocates nothing —
+    // slicebytetostring's `n == 1` branch, which returns a view into runtime.staticuint64s
+    // (runtime/string.go:144-150). Scoped to this conversion only: `string(byte)` and `string(rune)`
+    // are Go's intstring, which allocates when its result escapes, so they do not come here. Sharing
+    // one backing per byte value is sound because no @string hands out a writable view of its bytes
+    // (ToSpan, Slice and the spread are read-only; unsafe.StringData's pointer carries Go's own
+    // must-not-modify contract, the same one staticuint64s relies on).
+    public @string(in slice<byte> value)
+    {
+        if (value.Length == 1)
+        {
+            m_value = s_oneByteStrings[value[0]];
+            m_offset = 0;
+            m_length = 1;
+            return;
+        }
+
+        m_value = value.ToArray();
+        m_offset = 0;
+        m_length = m_value.Length;
+    }
+
+    // The 256 one-byte backings, built once. Plain allocations, not charged to AllocationCounter: they
+    // are process-wide static data, as staticuint64s is in Go, not an allocation of any conversion.
+    private static readonly byte[][] s_oneByteStrings = BuildOneByteStrings();
+
+    private static byte[][] BuildOneByteStrings()
+    {
+        byte[][] table = new byte[256][];
+
+        for (int i = 0; i < table.Length; i++)
+            table[i] = [(byte)i];
+
+        return table;
+    }
 
     /// <summary>
     /// Creates a TRANSIENT @string that ALIASES <paramref name="value"/>'s backing bytes without
@@ -248,20 +282,31 @@ public readonly struct @string :
     // needs an explicit form, to widen @string's int Length to the interface's nint.
     nint IByteSeq.Length => m_length;
 
-    public slice<byte> Slice(int start, int length)
+    public ReadOnlySpan<byte> Slice(int start, int length)
     {
-        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + start + length);
+        return Bytes.Slice(start, length);
     }
 
-    public slice<byte> Slice(nint start, nint length)
+    public ReadOnlySpan<byte> Slice(nint start, nint length)
     {
-        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + start + length);
+        return Bytes.Slice((int)start, (int)length);
     }
 
     // The explicit-bounds slice path behind `builtin.slice(s, low, high, max)`, bounded by this
     // string's WINDOW rather than by its whole backing array — the same correction array<T>.slice
     // already carries for an alias window. Shares the backing, as Go's slicing always does.
-    internal slice<byte> SliceBounds(nint low, nint high, nint max)
+    // The string's own window over its backing array, as the slice<byte> an element reference needs:
+    // `unsafe.StringData` is DEFINED as `&str[0]`, an interior pointer into the string's storage, and
+    // Go's contract is that those bytes must not be modified. Every other view of an @string is
+    // read-only (ToSpan, Slice, the spread, SliceBounds), because a backing may be shared by every
+    // string windowing it, a hoisted literal, or a one-byte string of the process-wide table. So this
+    // is internal, reached only through unsafe's InternalsVisibleTo grant, and named for what it is.
+    internal slice<byte> UnsafeBackingWindow()
+    {
+        return new slice<byte>(m_value ?? [], m_offset, m_offset + m_length);
+    }
+
+    internal ReadOnlySpan<byte> SliceBounds(nint low, nint high, nint max)
     {
         nint start = low == -1 ? 0 : low;
         nint end = high == -1 ? m_length : high;
@@ -270,15 +315,15 @@ public readonly struct @string :
         if (start < 0 || end < start || bound < end || bound > m_length)
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(start, end, bound, m_length);
 
-        return new slice<byte>(m_value ?? [], m_offset + start, m_offset + end, m_offset + bound);
+        return Bytes.Slice((int)start, (int)(end - start));
     }
 
-    public Span<byte> ToSpan()
+    public ReadOnlySpan<byte> ToSpan()
     {
-        return m_value is null ? default : new Span<byte>(m_value, m_offset, m_length);
+        return Bytes;
     }
 
-    public Span<byte> ꓸꓸꓸ => ToSpan(); // Spread operator
+    public ReadOnlySpan<byte> ꓸꓸꓸ => ToSpan(); // Spread operator
 
     // NOTE: there is deliberately no pinned-view accessor here. `unsafe.StringData` was this
     // string's only pinning consumer, and its pin was a defect rather than a service: a
@@ -715,8 +760,20 @@ public readonly struct @string :
         return a.SequenceCompareTo(b.Bytes) >= 0;
     }
 
+    // Go's concatstrings (runtime/string.go:46-51): when only one operand is non-empty, the result IS
+    // that operand — no allocation, no copy — and when none is, the result is "". That holds for an
+    // operand that aliases other storage too (AliasOf, unsafe.String): Go returns it as it is, and so
+    // does this (COORD's verification note F8 retired revision 4's copy-on-alias precondition). The
+    // stack-data exception Go makes for an escaping result cannot arise here: no @string lives on a
+    // stack. The span-operand overloads below follow the same rule for an empty span.
     public static @string operator +(@string a, @string b)
     {
+        if (b.m_length == 0)
+            return a;
+
+        if (a.m_length == 0)
+            return b;
+
         ReadOnlySpan<byte> sa = a.Bytes, sb = b.Bytes;
         byte[] bytes = AllocationCounter.NewArray<byte>(sa.Length + sb.Length);
 
@@ -734,6 +791,12 @@ public readonly struct @string :
     // per-concat path is affected — no change to the far hotter `[]byte`→`@string` conversion path.
     public static @string operator +(@string a, ReadOnlySpan<byte> b)
     {
+        // An empty span operand leaves the @string, which is returned as itself (G8). An empty @string
+        // with a non-empty span still copies the span once: Go would return the literal's own static
+        // bytes, but a span has no @string to return until the literal is materialized.
+        if (b.Length == 0)
+            return a;
+
         ReadOnlySpan<byte> a1 = a.Bytes;
         byte[] bytes = AllocationCounter.NewArray<byte>(a1.Length + b.Length);
 
@@ -745,6 +808,9 @@ public readonly struct @string :
 
     public static @string operator +(ReadOnlySpan<byte> a, @string b)
     {
+        if (a.Length == 0)
+            return b;
+
         ReadOnlySpan<byte> b1 = b.Bytes;
         byte[] bytes = AllocationCounter.NewArray<byte>(a.Length + b1.Length);
 
