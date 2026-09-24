@@ -324,8 +324,8 @@ internal static void Main() {
 } // end main_package
 ```
 
-> **NOTE — platforms:** _requires go2cs packages **1.23.1.5 or later**, the first release carrying Linux
-> binaries alongside Windows. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
+> **NOTE — platforms:** _requires go2cs packages **1.24.13.1 or later**, the release matching the converter's
+> Go 1.24.13 toolchain. Steps 1–2 run on both platforms; steps 3–4 complete on **Windows** today, and
 > on Linux for programs whose import closure stays within the `fmt`/`os`/`time` class. A closure reaching
 > platform-divergent `syscall` surface (as this example's `x/sys` dependency does) still builds only on
 > Windows — the remaining piece is the Linux side of that `syscall` surface, tracked in the Roadmap's
