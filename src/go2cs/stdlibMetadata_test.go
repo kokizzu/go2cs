@@ -79,7 +79,7 @@ func TestStdLibMetadataInSync(t *testing.T) {
 // publishes three exported type aliases and a VALUE-form `Errno` → `error` implementation, and
 // golang.org/x/sys/windows must see all four when syscall is referenced as a NuGet assembly.
 func TestStdLibExportedMetadataReadsThroughPackageInfoParsers(t *testing.T) {
-	lines, ok := stdLibExportedMetadata("syscall")
+	lines, ok := stdLibExportedMetadata("syscall", "")
 
 	if !ok {
 		t.Fatal("embedded stdlib metadata has no record for `syscall`")
@@ -122,11 +122,11 @@ func TestStdLibExportedMetadataReadsThroughPackageInfoParsers(t *testing.T) {
 
 	// Every recorded package must be keyed the way PackageInfo.PackageName spells it (dots, and
 	// the `go.<name>` NuGet package id), never with path separators.
-	if _, ok := stdLibExportedMetadata("math/rand/v2"); ok {
+	if _, ok := stdLibExportedMetadata("math/rand/v2", ""); ok {
 		t.Error("embedded metadata is keyed by import path; it must be keyed by the dotted package name")
 	}
 
-	if _, ok := stdLibExportedMetadata("math.rand.v2"); !ok {
+	if _, ok := stdLibExportedMetadata("math.rand.v2", ""); !ok {
 		t.Error("embedded metadata has no record for `math.rand.v2`")
 	}
 }
@@ -262,4 +262,133 @@ func containsPair(pairs [][2]string, first string, second string) bool {
 
 func normalizeLineEndings(text string) string {
 	return strings.ReplaceAll(text, "\r\n", "\n")
+}
+
+// TestStdLibExportedMetadataSelectsTheTargetFlavor pins the per-GOOS lookup. syscall is an L3
+// package with no flat package_info.cs: its windows flavor exports the `Handle` alias and Δ-renames
+// `Sockaddr`, and its linux flavor does neither. Before the record carried non-reference flavors, a
+// linux lookup silently answered with the windows section.
+func TestStdLibExportedMetadataSelectsTheTargetFlavor(t *testing.T) {
+	aliasesOf := func(goos string) map[string]string {
+		t.Helper()
+
+		lines, ok := stdLibExportedMetadata("syscall", goos)
+
+		if !ok {
+			t.Fatalf("embedded stdlib metadata has no record for `syscall` (goos %q)", goos)
+		}
+
+		aliases, err := parseExportedTypeAliasLines(lines)
+
+		if err != nil {
+			t.Fatalf("parseExportedTypeAliasLines (goos %q): %v", goos, err)
+		}
+
+		found := map[string]string{}
+
+		for _, alias := range aliases {
+			found[alias[0]] = alias[1]
+		}
+
+		return found
+	}
+
+	// The reference flavor, asked for by name and by default, is the unqualified section.
+	for _, goos := range []string{stdlibmeta.ReferenceGOOS, ""} {
+		if _, ok := aliasesOf(goos)["Handle"]; !ok {
+			t.Errorf("syscall (goos %q) lost the windows-only `Handle` alias", goos)
+		}
+	}
+
+	for _, goos := range []string{"linux", "darwin"} {
+		found := aliasesOf(goos)
+
+		if _, ok := found["Handle"]; ok {
+			t.Errorf("syscall (goos %q) carries the windows-only `Handle` alias: the lookup answered with the reference section", goos)
+		}
+
+		if _, ok := found["Sockaddr"]; ok {
+			t.Errorf("syscall (goos %q) Δ-renames `Sockaddr`, which only the windows flavor does", goos)
+		}
+
+		if _, ok := found["Signal"]; !ok {
+			t.Errorf("syscall (goos %q) is missing the `Signal` alias every flavor exports; got %v", goos, found)
+		}
+	}
+
+	// A package with ONE flat package_info.cs has no flavor sections: every GOOS reads the same record.
+	fmtWindows, _ := stdLibExportedMetadata("fmt", stdlibmeta.ReferenceGOOS)
+	fmtLinux, _ := stdLibExportedMetadata("fmt", "linux")
+
+	if strings.Join(fmtWindows, "\n") != strings.Join(fmtLinux, "\n") {
+		t.Error("fmt has a flat package_info.cs, yet its linux record differs from its windows one")
+	}
+}
+
+// TestRecurseNuGetImportsTheTargetFlavorsAliases drives the EMISSION: a -recurse=nuget conversion for
+// linux must not import syscall's windows-only aliases into the consumer's <ImportedTypeAliases>
+// block. It did, which is the README walkthrough's `syscallꓸHandle = go.syscall_package.ΔHandle`
+// (CS0426) and non-generic `ΔSockaddr` (CS0305) on Linux. The windows conversion is the control: the
+// reference flavor's aliases are unchanged.
+func TestRecurseNuGetImportsTheTargetFlavorsAliases(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the app's standard-library closure via go/packages")
+	}
+
+	goRoot := build.Default.GOROOT
+
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
+	convert := func(target string) string {
+		t.Helper()
+
+		root := t.TempDir()
+		appDir := filepath.Join(root, "app")
+
+		writeModuleFile(t, filepath.Join(appDir, "go.mod"), "module example.com/app\n\ngo 1.23\n")
+		writeModuleFile(t, filepath.Join(appDir, "main.go"),
+			"package main\n\nimport (\n\t\"fmt\"\n\t\"syscall\"\n)\n\n"+
+				"func describe(sa syscall.Sockaddr, sig syscall.Signal) string {\n\treturn fmt.Sprint(sa == nil, sig)\n}\n\n"+
+				"func main() {\n\tfmt.Println(describe(nil, syscall.SIGINT))\n}\n")
+
+		options := Options{
+			goRoot:              goRoot,
+			goPath:              build.Default.GOPATH,
+			go2csPath:           filepath.Join(root, "no-runtime-here"),
+			recurseOutputRoot:   filepath.Join(root, "out"),
+			recurse:             true,
+			nugetRefs:           true,
+			targetPlatform:      target,
+			indentSpaces:        4,
+			preferVarDecl:       true,
+			useChannelOperators: true,
+		}
+
+		build.Default.GOROOT = options.goRoot
+		build.Default.GOPATH = options.goPath
+
+		if err := NewModuleConverter(options).ConvertModule(appDir); err != nil {
+			t.Fatalf("ConvertModule (%s): %v", target, err)
+		}
+
+		return readGenerated(t, filepath.Join(options.recurseOutputRoot, "src", "example.com", "app", PackageInfoFileName))
+	}
+
+	linux := convert("linux/amd64")
+
+	if strings.Contains(linux, "syscallꓸHandle") {
+		t.Errorf("a linux conversion imported syscall's windows-only `Handle` alias (CS0426 against the linux flavor):\n%s", linux)
+	}
+
+	if strings.Contains(linux, "go.syscall_package.ΔSockaddr") {
+		t.Errorf("a linux conversion imported the windows flavor's Δ-renamed `Sockaddr` (CS0305 against the linux flavor):\n%s", linux)
+	}
+
+	windows := convert("windows/amd64")
+
+	if !strings.Contains(windows, "syscallꓸHandle = go.syscall_package.ΔHandle") {
+		t.Errorf("the windows (reference) conversion no longer imports `Handle`; the control is void:\n%s", windows)
+	}
 }
