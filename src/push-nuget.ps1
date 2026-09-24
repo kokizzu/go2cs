@@ -78,8 +78,9 @@
     The census is the runbook's NAMED IDENTITIES (tests.csproj, proof pages, green badges and index
     rows, each term named), and the pre-flight also composes the version the next publish would mint
     and refuses it if it already exists, or is not numerically newer than every recorded
-    docs\validation\<version>\ snapshot and nuget-* tag. That half reads git (`git tag --list`,
-    read-only), so git must be on PATH.
+    docs\validation\<version>\ snapshot and nuget-* tag, and it refuses by name any relative link the
+    frozen roster would carry that cannot be relocated or resolves to no tracked path. Those halves
+    read git (`git tag --list`, `git ls-files`, both read-only), so git must be on PATH.
 
 .EXAMPLE
     .\push-nuget.ps1
@@ -526,6 +527,28 @@ function Get-GoNextReleaseVerification {
     }
 }
 
+# THE FROZEN ROSTER'S RELATIVE LINKS. ConvertTo-FrozenRosterText relocates every relative,
+# path-shaped link by '../../' so it names the same path from two directories deeper; this names the
+# two ways one can still dangle in the published snapshot, each REFUSED by name: a link the transform
+# could not relocate at all (its Unrelocated audit arm), and a relocated link whose target is not a
+# tracked path (Get-UnresolvedRelativeLinks, against `git ls-files`). One definition, called by the
+# pre-flight on a dry transform of the living roster and again by the freeze before it writes.
+function Get-GoFrozenRosterLinkProblems {
+    param(
+        [Parameter(Mandatory)]$Transform,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$TrackedPaths
+    )
+
+    $problems = New-Object System.Collections.Generic.List[string]
+    foreach ($link in @($Transform.Unrelocated)) {
+        $problems.Add("roster link the freeze cannot relocate (it would dangle in the frozen snapshot): $link")
+    }
+    foreach ($link in @(Get-UnresolvedRelativeLinks -Targets @($Transform.Relocated) -TrackedPaths $TrackedPaths)) {
+        $problems.Add("roster link resolves to no tracked path (it would dangle in the frozen snapshot): $link")
+    }
+    return $problems.ToArray()
+}
+
 $coreReadmeRoot = Join-Path $src 'core'
 $preflightProofs = Join-Path $repoRoot 'docs\validation\current'
 $rosterPath = Join-Path $repoRoot 'docs\ValidatedTestPackages.md'
@@ -658,6 +681,26 @@ Write-Step ("Next release: {0} (base {1} + counter {2} + 1): {3} -- newest recor
 if ($nextRelease.Excluded.Count) {
     Write-Host ("      excluded by name, not a release: {0}" -f ($nextRelease.Excluded -join ', '))
 }
+
+# THE FROZEN ROSTER'S LINKS, asked here rather than discovered after the freeze (see
+# Get-GoFrozenRosterLinkProblems). The transform is run on the living roster with the would-be
+# version and its text discarded: only its link accounting is read. The tracked-path list is kept
+# for the freeze's own backstop, so both read one list. A git read that fails is a named problem,
+# and an empty list resolves nothing, so the check fails closed.
+$trackedRepoPaths = @()
+try {
+    $trackedRepoPaths = @(& git -C $repoRoot -c core.quotepath=off ls-files)
+    if ($LASTEXITCODE -ne 0) { $censusProblems.Add("git ls-files exited $LASTEXITCODE, so the frozen roster's links cannot be resolved against the tracked tree") }
+}
+catch { $censusProblems.Add("git ls-files failed ($($_.Exception.Message)), so the frozen roster's links cannot be resolved against the tracked tree") }
+
+$auditVersion = if ($nextRelease.Next) { $nextRelease.Next } else { 'preflight' }
+$rosterLinkAudit = ConvertTo-FrozenRosterText -RosterText ([System.IO.File]::ReadAllText($rosterPath)) -Version $auditVersion -Commit 'preflight'
+$rosterLinkProblems = @(Get-GoFrozenRosterLinkProblems -Transform $rosterLinkAudit -TrackedPaths $trackedRepoPaths)
+foreach ($problem in $rosterLinkProblems) { $censusProblems.Add($problem) }
+$rosterLinkVerdict = if ($rosterLinkProblems.Count) { "$($rosterLinkProblems.Count) would dangle" } else { 'every one resolves to a tracked path' }
+Write-Step ("Frozen-roster links: {0} relative link(s) relocated ({1} distinct): {2}; {3} proof link(s) onto sibling pages" -f `
+            @($rosterLinkAudit.Relocated).Count, @($rosterLinkAudit.Relocated | Sort-Object -Unique).Count, $rosterLinkVerdict, $rosterLinkAudit.ProofLinks)
 
 # NOT $green/$source. PowerShell resolves variable names case-INSENSITIVELY, so `$source = <object>`
 # binds the script's own [string]$Source PARAMETER -- which keeps its type constraint and COERCES the
@@ -1079,6 +1122,16 @@ if (-not (Test-Path $currentProofs)) {
                 -RosterText ([System.IO.File]::ReadAllText($rosterSource)) `
                 -Version $fullVersion -Commit $frozenCommit
 
+            # The audit arm, REFUSING before the roster is written (it WARNED after writing it until
+            # 2026-09-24, and three links would have published dangling in 1.24.13.1). The pre-flight
+            # already ran this same check against the same roster and tracked-path list, so reaching a
+            # throw here means the tree moved between the two; it is a backstop, not the gate.
+            $frozenLinkProblems = @(Get-GoFrozenRosterLinkProblems -Transform $frozenRoster -TrackedPaths $trackedRepoPaths)
+            if ($frozenLinkProblems.Count) {
+                throw ("The frozen $fullVersion roster would carry $($frozenLinkProblems.Count) relative link(s) that " +
+                       "dangle in docs\validation\$($fullVersion):`n    " + ($frozenLinkProblems -join "`n    "))
+            }
+
             [System.IO.File]::WriteAllText((Join-Path $versionProofs $frozenRosterName), $frozenRoster.Text, $utf8NoBomText)
 
             # --- and that roster's package column, pinned onto the tag ------------------------------
@@ -1127,16 +1180,6 @@ if (-not (Test-Path $currentProofs)) {
                         "$($pinnedRoster.SourceLinks) package-column source link(s) pinned onto tag $releaseTag " +
                         "across $($pinnedRoster.Rows) row(s), $($pinnedDisclosure.DisclosureLinks) disclosure-manifest " +
                         "pointer(s) pinned, commit $frozenCommit")
-
-            # The audit arm. Empty on the roster this shipped against; a future roster that grows a
-            # relative link shape neither substitution knows would otherwise dangle silently on the
-            # published site, which is the one place nobody is watching for it.
-            if ($frozenRoster.Unrelocated.Count) {
-                Write-Warning ("The frozen $fullVersion roster carries $($frozenRoster.Unrelocated.Count) relative " +
-                               "link(s) that neither retarget handled -- they will resolve against " +
-                               "docs\validation\$fullVersion and are almost certainly broken there:`n    " +
-                               ($frozenRoster.Unrelocated -join "`n    "))
-            }
         }
         # The count is EVERY page under docs\validation\current -- rows' own pages, relocation anchors
         # and exclusion pages alike (COORD ruling RN-6) -- so no green badge, no roster [proof] link and

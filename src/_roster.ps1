@@ -666,14 +666,22 @@ function Get-ProofPageIdentity {
     Two substitutions, both counted and both returned, because a published document is the one
     artifact where a silent no-op and a silent over-match cost the same and look identical:
 
-      RELOCATE   Every relative link that pointed OUT of docs\ (../src/..., README.md#..., a
-                 phase4\ reference definition) is two directories shallower than the snapshot, so
-                 it gains '../../' and resolves to exactly the file it named before. This is pure
-                 relocation compensation: the target does not move, the path to it does. Runs
-                 FIRST and excludes validation/current/ explicitly, so the proof links below are
-                 still in their original spelling when the second substitution looks for them --
-                 order is load-bearing, since a retargeted sibling link ('bytes.md') matches the
-                 relocate pattern perfectly and would be sent to '../../bytes.md'.
+      RELOCATE   Every relative, path-shaped link other than a proof link -- ANY file type or a
+                 directory (../src/..., README.md#..., phase4/.../shardmap.py, a .txt, a trailing-
+                 slash directory, a phase4\ reference definition) -- is two directories shallower
+                 than the snapshot, so it gains '../../' and resolves to exactly the path it named
+                 before. This is pure relocation compensation: the target does not move, the path
+                 to it does. Runs FIRST and excludes validation/current/ explicitly, so the proof
+                 links below are still in their original spelling when the second substitution
+                 looks for them -- order is load-bearing, since a retargeted sibling link
+                 ('bytes.md') matches the relocate pattern perfectly and would be sent to
+                 '../../bytes.md'.
+                 (Until 2026-09-24 this relocated .md and .ps1 only, the two extensions a census of
+                 the 1.23.12.3 roster found. The 1.24.13 roster links a .txt, a .py and a directory,
+                 and those three would have published dangling in the 1.24.13.1 snapshot with only
+                 a warning -- COORD, the census seat's accept. Whether a relocated link RESOLVES to
+                 a tracked path is the caller's check: Get-UnresolvedRelativeLinks below, which
+                 push-nuget.ps1 runs in its pre-flight and again before it writes the roster.)
 
       PROOF      validation/current/<id>.md -> <id>.md, the sibling frozen page. This is the whole
                  point: a snapshot whose 204 proof links walk back into the LIVING directory is a
@@ -681,8 +689,9 @@ function Get-ProofPageIdentity {
 
     UNRELOCATED is the audit arm. It names every path-shaped relative target in the source that
     NEITHER substitution consumed -- empty on today's roster, and the only way a future roster
-    gaining a link shape nobody anticipated shows up as something other than a dangling link on
-    the published site. It is reported, never silently passed.
+    gaining a link shape nobody anticipated (a './' or root-absolute '/' spelling) shows up as
+    something other than a dangling link on the published site. It is returned, never silently
+    passed, and push-nuget.ps1 REFUSES a non-empty one by name.
 
     The roster's ABSOLUTE links are deliberately NOT touched here, and there are two kinds. The
     PACKAGE COLUMN is one tree/master URL per row, pinned onto the release tag by
@@ -734,24 +743,29 @@ function ConvertTo-FrozenRosterText {
     $relocated = New-Object System.Collections.Generic.List[string]
     $text = $RosterText
 
-    # RELOCATE. The extension set is derived from a census of the roster this shipped against
-    # (.md and .ps1 were its only relative non-proof targets); anything outside it is not silently
-    # passed, it lands in Unrelocated below.
-    $relocateInline = '\]\((?!https?://|#|validation/current/)((?:\.\./)*[A-Za-z0-9_][^)\s]*\.(?:md|ps1)(?:#[^)\s]*)?)\)'
+    # RELOCATE. Every relative target: no URI scheme (https:, mailto:, ...), no in-page '#', and not
+    # a proof link. The patterns admit any spelling that starts like a path, and the evaluators then
+    # relocate only the PATH-SHAPED ones -- the same predicate the audit above collects with -- so a
+    # placeholder such as `(url)` in the roster's own HTML comments is left exactly as written, while
+    # every real link, of any file type or a directory, is relocated. Anything path-shaped that
+    # neither pattern admits lands in Unrelocated below rather than passing silently.
+    $relocateInline = '\]\((?![A-Za-z][A-Za-z0-9+.-]*:|#|validation/current/)((?:\.\./)*[A-Za-z0-9_][^)\s]*)\)'
     # The trailing class admits \r as well as space and tab. .NET's multiline '$' matches BEFORE the
     # \n of a CRLF line, so a '[ \t]*$' tail cannot reach the end of a line in this repo's CRLF
     # working tree -- measured: the one reference definition in the roster went UNMATCHED and landed
     # in Unrelocated, which is the audit arm doing its job rather than a link silently dangling.
-    $relocateRef = '(?m)^(\[[^\]]+\]:[ \t]+)(?!https?://|#|validation/current/)((?:\.\./)*[A-Za-z0-9_][^\s]*\.(?:md|ps1)(?:#\S*)?)[ \t\r]*$'
+    $relocateRef = '(?m)^(\[[^\]]+\]:[ \t]+)(?![A-Za-z][A-Za-z0-9+.-]*:|#|validation/current/)((?:\.\./)*[A-Za-z0-9_]\S*)[ \t\r]*$'
 
     $text = [regex]::Replace($text, $relocateInline, {
         param($m)
+        if ($m.Groups[1].Value -notmatch $pathShaped) { return $m.Value }
         $relocated.Add($m.Groups[1].Value); $handled.Add($m.Groups[1].Value)
         '](../../' + $m.Groups[1].Value + ')'
     })
 
     $text = [regex]::Replace($text, $relocateRef, {
         param($m)
+        if ($m.Groups[2].Value -notmatch $pathShaped) { return $m.Value }
         $relocated.Add($m.Groups[2].Value); $handled.Add($m.Groups[2].Value)
         $m.Groups[1].Value + '../../' + $m.Groups[2].Value
     })
@@ -816,6 +830,73 @@ function ConvertTo-FrozenRosterText {
         Unrelocated = $unrelocated
         NoteLines   = $note.Count
     }
+}
+
+<#
+.SYNOPSIS
+    The relative link targets that resolve to NO tracked path -- the links a frozen roster would
+    publish dangling.
+.DESCRIPTION
+    RELOCATE (ConvertTo-FrozenRosterText above) keeps a relative link pointing at the path it named
+    in the living roster; it cannot know whether that path exists. This does: each target, as
+    written relative to -BaseDir (the living roster's directory, docs), has its #fragment and ?query
+    dropped and its %-escapes decoded, is resolved segment by segment ('.' and '..' honoured, and a
+    walk above the repository root never resolves), and must then name a TRACKED FILE, or -- with or
+    without a trailing slash -- a directory holding at least one tracked file. A trailing slash names
+    a directory and only a directory.
+
+    -TrackedPaths is `git ls-files` output: repository-relative, '/'-separated, case-sensitive
+    (ORDINAL), as git and the published site both are. An EMPTY list resolves nothing, so a caller
+    whose git read failed refuses every link rather than passing them: the check fails closed.
+.OUTPUTS
+    One string per unresolved target, sorted and unique: "<target> (resolves to <path>)".
+#>
+function Get-UnresolvedRelativeLinks {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $Targets,
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]] $TrackedPaths,
+        [string] $BaseDir = 'docs'
+    )
+
+    $files = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    $dirs = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($path in @($TrackedPaths)) {
+        if (-not $path) { continue }
+        [void]$files.Add($path)
+        $cut = $path.LastIndexOf('/')
+        while ($cut -gt 0) {
+            if (-not $dirs.Add($path.Substring(0, $cut))) { break }
+            $cut = $path.LastIndexOf('/', $cut - 1)
+        }
+    }
+
+    $unresolved = New-Object 'System.Collections.Generic.SortedSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($target in @($Targets)) {
+        if (-not $target) { continue }
+        $bare = [System.Uri]::UnescapeDataString(($target -replace '[#?].*$', ''))
+        $isDirectory = $bare.EndsWith('/')
+
+        $stack = New-Object System.Collections.Generic.List[string]
+        $escaped = $false
+        foreach ($segment in (($BaseDir.TrimEnd('/') + '/' + $bare) -split '/')) {
+            if ($segment -eq '' -or $segment -eq '.') { continue }
+            if ($segment -eq '..') {
+                if ($stack.Count -eq 0) { $escaped = $true; break }
+                $stack.RemoveAt($stack.Count - 1)
+                continue
+            }
+            $stack.Add($segment)
+        }
+
+        $resolved = $stack -join '/'
+        $ok = -not $escaped -and ($dirs.Contains($resolved) -or (-not $isDirectory -and $files.Contains($resolved)))
+        if (-not $ok) {
+            $shown = if ($escaped) { 'above the repository root' } else { $resolved }
+            [void]$unresolved.Add("$target (resolves to $shown)")
+        }
+    }
+
+    return @($unresolved)
 }
 
 <#

@@ -1140,6 +1140,48 @@ finally {
     if (Test-Path $linkFixturePath) { Remove-Item $linkFixturePath -Force }
 }
 
+# ---- 2b5. the FROZEN roster's relative links, against fixtures (2026-09-24, COORD at the census seat's accept)
+# ConvertTo-FrozenRosterText relocates EVERY relative, path-shaped link by '../../' -- any file type or
+# a directory, where it used to relocate .md and .ps1 only and three 1.24.13 links (a directory, a .txt
+# and a .py) would have published dangling in 1.24.13.1 behind a warning. Get-UnresolvedRelativeLinks
+# names a relocated link that resolves to no tracked path; push-nuget.ps1 REFUSES both by name, in its
+# pre-flight and again before it writes the frozen roster. Both functions are _roster.ps1's.
+function Get-OrdinalJoin([string[]] $Items) {
+    $list = New-Object System.Collections.Generic.List[string]
+    foreach ($i in @($Items)) { if ($null -ne $i) { $list.Add($i) } }
+    $list.Sort([System.StringComparer]::Ordinal)
+    return ($list -join ',')
+}
+
+$relocFixture = ConvertTo-FrozenRosterText -Version '1.24.13.1' -Commit 'abc1234' -FrozenOn '2026-01-01' -RosterText ((@(
+    '# Fixture roster'
+    ''
+    'A directory [d](phase4/evidence/), a text file [t](phase4/list.txt), a script [s](../src/tool.ps1), a page [p](validation/current/ex.row.md),'
+    'a placeholder [x](url), an in-page anchor [a](#here), a site link [w](https://example.invalid/x.py).'
+    ''
+    '[ref]: phase4/data.py'
+) -join "`n"))
+Assert-Equal 'frozen roster: every relative path-shaped link relocates -- any file type, or a directory' `
+    '../src/tool.ps1,phase4/data.py,phase4/evidence/,phase4/list.txt' (Get-OrdinalJoin $relocFixture.Relocated)
+Assert-Equal 'frozen roster: a DIRECTORY link is relocated two levels up' $true ($relocFixture.Text.Contains('[d](../../phase4/evidence/)'))
+Assert-Equal 'frozen roster: a .txt link is relocated two levels up' $true ($relocFixture.Text.Contains('[t](../../phase4/list.txt)'))
+Assert-Equal 'frozen roster: a reference definition of any type is relocated' $true ($relocFixture.Text.Contains('[ref]: ../../phase4/data.py'))
+Assert-Equal 'frozen roster: a placeholder, an in-page anchor and a URL are left exactly as written' $true (
+    $relocFixture.Text.Contains('[x](url)') -and $relocFixture.Text.Contains('[a](#here)') -and
+    $relocFixture.Text.Contains('[w](https://example.invalid/x.py)'))
+Assert-Equal 'frozen roster: the proof link becomes its sibling page' $true ($relocFixture.Text.Contains('[p](ex.row.md)'))
+Assert-Equal 'frozen roster: nothing path-shaped is left unrelocated' '' (Get-OrdinalJoin $relocFixture.Unrelocated)
+
+$trackedFixture = @('docs/phase4/evidence/a.json', 'docs/phase4/list.txt', 'docs/README.md', 'src/tool.ps1')
+Assert-Equal 'link resolution: a tracked file, a tracked directory either spelling, a fragment and an ../ walk resolve' '' `
+    (@(Get-UnresolvedRelativeLinks -Targets @('phase4/evidence/', 'phase4/evidence', 'phase4/list.txt', '../src/tool.ps1', 'README.md#try') `
+        -TrackedPaths $trackedFixture) -join '; ')
+Assert-Equal 'link resolution: a missing path, a file spelled as a directory and a walk above the root are each NAMED' `
+    '../../x.md (resolves to above the repository root); phase4/gone.txt (resolves to docs/phase4/gone.txt); phase4/list.txt/ (resolves to docs/phase4/list.txt)' `
+    (@(Get-UnresolvedRelativeLinks -Targets @('phase4/gone.txt', 'phase4/list.txt/', '../../x.md') -TrackedPaths $trackedFixture) -join '; ')
+Assert-Equal 'link resolution: an EMPTY tracked list resolves nothing (the check fails closed)' 1 `
+    @(Get-UnresolvedRelativeLinks -Targets @('phase4/list.txt') -TrackedPaths @()).Count
+
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
 # Three populations since the 2026-08-29 n/a ruling: validated-at-count (numeric annotation),
