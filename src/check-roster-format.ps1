@@ -866,26 +866,8 @@ if ($implementable -gt 0) {
 # from the wrong instrument. Two guards, two questions.
 $populationPath = Join-Path $repo 'docs/phase4/hopA-inputs/recon-lists/population-go1.24.13.txt'
 
-function Get-PopulationRows {
-    param([Parameter(Mandatory)][string] $Path)
-
-    if (-not (Test-Path $Path)) { throw "Cannot find the population of record at $Path" }
-
-    $names = @([System.IO.File]::ReadAllLines($Path) |
-        ForEach-Object { $_.Trim() } |
-        Where-Object { $_ -and -not $_.StartsWith('#') })
-
-    if ($names.Count -eq 0) {
-        throw "The population of record at $Path parsed to ZERO rows -- a comment-only file reads as a closed arithmetic over an empty universe"
-    }
-
-    $duplicates = @($names | Group-Object | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
-    if ($duplicates.Count -gt 0) {
-        throw "The population of record repeats $($duplicates.Count) name(s): $($duplicates -join ', ') -- the population is a SET"
-    }
-
-    return $names
-}
+# Get-PopulationRows, the reader, lives in _roster.ps1 (2026-09-23): push-nuget.ps1's release census
+# reads the rowless-candidate class through it too, and one reader is what keeps the two agreeing.
 
 # The arithmetic itself, as a function over its four inputs rather than inline against the real
 # ones. That is what lets the fixture arms below drive it with a POPULATION THAT DISAGREES -- an
@@ -1014,31 +996,9 @@ Assert-Equal 'population of record: the header closes against the enumeration' '
 #     e.g. a package outside N, or one whose row was struck without its artifacts).
 # The TRACKED set comes from git, never the working tree: a build or an unfinished -tests run leaves
 # untracked projects behind, and a guard that counted them would red on the lane's own debris.
-function Get-TestProjectIdentityViolations {
-    param([string[]] $Projects, [string[]] $Banked, [string[]] $Excluded, [string[]] $Population)
-
-    $violations = New-Object System.Collections.Generic.List[string]
-    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
-    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
-    $projectSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Projects)) { [void]$projectSet.Add($p) }
-    $candidateSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Population)) {
-        if (-not $bankedSet.Contains($p) -and -not $excludedSet.Contains($p)) { [void]$candidateSet.Add($p) }
-    }
-
-    foreach ($p in @($Banked | Sort-Object)) {
-        if (-not $projectSet.Contains($p)) { [void]$violations.Add("banked row has no tracked tests.csproj: $p") }
-    }
-    foreach ($p in @($Projects | Sort-Object)) {
-        if (-not ($bankedSet.Contains($p) -or $excludedSet.Contains($p) -or $candidateSet.Contains($p))) {
-            [void]$violations.Add("tracked tests.csproj belongs to no row, exclusion row or population candidate: $p")
-        }
-    }
-    return $violations.ToArray()
-}
+#
+# Get-TestProjectIdentityViolations lives in _roster.ps1 (2026-09-23), shared with push-nuget.ps1's
+# release census, which holds the same identity before a publish; the fixtures below still drive it.
 
 # The function's contract, both directions, against fixtures.
 $idPop = @('ex/row', 'ex/gone', 'ex/cand', 'ex/quiet')
@@ -1095,10 +1055,9 @@ Assert-Equal 'test-project identity: the named sides add up' $testProjects.Count
 # crypto/internal/fips140test, embed/internal/embedtest, go/ast/internal/tests,
 # internal/coverage/test. The README set is the TRACKED one (from git, like 2b2), so a lane's
 # untracked scratch README cannot red it.
-function Test-ReadmeAdvertisesValidated {
-    param([string] $Text)
-    return [regex]::IsMatch($Text, 'img\.shields\.io/badge/Tests-\d+%2F\d+_validated-')
-}
+#
+# Test-ReadmeAdvertisesValidated and Get-BadgeRosterViolations live in _roster.ps1 (2026-09-23),
+# shared with push-nuget.ps1's release census; the fixtures below still drive them.
 
 Assert-Equal 'badge: a validated Tests badge is recognised' $true `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](x)')
@@ -1106,31 +1065,6 @@ Assert-Equal 'badge: not_yet_validated is not a validation claim' $false `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-not_yet_validated-orange?logo=go)](x)')
 Assert-Equal 'badge: none_to_validate is not a validation claim' $false `
     (Test-ReadmeAdvertisesValidated '[![Tests](https://img.shields.io/badge/Tests-none_to_validate-lightgrey?logo=go)](x)')
-
-function Get-BadgeRosterViolations {
-    param([string[]] $WithReadme, [string[]] $Validated, [string[]] $Banked, [string[]] $Excluded)
-
-    $violations = New-Object System.Collections.Generic.List[string]
-    $validatedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Validated)) { [void]$validatedSet.Add($p) }
-    $bankedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Banked)) { [void]$bankedSet.Add($p) }
-    $excludedSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    foreach ($p in @($Excluded)) { [void]$excludedSet.Add($p) }
-
-    foreach ($p in @($WithReadme | Sort-Object)) {
-        if ($bankedSet.Contains($p) -and -not $validatedSet.Contains($p)) {
-            [void]$violations.Add("banked row's README carries no validated Tests badge: $p")
-        }
-    }
-    foreach ($p in @($Validated | Sort-Object)) {
-        if (-not $bankedSet.Contains($p)) {
-            $what = if ($excludedSet.Contains($p)) { 'an EXCLUSION row' } else { 'a non-row' }
-            [void]$violations.Add("validated Tests badge on $($what): $p")
-        }
-    }
-    return $violations.ToArray()
-}
 
 # The set rule's contract, both directions, against fixtures.
 Assert-Equal 'badge vs roster: agreement reports nothing' 0 `
@@ -1160,6 +1094,93 @@ Write-Host ('  banked rows with NO README (outside the check): {0}' -f ($rowsWit
 
 Assert-Equal 'badge vs roster: the vacuity guard (a zero means the README walk read nothing)' $true ($readmePackages.Count -gt 0)
 Assert-Equal 'badge vs roster: every README Tests badge agrees with the roster' '' ($badgeViolations -join '; ')
+
+# ---- 2b4. the PROOF-PAGE identity's contract, against fixtures (2026-09-23, COORD ruling RN-6) ----
+# current proof pages = rows by name + relocation anchors by link + exclusion rows by exclusion (the
+# runbook's H10 close amendment, "THE RELEASE CENSUS, CORRECTED"). push-nuget.ps1's release
+# pre-flight HOLDS it over docs/validation/current, and its fifth-number check holds it over the
+# snapshot the freeze writes; the functions live in _roster.ps1, and this file is where _roster.ps1's
+# contracts are pinned, so the arms are here. No live reading is taken HERE on purpose: the living
+# pages already have two readers (the index tool and the release), and a third reader of one set is
+# the drift the shared functions exist to remove.
+$pageFixture = Get-ProofPageIdentity -Pages @('ex.row', 'ex.gone', 'ex.old') -Banked @('ex.row') `
+    -Linked @('ex.row', 'ex.old') -Excluded @('ex.gone')
+Assert-Equal 'page identity: a closed set reports nothing' '' ($pageFixture.Violations -join '; ')
+Assert-Equal 'page identity: each page in ONE class, name before exclusion before link' 'ex.row|ex.gone|ex.old' `
+    (($pageFixture.ByName -join ',') + '|' + ($pageFixture.ByExclusion -join ',') + '|' + ($pageFixture.ByLink -join ','))
+Assert-Equal 'page identity: an ORPHAN page is named' `
+    "proof page backed by nothing (no roster row by name, no exclusion row, no row's [proof] link): ex.stray" `
+    ((Get-ProofPageIdentity -Pages @('ex.row', 'ex.stray') -Banked @('ex.row') -Linked @('ex.row') -Excluded @()).Violations -join '; ')
+Assert-Equal 'page identity: an anchor never excuses a banked row with no page of its own' `
+    'banked row has no proof page of its own: ex.row' `
+    ((Get-ProofPageIdentity -Pages @('ex.old') -Banked @('ex.row') -Linked @('ex.old') -Excluded @()).Violations -join '; ')
+Assert-Equal "page identity: a row's [proof] link that resolves to no page is named" `
+    "a roster row's [proof] link resolves to no page: ex.gone" `
+    ((Get-ProofPageIdentity -Pages @('ex.row') -Banked @('ex.row') -Linked @('ex.row', 'ex.gone') -Excluded @()).Violations -join '; ')
+
+# The "by link" reader, in both spellings, and ROW lines only: prose and a placeholder admit nothing.
+$ellipsis = [string][char]0x2026
+$linkFixturePath = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-link-fixture-' + [guid]::NewGuid().ToString('n') + '.md')
+try {
+    [System.IO.File]::WriteAllText($linkFixturePath, (@(
+        '| Package | Tests | Disclosed | What it exercises |'
+        '|:--|:--:|:--:|:--|'
+        "| [``ex/row``](https://x/row) | 3 |  | Own page first. $dot [proof](validation/current/ex.row.md) $dot [proof](validation/current/ex.old.md) |"
+        "| [``ex/two``](https://x/two) | 1 |  | Frozen spelling. $dot [proof](ex.two.md) $dot [proof]($ellipsis) |"
+        ''
+        'Prose is not a row: [proof](validation/current/ex.prose.md) and [proof](ex.prose.md).'
+    ) -join "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
+
+    Assert-Equal 'row proof links: the LIVING spelling, from row lines only' 'ex.old,ex.row' `
+        ((Get-RosterRowProofLinks -Path $linkFixturePath) -join ',')
+    Assert-Equal 'row proof links: the FROZEN sibling spelling, from row lines only' 'ex.two' `
+        ((Get-RosterRowProofLinks -Path $linkFixturePath -Frozen) -join ',')
+}
+finally {
+    if (Test-Path $linkFixturePath) { Remove-Item $linkFixturePath -Force }
+}
+
+# ---- 2b5. the FROZEN roster's relative links, against fixtures (2026-09-24, COORD at the census seat's accept)
+# ConvertTo-FrozenRosterText relocates EVERY relative, path-shaped link by '../../' -- any file type or
+# a directory, where it used to relocate .md and .ps1 only and three 1.24.13 links (a directory, a .txt
+# and a .py) would have published dangling in 1.24.13.1 behind a warning. Get-UnresolvedRelativeLinks
+# names a relocated link that resolves to no tracked path; push-nuget.ps1 REFUSES both by name, in its
+# pre-flight and again before it writes the frozen roster. Both functions are _roster.ps1's.
+function Get-OrdinalJoin([string[]] $Items) {
+    $list = New-Object System.Collections.Generic.List[string]
+    foreach ($i in @($Items)) { if ($null -ne $i) { $list.Add($i) } }
+    $list.Sort([System.StringComparer]::Ordinal)
+    return ($list -join ',')
+}
+
+$relocFixture = ConvertTo-FrozenRosterText -Version '1.24.13.1' -Commit 'abc1234' -FrozenOn '2026-01-01' -RosterText ((@(
+    '# Fixture roster'
+    ''
+    'A directory [d](phase4/evidence/), a text file [t](phase4/list.txt), a script [s](../src/tool.ps1), a page [p](validation/current/ex.row.md),'
+    'a placeholder [x](url), an in-page anchor [a](#here), a site link [w](https://example.invalid/x.py).'
+    ''
+    '[ref]: phase4/data.py'
+) -join "`n"))
+Assert-Equal 'frozen roster: every relative path-shaped link relocates -- any file type, or a directory' `
+    '../src/tool.ps1,phase4/data.py,phase4/evidence/,phase4/list.txt' (Get-OrdinalJoin $relocFixture.Relocated)
+Assert-Equal 'frozen roster: a DIRECTORY link is relocated two levels up' $true ($relocFixture.Text.Contains('[d](../../phase4/evidence/)'))
+Assert-Equal 'frozen roster: a .txt link is relocated two levels up' $true ($relocFixture.Text.Contains('[t](../../phase4/list.txt)'))
+Assert-Equal 'frozen roster: a reference definition of any type is relocated' $true ($relocFixture.Text.Contains('[ref]: ../../phase4/data.py'))
+Assert-Equal 'frozen roster: a placeholder, an in-page anchor and a URL are left exactly as written' $true (
+    $relocFixture.Text.Contains('[x](url)') -and $relocFixture.Text.Contains('[a](#here)') -and
+    $relocFixture.Text.Contains('[w](https://example.invalid/x.py)'))
+Assert-Equal 'frozen roster: the proof link becomes its sibling page' $true ($relocFixture.Text.Contains('[p](ex.row.md)'))
+Assert-Equal 'frozen roster: nothing path-shaped is left unrelocated' '' (Get-OrdinalJoin $relocFixture.Unrelocated)
+
+$trackedFixture = @('docs/phase4/evidence/a.json', 'docs/phase4/list.txt', 'docs/README.md', 'src/tool.ps1')
+Assert-Equal 'link resolution: a tracked file, a tracked directory either spelling, a fragment and an ../ walk resolve' '' `
+    (@(Get-UnresolvedRelativeLinks -Targets @('phase4/evidence/', 'phase4/evidence', 'phase4/list.txt', '../src/tool.ps1', 'README.md#try') `
+        -TrackedPaths $trackedFixture) -join '; ')
+Assert-Equal 'link resolution: a missing path, a file spelled as a directory and a walk above the root are each NAMED' `
+    '../../x.md (resolves to above the repository root); phase4/gone.txt (resolves to docs/phase4/gone.txt); phase4/list.txt/ (resolves to docs/phase4/list.txt)' `
+    (@(Get-UnresolvedRelativeLinks -Targets @('phase4/gone.txt', 'phase4/list.txt/', '../../x.md') -TrackedPaths $trackedFixture) -join '; ')
+Assert-Equal 'link resolution: an EMPTY tracked list resolves nothing (the check fails closed)' 1 `
+    @(Get-UnresolvedRelativeLinks -Targets @('phase4/list.txt') -TrackedPaths @()).Count
 
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
@@ -1565,8 +1586,10 @@ for ($i = 0; $i -lt $readmeLines.Count; $i++) {
 }
 
 # Vacuity control, same shape as 2d's and for the same reason: if the heading is renamed or the
-# archive line moves, every figure below reads '(not found)' and fails by name -- but this states it
-# in one line, so the report names the CAUSE rather than five symptoms of it.
+# archive line moves, the required headline below reads '(not found)' and fails by name (and every
+# optional figure reads absent) -- but this states it in one line, so the report names the CAUSE
+# rather than a symptom of it. Kept unchanged by the 2026-09-24 short-block change: an unlocated block
+# must still fail, or every figure would read absent and pass.
 Assert-Equal 'README featured NEWS block located (vacuity control: heading through archive line)' $true `
     (($newsStart -ge 0) -and ($newsEnd -gt $newsStart))
 
@@ -1575,44 +1598,90 @@ if ($newsStart -ge 0 -and $newsEnd -gt $newsStart) {
     $newsText = (($readmeLines[$newsStart..$newsEnd]) -join ' ') -replace '\s+', ' '
 }
 
-function Get-NewsFigure {
+# ONE FIGURE REQUIRED, THE REST CHECKED IF PRESENT (owner order 2026-09-24). The featured block becomes
+# a SHORT high-level summary with fewer statistics, and the full detail lives in docs/NEWS.md. Until
+# then this arm REQUIRED all five figures, so an absent one read '(not found)' and failed, and a short
+# block could not pass. What the guard still promises is unchanged: NO STALE FIGURE ON THE FRONT PAGE.
+#   - the headline `N of the M testable` is REQUIRED: it is the one figure the owner keeps on the
+#     front page, and an absent one fails as '(not found)', exactly as before;
+#   - every OTHER figure is checked IF ITS PHRASING APPEARS: stated, it must equal the roster, whole
+#     and by name, as before; unstated, the arm prints `(absent -- not stated in the block)` and
+#     passes, because a figure the block does not state cannot be stale there.
+# A figure with two parts (the implementable denominator and its percentage) is compared on the
+# parts the block states; a part it does not state reads `(absent)` in the printout.
+# The price is stated rather than hidden: a figure whose PHRASING drifts reads as absent, not stale.
+# The phrasings below are the block's own; a re-worded figure needs its pattern re-worded with it,
+# and the unconditional printout below is where a reader sees an expected figure reading absent.
+function Get-NewsFigurePart {
     param([string] $Text, [string] $Pattern, [int] $Group = 1)
 
-    # A miss returns a token that can never equal a roster figure, so it fails loudly rather than
-    # colliding with a real value the way a numeric sentinel would.
+    # $null for a phrasing the block does not contain -- which the caller turns into '(not found)'
+    # for the REQUIRED figure (a token that can never equal a roster figure, so it fails loudly) and
+    # into an absent reading for the others.
     if ($Text -match $Pattern) { return (($Matches[$Group]) -replace ',', '') }
-    return '(not found)'
+    return $null
 }
 
 $bankedPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable'
 $linuxPattern = '(\d+)\s+of\s+the\s+(\d+)\s+applicable\s+rows'
 
+# THE HEADLINE'S OWN PERCENTAGE (owner, 2026-09-24, ledger 1f226c6912). The block may state it in
+# parentheses right after the headline counts -- "218 of the 230 testable standard-library packages
+# (94.8%) pass ..." -- and no pattern read that position, so a stale one would have sat on the front
+# page unwatched. Only a few words (letters, hyphens, spaces and bold asterisks; nothing that ends a
+# clause) may sit between `testable` and the parenthesis, so a percentage later in the block is never
+# read as this one. Its roster side is the HEADER's own figure (`N / M testable packages validated --
+# X%`, parsed as $percentText in section 2, which asserts it follows from the counts); it is never
+# recomputed here. Checked if present, like every figure but the headline counts.
+$bankedPctPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable[A-Za-z\s*-]{0,60}?\(\s*([\d.]+)\s*%\s*\)'
+
 $newsFigures = @(
-    @{ Name = 'banked / testable packages'
-       Readme = ((Get-NewsFigure $newsText $bankedPattern) + '/' + (Get-NewsFigure $newsText $bankedPattern 2))
-       Roster = "$($rows.Count)/$testable" }
-    @{ Name = 'matching verdicts'
-       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+matching\s+verdicts')
-       Roster = "$columnTotal" }
-    @{ Name = 'disclosed divergences'
-       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+divergences\s+disclosed')
-       Roster = "$columnDisclosed" }
-    @{ Name = 'implementable denominator / pct'
-       Readme = ((Get-NewsFigure $newsText 'denominator\s+is\s+\*{0,2}(\d+)\b') + '/' +
-                 (Get-NewsFigure $newsText 'roster\s+at\s+\*{0,2}([\d.]+)\s*%'))
-       Roster = "$implementable/$honestLivePct" }
-    @{ Name = 'linux rows'
-       Readme = ((Get-NewsFigure $newsText $linuxPattern) + '/' + (Get-NewsFigure $newsText $linuxPattern 2))
-       Roster = "$($linuxRows.Count)/$($rows.Count - $linuxNaRows.Count)" }
+    @{ Name = 'banked / testable packages'; Required = $true
+       Parts = @(@{ Pattern = $bankedPattern; Group = 1; Roster = "$($rows.Count)" }
+                 @{ Pattern = $bankedPattern; Group = 2; Roster = "$testable" }) }
+    @{ Name = 'headline testable percentage'; Required = $false
+       Parts = @(@{ Pattern = $bankedPctPattern; Group = 3; Roster = "$percentText" }) }
+    @{ Name = 'matching verdicts'; Required = $false
+       Parts = @(@{ Pattern = '([\d,]+)\s+matching\s+verdicts'; Group = 1; Roster = "$columnTotal" }) }
+    @{ Name = 'disclosed divergences'; Required = $false
+       Parts = @(@{ Pattern = '([\d,]+)\s+divergences\s+disclosed'; Group = 1; Roster = "$columnDisclosed" }) }
+    @{ Name = 'implementable denominator / pct'; Required = $false
+       Parts = @(@{ Pattern = 'denominator\s+is\s+\*{0,2}(\d+)\b'; Group = 1; Roster = "$implementable" }
+                 @{ Pattern = 'roster\s+at\s+\*{0,2}([\d.]+)\s*%'; Group = 1; Roster = "$honestLivePct" }) }
+    @{ Name = 'linux rows'; Required = $false
+       Parts = @(@{ Pattern = $linuxPattern; Group = 1; Roster = "$($linuxRows.Count)" }
+                 @{ Pattern = $linuxPattern; Group = 2; Roster = "$($rows.Count - $linuxNaRows.Count)" }) }
 )
 
-# Printed UNCONDITIONALLY, pass or fail. A comparison whose inputs are never shown is one nobody can
-# tell apart from a comparison that did not happen.
+# Printed UNCONDITIONALLY, pass or fail, every figure including the absent ones. A comparison whose
+# inputs are never shown is one nobody can tell apart from a comparison that did not happen.
 Write-Host ''
 Write-Host 'README featured NEWS block vs the roster header:' -ForegroundColor Cyan
 foreach ($figure in $newsFigures) {
-    Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, $figure.Readme, $figure.Roster)
-    Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" $figure.Roster $figure.Readme
+    # A List, not a pipeline: a pipeline drops the $null that marks an absent part and shifts the rest.
+    $readings = New-Object System.Collections.Generic.List[object]
+    foreach ($part in $figure.Parts) { $readings.Add((Get-NewsFigurePart $newsText $part.Pattern $part.Group)) }
+    $rosterShown = (@($figure.Parts | ForEach-Object { $_.Roster }) -join '/')
+    $stated = @($readings | Where-Object { $null -ne $_ }).Count
+
+    if ($stated -eq 0 -and -not $figure.Required) {
+        Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, '(absent -- not stated in the block)', $rosterShown)
+        continue
+    }
+
+    $readmeShown = (@(for ($p = 0; $p -lt $readings.Count; $p++) {
+                if ($null -ne $readings[$p]) { $readings[$p] } elseif ($figure.Required) { '(not found)' } else { '(absent)' } }) -join '/')
+    Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, $readmeShown, $rosterShown)
+
+    # Compared on the parts that bind: every part of the required figure, the stated parts of the rest.
+    $expected = @()
+    $actual = @()
+    for ($p = 0; $p -lt $readings.Count; $p++) {
+        if ($null -eq $readings[$p] -and -not $figure.Required) { continue }
+        $expected += $figure.Parts[$p].Roster
+        $actual += $(if ($null -ne $readings[$p]) { $readings[$p] } else { '(not found)' })
+    }
+    Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" ($expected -join '/') ($actual -join '/')
 }
 
 # ---- 2f. a row's cells agree with its OWN page at the pin (ruled 2026-09-22) ----------------------

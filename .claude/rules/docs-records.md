@@ -43,6 +43,24 @@ paths:
   A second lane's four path-and-account arms read CLEAN on the tree that held all six name hits: its "every post censused clean" was
   TRUE and measured far less than it sounded. A disclosure of one's own broken gate is what made the second lane look at its own; a
   clean report would have moved nobody. -->
+- **The owner's PUBLIC handles are ADMITTED exceptions** (ruled 2026-09-22 at the console): the GitHub organisation /
+  NuGet author handle, and the work-mail account handle. Both are published attribution, not infrastructure, and both
+  are carried as HASHES -- never plaintext -- in `fleetPublicHandles` (the authority, in repoguard's
+  `fleetIdentifierCensus_test.go`) and in the `ADMIT` section of `.claude/coord-scripts/coord-identifier-hashes.txt`,
+  which is generated from it and held equal to it by `TestFleetIdentifierHashFileMatchesTheGoLists`. The admit is by
+  EXACT ENCLOSING WORD: a denied token found INSIDE a longer word takes that word, whole and lowercased, and an
+  admitted word is reported as `public-handle` rather than counted. **Nothing else moved.** The ACCOUNT name as a bare
+  token is still denied, every profile path is still denied whatever its segment spells, hostnames and shares are
+  unchanged, a word that merely CONTAINS a handle is still a hit, and only the two census arms whose definition carries
+  `[PUBLIC-HANDLE-ADMIT]` consult the set. <!-- Measured need, 2026-09-22 on the i7: the account derivation is a SUBSTRING
+  of the organisation handle, so the census's reduced pass read TEN hits on the published docs/README.md at master (fingerprint
+  ea436558) -- five registry-search URLs, each also read on its joined pair -- every one of them the published handle. CLEAN after,
+  arms still MATCHING (occ=5 each, hits=0). Red-first both instruments: with the admit consult disabled the README returns to 10
+  and the census self-test reds 4 of its 19 new assertions, all of them the ADMIT direction, every refusal sibling staying green;
+  a second, narrower regression of the percent-escape rule ALONE reds exactly the registry-URL case (the handle follows `%20`) and
+  leaves the bare-word admit green. Both restored byte-identically (sha256). The Go guard reads the two real rows INERT -- its
+  tokenizer has no substring pass -- which is why TestNoFleetIdentifiersInTrackedFiles was green on that README before and after;
+  the rows live there because one authority is the property worth having. -->
 - **Git HISTORY retains the pre-scrub originals, so never reintroduce one by quoting a pre-scrub record verbatim.**
   Re-census case-insensitively before banking any doc that copies old text. <!-- History retention is owner-accepted. The
   reintroduce-by-quoting mode is real: five of the seven hits found on the mailbox tree 2026-09-08 were in posts dated AT OR AFTER the scrub. -->
@@ -139,6 +157,21 @@ paths:
   JSON escaping and so is indistinguishable from a network prefix. The account-name class, the only real leak, read clean everywhere.
   The strict instrument earned its placement by refusing the very post that first quoted the three shapes literally. The red arm proving
   a tree gate covers a PENDING entry is a line appended and not committed. -->
+- **A CONVERTED GO TEST SOURCE takes `converted`, not `entry`** (`coord-identifier-census.sh converted <file>...`,
+  2026-09-22). `entry` stays the gate for messages, docs and scripts; for the TRACKED tree the gate of record is
+  repoguard's `TestNoFleetIdentifiersInTrackedFiles`, which already admits this class by file. In `converted` the
+  literal-shaped arms the definition marks `[CONVERTED-CONTEXT]` are REPORTED with their counts and cannot refuse,
+  every other arm refuses exactly as in `entry`, and a path that is not a converted test artifact under `src/core/`
+  (or a `docs/validation/current/` proof page) is refused INTO `entry` with rc 2 — the downgrade is justified by a
+  property of the INPUT, so the caller does not get to assert it. <!-- MEASURED 2026-09-22 on two lanes' H10 re-bank
+  shards: 13 refusals on one and 25 on the other, every value found verbatim in the same package's own *_test.go under the pinned
+  GOROOT (a dnsName «ipv4» in a certificate test, NIST policy-test names, a base64 position map matching the quad arm, and a
+  loopback-name-and-port literal matching host_ctx). Both lanes were running repoguard by hand and explaining the count in prose per shard — STRICT's rationale is
+  that a false refusal costs its writer one rewrite of THEIR OWN post, and that is false of a file the lane did not author, exactly as
+  it was false of the evidence record that moved the doc-constant admit into strict. The mode is STRICTER than the guard it defers to:
+  the guard skips the whole structural pass for a *_test.cs (fleetIsUpstreamFixture) and keeps its denied-token pass; this keeps every
+  structural arm but the marked two. Live reading at 9e12c3e7d: src/core/net/netip/netip_test.cs reads REFUSED(1) 195 hits under entry
+  and CLEAN under converted with `ipv4 occ=210 would-have-refused=195`. -->
 - **Re-guard a scrub commit AFTER its rebase**, so the claim holds for the exact tree pushed.
 - **To run master's guard against another branch's tree, place the guard's package at a NEW UNTRACKED path inside the
   clone** — its root resolver still finds the clone root. Never copy master's converter tree OVER the branch's: that

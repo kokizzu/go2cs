@@ -5,6 +5,10 @@ library that compiles, passes its upstream tests, and has working C# implementat
 assembly-backed declarations. Sequenced **green the loop first**, then compile, validate, and complete
 the full conversion.
 
+> **Status (<release date>): the corpus is on Go 1.24.13**, published as `1.24.13.1`. The hop re-derived
+> every roster row from Go 1.24.13's own test sources; the [roster](ValidatedTestPackages.md)'s header
+> carries the current figures. The dated status below records the Phase-3 milestone.
+>
 > **Status (2026-07-10): Phases 0–3 done — the full standard library compiles.** All **302** packages of
 > the auto-conversion (Go 1.23.1) build clean as .NET assemblies (commit `51ba5d9cf`,
 > tag `stdlib-green-2026-07-10`) — the Phase-3 milestone. **Compiling, not yet operational:** Phase 4 will
@@ -102,7 +106,7 @@ more). So "green the loop" means **green `fmt`'s closure**, bottom-up.
   | 18 | CS1003 | syntax error, X expected | open (syntax cluster) |
   | 18 | CS0051 | inconsistent accessibility (param type less accessible) | open |
   | — | CS0103 | missing package-level lookup tables (e.g. `ntz8tab`/`pop8tab` in math/bits) | open |
-- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.23.12) →
+- **Converter-improvement loop (proven end-to-end):** edit `src/go2cs/*.go` → `go build` (Go 1.24.13) →
   re-transpile → `dotnet build`. (For behavioral tests the harness runs this loop itself — see
   [`/CLAUDE.md`](../CLAUDE.md) "Test-harness mechanics".)
 - **Retarget detail:** the stdlib converter writes to **`<go2cspath>/core/<pkg>`** (hardcoded `core` subdir).
@@ -848,14 +852,17 @@ every NuGet package, and knowing which is which explains what works where:
 1. **The runtime library (`go.lib`) selects its platform at RUN time**, like any cross-platform
    .NET library — where it needs the OS (console fd writes, synchronization primitives, timers) it
    branches per-OS, so these paths are operational on Windows, Linux and macOS today.
-2. **Platform-neutral converted packages** (~270 of ~305) contain no platform-varying code at all —
+2. **Platform-neutral converted packages** (~305 of ~340) contain no platform-varying code at all —
    their IL behaves identically on any OS .NET supports. This is why `fmt`-class programs — the
    Tour of Go, for instance — run correctly on Linux from today's packages.
-3. **Platform-varying converted packages** (the 37) select their platform at BUILD time, faithful
-   to Go's build-tag model — and today's published emission is `windows/amd64`. Reaching their
-   platform-entangled behavior on another OS (local timezones, sockets, the `syscall` surface)
-   follows Windows semantics or fails; this is the wall above, not a portability defect in the
-   layers below it.
+3. **Platform-varying converted packages** select their platform at BUILD time, faithful to Go's
+   build-tag model. Each ships one flavor per supported platform — `win-x64` and `linux-x64` — and,
+   from packages 1.24.13.2, a consumer both compiles and runs against the flavor of the platform its
+   conversion targeted (go.lib selects the compile asset; the runtime selects the loaded one). On a
+   platform with no shipped flavor (macOS, other architectures) the Windows flavor is what compiles and
+   loads, and its platform-entangled behavior (local timezones, sockets, the `syscall` surface) follows
+   Windows semantics or fails; that is the remaining wall, not a portability defect in the layers
+   below it.
 
 **Validation is per-target.** Every row in
 [`ValidatedTestPackages.md`](ValidatedTestPackages.md) is a `windows/amd64` verdict; a Linux
@@ -871,11 +878,11 @@ so Go-faithful per-platform semantics never fork the package graph.
 |---|---|---|
 | Baseline + tests build clean | `dotnet build src/go2cs.slnx` | ✅ green |
 | Behavioral suite passing | `BehavioralTests` / `BehavioralRunner` | ✅ 555 projects transpile+compile+golden, 529 output-compared (2026-08-10) |
-| Full packages compiling | `src/go2cs-stdlib.slnx` (307 projects since layout L3) | ✅ **302 / 302** packages (2026-07-10, `51ba5d9cf`) |
+| Full packages compiling | `src/go2cs-stdlib.slnx` (344 projects at Go 1.24.13) | ✅ **342 / 342** packages (2026-09-23, `fa18863b9`) |
 | Full-conversion error count | build-error buckets | ✅ **0** |
 | Converted package tests | [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the authoritative roster | ◻ Phase 4 **in flight**. The roster's own header carries the current count, verdict total and disclosure total, recomputed from its table — read it there rather than here, so this row cannot go stale against it |
 | Assembly-backed implementations | Phase 5 external-declaration ledger | ◻ Phase 5 planned — gated by Phase 4 validation |
-| Linux / multi-target | Platforms section above | ◻ converts + runs `fmt`/`os`/`time`-class programs; `syscall` surface in progress |
+| Linux / multi-target | Platforms section above | ◻ converts on Windows and Linux; a module reaching `golang.org/x/sys/unix` (the README walkthrough) builds and runs on `linux/amd64` with go2cs packages ≥ 1.24.13.2 and a converter from a checkout that includes them; the wider operational `syscall` surface and a Linux validation roster are in progress |
 
 ## Reference: open converter items (`src/go2cs/ToDo.md`)
 

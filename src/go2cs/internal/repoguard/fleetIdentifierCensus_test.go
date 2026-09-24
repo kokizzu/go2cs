@@ -118,6 +118,57 @@ var fleetDeniedTokens = []fleetDeniedToken{
 	{15, "64bcb3dc70c4e605e5f1f29e4e42af4ab20de3b69f6452e5d5444305f432ea6d", "fleet machine name"},
 }
 
+// fleetPublicHandle is one of the owner's PUBLIC handles, admitted as a known public exception and
+// stored exactly as a denied token is -- (length, SHA-256 of the lowercased form, reason) -- because
+// a guard that spelled ANY account-derived token would put it on the pushed surface itself. The
+// handles are public; the consistency is the point, so no reader of this file has to learn which of
+// two spellings of the same idea is the safe one.
+//
+// RULED 2026-09-22 at the console. Two handles, and only these two:
+//
+//	the GitHub organisation / NuGet author handle -- the same token the public mail handle uses,
+//	which appears in every `github.com/<handle>/go2cs` URL at master and in the registry search URLs
+//	the published README carries;
+//
+//	the work-mail account handle -- the shorter of the two.
+//
+// WHAT IS NOT ADMITTED, and the ruling says so in as many words: the Windows ACCOUNT name as a bare
+// token, every profile path carrying any of these (`users\<name>`, `/home/<name>`), hostnames, share
+// names and addresses. The account name is a SUBSTRING of the longer handle, which is the whole
+// reason this set exists -- the shell census's reduced pass read ten hits on the published README
+// from that containment alone -- and admitting a WORD is the narrowest thing that fixes it.
+//
+// SEMANTICS, and they are deliberately the narrowest that can work: the admit is consulted only when
+// a denied token matches INSIDE a longer word, and it is keyed on the hash of the ENCLOSING WORD,
+// whole and lowercased. A bare denied token standing alone as a word is refused without the set
+// being consulted at all (fleetLineHasDeniedToken tests the whole run FIRST and returns), a word
+// that merely CONTAINS an admitted handle is refused because the lookup is by exact hash and never
+// by containment, and the STRUCTURAL passes are untouched -- a profile segment spelled with a public
+// handle is still an account segment and still a hit.
+type fleetPublicHandle struct {
+	Len  int
+	Hash string
+	What string
+}
+
+var fleetPublicHandles = []fleetPublicHandle{
+	{14, "6e20b08e8ef15c17552c9ba5ee62ff640ea39552bbdccc1f0f6c0db5e5c92818", "the GitHub organisation / NuGet author handle"},
+	{8, "f73dc7a07d73876ae6a1e18eb95a99cc5d12a628644c33ea307397700ba6c1f3", "the work-mail account handle"},
+}
+
+// fleetAdmitIndex groups the admitted handles by length, exactly as fleetDeniedIndex does, so a
+// candidate word is hashed only when its length can possibly match.
+func fleetAdmitIndex(hs []fleetPublicHandle) map[int]map[string]string {
+	idx := map[int]map[string]string{}
+	for _, h := range hs {
+		if idx[h.Len] == nil {
+			idx[h.Len] = map[string]string{}
+		}
+		idx[h.Len][h.Hash] = h.What
+	}
+	return idx
+}
+
 // fleetDeniedIndex groups the denylist by token length, so a line's tokens are hashed only when
 // their length can possibly match.
 func fleetDeniedIndex(toks []fleetDeniedToken) map[int]map[string]string {
@@ -354,14 +405,14 @@ func fleetIsPlaceholder(seg string) bool {
 // scanFleetIdentifiers runs both passes over one file's bytes. denied is a parameter rather than a
 // package global so the positive control can drive the denied-token pass with a synthetic entry,
 // exercising this exact code path without any test spelling a real identifier.
-func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string]string) []fleetFinding {
-	return scanFleetContent(path, content, denied, fleetIsUpstreamFixture(path))
+func scanFleetIdentifiers(path string, content []byte, denied, admit map[int]map[string]string) []fleetFinding {
+	return scanFleetContent(path, content, denied, admit, fleetIsUpstreamFixture(path))
 }
 
 // scanFleetContent is scanFleetIdentifiers with the upstream-data decision made by the caller:
 // scanFleetTree also admits the //go:embed payloads its tracked project files name (see
 // fleetEmbedPayloads), which no predicate on the path alone can know.
-func scanFleetContent(path string, content []byte, denied map[int]map[string]string, upstream bool) []fleetFinding {
+func scanFleetContent(path string, content []byte, denied, admit map[int]map[string]string, upstream bool) []fleetFinding {
 	if bytes.IndexByte(content, 0) >= 0 {
 		return nil // binary
 	}
@@ -406,7 +457,7 @@ func scanFleetContent(path string, content []byte, denied map[int]map[string]str
 		if clearedTokens {
 			continue
 		}
-		if fleetLineHasDeniedToken(line, denied) {
+		if fleetLineHasDeniedToken(line, denied, admit) {
 			out = append(out, fleetFinding{path, n, "denied-token"})
 		}
 	}
@@ -462,7 +513,7 @@ func scanFleetContent(path string, content []byte, denied map[int]map[string]str
 				}
 			}
 		}
-		if !clearedTokens && fleetLineHasDeniedToken(joined, denied) {
+		if !clearedTokens && fleetLineHasDeniedToken(joined, denied, admit) {
 			out = append(out, fleetFinding{path, 0, "denied-token-split"})
 		}
 	}
@@ -554,7 +605,17 @@ func fleetHasFold(hay []byte, needle string) bool {
 // was caught -- a gap with no principle behind it, since an owner column, a share name, a Windows
 // account and an environment variable all join with '_' exactly as readily as with '-'. The
 // widening cost the corpus nothing: the whole-tree run is green before and after.
-func fleetLineHasDeniedToken(line []byte, denied map[int]map[string]string) bool {
+//
+// ⚠ THE PUBLIC-HANDLE ADMIT (2026-09-22) LIVES HERE, AND ITS PLACEMENT IS THE WHOLE OF ITS SCOPE.
+// The WHOLE RUN is tested against the denylist FIRST and returns without the admit set being read at
+// all, so a bare denied token standing alone as a word can never be admitted by anything. The admit
+// is consulted only between that test and the COMPONENT walk -- that is, only where a denied token
+// would be found INSIDE a longer word -- and it is keyed on the hash of the enclosing run, whole and
+// lowercased. Three properties follow from the placement rather than from a rule anyone has to
+// remember: a bare denied token still refuses, a word that merely CONTAINS an admitted handle still
+// refuses (the lookup is an exact hash, never containment), and the STRUCTURAL passes never reach
+// this function, so `users\<handle>\x` is still a profile-path hit.
+func fleetLineHasDeniedToken(line []byte, denied, admit map[int]map[string]string) bool {
 	isTok := func(c byte) bool {
 		return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' ||
 			c == '.' || c == '_' || c == '-'
@@ -572,12 +633,14 @@ func fleetLineHasDeniedToken(line []byte, denied map[int]map[string]string) bool
 		if fleetTokenDenied(tok, denied) {
 			return true
 		}
-		for k, p := 0, 0; k <= len(tok); k++ {
-			if k == len(tok) || tok[k] == '-' || tok[k] == '.' || tok[k] == '_' {
-				if k > p && fleetTokenDenied(tok[p:k], denied) {
-					return true
+		if !fleetWordAdmitted(tok, admit) {
+			for k, p := 0, 0; k <= len(tok); k++ {
+				if k == len(tok) || tok[k] == '-' || tok[k] == '.' || tok[k] == '_' {
+					if k > p && fleetTokenDenied(tok[p:k], denied) {
+						return true
+					}
+					p = k + 1
 				}
-				p = k + 1
 			}
 		}
 		i = j
@@ -594,10 +657,23 @@ func fleetTokenDenied(tok []byte, denied map[int]map[string]string) bool {
 	return hit
 }
 
+// fleetWordAdmitted reports whether one whole identifier run is one of the owner's admitted public
+// handles. Same shape as fleetTokenDenied on purpose -- length-bucketed, exact hash of the lowercased
+// form -- so the two lists are read the same way and neither can grow a containment rule the other
+// does not have.
+func fleetWordAdmitted(tok []byte, admit map[int]map[string]string) bool {
+	byHash, ok := admit[len(tok)]
+	if !ok {
+		return false
+	}
+	_, hit := byHash[fleetHash(string(tok))]
+	return hit
+}
+
 // scanFleetTree scans an explicit list of paths relative to root. Factored out so the positive
 // control drives the SAME walk -- binary skip, line splitting and both passes -- over a temporary
 // tree, rather than testing a reimplementation of it.
-func scanFleetTree(root string, rel []string, denied map[int]map[string]string) ([]fleetFinding, int) {
+func scanFleetTree(root string, rel []string, denied, admit map[int]map[string]string) ([]fleetFinding, int) {
 	var out []fleetFinding
 	read := 0
 	payloads := fleetEmbedPayloads(root, rel)
@@ -607,7 +683,7 @@ func scanFleetTree(root string, rel []string, denied map[int]map[string]string) 
 			continue // unreadable or a submodule entry; never a pass by omission, see the count assert
 		}
 		read++
-		out = append(out, scanFleetContent(p, content, denied, fleetIsUpstreamFixture(p) || payloads[p])...)
+		out = append(out, scanFleetContent(p, content, denied, admit, fleetIsUpstreamFixture(p) || payloads[p])...)
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].Path != out[j].Path {
@@ -676,7 +752,7 @@ func TestNoFleetIdentifiersInTrackedFiles(t *testing.T) {
 			"the enumeration is broken, and a guard that scans nothing passes everything", len(files))
 	}
 
-	findings, read := scanFleetTree(root, files, fleetDeniedIndex(fleetDeniedTokens))
+	findings, read := scanFleetTree(root, files, fleetDeniedIndex(fleetDeniedTokens), fleetAdmitIndex(fleetPublicHandles))
 	if read < len(files)*9/10 {
 		t.Fatalf("read only %d of %d tracked files; the scan has a hole", read, len(files))
 	}
@@ -797,7 +873,7 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 			// GREEN before: the clean record, whose placeholders and nickname are exactly what a
 			// scrubbed file looks like, must not fire. Without this arm a scanner that flagged
 			// everything would pass the red arm below.
-			if got, _ := scanFleetTree(dir, []string{rel}, denied); len(got) != 0 {
+			if got, _ := scanFleetTree(dir, []string{rel}, denied, nil); len(got) != 0 {
 				t.Fatalf("clean record fired: %v", got)
 			}
 
@@ -805,7 +881,7 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 			if err := os.WriteFile(full, append(append([]byte{}, original...), []byte(p.line)...), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			got, _ := scanFleetTree(dir, []string{rel}, denied)
+			got, _ := scanFleetTree(dir, []string{rel}, denied, nil)
 			if len(got) == 0 {
 				t.Fatalf("planted %s was NOT detected -- this guard cannot go red", p.name)
 			}
@@ -834,7 +910,7 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 			if !bytes.Equal(back, original) {
 				t.Fatal("restore is not byte-identical")
 			}
-			if got, _ := scanFleetTree(dir, []string{rel}, denied); len(got) != 0 {
+			if got, _ := scanFleetTree(dir, []string{rel}, denied, nil); len(got) != 0 {
 				t.Fatalf("restored record still fires: %v", got)
 			}
 		})
@@ -884,7 +960,7 @@ func TestFleetIdentifierNicknameHostsAreAdmitted(t *testing.T) {
 		if err := os.WriteFile(full, []byte(line), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		got, read := scanFleetTree(dir, []string{rel}, denied)
+		got, read := scanFleetTree(dir, []string{rel}, denied, nil)
 		if read != 1 {
 			t.Fatalf("the arm scanned %d files, want 1 -- it measured nothing", read)
 		}
@@ -962,7 +1038,7 @@ func TestFleetIdentifierNicknameHostsAreAdmitted(t *testing.T) {
 	t.Run("no nickname is a denied token", func(t *testing.T) {
 		live := fleetDeniedIndex(fleetDeniedTokens)
 		for nick := range fleetNicknameHostSegments {
-			if fleetLineHasDeniedToken([]byte(nick), live) {
+			if fleetLineHasDeniedToken([]byte(nick), live, nil) {
 				t.Errorf("nickname %q is also a denied token -- the two lists disagree about one string", nick)
 			}
 		}
@@ -1039,7 +1115,7 @@ func TestFleetIdentifierUnicodeEscapeHostsAreAdmitted(t *testing.T) {
 		if err := os.WriteFile(full, []byte(line), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		got, read := scanFleetTree(dir, []string{rel}, denied)
+		got, read := scanFleetTree(dir, []string{rel}, denied, nil)
 		if read != 1 {
 			t.Fatalf("the arm scanned %d files, want 1 -- it measured nothing", read)
 		}
@@ -1181,7 +1257,7 @@ func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := scanFleetIdentifiers("docs/phase4/CONTROL-record.md", []byte(c.content), denied)
+			got := scanFleetIdentifiers("docs/phase4/CONTROL-record.md", []byte(c.content), denied, nil)
 
 			if c.wantKind == "" {
 				if len(got) != 0 {
@@ -1240,7 +1316,7 @@ func TestFleetIdentifierEmbedPayloadsAreAdmittedAsFixtures(t *testing.T) {
 			}
 			rel = append(rel, p)
 		}
-		got, read := scanFleetTree(dir, rel, denied)
+		got, read := scanFleetTree(dir, rel, denied, nil)
 		if read != len(files) {
 			t.Fatalf("the arm scanned %d of %d files -- it measured nothing", read, len(files))
 		}
@@ -1385,4 +1461,242 @@ func TestFleetIdentifierClearancesAreLive(t *testing.T) {
 			t.Errorf("cleared file is gone: %s (%v) -- retire the entry", path, err)
 		}
 	}
+}
+
+// TestFleetPublicHandleAdmitIsBounded is the control for the 2026-09-22 public-handle admit, and,
+// as with the nickname widening, the arms that matter are the REFUSALS. An admit-only control is
+// green on a set that admits everything.
+//
+// ⚠ THE SET IT DRIVES IS SYNTHETIC, for the reason fleetDeniedToken's comment gives: an arm that
+// exercised a REAL row would have to spell the token, which is the thing the hashes exist to keep
+// out of the tree. What the synthetic set proves is that the MECHANISM is live and bounded. What it
+// cannot prove is that a particular row is live -- that is the one-time red-first at cut time, and
+// for the two rows added on 2026-09-22 it was measured on the shell census, where the hits are.
+//
+// ⚠ AND THE READING THAT MUST BE RECORDED RATHER THAN ASSUMED: under THIS guard's tokenizer the two
+// real rows are INERT, and that is not a defect. fleetLineHasDeniedToken has no substring pass -- it
+// matches a whole run or a dot/hyphen/underscore COMPONENT -- so the longer public handle never
+// produced a denied-token hit here in the first place; the containment that costs ten hits on the
+// published README is visible only to the shell census's reduced pass. The rows live here because
+// this file is the AUTHORITY the shell list is generated from, and one authority is the property
+// worth having. Measured at cut time: TestNoFleetIdentifiersInTrackedFiles is green on master's
+// docs/README.md both before and after this change.
+func TestFleetPublicHandleAdmitIsBounded(t *testing.T) {
+	// Denied, and admitted: the admitted word CONTAINS the denied token as a component, which is
+	// exactly the shape the ruling is about -- the account name inside the public handle.
+	const controlToken = "zzcontrolaccount"
+	const handle = "zzcontrolaccount-public"
+	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
+	admit := fleetAdmitIndex([]fleetPublicHandle{{len(handle), fleetHash(handle), "control handle"}})
+
+	// ASSEMBLED, never spelled: this file is tracked and is scanned by the guard it tests, so a
+	// profile path written out as a literal here is content the guard reads. `%` is a substitution
+	// sigil, so the source text reads as a placeholder while the runtime string carries a real path.
+	const profileFmt = "toolchain root at C:\\Users\\%s\\sdk\n"
+	const homeFmt = "sources under /home/%s/go\n"
+
+	scan := func(content string) []fleetFinding {
+		return scanFleetIdentifiers("docs/phase4/CONTROL-record.md", []byte(content), denied, admit)
+	}
+	hasKind := func(got []fleetFinding, kind string) bool {
+		for _, f := range got {
+			if f.Kind == kind {
+				return true
+			}
+		}
+		return false
+	}
+
+	// (a) THE ADMIT. The one thing the widening buys: the denied token is a component of an admitted
+	// word, and the line is clean. Remove the admit consult in fleetLineHasDeniedToken and this is
+	// the arm that goes red.
+	t.Run("a denied token inside an admitted handle is admitted", func(t *testing.T) {
+		if got := scan("see the " + handle + " page for the published packages\n"); len(got) != 0 {
+			t.Errorf("an admitted public handle fired: %v", got)
+		}
+	})
+
+	// (b) THE BARE TOKEN, refused, and refused WITHOUT the admit set being consulted at all -- the
+	// whole run is tested first and returns. This is the arm that keeps the admit from ever becoming
+	// a way to clear the account name itself.
+	t.Run("a bare denied token in prose is still refused", func(t *testing.T) {
+		if got := scan("owner column reads " + controlToken + " here\n"); !hasKind(got, "denied-token") {
+			t.Errorf("a bare denied token was not refused: %v", got)
+		}
+	})
+
+	// (c) CONTAINMENT IS NOT ADMISSION. The lookup is an exact hash of the whole enclosing run, so a
+	// word that merely contains an admitted handle -- or merely contains the denied token with a
+	// separator -- is still a hit. This is how an admit list quietly becomes a hole, and it is the
+	// same bound the nickname admit carries.
+	t.Run("a word that merely contains an admitted handle is refused", func(t *testing.T) {
+		for _, w := range []string{handle + "xyz", controlToken + "-notpublic", "x_" + controlToken + "_public"} {
+			if got := scan("owner column reads " + w + " here\n"); !hasKind(got, "denied-token") {
+				t.Errorf("%q was admitted although it is not the admitted handle: %v", w, got)
+			}
+		}
+	})
+
+	// ⚠ THE BOUND, MEASURED RATHER THAN ASSUMED, and it is NOT this widening's. A denied token glued
+	// into a longer run with NO separator was never reachable by this guard -- fleetLineHasDeniedToken
+	// walks whole runs plus dot/hyphen/underscore components and has no substring pass -- so a word
+	// like "zz" + the handle reads clean here whatever the admit set says. Written first as a REFUSE
+	// arm and measured red, which is how the bound came to be stated rather than assumed. The arm
+	// drives it BOTH ways and requires the readings to AGREE: attributable to the tokenizer, not to
+	// the admit. Same bound the nickname and unicode-escape admits carry, and stated rather than
+	// asserted as an admit property so that a future substring pass is an improvement, not a red arm.
+	t.Run("a no-separator prefix is invisible to the tokenizer, admit or not", func(t *testing.T) {
+		line := "owner column reads zz" + handle + " here\n"
+		withAdmit := scan(line)
+		withoutAdmit := scanFleetIdentifiers("docs/phase4/CONTROL-record.md", []byte(line), denied, nil)
+		if len(withAdmit) != 0 || len(withoutAdmit) != 0 {
+			t.Fatalf("expected both readings clean (the tokenizer's bound): with=%v without=%v",
+				withAdmit, withoutAdmit)
+		}
+	})
+
+	// (d) SCOPE: THE STRUCTURAL PASSES ARE UNTOUCHED. The admit lives in the denied-token walker,
+	// which the profile and home arms never reach, so a profile path spelled with the PUBLIC HANDLE
+	// is still an account segment and still a hit. The ruling says this in as many words.
+	t.Run("a profile path carrying the admitted handle is still refused", func(t *testing.T) {
+		for _, seg := range []string{handle, controlToken} {
+			if got := scan(fmt.Sprintf(profileFmt, seg)); !hasKind(got, "profile-path") {
+				t.Errorf("a profile path with segment %q was admitted: %v", seg, got)
+			}
+			if got := scan(fmt.Sprintf(homeFmt, seg)); !hasKind(got, "profile-path") {
+				t.Errorf("a home path with segment %q was admitted: %v", seg, got)
+			}
+		}
+	})
+
+	// (e) The admit reaches the JOINED surface too, because the joined pass calls the same walker.
+	// Without this the gate would refuse a handle that a line break happens to fall inside, which is
+	// the false-refusal direction the split arms above were added to avoid creating.
+	t.Run("an admitted handle split across a line break is admitted", func(t *testing.T) {
+		if got := scan("see the " + handle[:8] + "\n" + handle[8:] + " page\n"); len(got) != 0 {
+			t.Errorf("an admitted handle wrapped at a line break fired: %v", got)
+		}
+	})
+
+	// (f) A nil admit set is the pre-ruling behaviour EXACTLY -- the property every other arm in this
+	// file depends on, since they all pass nil.
+	t.Run("a nil admit set refuses what it always refused", func(t *testing.T) {
+		got := scanFleetIdentifiers("docs/phase4/CONTROL-record.md",
+			[]byte("see the "+handle+" page\n"), denied, nil)
+		if !hasKind(got, "denied-token") {
+			t.Errorf("with no admit set the handle must refuse exactly as before: %v", got)
+		}
+	})
+
+	// THE TWO LIVE LISTS MUST NOT DISAGREE ABOUT ONE STRING. Driven with the package's own indexes,
+	// so it spells nothing: an admitted handle that were also a denied token would be a row that
+	// cannot be reached (the whole-run denial returns first) and a contradiction in the ruling.
+	t.Run("no admitted handle is a denied token", func(t *testing.T) {
+		liveDenied := fleetDeniedIndex(fleetDeniedTokens)
+		for _, h := range fleetPublicHandles {
+			if byHash, ok := liveDenied[h.Len]; ok {
+				if _, clash := byHash[h.Hash]; clash {
+					t.Errorf("an admitted handle (%s) is also a denied token -- the two lists disagree", h.What)
+				}
+			}
+		}
+	})
+
+	// The admitted SET, enumerated with a count and with reasons: a claim about a set is derived from
+	// the whole construct, never from the members a reader happens to check. A third row arriving
+	// here without a ruling naming it goes red.
+	t.Run("exactly the two ruled handles are admitted", func(t *testing.T) {
+		if len(fleetPublicHandles) != 2 {
+			t.Fatalf("%d public handles are admitted, want 2 -- the 2026-09-22 ruling names two",
+				len(fleetPublicHandles))
+		}
+		seen := map[string]bool{}
+		for _, h := range fleetPublicHandles {
+			if h.What == "" {
+				t.Errorf("an admitted handle of length %d carries no reason", h.Len)
+			}
+			if h.Len < 5 {
+				t.Errorf("an admitted handle of length %d is too short to be a handle", h.Len)
+			}
+			if len(h.Hash) != 64 {
+				t.Errorf("an admitted handle's hash is %d characters, want 64", len(h.Hash))
+			}
+			if seen[h.Hash] {
+				t.Errorf("an admitted handle is listed twice")
+			}
+			seen[h.Hash] = true
+		}
+	})
+}
+
+// TestFleetIdentifierHashFileMatchesTheGoLists makes the shell census's hash list's own header
+// claim -- "GENERATED FROM ... fleetDeniedTokens" -- something the tree ENFORCES rather than
+// something a commit message asserts.
+//
+// The two instruments cannot disagree about WHICH names are denied or WHICH handles are admitted,
+// and until this arm existed the only thing stopping them was whoever remembered to edit both files
+// in one commit. That is exactly the silent-drift shape this whole guard was built for: the shell
+// census would go on measuring an older order, every test would stay green, and the gap would be
+// found the way the 2026-09-04 reintroduction was -- by someone happening to look.
+//
+// It compares HASHES, so it spells nothing, and it is an EQUALITY in both directions: a row in
+// either file with no partner in the other is a failure that names the side it is missing from.
+func TestFleetIdentifierHashFileMatchesTheGoLists(t *testing.T) {
+	root := repoRootFromPackageDir(t)
+	rel := filepath.Join(".claude", "coord-scripts", "coord-identifier-hashes.txt")
+	content, err := os.ReadFile(filepath.Join(root, rel))
+	if err != nil {
+		t.Fatalf("the shared hash list is unreadable at %s: %v -- "+
+			"an instrument that cannot read the other instrument's list must not report agreement", rel, err)
+	}
+
+	fileDenied := map[string]bool{}
+	fileAdmit := map[string]bool{}
+	for n, raw := range strings.Split(string(content), "\n") {
+		line := strings.TrimRight(raw, "\r")
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		f := strings.Split(line, "\t")
+		switch {
+		case f[0] == "ADMIT":
+			if len(f) < 4 {
+				t.Fatalf("%s:%d: an ADMIT row needs ADMIT<TAB>LEN<TAB>HASH<TAB>WHAT", rel, n+1)
+			}
+			fileAdmit[f[1]+"\t"+f[2]] = true
+		case len(f) >= 3:
+			fileDenied[f[0]+"\t"+f[1]] = true
+		default:
+			t.Fatalf("%s:%d: a row that is neither a denied row nor an ADMIT row", rel, n+1)
+		}
+	}
+
+	goDenied := map[string]bool{}
+	for _, d := range fleetDeniedTokens {
+		goDenied[fmt.Sprintf("%d\t%s", d.Len, d.Hash)] = true
+	}
+	goAdmit := map[string]bool{}
+	for _, h := range fleetPublicHandles {
+		goAdmit[fmt.Sprintf("%d\t%s", h.Len, h.Hash)] = true
+	}
+
+	cmp := func(kind string, inGo, inFile map[string]bool) {
+		for k := range inGo {
+			if !inFile[k] {
+				t.Errorf("a %s row is in the Go list but NOT in %s -- the shell census is measuring "+
+					"an older order (len %s)", kind, rel, strings.SplitN(k, "\t", 2)[0])
+			}
+		}
+		for k := range inFile {
+			if !inGo[k] {
+				t.Errorf("a %s row is in %s but NOT in the Go list, which is the authority -- "+
+					"add it there or retire it here (len %s)", kind, rel, strings.SplitN(k, "\t", 2)[0])
+			}
+		}
+		if len(inGo) != len(inFile) {
+			t.Errorf("%s rows: %d in the Go list, %d in %s", kind, len(inGo), len(inFile), rel)
+		}
+	}
+	cmp("denied", goDenied, fileDenied)
+	cmp("admitted-handle", goAdmit, fileAdmit)
 }

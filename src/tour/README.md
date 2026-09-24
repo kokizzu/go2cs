@@ -35,8 +35,8 @@ The interface is deliberately parallel:
 
 ## Requirements
 
-- Go 1.23.1 or later
-- .NET SDK 9.0 or later
+- Go 1.24.13 (the release `src/go2cs/go.mod` pins)
+- .NET SDK 10.0 or later
 - A local clone of this `go2cs` repository
 - Network access on the first start to install the official offline Tour and restore the go2cs NuGet
   packages, and when an exercise first imports a Go module that is not already in the local module cache
@@ -89,7 +89,7 @@ Useful options:
   runtime sources* below for the default order)
 - `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1`
 - `-nuget-source=/path/or/feed`: folder or feed containing go2cs packages
-- `-nuget-version=1.23.1.2`: package version to restore
+- `-nuget-version=<version>`: package version to restore (default: `GO2CS_NUGET_VERSION`, else `<GoStdLibVersion>.<GoBuildNumber>` from `src/version.props`)
 - `-solutions-url=https://…`: target of the header's exercise-solutions link;
   empty removes the link, and only `http`/`https` targets are shown
 - `-solutions-text=Exercise solutions`: text for that link
