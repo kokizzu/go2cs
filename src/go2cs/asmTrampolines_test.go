@@ -22,12 +22,20 @@ const asmTrampolineFixtureGo = `package main
 
 import (
 	"fmt"
+	"sync/atomic"
 	"syscall"
 )
 
 // Shape 1: a JMP to an EXPORTED function of another package with an IDENTICAL signature
 // (x/sys/unix's Syscall): forwards.
 func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err syscall.Errno)
+
+// Shape 1b: a JMP to an EXPORTED function of a DIRECTLY imported package whose signature is NOT
+// identical (runtime/internal/atomic's LoadUintptr -> Load64 shape: *uintptr against *uint64): the
+// frames agree, the Go types do not, so it stays a stub.
+func LoadUintptr(addr *uintptr) uintptr
+
+var _ = atomic.LoadUint64
 
 // Shape 2: the REAL x/sys/unix gettimeofday. The jump target is syscall·gettimeofday, but the
 // parameter is this package's OWN Timeval, so the Go signatures are not identical: stays a stub.
@@ -70,6 +78,9 @@ const asmTrampolineFixtureAsm = `// Copyright notice.
 
 TEXT ·Syscall(SB),NOSPLIT,$0-56
 	JMP	syscall·Syscall(SB)
+
+TEXT ·LoadUintptr(SB),NOSPLIT,$0-16
+	JMP	sync∕atomic·LoadUint64(SB)
 
 TEXT ·gettimeofday(SB),NOSPLIT,$0-16
 	JMP	syscall·gettimeofday(SB)
@@ -217,7 +228,7 @@ func TestAsmTrampolinesForwardByShape(t *testing.T) {
 	// Shapes that must NOT forward: signatures that differ in Go types (the real x/sys gettimeofday),
 	// an unexported cross-package target, real machine code, and a same-package target whose parameter
 	// Phase A lowered.
-	for _, name := range []string{"gettimeofday", "rawNoError", "SyscallNoError", "derefAlias"} {
+	for _, name := range []string{"LoadUintptr", "gettimeofday", "rawNoError", "SyscallNoError", "derefAlias"} {
 		if body := emittedFunction(t, linux, name); !strings.Contains(body, " partial ") {
 			t.Errorf("shape %s: must stay a partial stub:\n%s", name, body)
 		}
@@ -227,7 +238,7 @@ func TestAsmTrampolinesForwardByShape(t *testing.T) {
 	// trampoline to read and every shape keeps its stub.
 	windows := convertAsmTrampolineFixture(t, "windows/amd64")
 
-	for _, name := range []string{"Syscall", "gettimeofday", "rawNoError", "SyscallNoError", "localAlias", "derefAlias"} {
+	for _, name := range []string{"Syscall", "LoadUintptr", "gettimeofday", "rawNoError", "SyscallNoError", "localAlias", "derefAlias"} {
 		if body := emittedFunction(t, windows, name); !strings.Contains(body, " partial ") {
 			t.Errorf("windows control: %s forwarded although its assembly is not in the windows build:\n%s", name, body)
 		}
@@ -327,5 +338,65 @@ GLOBL ·data(SB), RODATA, $8
 
 	if len(got) != len(want) {
 		t.Errorf("parsed %d trampolines, want %d: %v", len(got), len(want), got)
+	}
+}
+
+// TestAsmTrampolinesSkipGoRootPackages is the WIRING arm for the scope exclusion: the same fixture,
+// converted as one package from under a GOROOT's src/, must keep every trampoline a stub, because the
+// corpus governs its own assembly with hand-owns. options.goRoot alone moves (the toolchain the
+// loader runs is untouched), and the identical conversion with the real GOROOT is the control that
+// proves the fixture forwards when the exclusion does not apply.
+func TestAsmTrampolinesSkipGoRootPackages(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the package via go/packages")
+	}
+
+	realGoRoot := build.Default.GOROOT
+
+	if realGoRoot == "" {
+		realGoRoot = runtime.GOROOT()
+	}
+
+	convert := func(goRoot string, pkgDir string) string {
+		t.Helper()
+
+		writeModuleFile(t, filepath.Join(pkgDir, "go.mod"), "module example.com/tramp\n\ngo 1.23\n")
+		writeModuleFile(t, filepath.Join(pkgDir, "main.go"), asmTrampolineFixtureGo)
+		writeModuleFile(t, filepath.Join(pkgDir, "asm_linux_amd64.s"), asmTrampolineFixtureAsm)
+
+		options := Options{
+			goRoot:              goRoot,
+			goPath:              build.Default.GOPATH,
+			go2csPath:           filepath.Join(filepath.Dir(pkgDir), "runtime"),
+			targetPlatform:      "linux/amd64",
+			indentSpaces:        4,
+			preferVarDecl:       true,
+			useChannelOperators: true,
+		}
+
+		outDir := filepath.Join(filepath.Dir(pkgDir), "out")
+
+		if err := processConversion(pkgDir, true, outDir, options); err != nil {
+			t.Fatalf("processConversion (goRoot %s): %v", goRoot, err)
+		}
+
+		return strings.ReplaceAll(readGenerated(t, filepath.Join(outDir, "main.cs")), "\r\n", "\n")
+	}
+
+	// CONTROL: outside GOROOT the exported identical shape forwards.
+	control := convert(realGoRoot, filepath.Join(t.TempDir(), "tramp"))
+
+	if body := emittedFunction(t, control, "Syscall"); strings.Contains(body, " partial ") {
+		t.Fatalf("control: outside GOROOT the Syscall trampoline must forward, so this arm proves nothing:\n%s", body)
+	}
+
+	// Under options.goRoot/src the same package is corpus code: every shape keeps its stub.
+	fakeGoRoot := t.TempDir()
+	underGoRoot := convert(fakeGoRoot, filepath.Join(fakeGoRoot, "src", "tramp"))
+
+	for _, name := range []string{"Syscall", "localAlias"} {
+		if body := emittedFunction(t, underGoRoot, name); !strings.Contains(body, " partial ") {
+			t.Errorf("%s forwarded in a package under GOROOT's src/:\n%s", name, body)
+		}
 	}
 }

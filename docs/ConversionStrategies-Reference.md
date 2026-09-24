@@ -18930,12 +18930,15 @@ public static (uintptr r1, uintptr r2, syscall.Errno err) Syscall(uintptr trap, 
 ```
 
 The rule is deliberately narrow. The block is selected with the conversion's own build context (target
-platform, `-tags`, the loader toolchain's release tags); a block under a preprocessor conditional, or
-with any other instruction (x/sys/unix's `SyscallNoError` issues a raw `SYSCALL`), keeps its stub. A jump
+platform, `-tags`, the loader toolchain's release tags, and `cgo` only when `-tags` names it, as for Go
+files); a block containing a preprocessor conditional, or a block with any other instruction (x/sys/unix's
+`SyscallNoError` issues a raw `SYSCALL`), keeps its stub. A jump
 proves an identical FRAME and nothing more, so the local and target signatures must be
 `types.Identical`: x/sys/unix's `gettimeofday` jumps to `syscall·gettimeofday` but takes its OWN
 `*Timeval`, and forwarding it would be CS1503 that stops the whole package building. A cross-package target
-must be exported (nothing widens the target package's surface), and a same-package target whose parameters
+must be exported (nothing widens the target package's surface) and must live in a package the trampoline's
+package imports DIRECTLY, since only a direct import carries the type information the signature check
+reads; a same-package target whose parameters
 Phase A lowered to `ref` keeps its stub. It applies only OUTSIDE the converted standard library: the
 corpus's own trampolines (internal/runtime/atomic and the hand-owned sync/atomic) are governed by hand-owns
 and the stub census, and a forwarder there would collide with a hand-owned partial.

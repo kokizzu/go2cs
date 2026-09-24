@@ -16,7 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -51,8 +51,8 @@ import (
 // with a hand-owned partial implementation. A third-party package has no hand-owns: every bodyless
 // function there is a throwing stub today, so a forwarder can only replace a certain failure.
 //
-// A block whose body is anything else (x/sys/unix's SyscallNoError issues a raw SYSCALL), or whose
-// instructions sit under a preprocessor conditional, is not a forwarder and keeps its stub.
+// A block whose body is anything else (x/sys/unix's SyscallNoError issues a raw SYSCALL), or a block
+// containing a preprocessor conditional, is not a forwarder and keeps its stub.
 
 // asmTextRE matches a TEXT directive for a function of THIS package (`·Name`); asmJumpRE the single
 // jump that makes a block a trampoline (`JMP` on amd64, `B` or `JMP` on arm64).
@@ -166,14 +166,16 @@ func isGoRootSourceDir(dir string, goRoot string) bool {
 }
 
 // asmBuildContext is the go/build context the conversion selects assembly with: the target platform,
-// the -tags set and the LOADER toolchain's release tags (loaderReleaseTags), with cgo following go's
-// own default of enabled only for a native, cgo-capable build.
+// the -tags set and the LOADER toolchain's release tags (loaderReleaseTags). The `cgo` constraint is
+// satisfied exactly as CheckBuildConstraints satisfies it for the package's Go files: only when -tags
+// names it, so a .s file and the Go file declaring its functions are never selected under different
+// answers.
 func asmBuildContext(sourceDir string, targetPlatform string, buildTags []string) build.Context {
 	context := build.Default
 	context.GOOS, context.GOARCH, _ = strings.Cut(targetPlatform, "/")
 	context.BuildTags = append([]string(nil), buildTags...)
 	context.ReleaseTags = loaderReleaseTags(sourceDir)
-	context.CgoEnabled = build.Default.CgoEnabled && context.GOOS == runtime.GOOS && context.GOARCH == runtime.GOARCH
+	context.CgoEnabled = slices.Contains(buildTags, "cgo")
 
 	return context
 }
