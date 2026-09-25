@@ -86,7 +86,7 @@ internal static void blankFuncValues() {
     _ = (stateFn)(lexText);
     _ = (stateFn)(lexNumber);
     _ = (Funcꓸꓸꓸ<nint, nint>)(total);
-    _ = (Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf);
+    _ = (Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ);
     var c = Ꮡ(new counter(nil));
     
     var cʗ1 = c;

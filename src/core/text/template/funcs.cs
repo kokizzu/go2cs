@@ -37,7 +37,7 @@ internal static FuncMap builtins() {
         ["not"u8] = not,
         ["or"u8] = ((Funcꓸꓸꓸ<reflectꓸValue, reflectꓸValue, reflectꓸValue>)(or)),
         ["print"u8] = ((Funcꓸꓸꓸ<any, @string>)(fmt.Sprint)),
-        ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf)),
+        ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ)),
         ["println"u8] = ((Funcꓸꓸꓸ<any, @string>)(fmt.Sprintln)),
         ["urlquery"u8] = ((Funcꓸꓸꓸ<any, @string>)(URLQueryEscaper)), // Comparisons
 

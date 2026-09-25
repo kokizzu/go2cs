@@ -28,7 +28,7 @@ internal static readonly object notAnErrorˢ = (@string)"not-an-error"u8;
 public static void TestErrorf(ж<Δtesting.T> Ꮡt) {
     // noVetErrorf is an alias for fmt.Errorf that does not trigger vet warnings for
     // %w format strings.
-    Funcꓸꓸꓸ<@string, any, error> noVetErrorf = fmt.Errorf;
+    Funcꓸꓸꓸ<@string, any, error> noVetErrorf = fmt.Errorfᶠ;
     var wrapped = errors.New(innerErrorˢ);
     foreach (var (_, test) in new TestErrorf_type[]{new(
         err: fmt.Errorf("%w"u8, wrapped),

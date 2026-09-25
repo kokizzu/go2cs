@@ -1151,6 +1151,10 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// contract, refVerdictPublication.go) — read from the same line set, so a NuGet-referenced
 	// dependency's embedded metadata seeds them exactly as an on-disk package_info.cs does.
 	loadRefPrimaryLines(lines, rootPackageName)
+
+	// And its published sstring twins (sstringTwinOperations.go), whose func values name the
+	// canonical delegate rather than the method group.
+	loadSStringTwinLines(lines, rootPackageName)
 }
 
 // preloadImportedTypeAliases loads the exported type aliases of EVERY package imported by ANY file in

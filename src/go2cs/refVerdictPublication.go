@@ -330,6 +330,10 @@ func refPrimaryHandOwnDeclared(packageOutputPath string, typeName string, method
 func collectPublishedRefVerdicts(pkg *packages.Package, packageOutputPath string) error {
 	packageRefPrimaryRecords = nil
 
+	// The sstring twins' records are collected at the same point, so both drivers that publish one
+	// family publish the other (sstringTwinOperations.go).
+	collectPublishedSStringTwins(pkg)
+
 	if pkg == nil {
 		return nil
 	}
@@ -362,14 +366,37 @@ func collectPublishedRefVerdicts(pkg *packages.Package, packageOutputPath string
 	return nil
 }
 
+// recordSection describes one optional package_info.cs record section: its markers, its prose, and
+// which lines inside it are records. <RefVerdicts> and the sstring twins' <SStringTwins> share the
+// one writer below.
+type recordSection struct {
+	start    string
+	end      string
+	prose    func() []string
+	isRecord func(line string) bool
+}
+
+var refVerdictSection = recordSection{
+	start:    refVerdictSectionStart,
+	end:      refVerdictSectionEnd,
+	prose:    refVerdictProseLines,
+	isRecord: func(line string) bool { return len(parseRefPrimaryLines([]string{line})) == 1 },
+}
+
 // applyRefVerdictSection rewrites a package-info file's <RefVerdicts> section from the given
-// records: any existing section (its prose, markers and records, and the blank line that separates
-// it from what follows) is removed, existing records are merged in when mergeExisting is set (the
-// single-file and -tests paths), and the section is re-inserted — before the ImplicitConversions
-// section, or before the namespace declaration when a file predates that marker — ONLY when the
-// merged set is non-empty. An empty set leaves no trace, which is what keeps a flags-off
-// conversion byte-identical to a file written before the contract existed.
+// records (see applyRecordSection).
 func applyRefVerdictSection(packageInfoLines []string, records []string, mergeExisting bool) []string {
+	return applyRecordSection(packageInfoLines, records, mergeExisting, refVerdictSection)
+}
+
+// applyRecordSection rewrites a package-info file's record section from the given records: any
+// existing section (its prose, markers and records, and the blank line that separates it from what
+// follows) is removed, existing records are merged in when mergeExisting is set (the single-file and
+// -tests paths), and the section is re-inserted — before the ImplicitConversions section, or before
+// the namespace declaration when a file predates that marker — ONLY when the merged set is non-empty.
+// An empty set leaves no trace, which is what keeps a conversion with nothing to publish
+// byte-identical to a file written before the section existed.
+func applyRecordSection(packageInfoLines []string, records []string, mergeExisting bool, spec recordSection) []string {
 	merged := HashSet[string]{}
 
 	for _, record := range records {
@@ -381,12 +408,12 @@ func applyRefVerdictSection(packageInfoLines []string, records []string, mergeEx
 	for i, line := range packageInfoLines {
 		trimmed := strings.TrimSpace(line)
 
-		if trimmed == refVerdictSectionStart {
+		if trimmed == spec.start {
 			startIndex = i
 			continue
 		}
 
-		if trimmed == refVerdictSectionEnd && startIndex >= 0 {
+		if trimmed == spec.end && startIndex >= 0 {
 			endIndex = i
 			break
 		}
@@ -395,7 +422,7 @@ func applyRefVerdictSection(packageInfoLines []string, records []string, mergeEx
 	if startIndex >= 0 && endIndex > startIndex {
 		if mergeExisting {
 			for _, line := range packageInfoLines[startIndex+1 : endIndex] {
-				if parsed := parseRefPrimaryLines([]string{line}); len(parsed) == 1 {
+				if spec.isRecord(line) {
 					merged.Add(strings.TrimSpace(line))
 				}
 			}
@@ -404,7 +431,7 @@ func applyRefVerdictSection(packageInfoLines []string, records []string, mergeEx
 		// Remove the block: the prose lines immediately above the start marker, the section, and
 		// the one blank line after the end marker that separated it from the next section.
 		removeFrom := startIndex
-		prose := refVerdictProseLines()
+		prose := spec.prose()
 
 		for len(prose) > 0 && removeFrom > 0 && strings.TrimSpace(packageInfoLines[removeFrom-1]) == prose[len(prose)-1] {
 			removeFrom--
@@ -452,11 +479,11 @@ func applyRefVerdictSection(packageInfoLines []string, records []string, mergeEx
 		insertAt = len(packageInfoLines)
 	}
 
-	section := make([]string, 0, len(sorted)+len(refVerdictProseLines())+3)
-	section = append(section, refVerdictProseLines()...)
-	section = append(section, refVerdictSectionStart)
+	section := make([]string, 0, len(sorted)+len(spec.prose())+3)
+	section = append(section, spec.prose()...)
+	section = append(section, spec.start)
 	section = append(section, sorted...)
-	section = append(section, refVerdictSectionEnd, "")
+	section = append(section, spec.end, "")
 
 	updated := make([]string, 0, len(packageInfoLines)+len(section))
 	updated = append(updated, packageInfoLines[:insertAt]...)

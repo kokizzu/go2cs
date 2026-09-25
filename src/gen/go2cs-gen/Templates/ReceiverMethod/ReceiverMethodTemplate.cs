@@ -27,9 +27,28 @@ internal class ReceiverMethodTemplate : TemplateBase
     // reason ReceiverTypeIsPublic is: the one construction site cannot silently take a default.
     public required bool NoInlining;
 
-    private string ForwarderAttributes => NoInlining
-        ? $"[{GeneratedCodeAttribute}, global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]"
-        : $"[{GeneratedCodeAttribute}]";
+    // The SOURCE method's [OverloadResolutionPriority(n)] argument, or null. The converter marks the
+    // sstring member of an sstring twin with priority 1 (docs/phase4/DESIGN-sstring-twin-pilot.md), and
+    // the ж-forwarder emitted here must carry the same priority. Otherwise the two forwarders a twin pair
+    // generates tie, and a u8 argument reaching the method through a pointer is CS0121, because both
+    // parameter types are implicitly convertible from ReadOnlySpan<byte> (i9 twin probe, arm n1).
+    // Required for the same reason NoInlining is.
+    public required string? OverloadResolutionPriority;
+
+    private string ForwarderAttributes
+    {
+        get
+        {
+            string attributes = NoInlining
+                ? $"{GeneratedCodeAttribute}, global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)"
+                : GeneratedCodeAttribute;
+
+            if (OverloadResolutionPriority is not null)
+                attributes += $", global::System.Runtime.CompilerServices.OverloadResolutionPriority({OverloadResolutionPriority})";
+
+            return $"[{attributes}]";
+        }
+    }
 
     // Whether the RECEIVER type is public IN THE EMISSION, read from its symbol by the generator
     // (Common.EffectiveScopeIsPublic) rather than from the Go export case of its name. Required, so

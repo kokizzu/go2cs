@@ -978,6 +978,13 @@
 [assembly: GoImplement<stringReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<wrapError, error>(Pointer = true)]
 [assembly: GoImplement<wrapErrors, error>(Pointer = true)]
+[assembly: GoSStringTwin("Appendf")]
+[assembly: GoSStringTwin("Errorf")]
+[assembly: GoSStringTwin("Fprintf")]
+[assembly: GoSStringTwin("Fscanf")]
+[assembly: GoSStringTwin("Printf")]
+[assembly: GoSStringTwin("Sprintf")]
+[assembly: GoSStringTwin("Sscanf")]
 
 ##go.ast
 // <ExportedTypeAliases>
@@ -3295,6 +3302,8 @@
 ##unicode.utf8
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
+[assembly: GoSStringTwin("DecodeRuneInString")]
+[assembly: GoSStringTwin("RuneCountInString")]
 
 ##unique
 // <ExportedTypeAliases>

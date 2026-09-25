@@ -1639,6 +1639,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSStringElision() => CheckTarget("SStringElision");
 
     [TestMethod]
+    public void CheckSStringTwinPilot() => CheckTarget("SStringTwinPilot");
+
+    [TestMethod]
     public void CheckSamePackageImplementNoWitness() => CheckTarget("SamePackageImplementNoWitness");
 
     [TestMethod]

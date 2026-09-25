@@ -791,6 +791,20 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 		}
 	}
 
+	// A package-qualified sstring TWIN referenced as a VALUE (`fmt.Sprintf` as a func value) names
+	// its canonical delegate, as the bare reference does in convIdent (sstringTwinOperations.go). It
+	// is decided FIRST: the arms below include ones that return a package selector early (an
+	// assignment's `f := fmt.Sprintf`), and every one of them would emit the method group, which is
+	// CS0123 for a twin. A call's callee (isCallExpr, or a suppressed-type-args callee context) is
+	// not a value, and a method value has a selection, which sstringTwinFuncValue refuses.
+	if !context.isCallExpr && !context.suppressGenericTypeArgs && v.info.Selections[selectorExpr] == nil {
+		if funcObj, isFunc := v.info.Uses[selectorExpr.Sel].(*types.Func); isFunc {
+			if canonical, isTwin := v.sstringTwinFuncValue(funcObj, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))); isTwin {
+				return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil), canonical))
+			}
+		}
+	}
+
 	// A Go method becomes a C# extension method on the receiver box (`Method(this ж<T>, …)`) emitted in
 	// its DEFINING package's class. C# only finds an extension method when that class's NAMESPACE is in
 	// scope. For a method whose receiver type lives in a sub-namespace package (e.g. `internal/runtime/

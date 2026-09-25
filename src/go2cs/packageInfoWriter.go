@@ -648,6 +648,9 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 	// a package with nothing to publish is byte-identical to one written before the contract.
 	packageInfoLines = applyRefVerdictSection(packageInfoLines, packageRefPrimaryRecords, mergeExisting)
 
+	// The sstring twins' records (sstringTwinOperations.go), under the same omitted-when-empty rule.
+	packageInfoLines = applyRecordSection(packageInfoLines, packageSStringTwinRecords, mergeExisting, sstringTwinSection)
+
 	// Handle implicit conversions
 	startLineIndex = -1
 	endLineIndex = -1

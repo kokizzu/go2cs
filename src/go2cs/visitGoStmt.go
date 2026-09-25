@@ -141,6 +141,12 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 		renderLambdaParams = true
 	}
 
+	// An sstring TWIN callee has no single method group (CS0123): take the lambda form, exact
+	// mirror of the arm in visitDeferStmt.
+	if paramCount > 0 && v.callSStringTwinCallee(goStmt.Call) != nil {
+		renderLambdaParams = true
+	}
+
 	// A MULTI-VALUE call as the SOLE argument (`go f(g())`) always takes the temp-parameter form —
 	// exact mirror of the arm in visitDeferStmt. Go evaluates `g()` on the CURRENT goroutine at the
 	// `go` statement and only `f` runs on the new one, so the whole tuple is the eager argument and

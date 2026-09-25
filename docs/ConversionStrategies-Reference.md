@@ -2537,6 +2537,58 @@ initializer. A package-level const is unchanged. (Arm C of DESIGN-string-literal
 2026-09-23; guarded by the `LocalStringConstHoist` behavioral test, whose first line is the relocation's
 output control, and by `TestLocalStringConstHoistsUnderItsOwnName`.)
 
+### An sstring TWIN: a registered function gains a prioritized `sstring` overload
+
+A `string` parameter is an `@string`, so a literal argument materializes one per call:
+`fmt.Sprintf("xxx")` allocated the literal and then the result, where Go allocates only the result. The
+sstring twin pilot (docs/phase4/DESIGN-sstring-twin-pilot.md, ruled on the i9 twin probe `b919919c96`)
+keeps the `@string` member and adds an `sstring` member of the same name under
+`[OverloadResolutionPriority(1)]`. The `sstring` member carries the converted body, and the `@string`
+member forwards to it:
+
+```csharp
+[OverloadResolutionPriority(1)] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
+    …
+}
+
+[GoTwinForwarder] public static @string Sprintf(@string format, params ꓸꓸꓸany aʗp) => Sprintf((sstring)format, aʗp);
+
+// The canonical func value of Sprintf: a twinned function has no single method group (CS0123).
+public static readonly Funcꓸꓸꓸ<@string, any, @string> Sprintfᶠ = [GoTwinForwarder("Sprintf")] static (@string format, ꓸꓸꓸany aʗp) => Sprintf(format, aʗp);
+```
+
+- **Call sites are unchanged.** With the priority, a u8 literal binds the `sstring` member through
+  golib's implicit `ReadOnlySpan<byte>` → `sstring` operator, with no copy. An `@string` argument binds
+  it through a zero-copy view, and a C# string binds it too. So a direct call always runs the body.
+- **A func value names the canonical delegate.** A twin has no single method group, and converting one
+  to a delegate typed on `@string` is CS0123 (a cast included), so every value site names `<Name>ᶠ`:
+  `["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ))`. One delegate object serves every
+  site, so `reflect.ValueOf(fmt.Sprintf).Pointer()` is equal across sites, as in Go. Its lambda records
+  the Go name (golib's `GoTwinForwarderAttribute`), so `runtime.FuncForPC(…).Name()` reads
+  `fmt.Sprintf`, and a traceback skips a forwarder's frame. A twinned METHOD has no canonical delegate;
+  referencing one as a value stops the conversion.
+- **A deferred or `go` call to a twin takes the temp-parameter lambda form** (`defer(ᴛ1 => Count(ᴛ1), …)`)
+  instead of the method group.
+- **Records.** A package publishes each exported package-level twin as `[assembly: GoSStringTwin("Sprintf")]`
+  in a `<SStringTwins>` section of `package_info.cs`, omitted when empty, and carried into the embedded
+  standard-library metadata. A consumer in another package reads the record to know that a func value
+  must name `Sprintfᶠ`.
+- **For a `[GoRecv]` method,** go2cs-gen copies the `[OverloadResolutionPriority]` onto the ж overload it
+  generates, so a u8 argument through a pointer receiver does not tie (CS0121).
+
+The population is an explicit list (`sstringTwins` in sstringTwinOperations.go), never a predicate: the O1
+survival census's fmt pilot, which is fmt's format-position parameters closed under onward passing, plus
+unicode/utf8's two string readers. The converter refuses a registered function in five cases:
+- it is hand-owned;
+- it has no body or is generic;
+- a registered parameter is not `string`;
+- a registered parameter is captured by a closure or used in a defer or go statement;
+- a local is bound to a registered parameter, because the implicit `sstring` → `@string` conversion
+  would copy silently.
+
+`TestNoSStringTwinMethodGroupInCorpus` fails on any method-group reference to a twin in the committed
+corpus.
+
 ### The `&^=` (bit-clear) compound assignment on a narrow type
 C# has no `&^` (AND-NOT) operator, so Go's `a &^= b` expands to `a &= ~b`. The `~` complement always promotes its operand to `int`, and `int` is not implicitly convertible to a narrower or unsigned LHS type (`byte`/`ushort`/`uint`/`ulong`/`uintptr`/`nuint`) — so `flags &= ~b` is CS0266. The complemented value is therefore cast back to the LHS type, inside `unchecked` because for a *constant* operand `~b` folds to a negative `int` constant whose checked narrowing would overflow (CS0221):
 

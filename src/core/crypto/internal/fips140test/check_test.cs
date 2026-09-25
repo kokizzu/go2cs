@@ -139,7 +139,7 @@ public static void TestFIPSCheckInfo(ж<testing.T> Ꮡt) {
     no(checktestNoptrdataˢ, @unsafe.Pointer.FromPinnedBox(checktest.ᏑNOPTRDATA), 0, 1, 3);
     no(checktestDataˢ, @unsafe.Pointer.FromPinnedBox(Ꮡ(checktest.DATA)), 0, 1, 2);
     // Check that non-FIPS symbols are not in any of the sections.
-    no(fmtPrintfˢ, (@unsafe.Pointer)abi.FuncPCABIInternal(fmt.Printf), 0, 1, 2, 3); // TEXT
+    no(fmtPrintfˢ, (@unsafe.Pointer)abi.FuncPCABIInternal(fmt.Printfᶠ), 0, 1, 2, 3); // TEXT
     no(unicodeCategoriesˢ, @unsafe.Pointer.FromPinnedBox(Ꮡ(unicode.Categories)), 0, 1, 2, 3); // BSS
     no(unicodeAsciiHexDigitˢ, @unsafe.Pointer.FromBox(Ꮡ(unicode.ASCII_Hex_Digit)), 0, 1, 2, 3); // DATA
     // Check that we have enough data in total.

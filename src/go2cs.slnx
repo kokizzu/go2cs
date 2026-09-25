@@ -827,6 +827,7 @@
     <Project Path="tests/Behavioral/RingPointerMethods/RingPointerMethods.csproj" />
     <Project Path="tests/Behavioral/RuntimeCallerFrames/RuntimeCallerFrames.csproj" />
     <Project Path="tests/Behavioral/SStringElision/SStringElision.csproj" />
+    <Project Path="tests/Behavioral/SStringTwinPilot/SStringTwinPilot.csproj" />
     <Project Path="tests/Behavioral/SamePackageImplementNoWitness/SamePackageImplementNoWitness.csproj" />
     <Project Path="tests/Behavioral/SamePackageImplementNoWitness/ledger/SamePackageImplementNoWitness.ledger.csproj" />
     <Project Path="tests/Behavioral/SameUnderlyingNamedConv/SameUnderlyingNamedConv.csproj" />
