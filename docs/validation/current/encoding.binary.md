@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `encoding/binary` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-23 · converter `f95f88866`*
+*Validated 2026-09-25 · converter `e75e3b479`*
 
-**140 matched · 6 disclosed** — Go 1.24.13, `windows/amd64`, converted package
+**142 matched · 4 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/encoding/binary`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/binary).
 
 Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
@@ -77,8 +77,8 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd
 | `TestSizeAllocs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestSizeAllocs/*binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestSizeAllocs/[1]binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestSizeAllocs/[]binary.Struct` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestSizeAllocs/[]binary.Struct#01` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestSizeAllocs/[]binary.Struct` | pass | pass |
+| `TestSizeAllocs/[]binary.Struct#01` | pass | pass |
 | `TestSizeAllocs/binary.Struct` | pass | pass |
 | `TestSizeAllocs/bool` | pass | pass |
 | `TestSizeAllocs/complex128` | pass | pass |
@@ -181,8 +181,6 @@ CLR *can* meet, pinned against the named plan that will retire it; every other c
 | `TestSizeAllocs` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestSizeAllocs/*binary.Struct` | `deferred` | want-zero AllocsPerRun assert: Size(v any) boxes the pointer argument per call and Indirect materializes an addressable bridge Value — CLR heap allocations Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not. |
 | `TestSizeAllocs/[1]binary.Struct` | `deferred` | want-zero AllocsPerRun assert: Size(v any) boxes the array argument per call (a full managed copy of the array struct) — CLR heap allocations Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not. |
-| `TestSizeAllocs/[]binary.Struct` | `deferred` | want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not. |
-| `TestSizeAllocs/[]binary.Struct#01` | `deferred` | want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing proof above is WITHDRAWN and FALSIFIED: the counter never charges a CLR box (AllocationCounter.cs:50-53), and the value-typed TestSizeAllocs subtests read exact zero on Windows (readings-go1.24.13.tsv lines 84-86), which a per-call box could not. |
 
 ## Excluded declarations
 
