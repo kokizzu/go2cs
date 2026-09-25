@@ -176,7 +176,16 @@ internal static any /*i*/ packInterfaceValue(ΔValue v) {
 // caller that Go lets recover from instead died, taking the process with it. Int() and Len() answered
 // quietly with a wrong value, which is worse than dying. A Go panic is recoverable by contract; that
 // is the property being restored here, not just the message.
-private static void mustBeKind(this ΔValue v, @string method, params ΔKind[] accepted) {
+//
+// WHY THE PARAMETERS ARE SPANS. Every caller passes a "…"u8 literal and a fixed kind list, and this
+// runs on EVERY accessor call, so it must cost nothing when the kind is accepted: Go's inline switch
+// allocates nothing. As `@string method, params ΔKind[] accepted` it paid two heap objects per call:
+// a fresh @string copied from the literal (a counted golib allocation) and the params array (an
+// uncounted one that AllocsPerRun's byte cross-check still sees). Measured at fa18863b94 by a
+// stack-attributed counter: that @string was the whole of encoding/binary's TestSizeAllocs 1-per-run
+// for its slice and array forms, and 33 of TestAppendAllocs' 75. As spans, the literal is copied into
+// a @string only on the panic path.
+private static void mustBeKind(this ΔValue v, ReadOnlySpan<byte> method, params ReadOnlySpan<ΔKind> accepted) {
     ΔKind k = v.kind();
     foreach (ΔKind a in accepted) {
         if (k == a) {
