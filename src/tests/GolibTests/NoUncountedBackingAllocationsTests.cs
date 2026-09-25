@@ -83,6 +83,7 @@ public class NoUncountedBackingAllocationsTests
         ("GoStructSynthesis.cs|Type[] signature = new Type[targetParameters.Length - skip + 1];", "runtime struct-type synthesis: signature and dims metadata of a synthesized type"),
         ("GoStructSynthesis.cs|int[] result = new int[dims.Length];", "runtime struct-type synthesis: signature and dims metadata of a synthesized type"),
         ("GoStructSynthesis.cs|long[] result = new long[dims.Length];", "runtime struct-type synthesis: signature and dims metadata of a synthesized type"),
+        ("string.cs|byte[][] table = new byte[256][];", "the one-byte string table: Go's runtime.staticuint64s, static data every one-byte string([]byte) views (runtime/string.go:144-150), built once, not an allocation of any conversion"),
         ("GoZeroSize.cs|internal static readonly T[] Storage = IsZeroSize ? new T[1] : [];", "a per-type static singleton: the one storage slot every zero-size value of T shares"),
         ("runtime/BoringCaches.cs|Action[] updated = new Action[s_caches.Length + 1];", "runtime bookkeeping: the registered cache-cleanup callbacks (copy-on-register)"),
         ("runtime/CrashReport.cs|byte[] bytes = Encoding.UTF8.GetBytes(report);", "crash-report output: the UTF-8 text of a fatal report, written once as the process dies"),
