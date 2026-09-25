@@ -1072,8 +1072,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     // implements IByteSeq.Length, and the public slice<T> range indexer implicitly implements the
     // self-referential IByteSeq<slice<T>, T>.this[Range] — so a generic body's sub-slice stays a
     // slice<T> instead of boxing into the interface. Only the element indexer needs an explicit
-    // form, to expose slice<T>'s `ref T` indexer as the interface's by-value read.
+    // form, to expose slice<T>'s `ref T` indexer as the interface's by-value read. The spread is
+    // explicit too: the interface's is read-only (see IByteSeq<T>.ꓸꓸꓸ), while slice<T>'s own public
+    // spread stays the writable Span<T> a Go []byte is.
     T IByteSeq<T>.this[nint index] => this[index];
+
+    ReadOnlySpan<T> IByteSeq<T>.ꓸꓸꓸ => ToSpan();
 
     ISlice<T> ISlice<T>.Slice(int start, int length) => Slice(start, length);
 
@@ -1620,7 +1624,7 @@ public static class SliceExtensions
 
     // slice of a Go string helper function — bounds are relative to the string's own WINDOW, for the
     // same reason the array<T> overload above bounds them by the array's (see @string.SliceBounds).
-    public static slice<byte> slice(this @string source, nint low = -1, nint high = -1, nint max = -1)
+    public static ReadOnlySpan<byte> slice(this @string source, nint low = -1, nint high = -1, nint max = -1)
     {
         return source.SliceBounds(low, high, max);
     }
