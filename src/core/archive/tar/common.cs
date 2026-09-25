@@ -46,8 +46,11 @@ internal static error errSparseTooLong = errors.New("archive/tar: sparse map too
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string andˢ = "; and "u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string prefixᶜ = "archive/tar: cannot encode header"u8;
+
 internal static @string Error(this headerError he) {
-    @string prefix = "archive/tar: cannot encode header"u8;
+    @string prefix = prefixᶜ;
     slice<@string> ss = default!;
     foreach (var (_, s) in he) {
         if (s != ""u8) {

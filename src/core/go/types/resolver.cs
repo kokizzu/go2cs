@@ -95,6 +95,9 @@ internal static void arityMatch(this ж<Checker> Ꮡcheck, ж<ast.ValueSpec> Ꮡ
 
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string illegalCharsᶜ = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+
 internal static (@string, error) validatedImportPath(@string path) {
     var (s, err) = strconv.Unquote(path);
     if (err != default!) {
@@ -103,7 +106,7 @@ internal static (@string, error) validatedImportPath(@string path) {
     if (s == ""u8) {
         return ("", fmt.Errorf("empty string"u8));
     }
-    @string illegalChars = "!\"#$%&'()*,:;<=>?[\\]^{|}`�";
+    @string illegalChars = illegalCharsᶜ;
     foreach (var (_, r) in s) {
         if (!unicode.IsGraphic(r) || unicode.IsSpace(r) || strings.ContainsRune(illegalChars, r)) {
             return (s, fmt.Errorf("invalid character %#U"u8, r));

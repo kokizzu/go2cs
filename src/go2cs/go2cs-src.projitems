@@ -28,6 +28,7 @@
     <None Include="$(MSBuildThisFileDirectory)assemblyScopedAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)astTypeSyntax.go" />
     <None Include="$(MSBuildThisFileDirectory)autoSiblingOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)behavioralPackageInfoAttributes_test.go" />
     <None Include="$(MSBuildThisFileDirectory)bestEffortTranspile_test.go" />
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)callerInliningAnalysis.go" />
@@ -176,6 +177,7 @@
     <None Include="$(MSBuildThisFileDirectory)linknameVarAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)linknameVarAliasRegistry_test.go" />
     <None Include="$(MSBuildThisFileDirectory)linkStagedFixtures_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)localStringConstHoist_test.go" />
     <None Include="$(MSBuildThisFileDirectory)localTypeLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)localValueIfaceCallConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)main.go" />

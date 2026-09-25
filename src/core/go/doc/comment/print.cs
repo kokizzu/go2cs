@@ -203,6 +203,9 @@ internal static bool blankBefore(Block x) {
     return true;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fourSpaceᶜ1 = "    "u8;
+
 // block prints the block x to out.
 [GoRecv] internal static void block(this ref commentPrinter p, ж<bytes.Buffer> Ꮡout, Block x) {
     ref var @out = ref Ꮡout.DerefOrNull();
@@ -251,7 +254,7 @@ internal static bool blankBefore(Block x) {
                 @out.WriteString(". "u8);
             }
             foreach (var (iΔ1, blk) in (~item).Content) {
-                @string fourSpace = "    "u8;
+                @string fourSpace = fourSpaceᶜ1;
                 if (iΔ1 > 0) {
                     @out.WriteString("\n" + fourSpace);
                 }

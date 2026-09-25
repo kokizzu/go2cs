@@ -1006,10 +1006,16 @@ internal static error Close(this ж<expectContinueReader> Ꮡecr) {
 // For parsing this time format, see [ParseTime].
 public static readonly @string TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string daysᶜ = "SunMonTueWedThuFriSat"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string monthsᶜ = "JanFebMarAprMayJunJulAugSepOctNovDec"u8;
+
 // appendTime is a non-allocating version of []byte(t.UTC().Format(TimeFormat))
 internal static slice<byte> appendTime(slice<byte> b, time.Time t) {
-    @string days = "SunMonTueWedThuFriSat"u8;
-    @string months = "JanFebMarAprMayJunJulAugSepOctNovDec"u8;
+    @string days = daysᶜ;
+    @string months = monthsᶜ;
     t = t.UTC();
     var (yy, mm, dd) = t.Date();
     var (hh, mn, ss) = t.Clock();
@@ -1985,6 +1991,15 @@ internal static bool isCommonNetReadError(error err) {
 internal static readonly @string http10400BadRequestˢ = "HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"u8;
 internal static readonly @string clientSentAnHttpRequestˢ = "client sent an HTTP request to an HTTPS server"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string errorHeadersᶜ = "\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string publicErrᶜ = "431 Request Header Fields Too Large"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string publicErrᶜ1 = "400 Bad Request"u8;
+
 // Serve a new connection.
 internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
     GoFrame ᒐ = default;
@@ -2095,7 +2110,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
                 Ꮡc.setState(c.rwc, StateActive, runHooks);
             }
             if (err != default!) {
-                @string errorHeaders = "\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n"u8;
+                @string errorHeaders = errorHeadersᶜ;
                 switch (ᐧ) {
                 case {} when AreEqual(err, errTooLarge): {
                     // Their HTTP client may or may not be
@@ -2103,7 +2118,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
                     // responding to them and hanging up
                     // while they're still writing their
                     // request. Undefined behavior.
-                    @string publicErr = "431 Request Header Fields Too Large"u8;
+                    @string publicErr = publicErrᶜ;
                     fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
                     c.closeWriteAndWait();
                     return;
@@ -2129,7 +2144,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
                             return;
                         }
                     }
-                    @string publicErr = "400 Bad Request"u8;
+                    @string publicErr = publicErrᶜ1;
                     fmt.Fprintf(new net_ConnᴠWriter(c.rwc), "HTTP/1.1 " + publicErr + errorHeaders + publicErr);
                     return;
                 }}

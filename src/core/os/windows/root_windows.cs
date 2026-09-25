@@ -19,6 +19,9 @@ using fs = go.io.fs_package;
 
 partial class os_package {
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fixedPrefixᶜ = @"\\?\?"u8;
+
 // rootCleanPath uses GetFullPathName to perform lexical path cleaning.
 //
 // On Windows, file names are lexically cleaned at the start of a file operation.
@@ -43,7 +46,7 @@ internal static (@string, error) rootCleanPath(@string s, slice<@string> prefix,
     if (stringslite.IndexByte(s, (rune)'?') >= 0) {
         return ("", windows.ERROR_INVALID_NAME);
     }
-    @string fixedPrefix = @"\\?\?"u8;
+    @string fixedPrefix = fixedPrefixᶜ;
     var buf = slice<byte>(fixedPrefix);
     foreach (var (_, p) in prefix) {
         buf = append(buf, (byte)((rune)'\\'));

@@ -247,6 +247,9 @@ internal static error writeHeader(io.Writer @out, @string k, @string v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string pemCannotEncodeAHeaderˢ = "pem: cannot encode a header key that contains a colon"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string procTypeᶜ = "Proc-Type"u8;
+
 // Encode writes the PEM encoding of b to out.
 public static error Encode(io.Writer @out, ж<Block> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
@@ -270,7 +273,7 @@ public static error Encode(io.Writer @out, ж<Block> Ꮡb) {
         }
     }
     if (len(b.Headers) > 0) {
-        @string procType = "Proc-Type"u8;
+        @string procType = procTypeᶜ;
         var h = new slice<@string>(0, len(b.Headers));
         var hasProcType = false;
         foreach (var (k, _) in b.Headers) {

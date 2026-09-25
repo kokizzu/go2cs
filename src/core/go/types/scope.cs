@@ -144,6 +144,9 @@ internal static bool _InsertLazy(this ж<ΔScope> Ꮡs, @string name, Func<Objec
     s.elems[name] = obj;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string indᶜ = ".  "u8;
+
 // WriteTo writes a string representation of the scope to w,
 // with the scope elements sorted by name.
 // The level of indentation is controlled by n >= 0, with
@@ -152,7 +155,7 @@ internal static bool _InsertLazy(this ж<ΔScope> Ꮡs, @string name, Func<Objec
 public static void WriteTo(this ж<ΔScope> Ꮡs, io.Writer w, nint n, bool recurse) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    @string ind = ".  "u8;
+    @string ind = indᶜ;
     @string indn = strings.Repeat(ind, n);
     fmt.Fprintf(w, "%s%s scope %p {\n"u8, indn, s.comment, Ꮡs.OrTypedNil());
     @string indn1 = indn + ind;

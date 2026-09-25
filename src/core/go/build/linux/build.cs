@@ -189,9 +189,12 @@ partial class build_package {
     return hasSubdir(rootSym, dirSym);
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string sepᶜ = "/";
+
 // hasSubdir reports if dir is within root by performing lexical analysis only.
 internal static (@string rel, bool ok) hasSubdir(@string root, @string dir) {
-    @string sep = "/";
+    @string sep = sepᶜ;
     root = filepath.Clean(root);
     if (!strings.HasSuffix(root, sep)) {
         root += sep;

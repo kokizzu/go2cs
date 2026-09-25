@@ -147,6 +147,27 @@ private static readonly @string depˢ = "dep"u8;
     return buf.String();
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string pathLineᶜ = "path\t"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string modLineᶜ = "mod\t"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string depLineᶜ = "dep\t"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string repLineᶜ = "=>\t"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string buildLineᶜ = "build\t"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string newlineᶜ = "\n"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string tabᶜ = "\t"u8;
+
 // ParseBuildInfo parses the string returned by [*BuildInfo.String],
 // restoring the original BuildInfo,
 // except that the GoVersion field is not set.
@@ -164,13 +185,13 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 err = fmt.Errorf("could not parse Go build info: line %d: %w"u8, lineNum, err);
             }
         }, ref ᒐ);
-        @string pathLine = "path\t"u8;
-        @string modLine = "mod\t"u8;
-        @string depLine = "dep\t"u8;
-        @string repLine = "=>\t"u8;
-        @string buildLine = "build\t"u8;
-        @string newline = "\n"u8;
-        @string tab = "\t"u8;
+        @string pathLine = pathLineᶜ;
+        @string modLine = modLineᶜ;
+        @string depLine = depLineᶜ;
+        @string repLine = repLineᶜ;
+        @string buildLine = buildLineᶜ;
+        @string newline = newlineᶜ;
+        @string tab = tabᶜ;
         (Module, error) readModuleLine(slice<@string> elem) {
             if (len(elem) != 2 && len(elem) != 3) {
                 return (new Module(nil), fmt.Errorf("expected 2 or 3 columns; got %d"u8, len(elem)));

@@ -1062,7 +1062,33 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					strTypeName = csTypeName
 				}
 
-				if v.inFunction {
+				if v.inFunction && packageHoistedLocalConsts[c] {
+					// Arm C (§8): the function-local const is hoisted to one `static readonly` field
+					// under its own name, and the local copies it, so every reference is unchanged and
+					// the value is materialised once per process rather than once per call.
+					fieldName := claimHoistedConstFieldName(csIDName)
+
+					fieldAccess := "private"
+
+					if v.options.testFriendAssembly {
+						fieldAccess = "internal"
+					}
+
+					if v.currentFuncPrefix.Len() > 0 {
+						v.currentFuncPrefix.WriteString(v.newline)
+					}
+
+					v.currentFuncPrefix.WriteString("// Hoisted Go string constant (single allocation; Go keeps it in RODATA)")
+					v.currentFuncPrefix.WriteString(v.newline)
+					v.currentFuncPrefix.WriteString(fmt.Sprintf("%s static readonly %s %s = %s;", fieldAccess, strTypeName, fieldName, constVal))
+					v.currentFuncPrefix.WriteString(v.newline)
+
+					if valueSpec.Type == nil && len(valueSpec.Values) >= i+1 {
+						typeLenDeviation += token.Pos(utf8.RuneCountInString(fieldName) - utf8.RuneCountInString(constVal))
+					}
+
+					v.writeOutput("%s %s = %s;", strTypeName, csIDName, fieldName)
+				} else if v.inFunction {
 					v.writeOutput("%s %s = %s;", strTypeName, csIDName, constVal)
 				} else {
 					v.writeOutput("%s static readonly %s %s = %s;", access, strTypeName, csIDName, constVal)

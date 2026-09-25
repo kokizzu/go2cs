@@ -166,6 +166,12 @@ internal static readonly @string missingInAddressˢ = "missing ']' in address"u8
 internal static readonly @string unexpectedInAddressˢ = "unexpected '[' in address"u8;
 internal static readonly @string unexpectedInAddressˢ2 = "unexpected ']' in address"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string missingPortᶜ = "missing port in address"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string tooManyColonsᶜ = "too many colons in address"u8;
+
 // SplitHostPort splits a network address of the form "host:port",
 // "host%zone:port", "[host]:port" or "[host%zone]:port" into host or
 // host%zone and port.
@@ -179,8 +185,8 @@ public static (@string host, @string port, error err) SplitHostPort(@string host
     @string host = default!;
     @string port = default!;
 
-    @string missingPort = "missing port in address"u8;
-    @string tooManyColons = "too many colons in address"u8;
+    @string missingPort = missingPortᶜ;
+    @string tooManyColons = tooManyColonsᶜ;
     (@string host, @string port, error err) addrErr(@string addr, @string why) {
         return ("", "", new AddrErrorжerror(Ꮡ(new AddrError(Err: why, Addr: addr))));
     }

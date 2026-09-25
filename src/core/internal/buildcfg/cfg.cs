@@ -162,11 +162,17 @@ public static @string String(this GoarmFeatures g) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string goarmˢ = "GOARM"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string softFloatOptᶜ = ",softfloat"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string hardFloatOptᶜ = ",hardfloat"u8;
+
 internal static GoarmFeatures /*g*/ goarm() {
     GoarmFeatures g = default!;
 
-    @string softFloatOpt = ",softfloat"u8;
-    @string hardFloatOpt = ",hardfloat"u8;
+    @string softFloatOpt = softFloatOptᶜ;
+    @string hardFloatOpt = hardFloatOptᶜ;
     @string def = DefaultGOARM;
     if (GOOS == "android"u8 && GOARCH == "arm"u8) {
         // Android arm devices always support GOARM=7.
@@ -228,12 +234,18 @@ public static @string String(this Goarm64Features g) {
     return arm64Str;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string lseOptᶜ = ",lse"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string cryptoOptᶜ = ",crypto"u8;
+
 public static (Goarm64Features g, error e) ParseGoarm64(@string v) {
     Goarm64Features g = default!;
     error e = default!;
 
-    @string lseOpt = ",lse"u8;
-    @string cryptoOpt = ",crypto"u8;
+    @string lseOpt = lseOptᶜ;
+    @string cryptoOpt = cryptoOptᶜ;
     g.LSE = false;
     g.Crypto = false;
     // We allow any combination of suffixes, in any order

@@ -98,7 +98,7 @@ using static go.os_package;
 [assembly: go.GoPositionMap("os/removeall_noat.go", "removeall_noat.cs", "AA4egqbMgqiCgqiCgoCCpJSUqIKCgoKUlJaCgoSCgoSCgoKUgsyCAAcShIKmgpSC3oKCgpYABxDMgoKUgoCCgILYgpQ=")]
 [assembly: go.GoPositionMap("os/root.go", "root.cs", "ABEwAAkCgoKUkgAoWqKCrLKqoqqiqqIABRDygpSCgoKUgqrCggACEuKClKqiqsKCruKCpoKApsiCgKYABxoADAKClIKWlIKClIKWgpKClIKUlIKClKaClJSUlJSUgq7CyoKCgpSCgpSmooKCAAcSgoKUkoKG1qKCgpSCgpSS1oKCgpSokoKUyoKm", "282-284:1")]
 [assembly: go.GoPositionMap("os/root_openat.go", "root_openat.cs", "ABs80oKCgpSCgtbSgoKClILW0oKCgpSCguiCpoKGgpSmgoaClAACFgAMAoCCpISCgpaCgoKCAAIU4oSCgoKCgoKCltyCgoKUgoKUgoKUgoKUgpbugoCCtoKCgoKUooK4gIKCgpSCgpTulKaCgpSUgqYACRCA", "68-70:1;78-80:1;108-112:1")]
-[assembly: go.GoPositionMap("os/root_windows.go", "root_windows.cs", "ABVMABQEgpaCgoKClIKCgoKUhIKCloKClIKCloKWrJKClIKCgpTaqsKCgoKWyIKosoKClKiyhoKUpoKCgoCCtqaigoKUpoKUgoIACxqClILWgoIADh6UpoLclKKCgpSCgoKUgoKClJTEgpSmgqaC", "127-129:1;210-228:1")]
+[assembly: go.GoPositionMap("os/root_windows.go", "root_windows.cs", "ABhMABQEgpaCgoKClIKCgoKUhIKCloKClIKCloKWrJKClIKCgpTaqsKCgoKWyIKosoKClKiyhoKUpoKCgoCCtqaigoKUpoKUgoIACxqClILWgoIADh6UpoLclKKCgpSCgoKUgoKClJTEgpSmgqaC", "127-129:1;210-228:1")]
 [assembly: go.GoPositionMap("os/stat.go", "stat.cs", "AAoWooIAAhYACAKC")]
 [assembly: go.GoPositionMap("os/stat_windows.go", "stat_windows.cs", "AA8gwoKUqLKClIKCmqKCpoKAgqS6goKCgpSClIKAgqQAAhDChMqUuJaCgriClJSClNaCkoKUlKSCgpSC2JLYkoLclA==")]
 [assembly: go.GoPositionMap("os/sys.go", "sys.cs", "AAcQkg==")]

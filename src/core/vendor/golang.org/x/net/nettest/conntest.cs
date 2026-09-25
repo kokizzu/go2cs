@@ -584,6 +584,9 @@ internal static void checkForTimeoutError(ж<testing.T> Ꮡt, error err) {
     }
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string sᶜ = "Hello, world!"u8;
+
 // testRoundtrip writes something into c and reads it back.
 // It assumes that everything written into c is echoed back to itself.
 internal static void testRoundtrip(ж<testing.T> Ꮡt, net.Conn c) {
@@ -593,7 +596,7 @@ internal static void testRoundtrip(ж<testing.T> Ꮡt, net.Conn c) {
             Ꮡt.Errorf("roundtrip SetDeadline error: %v"u8, err);
         }
     }
-    @string s = "Hello, world!"u8;
+    @string s = sᶜ;
     var buf = slice<byte>(s);
     {
         var (_, err) = c.Write(buf); if (err != default!) {

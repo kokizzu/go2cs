@@ -89,6 +89,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageHoistedDecls = make(map[*ast.FuncDecl][]*hoistedLiteral)
 	packageHoistLitReaders = make(map[*types.Func]bool)
 	packageHoistNames = make(map[string]hoistSeed)
+	packageHoistedLocalConsts = make(map[*types.Const]bool)
 	packageImportAliasRenames = make(map[string]string)
 	packageChildNamespaces = make(map[string]bool)
 	packageQualifiedNamespaces = make(map[string]bool)

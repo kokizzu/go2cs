@@ -215,8 +215,14 @@ public static FileMode ModeType => /* ModeDir | ModeSymlink | ModeNamedPipe | Mo
 
 public static FileMode ModePerm => /* 0777 */ 511;  // Unix permission bits
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string strᶜ = "dalTLDpSugct?"u8;
+
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string rwxᶜ = "rwxrwxrwx"u8;
+
 public static @string String(this FileMode m) {
-    @string str = "dalTLDpSugct?"u8;
+    @string str = strᶜ;
     array<byte> buf = new(32);               // Mode is uint32.
     nint w = 0;
     foreach (var (i, c) in (@string)str) {
@@ -229,7 +235,7 @@ public static @string String(this FileMode m) {
         buf[w] = (rune)'-';
         w++;
     }
-    @string rwx = "rwxrwxrwx"u8;
+    @string rwx = rwxᶜ;
     foreach (var (i, c) in (@string)rwx) {
         if ((FileMode)(m & ((FileMode)((uint32)1 << (int)((nuint)(9 - 1 - i))))) != 0){
             buf[w] = (byte)c;

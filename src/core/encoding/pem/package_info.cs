@@ -53,7 +53,7 @@ using static go.encoding.pem_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/pem/pem.go", "pem.cs", "ACNQ0oKCgoKUgoKmAAIQ0qaUgoSCgpSClgAKGAAJBoSCpoKUuoKClIKCgpSCgoSCgoKCgoKUhLqmgpSEgoKogoKCgoK6grqCgoKWgoKEqICCpoKCgoKCgpS6ggANHLKCgoKWgoKUgoSCgpaCgpamooKCgpSWpoKC2MSCgs6AgqSAgqaCgoKCgoKClLiCgILIgoKAgraAgriChIKAgqSChICCpIIAAhDSgoCCpA==")]
+[assembly: go.GoPositionMap("encoding/pem/pem.go", "pem.cs", "ACNQ0oKCgoKUgoKmAAIQ0qaUgoSCgpSClgAKGAAJBoSCpoKUuoKClIKCgpSCgoSCgoKCgoKUhLqmgpSEgoKogoKCgoK6grqCgoKWgoKEqICCpoKCgoKCgpS6ggANHLKCgoKWgoKUgoSCgpaCgpamooKCgpSWpoKCAAgIxIKCzoCCpICCpoKCgoKCgoKUuIKAgsiCgoCCtoCCuIKEgoCCpIKEgIKkggACENKCgIKk")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;

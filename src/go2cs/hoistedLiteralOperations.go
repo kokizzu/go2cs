@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/token"
 	"go/types"
 	"strconv"
@@ -53,6 +54,14 @@ var packageHoistedDecls map[*ast.FuncDecl][]*hoistedLiteral
 // one of these transitively must be relocated into the ordered static constructor, which C# runs
 // after ALL static field initializers (§4.4).
 var packageHoistLitReaders map[*types.Func]bool
+
+// packageHoistedLocalConsts holds every FUNCTION-LOCAL string const this pass hoists (§8 arm C). A
+// local `const fnAtoi = "Atoi"` renders as a C# local, materialised on every call (strconv/atoi.cs);
+// hoisted, it becomes one `static readonly` field under the const's OWN name (claimHoistedConstFieldName,
+// the big-const pattern) that the local copies — an @string struct copy, which allocates nothing. The
+// decision is made here, beside Tier C's, so the reading function joins packageHoistLitReaders and a
+// package-level initializer that reaches it is relocated exactly as for a hoisted literal (§4.4).
+var packageHoistedLocalConsts map[*types.Const]bool
 
 // packageHoistNames maps a literal's Go SOURCE TOKEN to the field the pass claimed for it — the
 // production-side map a `-tests` conversion is seeded with (see collectHoistedLiterals).
@@ -128,6 +137,7 @@ func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.I
 	packageHoistedDecls = make(map[*ast.FuncDecl][]*hoistedLiteral)
 	packageHoistLitReaders = make(map[*types.Func]bool)
 	packageHoistNames = make(map[string]hoistSeed)
+	packageHoistedLocalConsts = make(map[*types.Const]bool)
 
 	pkgPath := ""
 
@@ -196,6 +206,14 @@ func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.I
 			}
 
 			c.collectFunc(funcDecl)
+
+			// Arm C: this function's string consts. Only an EMITTED file may declare the field (a
+			// seeded `-tests` pass does not rewrite a production file, whose `.cs` already has them).
+			if c.emitted && c.collectLocalConsts(funcDecl) {
+				if obj, ok := info.Defs[funcDecl.Name].(*types.Func); ok && obj != nil {
+					packageHoistLitReaders[obj] = true
+				}
+			}
 		}
 	}
 
@@ -261,6 +279,47 @@ type hoistCollector struct {
 
 	// per-function walk state
 	funcDecl *ast.FuncDecl
+}
+
+// collectLocalConsts registers every string const declared inside funcDecl's body (its function
+// literals included: they emit into the same function's prefix) and reports whether it found one. The
+// §4.2 exclusions that apply to a const are the function-level ones collectHoistedLiterals already
+// applied before calling it (a hand-owned file or function, `func init()`, an init-reachable function
+// without relocation); an EMPTY value is not hoisted, since the empty @string already costs 0 B. A
+// package-level const is untouched: it is already the constant's own `static readonly` field.
+func (c *hoistCollector) collectLocalConsts(funcDecl *ast.FuncDecl) bool {
+	found := false
+
+	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
+		genDecl, ok := n.(*ast.GenDecl)
+
+		if !ok || genDecl.Tok != token.CONST {
+			return true
+		}
+
+		for _, spec := range genDecl.Specs {
+			valueSpec, ok := spec.(*ast.ValueSpec)
+
+			if !ok {
+				continue
+			}
+
+			for _, name := range valueSpec.Names {
+				obj, ok := c.info.Defs[name].(*types.Const)
+
+				if !ok || obj == nil || name.Name == "_" || obj.Val().Kind() != constant.String || constant.StringVal(obj.Val()) == "" {
+					continue
+				}
+
+				packageHoistedLocalConsts[obj] = true
+				found = true
+			}
+		}
+
+		return true
+	})
+
+	return found
 }
 
 // initializerReachableFuncs returns every package function a package-level `var` initializer can

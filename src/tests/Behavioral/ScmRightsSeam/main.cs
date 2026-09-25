@@ -46,10 +46,13 @@ private static readonly @string parseRightsPhase2ˢ = "parse rights (phase 2)"u8
 private static readonly @string readReceivedFdPhase2ˢ = "read(received fd, phase 2)"u8;
 private static readonly object controlOnlyDescriptorˢ = (@string)"control-only descriptor reads the staged bytes:"u8;
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string secretᶜ = "scm-rights-payload"u8;
+
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
-        @string secret = "scm-rights-payload"u8;
+        @string secret = secretᶜ;
         array<nint> pipeFds = new(2);
         fatal(pipe2ˢ, syscall.Pipe2(pipeFds[..], 0));
         nint pipeRead = pipeFds[0];

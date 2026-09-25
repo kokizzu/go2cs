@@ -910,6 +910,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckLocalShadowsEmbedHopType() => CheckTarget("LocalShadowsEmbedHopType");
 
     [TestMethod]
+    public void CheckLocalStringConstHoist() => CheckTarget("LocalStringConstHoist");
+
+    [TestMethod]
     public void CheckLocalStructFieldAddr() => CheckTarget("LocalStructFieldAddr");
 
     [TestMethod]
