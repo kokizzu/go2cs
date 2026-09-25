@@ -44,18 +44,14 @@ internal static float64 copysign(float64 x, float64 y) {
 }
 
 // float64bits returns the IEEE 754 binary representation of f.
-internal static uint64 float64bits(float64 fʗp) {
-    ref var f = ref heap(fʗp, out var Ꮡf);
-
-    return ~Ꮡf.Reinterpret<float64, uint64>();
+internal static uint64 float64bits(float64 f) {
+    return bitcast<float64, uint64>(f);
 }
 
 // float64frombits returns the floating point number corresponding
 // the IEEE 754 binary representation b.
-internal static float64 float64frombits(uint64 bʗp) {
-    ref var b = ref heap(bʗp, out var Ꮡb);
-
-    return ~Ꮡb.Reinterpret<uint64, float64>();
+internal static float64 float64frombits(uint64 b) {
+    return bitcast<uint64, float64>(b);
 }
 
 } // end runtime_package

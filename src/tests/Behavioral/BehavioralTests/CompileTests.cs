@@ -2056,6 +2056,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
 
     [TestMethod]
+    public void CheckValuePunBits() => CheckTarget("ValuePunBits");
+
+    [TestMethod]
     public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
 
     [TestMethod]

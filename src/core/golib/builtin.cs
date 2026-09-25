@@ -3136,6 +3136,18 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Reinterprets the bits of a sized numeric VALUE as another sized numeric type of the same size: Go's
+    /// value pun READ <c>*(*U)(unsafe.Pointer(&amp;x))</c> (math.Float64bits' whole body), which Go compiles
+    /// to a register move. The converter emits it only for predeclared sized numerics of equal size and
+    /// only for a read, so nothing is boxed and nothing is allocated (docs/phase4, the Float*bits seat).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TDst bitcast<TSrc, TDst>(TSrc value) where TSrc : unmanaged where TDst : unmanaged
+    {
+        return Unsafe.BitCast<TSrc, TDst>(value);
+    }
+
+    /// <summary>
     /// Creates a TRANSIENT Go string that ALIASES <paramref name="source"/>'s backing bytes without
     /// copying — the go2cs form of the Go compiler's <c>m[string(b)]</c> map-lookup special case
     /// (<c>runtime.slicebytetostringtmp</c>), where the conversion's result provably does not outlive

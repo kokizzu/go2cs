@@ -100,7 +100,7 @@ using static go.math_package;
 [assembly: go.GoPositionMap("math/tan.go", "tan.cs", "AFKmAfKClKaCvJSkuIKCgpSCkoKUgpaCgpaUhIKUlIKUgpQ=")]
 [assembly: go.GoPositionMap("math/tanh.go", "tanh.cs", "AESWAfKClKaCgoKUgpSkgoKCxoKUgrQ=")]
 [assembly: go.GoPositionMap("math/trig_reduce.go", "trig_reduce.cs", "ABc+AAoCgoK4goKCuJKCgpSCgoKClJSCgpSClIKUgoKCpg==")]
-[assembly: go.GoPositionMap("math/unsafe.go", "unsafe.cs", "AAkwABEArOCq0Kzg")]
+[assembly: go.GoPositionMap("math/unsafe.go", "unsafe.cs", "AAkwAA8ArMCqsKzA")]
 // </GoSourcePositionMaps>
 
 namespace go;

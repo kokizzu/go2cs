@@ -49,6 +49,10 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 	// consults the mark), and the emission visitors read the same verdict. See cgoUnsafeArgsLift.go.
 	collectCgoUnsafeArgsLifts(files, info)
 
+	// Likewise the `&x` a value pun READ consumes (`*(*uint64)(unsafe.Pointer(&f))`, math.Float64bits):
+	// the read renders as a bitcast of x's value, so that address-of boxes nothing. See valuePunOperations.go.
+	collectValuePunReads(files, info)
+
 	var concurrentTasks sync.WaitGroup
 
 	// A panic raised on THIS side of the `go` statement below cannot be recovered by the caller:
@@ -717,6 +721,11 @@ func (v *Visitor) objectAddressTaken(obj types.Object, body ast.Node, directOnly
 			return true
 		}
 
+		// The `&x` a value pun READ consumes (valuePunOperations.go): rendered as a bitcast of x's value.
+		if packageValuePunAddressOf[unary] {
+			return true
+		}
+
 		switch x := unary.X.(type) {
 		case *ast.Ident:
 			if v.info.ObjectOf(x) == obj {
@@ -832,7 +841,7 @@ func (v *Visitor) performEscapeAnalysisForObject(identObj types.Object, parentBl
 		switch n := node.(type) {
 		case *ast.UnaryExpr:
 			// Check if ident is used in an address-of operation
-			if n.Op == token.AND {
+			if n.Op == token.AND && !packageValuePunAddressOf[n] {
 				// Direct address of identifier
 				if id, ok := n.X.(*ast.Ident); ok {
 					if obj := v.info.ObjectOf(id); obj == identObj {

@@ -2059,6 +2059,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
 
     [TestMethod]
+    public void CheckValuePunBits() => CheckTarget("ValuePunBits");
+
+    [TestMethod]
     public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
 
     [TestMethod]

@@ -13,7 +13,7 @@
 // </ImportedTypeAliases>
 
 using go;
-using static go.@internal.runtime.atomic_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -49,17 +49,13 @@ using static go.@internal.runtime.atomic_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/runtime/atomic/atomic_amd64.go", "atomic_amd64.cs", "ABpopqampqamAAQSpqampqampqamqsampqampqas")]
-[assembly: go.GoPositionMap("internal/runtime/atomic/stubs.go", "stubs.cs", "AAoYpqampqampqamqsampqam")]
-[assembly: go.GoPositionMap("internal/runtime/atomic/types.go", "types.cs", "ABEosqyyAAIQ0q7CAAIU8gANIrKssgACENKuwgACFPIAChyyrLIAAhTyAAIU8gAKHLKssoKClAAKHLIAAhgACQKssgACGAAJAgACENIAAhoACgKuwgACFPIAAhTyAAIU8gANIrKssgACENKuwgACFPIAChyyAAIYAAkCrLIAAhgACQIAAhDSrsIAAhTyAAwgsoKssgAQKLIAAhgACQKokqwABBwADAKssqYABhSyAAIYAAkCrLIAAh4ADAKuwgAKFrI=")]
-[assembly: go.GoPositionMap("internal/runtime/atomic/types_64bit.go", "types_64bit.cs", "AAgkAAkCAAIYAAkC")]
-[assembly: go.GoPositionMap("internal/runtime/atomic/unaligned.go", "unaligned.cs", "/oI=")]
+[assembly: go.GoPositionMap("ValuePunBits.go", "ValuePunBits.cs", "AAgcgoLKooKoooKmgoKWgoSChIKWgoI=")]
 // </GoSourcePositionMaps>
 
-namespace go.@internal.runtime;
+namespace go;
 
-[GoPackage("atomic")]
-public static partial class atomic_package
+[GoPackage("main")]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -68,18 +64,6 @@ public static partial class atomic_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct align64 {}
-    internal partial struct noCopy {}
-    public partial struct Bool {}
-    public partial struct Float64 {}
-    public partial struct Int32 {}
-    public partial struct Int64 {}
-    public partial struct Pointer<T> {}
-    public partial struct Uint32 {}
-    public partial struct Uint64 {}
-    public partial struct Uint8 {}
-    public partial struct Uintptr {}
-    public partial struct UnsafePointer {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -89,5 +73,7 @@ public static partial class atomic_package
     // item of the project guarantees.
 
     // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
     // </ImportInitializers>
 }

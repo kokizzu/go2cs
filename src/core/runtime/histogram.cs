@@ -103,15 +103,13 @@ internal static UntypedInt fInf => 0x7FF0000000000000;
 internal static UntypedInt fNegInf => 0xFFF0000000000000;
 
 internal static float64 float64Inf() {
-    ref var inf = ref heap<uint64>(out var Ꮡinf);
-    inf = (uint64)fInf;
-    return ~Ꮡinf.Reinterpret<uint64, float64>();
+    var inf = (uint64)fInf;
+    return bitcast<uint64, float64>(inf);
 }
 
 internal static float64 float64NegInf() {
-    ref var inf = ref heap<uint64>(out var Ꮡinf);
-    inf = (uint64)fNegInf;
-    return ~Ꮡinf.Reinterpret<uint64, float64>();
+    var inf = (uint64)fNegInf;
+    return bitcast<uint64, float64>(inf);
 }
 
 // timeHistogramMetricsBuckets generates a slice of boundaries for

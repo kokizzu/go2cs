@@ -1982,6 +1982,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
 
     [TestMethod]
+    public void CheckValuePunBits() => CheckTarget("ValuePunBits");
+
+    [TestMethod]
     public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
 
     [TestMethod]
