@@ -168,6 +168,20 @@ public static class GoSyntheticPC
         if (owner is null)
             return method.Name;
 
+        string name = method.Name;
+
+        // An sstring twin's canonical value delegate (`Sprintfᶠ`) is a lambda. Its method is a
+        // compiler-generated `<.cctor>b__X_Y` on the nested `<>c` class, so the function's Go name is
+        // RECORDED on it, and its package is the enclosing package class, not the closure class
+        // (docs/phase4/DESIGN-sstring-twin-pilot.md §3.4).
+        if (method.GetCustomAttribute<GoTwinForwarderAttribute>(inherit: false) is { GoName: { } goName })
+        {
+            name = goName;
+
+            while (owner.DeclaringType is { } outer)
+                owner = outer;
+        }
+
         // A converted package is the class `<pkg>_package` in namespace `go[.<path segments>]`, so
         // the import path is the namespace below `go` with the package's own name appended:
         // `go.internal` + `abi_package` → `internal/abi`. (`go.@internal` in source is only an
@@ -189,7 +203,7 @@ public static class GoSyntheticPC
         string? space = owner.Namespace;
 
         if (space is null || space.Length == 0)
-            return $"{package}.{method.Name}";
+            return $"{package}.{name}";
 
         string prefix = space == GoRoot
             ? ""
@@ -197,7 +211,7 @@ public static class GoSyntheticPC
                 ? space[GoRootDot.Length..].Replace('.', '/') + "/"
                 : space.Replace('.', '/') + "/";
 
-        return $"{prefix}{package}.{method.Name}";
+        return $"{prefix}{package}.{name}";
     }
 
     private const string PackageSuffix = "_package";

@@ -853,6 +853,13 @@ partial class runtime_package
 
         string name = method.Name;
 
+        // An sstring twin's canonical value delegate is a lambda carrying the Go name of the function
+        // it stands for (GoTwinForwarderAttribute), so a func VALUE's *Func names that function
+        // rather than a `.cctor` literal. Its declaring type is the closure class nested in the
+        // package class, which the `_package` search above already reads through.
+        if (method.GetCustomAttributes(typeof(GoTwinForwarderAttribute), inherit: false) is [GoTwinForwarderAttribute { GoName: { } goName }])
+            name = goName;
+
         // A function literal is emitted as a compiler-generated method — `<Outer>b__X_Y` for a
         // lambda on a `<>c__DisplayClassX_Y` nested in the package class, `<Outer>g__name|X_Y`
         // for a local function; Go renders the same literal as `Outer.funcN` (a nested one as
@@ -1635,6 +1642,12 @@ partial class runtime_package
             if (attribute is System.CodeDom.Compiler.GeneratedCodeAttribute generated && generated.Tool == "go2cs-gen")
                 return false;
         }
+
+        // A converter-emitted sstring-twin forwarder (the @string member, or the canonical value
+        // delegate's lambda) is the same kind of machinery: a call through it shows the frames a
+        // direct call shows (docs/phase4/DESIGN-sstring-twin-pilot.md §3.4).
+        if (method.IsDefined(typeof(GoTwinForwarderAttribute), inherit: false))
+            return false;
 
         Type topLevel = declaring;
 

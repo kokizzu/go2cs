@@ -366,6 +366,12 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// are written here exactly as they would be above a converted declaration, and the ones inside
 	// the displaced span are retired: they document a body this file does not contain.
 	if v.isManualFuncDecl(funcDecl) {
+		// A registered sstring twin must be emitted: a hand-owned body cannot be twinned by the
+		// converter, and the published record would promise a canonical delegate nothing declares.
+		if fn, ok := v.info.ObjectOf(funcDecl.Name).(*types.Func); ok && len(sstringTwinIndices(fn)) > 0 {
+			panic(fmt.Sprintf("@visitFuncDecl - the sstring twin %s is refused: it is hand-owned (DESIGN-sstring-twin-pilot.md §3.1)", sstringTwinKey(fn)))
+		}
+
 		v.outputBuilder.WriteString(v.newline)
 		v.writeDoc(nil, funcDecl.Pos())
 		v.writeOutput(funcPlaceholderFormat, funcDecl.Name.Name)
@@ -1308,7 +1314,35 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		v.replaceMarker(functionPartialMarker, "")
 	}
 
-	v.replaceMarker(functionParametersMarker, parameterSignature)
+	// An sstring TWIN (sstringTwinOperations.go): this declaration becomes the sstring member, which
+	// carries the body under [OverloadResolutionPriority(1)]; the @string member that forwards to it,
+	// and a package-level twin's canonical value delegate, are written after the body from the
+	// @string parameter list rendered above.
+	twinFunc, _ := v.info.ObjectOf(funcDecl.Name).(*types.Func)
+	twinIndices := sstringTwinIndices(twinFunc)
+	twinPriority := ""
+	var twinReceiverName string
+	var twinForwardArgs []string
+
+	if len(twinIndices) > 0 {
+		v.validateSStringTwin(funcDecl, twinFunc, twinIndices)
+
+		var twinSignature string
+		twinSignature, twinReceiverName, twinForwardArgs = sstringTwinSignatures(sstringTwinKey(twinFunc), parameterSignature, twinIndices, funcDecl.Recv != nil)
+
+		v.replaceMarker(functionParametersMarker, twinSignature)
+		v.addRequiredUsing("System.Runtime.CompilerServices")
+		twinPriority = "[OverloadResolutionPriority(1)] "
+	} else {
+		v.replaceMarker(functionParametersMarker, parameterSignature)
+	}
+
+	// The attributes the @string member repeats: the frame-preserving mark and [GoRecv].
+	twinForwarderAttributes := v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))
+
+	if strings.HasPrefix(parameterSignature, "this ref ") {
+		twinForwarderAttributes += "[GoRecv] "
+	}
 
 	if isModuleInitializer {
 		// The `runtime` package's own init functions are Go's runtime SELF-BOOTSTRAP (arena
@@ -1324,9 +1358,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoInit] ")
 		}
 	} else if strings.HasPrefix(parameterSignature, "this ref ") {
-		v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoRecv] ")
+		v.replaceMarker(functionAttributeMarker, twinPriority+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoRecv] ")
 	} else {
-		v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name)))
+		v.replaceMarker(functionAttributeMarker, twinPriority+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name)))
 	}
 
 	var funcExecutionContext string
@@ -1414,6 +1448,10 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 	} else {
 		v.outputBuilder.WriteString(v.newline)
+	}
+
+	if len(twinIndices) > 0 {
+		v.writeSStringTwinCompanions(twinFunc, twinForwarderAttributes, functionAccess, resultSignature, csFunctionName, parameterSignature, twinReceiverName, twinForwardArgs)
 	}
 
 	v.inFunction = false

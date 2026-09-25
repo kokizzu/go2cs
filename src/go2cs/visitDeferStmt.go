@@ -102,6 +102,13 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		if paramCount > 0 && v.refLoweredCalleePositions(deferStmt.Call) != nil {
 			renderLambdaParams = true
 		}
+
+		// An sstring TWIN callee has no single method group, so its method-group conversion to
+		// golib's defer Action/Func is CS0123 (sstringTwinOperations.go). The temp-param lambda
+		// form keeps the eager arguments as @string type arguments and its call binds the twin.
+		if paramCount > 0 && v.callSStringTwinCallee(deferStmt.Call) != nil {
+			renderLambdaParams = true
+		}
 	}
 
 	// A MULTI-VALUE call as the SOLE argument (`defer f(g())`) always takes the temp-parameter

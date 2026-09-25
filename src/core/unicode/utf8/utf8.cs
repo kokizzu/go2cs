@@ -7,6 +7,8 @@
 // See https://en.wikipedia.org/wiki/UTF-8
 namespace go.unicode;
 
+using System.Runtime.CompilerServices;
+
 partial class utf8_package {
 
 // The conditions RuneError==unicode.ReplacementChar and
@@ -210,7 +212,7 @@ public static (rune r, nint size) DecodeRune(slice<byte> p) {
 // An encoding is invalid if it is incorrect UTF-8, encodes a rune that is
 // out of range, or is not the shortest possible UTF-8 encoding for the
 // value. No other validation is performed.
-public static (rune r, nint size) DecodeRuneInString(@string s) {
+[OverloadResolutionPriority(1)] public static (rune r, nint size) DecodeRuneInString(sstring s) {
     nint n = len(s);
     if (n < 1) {
         return (RuneError, 0);
@@ -250,6 +252,11 @@ public static (rune r, nint size) DecodeRuneInString(@string s) {
     }
     return ((rune)((rune)((rune)(((rune)((byte)(s0 & (byte)mask4)) << (int)(18)) | ((rune)((byte)(s1 & (byte)maskx)) << (int)(12))) | ((rune)((byte)(s2 & (byte)maskx)) << (int)(6))) | (rune)((byte)(s3 & (byte)maskx))), 4);
 }
+
+[GoTwinForwarder] public static (rune r, nint size) DecodeRuneInString(@string s) => DecodeRuneInString((sstring)s);
+
+// The canonical func value of DecodeRuneInString: a twinned function has no single method group (CS0123).
+public static readonly Func<@string, (rune, nint)> DecodeRuneInStringᶠ = [GoTwinForwarder("DecodeRuneInString")] static (@string s) => DecodeRuneInString(s);
 
 // DecodeLastRune unpacks the last UTF-8 encoding in p and returns the rune and
 // its width in bytes. If p is empty it returns ([RuneError], 0). Otherwise, if
@@ -461,7 +468,7 @@ public static nint RuneCount(slice<byte> p) {
 }
 
 // RuneCountInString is like [RuneCount] but its input is a string.
-public static nint /*n*/ RuneCountInString(@string s) {
+[OverloadResolutionPriority(1)] public static nint /*n*/ RuneCountInString(sstring s) {
     nint n = default!;
 
     foreach ((_, _) in s) {
@@ -469,6 +476,11 @@ public static nint /*n*/ RuneCountInString(@string s) {
     }
     return n;
 }
+
+[GoTwinForwarder] public static nint /*n*/ RuneCountInString(@string s) => RuneCountInString((sstring)s);
+
+// The canonical func value of RuneCountInString: a twinned function has no single method group (CS0123).
+public static readonly Func<@string, nint> RuneCountInStringᶠ = [GoTwinForwarder("RuneCountInString")] static (@string s) => RuneCountInString(s);
 
 // RuneStart reports whether the byte could be the first byte of an encoded,
 // possibly invalid rune. Second and subsequent bytes always have the top two

@@ -111,6 +111,7 @@ public class RecvGenerator : ISourceGenerator
                     Method = method,
                     ReceiverTypeIsPublic = receiverTypeIsPublic,
                     NoInlining = HasNoInliningMark(methodSyntax),
+                    OverloadResolutionPriority = GetOverloadResolutionPriority(methodSyntax),
                     UsingStatements = usingStatements
                 }
                 .Generate();
@@ -124,6 +125,27 @@ public class RecvGenerator : ISourceGenerator
     // The converter's frame-preserving mark, read as it is SPELLED in the emission --
     // `[MethodImpl(MethodImplOptions.NoInlining)]` (computeNoInliningClosure) -- so the forwarder
     // inherits exactly the functions the converter protected and nothing else.
+    private static string? GetOverloadResolutionPriority(MethodDeclarationSyntax methodSyntax)
+    {
+        // Read as SPELLED in the emission, like HasNoInliningMark: the argument is the converter's
+        // integer literal, so it is carried across verbatim.
+        foreach (AttributeListSyntax list in methodSyntax.AttributeLists)
+        {
+            foreach (AttributeSyntax attribute in list.Attributes)
+            {
+                string name = attribute.Name.ToString();
+
+                if (!name.EndsWith("OverloadResolutionPriority", StringComparison.Ordinal) && !name.EndsWith("OverloadResolutionPriorityAttribute", StringComparison.Ordinal))
+                    continue;
+
+                if (attribute.ArgumentList is { Arguments.Count: 1 } arguments)
+                    return arguments.Arguments[0].Expression.ToString();
+            }
+        }
+
+        return null;
+    }
+
     private static bool HasNoInliningMark(MethodDeclarationSyntax methodSyntax)
     {
         foreach (AttributeListSyntax list in methodSyntax.AttributeLists)

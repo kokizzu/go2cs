@@ -388,6 +388,12 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 			if wrapper, wrapped := v.refLoweredFuncValueWrapper(funcObj, name); wrapped {
 				return wrapper
 			}
+
+			// An sstring TWIN referenced as a value names its canonical delegate: a twin has no
+			// single method group, so the method group is CS0123 (sstringTwinOperations.go).
+			if canonical, isTwin := v.sstringTwinFuncValue(funcObj, name); isTwin {
+				return canonical
+			}
 		}
 	}
 

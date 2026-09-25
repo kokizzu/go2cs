@@ -9,6 +9,7 @@
 // ReSharper disable BuiltInTypeReferenceStyle
 
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -121,6 +122,51 @@ public readonly ref struct sstring
         return m_value;
     }
 
+    // Spread operator: `append(b, s...)`. Unlike @string's (a Span<byte>), the view is read-only, so the
+    // spread binds builtin's constrained `append<S, T>(S, params ReadOnlySpan<T>)`, which slice<byte>
+    // satisfies. It appends the bytes without an intermediate copy.
+    public ReadOnlySpan<byte> ꓸꓸꓸ => m_value;
+
+    // `for i, r := range s`: yields (byte index, rune) exactly as @string's enumerator does (a byte
+    // index for each rune's first byte; U+FFFD for an invalid byte, advancing ONE byte). It is a ref
+    // struct over the view, so unlike @string's class enumerator the range allocates nothing, as in Go.
+    public RuneEnumerator GetEnumerator()
+    {
+        return new RuneEnumerator(m_value);
+    }
+
+    public ref struct RuneEnumerator(ReadOnlySpan<byte> bytes)
+    {
+        private readonly ReadOnlySpan<byte> m_bytes = bytes;
+        private int m_byteIndex;
+        private (nint, rune) m_current;
+
+        public readonly (nint, rune) Current => m_current;
+
+        public bool MoveNext()
+        {
+            if (m_byteIndex >= m_bytes.Length)
+                return false;
+
+            OperationStatus status = Rune.DecodeFromUtf8(m_bytes[m_byteIndex..], out Rune rune, out int bytesConsumed);
+
+            if (status == OperationStatus.Done)
+            {
+                m_current = (m_byteIndex, rune.Value);
+            }
+            else
+            {
+                m_current = (m_byteIndex, RuneReplacementChar);
+                bytesConsumed = 1;
+            }
+
+            m_byteIndex += bytesConsumed;
+            return true;
+        }
+
+        private const rune RuneReplacementChar = 0xFFFD;
+    }
+
     public override string ToString()
     {
         return Encoding.UTF8.GetString(m_value);
@@ -179,10 +225,14 @@ public readonly ref struct sstring
         return new @string(value.m_value);
     }
 
-    // ReadOnlySpan<byte> (most importantly a u8 literal) is EXPLICIT on purpose: an implicit form would
-    // clash with @string's implicit ReadOnlySpan<byte> operator and make every "..."u8 literal
-    // CS0034-ambiguous. The converter target-types such literals to sstring where it wants them.
-    public static explicit operator sstring(ReadOnlySpan<byte> value)
+    // ReadOnlySpan<byte> (most importantly a u8 literal) is IMPLICIT, so a u8 literal binds an sstring
+    // parameter with no copy: the sstring twin of a function (docs/phase4/DESIGN-sstring-twin-pilot.md)
+    // takes `F("..."u8)` straight into the view. It was EXPLICIT to avoid a CS0034/CS0121 clash with
+    // @string's own implicit ReadOnlySpan<byte> operator. That clash can only arise where both an @string
+    // and an sstring overload are applicable, which is exactly a twin pair, and the twin's
+    // [OverloadResolutionPriority(1)] resolves it (i9 twin probe b919919c96, arm n1). The flip itself
+    // measured 0 errors across both solutions (COORD's census, ledger 7baf01e424).
+    public static implicit operator sstring(ReadOnlySpan<byte> value)
     {
         return new sstring(value);
     }

@@ -53,6 +53,8 @@ func resetPackageState(pkg *packages.Package) {
 	importedValueImplements = HashSet[string]{}
 	importedRefPrimaries = HashSet[string]{}
 	packageRefPrimaryRecords = nil
+	importedSStringTwins = HashSet[string]{}
+	packageSStringTwinRecords = nil
 	constImportedTypeAliases = NewHashSet([]string{})
 	derivedTypeAliases = NewHashSet([]string{})
 	usedDerivedTypeAliases = NewHashSet([]string{})

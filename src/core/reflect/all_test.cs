@@ -4411,12 +4411,12 @@ public static void TestVariadic(ж<Δtesting.T> Ꮡt) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     var V = ValueOf;
     b.Reset();
-    V(fmt.Fprintf).Call(new reflectꓸValue[]{V(Ꮡb), V(sDWorldˢ), V(helloˢ), V((nint)(42))}.slice());
+    V(fmt.Fprintfᶠ).Call(new reflectꓸValue[]{V(Ꮡb), V(sDWorldˢ), V(helloˢ), V((nint)(42))}.slice());
     if (b.String() != "hello, 42 world"u8) {
         Ꮡt.Errorf("after Fprintf Call: %q != %q"u8, b.String(), hello42Worldˢ);
     }
     b.Reset();
-    V(fmt.Fprintf).CallSlice(new reflectꓸValue[]{V(Ꮡb), V(sDWorldˢ), V(new any[]{(@string)"hello"u8, (nint)(42)}.slice())}.slice());
+    V(fmt.Fprintfᶠ).CallSlice(new reflectꓸValue[]{V(Ꮡb), V(sDWorldˢ), V(new any[]{(@string)"hello"u8, (nint)(42)}.slice())}.slice());
     if (b.String() != "hello, 42 world"u8) {
         Ꮡt.Errorf("after Fprintf CallSlice: %q != %q"u8, b.String(), hello42Worldˢ);
     }

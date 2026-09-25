@@ -10,10 +10,16 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
+global using runtimeꓸError = go.runtime_package.ΔError;
 // </ImportedTypeAliases>
 
 using go;
-using static go.unicode.utf8_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -38,14 +44,6 @@ using static go.unicode.utf8_package;
 // <InterfaceImplementations>
 // </InterfaceImplementations>
 
-// An exported function recorded here is an sstring twin: a @string member and a prioritized
-// sstring member, so it has no single method group. A func value names its canonical delegate
-// `<Name>ᶠ` instead. Go spellings. The section exists only while there is a record to hold.
-// <SStringTwins>
-[assembly: GoSStringTwin("DecodeRuneInString")]
-[assembly: GoSStringTwin("RuneCountInString")]
-// </SStringTwins>
-
 // <ImplicitConversions>
 // </ImplicitConversions>
 
@@ -57,13 +55,14 @@ using static go.unicode.utf8_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("unicode/utf8/utf8.go", "utf8.cs", "AHLcAaKCgpSCgqaCgqSUqJKCgpSCgqaCgqSUAAIWAAgCgoKUgoK4gpSCgoKUgoKUkpSCgpSClIKClAACFgAIAoKClIKCuIKUgoKClIKClJKUgoKUgpSCgpQABxYACwKCgpSCgoLKgoKUgoKmgpSCgpQAAhYACwKCgpSCgoLKgoKUgoKmgpSCgpSqopSkpKSkpKSsxIKClKaUgKSCgoKkgoKCgqSCgoKCgqSCgoKC3sSClKaUgKSkpKTcooKCgoCUtqiygpT8sKbIlsqCgpSUlIKCgoKClIKClIKClIKAgsSCxILElKikyoKClJSUgoKCgoKUgoKUgoKUgoCCxILEgsSUqqKUpKQ=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA4egAAPBKSCgoKCgoKGgoKCgoaCgoKGgoKCgoKCgoKEgg==")]
 // </GoSourcePositionMaps>
 
-namespace go.unicode;
+namespace go;
 
-[GoPackage("utf8")]
-public static partial class utf8_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -72,7 +71,6 @@ public static partial class utf8_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct acceptRange {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -82,5 +80,10 @@ public static partial class utf8_package
     // item of the project guarantees.
 
     // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
     // </ImportInitializers>
 }

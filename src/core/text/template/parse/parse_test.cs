@@ -338,7 +338,7 @@ internal static slice<parseTest> parseTests = new parseTest[]{
 }.slice();
 
 internal static map<@string, any> builtins = new map<@string, any>{
-    ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintf)),
+    ["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ)),
     ["contains"u8] = strings.Contains
 };
 

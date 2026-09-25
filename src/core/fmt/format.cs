@@ -5,6 +5,7 @@ namespace go;
 
 using strconv = strconv_package;
 using utf8 = unicode.utf8_package;
+using System.Runtime.CompilerServices;
 using unicode;
 
 partial class fmt_package {
@@ -103,7 +104,7 @@ internal const bool unsigned = false;
 }
 
 // padString appends s to f.buf, padded on left (!f.minus) or right (f.minus).
-[GoRecv] internal static void padString(this ref fmt f, @string s) {
+[OverloadResolutionPriority(1)] [GoRecv] internal static void padString(this ref fmt f, sstring s) {
     if (!f.widPresent || f.wid == 0) {
         f.buf.writeString(s);
         return;
@@ -119,6 +120,8 @@ internal const bool unsigned = false;
         f.writePadding(width);
     }
 }
+
+[GoTwinForwarder] [GoRecv] internal static void padString(this ref fmt f, @string s) => f.padString((sstring)s);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string trueˢ = "true"u8;
@@ -189,7 +192,7 @@ internal static readonly @string falseˢ = "false"u8;
 }
 
 // fmtInteger formats signed and unsigned integers.
-[GoRecv] internal static void fmtInteger(this ref fmt f, uint64 u, nint @base, bool isSigned, rune verb, @string digits) {
+[OverloadResolutionPriority(1)] [GoRecv] internal static void fmtInteger(this ref fmt f, uint64 u, nint @base, bool isSigned, rune verb, sstring digits) {
     var negative = isSigned && (int64)u < 0;
     if (negative) {
         u = ((uint64)0 - u);
@@ -332,6 +335,8 @@ internal static readonly @string falseˢ = "false"u8;
     f.zero = oldZero;
 }
 
+[GoTwinForwarder] [GoRecv] internal static void fmtInteger(this ref fmt f, uint64 u, nint @base, bool isSigned, rune verb, @string digits) => f.fmtInteger(u, @base, isSigned, verb, (sstring)digits);
+
 // truncateString truncates the string s to the specified precision, if present.
 [GoRecv] internal static @string truncateString(this ref fmt f, @string s) {
     if (f.precPresent) {
@@ -378,7 +383,7 @@ internal static readonly @string falseˢ = "false"u8;
 }
 
 // fmtSbx formats a string or byte slice as a hexadecimal encoding of its bytes.
-[GoRecv] internal static void fmtSbx(this ref fmt f, @string s, slice<byte> b, @string digits) {
+[OverloadResolutionPriority(1)] [GoRecv] internal static void fmtSbx(this ref fmt f, sstring s, slice<byte> b, sstring digits) {
     nint length = len(b);
     if (b == default!) {
         // No byte slice present. Assume string s should be encoded.
@@ -445,15 +450,21 @@ internal static readonly @string falseˢ = "false"u8;
     }
 }
 
+[GoTwinForwarder] [GoRecv] internal static void fmtSbx(this ref fmt f, @string s, slice<byte> b, @string digits) => f.fmtSbx((sstring)s, b, (sstring)digits);
+
 // fmtSx formats a string as a hexadecimal encoding of its bytes.
-[GoRecv] internal static void fmtSx(this ref fmt f, @string s, @string digits) {
+[OverloadResolutionPriority(1)] [GoRecv] internal static void fmtSx(this ref fmt f, sstring s, sstring digits) {
     f.fmtSbx(s, default!, digits);
 }
 
+[GoTwinForwarder] [GoRecv] internal static void fmtSx(this ref fmt f, @string s, @string digits) => f.fmtSx((sstring)s, (sstring)digits);
+
 // fmtBx formats a byte slice as a hexadecimal encoding of its bytes.
-[GoRecv] internal static void fmtBx(this ref fmt f, slice<byte> b, @string digits) {
+[OverloadResolutionPriority(1)] [GoRecv] internal static void fmtBx(this ref fmt f, slice<byte> b, sstring digits) {
     f.fmtSbx(""u8, b, digits);
 }
+
+[GoTwinForwarder] [GoRecv] internal static void fmtBx(this ref fmt f, slice<byte> b, @string digits) => f.fmtBx(b, (sstring)digits);
 
 // fmtQ formats a string as a double-quoted, escaped Go string constant.
 // If f.sharp is set a raw (backquoted) string may be returned instead

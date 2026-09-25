@@ -31,7 +31,7 @@ using static global::go.runtime_internal_test_package;
 partial class runtime_test_package {
 
 [GoInit] internal static void initΔ3() {
-    runtime_internal_test_package.FmtSprintf = fmt.Sprintf;
+    runtime_internal_test_package.FmtSprintf = fmt.Sprintfᶠ;
     runtime_internal_test_package.TestenvOptimizationOff = testenv.OptimizationOff;
 }
 

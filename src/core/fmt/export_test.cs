@@ -10,6 +10,6 @@ partial class fmt_internal_test_package {
 public static Func<rune, bool> IsSpace;
 internal static void initᴛIsSpace() { IsSpace = isSpace; }
 
-public static Func<@string, nint, nint, (nint, bool, nint)> Parsenum = parsenum;
+public static Func<@string, nint, nint, (nint, bool, nint)> Parsenum = parsenumᶠ;
 
 } // end fmt_internal_test_package
