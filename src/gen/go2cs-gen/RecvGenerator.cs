@@ -122,9 +122,6 @@ public class RecvGenerator : ISourceGenerator
         }
     }
 
-    // The converter's frame-preserving mark, read as it is SPELLED in the emission --
-    // `[MethodImpl(MethodImplOptions.NoInlining)]` (computeNoInliningClosure) -- so the forwarder
-    // inherits exactly the functions the converter protected and nothing else.
     private static string? GetOverloadResolutionPriority(MethodDeclarationSyntax methodSyntax)
     {
         // Read as SPELLED in the emission, like HasNoInliningMark: the argument is the converter's
@@ -146,7 +143,11 @@ public class RecvGenerator : ISourceGenerator
         return null;
     }
 
-    private static bool HasNoInliningMark(MethodDeclarationSyntax methodSyntax)
+    // The converter's frame-preserving mark, read as it is SPELLED in the emission --
+    // `[MethodImpl(MethodImplOptions.NoInlining)]` (computeNoInliningClosure) -- so the forwarder
+    // inherits exactly the functions the converter protected and nothing else. StrGenerator
+    // reads the same mark for the same reason.
+    internal static bool HasNoInliningMark(MethodDeclarationSyntax methodSyntax)
     {
         foreach (AttributeListSyntax list in methodSyntax.AttributeLists)
         {

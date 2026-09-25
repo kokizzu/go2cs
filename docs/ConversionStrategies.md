@@ -812,15 +812,13 @@ and slice-aliasing/write-through semantics.
 
 ## Strings (`@string` and `sstring`)
 
-Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
-an immutable byte string whose `len`, indexing, ranging, concatenation, and comparisons are byte-oriented
-like Go's, not UTF-16-oriented like `System.String`. It also carries Go's string *header* — a backing array
-plus an **offset and length** — so `s[i:j]` is an O(1) window over shared storage rather than a copy, which
-is what keeps the ubiquitous `s = s[n:]` and `DecodeRuneInString(s[i:])` idioms linear instead of quadratic
-([detail](ConversionStrategies-Reference.md#slicing-a-string-is-a-window-not-a-copy--string-carries-an-offset-and-a-length)).
-Plain string literals usually render as
-`"..."u8` `ReadOnlySpan<byte>` values, then target-type into `@string` only when a heap string is actually
-needed. That keeps common literal-to-slice and literal-comparison forms allocation-free:
+Go's `string` becomes golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
+an immutable byte string. `len`, indexing, `range`, comparison and concatenation work on bytes, as in Go,
+not on UTF-16 characters. Slicing is cheap: `s[i:j]` is a window over the same bytes, not a copy
+([detail](ConversionStrategies-Reference.md#string-is-a-byte-string-and-slicing-it-is-a-window)).
+
+**Literals** render as C# UTF-8 literals, `"…"u8`, and become an `@string` only where a string value is
+needed:
 
 ```go
 var s string = "ready"
@@ -831,15 +829,9 @@ b := []byte("hi")
 var b = slice<byte>("hi"u8);
 ```
 
-A string↔bytes conversion is a cast over the golib types: `string(b.buf[b.off:])` →
-`(@string)(b.buf[(int)(b.off)..])`, and `[]byte(s)` → `slice<byte>(s)`. `[]rune(s)` decodes through the
-Go string model rather than the CLR string model. Literals with raw byte escapes that cannot be expressed
-faithfully as UTF-8 source (for example high `\xHH` bytes or greedy hex escapes) emit as byte-array-backed
-`@string`, preserving Go's exact bytes.
-
-A literal that materializes a **value** is **hoisted** to a package-scoped `private static readonly` field
-declared immediately above the function that first uses it, so it costs at most one allocation per program
-run instead of one per evaluation — Go's own RODATA cost model:
+**A literal that becomes a value is created once.** Go keeps literals in read-only memory, so they cost
+nothing at run time. The converter moves such a literal into a `static readonly` field above the function
+that uses it. The `ˢ` suffix marks the generated name:
 
 ```go
 func FormatBool(b bool) string {
@@ -858,73 +850,71 @@ public static @string FormatBool(bool b) {
 }
 ```
 
-The `ˢ` suffix marks a converter-synthesized name, like `ᴛ` for temporaries and `Δ` for renames. Hoisting
-covers value-materializing contexts only — returns, assignments, `string` and `any` arguments, map keys,
-named-string conversions — and deliberately skips the contexts where the inline literal is already free, or
-where a name derived from the literal's content would read worse than the value itself: comparisons and
-concatenations (golib compares and concatenates a `u8` span in place), `[]byte`/`[]rune` sources (the copy is
-mandatory), format strings, composite-literal elements, `func init()` bodies, package-level initializers, and
-literals whose slug carries no information. A literal used *only* in `any` slots is emitted pre-boxed, so
-those sites allocate nothing at all. See the reference for the full inclusion/exclusion tables, the naming
-rules, and the initialization-order guarantee.
+A literal that is already free where it appears stays inline: in a comparison, in a concatenation, as a
+format string, and a few other places.
 
-Named string types are real wrapper structs (`type relationship string`), so the generated type keeps the
-string surface: indexing, sub-slicing, `len`, comparisons, concatenation, constants, and method calls stay
-on the named type instead of collapsing back to plain `@string`. Concatenation matters twice over: Go keeps
-the named type across a `+`, so the wrapper carries its own `+` overloads (including against a `u8` span) —
-without them C# falls back to `string.Concat`, handing back a `System.String` stripped of the type's
-methods.
+**A string constant declared inside a function** gets the same treatment. Its field takes the constant's
+own name with a `ᶜ` suffix, and the local copies the field, which allocates nothing:
+
+```go
+func Atoi(s string) (int, error) {
+	const fnAtoi = "Atoi"
+	…
+```
+```csharp
+internal static readonly @string fnAtoiᶜ = "Atoi"u8;
+
+public static (nint, error) Atoi(@string s) {
+    @string fnAtoi = fnAtoiᶜ;
+    …
+```
+
+**Named string types** (`type Token string`) are wrapper structs that keep the full string surface:
+indexing, slicing, `len`, comparison, `+` and the type's own methods.
 
 ```go
 type Token string
 func (t Token) First() byte { return t[0] }
-const done Token = "done"
 next := done + "-next"    // still a Token
 ```
 ```csharp
 [GoType("@string")] partial struct Token;
-internal static readonly Token done = "done"u8;
 public static byte First(this Token t) => t[0];
 Token next = done + "-next"u8;
 ```
 
-Most `string([]byte)` conversions must copy into `@string` — the price of Go's immutable-string guarantee.
-Go's own compiler *elides* that copy when the resulting string does not escape and its source is not
-modified while it is alive, letting the string alias the bytes in place. The converter recovers this common
-fast path with a second string type,
-[`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs): a
-stack-only `readonly ref struct` that *views* a `ReadOnlySpan<byte>` with **no allocation**.
+**`sstring` is a string view that allocates nothing.** Golib's
+[`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs) is a stack-only
+`ref struct` over a span of bytes. C# does not let a `ref struct` be stored, boxed or captured. So if the
+converter ever used one where the string could escape, the result would be a compile error, not a silent
+bug. `sstring` appears in two places:
 
-A provably-safe `string([]byte)` conversion emits `sstring`; anything that escapes stays `@string` (the implicit
-`sstring`→`@string` conversion copies to the heap at that boundary, so correctness never depends on getting
-the analysis right — only performance does).
+- **A `string([]byte)` conversion that does not escape.** Go skips the copy when the string is only read
+  while its bytes cannot change, and the converter does the same:
 
-Safety is enforced two ways. Because `sstring` is a `ref struct`, the .NET compiler forbids every way a
-string could escape — a field, array, map, interface box, channel, closure, or a return past its data's
-lifetime — so an over-reach is a **compile error, not a silent bug**. The one hazard the compiler cannot
-see — the source slice mutated while the view is alive — the converter's escape analysis rules out. So
-`sstring` appears only for a non-escaping conversion used in **read-only** positions: a comparison, a
-`switch` tag, `len`/index, or a concatenation operand.
+  ```go
+  if string(hdr[:4]) == wantMagic { … }
+  ```
+  ```csharp
+  if (((sstring)(hdr[..4])) == wantMagic) { … }
+  ```
 
-```go
-if string(hdr[:4]) == wantMagic { … }        // compare a slice against a []byte-derived string
-switch string(cmd) { case "get": …; case "put": … }
-```
-```csharp
-if (((sstring)(hdr[..4])) == wantMagic) { … }   // mixed sstring/@string compare — no heap copy
-var exprᴛ1 = ((sstring)cmd);                     // a string switch lowers to == comparisons
-if (exprᴛ1 == "get"u8) { … } if (exprᴛ1 == "put"u8) { … }
-```
+- **String parameters of selected functions** (the sstring *twin*). A listed function, for example
+  `fmt.Sprintf`, takes its string as an `sstring`, so a literal argument binds with no copy:
 
-Comparing an `sstring` against a `"…"u8` literal, an `@string`, or another view runs zero-allocation
-directly over the backing spans — which is where the win shows: the eligible comparison idiom measures
-~11–12× faster than the `@string` copy-and-compare. A repeated conversion in a loop is hoisted to a single
-reused view; everything that escapes simply stays `@string`.
+  ```csharp
+  [GoStr] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) { … }
+
+  fmt.Sprintf("xxx"u8);   // no @string is created for "xxx"
+  ```
+
+  The [`StrGenerator`](#source-generators) adds an `@string` overload that forwards to it. For a
+  package-level function it also adds one shared delegate, `Sprintfᶠ`, which the converter names wherever
+  Go uses the function as a value.
 
 **Full detail:** [Reference → Strings (`@string` and `sstring`)](ConversionStrategies-Reference.md#strings-string-and-sstring) —
-literal rendering, string↔`[]byte`/`[]rune` conversions, named-string wrapper behavior, high-`\x`-escape
-byte arrays, the exact `sstring` eligibility predicate, comparison / `switch` / concatenation forms,
-loop-invariant hoisting, and the `SStringElision` guard test.
+windows and conversions, literal rendering and byte-array literals, the exact hoisting rules, named-string
+wrappers, `sstring` eligibility, and the twin rule, records and guard tests.
 
 ---
 
@@ -1766,12 +1756,14 @@ principal generators:
   implementation glue + implicit conversions.
 - **`RecvGenerator`** (`[GoRecv]`) — emits the pointer/box (`ж<T>`) overload of each value-receiver method.
 - **`ImplicitConvGenerator`** — the implicit operators letting a named type and its underlying interconvert.
+- **`StrGenerator`** (`[GoStr]`) — for an sstring twin, the `@string` overload that forwards to the
+  `sstring` member, and a package-level function's shared value delegate (`Sprintfᶠ`).
 - **`PartialStubGenerator`** — a throwing stub for any bodyless partial (asm/cgo) with no real
   implementation. (For cgo specifically the stubs are an interim state, not a dead end: the
   ratified [cgo interop plan](PLAN-cgo-interop.md) maps the `import "C"` ladder that replaces
   them with real P/Invoke-backed bindings.)
 
-Common attributes: `[GoType]`, `[GoRecv]`, `[GoTag]`, `[GoPackage]`, and the test-only
+Common attributes: `[GoType]`, `[GoRecv]`, `[GoStr]`, `[GoTag]`, `[GoPackage]`, and the test-only
 `[GoTestMatchingConsoleOutput]`.
 
 An inline `[GoType]` declaration is deliberately **bare** so it reads like the Go original — but a C# nested

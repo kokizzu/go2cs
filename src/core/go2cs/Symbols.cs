@@ -53,6 +53,11 @@ public static class Symbols
     // `static readonly` @string a Go RODATA literal is materialized into (see Tier C of
     // docs/phase4/DESIGN-string-literal-allocation.md).
     public const string HoistedLiteralMarker = "ˢ";
+    // Suffixes the name of an sstring twin's canonical value delegate (`Sprintfᶠ`) - the one
+    // `static readonly` delegate every func-value site names, because a twinned function has no single
+    // method group (see docs/phase4/DESIGN-sstring-twin-pilot.md). The converter names it; the
+    // StrGenerator declares it.
+    public const string FuncValueMarker = "ᶠ";
     // Composes VALUE-form foreign interface adapter class names ({Struct}ᴠ{Iface}) - the
     // value sibling of the ж-composed pointer adapters (wraps a COPY, Go value semantics).
     public const string ValueAdapterInfix = "ᴠ";

@@ -12,7 +12,6 @@ using Δsync = sync_package;
 using utf8 = unicode.utf8_package;
 using @internal;
 using @unsafe = unsafe_package;
-using System.Runtime.CompilerServices;
 using unicode;
 using ꓸꓸꓸany = Span<any>;
 
@@ -123,11 +122,9 @@ public static @string FormatString(State state, rune verb) {
     b = appendꓸꓸꓸ(b, p);
 }
 
-[OverloadResolutionPriority(1)] [GoRecv] internal static void writeString(this ref buffer b, sstring s) {
+[GoStr] [GoRecv] internal static void writeString(this ref buffer b, sstring s) {
     b = append(b, s.ꓸꓸꓸ);
 }
-
-[GoTwinForwarder] [GoRecv] internal static void writeString(this ref buffer b, @string s) => b.writeString((sstring)s);
 
 [GoRecv] internal static void writeByte(this ref buffer b, byte c) {
     b = append(b, c);
@@ -247,7 +244,7 @@ internal static void free(this ж<pp> Ꮡp) {
 
 // Fprintf formats according to a format specifier and writes to w.
 // It returns the number of bytes written and any write error encountered.
-[OverloadResolutionPriority(1)] public static (nint n, error err) Fprintf(Δio.Writer w, sstring format, params ꓸꓸꓸany aʗp) {
+[GoStr] public static (nint n, error err) Fprintf(Δio.Writer w, sstring format, params ꓸꓸꓸany aʗp) {
     nint n = default!;
     error err = default!;
     var a = aʗp.slice();
@@ -259,26 +256,16 @@ internal static void free(this ж<pp> Ꮡp) {
     return (n, err);
 }
 
-[GoTwinForwarder] public static (nint n, error err) Fprintf(Δio.Writer w, @string format, params ꓸꓸꓸany aʗp) => Fprintf(w, (sstring)format, aʗp);
-
-// The canonical func value of Fprintf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<Δio.Writer, @string, any, (nint, error)> Fprintfᶠ = [GoTwinForwarder("Fprintf")] static (Δio.Writer w, @string format, ꓸꓸꓸany aʗp) => Fprintf(w, format, aʗp);
-
 // Printf formats according to a format specifier and writes to standard output.
 // It returns the number of bytes written and any write error encountered.
-[OverloadResolutionPriority(1)] public static (nint n, error err) Printf(sstring format, params ꓸꓸꓸany aʗp) {
+[GoStr] public static (nint n, error err) Printf(sstring format, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
     return Fprintf(new os.FileжWriter(os.Stdout), format, a.ꓸꓸꓸ);
 }
 
-[GoTwinForwarder] public static (nint n, error err) Printf(@string format, params ꓸꓸꓸany aʗp) => Printf((sstring)format, aʗp);
-
-// The canonical func value of Printf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<@string, any, (nint, error)> Printfᶠ = [GoTwinForwarder("Printf")] static (@string format, ꓸꓸꓸany aʗp) => Printf(format, aʗp);
-
 // Sprintf formats according to a format specifier and returns the resulting string.
-[OverloadResolutionPriority(1)] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
+[GoStr] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
     var p = newPrinter();
@@ -288,14 +275,9 @@ public static readonly Funcꓸꓸꓸ<@string, any, (nint, error)> Printfᶠ = [G
     return s;
 }
 
-[GoTwinForwarder] public static @string Sprintf(@string format, params ꓸꓸꓸany aʗp) => Sprintf((sstring)format, aʗp);
-
-// The canonical func value of Sprintf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<@string, any, @string> Sprintfᶠ = [GoTwinForwarder("Sprintf")] static (@string format, ꓸꓸꓸany aʗp) => Sprintf(format, aʗp);
-
 // Appendf formats according to a format specifier, appends the result to the byte
 // slice, and returns the updated slice.
-[OverloadResolutionPriority(1)] public static slice<byte> Appendf(slice<byte> b, sstring format, params ꓸꓸꓸany aʗp) {
+[GoStr] public static slice<byte> Appendf(slice<byte> b, sstring format, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
     var p = newPrinter();
@@ -304,11 +286,6 @@ public static readonly Funcꓸꓸꓸ<@string, any, @string> Sprintfᶠ = [GoTwin
     p.free();
     return b;
 }
-
-[GoTwinForwarder] public static slice<byte> Appendf(slice<byte> b, @string format, params ꓸꓸꓸany aʗp) => Appendf(b, (sstring)format, aʗp);
-
-// The canonical func value of Appendf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<slice<byte>, @string, any, slice<byte>> Appendfᶠ = [GoTwinForwarder("Appendf")] static (slice<byte> b, @string format, ꓸꓸꓸany aʗp) => Appendf(b, format, aʗp);
 
 // These routines do not take a format string
 
@@ -432,7 +409,7 @@ internal static bool tooLarge(nint x) {
 }
 
 // parsenum converts ASCII to integer.  num is 0 (and isnum is false) if no number present.
-[OverloadResolutionPriority(1)] internal static (nint num, bool isnum, nint newi) parsenum(sstring s, nint start, nint end) {
+[GoStr] internal static (nint num, bool isnum, nint newi) parsenum(sstring s, nint start, nint end) {
     nint num = default!;
     bool isnum = default!;
     nint newi = default!;
@@ -449,11 +426,6 @@ internal static bool tooLarge(nint x) {
     }
     return (num, isnum, newi);
 }
-
-[GoTwinForwarder] internal static (nint num, bool isnum, nint newi) parsenum(@string s, nint start, nint end) => parsenum((sstring)s, start, end);
-
-// The canonical func value of parsenum: a twinned function has no single method group (CS0123).
-internal static readonly Func<@string, nint, nint, (nint, bool, nint)> parsenumᶠ = [GoTwinForwarder("parsenum")] static (@string s, nint start, nint end) => parsenum(s, start, end);
 
 [GoRecv] internal static void unknownType(this ref pp p, reflectꓸValue v) {
     if (!v.IsValid()) {
@@ -661,7 +633,7 @@ internal static void fmtString(this ж<pp> Ꮡp, @string v, rune verb) {
 
 }
 
-[OverloadResolutionPriority(1)] internal static void fmtBytes(this ж<pp> Ꮡp, slice<byte> v, rune verb, sstring typeString) {
+[GoStr] internal static void fmtBytes(this ж<pp> Ꮡp, slice<byte> v, rune verb, sstring typeString) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     switch (verb) {
@@ -714,8 +686,6 @@ internal static void fmtString(this ж<pp> Ꮡp, @string v, rune verb) {
     }}
 
 }
-
-[GoTwinForwarder] internal static void fmtBytes(this ж<pp> Ꮡp, slice<byte> v, rune verb, @string typeString) => Ꮡp.fmtBytes(v, verb, (sstring)typeString);
 
 internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune verb) {
     ref var p = ref Ꮡp.DerefOrNull();
@@ -1268,7 +1238,7 @@ internal static (nint num, bool isInt, nint newArgNum) intFromArg(slice<any> a, 
 // The returned values are the index, the number of bytes to consume
 // up to the closing paren, if present, and whether the number parsed
 // ok. The bytes to consume will be 1 if no closing paren is present.
-[OverloadResolutionPriority(1)] internal static (nint index, nint wid, bool ok) parseArgNumber(sstring format) {
+[GoStr] internal static (nint index, nint wid, bool ok) parseArgNumber(sstring format) {
     // There must be at least 3 bytes: [n].
     if (len(format) < 3) {
         return (0, 1, false);
@@ -1286,15 +1256,10 @@ internal static (nint num, bool isInt, nint newArgNum) intFromArg(slice<any> a, 
     return (0, 1, false);
 }
 
-[GoTwinForwarder] internal static (nint index, nint wid, bool ok) parseArgNumber(@string format) => parseArgNumber((sstring)format);
-
-// The canonical func value of parseArgNumber: a twinned function has no single method group (CS0123).
-internal static readonly Func<@string, (nint, nint, bool)> parseArgNumberᶠ = [GoTwinForwarder("parseArgNumber")] static (@string format) => parseArgNumber(format);
-
 // argNumber returns the next argument to evaluate, which is either the value of the passed-in
 // argNum or the value of the bracketed integer that begins format[i:]. It also returns
 // the new value of i, that is, the index of the next byte of the format to process.
-[OverloadResolutionPriority(1)] [GoRecv] internal static (nint newArgNum, nint newi, bool found) argNumber(this ref pp p, nint argNum, sstring format, nint i, nint numArgs) {
+[GoStr] [GoRecv] internal static (nint newArgNum, nint newi, bool found) argNumber(this ref pp p, nint argNum, sstring format, nint i, nint numArgs) {
     if (len(format) <= i || format[i] != (rune)'[') {
         return (argNum, i, false);
     }
@@ -1306,8 +1271,6 @@ internal static readonly Func<@string, (nint, nint, bool)> parseArgNumberᶠ = [
     p.goodArgNum = false;
     return (argNum, i + wid, ok);
 }
-
-[GoTwinForwarder] [GoRecv] internal static (nint newArgNum, nint newi, bool found) argNumber(this ref pp p, nint argNum, @string format, nint i, nint numArgs) => p.argNumber(argNum, (sstring)format, i, numArgs);
 
 [GoRecv] internal static void badArgNum(this ref pp p, rune verb) {
     p.buf.writeString(percentBangString);
@@ -1321,7 +1284,7 @@ internal static readonly Func<@string, (nint, nint, bool)> parseArgNumberᶠ = [
     p.buf.writeString(missingString);
 }
 
-[OverloadResolutionPriority(1)] internal static void doPrintf(this ж<pp> Ꮡp, sstring format, slice<any> a) {
+[GoStr] internal static void doPrintf(this ж<pp> Ꮡp, sstring format, slice<any> a) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     nint end = len(format);
@@ -1521,8 +1484,6 @@ break_formatLoop:;
         p.buf.writeByte((rune)')');
     }
 }
-
-[GoTwinForwarder] internal static void doPrintf(this ж<pp> Ꮡp, @string format, slice<any> a) => Ꮡp.doPrintf((sstring)format, a);
 
 internal static void doPrint(this ж<pp> Ꮡp, slice<any> a) {
     ref var p = ref Ꮡp.DerefOrNull();

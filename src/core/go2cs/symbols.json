@@ -169,6 +169,20 @@
       "note": "U+1D9C - hoisted function-local big-constant field-name suffix: a Go local const whose value fits neither int64 nor uint64 emits as GoBigConst (BigInteger), and the parse hoists to one static readonly field per package so the local costs a struct copy instead of a per-call BigInteger.Parse (L11). Converter-only, so no Symbols.cs projection."
     },
     {
+      "name": "FuncValueMarker",
+      "value": "\u1da0",
+      "csharp": true,
+      "goEscape": true,
+      "goTrailing": "Suffix of an sstring twin's canonical value delegate (Sprintf\u1da0). Variants: \u1da0 \u1da0\u1da0",
+      "csComment": [
+        "Suffixes the name of an sstring twin's canonical value delegate (`Sprintf\u1da0`) - the one",
+        "`static readonly` delegate every func-value site names, because a twinned function has no single",
+        "method group (see docs/phase4/DESIGN-sstring-twin-pilot.md). The converter names it; the",
+        "StrGenerator declares it."
+      ],
+      "note": "U+1DA0 - sstring twin canonical value delegate suffix, in the family of HoistedLiteralMarker (U+02E2) and HoistedConstMarker (U+1D9C). Shared with go2cs-gen, which emits the field."
+    },
+    {
       "name": "TrueMarker",
       "value": "\u1427",
       "goEscape": true,
