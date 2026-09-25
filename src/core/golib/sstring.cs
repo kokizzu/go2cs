@@ -70,10 +70,11 @@ public readonly ref struct sstring
     public sstring(in slice<byte> value) : this(value.ToSpan()) { }
 
     // From a C# string (e.g. a string literal). This necessarily allocates the UTF-8 encoding; the view
-    // then covers that fresh buffer.
+    // then covers that fresh buffer. Charged through AllocationCounter like every other golib backing
+    // (the empty case allocates nothing and is charged nothing).
     public sstring(string? value)
     {
-        m_value = Encoding.UTF8.GetBytes(value ?? "");
+        m_value = AllocationCounter.Utf8ToBytes(value);
     }
 
     public sstring(sstring value) : this(value.m_value) { }
@@ -108,7 +109,7 @@ public readonly ref struct sstring
     // slice<byte> over a fresh array rather than aliasing the view.
     public slice<byte> Slice(int start, int length)
     {
-        return new slice<byte>(m_value.Slice(start, length).ToArray());
+        return new slice<byte>(AllocationCounter.CopyOf(m_value.Slice(start, length)));
     }
 
     public slice<byte> Slice(nint start, nint length)
@@ -201,7 +202,7 @@ public readonly ref struct sstring
 
     public static implicit operator slice<byte>(sstring value)
     {
-        return new slice<byte>(value.m_value.ToArray());
+        return new slice<byte>(AllocationCounter.CopyOf(value.m_value));
     }
 
     public static implicit operator sstring(byte[] value)
@@ -211,7 +212,7 @@ public readonly ref struct sstring
 
     public static explicit operator byte[](sstring value)
     {
-        return value.m_value.ToArray();
+        return AllocationCounter.CopyOf(value.m_value);
     }
 
     // Enable comparisons/assignment against nil, mirroring @string (a Go string's zero value is "").
@@ -442,17 +443,17 @@ public readonly ref struct sstring
     // would have done.
     public static @string operator +(string a, sstring b)
     {
-        return concat(Encoding.UTF8.GetBytes(a ?? ""), b.m_value);
+        return concat(AllocationCounter.Utf8ToBytes(a), b.m_value);
     }
 
     public static @string operator +(sstring a, string b)
     {
-        return concat(a.m_value, Encoding.UTF8.GetBytes(b ?? ""));
+        return concat(a.m_value, AllocationCounter.Utf8ToBytes(b));
     }
 
     private static @string concat(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        byte[] bytes = new byte[a.Length + b.Length];
+        byte[] bytes = AllocationCounter.NewArray<byte>(a.Length + b.Length);
         a.CopyTo(bytes);
         b.CopyTo(new Span<byte>(bytes, a.Length, b.Length));
         return new @string(bytes);
