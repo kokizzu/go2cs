@@ -11,13 +11,14 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ## 📰 NEWS — The converted standard library moves to Go 1.24.13
 
-go2cs now converts Go 1.24.13's standard library, and **218 of the 230 testable standard-library
-packages (94.8%) pass their own Go 1.24.13 test suites in C#**, compared verdict for verdict against
+go2cs now converts Go 1.24.13's standard library, and **219 of the 230 testable standard-library
+packages (95.2%) pass their own Go 1.24.13 test suites in C#**, compared verdict for verdict against
 `go test -json`, with every difference disclosed. Each row of the
 [validated roster](ValidatedTestPackages.md) links a proof page that lists Go's verdict beside
 go2cs's, test by test. Converted programs can use Go 1.24's new APIs, such as `os.Root`,
 `weak.Pointer` and `crypto/mlkem`, and the converted library ships as **NuGet 1.24.13.1**,
-targeting .NET 10. `net/http` ships in the release but is not yet validated. The
+targeting .NET 10. `net/http` shipped in 1.24.13.2 before it validated; it validates on master since 2026-09-25 (1,387
+verdicts). The
 [full announcement](NEWS.md#september-24-2026--the-converted-standard-library-moves-to-go-12413-and-218-packages-validate-against-it)
 has the details.
 
