@@ -991,10 +991,9 @@ public static class ArrayExtensions
     // SparseArray's own Count is `max index + 1`, which is the literal's extent, not the array's.
     public static array<T> array<T>(this IEnumerable<T> source, int length)
     {
-        // Enumerable.ToArray's own result is charged here; the growth buffers it discards on the
-        // way are BCL-internal and, like every other BCL internal, deliberately uncharged.
-        AllocationCounter.Count();
-        return source.ToArray().array(length);
+        // Enumerable.ToArray's own result is charged by the door; its discarded growth buffers are
+        // BCL-internal and uncharged.
+        return AllocationCounter.Materialize(source).array(length);
     }
 
     // …and the needy-element form of that projection. This one is NOT the T[] overload's story with
@@ -1016,8 +1015,7 @@ public static class ArrayExtensions
     // SparseArray. Every position past the source's own extent is constructed.
     public static array<T> array<T>(this IEnumerable<T> source, int length, Func<T> elementFactory)
     {
-        AllocationCounter.Count();
-        return source.ToArray().array(length, elementFactory);
+        return AllocationCounter.Materialize(source).array(length, elementFactory);
     }
 
     // array initializer from Span
@@ -1030,7 +1028,6 @@ public static class ArrayExtensions
     public static array<T> array<T>(this IEnumerable<T> source)
     {
         // As above: the materialized array is charged, its BCL-internal growth buffers are not.
-        AllocationCounter.Count();
-        return new array<T>(source.ToArray());
+        return new array<T>(AllocationCounter.Materialize(source));
     }
 }

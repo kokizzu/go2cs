@@ -950,9 +950,10 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return new slice<T>(value);
     }
 
+    // A detached copy, charged through the door Source itself uses.
     public static implicit operator T[](slice<T> value)
     {
-        return value.ToArray();
+        return AllocationCounter.CopyOf<T>(value.ToSpan());
     }
 
     // Enable implicit conversions between slice<T> and array<T>
@@ -963,7 +964,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public static implicit operator array<T>(slice<T> value)
     {
-        return new array<T>(value.ToArray());
+        return new array<T>(AllocationCounter.CopyOf<T>(value.ToSpan()));
     }
 
     // slice<T> to slice<T> comparisons — HEADER identity (same backing array reference, window and
@@ -1057,8 +1058,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     {
         // The Cast/ToArray materialization is this method's own allocation, distinct from whatever
         // Append then allocates to grow; the LINQ iterator behind it is BCL-internal and uncharged.
-        AllocationCounter.Count();
-        return Append(elems.Cast<T>().ToArray());
+        return Append(AllocationCounter.Materialize(elems.Cast<T>()));
     }
 
     ISlice<T> ISlice<T>.Append(params T[] elems)
@@ -1524,8 +1524,7 @@ public static class SliceExtensions
     public static slice<T> slice<T>(this IEnumerable<T> source, nint low = -1, nint high = -1, nint max = -1)
     {
         // Enumerable.ToArray's result is charged; its discarded growth buffers are BCL-internal.
-        AllocationCounter.Count();
-        return source.ToArray().slice(low, high, max);
+        return AllocationCounter.Materialize(source).slice(low, high, max);
     }
 
     // slice of a Go array helper function — bounds are RELATIVE to the array's own WINDOW, and the

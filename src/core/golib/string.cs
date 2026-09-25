@@ -102,7 +102,8 @@ public readonly struct @string :
 
     public @string(in ReadOnlySpan<rune> value) : this(value.ToUTF8Bytes()) { }
 
-    public @string(in slice<byte> value) : this(value.ToArray()) { }
+    // `string(b)` copies: the detached copy is charged through the door slice<T>.Source uses.
+    public @string(in slice<byte> value) : this(AllocationCounter.CopyOf<byte>(value.ToSpan())) { }
 
     /// <summary>
     /// Creates a TRANSIENT @string that ALIASES <paramref name="value"/>'s backing bytes without
@@ -153,7 +154,7 @@ public readonly struct @string :
         return new @string(value.m_array ?? [], (int)value.Low, (int)value.Length);
     }
 
-    public @string(in slice<char> value) : this(value.ToArray()) { }
+    public @string(in slice<char> value) : this(AllocationCounter.CopyOf<char>(value.ToSpan())) { }
 
     public @string(in slice<rune> value) : this(value.ToSpan()) { }
 
@@ -531,9 +532,7 @@ public readonly struct @string :
 
     public static implicit operator slice<char>(@string value)
     {
-        AllocationCounter.Count();
-
-        return new slice<char>(((IEnumerable<char>)value).ToArray());
+        return new slice<char>(AllocationCounter.Materialize((IEnumerable<char>)value));
     }
 
     public static implicit operator byte[](@string value)
@@ -577,9 +576,7 @@ public readonly struct @string :
 
     public static explicit operator char[](@string value)
     {
-        AllocationCounter.Count();
-
-        return ((IEnumerable<char>)value).ToArray();
+        return AllocationCounter.Materialize((IEnumerable<char>)value);
     }
 
     public static implicit operator @string(char[] value)

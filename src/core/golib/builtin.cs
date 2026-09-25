@@ -2901,7 +2901,11 @@ public static partial class builtin
         if (source == nil)
             return default;
 
-        TWide[] result = new TWide[source.Length];
+        // A fresh backing either way, so it is charged. For a string <-> defined-byte CONVERSION it is
+        // the object Go's own stringtoslicebyte / slicebytetostring allocates; for an adapter
+        // PROJECTION Go shares the backing and allocates nothing, so there the count reads one object
+        // above Go's, which is real allocation behavior and belongs in the number.
+        TWide[] result = AllocationCounter.NewArray<TWide>(source.Length);
 
         for (int i = 0; i < source.Length; i++)
             result[i] = conv(source[i]);

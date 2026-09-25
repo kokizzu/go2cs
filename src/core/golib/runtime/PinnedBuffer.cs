@@ -104,7 +104,8 @@ internal class PinnedBuffer : IArray<byte>, IDisposable
 
     public Span<byte> ꓸꓸꓸ => ToSpan();
 
-    public byte[] Source => ToSpan().ToArray();
+    // A detached copy, charged like every other IArray.Source (slice<T>.Source, array<T>.ToArray).
+    public byte[] Source => AllocationCounter.CopyOf<byte>(ToSpan());
 
     Array IArray.Source => Source;
 

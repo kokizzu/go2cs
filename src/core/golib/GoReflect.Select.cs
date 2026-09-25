@@ -50,7 +50,9 @@ public static partial class GoReflect
     public static (nint opWinner, object? recvValue, bool recvOk) RunSelect(
         IChannel?[] channels, bool[] isSend, object?[] sendValues, bool hasDefault)
     {
-        SelectOp[] ops = new SelectOp[channels.Length];
+        // Go's reflect.Select heap-allocates its per-case array on every call (runtime.reflect_rselect's
+        // `sel := make([]scase, len(cases))`); this is that array, so it is charged.
+        SelectOp[] ops = AllocationCounter.NewArray<SelectOp>(channels.Length);
 
         for (int i = 0; i < channels.Length; i++)
         {
