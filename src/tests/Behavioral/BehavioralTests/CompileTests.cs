@@ -91,6 +91,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckAppendNilSliceElement() => CheckTarget("AppendNilSliceElement");
 
     [TestMethod]
+    public void CheckAppendOfMake() => CheckTarget("AppendOfMake");
+
+    [TestMethod]
     public void CheckAppendUntypedConst() => CheckTarget("AppendUntypedConst");
 
     [TestMethod]

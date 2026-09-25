@@ -240,7 +240,7 @@ internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> �
         paddingLen = maxNameLength + 9;
     }
     paddingLen = 31 - ((len(h) + paddingLen - 1) % 32);
-    return (appendꓸꓸꓸ(h, new slice<byte>(paddingLen)), default!);
+    return (appendꓸꓸꓸ(h, makeꓸꓸꓸ<byte>(paddingLen)), default!);
 }
 
 internal static bool skipUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs) {

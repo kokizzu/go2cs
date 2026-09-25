@@ -5813,6 +5813,32 @@ string spreads keep the span route (their spread is a byte projection, not a sli
 spread arm; golib: `builtin.appendꓸꓸꓸ` ×2 over `slice<T>.Append(in slice<T>, ISlice<T>)`. The row
 this unlocked: `slices` validates 119 matched · 3 disclosed the moment the arc lands.
 
+**Append-of-make grows in place without the make (2026-09-24, REC-C §B).** Go's compiler recognises
+`append(x, make([]T, n)...)` (walk's `isAppendOfMake`, "extendslice") and extends `x` by `n` zeroed elements
+without allocating the `make`, which is why `slices.Grow` says it "allocates only once". The emission now
+renders exactly that operand as the length-only `makeꓸꓸꓸ<T>(n)`, and nothing else in the call changes:
+
+```csharp
+s = subslice<S, E>(appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, cap(s)), makeꓸꓸꓸ<E>(n)), 0, len(s));
+```
+
+golib's `makeꓸꓸꓸ<T>` validates the length as `make` does (same panic), and `appendꓸꓸꓸ` over it calls
+`slice<T>.AppendZeroed`. That mirrors `Append`'s arms: the zero-size arm, so `TestConcat_too_large`'s
+`MaxInt` fakes still allocate nothing; nil; in place, zeroing the shared backing's new elements, which a
+stale write beyond `len` would otherwise leak; and growth through `CalculateNewCapacity`. So no `cap()`
+moves. Refused, each keeping the make-then-append emission:
+- a capacity argument (Go does not recognise it either);
+- an element whose zero value must be constructed (`arrayElemFactory`);
+- fixed-array dimension cargo;
+- a `make` bound to a name.
+
+Stdlib footprint at `fa18863b94`: 19 lines in 16 files on windows, 18 in 15 on linux and darwin, each a
+one-operand swap. (Guarded by:
+- the `AppendOfMake` behavioral test;
+- the converter's `TestAppendOfMakeEmitsTheLengthOnlyOperandOnlyForGosExtendSliceShape`, controlled both
+  ways;
+- GolibTests' `AppendOfMakeTests`.)
+
 Known and deliberate divergence: Go's OTHER zero-size shape is the zero-length array (`[0]T`, and
 `[N]struct{}`). go2cs emits a Go array as `array<T>`, whose backing is a managed reference field, so such
 a type classifies as NON-zero-size and keeps the allocating path — the honest answer for the

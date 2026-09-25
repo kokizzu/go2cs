@@ -30,7 +30,7 @@ internal static float64 logDiv = math.Log(math.Pow(10D, 1.0D / 5D));
         bucket = (nint)(math.Log((float64)(int64)d) / logDiv);
     }
     if (len(h.Buckets) <= bucket) {
-        h.Buckets = appendꓸꓸꓸ(h.Buckets, new slice<nint>(bucket - len(h.Buckets) + 1));
+        h.Buckets = appendꓸꓸꓸ(h.Buckets, makeꓸꓸꓸ<nint>(bucket - len(h.Buckets) + 1));
         h.Buckets = h.Buckets[..(int)(cap(h.Buckets))];
     }
     h.Buckets[bucket]++;

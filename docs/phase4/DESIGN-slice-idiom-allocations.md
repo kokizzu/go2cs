@@ -120,3 +120,56 @@ F5's two); slices TestInsert's remaining objects fall by one per growing insert.
 newly reachable hard case. §B's recognition is controlled against a
 `make` bound to a name. Each stage reads its members' rows before and after at Release with tiering
 off. The emission diff of each stage is measured over the whole corpus (two-seeded reconvert).
+
+## §B as built -- dated block, 2026-09-24 (C2)
+
+On `claude/c2-rec-c-append-make`, off `fa18863b94`, UNMERGED until the 1.24.13.1 release. Nothing above
+this block is rewritten.
+
+**The form differs from the stub's "one golib grow operation".** The converter changes ONE operand and
+nothing else in the call. A direct `make` spread into `append` renders as the length-only `makeꓸꓸꓸ<T>(n)`
+(`appendOfMakeOperand`, convCallExpr.go). golib's `appendꓸꓸꓸ` over it calls `slice<T>.AppendZeroed`,
+which extends `x` by `n` default elements through `Append`'s own arms: zero-size, nil, in place, and
+growth by `CalculateNewCapacity`. So the stub's precondition holds by construction: `cap()` is what
+`append` gives today. Grow's trailing `[:len(x)]` re-slice needs nothing; it is an ordinary re-slice of
+the result.
+
+**Refusals, widened from the stub's two:**
+- a capacity argument (Go's `isAppendOfMake` refuses it too);
+- an element type whose zero value must be CONSTRUCTED (`arrayElemFactory`: golib's `default(T)` is not
+  that zero value);
+- fixed-array dimension cargo (`withSliceElemDims`), which only the made slice can carry;
+- a `make` bound to a name, or a spread of anything but a direct `make`.
+
+**Footprint, two seeded `-stdlib` reconverts** (base `fa18863b94`, head this branch, one frozen seed, all
+three targets serial). Written counts are equal per target (1,856 / 1,935 / 1,930).
+- **Lines:** 19 changed lines in 16 files on windows, 18 in 15 on linux and darwin. Every one is the same
+  one-operand swap (`new slice<T>(n)` or `make<S>(n)` → `makeꓸꓸꓸ<T>(n)`).
+- **Files:** slices.cs ×3 (Grow, Insert, Replace); bytes/buffer.cs (growSlice); the hash digests
+  (crypto/md5, crypto/sha1, fips140 sha256/sha512/sha3 shake); internal/zstd ×3; crypto/tls/ech.cs;
+  internal/coverage ×2; traceviewer/histogram.cs; time/format.cs; and on windows only
+  syscall/windows/syscall_windows.cs.
+- **No `GoPositionMap` line.** A same-line swap shifts nothing.
+- **Applied by `git merge-file` hunks:** the applied lines equal the emitted lines exactly, and the
+  residual against the head arm is 0 lines in all 16 files.
+- **Re-emitted after a fresh build:** the windows arm, re-emitted from a binary freshly built from this
+  branch's converter source, is byte-identical to the measured arm (0 differing files).
+
+**Guards:**
+- **Converter:** `TestAppendOfMakeEmitsTheLengthOnlyOperandOnlyForGosExtendSliceShape`, end to end over a
+  fixture with four accepted and four refused shapes. It is RED at `fa18863b94` on exactly the four
+  accepted shapes. A deliberately regressed copy (capacity and array-element checks disabled) turned it
+  red on exactly `withCap` and `arrays`.
+- **Behavioral:** `AppendOfMake`, registered in the four classes and `go2cs.slnx`. Its golden differs from
+  the base emission on exactly the three accepted sites (`extend`, `Grow`, `growGeneric`). The three
+  refused sites are unchanged. Its `in place` case checks that stale values past `len` come back zeroed.
+- **golib:** GolibTests `AppendOfMakeTests`.
+- **CNR:** base and head binaries over the 736 tracked behavioral projects (linux host). Both arms have
+  the same 8 unmeasured projects, and **0 tracked files differ**. Every raw difference was an absolute
+  root path inside a `GoPositionMap` record, except one. That one is the UNTRACKED
+  `src/tests/Behavioral/package_info.cs` that census conversions accumulate at the Behavioral root, and
+  it differs only in member order. So no existing golden moves; the one new golden is `AppendOfMake`'s.
+
+**Predictions:** C1's, above, stand (UNMEASURED). The mechanism's count per recognised evaluation is
+0 within capacity and 1 when growing: only the grown backing, where the old form counted the `make` as
+well.

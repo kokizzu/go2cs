@@ -22,7 +22,7 @@ partial class slicewriter_package {
     nint amt = len(p);
     var towrite = sws.payload[(int)(sws.off)..];
     if (len(towrite) < amt) {
-        sws.payload = appendꓸꓸꓸ(sws.payload, new slice<byte>(amt - len(towrite)));
+        sws.payload = appendꓸꓸꓸ(sws.payload, makeꓸꓸꓸ<byte>(amt - len(towrite)));
         towrite = sws.payload[(int)(sws.off)..];
     }
     copy(towrite, p);

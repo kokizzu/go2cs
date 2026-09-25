@@ -281,6 +281,7 @@
     <Project Path="tests/Behavioral/AnyStringLitComposite/AnyStringLitComposite.csproj" />
     <Project Path="tests/Behavioral/AppendNamedSliceElement/AppendNamedSliceElement.csproj" />
     <Project Path="tests/Behavioral/AppendNilSliceElement/AppendNilSliceElement.csproj" />
+    <Project Path="tests/Behavioral/AppendOfMake/AppendOfMake.csproj" />
     <Project Path="tests/Behavioral/AppendUntypedConst/AppendUntypedConst.csproj" />
     <Project Path="tests/Behavioral/AssignThroughTypeAssert/AssignThroughTypeAssert.csproj" />
     <Project Path="tests/Behavioral/AtomicValue/AtomicValue.csproj" />

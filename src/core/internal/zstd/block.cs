@@ -25,7 +25,7 @@ internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
         // We know that blockSize <= 128K,
         // so this won't allocate an enormous amount.
         nint need = blockSize - builtin.len(r.compressedBuf);
-        r.compressedBuf = appendꓸꓸꓸ(r.compressedBuf, new slice<byte>(need));
+        r.compressedBuf = appendꓸꓸꓸ(r.compressedBuf, makeꓸꓸꓸ<byte>(need));
     }
     {
         var (_, errΔ1) = io.ReadFull(r.r, r.compressedBuf); if (errΔ1 != default!) {

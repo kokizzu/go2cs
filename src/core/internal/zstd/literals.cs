@@ -281,7 +281,7 @@ internal static (slice<byte>, error) readLiteralsFourStreams(this ж<Reader> Ꮡ
     nint out3 = out2 + regeneratedStreamSize;
     nint out4 = out3 + regeneratedStreamSize;
     nint regeneratedStreamSize4 = regeneratedSize - regeneratedStreamSize * 3;
-    outbuf = appendꓸꓸꓸ(outbuf, new slice<byte>(regeneratedSize));
+    outbuf = appendꓸꓸꓸ(outbuf, makeꓸꓸꓸ<byte>(regeneratedSize));
     var huffTable = r.huffmanTable;
     var huffBits = (uint32)r.huffmanTableBits;
     var huffMask = (((uint32)1).Lsh((uint64)(huffBits))) - 1;

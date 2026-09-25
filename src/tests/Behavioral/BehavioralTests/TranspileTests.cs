@@ -91,6 +91,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAppendNilSliceElement() => CheckTarget("AppendNilSliceElement");
 
     [TestMethod]
+    public void CheckAppendOfMake() => CheckTarget("AppendOfMake");
+
+    [TestMethod]
     public void CheckAppendUntypedConst() => CheckTarget("AppendUntypedConst");
 
     [TestMethod]
