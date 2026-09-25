@@ -314,3 +314,82 @@ today: the loader only checks the field is present (testConversion.go:7586) and 
 check-roster-format's 2c arm. The comparator reads each entry's recorded per-run figure (every reading
 LEADS with it) against the run's own unit note and flags a move AWAY from the want. Until it lands,
 COORD compares them by hand at every sweep read (X(5)).
+
+## 9.1 Dated block, 2026-09-24 (C2) -- REC-F (iii) and (iv) as built: the MakeNoZero census and the predictions
+
+On `claude/c2-rec-f-golib`, off `fa18863b94`, UNMERGED until the 1.24.13.1 release. The golib and bytealg
+change is `97060327a7`: (iv) `NewArray(0)` returns `Array.Empty<T>()` uncharged; (iii) `MakeNoZero`
+allocates through `AllocationCounter` at Go's size class. This block is its census and its prediction
+table. Nothing above it is rewritten.
+
+**The census: which `AllocsPerRun` asserts reach `MakeNoZero`.** It is dynamic, not a call graph. Go's own
+tests ran on a patched go1.24.13 GOROOT that counts `MakeNoZero` calls inside each `AllocsPerRun`
+measurement window. The patch, method and data are in
+[`probes/c2-mnz-census/`](probes/c2-mnz-census/README.md). The positive control, `Grow(18)`, read 1 call
+and 24 B per run before any zero was trusted.
+- **Population:** 119 `AllocsPerRun` call sites in the tests of 46 std packages (cmd excluded).
+- **Observed:** 112 sites over 411 calls (linux/amd64; a second pass at `GOMAXPROCS=1` for the tests that
+  skip on "GOMAXPROCS>1").
+- **Not executed, 7 sites, each classified by reading its closure:**
+  - `syscall/js` ×3: not a go2cs target.
+  - `os/os_windows_test.go:1477` (UTF16 conversions) and `syscall/syscall_windows_test.go:248` (syscalls):
+    Windows only.
+  - `internal/zstd/zstd_test.go:264`: the big test data was absent.
+  - `reflect/all_test.go:1288`: `DeepEqual`, skipped by Go itself.
+  
+  None of their packages calls `strings.Builder` or the `bytes` functions that reach `MakeNoZero`.
+- **The converted callers match Go's one to one:** strings/builder.cs:68 (`Builder.grow`) and
+  bytes/bytes.cs:602, :697, :724, :754 (`Map`, `Repeat`, `ToUpper`, `ToLower`). So Go's executed paths are
+  the converted code's paths.
+
+**Result: 4 sites, 7 calls, each exactly ONE `MakeNoZero` per run, all in strings and bufio.** Every other
+observed site reads 0, including every one of (iv)'s log/slog members, so (iii) and (iv) touch disjoint
+members and their predictions compose by addition.
+
+| member | Go's own count | MakeNoZero per run (size-class bytes) | go2cs today (i7 reading run, COUNT) | predicted after (iii) (UNMEASURED) | what the count is, after |
+|:--|--:|:--|--:|--:|:--|
+| strings TestBuilderAllocs (want 1) | 1 | 1 (8 B: `Grow(5)`) | 2 | **3** | ж<Builder> box + ElemRefBox + the buffer |
+| bufio TestReadStringAllocs (want 1) | 1 | 1 (144 B) | 2 | **3** | ReadString's ж<Builder> box (bufio.cs:516) + ElemRefBox + the buffer |
+| strings TestBuilderGrowSizeclasses (want ≤ 1) | 1 | 1 (24 B: `Grow(18)`) | 3 | **3** | box + ElemRefBox + the buffer; the append REGROW is gone, because 24 B holds the 19-byte write |
+| strings TestBuilderGrow, growLen=0 leg (want 0) | 0 | 0 | 2 | **2** | untouched: `Grow(0)` never calls `grow` |
+| strings TestBuilderGrow, growLen 100 / 1000 / 10000 / 100000 legs (want 1) | 1 each | 1 each (112 / 1,024 / 10,240 / 106,496 B) | 3 each (printed, not in the unit note) | **4 each** | today's three as the entry's plan names them (box, ElemRefBox, the `(@string)p` operand at strings/builder_test.cs:146) + the buffer |
+
+**Reading the table:**
+- (iii) moves no member TOWARD its want. It makes Go's one real allocation visible, which is the half
+  §9 calls load-bearing. The members' plans already say so ("REC-F (iii) takes it back to 2", after REC-D).
+  With REC-D's ElemRefBox removal as well, and for the Grow legs §7 stage 5's operand, each member
+  reaches the FLOOR its plan names: box plus buffer, 2.
+- TestBuilderGrowSizeclasses is the one member where the size class changes the COMPOSITION rather than
+  the number. **Falsifier:** a reading of 4 means the regrow survived, so the capacity did not round.
+- **Bytes move too, and are not predicted to the byte:** every buffer rounds up to its class (106,496 B
+  per run at growLen 100000). TestBuilderGrowSizeclasses loses the regrow's array.
+- **TestBuilderGrow's unit note stays on its growLen=0 leg** (the first nonzero call, §9 (ii)), so its
+  recorded reading stays 2. Only the printed messages of legs 2-5 move, 3 → 4.
+
+**The re-pins ride the same batch** (§9 (iii)): the `reading` fields of these four strings/bufio entries
+are re-read on the hardware lane and replaced in the same merge. Until §9 (v)'s comparator exists,
+COORD's by-hand sweep comparison would otherwise flag every one of them as a move AWAY from the want,
+which is correct and expected here.
+
+**(iv)'s members and predictions are C1's** (§9 (iv), UNMEASURED) and are not re-derived here. This run
+adds Go's own counts beside them, from the same census (linux/amd64): TestAlloc/2_pairs 2,
+/2_pairs_disabled_inline 2, /9_kvs 10, /attrs6 1, /attrs9 1, and 0 for /pairs, /attrs1, /attrs3,
+/attrs3_disabled, TestAttrNoAlloc, TestValueNoAlloc and TestAnyLevelAlloc. So after (iv) the residual gap
+per member is C1's predicted count minus Go's count; for 9_kvs that is 18 − 10.
+
+**(iv)'s reach beyond its named members is NOT censused.** A zero-length `array<T>` in any measured window
+loses one counted object. That only moves toward Go, since Go never allocates a zero-size object, with ONE
+exception: a row whose only counted objects were empty arrays, and which still allocates uncounted bytes,
+crosses the COUNT/BYTES seam (testing.cs:750). Its reading then RISES to bytes per run.
+TestAnyLevelAlloc (COUNT 1 → BYTES 24) is the named instance. The row re-read below is the census for
+the rest.
+
+**Gates owed on the hardware lane (none has run; this box cannot execute the Windows-flavour corpus):**
+- `ZeroLengthBackingTests`, and the GolibTests suite;
+- the strings, bufio and log/slog rows before and after at Release with tiering off, on Windows AND Linux;
+- a re-read of every `AllocsPerRun` row's unit note, for (iv)'s seam crossings;
+- CNR through the behavioral census;
+- one `go2cs.slnx` build, the floor's rule after a golib API change.
+
+The corpus reconvert hunk gate reads zero by construction: this is a golib and hand-owned-file change
+with no emission change.

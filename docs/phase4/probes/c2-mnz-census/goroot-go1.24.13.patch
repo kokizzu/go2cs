@@ -1,0 +1,67 @@
+--- a/src/internal/bytealg/bytealg.go
++++ b/src/internal/bytealg/bytealg.go
+@@ -111,6 +111,10 @@
+ 	return -1
+ }
+ 
++// MNZ census (C2 scratch, not Go): counted by runtime.bytealg_MakeNoZero while MNZWindow is set.
++var MNZWindow bool
++var MNZCount, MNZBytes int64
++
+ // MakeNoZero makes a slice of length n and capacity of at least n Bytes
+ // without zeroing the bytes (including the bytes between len and cap).
+ // It is the caller's responsibility to ensure uninitialized bytes
+--- a/src/runtime/slice.go
++++ b/src/runtime/slice.go
+@@ -5,6 +5,7 @@
+ package runtime
+ 
+ import (
++	"internal/bytealg"
+ 	"internal/abi"
+ 	"internal/goarch"
+ 	"internal/runtime/math"
+@@ -397,5 +398,9 @@
+ 		panicmakeslicelen()
+ 	}
+ 	cap := roundupsize(uintptr(len), true)
++	if bytealg.MNZWindow {
++		bytealg.MNZCount++
++		bytealg.MNZBytes += int64(cap)
++	}
+ 	return unsafe.Slice((*byte)(mallocgc(uintptr(cap), nil, false)), cap)[:len]
+ }
+--- a/src/testing/allocs.go
++++ b/src/testing/allocs.go
+@@ -5,6 +5,9 @@
+ package testing
+ 
+ import (
++	"internal/bytealg"
++	"os"
++	"fmt"
+ 	"runtime"
+ )
+ 
+@@ -29,13 +32,21 @@
+ 	mallocs := 0 - memstats.Mallocs
+ 
+ 	// Run the function the specified number of times
++	bytealg.MNZCount, bytealg.MNZBytes = 0, 0
++	bytealg.MNZWindow = true
+ 	for i := 0; i < runs; i++ {
+ 		f()
+ 	}
++	bytealg.MNZWindow = false
+ 
+ 	// Read the final statistics
+ 	runtime.ReadMemStats(&memstats)
+ 	mallocs += memstats.Mallocs
++	{
++		pc, file, line, _ := runtime.Caller(1)
++		fn := runtime.FuncForPC(pc).Name()
++		fmt.Fprintf(os.Stderr, "MNZCENSUS\t%s:%d\t%s\truns=%d\tmallocs=%d\tmnz=%d\tmnzbytes=%d\n", file, line, fn, runs, mallocs, bytealg.MNZCount, bytealg.MNZBytes)
++	}
+ 
+ 	// Average the mallocs over the runs (not counting the warm-up).
+ 	// We are forced to return a float64 because the API is silly, but do
