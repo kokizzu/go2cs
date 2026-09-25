@@ -1462,8 +1462,10 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     }
     object? liveMap = v.live;
     // Indexing a nil map is legal and yields the zero Value — unlike ASSIGNING to one, which
-    // panics — so this is a miss, not an error.
+    // panics — so this is a miss, not an error. The key is still HASHED first (Go's mapaccess
+    // runs mapKeyError on a nil map too), so an unhashable interface key panics even here.
     if (liveMap is null || (liveMap is IMap nilProbe && nilProbe.IsNil)) {
+        GoReflect.CheckMapKeyHashable(k);
         return new ΔValue(nil);
     }
     if (!GoReflect.TryGetMapEntry(liveMap, keyType, elemType, k, out object? e)) {
@@ -1767,12 +1769,15 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     // Guarding both arms together made the DELETE inherit the ASSIGN path's panic (reflect's own
     // TestNilMap), while the assignment beside it was already right, down to Go's exact text.
     if (elem.flag == 0) {
-        if (nilMap) {
-            return;
-        }
         if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? dk, GoReflect.GoTypeRelation.Assignable)) {
             throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                         " is not assignable to type " + GoReflect.GoTypeName(keyType));
+        }
+        // A delete on a nil map is a no-op, after the key is hashed: Go's mapdelete runs
+        // mapKeyError on a nil map, so an unhashable interface key panics even here.
+        if (nilMap) {
+            GoReflect.CheckMapKeyHashable(dk);
+            return;
         }
         GoReflect.DeleteMapEntry(liveMap!, keyType, elemType, dk);
         return;
