@@ -56,7 +56,6 @@ namespace go;
 
 [GoPackage("main")]
 [GoTestMatchingConsoleOutput]
-[GoTestMatchingConsoleOutput]
 public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
