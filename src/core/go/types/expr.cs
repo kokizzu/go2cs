@@ -641,7 +641,7 @@ internal static @string incomparableCause(this ж<Checker> Ꮡcheck, ΔType typ)
     // see if we can extract a more specific error
     @string cause = default!;
     comparableType(typ, true, default!, (@string format, params ꓸꓸꓸany argsʗp) => {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
         cause = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
     });
     return cause;

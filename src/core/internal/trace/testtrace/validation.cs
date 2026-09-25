@@ -405,7 +405,7 @@ internal static void checkStack(ж<errAccumulator> Ꮡe, traceꓸStack stk) {
 }
 
 [GoRecv] internal static void Errorf(this ref errAccumulator e, @string f, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     e.errs = append(e.errs, fmt.Errorf(f, args.ꓸꓸꓸ));
 }

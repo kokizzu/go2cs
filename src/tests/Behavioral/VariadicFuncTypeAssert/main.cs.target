@@ -6,7 +6,7 @@ using ꓸꓸꓸany = Span<any>;
 partial class main_package {
 
 internal static @string escaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     return fmt.Sprint(args.ꓸꓸꓸ);
 }
@@ -31,7 +31,7 @@ private static readonly object directPlainNoMatchˢ = (@string)"direct plain: no
 
 internal static void Main() {
     Actionꓸꓸꓸ<@string, any> fn = (@string format, params ꓸꓸꓸany argsʗp) => {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
         fmt.Printf(format + "\n"u8, args.ꓸꓸꓸ);
     };
     any logf = (((Actionꓸꓸꓸ<@string, any>)(fn))).OrTypedNilFunc();
@@ -57,7 +57,7 @@ internal static void Main() {
         }
     }
     any direct = ((Funcꓸꓸꓸ<any, @string>)((params ꓸꓸꓸany argsʗp) => {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
         return fmt.Sprint(args.ꓸꓸꓸ);
     }));
     {

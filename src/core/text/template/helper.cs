@@ -39,7 +39,7 @@ public static ж<Template> Must(ж<Template> Ꮡt, error err) {
 // For instance, ParseFiles("a/foo", "b/foo") stores "b/foo" as the template
 // named "foo", while "a/foo" is unavailable.
 public static (ж<Template>, error) ParseFiles(params ꓸꓸꓸstring filenamesʗp) {
-    var filenames = filenamesʗp.slice();
+    var filenames = filenamesʗp.sslice();
 
     return parseFiles(nil, readFileOS, filenames.ꓸꓸꓸ);
 }
@@ -56,7 +56,7 @@ public static (ж<Template>, error) ParseFiles(params ꓸꓸꓸstring filenames�
 // When parsing multiple files with the same name in different directories,
 // the last one mentioned will be the one that results.
 public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params ꓸꓸꓸstring filenamesʗp) {
-    var filenames = filenamesʗp.slice();
+    var filenames = filenamesʗp.sslice();
 
     ref var t = ref Ꮡt.DerefOrNull();
     t.init();

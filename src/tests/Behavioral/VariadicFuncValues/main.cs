@@ -36,13 +36,13 @@ internal static void report(Actionꓸꓸꓸ<@string, any> emit) {
 }
 
 [GoRecv] internal static void errorf(this ref logger l, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     fmt.Printf(l.tag + "!"u8 + format + "\n"u8, args.ꓸꓸꓸ);
 }
 
 [GoRecv] internal static void logf(this ref logger l, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     fmt.Printf(l.tag + "~"u8 + format + "\n"u8, args.ꓸꓸꓸ);
 }
@@ -80,7 +80,7 @@ internal static void Main() {
     f = gather;
     fmt.Println(f("var"u8, 10));
     report((@string format, params ꓸꓸꓸany argsʗp) => {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
         fmt.Printf(format + "\n"u8, args.ꓸꓸꓸ);
     });
     var lg = Ꮡ(new logger(tag: "L"u8));

@@ -3264,7 +3264,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
 }
 
 [GoRecv] internal static void logf(this ref transportRequest tr, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     {
         var (logf, ok) = tr.Request.Context().Value(new tLogKey(nil))._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok) {

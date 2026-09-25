@@ -21,7 +21,7 @@ internal static void assert(bool b) {
 }
 
 internal static void errorf(@string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     throw panic(fmt.Sprintf(format, args.ꓸꓸꓸ));
 }

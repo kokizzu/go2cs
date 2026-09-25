@@ -511,7 +511,7 @@ internal static UntypedInt maxArgs => 42;
 //go:linkname syscall_SyscallN syscall.SyscallN
 //go:nosplit
 internal static (uintptr r1, uintptr r2, uintptr err) syscall_SyscallN(uintptr fn, params ꓸꓸꓸuintptr argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     return syscall_syscalln(fn, (uintptr)len(args), args.ꓸꓸꓸ);
 }

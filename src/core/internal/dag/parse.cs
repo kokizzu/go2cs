@@ -107,7 +107,7 @@ public static (ж<Graph>, error) Parse(@string dag) {
     // TODO: Add line numbers to errors.
     ref var errors = ref heap<slice<@string>>(out var Ꮡerrors);
     void errorf(@string format, params ꓸꓸꓸany aʗp) {
-        var a = aʗp.slice();
+        var a = aʗp.sslice();
         Ꮡerrors.ValueSlot = append(Ꮡerrors.ValueSlot, fmt.Sprintf(format, a.ꓸꓸꓸ));
     }
     foreach (var (_, r) in rules) {

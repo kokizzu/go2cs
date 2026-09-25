@@ -47,7 +47,7 @@ public static http.HandlerFunc SVGProfileHandlerFunc(Func<ж<http.Request>, (sli
             if (r.FormValue(rawˢ) != ""u8) {
                 w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
                 void failf(@string s, params ꓸꓸꓸany argsʗp) {
-                    var args = argsʗp.slice();
+                    var args = argsʗp.sslice();
                     w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
                     w.Header().Set(xGoPprofˢ, "1"u8);
                     http.Error(w, fmt.Sprintf(s, args.ꓸꓸꓸ), http.StatusInternalServerError);

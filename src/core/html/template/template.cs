@@ -88,7 +88,7 @@ public static slice<ж<Template>> Templates(this ж<Template> Ꮡt) {
 //	"missingkey=error"
 //		Execution stops immediately with an error.
 public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring optʗp) {
-    var opt = optʗp.slice();
+    var opt = optʗp.sslice();
 
     ref var t = ref Ꮡt.DerefOrNull();
     t.text.Option(opt.ꓸꓸꓸ);
@@ -467,7 +467,7 @@ public static ж<Template> Must(ж<Template> Ꮡt, error err) {
 // For instance, ParseFiles("a/foo", "b/foo") stores "b/foo" as the template
 // named "foo", while "a/foo" is unavailable.
 public static (ж<Template>, error) ParseFiles(params ꓸꓸꓸstring filenamesʗp) {
-    var filenames = filenamesʗp.slice();
+    var filenames = filenamesʗp.sslice();
 
     return parseFiles(nil, readFileOS, filenames.ꓸꓸꓸ);
 }
@@ -481,7 +481,7 @@ public static (ж<Template>, error) ParseFiles(params ꓸꓸꓸstring filenames�
 //
 // ParseFiles returns an error if t or any associated template has already been executed.
 public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params ꓸꓸꓸstring filenamesʗp) {
-    var filenames = filenamesʗp.slice();
+    var filenames = filenamesʗp.sslice();
 
     return parseFiles(Ꮡt, readFileOS, filenames.ꓸꓸꓸ);
 }

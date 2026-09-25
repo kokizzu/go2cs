@@ -26,7 +26,7 @@ partial class gcm_package {
 // It is not allowed as a stand-alone operation in FIPS mode because it
 // is not ACVP tested.
 public static slice<byte> GHASH([GoArrayDims(16)] ж<array<byte>> Ꮡkey, params Span<slice<byte>> inputsʗp) {
-    var inputs = inputsʗp.slice();
+    var inputs = inputsʗp.sslice();
 
     fips140.RecordNonApproved();
     ref var @out = ref heap(new array<byte>(16), out var Ꮡout);

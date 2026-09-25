@@ -88,7 +88,7 @@ internal static pmode noExtraLinebreak => 2;     // disables extra line break af
 }
 
 [GoRecv] internal static void internalError(this ref printer p, params ꓸꓸꓸany msgʗp) {
-    var msg = msgʗp.slice();
+    var msg = msgʗp.sslice();
 
     if (debug) {
         fmt.Print(p.pos.String() + ": ");

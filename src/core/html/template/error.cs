@@ -88,7 +88,7 @@ public static ErrorCode ErrJSTemplate => 12;
 // errorf creates an error given a format string f and args.
 // The template Name still needs to be supplied.
 internal static ж<ΔError> errorf(ErrorCode k, parse.Node node, nint line, @string f, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     return Ꮡ(new ΔError(k, node, ""u8, line, fmt.Sprintf(f, args.ꓸꓸꓸ)));
 }

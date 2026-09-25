@@ -98,7 +98,7 @@ internal static @string Error(this importError e) {
 }
 
 [GoRecv] internal static void errorf(this ref parser p, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     p.error(fmt.Errorf(format, args.ꓸꓸꓸ));
 }
@@ -1019,7 +1019,7 @@ internal static typesꓸType lookupBuiltinType(nint typ) {
 //
 // parseType updates the type map to t for all type numbers n.
 internal static typesꓸType parseType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, params ꓸꓸꓸany nʗp) {
-    var n = nʗp.slice();
+    var n = nʗp.sslice();
 
     ref var p = ref Ꮡp.DerefOrNull();
     p.expect((rune)'<');
@@ -1080,7 +1080,7 @@ internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> �
 internal static (typesꓸType t, nint n1) parseTypeExtended(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, params ꓸꓸꓸany nʗp) {
     typesꓸType t = default!;
     nint n1 = default!;
-    var n = nʗp.slice();
+    var n = nʗp.sslice();
 
     ref var p = ref Ꮡp.DerefOrNull();
     p.expect((rune)'<');

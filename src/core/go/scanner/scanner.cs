@@ -155,7 +155,7 @@ internal static Mode dontInsertSemis => 2;     // do not automatically insert se
 }
 
 [GoRecv] internal static void errorf(this ref Scanner s, nint offs, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     s.error(offs, fmt.Sprintf(format, args.ꓸꓸꓸ));
 }

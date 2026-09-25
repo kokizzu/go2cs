@@ -8,7 +8,7 @@ partial class main_package {
 
 internal static void Main() {
     @string format(@string f, params ꓸꓸꓸany aʗp) {
-        var a = aʗp.slice();
+        var a = aʗp.sslice();
         return fmt.Sprintf(f, a.ꓸꓸꓸ);
     }
     fmt.Println(format("%s=%d"u8, (@string)"x"u8, (nint)(1)));
@@ -24,7 +24,7 @@ internal static void Main() {
     fmt.Println(sum(1, 2, 3, 4));
     var sumʗ1 = sum;
     nint forward(params ꓸꓸꓸnint aʗp) {
-        var a = aʗp.slice();
+        var a = aʗp.sslice();
         return sumʗ1(a.ꓸꓸꓸ);
     }
     fmt.Println(forward(10, 20, 30));

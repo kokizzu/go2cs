@@ -54,7 +54,7 @@ partial class fmt_package {
 // as space. It returns the number of items successfully scanned.
 // If that is less than the number of arguments, err will report why.
 public static (nint n, error err) Scan(params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     return Fscan(new os_FileжReader(os.Stdin), a.ꓸꓸꓸ);
 }
@@ -62,7 +62,7 @@ public static (nint n, error err) Scan(params ꓸꓸꓸany aʗp) {
 // Scanln is similar to [Scan], but stops scanning at a newline and
 // after the final item there must be a newline or EOF.
 public static (nint n, error err) Scanln(params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     return Fscanln(new os_FileжReader(os.Stdin), a.ꓸꓸꓸ);
 }
@@ -75,7 +75,7 @@ public static (nint n, error err) Scanln(params ꓸꓸꓸany aʗp) {
 // The one exception: the verb %c always scans the next rune in the
 // input, even if it is a space (or tab etc.) or newline.
 public static (nint n, error err) Scanf(@string format, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     return Fscanf(new os_FileжReader(os.Stdin), format, a.ꓸꓸꓸ);
 }
@@ -99,7 +99,7 @@ public static (nint n, error err) Scanf(@string format, params ꓸꓸꓸany aʗp
 // returns the number of items successfully scanned. If that is less
 // than the number of arguments, err will report why.
 public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscan(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), a.ꓸꓸꓸ);
@@ -108,7 +108,7 @@ public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp
 // Sscanln is similar to [Sscan], but stops scanning at a newline and
 // after the final item there must be a newline or EOF.
 public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscanln(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), a.ꓸꓸꓸ);
@@ -119,7 +119,7 @@ public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany a�
 // returns the number of items successfully parsed.
 // Newlines in the input must match newlines in the format.
 public static (nint n, error err) Sscanf(@string strʗp, @string format, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscanf(new stringReaderжReader(Ꮡstr.Reinterpret<@string, stringReader>()), format, a.ꓸꓸꓸ);

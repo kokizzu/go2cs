@@ -261,7 +261,7 @@ internal static bool convertibleTo(this ж<operand> Ꮡx, ж<Checker> Ꮡcheck, 
         return false;
     }
     void errorf(@string format, params ꓸꓸꓸany argsʗp) {
-        var args = argsʗp.slice();
+        var args = argsʗp.sslice();
         if (Ꮡcheck != nil && Ꮡcause != nil) {
             @string msg = Ꮡcheck.sprintf(format, args.ꓸꓸꓸ);
             if (Ꮡcause.Value != ""u8) {

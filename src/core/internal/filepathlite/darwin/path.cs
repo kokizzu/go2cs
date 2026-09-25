@@ -53,7 +53,7 @@ internal static error errInvalidPath = errors.New("invalid path"u8);
 }
 
 [GoRecv] internal static void prepend(this ref lazybuf b, params ꓸꓸꓸbyte prefixʗp) {
-    var prefix = prefixʗp.slice();
+    var prefix = prefixʗp.sslice();
 
     b.buf = slices.Insert(b.buf, 0, prefix.ꓸꓸꓸ);
     b.w += len(prefix);

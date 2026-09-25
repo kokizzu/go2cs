@@ -169,7 +169,7 @@ internal static readonly @string u2029ˢ = @"\u2029"u8;
 // jsValEscaper escapes its inputs to a JS Expression (section 11.14) that has
 // neither side-effects nor free variables outside (NaN, Infinity).
 internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     any a = default!;
     if (len(args) == 1){
@@ -278,7 +278,7 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
 // JavaScript source, in JavaScript embedded in an HTML5 <script> element,
 // or in an HTML5 event handler attribute such as onclick.
 internal static @string jsStrEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, t) = stringify(args.ꓸꓸꓸ);
     if (t == contentTypeJSStr) {
@@ -288,7 +288,7 @@ internal static @string jsStrEscaper(params ꓸꓸꓸany argsʗp) {
 }
 
 internal static @string jsTmplLitEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, _) = stringify(args.ꓸꓸꓸ);
     return replace(s, jsBqStrReplacementTable);
@@ -299,7 +299,7 @@ internal static @string jsTmplLitEscaper(params ꓸꓸꓸany argsʗp) {
 // expression literal. /foo{{.X}}bar/ matches the string "foo" followed by
 // the literal text of {{.X}} followed by the string "bar".
 internal static @string jsRegexpEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (s, _) = stringify(args.ꓸꓸꓸ);
     s = replace(s, jsRegexpReplacementTable);

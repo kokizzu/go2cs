@@ -2077,6 +2077,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckVariadicFuncValues() => CheckTarget("VariadicFuncValues");
 
     [TestMethod]
+    public void CheckVariadicPackPassThrough() => CheckTarget("VariadicPackPassThrough");
+
+    [TestMethod]
     public void CheckVariadicPointerParam() => CheckTarget("VariadicPointerParam");
 
     [TestMethod]

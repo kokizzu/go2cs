@@ -3789,7 +3789,7 @@ public static void SetKeepAlivesEnabled(this ж<Server> Ꮡs, bool v) {
 
 // TODO: Issue 26303: close HTTP/2 conns as soon as they become idle.
 [GoRecv] internal static void logf(this ref Server s, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (s.ErrorLog != nil){
         s.ErrorLog.Printf(format, args.ꓸꓸꓸ);
@@ -3802,7 +3802,7 @@ public static void SetKeepAlivesEnabled(this ж<Server> Ꮡs, bool v) {
 // via ServerContextKey. If there's no associated server, or if ErrorLog
 // is nil, logging is done via the log package's standard logger.
 internal static void logf(ж<Request> Ꮡr, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var r = ref Ꮡr.DerefOrNull();
     var (s, _) = r.Context().Value(ServerContextKey.OrTypedNil())._<ж<Server>>(ᐧ);

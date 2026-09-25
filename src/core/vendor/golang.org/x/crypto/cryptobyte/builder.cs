@@ -279,7 +279,7 @@ private static readonly @string cryptobyteLengthOverflowˢ = "cryptobyte: length
 private static readonly @string cryptobyteBuilderIsˢ = "cryptobyte: Builder is exceeding its fixed-size buffer"u8;
 
 [GoRecv] internal static void add(this ref Builder b, params ꓸꓸꓸbyte bytesʗp) {
-    var bytes = bytesʗp.slice();
+    var bytes = bytesʗp.sslice();
 
     if (b.err != default!) {
         return;

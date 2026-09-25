@@ -390,7 +390,7 @@ internal static readonly @string godebugExecwait2Detectedˢ = "GODEBUG=execwait=
 // quoting yourself and provide the full command line in SysProcAttr.CmdLine,
 // leaving Args empty.
 public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
-    var arg = argʗp.slice();
+    var arg = argʗp.sslice();
 
     var cmd = Ꮡ(new Cmd(
         Path: name,
@@ -475,7 +475,7 @@ public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
 // on its Process, and leaves its WaitDelay unset. The caller may change the
 // cancellation behavior by modifying those fields before starting the command.
 public static ж<Cmd> CommandContext(context.Context ctx, @string name, params ꓸꓸꓸstring argʗp) {
-    var arg = argʗp.slice();
+    var arg = argʗp.sslice();
 
     if (ctx == default!) {
         throw panic("nil Context");

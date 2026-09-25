@@ -719,7 +719,7 @@ internal static error copyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWrit
 }
 
 [GoRecv] internal static void logf(this ref ReverseProxy p, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (p.ErrorLog != nil){
         p.ErrorLog.Printf(format, args.ꓸꓸꓸ);

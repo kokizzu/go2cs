@@ -137,7 +137,7 @@ public static error Unwrap(this ExecError e) {
 
 // errorf records an ExecError and terminates processing.
 [GoRecv] internal static void errorf(this ref state s, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     @string name = doublePercent(s.tmpl.Name());
     if (s.node == default!){

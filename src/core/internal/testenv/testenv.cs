@@ -486,7 +486,7 @@ private static readonly @string ifNeImportPathCommandˢ = @"{{if ne .ImportPath 
 // pkgs may include any package pattern that is valid to pass to 'go list',
 // so it may also be a list of Go source files all in the same directory.
 public static void WriteImportcfg(testing.TB t, @string dstPath, map<@string, @string> packageFiles, params ꓸꓸꓸstring pkgsʗp) {
-    var pkgs = pkgsʗp.slice();
+    var pkgs = pkgsʗp.sslice();
 
     t.Helper();
     var icfg = @new<bytes.Buffer>();

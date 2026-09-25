@@ -87,7 +87,7 @@ internal static WriterTo _ᴛ2ʗ = new multiReaderжWriterTo(((ж<multiReader>)n
 // inputs have returned EOF, Read will return EOF.  If any of the readers
 // return a non-nil, non-EOF error, Read will return that error.
 public static Reader MultiReader(params ꓸꓸꓸReader readersʗp) {
-    var readers = readersʗp.slice();
+    var readers = readersʗp.sslice();
 
     var r = new slice<Reader>(len(readers));
     copy(r, readers);

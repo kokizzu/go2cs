@@ -45,6 +45,12 @@ public ref struct sslice<T>
         return m_span[..m_length];
     }
 
+    // Spread operator, as slice<T>'s is. A pass-through `f(x, v...)` of a stack-view variadic (REC-C,
+    // section A) hands the callee's params Span<T> the SAME storage, as Go passes the pack's header.
+    // Spelled with escapes: this file is not UTF-8 (its header's copyright sign is one Latin-1 byte),
+    // so a raw glyph here would be read through whatever fallback code page the compiler picks.
+    public Span<T> \uA4F8\uA4F8\uA4F8 => ToSpan();
+
     public Span<T> ToCapacitySpan()
     {
         return m_span;

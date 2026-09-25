@@ -184,7 +184,7 @@ public static ж<Proc> MustFindProc(this ж<DLL> Ꮡd, @string name) {
 //
 //go:uintptrescapes
 [GoRecv] public static (uintptr, uintptr, error) Call(this ref Proc p, params ꓸꓸꓸuintptr aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     var (ᴛ1, ᴛ2, ᴛ3) = SyscallN(p.Addr(), a);
     return (ᴛ1, ᴛ2, ᴛ3);
@@ -326,7 +326,7 @@ public static uintptr Addr(this ж<LazyProc> Ꮡp) {
 //
 //go:uintptrescapes
 public static (uintptr r1, uintptr r2, error lastErr) Call(this ж<LazyProc> Ꮡp, params ꓸꓸꓸuintptr aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     ref var p = ref Ꮡp.DerefOrNull();
     Ꮡp.mustFind();

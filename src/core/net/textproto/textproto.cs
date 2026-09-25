@@ -111,7 +111,7 @@ public static (ж<Conn>, error) Dial(@string network, @string addr) {
 public static (nuint id, error err) Cmd(this ж<Conn> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
     nuint id = default!;
     error err = default!;
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     id = Ꮡc.of(Conn.ᏑPipeline).Next();
     Ꮡc.of(Conn.ᏑPipeline).StartRequest(id);

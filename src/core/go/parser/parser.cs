@@ -79,7 +79,7 @@ internal static void init(this ж<parser> Ꮡp, ж<tokenꓸFile> Ꮡfile, slice<
 // ----------------------------------------------------------------------------
 // Parsing support
 [GoRecv] internal static void printTrace(this ref parser p, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     @string dots = ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "u8;
     const nint n = /* len(dots) */ 64;

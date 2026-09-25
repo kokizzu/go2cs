@@ -1531,7 +1531,7 @@ internal static @string dumpOrdering(ref ordering order) {
 // an Event manually if this isn't quite the right way to express
 // the contents of the event.
 internal static ΔEvent makeEvent(ж<evTable> Ꮡtable, schedCtx ctx, @event.Type typ, ΔTime time, params ꓸꓸꓸuint64 argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var ev = new ΔEvent(
         table: Ꮡtable,

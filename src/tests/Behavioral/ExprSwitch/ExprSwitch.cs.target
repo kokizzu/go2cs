@@ -22,7 +22,7 @@ internal static @string getStr2(any test1, @string test2) {
 }
 
 internal static @string getStr3(@string format, params ꓸꓸꓸany aʗp) {
-    var a = aʗp.slice();
+    var a = aʗp.sslice();
 
     return fmt.Sprintf(format, a.ꓸꓸꓸ);
 }

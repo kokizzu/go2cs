@@ -30,7 +30,7 @@ partial class strings_package {
 //
 // NewReplacer panics if given an odd number of arguments.
 public static ж<Replacer> NewReplacer(params ꓸꓸꓸstring oldnewʗp) {
-    var oldnew = oldnewʗp.slice();
+    var oldnew = oldnewʗp.sslice();
 
     if (len(oldnew) % 2 == 1) {
         throw panic("strings.NewReplacer: odd argument count");

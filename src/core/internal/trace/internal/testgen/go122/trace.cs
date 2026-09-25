@@ -97,7 +97,7 @@ public static ж<Trace> NewTrace() {
 // of the names in Specs() result for the version that was passed to
 // this trace.
 [GoRecv] public static void RawEvent(this ref Trace t, @event.Type typ, slice<byte> data, params ꓸꓸꓸuint64 argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     t.events = append(t.events, t.createEvent(typ, data, args.ꓸꓸꓸ));
 }
@@ -394,7 +394,7 @@ internal static ж<ΔBatch> newStructuralBatch(this ж<ΔGeneration> Ꮡg) {
 // of the names in Specs() result for the version that was passed to
 // this trace.
 [GoRecv] public static void RawEvent(this ref ΔBatch b, @event.Type typ, slice<byte> data, params ꓸꓸꓸuint64 argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var ev = (~b.gen).trace.createEvent(typ, data, args.ꓸꓸꓸ);
     // Compute the size of the event and add it to the batch.

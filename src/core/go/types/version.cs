@@ -52,7 +52,7 @@ internal static goVersion go_current = asGoVersion(fmt.Sprintf("go1.%d"u8, (nint
 // verifyVersionf is like allowVersion but also accepts a format string and arguments
 // which are used to report a version error if allowVersion returns false.
 internal static bool verifyVersionf(this ж<Checker> Ꮡcheck, positioner at, goVersion v, @string format, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var check = ref Ꮡcheck.DerefOrNull();
     if (!check.allowVersion(v)) {
