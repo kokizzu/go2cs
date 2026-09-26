@@ -124,5 +124,76 @@ public class EventPipeSamplerTests
         Assert.AreEqual("cpusamplerprobe.cpuHog1", GoSyntheticPC.NameOf(hogPC));
     }
 
+    [TestMethod]
+    public void ASampleCarriesTheLabelsItsThreadHadWhenSampled()
+    {
+        const int hz = 100;
+        const int hogMilliseconds = 1000;
+
+        var sampler = new EventPipeSampler(EventPipeSampler.OpenInProcessSession);
+        var samples = new List<(uintptr[] stack, unsafe_package.Pointer tag)>();
+        unsafe_package.Pointer label = unsafe_package.Pointer.FromPinnedBox(Ꮡ(42L));
+
+        void Collect(int64 nanotime, slice<uintptr> stack, unsafe_package.Pointer tag)
+        {
+            var copy = new uintptr[(int)stack.Length];
+
+            for (int i = 0; i < copy.Length; i++)
+                copy[i] = stack[i];
+
+            samples.Add((copy, tag));
+        }
+
+        sampler.Start(hz);
+        Assert.IsTrue(sampler.LastSessionOpened, "a SampleProfiler session must open on this process");
+
+        // Go's pprof.Do: the labelled hog sets its labels (runtime_setProfLabel is Goroutine.SetProfileLabels)
+        // after profiling started, and clears them when it is done; the other hog never sets any.
+        var labelled = new Thread(() =>
+        {
+            go.golib.Goroutine.SetProfileLabels(label);
+            cpusamplerprobe_package.cpuHogger(hogMilliseconds);
+            go.golib.Goroutine.SetProfileLabels(null);
+        });
+        var unlabelled = new Thread(() => cpusamplerprobe_package.cpuHogger2(hogMilliseconds));
+
+        labelled.Start();
+        unlabelled.Start();
+        labelled.Join();
+        unlabelled.Join();
+
+        sampler.Stop(Collect);
+
+        uintptr hoggerPC = GoSyntheticPC.Of(typeof(cpusamplerprobe_package).GetMethod(nameof(cpusamplerprobe_package.cpuHogger))!);
+        uintptr hogger2PC = GoSyntheticPC.Of(typeof(cpusamplerprobe_package).GetMethod(nameof(cpusamplerprobe_package.cpuHogger2))!);
+        int labelledSamples = 0, labelledTagged = 0, unlabelledSamples = 0, unlabelledTagged = 0;
+
+        foreach ((uintptr[] stack, unsafe_package.Pointer tag) in samples)
+        {
+            bool tagged = tag is not null && tag != nil;
+
+            if (Array.IndexOf(stack, hoggerPC) >= 0)
+            {
+                labelledSamples++;
+
+                if (tagged && ReferenceEquals(tag, label))
+                    labelledTagged++;
+            }
+            else if (Array.IndexOf(stack, hogger2PC) >= 0)
+            {
+                unlabelledSamples++;
+
+                if (tagged)
+                    unlabelledTagged++;
+            }
+        }
+
+        Console.WriteLine($"labelled hog {labelledTagged} of {labelledSamples} tagged; unlabelled hog {unlabelledTagged} of {unlabelledSamples} tagged");
+
+        Assert.IsTrue(labelledSamples >= 20 && unlabelledSamples >= 20, $"both hogs are sampled; {labelledSamples} and {unlabelledSamples}");
+        Assert.AreEqual(labelledSamples, labelledTagged, "every sample of the labelled hog carries its labels");
+        Assert.AreEqual(0, unlabelledTagged, "no sample of the unlabelled hog carries labels");
+    }
+
     private sealed class ServerNotAvailableProbeException() : Exception("diagnostic port not available (probe)");
 }

@@ -33,4 +33,27 @@ internal static class cpusamplerprobe_package
 
         s_salt += salt;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ulong cpuHog2(ulong x)
+    {
+        ulong f = x;
+
+        for (int i = 0; i < 100000; i++)
+            f = f % 2 == 0 ? f * 5 + 1 : f / 2 + 3;
+
+        return f;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cpuHogger2(int milliseconds)
+    {
+        var clock = Stopwatch.StartNew();
+        ulong salt = 1;
+
+        while (clock.ElapsedMilliseconds < milliseconds)
+            salt += cpuHog2(salt);
+
+        s_salt += salt;
+    }
 }
