@@ -470,10 +470,13 @@ partial class runtime_package
     // then per-sample ensure+compute in order — and everything of substance (initMetrics' table,
     // the compute closures, the stat aggregates) stays auto-converted.
     //
-    // The pointer column is the metricValue.pointer word as-is (histogram kinds put a runtime
-    // histogram's address there). It crosses as the same opaque address the Go form would carry
-    // and is exactly as (un)readable on the other side — Value.Float64Histogram()'s reinterpret
-    // is a pre-existing limitation of the address model, not something this shim changes.
+    // A HISTOGRAM crosses as its two slices, not as its address. Go's metricValue.pointer holds the
+    // address of the runtime's own metricFloat64Histogram, and runtime/metrics' Value.Float64Histogram
+    // casts it to *Float64Histogram: a different type with the same layout. The managed pointer model
+    // refuses that reinterpret (arm 2a), and runtime cannot name runtime/metrics' type (metrics
+    // references runtime, not the reverse), so the runtime hands over counts and buckets and
+    // runtime/metrics/sample.cs builds its own Float64Histogram over the same two slices. Histograms
+    // are the only kind that sets metricValue.pointer (float64HistOrInit is its one writer).
     //
     // ⚠ A STATED DIVERGENCE, deliberately not repaired here (⟨OQ-4⟩ of DESIGN-readmemstats-surface.md,
     // ratified 2026-08-21): runtime/metrics does NOT read the ReadMemStats surface. Its compute
@@ -486,7 +489,7 @@ partial class runtime_package
     // auto-converted closures into hand-owns on a banked package for no consuming test — the banked
     // runtime/metrics row is TestNames + TestDocs, which asserts no VALUE — so the divergence is
     // recorded rather than papered over, and the wiring waits for a consumer that demands it.
-    public static void readMetricsManaged(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<unsafe_package.Pointer> pointers)
+    public static void readMetricsManaged(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<slice<uint64>> histCounts, slice<slice<float64>> histBuckets)
     {
         metricsLock();
 
@@ -517,7 +520,13 @@ partial class runtime_package
 
             kinds[i] = (nint)value.kind;
             scalars[i] = value.scalar;
-            pointers[i] = value.pointer;
+
+            if (value.kind == metricKindFloat64Histogram)
+            {
+                ж<metricFloat64Histogram> hist = (ж<metricFloat64Histogram>)(uintptr)value.pointer;
+                histCounts[i] = hist.Value.counts;
+                histBuckets[i] = hist.Value.buckets;
+            }
         }
 
         metricsUnlock();
