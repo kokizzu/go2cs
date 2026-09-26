@@ -56,6 +56,30 @@ internal static class Q44RegistryCensus
     // cannot answer falsifier (b) -- which needs to know WHICH types met at offset 0.
     private static readonly ConcurrentDictionary<string, long> s_arm2Pairs = new();
 
+    // THE INTERIOR-ALIAS STEP (seat (c), M4): its own arm BESIDE 2a and 3, never inside the
+    // conversion sum. Every arrival it sees was already counted as a conversion by arm 2 (the 2a
+    // subset) or arm 3, exactly as the 2a subset stays counted in arm 2 after the fix diverted it --
+    // so the reconciliation above is untouched, and these lines say which of those arrivals the step
+    // RESOLVED and which it left to today's refusal, keyed by the PATH SHAPE it walked.
+    private static long s_interiorResolved;
+    private static long s_interiorRefused;
+    private static readonly ConcurrentDictionary<string, long> s_interiorShapes = new();
+
+    internal static void Interior(object baseBox, Type requested, bool fromArm3, string shape, bool resolved)
+    {
+        Interlocked.Increment(ref resolved ? ref s_interiorResolved : ref s_interiorRefused);
+
+        // The POINTEE type, as arm 2 records it: the box class alone names StandardBox`1 for every base.
+        Type baseType = baseBox.GetType() is { IsGenericType: true } g ? g.GetGenericArguments()[0] : baseBox.GetType();
+
+        string key = $"{(fromArm3 ? "arm3" : "2a")}  {(resolved ? "RESOLVED" : "REFUSED")}  " +
+                     $"base={baseType.FullName}  requested={requested.FullName}  path={shape}";
+        s_interiorShapes.AddOrUpdate(key, 1, static (_, n) => n + 1);
+    }
+
+    internal static (long resolved, long refused) InteriorSnapshot() =>
+        (Interlocked.Read(ref s_interiorResolved), Interlocked.Read(ref s_interiorRefused));
+
     // Conservative and CLOSED over fields: a struct counts as reference-bearing if it, or anything it
     // contains, is a managed reference. `RuntimeHelpers.IsReferenceOrContainsReferences<T>` answers
     // this exactly but needs a generic parameter, and here the type is only known as a `Type` -- so
@@ -383,6 +407,12 @@ internal static class Q44RegistryCensus
 
         foreach (var kv in s_arm2Pairs)
             lines.Add($"Q44CENSUS-ARM2 {kv.Value,8}  {kv.Key}");
+
+        lines.Add($"Q44CENSUS-INTERIOR resolved={Interlocked.Read(ref s_interiorResolved)} " +
+                  $"refused={Interlocked.Read(ref s_interiorRefused)} -- a SUBSET of arm2a + arm3, not a conversion arm");
+
+        foreach (var kv in s_interiorShapes)
+            lines.Add($"Q44CENSUS-INTERIOR {kv.Value,8}  {kv.Key}");
 
         // ⚠ NOTHING ROUTINE GOES TO stderr, and that is the whole of arm 2 (2026-09-08). These lines
         // used to be written here as a "secondary" channel. stderr is not a spare channel: it is a
