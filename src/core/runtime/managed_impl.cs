@@ -1971,4 +1971,14 @@ partial class runtime_package
     {
         return (callerSpanStart(0), callerSpanStart(int.MaxValue) + (((nuint)1 << CallerSpanShift) - 1));
     }
+
+    /// <summary>The address range of this runtime's Go TEXT: every program counter it hands to Go code
+    /// lies inside it -- caller tokens from the caller-span band's base, function PCs in GoSyntheticPC's
+    /// band above it. runtime/pprof reports it as the executable's text mapping (proto_*_impl.cs), the
+    /// role Go's own text segment plays, so a profile location built from one of these PCs has a
+    /// mapping. <c>end</c> is exclusive, so the single address <c>ulong.MaxValue</c> is outside.</summary>
+    public static (ulong start, ulong end) GoSyntheticTextRange()
+    {
+        return ((ulong)s_callerSpanBase, ulong.MaxValue);
+    }
 }
