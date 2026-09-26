@@ -66,6 +66,28 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			panic(fmt.Sprintf("@visitTypeSpec - Failed to get type for type alias %s", name))
 		}
 
+		// A Go 1.24 GENERIC alias (`type A[T any] = Box[T]`) has no C# form: a `using` directive
+		// cannot declare type parameters, and a closed one cannot take type arguments at a use. Every
+		// use renders the alias's TARGET instead (genericAliasTarget), so the declaration emits no
+		// `global using` and publishes no GoTypeAlias record, which every importer would otherwise
+		// turn into a `global using` over an unbound `go.T`. A one-line comment keeps the Go
+		// declaration so the name still reads where it is declared.
+		//
+		// A generic alias of an ANONYMOUS struct or interface is not supported: its target is an
+		// anonymous type per instantiation, which the lift below names only for a non-generic
+		// declaration, and lifting it as a generic type of its own would make `Cell[int]` a
+		// different type from `struct{ Row, Col int }`, which Go says it is not. It emits the comment
+		// and a warning, and no lifted type.
+		if typeSpec.TypeParams != nil && len(typeSpec.TypeParams.List) > 0 {
+			switch typeSpecType.(type) {
+			case *types.Struct, *types.Interface:
+				showWarning("%s: generic type alias %s of an anonymous %s is not supported: its uses will not compile", v.fset.Position(typeSpec.Pos()), typeSpec.Name.Name, strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", typeSpecType), "*types.")))
+			}
+
+			v.writeOutputLn("// type %s", strings.ReplaceAll(v.getPrintedNode(typeSpec), "\n", " "))
+			return
+		}
+
 		// Check if the aliased type is a struct or pointer to a struct
 		if structType, exprType := v.extractStructType(typeSpec.Type); structType != nil && !v.liftedTypeExists(structType) {
 			if v.inFunction {

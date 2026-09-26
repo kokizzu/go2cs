@@ -1037,6 +1037,13 @@ func (v *Visitor) convCompositeLitAs(compositeLit *ast.CompositeLit, elidedType 
 
 	if compositeLit.Type != nil {
 		typeRender = v.convExpr(compositeLit.Type, contexts)
+
+		// Type syntax naming a Go 1.24 GENERIC alias (`P[string, int]{…}`, `lib.Set[int]{…}`)
+		// renders the alias's TARGET, as every other type position does (genericAliasTarget): the
+		// syntax's own rendering is the alias name with type arguments, which no C# type carries.
+		if aliasType, ok := genericAliasTarget(v.info.TypeOf(compositeLit.Type)); ok {
+			typeRender = convertToCSTypeName(v.getAliasQualifiedTypeName(aliasType, false))
+		}
 	} else {
 		typeRender = convertToCSTypeName(v.getAliasQualifiedTypeName(exprType, false))
 	}

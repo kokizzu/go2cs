@@ -9383,6 +9383,36 @@ wants the same answer. (Guarded by `mixedKeyedComposite_test.go`'s
 `TestRootedUsingAliasKeepsGlobalQualifier`, which asserts the rooted *and* unrooted renders both
 leave such a name alone.)
 
+### Generic Type Aliases
+
+A Go 1.24 generic alias (`type A[T any] = Box[T]`) cannot be a C# `using` alias: a `using` directive cannot declare type parameters (`using A<T> = Box<T>;` is CS1002), and a closed alias cannot take type arguments at a use (CS0307). A Go alias *is* its target (identity, method set, assignability), so the converter renders the target wherever the alias is named:
+
+```go
+type P[K comparable, V any] = Pair[K, V]
+type StrPair[V any] = Pair[string, V]
+type IntMap[V any] = map[int]V
+
+func swap[T comparable](p P[T, T]) P[T, T] { return P[T, T]{Key: p.Val, Val: p.Key} }
+m := IntMap[string]{1: "one"}
+```
+```csharp
+// type P[K comparable, V any] = Pair[K, V]
+// type StrPair[V any] = Pair[string, V]
+// type IntMap[V any] = map[int]V
+
+internal static Pair<T, T> swap<T>(Pair<T, T> p) {
+    return new Pair<T, T>(Key: p.Val, Val: p.Key);
+}
+var m = new map<nint, @string>{[1] = "one"u8};
+```
+
+- **Declaration.** The alias emits a one-line comment holding its Go text, and nothing else: no `global using` and no `GoTypeAlias` record. A record would reach every importer as a `global using` over an unbound `go.T`, breaking packages that never name the alias.
+- **Uses.** `genericAliasTarget` (typeNameResolution.go) answers `types.Unalias(t)` for a `*types.Alias` with type arguments or type parameters. `getAliasQualifiedTypeName` and `getFullyQualifiedTypeName` call it first, and a composite literal whose type syntax names a generic alias renders the resolved target instead of the syntax. An alias of an alias resolves all the way (`SP[bool]` → `Pair<@string, bool>`), and a cross-package target takes the file's import alias (`ga.Box<nint>`).
+- **Plain aliases are untouched.** An alias without type parameters, including one over an instantiated generic (`type IntBox = Box[int]`), keeps its `global using`, its record and its name at every use.
+- **Not supported:** a generic alias of an anonymous struct or interface (`type Cell[T any] = struct{ Row, Col T }`). Its target is a different anonymous type per instantiation, and lifting it as a generic type of its own would make `Cell[int]` a different type from `struct{ Row, Col int }`. The declaration emits the comment and a conversion warning.
+
+Guarded by the `GenericTypeAlias` behavioral test (with `GenericTypeAliasLib` and `GenericTypeAliasBystander`, a consumer that never names an alias) and by `TestGenericTypeAliasRendersItsTarget` and `TestPlainTypeAliasKeepsItsName`.
+
 ## Delegates to Value Receiver Instances
 
 **A Go METHOD EXPRESSION** — `(*timers).run`, the *unbound* method as a func value whose first parameter is the receiver (runtime `time.go`'s `abi.FuncPCABIInternal((*timers).run)`) — selects a method off a **type**. Emitting the selector naively renders the type in value position (`(ж<timers>).run` — CS0119 + CS1503). Go types the expression as the func signature with the receiver prepended, so the converter renders that signature as the concrete delegate type and casts the method's static form to it: `(Func<ж<timers>, int64, int64>)(run)`. For a `[GoRecv]` method the `RecvGenerator`'s ж-overload matches the delegate exactly; a value-receiver method expression (`counter.get`) casts to its value-typed delegate (`(Func<counter, nint>)(get)`); a direct-ж method's primary form matches directly. (Guarded by the `MethodExpression` behavioral test — pointer- and value-receiver method expressions assigned, passed inline, and *invoked*, with mutations accumulating through the receiver box, values vs Go.)

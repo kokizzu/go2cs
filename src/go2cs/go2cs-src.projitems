@@ -122,6 +122,7 @@
     <None Include="$(MSBuildThisFileDirectory)foreignTypeAliases.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignTypeAliases_test.go" />
     <None Include="$(MSBuildThisFileDirectory)funcResultProjection_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)genericTypeAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)globalAddressOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)go.mod" />
     <None Include="$(MSBuildThisFileDirectory)go.sum" />

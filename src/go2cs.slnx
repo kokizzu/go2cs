@@ -486,6 +486,9 @@
     <Project Path="tests/Behavioral/GenericStringTypeArg/GenericStringTypeArg.csproj" />
     <Project Path="tests/Behavioral/GenericStructEquality/GenericStructEquality.csproj" />
     <Project Path="tests/Behavioral/GenericStructFields/GenericStructFields.csproj" />
+    <Project Path="tests/Behavioral/GenericTypeAlias/GenericTypeAlias.csproj" />
+    <Project Path="tests/Behavioral/GenericTypeAliasBystander/GenericTypeAliasBystander.csproj" />
+    <Project Path="tests/Behavioral/GenericTypeAliasLib/GenericTypeAliasLib.csproj" />
     <Project Path="tests/Behavioral/GenericTypeAssertions/GenericTypeAssertions.csproj" />
     <Project Path="tests/Behavioral/GenericTypeDecl/GenericTypeDecl.csproj" />
     <Project Path="tests/Behavioral/GenericTypeInference/GenericTypeInference.csproj" />

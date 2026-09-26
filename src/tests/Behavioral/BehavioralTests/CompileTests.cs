@@ -652,6 +652,15 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckGenericStructFields() => CheckTarget("GenericStructFields");
 
     [TestMethod]
+    public void CheckGenericTypeAlias() => CheckTarget("GenericTypeAlias");
+
+    [TestMethod]
+    public void CheckGenericTypeAliasBystander() => CheckTarget("GenericTypeAliasBystander");
+
+    [TestMethod]
+    public void CheckGenericTypeAliasLib() => CheckTarget("GenericTypeAliasLib");
+
+    [TestMethod]
     public void CheckGenericTypeAssertions() => CheckTarget("GenericTypeAssertions");
 
     [TestMethod]
