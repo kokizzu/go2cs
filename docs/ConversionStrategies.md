@@ -1141,6 +1141,19 @@ of a func-type alias (`System.Func`). The golib csproj-alias names go the other 
 rather than rooted, since `uint64` and friends stand for C# keywords: `type fe = [4]uint64` emits
 `global using fe = go.array<ulong>;`.
 
+A **generic alias** (Go 1.24, `type A[T any] = Box[T]`) has no C# form: a `using` directive cannot declare
+type parameters. Every use renders the alias's target, which Go says it is, and the declaration keeps the Go
+text as a comment:
+
+```go
+type Alias[T any] = Box[T]
+func Get(a Alias[int]) int { return a.V }
+```
+```csharp
+// type Alias[T any] = Box[T]
+public static nint Get(Box<nint> a) { ... }
+```
+
 **Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference.md#type-aliasing) — self-boxing
 pointer conversions, the rooted-nesting RHS and its four qualifiers, keyword-safe RHS rendering,
 `types.Unalias` at type-switched decision points, and same-package alias-target namespace qualification.

@@ -162,3 +162,36 @@ converter's behaviour by inspection (`types.Unalias`, 52 files), and unmeasured 
 
 **Re-running the census is the trigger for reopening**, per §6 — `arm13_genalias`, the `go/ast` walk
 with its fixture control, against whatever tree is in question. Not a feature-list review.
+
+---
+
+## 2026-09-26 — MEASURED: option (a) was NOT the converter's behaviour; implemented (C2, `claude/c2-generic-type-alias`)
+
+Appended, not rewritten. The ruling above rests on (a) being "already the converter's behaviour by
+inspection (`types.Unalias`, 52 files)". **Measured, it was not.** At master `db1bd885a2`, on a
+two-module probe that Go runs:
+
+- each generic alias emitted `global using A = go.pkg.Box<go.T>;`, with its type parameter
+  unbound, and published an `[assembly: GoTypeAlias("A", "…<go.T>")]` record. The declaring
+  package failed to build (CS0234 on `go.T`, CS0307 on `List<T>` as a parameter type);
+- every use named the alias with type arguments (`P<T, T>`, `new lib.Alias<nint>(…)`,
+  `IntMap<@string>`), which no C# alias accepts (CS0307);
+- an importer turns every exported record into a `global using`, so **one exported generic alias
+  broke every consumer of its package**, including one that never names it;
+- an alias of an anonymous struct emitted a slash inside a type name, and an alias of a pointer
+  `go.go.T`.
+
+The mechanism: go1.24's `go/types` materializes `*types.Alias` with `TypeArgs()`, and the
+converter's type-name renderers and its alias declaration treated it as a plain alias. Whatever
+the existing `types.Unalias` calls decide, the name a use renders came from the alias itself.
+
+**Implemented as ruled:** the declaration emits a one-line comment keeping the Go text and
+nothing else; `genericAliasTarget` renders `types.Unalias(t)` at every use, gated on the alias
+having type parameters or arguments, so a plain alias keeps its name byte for byte. The
+anonymous-struct/interface target is **not supported**: its declaration emits the comment and a
+conversion warning (the reason is in the Reference, *Generic Type Aliases*).
+
+The census that triggers a reopen, re-run for this cut (a `go/ast` walk, controlled 12/12 on the
+probe including a `_test.go` alias): **0 generic aliases in GOROOT 1.24.13** (3840 files, all
+targets, tests included), and 0 in `src/tests`. The guard §7 asked for exists now: the
+`GenericTypeAlias` behavioral test, red at master and matching Go's output with the fix.

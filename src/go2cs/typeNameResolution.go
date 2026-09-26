@@ -49,6 +49,30 @@ import (
 	"strings"
 )
 
+// genericAliasTarget answers the TARGET of a Go 1.24 generic type alias (`type A[T any] = Box[T]`),
+// instantiated or not, and false for every other type. A generic alias renders as its target
+// wherever it is named, because C# has no generic alias: a `using` directive cannot declare type
+// parameters (`using A<T> = Box<T>;` is CS1002), and a closed `using` alias cannot take type
+// arguments at a use site (CS0307). Go's alias IS its target (identity, method set,
+// assignability), so the rendering is exact; only the alias NAME is lost, and the declaration
+// keeps it as a comment (visitTypeSpec). A PLAIN alias has no type parameters or arguments and
+// never reaches here, so it keeps its own name byte for byte, including a plain alias of an
+// instantiated generic (`type IntBox = Box[int]`).
+// Ruled in docs/phase4/DESIGN-generic-type-aliases.md.
+func genericAliasTarget(t types.Type) (types.Type, bool) {
+	alias, ok := t.(*types.Alias)
+
+	if !ok {
+		return nil, false
+	}
+
+	if (alias.TypeArgs() == nil || alias.TypeArgs().Len() == 0) && (alias.TypeParams() == nil || alias.TypeParams().Len() == 0) {
+		return nil, false
+	}
+
+	return types.Unalias(alias), true
+}
+
 // getExpressionTypeName resolves expr to its type and names it with getAliasQualifiedTypeName —
 // the convenience spelling for the common "I have an expression, I need its type name" caller.
 //
@@ -246,6 +270,10 @@ func signatureReferencesNamedFuncType(sig *types.Signature) bool {
 func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) string {
 	if t == nil {
 		return ""
+	}
+
+	if target, ok := genericAliasTarget(t); ok {
+		return v.getAliasQualifiedTypeName(target, isUnderlying)
 	}
 
 	// A non-generic methodless named func type renders as its base C# delegate (its underlying
@@ -565,6 +593,10 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) string {
 	if t == nil {
 		return ""
+	}
+
+	if target, ok := genericAliasTarget(t); ok {
+		return v.getFullyQualifiedTypeName(target, isUnderlying)
 	}
 
 	// A `global using` RHS may not name another using alias — C# resolves it with the compilation
