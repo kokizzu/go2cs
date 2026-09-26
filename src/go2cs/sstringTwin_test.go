@@ -149,7 +149,8 @@ func convertTwinFixtures(t *testing.T) (emitted string, packageInfo string, cons
 }
 
 // TestSStringTwinEmission controls the twin's declaring side, value sites, defer/go form and record
-// both ways. RED at claude/c2-arm-c 2d068bca59: no twin was emitted.
+// both ways. RED at claude/c2-arm-c 2d068bca59, where no twin was emitted, and at
+// claude/c2-sstring-twin-pilot 5b691c9c01, where the converter emitted the companions itself.
 func TestSStringTwinEmission(t *testing.T) {
 	registerFixtureTwins(t)
 
@@ -164,21 +165,11 @@ func TestSStringTwinEmission(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		// the sstring member: the body, the retyped registered parameter, the priority
-		"[OverloadResolutionPriority(1)] public static @string Format(sstring format, params ꓸꓸꓸany aʗp) {",
-		"[OverloadResolutionPriority(1)] public static nint Count(sstring s) {",
-		"[OverloadResolutionPriority(1)] public static @string Mixed(@string prefix, sstring s) {",
-		"[OverloadResolutionPriority(1)] [GoRecv] internal static void write(this ref buf b, sstring s) {",
-
-		// the @string member forwards
-		"[GoTwinForwarder] public static @string Format(@string format, params ꓸꓸꓸany aʗp) => Format((sstring)format, aʗp);",
-		"[GoTwinForwarder] public static nint Count(@string s) => Count((sstring)s);",
-		"[GoTwinForwarder] public static @string Mixed(@string prefix, @string s) => Mixed(prefix, (sstring)s);",
-		"[GoTwinForwarder] [GoRecv] internal static void write(this ref buf b, @string s) => b.write((sstring)s);",
-
-		// the canonical value delegate of each package-level twin
-		"public static readonly Funcꓸꓸꓸ<@string, any, @string> Formatᶠ = [GoTwinForwarder(\"Format\")] static (@string format, ꓸꓸꓸany aʗp) => Format(format, aʗp);",
-		"public static readonly Func<@string, nint> Countᶠ = [GoTwinForwarder(\"Count\")] static (@string s) => Count(s);",
+		// the sstring member: the body and the retyped registered parameter, marked for go2cs-gen
+		"[GoStr] public static @string Format(sstring format, params ꓸꓸꓸany aʗp) {",
+		"[GoStr] public static nint Count(sstring s) {",
+		"[GoStr] public static @string Mixed(@string prefix, sstring s) {",
+		"[GoStr] [GoRecv] internal static void write(this ref buf b, sstring s) {",
 
 		// the sstring gaps the pilot closes: range and spread over the view
 		"foreach ((_, _) in s) {",
@@ -186,6 +177,15 @@ func TestSStringTwinEmission(t *testing.T) {
 	} {
 		if !strings.Contains(emitted, want) {
 			t.Errorf("want %q in:\n%s", want, emitted)
+		}
+	}
+
+	// the companions are go2cs-gen's (StrGenerator): the converter emits neither the @string
+	// forwarder nor the canonical delegate, and no priority, so the visible file keeps one method per
+	// Go function. RED at claude/c2-sstring-twin-pilot 5b691c9c01, which emitted all three inline.
+	for _, refuse := range []string{"OverloadResolutionPriority", "GoTwinForwarder", "static readonly Funcꓸꓸꓸ<@string, any, @string> Formatᶠ", "Countᶠ =", "Count(@string s)", "write(this ref buf b, @string s)"} {
+		if strings.Contains(emitted, refuse) {
+			t.Errorf("the converter must not emit a twin companion (%q):\n%s", refuse, emitted)
 		}
 	}
 

@@ -1643,9 +1643,10 @@ partial class runtime_package
                 return false;
         }
 
-        // A converter-emitted sstring-twin forwarder (the @string member, or the canonical value
-        // delegate's lambda) is the same kind of machinery: a call through it shows the frames a
-        // direct call shows (docs/phase4/DESIGN-sstring-twin-pilot.md §3.4).
+        // An sstring twin's canonical value delegate (its lambda carries GoTwinForwarderAttribute) is
+        // the same kind of machinery: a call through it shows the frames a direct call shows. The
+        // twin's @string forwarder is go2cs-gen output, skipped by the check above
+        // (docs/phase4/DESIGN-sstring-twin-pilot.md §3.4).
         if (method.IsDefined(typeof(GoTwinForwarderAttribute), inherit: false))
             return false;
 

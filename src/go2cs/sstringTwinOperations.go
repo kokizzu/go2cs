@@ -6,20 +6,22 @@
 // version 3 only, which can be found in the LICENSE file.
 // Additional permission for emitted output: see LICENSE-EXCEPTION (AGPL section 7).
 
-// The sstring TWIN pilot (docs/phase4/DESIGN-sstring-twin-pilot.md; ruled by COORD on the i9 twin probe
-// b919919c96). A registered function keeps its `@string` member and gains an `sstring` overload of
-// the same name under [OverloadResolutionPriority(1)]:
+// The sstring TWIN (designed in docs/phase4/DESIGN-sstring-twin-pilot.md; ruled by COORD on the i9 twin
+// probe b919919c96). A registered function keeps an `@string` member and gains an `sstring` member of the
+// same name, and overload resolution prefers the sstring member:
 //
-//   - the SSTRING member carries the converted body. With the priority, every direct call binds it —
-//     a u8 literal (through golib's implicit ReadOnlySpan<byte> → sstring operator), an @string (a
-//     zero-copy view) and a C# string alike (probe forms a/b/c) — so a literal argument no longer
-//     materializes an @string per call;
-//   - the @STRING member forwards to it, keeping the signature every binder and consumer compiled
-//     against;
-//   - a package-level twin also gets ONE canonical value delegate, `<Name>ᶠ`, because a twin has no
-//     single method group (a method-group conversion to its delegate type is CS0123, probe e/e4).
-//     Every func-value site names it, so identity is stable across sites, and the lambda records the
-//     Go name for GoNameOf / FuncForPC (golib's GoTwinForwarderAttribute).
+//   - the SSTRING member carries the converted body. The converter emits it, marked [GoStr].
+//     Every direct call binds it: a u8 literal (through golib's implicit ReadOnlySpan<byte> → sstring
+//     operator), an @string (a zero-copy view) and a C# string alike (probe forms a/b/c), so a literal
+//     argument no longer materializes an @string per call;
+//   - the @STRING member forwards to it under [OverloadResolutionPriority(-1)], keeping the signature
+//     every binder and consumer compiled against. go2cs-gen's StrGenerator emits it, so the
+//     visible file keeps one method per Go function;
+//   - a package-level twin also gets ONE canonical value delegate, `<Name>ᶠ` (also generated), because
+//     a twin has no single method group (a method-group conversion to its delegate type is CS0123,
+//     probe e/e4). The converter names it at every func-value site, so identity is stable across
+//     sites, and its lambda records the Go name for GoNameOf / FuncForPC (golib's
+//     GoTwinForwarderAttribute).
 //
 // The population is an EXPLICIT list, never a predicate: the O1 survival census's PILOT3 set
 // (docs/phase4/probes/c2-o1-survival, r2 34b60c14da), less fmt.(pp).catchPanic, whose every literal
@@ -77,10 +79,6 @@ var sstringTwins = map[string][]int{
 	"unicode/utf8.DecodeRuneInString": {0},
 	"unicode/utf8.RuneCountInString":  {0},
 }
-
-// FuncValueMarker suffixes a twin's canonical value delegate (`Sprintfᶠ`), in the family of
-// HoistedLiteralMarker (ˢ) and HoistedConstMarker (ᶜ).
-const FuncValueMarker = "ᶠ"
 
 // sstringTwinKey composes a function's registry key.
 func sstringTwinKey(fn *types.Func) string {
@@ -157,7 +155,7 @@ func (v *Visitor) isSStringTwin(fn *types.Func) bool {
 
 // sstringTwinFuncValue renders a func-VALUE reference to a twin: the canonical delegate of a
 // package-level function. A twinned METHOD referenced as a value has no canonical delegate (it would
-// have to bind its receiver), and the pilot's population has none, so it stops the conversion rather
+// have to bind its receiver), and the registered population has none, so it stops the conversion rather
 // than emitting a method group that is CS0123.
 func (v *Visitor) sstringTwinFuncValue(fn *types.Func, renderedName string) (string, bool) {
 	if !v.isSStringTwin(fn) {
@@ -165,7 +163,7 @@ func (v *Visitor) sstringTwinFuncValue(fn *types.Func, renderedName string) (str
 	}
 
 	if signature, ok := fn.Type().(*types.Signature); ok && signature.Recv() != nil {
-		panic(fmt.Sprintf("@sstringTwinFuncValue - %s is an sstring twin referenced as a method value; the pilot has no canonical delegate for a method (DESIGN-sstring-twin-pilot.md §3.3)", sstringTwinKey(originFunc(fn))))
+		panic(fmt.Sprintf("@sstringTwinFuncValue - %s is an sstring twin referenced as a method value; a twin has no canonical delegate for a method (DESIGN-sstring-twin-pilot.md §3.3)", sstringTwinKey(originFunc(fn))))
 	}
 
 	return renderedName + FuncValueMarker, true
@@ -353,85 +351,34 @@ func parameterEntryName(entry string) string {
 	return entry[strings.LastIndexByte(entry, ' ')+1:]
 }
 
-// sstringTwinSignatures derives the twin's parameter list (each registered entry retyped sstring) and
-// the @string member's forwarding argument list from the rendered @string parameter list. A registered
-// entry that is not rendered `@string <name>` stops the conversion: the retyping is a text edit, and it
-// must never edit anything else.
-func sstringTwinSignatures(key string, parameterSignature string, indices []int, hasReceiver bool) (twinSignature string, receiverName string, forwardArgs []string) {
+// sstringTwinSignature derives the twin's parameter list from the rendered @string one: each registered
+// entry retyped sstring. A registered entry that is not rendered `@string <name>` stops the conversion:
+// the retyping is a text edit, and it must never edit anything else.
+func sstringTwinSignature(key string, parameterSignature string, indices []int, hasReceiver bool) string {
 	entries := splitParameterSignature(parameterSignature)
 	offset := 0
 
 	if hasReceiver {
-		receiverName = parameterEntryName(entries[0])
 		offset = 1
 	}
 
-	twinned := map[int]bool{}
-
 	for _, index := range indices {
-		twinned[index+offset] = true
-	}
+		i := index + offset
 
-	retyped := make([]string, len(entries))
-
-	for i, entry := range entries {
-		retyped[i] = entry
-
-		if i < offset {
-			continue
+		if i >= len(entries) {
+			panic(fmt.Sprintf("@sstringTwinSignature - the sstring twin %s: parameter #%d is not in %q", key, index, parameterSignature))
 		}
 
-		name := parameterEntryName(entry)
+		name := parameterEntryName(entries[i])
 
-		if twinned[i] {
-			if entry != "@string "+name {
-				panic(fmt.Sprintf("@sstringTwinSignatures - the sstring twin %s: parameter entry %q is not rendered `@string <name>`", key, entry))
-			}
-
-			retyped[i] = "sstring " + name
-			forwardArgs = append(forwardArgs, "(sstring)"+name)
-			continue
+		if entries[i] != "@string "+name {
+			panic(fmt.Sprintf("@sstringTwinSignature - the sstring twin %s: parameter entry %q is not rendered `@string <name>`", key, entries[i]))
 		}
 
-		forwardArgs = append(forwardArgs, name)
+		entries[i] = "sstring " + name
 	}
 
-	return strings.Join(retyped, ", "), receiverName, forwardArgs
-}
-
-// sstringTwinLambdaParameters renders the @string parameter list as a lambda's: `params` is dropped
-// (the delegate carries it) and the names are what the lambda forwards.
-func sstringTwinLambdaParameters(parameterSignature string) (parameters string, args []string) {
-	entries := splitParameterSignature(parameterSignature)
-	rendered := make([]string, len(entries))
-
-	for i, entry := range entries {
-		rendered[i] = strings.TrimPrefix(entry, "params ")
-		args = append(args, parameterEntryName(entry))
-	}
-
-	return strings.Join(rendered, ", "), args
-}
-
-// writeSStringTwinCompanions writes, after the twin's body, the @string member that forwards to it and
-// (for a package-level function) its canonical value delegate.
-func (v *Visitor) writeSStringTwinCompanions(fn *types.Func, forwarderAttributes string, access string, resultSignature string, csFunctionName string, parameterSignature string, receiverName string, forwardArgs []string) {
-	target := csFunctionName
-
-	if receiverName != "" {
-		target = receiverName + "." + csFunctionName
-	}
-
-	v.writeOutputLn("%s[GoTwinForwarder] %s%s static %s %s(%s) => %s(%s);", v.newline, forwarderAttributes, access, resultSignature, csFunctionName, parameterSignature, target, strings.Join(forwardArgs, ", "))
-
-	if receiverName != "" {
-		return
-	}
-
-	lambdaParameters, lambdaArgs := sstringTwinLambdaParameters(parameterSignature)
-
-	v.writeOutputLn("%s// The canonical func value of %s: a twinned function has no single method group (CS0123).", v.newline, fn.Name())
-	v.writeOutputLn("%s static readonly %s %s%s = [GoTwinForwarder(\"%s\")] static (%s) => %s(%s);", access, v.getCSharpTypeName(fn.Type()), csFunctionName, FuncValueMarker, fn.Name(), lambdaParameters, csFunctionName, strings.Join(lambdaArgs, ", "))
+	return strings.Join(entries, ", ")
 }
 
 // ---- The published records (the GoRefPrimary way, refVerdictPublication.go) ----

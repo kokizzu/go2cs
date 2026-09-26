@@ -2028,6 +2028,90 @@ The cast is spelled `nuint` for both native-width targets rather than naming the
 
 See [Named Numeric Types and Constant Contexts](#named-numeric-types-and-constant-contexts) for how these interact with native-int and named numeric types. See also [example](https://github.com/ritchiecarroll/go2cs/tree/master/src/archived/Examples/Manual%20Tour%20of%20Go%20Conversions/basics/numeric-constants).
 
+### `string()` of an untyped constant reference hops through the default type
+`string(utf8.RuneError)` renders the argument as its cross-package `static readonly` Untyped* wrapper, from which `@string` has no conversion (CS0030). The conversion hops through the constant's DEFAULT Go type first -- exactly Go's conversion semantics; a plain literal is already a C# constant and keeps its direct form:
+```csharp
+fmt.Println("a" + ((@string)(rune)CrossPkgLib.Sep) + "b");
+```
+Guarded by `CrossPkgUser` (`string(CrossPkgLib.Sep)`).
+
+### A `:=` from a named untyped constant materializes the default type
+`codepoint := unicode.ReplacementChar` must not declare with `var`: the constant renders as its
+`static readonly` Untyped* wrapper (`UntypedInt`/`UntypedFloat`/`UntypedComplex`), so `var` binds the
+LOCAL to the wrapper type instead of Go's inferred default type, and a later Go conversion like
+`string(codepoint)` fails (CS0030 — no `UntypedInt`→`@string` form; go/types conversions.go). The
+declaration materializes the Go-inferred default type instead — exactly Go's `:=` typing:
+```csharp
+rune codepoint = replacementChar;    // NOT `var codepoint = …` (binds UntypedInt)
+float64 factor = scale;
+```
+The gate is an Ident/Selector RHS resolving to a `*types.Const` of untyped NUMERIC kind (int is already
+routed to the explicit `nint` form, and string consts to the explicit string path); literals and computed
+constant expressions render as plain C# literals and keep `var`. Applies in both the single-declaration
+and the mixed-statement paths. (Guarded by the `UntypedConstDefine` behavioral test — untyped rune and
+float package constants `:=`-bound then converted/multiplied, output-compared vs Go.)
+
+### A computed untyped float constant materializes at its destination's float width
+A named untyped constant can still need its `Untyped*` wrapper because another use demands a different
+type. When that name participates in a computed float constant, C# must not evaluate the expression
+through the wrapper's arithmetic operators:
+```go
+const repetitions = 100000
+var loopBound int = repetitions
+mean := .5 * repetitions
+var quarterMean float64 = .25 * repetitions
+```
+The wrapper form makes C# overload resolution prefer `UntypedInt.operator*`, converting `.5` or `.25`
+to an integer and truncating it to zero before the result reaches the float local. The converter instead
+folds the exact Go constant expression once at the destination's resolved `float32` or `float64` width.
+An explicitly typed destination is visible on the expression itself; for a new `:=` local, go/types keeps
+the RHS untyped and records the default type on the declared identifier, so the declaration edge supplies
+that width. Both paths reuse the same named-constant fold and leave bare references, non-float constants,
+and expressions without a wrapper-emitted named constant unchanged. Guarded by `UntypedConstDefine`;
+`hash/maphash`'s 100,000-sample SMHasher avalanche bounds are the corpus witness.
+
+### `complex()` over a NAMED untyped constant pins the element width
+golib's `complex` builtin is overloaded on element width — `complex(float32, float32) => complex64`,
+`complex(float64, float64) => complex128` — and `UntypedFloat` converts implicitly to **both**. C#
+then applies its better-conversion-target rule, which prefers the **narrower** target (`float32`
+converts to `float64`, not the reverse), so a `complex128` the Go checker typed as such was silently
+constructed at float32 width:
+
+```go
+const maxFloat32 = 3.40282346638528859811704183484516925440e+38
+over := complex(maxFloat32*2, maxFloat32*2)     // complex128, 6.805646932770577e+38
+```
+```csharp
+var over = complex((float64)(maxFloat32 * 2D), (float64)(maxFloat32 * 2D));
+```
+
+Without the casts `over` is `(+Inf+Infi)` — and `encoding/gob`'s `TestOverflow` then found nothing
+out of complex64's range to reject, because `float32FromBits` accepts +Inf at either width. A
+LITERAL argument never had the problem: the untyped-const analysis records the call's element type
+as the argument's context and `convBasicLit` renders the `F`/`D` suffix from it (`complex(1.5D,
+2.5D)`). A **named** untyped const (`Δmath.MaxFloat32`), or a constant expression over one, renders
+as the `UntypedFloat` symbol and cannot carry a width — so exactly those calls pin their untyped
+arguments explicitly, at the element width Go's own typing gives the call
+(`complexCallElementType`, resolving an untyped-complex-constant call through its recorded context
+and Go's `complex128` default). A MIXED call needs nothing and gets nothing: `complex(g, half)` with
+`g` a `float64` was always unambiguous, since `float64` has no implicit conversion to `float32`.
+
+**The rule cannot be expressed from golib's side, and the attempt is instructive.** Naming the
+untyped pair explicitly (`complex(UntypedFloat, UntypedFloat) => complex128`) makes every MIXED call
+ambiguous — `complex(0D, gHalfPi)` has the float64 overload better on the first operand and the
+untyped one better on the second, so neither wins (CS0121). Completing all four width pairings does
+not rescue it either: `UntypedFloat` converts implicitly in **both directions** with `float32` and
+`float64`, so for an operand that is neither — `complex(7/2, 0D)`, an `int` — no candidate is
+strictly better and the ambiguity simply moves. Overload resolution has no way to say "prefer the
+width the *call* was typed at"; only the emitter knows that.
+
+Corpus footprint: **zero**. The trigger is a named-untyped-const operand, and no `complex()` call in
+the standard library (math/cmplx included) has one — every corpus site is either width-pinned
+literals or has a typed operand. Guarded by the extended `ComplexConstContext` (the overflow pair,
+its float32-range question, a named-untyped-const pair in both a complex128 and an explicit
+complex64 context, and the mixed call that must stay unchanged; neuter-proven — with the arm removed
+the guard's `over` prints `(+Inf+Infi)` and `over-fits-float32 true` where Go says `false`).
+
 ## Native and Narrow Integer Types
 
 In Go the `int` and `uint` types are sized according to the platform build target, i.e., 32-bit or 64-bit. C#'s `int`/`uint` are always 32-bit and `long`/`ulong` are always 64-bit. As of C# 9.0, native-sized integer types exist that behave exactly like their Go counterparts: [`nint` and `nuint`](https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-9#performance-and-interop). The converter maps Go `int` → `nint` and Go `uint` → `nuint`; `uintptr` also maps to `nuint`. The fixed-width Go types (`int8/16/32/64`, `uint8/16/32/64`, `byte`, `rune`) are kept as readable C# aliases of the same name (e.g. `global using uint16 = System.UInt16;`).
@@ -2484,110 +2568,6 @@ Package-level big consts were already `static readonly` fields and are unchanged
 `UntypedConstWideMask` — four functions with local big-const masks, exercising the ordinal chain — and
 by `net/textproto`'s validated `TestCommonHeaders`, whose want-zero assert is what surfaced the cost;
 L11.)
-
-### A function-LOCAL string const hoists to a `static readonly` field under its own name
-
-A local `const fnAtoi = "Atoi"` emitted as a plain local, `@string fnAtoi = "Atoi"u8;`, materialises the
-`u8` span into a fresh `@string` on **every call** of the enclosing function (a counted `CopyOf`,
-string.cs:460), where Go keeps the value in RODATA. strconv's `Atoi`, `ParseInt` and `ParseUint` pay it
-inside their `testing.AllocsPerRun` rows. Tier C's literal hoist deliberately skipped every CONST spec, on
-the premise that a const is already its own `static readonly` field; that holds at package level only.
-A function-local string const therefore hoists exactly like a local big constant (the subsection
-above): one field named after the const, with the `HoistedConstMarker` `ᶜ` and a package-wide ordinal on
-collision, and the local copies it, an `@string` struct copy that allocates nothing. Every reference
-is unchanged:
-
-```go
-// Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
-func Atoi(s string) (int, error) {
-	const fnAtoi = "Atoi"
-
-	sLen := len(s)
-	…
-}
-```
-```csharp
-// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
-internal static readonly @string fnAtoiᶜ = "Atoi"u8;
-
-// Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
-public static (nint, error) Atoi(@string s) {
-    @string fnAtoi = fnAtoiᶜ;
-    nint sLen = len(s);
-    …
-}
-```
-
-(strconv/atoi.cs as reconverted. The field is `internal` in a test-friend assembly, as every converted
-standard-library package is, and `private` otherwise.)
-
-The decision is made in Tier C's pre-pass (`collectLocalConsts`), not at emission, for the init-order
-reason §4.4 gives for hoisted literals: the function joins `packageHoistLitReaders`, so a package-level
-initializer that reaches it moves into the ordered static constructor instead of running as a field
-initializer that could read the hoisted field before its own initializer has run. The pass's
-function-level exclusions apply unchanged:
-- a hand-owned file or function;
-- `func init()`, which runs once;
-- on the `-tests` path, an initializer-reachable function;
-- a production file that a seeded `-tests` pass does not re-emit.
-
-An EMPTY const stays a local, since the empty `@string` costs nothing. A named string type keeps its type
-(`private static readonly Kind kᶜ = "kind-value"u8;`), and a byte-array value keeps its byte-array
-initializer. A package-level const is unchanged. (Arm C of DESIGN-string-literal-allocation.md §8, approved
-2026-09-23; guarded by the `LocalStringConstHoist` behavioral test, whose first line is the relocation's
-output control, and by `TestLocalStringConstHoistsUnderItsOwnName`.)
-
-### An sstring TWIN: a registered function gains a prioritized `sstring` overload
-
-A `string` parameter is an `@string`, so a literal argument materializes one per call:
-`fmt.Sprintf("xxx")` allocated the literal and then the result, where Go allocates only the result. The
-sstring twin pilot (docs/phase4/DESIGN-sstring-twin-pilot.md, ruled on the i9 twin probe `b919919c96`)
-keeps the `@string` member and adds an `sstring` member of the same name under
-`[OverloadResolutionPriority(1)]`. The `sstring` member carries the converted body, and the `@string`
-member forwards to it:
-
-```csharp
-[OverloadResolutionPriority(1)] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
-    …
-}
-
-[GoTwinForwarder] public static @string Sprintf(@string format, params ꓸꓸꓸany aʗp) => Sprintf((sstring)format, aʗp);
-
-// The canonical func value of Sprintf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<@string, any, @string> Sprintfᶠ = [GoTwinForwarder("Sprintf")] static (@string format, ꓸꓸꓸany aʗp) => Sprintf(format, aʗp);
-```
-
-- **Call sites are unchanged.** With the priority, a u8 literal binds the `sstring` member through
-  golib's implicit `ReadOnlySpan<byte>` → `sstring` operator, with no copy. An `@string` argument binds
-  it through a zero-copy view, and a C# string binds it too. So a direct call always runs the body.
-- **A func value names the canonical delegate.** A twin has no single method group, and converting one
-  to a delegate typed on `@string` is CS0123 (a cast included), so every value site names `<Name>ᶠ`:
-  `["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ))`. One delegate object serves every
-  site, so `reflect.ValueOf(fmt.Sprintf).Pointer()` is equal across sites, as in Go. Its lambda records
-  the Go name (golib's `GoTwinForwarderAttribute`), so `runtime.FuncForPC(…).Name()` reads
-  `fmt.Sprintf`, and a traceback skips a forwarder's frame. A twinned METHOD has no canonical delegate;
-  referencing one as a value stops the conversion.
-- **A deferred or `go` call to a twin takes the temp-parameter lambda form** (`defer(ᴛ1 => Count(ᴛ1), …)`)
-  instead of the method group.
-- **Records.** A package publishes each exported package-level twin as `[assembly: GoSStringTwin("Sprintf")]`
-  in a `<SStringTwins>` section of `package_info.cs`, omitted when empty, and carried into the embedded
-  standard-library metadata. A consumer in another package reads the record to know that a func value
-  must name `Sprintfᶠ`.
-- **For a `[GoRecv]` method,** go2cs-gen copies the `[OverloadResolutionPriority]` onto the ж overload it
-  generates, so a u8 argument through a pointer receiver does not tie (CS0121).
-
-The population is an explicit list (`sstringTwins` in sstringTwinOperations.go), never a predicate: the O1
-survival census's fmt pilot, which is fmt's format-position parameters closed under onward passing, plus
-unicode/utf8's two string readers. The converter refuses a registered function in five cases:
-- it is hand-owned;
-- it has no body or is generic;
-- a registered parameter is not `string`;
-- a registered parameter is captured by a closure or used in a defer or go statement;
-- a local is bound to a registered parameter, because the implicit `sstring` → `@string` conversion
-  would copy silently.
-
-`TestNoSStringTwinMethodGroupInCorpus` fails on any method-group reference to a twin in the committed
-corpus.
 
 ### The `&^=` (bit-clear) compound assignment on a narrow type
 C# has no `&^` (AND-NOT) operator, so Go's `a &^= b` expands to `a &= ~b`. The `~` complement always promotes its operand to `int`, and `int` is not implicitly convertible to a narrower or unsigned LHS type (`byte`/`ushort`/`uint`/`ulong`/`uintptr`/`nuint`) — so `flags &= ~b` is CS0266. The complemented value is therefore cast back to the LHS type, inside `unchecked` because for a *constant* operand `~b` folds to a negative `int` constant whose checked narrowing would overflow (CS0221):
@@ -5119,6 +5099,34 @@ public static (rune r1, rune r2) EncodeRune(rune r) {
 
 The declaration is kept whenever anything can read it, and the check is deliberately conservative in every unclear case — a retained dead declaration costs one line, a dropped live one is `CS0103`. It stays when the body **references** the result (read, assigned, address-taken, or captured by a closure — a capture is a use, so that walk descends into function literals); when the body has a **naked `return`**, which reads every named result by definition (that walk stops at a nested `*ast.FuncLit`, whose bare returns belong to the literal — the `iter.Pull` shape above depends on this); when the result is **heap-box backed**, whose box is the storage the render sites reference; and when the function is lowered through either defer form — `namedReturnDeferMode`, where the declarations sit outside the `func()` wrapper precisely so deferred closures can mutate them, or a **GoFrame**, whose named exit emits a trailing `return <names>;` after the `try`. In those last two the *generated* code reads the locals and the Go body need never mention them, so liveness is switched off wholesale rather than inferred. The same rule and the same opt-out apply to function **literals** (`namedReturnDeclLines`). Keeping the check rather than suppressing the code corpus-wide also preserves `CS0219` as a live signal: a genuinely dropped assignment to a named result still surfaces. (Guarded by `namedResultLiveness_test.go`, which pins one function per liveness reason plus the dead shape and the outer-dead/inner-naked case, and is proved in BOTH directions by negative control. Corpus effect: `CS0219` 1,219 → **52**, none of them a named-return prologue — 33 are in hand-owned files the converter never re-emits, 18 are Go's own `var` witnesses for a constant-folded `unsafe.Sizeof`/`Offsetof`, and 1 is a folded local const.)
 
+### A grouped var spec with one multi-result call deconstructs
+A grouped `var (name, offset, abs = t.locabs() ...)` spec is not a `:=`, so the assignment tuple machinery never saw it -- the per-name path assigned the WHOLE result tuple to the first name and silently DEFAULTED the rest (time appendFormat read a zero abs; a silent-wrongness class beyond the CS0029 that exposed it). Function-local specs now emit the C# tuple deconstruction, matching the `:=` form; package-level specs use the once-evaluated hidden-field component reads:
+```csharp
+var (ln, ls) = pair();
+```
+Guarded by `GlobalTupleVarDecl` (both levels, with a call-count check proving single evaluation).
+
+**The function-local gate asks whether a name has a BOX, not whether it "escapes" (2026-07-31).**
+That branch is gated to specs no name of which needs a `ref heap<T>` box declaration, and it read the
+raw `identEscapesHeap` flag — which the escape analysis **blanket-sets** for every *inherently*
+heap-allocated local (pointer, slice, map, chan, **interface**, **func**), because those are already
+references and get no box unless their address is genuinely taken. So the gate rejected specs that are
+entirely plain, and every tuple with an interface or func result fell back to the very per-name path
+this branch exists to replace:
+
+```csharp
+context.Context ctx = context.WithCancel(context.Background());   // the WHOLE tuple  (CS0029)
+Action cancel = default!;                                          // silently defaulted
+```
+
+`identHasHeapBox` is the predicate that answers the gate's actual question, and it is what the branch
+now calls. This is the trap `paramAddressTakenNeedsBox` already documents from the other side — *a
+verdict the box gate then refuses leaves `identEscapesHeap` set with no box behind it* — and it stayed
+hidden because `(int, string)`-shaped tuples, the ones anyone reaches for when probing, work fine.
+net's `var ctx, cancel = context.WithCancel(context.Background())` is the corpus site. (Guarded by the
+`GlobalTupleVarDecl` extension — a local `var si, fi = ifaceAndFunc()` returning an interface and a
+func, both read back.)
+
 ## Slices and Arrays
 Go slices and arrays are converted to the golib [`slice<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/slice.cs) and [`array<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/array.cs) structures. A `make`-style allocation uses a constructor; a composite literal builds a C# array and projects it with the `.slice()` / `.array()` extension:
 
@@ -6660,609 +6668,6 @@ both suites' declarations verbatim, spread into a variadic `...any`, appended to
 sub-sliced, spread into a second named `[]any`, and compared against `nil`, output-compared vs
 `go run`.
 
-## Strings (`@string` and `sstring`)
-Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), not `System.String`. That is a semantic decision, not just a naming one: Go strings are immutable byte sequences, so `len`, indexing, ranging, concatenation, conversion to `[]byte`/`[]rune`, equality, and type assertions must all observe Go's UTF-8/byte model rather than C#'s UTF-16 string model. A zero-value `@string` is also null-safe and reads as `""`, which lets `default!` stand in for Go's zero value without sprinkling null checks through converted code.
-
-Plain Go string literals usually render as C# UTF-8 literals (`"..."u8`, a `ReadOnlySpan<byte>`) and are target-typed only at the boundary that needs an actual Go string. That gives allocation-free fast paths such as `[]byte("hi")` -> `slice<byte>("hi"u8)`, `@string s = "hi"u8`, and comparisons against `sstring` views. When the literal's bytes cannot be represented faithfully as source UTF-8 -- notably high `\xHH` escapes and greedy hex-escape runs -- the converter emits a byte-array-backed `@string` instead, so byte indexing and `len` stay Go-correct.
-
-Named string types are generated as real `[GoType("@string")]` wrappers. The generator supplies the Go string surface directly on the wrapper -- byte indexers, range/sub-slice behavior, `Length` for `len`, `ReadOnlySpan<byte>` bridging for `u8` literals, comparisons, and conversions through the underlying `@string` -- so code that declares `type Token string` keeps distinct-type behavior while still reading like a string in method bodies.
-
-The heap `@string` form is always the correctness fallback for `string([]byte)`: it copies bytes into an immutable string, matching Go when the value escapes or the source buffer can later mutate. The performance fast path is golib [`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs), a stack-only `readonly ref struct` view over a `ReadOnlySpan<byte>`. A local or expression-level `string([]byte)` conversion may emit `sstring` only when the converter can prove the view is read-only, non-escaping, and not observed after a source mutation; if that proof is too weak, the conversion stays `@string`. Because `sstring` is a `ref struct`, most missed escape cases are C# compile errors rather than silent aliasing bugs.
-
-A **built-in used as a generic type argument** is rendered in its golib form, the same as anywhere else — in particular Go `string` becomes golib `@string`, never C# `string` (`System.String`). This matters because the converter adds a `new()` constraint to every generic type parameter: `@string` is a struct with a public parameterless constructor and satisfies it, whereas `System.String` would violate it (CS0310), and assigning a string literal — emitted as a `u8` `ReadOnlySpan<byte>` — into such a field would fail (CS0029). So:
-
-```go
-type Pair[A any, B any] struct { a A; b B }
-var p Pair[int, string]
-p.b = "hi"
-```
-```csharp
-Pair<nint, @string> p = default!;
-p.b = "hi"u8;
-```
-
-This applies uniformly to every type-argument position — first, second-or-later, and nested (`Pair[int, Box[string]]` → `Pair<nint, Box<@string>>`). (The behavioral test `GenericStringTypeArg` guards these cases; `NestedGenericTypes` covers the nesting depth without string args.)
-
-### Slicing a string is a WINDOW, not a copy — `@string` carries an offset and a length
-
-A Go string header is a *pointer plus length* into shared immutable storage, which is what makes `s[i:j]` an **O(1)** operation that allocates nothing. `@string` originally held a bare `byte[]`, so its range indexer had to materialize the sub-string's bytes: `s[i:]` was **O(n) with an allocation**. That is invisible in the small and quadratic in the ordinary Go idiom for walking a string by runes —
-
-```go
-for i := 0; i < len(s); {
-    r, size := utf8.DecodeRuneInString(s[i:])
-    i += size
-}
-```
-
-— which is exactly what `archive/zip`'s `detectUTF8` does over every file name and comment. At the 65,535-byte names its `TestZip64LargeDirectory` builds, each call copied ~2.1 GB; the test takes 13.2 s in Go and had not finished in **45 minutes** in C#.
-
-`@string` therefore carries the Go header's shape — a backing array **plus an offset and a length** — and its range indexer returns a window over the same array. Slicing a string now allocates nothing and copies nothing, matching Go's cost model. The same test completes in 20.2 s against Go's 11.3 s, and `archive/zip` validates 98/98.
-
-Sharing the backing array is safe for precisely the reason it is safe in Go: **`@string` is immutable**, and every conversion *out* to storage the receiver may mutate — `[]byte(s)`, the `byte[]` operator — already copies (see the next section, and the `unicode/utf8` `TestDecodeRune` corruption that pinned those copies down). Two consequences worth carrying:
-
-- The backing array is **private** to `@string`. A consumer reading it directly instead of reading the window would silently see the *whole* backing rather than the string, so privacy makes that a compile error rather than a wrong answer — which is how the remaining raw-array readers (`sstring`'s mixed comparison/concat operators, `builtin.slice(@string,…)`, `ByteSeqExtensions.ToGoString`) were found and corrected. Bounds that were measured against the backing array are now measured against the window (`@string.SliceBounds`) — the same correction `array<T>.slice` already carried for an alias window.
-- `unsafe.StringData` pins a window that does not begin at the backing array's start by materializing its bytes first, since a `GCHandle` pins an object from its start. Whole-backing strings — the overwhelming majority, and every string that reached there before windows existed — pin in place unchanged.
-
-### Converting a string to `[]byte` / `[]rune`
-A Go `[]byte(s)` / `[]rune(s)` element-decoding conversion is emitted as the golib element-slice form `slice<byte>(…)` / `slice<rune>(…)`, which relies on the `@string`→`slice<byte>`/`slice<rune>` conversion. When the source is a string **variable** it is already golib `@string`, so the conversion applies directly. When the source is a bare string **literal**, that literal would otherwise render as a `System.String` (no such conversion exists — CS1503/CS1929), so the converter casts it to `@string` first:
-
-```go
-bs := []byte("hello")
-rs := []rune("héllo")
-```
-```csharp
-var bs = slice<byte>((@string)"hello");
-var rs = slice<rune>((@string)"héllo");
-```
-
-The `@string` cast fires only on a string-literal argument; a string-variable conversion (`[]byte(s)`) needs no cast. (Guarded by the behavioral test `StringLiteralSliceConversion`.)
-
-The cast reaches a *top-level* literal argument only, which left Go's line-**splitting** literal idiom — one constant string written as several `+`-joined pieces so it fits the source width — rendering as a bare C# `string` concatenation. C# will not chain the two user-defined conversions `string` → `@string` → `byte[]` that golib's `slice<T>(T[])` would need, so `crypto/hmac`'s long-key vectors failed `CS1503: cannot convert from 'string' to 'byte[]'`. A `[]byte`/`[]rune` conversion whose argument is a **constant-valued binary expression** therefore casts the rendered operand as a whole, which keeps the source's split verbatim (C# constant-folds the concatenation itself, so preserving it costs nothing at run time):
-
-```go
-key := []byte("This is a test using a larger than block-size key " +
-    "and a larger than block-size data. The key needs to " +
-    "be hashed before being used by the HMAC algorithm.")
-```
-```csharp
-var key = slice<byte>((@string)("This is a test using a larger than block-size key " + "and a larger than block-size data. The key needs to " + "be hashed before being used by the HMAC algorithm."));
-```
-
-The gate is deliberately narrow — a `+` chain whose every leaf is a string literal that renders *plainly* — so it fires on exactly the shape that produces a bare C# `string` and nothing else. A non-constant concatenation (`s + "x"`) already yields an `@string` through its variable operand; an ident or selector naming a string constant emits its declared symbol; and a raw-byte (`\xHH`) leaf takes convBasicLit's byte-ARRAY route, which yields an `@string` that carries the whole chain with it (`slice<byte>("" + ((@string)(new byte[]{0xff, 0x80})))` — the `ByteTableStringVar` case, byte-identical across this change). (Guarded by `StringLiteralSliceConversion`, which now also covers the split `[]byte`/`[]rune` idiom and a raw-literal piece in the chain.)
-
-### `string([]rune)` encodes an INVALID rune as U+FFFD, never fails
-
-Go's rune-to-string conversions replace every invalid rune — a surrogate (`0xD800`–`0xDFFF`) or an
-out-of-range value (`< 0` or `> 0x10FFFF`) — with `U+FFFD` (`utf8.RuneError`, bytes `EF BF BD`),
-one replacement per invalid element: `string([]rune{0xD800})` is `"�"` (probed vs `go run`).
-Every golib rune-span encoding routes through one seam, `builtin.ToUTF8Bytes` (the `@string`
-rune-span constructor, the `slice<rune>`/single-`rune`→`@string` operators, and rune `append` all
-land there), which used the element conversion `int` → `System.Text.Rune` — and that conversion
-THROWS `ArgumentOutOfRangeException` for exactly Go's invalid values, killing the host instead of
-producing the replacement bytes (strings' `TestCaseConsistency` builds a string of every rune
-`0..MaxRune`, surrogates included — Phase-4 row R7). The encoder now uses
-`Rune.TryCreate(value, out codePoint)` and substitutes `Rune.ReplacementChar` on failure; the
-4-bytes-per-rune buffer estimate still covers the 3-byte replacement. (Guarded by the
-`InvalidRuneString` behavioral test — slice and single-rune conversions over runtime values, byte
-values and lengths compared vs Go; runtime values keep both compilers from constant-folding the
-conversions.)
-
-### Converting a string literal to a named string type
-A Go conversion of a string **literal** to a named type whose underlying type is `string` — `errorString("…")` where `type errorString string` — needs the same `@string` intermediate. The literal renders as a `u8` `ReadOnlySpan<byte>`, which has no conversion to the named type, so a bare `(errorString)"…"u8` is CS0030. The converter routes it through `@string` (which converts implicitly from the `u8` span and to which the named type converts):
-
-```go
-return errorString("kaboom")
-```
-```csharp
-return ((errorString)(@string)"kaboom"u8);
-```
-
-This is the form the runtime uses for every `panic(errorString("…"))` / `plainError("…")`. (Guarded by the behavioral test `NamedStringConversion`.)
-
-**The same intermediate is needed with NO explicit Go conversion written — a named string type's
-zero value in a RESULT position (2026-08-08).** Go converts an untyped string constant to a defined
-string type implicitly, so the source says only `return nil, ""`; the emitted C# still has to cross
-the two user-defined conversions, so a bare `""` has no conversion to the named type at all
-(**CS0029**). In a multi-result return the damage spreads: the failed element leaves its tuple
-siblings with no target type either, so the `default!` beside it is **CS8716**. The result type's
-being a defined type over `string` is the signal, and the literal takes the `@string` step:
-
-```go
-// os/zero_copy_linux.go — poll.String is `type String string`
-func getPollFDAndNetwork(i any) (*poll.FD, poll.String) {
-    sc, ok := i.(syscall.Conn)
-    if !ok {
-        return nil, ""
-    }
-```
-```csharp
-return (default!, (@string)"");
-```
-
-A plain `string` result is deliberately excluded (it emits as `@string`, which a literal already
-reaches in one conversion), as is a type parameter, whose emitted form is not a `[GoType]` wrapper.
-An ALIAS of a named string type is the same type and takes the same route. (Guarded by the behavioral
-test `NamedStringZeroValue` — the multi-result shape that carries the cascade, the single-result
-shape, the alias, and the named type still behaving as a string under `+`, `+=` and `==`,
-stdout-compared against `go run`.)
-
-### A POSITIONAL struct-composite element in a `string` field renders `u8`
-Go requires a positional composite literal to list every field in order, so element *i* is field *i*.
-A string-literal element whose field is a plain `string` renders as the `u8` span, which binds the
-generated constructor's `@string` parameter through one implicit conversion:
-
-```go
-type StructuralError struct{ Msg string }   // encoding/asn1
-return StructuralError{"empty integer"}
-```
-```csharp
-return new StructuralError("empty integer"u8);
-```
-
-KEYED elements (`fileListEntry{name: "./"}`) and ELIDED positional elements (`[]pair{{"e2", …}}`)
-already emitted `u8` — they route through `convKeyValueExpr` and the elided element context
-respectively — so this only closes the TYPED positional gap, where the element stayed a bare C#
-string that `Encoding.UTF8.GetBytes` transcoded on every evaluation. It was the corpus's last
-converter-emitted bare-UTF-16 literal class in a constructor position: 83 sites across 9 types
-(asn1's `StructuralError`/`SyntaxError`, net/http's `ProtocolError`/`contextKey`, math/big's
-`ErrNaN`, encoding/xml's `UnmarshalError`, net/url's `Error`, …). An `any` field keeps the boxed
-`(@string)"…"u8` form (`markAnyFieldLits` runs after and overrides).
-
-### A string-literal ELEMENT of a typed slice/array composite renders `u8`
-The element twin of the struct-field rule above. An **elided** slice/array literal already rendered
-`u8` (its element context is nil, and `convExprList`'s nil-context default leaves `u8StringOK` on),
-but the **typed** form built its own `CallExprContext` and never set `u8StringArgOK`, so every
-element fell back to a bare UTF-16 C# string that `Encoding.UTF8.GetBytes` re-transcoded on each
-evaluation:
-
-```go
-return StructuralError{[]string{"Format specifies USTAR", whyNoUSTAR}}   // archive/tar
-```
-```csharp
-return new headerError(new @string[]{"Format specifies USTAR"u8, whyNoUSTAR}.slice());
-```
-
-The span binds the `@string` element slot through `@string`'s implicit `ReadOnlySpan<byte>`
-conversion; a NAMED type over `string` binds the same way through its generated span conversion, so
-the rule keys on the element type's **underlying** basic kind (matching `markStringFieldLits`).
-An **empty-interface** element type — `[]any{"a"}` — keeps its mandatory `(@string)` box but now
-takes the `u8` half too (`new any[]{(@string)"a"u8}`): the cast is what makes the span boxable, the
-`u8` is what keeps the bytes a compile-time constant. These two were the corpus's last
-converter-emitted bare-UTF-16 literal classes — 385 `new @string[]{"…"}` element sites plus the
-`any`-element form. KeyValueExpr elements (maps, sparse arrays) are not `BasicLit`s and route
-through `convKeyValueExpr`, which already emitted `u8`. (Guarded by the behavioral tests
-`AnyStringLitComposite`, `DeepEqual`, `GenericCompositeLiterals`, and 15 others whose goldens carry
-the form.)
-
-### A string CONCAT element of a composite literal keeps the `u8` span form
-The two rules above mark a composite's string-typed element slots as span-tolerant, but they marked
-only the elements that were `BasicLit`s. That flag does double duty: `convExprList` derives
-`spanTargetUnsupported` from it, and `convBinaryExpr` reads *that* to suppress `u8` on a string
-**concat**'s literal operand. A concat element is an `ast.BinaryExpr`, never a `BasicLit`, so it left
-its own slot looking span-hostile and the literal fell back to bare UTF-16:
-
-```go
-allowed := []string{prefix + "-a", prefix + "-b"}
-```
-```csharp
-var allowed = new @string[]{prefix + "-a", prefix + "-b"}.slice();     // before
-var allowed = new @string[]{prefix + "-a"u8, prefix + "-b"u8}.slice(); // after
-```
-
-The suppression itself is correct where it was born — an `object[]` vararg slot cannot box a
-`ReadOnlySpan<byte>`, so `fmt.Println(allowed[0] + ":" + msg)` must keep plain operands (CS1503) —
-but a string element slot is not span-hostile, which the sibling spellings already proved: the same
-concat rendered `u8` when parenthesized (at the time, because `convParenExpr` dropped the incoming
-literal context — a defect in its own right, fixed in the next section) and when the composite's type
-was elided (nil element context). Marking every positional element makes the three agree, and it is
-what keeps the parenthesized spelling on the span form now that parentheses inherit their slot's
-context instead of discarding it. The span operand then binds golib's `operator +(@string, ReadOnlySpan<byte>)`, which
-block-copies the literal's ROM bytes straight into the single result buffer — no
-`Encoding.UTF8.GetBytes` transcode, no throwaway intermediate `@string`. Two literal operands need no
-operator at all: C# folds `"x"u8 + "y"u8` into one UTF-8 literal at compile time.
-
-### A SLICED string literal in a concat needs one real `@string` operand
-
-That last sentence is the whole hazard: C#'s `+` over UTF-8 spans is a **literal-only** compile-time
-feature, and a *slice* of a literal is not a literal. Go's `format_test.go` builds a fraction the
-obvious way:
-
-```go
-nanosec, err := strconv.ParseUint("012345678"[:test.fracDigits]+"000000000"[:9-test.fracDigits], 10, 0)
-```
-
-Both operands render as `"…"u8[..n]`, i.e. two bare `ReadOnlySpan<byte>` values with no operator
-between them (CS9047). The literals deliberately keep their `u8` form — Go slices a string by **bytes**,
-so re-rendering them as C# `string` and slicing that would index by UTF-16 code units, right for ASCII
-and silently wrong for anything else. Instead the sliced operand is cast to `@string`, which gives the
-concat one real operand and lets golib's `operator +(@string, ReadOnlySpan<byte>)` (or its mirror) bind
-while the other half stays a span:
-
-```csharp
-strconv.ParseUint(((@string)"012345678"u8[..(int)(test.fracDigits)]) + "000000000"u8[..(int)(9 - test.fracDigits)], 10, 0)
-```
-
-Only `token.ADD` is affected; a **comparison** against a sliced literal already binds golib's span-aware
-operators and keeps its zero-allocation form. (Guarded by the `PackageNameShadowing` behavioral test,
-case 5.)
-
-For a slot of a **named** string type the old form did not merely cost a transcode — it did not
-compile. The generated `[GoType("@string")]` wrapper carried the span *comparison* operators but no
-`+` at all, so C# fell back to converting both operands to a C# `string` and calling `string.Concat`:
-the result was a `string` where the wrapper was wanted (CS0029 in an element slot, CS1503 in a
-generated constructor), and a `u8` operand had no candidate to reach at all (CS0019).
-`InheritedTypeTemplate` now mirrors `@string`'s concat set — `+(T, T)`,
-`+(T, ReadOnlySpan<byte>)`, `+(ReadOnlySpan<byte>, T)` — so a named string type survives a concat
-exactly as Go says it does, keeping its method set:
-
-```go
-type version string
-func (v version) tag() string { return string(v) + "!" }
-
-short := base + "-rc"   // still a version, so short.tag() stays callable
-```
-```csharp
-version @short = @base + "-rc"u8;
-```
-
-The same `BasicLit`-only gate applied to `markStringFieldLits`, so a positional STRUCT element in a
-string field had the identical defect (`rec{base + "-s"}` over a `version` field was CS1503); both
-gates now mark every positional element. KEYED elements still skip — index *i* is not field *i* for
-them, and `convKeyValueExpr` resolves their slot itself. (Guarded by the behavioral tests
-`CompositeElementStringConcat`, which also pins the vararg suppression that must NOT change, and
-`NamedStringConcat`; `ReturnTupleFuncLitArg`'s golden carries the slice-element form.)
-
-### Parentheses inherit their slot's literal context
-Parentheses are transparent in Go: `(x)` lands in the enclosing slot exactly as `x` does. But
-`convParenExpr` rendered its operand with a **fresh** context list — it built the `StarExprContext`
-the pointer-cast path needs and passed only that — so the incoming `BasicLitContext` never reached the
-operand. The slot's span-tolerance signal (`spanTargetUnsupported`, above) was silently reset to the
-default *tolerant*, and a pair of parentheses could re-enable the `u8` span form inside a span-**hostile**
-slot:
-
-```go
-panic("a" + "b")     // suppressed correctly
-panic(("a" + "b"))   // parenthesized — the same slot, the opposite rendering
-```
-```csharp
-throw panic("a" + "b");         // before and after
-throw panic(("a"u8 + "b"u8));   // before — CS1503
-throw panic(("a" + "b"));       // after
-```
-
-C# folds two adjacent utf8 literal constants into a single `ReadOnlySpan<byte>`, and a span has no
-boxing conversion to `object`, so the parenthesized spelling did not merely differ — it did not
-compile. `panic` is where this surfaces because it is the one span-hostile slot with no second line of
-defence: the others pick up an outer `(@string)` box cast whose helper (`constExprIsStringLiteralConcat`)
-already unwraps `ParenExpr`, while `panic` short-circuits in `convCallExpr` before `convExprList` ever
-runs. With a **non**-constant operand the drop was invisible rather than fatal — `(a + "-y"u8)` binds
-golib's `operator +(@string, ReadOnlySpan<byte>)` and yields an `@string`, which boxes fine — but it
-still rendered the parenthesized and unparenthesized spellings of one expression differently.
-
-The fix threads the incoming literal context *through* the paren arm instead of replacing it; the
-`StarExprContext` is passed alongside it, so the pointer-cast path is unchanged. Every span-hostile
-slot — `panic`, a vararg `any`, an interface-typed assignment, return, or `ValueTuple` element — now
-renders both spellings alike.
-
-The **inverse** must hold too: a composite literal's string element slot *is* span-tolerant, and its
-parenthesized concat has to keep the span form. It does, through that composite's own per-element gate
-(previous section) rather than through the dropped context — which is exactly why the two changes
-belong together:
-
-```go
-elems := []string{a + "-g", (a + "-h")}
-```
-```csharp
-var elems = new @string[]{a + "-g"u8, (a + "-h"u8)}.slice();
-```
-
-Re-transpiling the behavioral corpus and reconverting the full standard library both produce
-byte-identical output, so this is latent-defect hardening rather than a rendering change: no site in
-either corpus spells a concat this way today. (Guarded by the behavioral test
-`ParenthesizedConcatContext`, which spells every affected slot **both** ways so the pair must agree.)
-
-One related gap is deliberately left open. The decisions that mark a string literal boxable —
-`u8StringArgOK` / `useGoStringArg` in `convCallExpr`, and the same test in `visitSendStmt`,
-`convKeyValueExpr`, `convCompositeLit`, `markAnyFieldLits`, and `convFuncLit` — all gate on
-`isStringBasicLit`, a bare `*ast.BasicLit` type assertion that does **not** unwrap parentheses (unlike
-`constExprIsStringLiteralConcat`, which does). So a parenthesized *standalone* literal in an `any` slot
-(`fmt.Println(("lit"))`) is not
-recognized as one, and now renders `(@string)(("lit"))` rather than the constant-span
-`(@string)(("lit"u8))` it got by accident from the dropped context — correct, and one
-`Encoding.UTF8.GetBytes` per evaluation slower. Making those gates paren-aware is the general fix for
-that family; it is a distinct change with its own footprint and is not folded in here.
-
-### Converting a string literal to a named `[]byte` / `[]rune` type
-The byte/rune-slice sibling of the named-string rule above: a string **literal** converting to a named type whose underlying is `[]byte` or `[]rune` — `htmlSig("<!DOCTYPE HTML")` where `type htmlSig []byte` (net/http `sniff.go`'s signature table) — cannot cast directly either. The `u8` span converts to neither the `[GoType]` wrapper (whose implicit operator takes exactly its underlying `slice<byte>`/`slice<rune>`) nor through `@string` in one hop (C# chains at most one user-defined conversion — CS0030). The converter materializes the underlying slice exactly the way the plain `[]byte("…")` conversion does (the `slice<T>(T[])` builtin over the literal's `@string`), and the wrapper's own operator then applies:
-
-```go
-type htmlSig []byte
-sig := htmlSig("<!DOCTYPE HTML")
-```
-```csharp
-var sig = ((htmlSig)slice<byte>((@string)"<!DOCTYPE HTML"u8));
-```
-
-The rune form decodes code points — `runeSig("héllo")` yields a rune-counted `slice<rune>` — matching Go's conversion semantics. The rule is stated over the OPERAND'S TYPE, not over its syntax: a string **variable** and a defined string are the same two-hop problem (`((namedByteSlice)plainVar)` was CS0030 exactly as the literal form was), so any string-typed operand takes the underlying-slice hop. (Guarded by the behavioral test `NamedByteSliceFromStringLit` — direct, composite-element, and argument positions, byte/rune element reads, all output-compared vs Go — and by `DefinedElemStringConversion` for the variable and defined-string operands.)
-
-### A string ↔ byte/rune-slice conversion with a DEFINED type on either END
-
-Go spells `[]byte(s)`, `[]E(s)` and `string(b)` identically whether the string, the slice or its element is a defined type or the plain builtin — the conversion is defined over the UNDERLYING types. C# reaches the two ends through different machinery, and **neither end can be reached by chaining**, because C# applies at most ONE user-defined conversion in a single context. The two ends therefore have two different remedies, and one conversion may need both at once.
-
-**The STRING end.** A `[GoType("@string")]` wrapper converts to golib `@string`, and `@string` converts to `byte[]`/`rune[]` — two user-defined hops, so `slice<byte>(v)` over a defined string finds no applicable `slice<T>(T[])` overload (`CS1503: cannot convert from 'strMarshaler' to 'byte[]'`). Spelling the `(@string)` step leaves exactly one implicit step for the argument conversion — the same remedy the split-literal idiom above already takes:
-
-```go
-type strMarshaler string
-func (s strMarshaler) MarshalJSON() ([]byte, error) { return []byte(s), nil }
-```
-```csharp
-[GoType("@string")] internal partial struct strMarshaler;
-
-internal static (slice<byte>, error) MarshalJSON(this strMarshaler s) {
-    return (slice<byte>((@string)s), default!);
-}
-```
-
-**The ELEMENT end.** `slice<byte>` and `slice<myByte>` are unrelated generic instantiations with no conversion between them at all — the element wrapper's own `byte`↔`myByte` operators say nothing about the slices written over them. The elements are projected one at a time through that operator, using golib's `widen`. This is not a concession: Go's string↔slice conversion always materializes fresh storage, so an element-wise copy is exactly its cost model (`[]E(s)` and `string(b)` both allocate in Go too), and the projection preserves its source's nil-vs-empty identity.
-
-```go
-type Uint8 byte
-type renamedRenamedByteSlice []renamedByte
-
-want := []Uint8("hello")
-r := renamedRenamedByteSlice("abc")
-s := string(want)
-```
-```csharp
-var want = widen<byte, Uint8>(slice<byte>((@string)"hello"u8), elemᴛ0 => (Uint8)elemᴛ0);
-var r = ((renamedRenamedByteSlice)widen<byte, renamedByte>(slice<byte>((@string)"abc"u8), elemᴛ0 => (renamedByte)elemᴛ0));
-var s = ((@string)widen<Uint8, byte>(want, elemᴛ0 => (byte)elemᴛ0));
-```
-
-The lambda parameter carries the temp-var marker (`ᴛ`) because C# rejects a lambda parameter that shadows an enclosing local, and a converted Go identifier can be any plain name.
-
-A plain string converting to a plain `[]byte`/`[]rune` is deliberately **not** claimed by either arm: golib's `@string` converts straight to `byte[]`/`rune[]`, so the existing single call already IS the whole conversion, and claiming it would rewrite the corpus to no effect. `[]E(s)` is also the only direction a defined element can be reached from — Go permits a slice→slice conversion only between identical element types, so `[]myByte([]byte)` is not Go at all and the projection is never asked to alias.
-
-**Census.** Across the whole Go 1.23.1 standard library — production *and* test sources — the shapes appear five times, all in `encoding/json`'s suite (`[]byte(strMarshaler)`, `[]byte(*strPtrMarshaler)`, `[]byte(marshaledValue)`, `[]Uint8("hello")`, `renamedRenamedByteSlice("abc")`), which is why the corpus compiled clean without them; the `string([]myByte)` direction has zero stdlib sites but is ordinary Go and is emitted by the same rule. These were five of the eight errors standing between `encoding/json` and its first run. (Guarded by the behavioral test `DefinedElemStringConversion` — every direction, value and pointer operands, named and unnamed slices, byte and rune elements, with the plain-on-plain controls in the same program.)
-
-⚠ The **reflection** mirror of the element end is still open: `reflect.Value.Bytes()` casts its receiver to `slice<byte>` and throws `InvalidCastException` for a `slice<myByte>` (`core/reflect/value_impl.cs`), which is what `encoding/json`'s `TestSliceOfCustomByte` and `TestEncodeRenamedByteSlice` report. Emission and reflection are independent seams; closing this one did not close that one.
-
-### A string literal with high raw-byte escapes (`\xHH` hex, `\NNN` octal) emits a byte-array `@string`
-Go's `\x` escape is **exactly two** hex digits denoting one raw byte; C#'s `\x` escape is a **greedy** 1-to-4-hex-digit code-*unit* escape, and a C# `"…"u8` literal UTF-8-re-encodes its content. So re-emitting a Go token verbatim as a C# string literal both (a) mis-parses `\xdb` followed by ASCII `"5""0"` (the token `\xdb50`) as the single code unit U+DB50 — a lone high surrogate that cannot UTF-8-encode into a golib `@string` (CS9026, time/tzdata's embedded zip blob) — and (b) silently widens every byte ≥ 0x80 to two UTF-8 bytes, so `@string` byte indexing / `len` would not match Go. Such literals are emitted as the exact bytes in a **parenthesized** byte-array-backed `@string`:
-
-```go
-const zipdata = "\x50\x4b\x03\x04\xdb50\xff\x92\x00LMT"   // raw bytes
-```
-```csharp
-internal static readonly @string zipdata = ((@string)(new byte[]{0x50, 0x4b, 0x03, 0x04, 0xdb, 0x35, 0x30, 0xff, 0x92, 0x00, 0x4c, 0x4d, 0x54}));
-```
-
-The outer parentheses are load-bearing: an inline-indexed literal (`"…"[i]`) would otherwise bind `[i]` to the inner `byte[]`. Only a raw-byte **escape** trips it — for `\xHH`, a byte value ≥ 0x80 or a trailing hex digit (the octal companion is below) — so a literal written with actual UTF-8 characters (`"Michał"`, `"白鵬翔"`) round-trips through `"…"u8` and keeps the readable string form, as does an all-ASCII escape run with no greedy extension (image/jpeg's `"\x00\x10\x01\x11"u8[i]`), and there is no behavioral-golden churn. (Guarded by the `HexByteStringLiteral` behavioral test.)
-
-Go spells a raw byte **two** ways, and the same rule covers both: `\NNN` is **exactly three** octal digits, likewise denoting one byte. Octal has no *greedy* hazard — Go's escape is exactly three digits and the C# `\uXXXX` it would render as is exactly four hex digits, so neither side can extend into the following text — but the **byte-width** hazard is identical and just as silent: Go's `"\377"` is the single byte `0xFF`, whereas the character `U+00FF` that `replaceOctalChars` would emit UTF-8-encodes to the **two** bytes `0xC3 0xBF`. The UTF-16-string and `u8` renderings produce those same wrong bytes, so an octal escape ≥ `\200` takes the byte-array path as well; below `\200` it is ASCII-safe and keeps the readable form:
-
-```go
-const octalData  = "\377\200\303\277\101\000\177Z"   // 8 raw bytes
-const asciiOctal = "\101\102\011\103"                // ASCII "AB\tC"
-```
-```csharp
-internal static readonly @string octalData = ((@string)(new byte[]{0xff, 0x80, 0xc3, 0xbf, 0x41, 0x00, 0x7f, 0x5a}));
-internal static readonly @string asciiOctal = "\u0041\u0042\u0009\u0043"u8;
-```
-
-Left unfixed, `len(octalData)` is 12 rather than 8 and every byte index past the first is wrong. This one is worth recording as a *latent* defect: it was found by design review, not by a miscompile, and the corpus had **no instance** of it (CNR is byte-identical across the behavioral corpus, and the rule is purely additive — it can only divert literals that were already being emitted with the wrong bytes). Note that the folded-value rule below catches the octal case for *concatenated* constants by a different test (`utf8.ValidString`), since a lone `\377` byte is not valid UTF-8. (Guarded by the extended `HexByteStringLiteral` behavioral test — a high-octal table, the `\200` low boundary, sub-0x80 controls asserting the readable form survives, and a non-const local, all byte-indexed and `len`-measured, output-compared vs `go run`; `stringLiteralNeedsByteArray`'s rule — both escape forms, the sub-0x80 controls, and the escaped-backslash parity cases — is unit-tested in `convBasicLit_test.go`.)
-
-The **sub-`\200` rewrite** that renders the readable form obeys the same backslash-parity rule, and
-it did not. `replaceOctalChars` matched `\NNN` with a plain regex, so in `"\\101"` — an *escaped
-backslash* followed by the ordinary characters `1`, `0`, `1` — it matched from the SECOND backslash
-and emitted `"\\u0041"`, whose C# value is the six characters `\u0041` where Go's is the four
-characters `\101`. Wrong content, wrong length, silently. (`"\\377"` is the same case above the
-diversion boundary: parity keeps it out of the byte-array path too, since it holds no raw byte.) The
-rewrite is now a positional parity scan — a `\NNN` is an escape only after an ODD run of
-backslashes — which also fixes a second defect of the regex form: it paired `FindAllString` with
-`strings.Replace(…, 1)`, replacing the first *textual* occurrence of each match rather than the
-matched position, so a literal carrying both forms rewrote the escaped one twice:
-
-```go
-const escapedOctal = "\\101|\101|\\\101|\\377"   // Go: `\101` | 'A' | `\`+'A' | `\377`
-```
-```csharp
-internal static readonly @string escapedOctal = "\\101|\u0041|\\\u0041|\\377"u8;
-```
-
-Three octal digits cap at `\777` = 0x1FF, so the C# `\uXXXX` code-unit escape always suffices (the
-old `\UXXXXXXXX` branch was unreachable). The same helper feeds the `token.CHAR` path, where the
-parity case cannot arise (a rune literal holds one character) but the escape rewrite is shared. This
-was found by review, not by a miscompile: CNR shows no corpus instance (byte-identical apart from
-the guard's own golden). (Guarded by the extended `HexByteStringLiteral` behavioral test — both
-forms as a const and as a local, plus the rune pair, output-compared vs `go run` — and by
-`TestReplaceOctalChars`.)
-
-The above routes a single `*ast.BasicLit` through `convBasicLit`'s scan. A string **constant** whose value is a *concatenation* — `const rev8tab = "" + "\x00\x80…" + …` (math/bits' bit-reversal table) — folds to one value with **no** single `BasicLit`, so it bypassed that scan and rendered a UTF-16 string literal: `rev8tab[1]` returned `0xC2` (the UTF-8 lead byte of U+0080), not `0x80`, and `Reverse8` was wrong. The const-string path now tests the FOLDED value directly — a value that is not valid UTF-8 (`utf8.ValidString`) cannot round-trip through a C# string/u8 literal, so it emits the same byte-array `@string` from its exact bytes (`byteArrayStringLiteral`, shared with `emitByteArrayString`); a valid-UTF-8 value keeps the readable `getStringLiteral` form. This catches any non-UTF-8 byte table built by concatenation (crypto S-boxes, embedded blobs), not just single literals. (Guarded by the `ByteTableStringConst` behavioral test — a concatenated `\x00\x80…` table byte-indexed and `len`-measured, output-compared vs `go run`; the pre-fix converter returns `0xC2` for index 1. The full corpus compiles with the byte-array consts, and CNR is byte-identical.)
-
-**Valid UTF-8 is not sufficient, and that gap cost `net/http/fcgi` a row (2026-08-09).** The folded
-arm's `utf8.ValidString` test answers only the byte-widening half of the round-trip; the *greedy-
-escape* half above applies to a folded constant exactly as it does to a `BasicLit`. FastCGI's
-`const want = "\x01\n\x00\x00\x00\x12\x06\x00" + "\x0f\x01FCGI_MPXS_CONNS1" + …` folds to a value
-that is entirely ASCII — perfectly valid UTF-8 — so it took the readable path and emitted
-`\x0f\x01FCGI…`, in which C# reads `\x01F` as U+001F and eats the `F`. Nothing failed to compile;
-`TestGetValues` simply compared a correct response against its own corrupted constant, and reported a
-`%q` diff whose cause is invisible unless you already know C#'s escape is variable-length. The arm
-now applies `stringLiteralNeedsByteArray` to the folded value's own quoted form, so BOTH declaration
-routes ask exactly the same question and diverge only where the answer genuinely differs. Corpus
-reach, measured before the fix: one live site — every other `\x`+hex-digit run in the emitted corpus
-sits inside a C# *verbatim* (`@"…"`) literal, where `\x` is two ordinary characters. (Guarded by the
-extended `ByteTableStringConst` behavioral test, whose second constant is the ASCII-only
-`"\x0f\x01" + "FCGI_MPXS_CONNS1" + "\x0a\x0d" + "BEEF"` — two greedy sites, byte-indexed, `len`- and
-`%q`-printed, output-compared vs `go run`; and by `net/http/fcgi`'s banked suite.)
-
-The **`var`** form of the same table needs no separate rule, and it is worth stating why, because
-the two declaration kinds reach the byte-array emission by genuinely different routes. A `const`
-is *folded* by go/types, so the concatenation is gone by the time the declaration is emitted and
-only the folded value can be inspected — hence the `utf8.ValidString` test above. A `var`'s
-initializer is *rendered as an expression*: `var tbl = "" + "\xff…" + …` walks the `BinaryExpr` and
-converts each operand through `convBasicLit`, so every piece is scanned on its own and the
-non-UTF-8 pieces become byte-array `@string`s that then concatenate as `@string`s:
-
-```csharp
-internal static @string tbl = ""u8 + ((@string)(new byte[]{0xff, 0x00, 0x80})) + ((@string)(new byte[]{0x01, 0xfe}));
-```
-
-This holds for a package-level var, a function-local var, an explicitly typed var
-(`var t string = …`), a single non-concatenated literal, and a `[]byte("" + "\xff…")` conversion.
-Note `encoding/hex`'s `reverseHexTable` — the 256-byte table that motivated a second look at this
-area — is a **`const`**, already covered by the folded-value rule; the corrupted UTF-16 literal
-still visible in a stale `src/core/encoding/hex/hex.cs` is pre-fix output, not current
-converter behavior. (Guarded by the `ByteTableStringVar` behavioral test — package-level, local,
-typed, and single-literal non-UTF-8 tables byte-indexed and `len`-measured, plus valid-UTF-8
-controls asserting the readable literal form and UTF-8 byte-count `len`, output-compared vs
-`go run`.)
-
-### A value-materializing string literal is HOISTED to a `static readonly` field beside its first use
-Go keeps string literals in RODATA: `return "true"` allocates **nothing** in a Go binary. Emitted
-inline, the converted C# pays a fresh backing `byte[]` at *every evaluation*, because each
-literal→`@string` materialization copies the `u8` span. A whole-package pre-pass therefore hoists
-each package-unique literal that materializes a VALUE to one `private static readonly` field,
-declared immediately above the function whose body holds its first package-wide use, and every use
-site becomes a field reference — so the literal costs at most one allocation per program *run*:
-
-```go
-// strconv/atob.go
-func FormatBool(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
-}
-```
-```csharp
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
-
-// FormatBool returns "true" or "false" according to the value of b.
-public static @string FormatBool(bool b) {
-    if (b) {
-        return trueˢ;
-    }
-    return falseˢ;
-}
-```
-
-**What hoists.** Only contexts that materialize a value, where a shared immutable `@string` is
-indistinguishable from a fresh one: a value `return`; an assignment to a local, parameter or struct
-field; an argument bound to a `string` parameter (including a variadic `...string` element); an
-`any`/empty-interface target (argument, result, channel send, assignment); a standalone map-index
-key; and a conversion of the literal to a named string type. A literal whose EVERY package use is an
-`any` target is emitted **pre-boxed** — `private static readonly object xˢ = (@string)"…"u8;` — so
-those sites allocate nothing at all. Mixed-use literals get one `@string` field and box per `any`
-call; there are never two fields for one literal.
-
-**What does not hoist**, and why — deterministic filters, not hotness heuristics:
-
-| Context | Why it stays inline |
-|:--|:--|
-| comparison operands (incl. lowered `switch` chains) | already zero-allocation: `@string` and every named string type compare against a `u8` span in place |
-| concat operands (`x + "…"`) | `operator +(@string, ReadOnlySpan<byte>)` already consumes the span without materializing it |
-| `[]byte("…")` / `[]rune("…")` sources | the result must be freshly MUTABLE; that one allocation is mandatory |
-| `fmt`/`log`/`testing` `*f` **format-position** literals (recognised structurally: a variadic callee named `…f` with a `string` parameter immediately before the variadic) | a format string slugs badly (`"%v"` → `vˢ`) and a formatting call's cost is dominated by formatting itself |
-| **degenerate slugs** — no usable ASCII word content, or a slug of ≤ 3 characters | `strˢ7` / `dˢ` carry no information; the literal reads better inline. `"true"` slugs to a healthy four-character `true` and DOES hoist |
-| the empty literal `""` | already 0 B (`ToArray()` of an empty span returns `Array.Empty`) |
-| composite-literal elements and keys | uniform hoisting would emit thousands of fields above the table-building functions and move their allocations out from under a `sync.Once` into the type initializer. (A *standalone* index into the same map — `table["composite key"]` — still hoists) |
-| literals inside `func init()` | run exactly once by construction |
-| package-level `var`/`const` initializers — decided on the **Go AST position**, not the emitted C# shape | one-time by nature (a package-level table is emitted into an `initᴛ*` method body, which a shape-based rule would mistake for an ordinary function) |
-| func literals OUTSIDE a function declaration | no `FunctionPrefixMarker` anchor exists to hoist above |
-| `\xHH` / high-octal raw-byte literals | already diverted to the byte-array-backed `@string` path |
-| every declaration a `[module: GoManualConversion]` file or entry owns | its emission is redirected to a non-compiled `.cs.auto` (or replaced by a placeholder comment), so it renders no prefix marker and must never CLAIM a field; its own literals stay inline, and the reconvert gate asserts no hoisted field is ever declared in a `.cs.auto` |
-| universe builtins (`panic`, `print`, `copy`, `unsafe.Slice`, …) | `go/types` records a call-site-specific signature for these, but the converter emits each through its own path — `panic` deliberately keeps the bare interned literal, which is zero-cost until a panic actually fires |
-
-**Naming.** `HoistedLiteralMarker` (`ˢ`, U+02E2 — a new `symbols.json` entry, never hardcoded)
-suffixes a camelCase slug of the literal's own content, joined at word boundaries and truncated at
-≤ 24 characters. That budget is **total**, first word included (corrected 2026-08-15 — see below).
-The alphabet is **ASCII** letters and digits, not `unicode.IsLetter`: a C#
-identifier is lexed over UTF-16 code units, so a letter outside the BMP is a surrogate pair and can
-never appear in one — `go/types` spells its universe type set `"𝓤"` (U+1D4E4, category Lu), and a
-rune-wide slug emitted `𝓤ˢ`, a CS1056/CS1519 cascade. An ALL-CAPS word folds whole
-(`"TESTING KEY"` → `testingKeyˢ`, `"CONTENT-TYPE"` → `contentTypeˢ`); touching only its first
-character would leave `tESTINGKEY`, which was 9% of the corpus' hoisted names on the first cut.
-Distinct literals whose slug collides take a package-wide first-occurrence ordinal (`fooˢ`, `fooˢ2`),
-checked against the package's declared names *and* the already-claimed hoist names —
-`performNameCollisionAnalysis` walks Go declarations only and never sees a synthetic name. Because
-every hoisted name ends in `ˢ`, it can collide with neither a C# keyword nor a Go-derived identifier.
-
-**The 24-character budget binds the FIRST word too** (2026-08-15, the `crypto/tls` lane). It did not:
-the word-boundary truncation only applied once the slug was non-empty, so the leading word was written
-whole at whatever length it happened to be. A literal that is ONE long word — a hex test vector, a
-base64 blob, an alphabet string — therefore minted an identifier of exactly its own length, and
-`crypto/tls`'s `key_schedule_test.go` carries a **2,176-character** hex vector: the field name was
-2,176 characters and the compile died `CS7013: Name '…' exceeds the maximum length allowed in
-metadata`. The committed corpus was already past the design's intent without failing — 33 of its 5,928
-hoisted names exceeded 24 characters, the longest 256 — so this was luck, not a boundary case. Raising
-the number would not close the class; making the budget total does: `len(literalSlug(v)) ≤ 24` is now
-an invariant, so a literal of any size mints a name within budget or no name at all. A word that alone
-overflows has no word-boundary truncation available (the design's "never mid-word — that is where
-unreadable names come from" rule), so the slug is empty and the degenerate rule keeps the literal
-inline, which is exactly where an unreadable identifier was the alternative. A/B footprint: those 33
-literals inline instead of hoisted, all but a handful hex/base64/alphabet content; **zero** behavioral
-goldens move (no behavioral literal has an over-budget first word).
-
-**Two orderings the mechanism has to respect.**
-
-*Initialization order.* C# runs static field initializers in textual order within a class PART and in
-**unspecified** order across parts, so a package-level `var` whose initializer transitively reads a
-hoisted field could observe `default(@string)` (`""`). The converter already owns the defense —
-`initOrderOperations` relocates dependency-ordered initializers into the generated static
-constructor, which runs after ALL field initializers — but its graph is keyed on Go variables and
-cannot see a synthetic field. Every function that reads a hoisted field is therefore registered in
-that graph, so any package-level initializer reaching one transitively is relocated. Three live
-corpus instances surfaced immediately: `net/http/internal/testcert`'s `LocalhostKey =
-testingKey(…)` reads two hoisted fields declared *later in the same file* and would have run
-`strings.ReplaceAll(s, "", "")`; `internal/profile` and `runtime/pprof` are the other two.
-
-Where the relocation is **unavailable** the rule takes a second arm: the `-tests` variant conversion
-does not run `collectMovedInitVars` at all (the test project has no `package_init.cs` emission path,
-and an internal variant shares the production class, which may already own a static constructor — a
-second one is CS0111), so there nothing inside a function a package-level initializer can REACH is
-hoisted at all; those sites keep the inline rendering, and the same literal still hoists from any
-other use. This is not hypothetical: `encoding/pem`'s `var pemData = testingKey(…)` is declared
-~300 lines above the `testingKey` whose two hoisted fields it depends on, ran
-`strings.ReplaceAll(s, "", "")`, and left every `"TESTING KEY"` in place. The corpus **compiled
-clean** with that bug present — only running the package's own Go tests found it.
-
-*Two-pass `-tests` conversion.* An internal `_test.go` file emits into the PRODUCTION package class
-and can sort BEFORE the production file that owns a field. The test pass's registry is therefore
-pre-seeded with the production literal→field map (recomputed by the same collector over the
-production files, with their manual-conversion flags), and a test file may only REFERENCE a seeded
-literal, never claim it — that is what prevents CS0102, not name luck. An EXTERNAL `<pkg>_test`
-variant carries no production files, so its seed is empty and it claims freely into its own class,
-which is required: a production field is `private` to a different class. Production output is
-byte-identical whether or not tests are converted.
-
-**Determinism.** File conversion is sequential in sorted-filename order (concurrency was removed for
-exactly this reason), and names and placement derive only from literal content plus source order, so
-two runs over the same tree emit the same bytes. Emission itself is a pure substitution at
-`convExpr`'s single `*ast.BasicLit` arm; the decision cannot be made there, because pre-boxing needs
-every use of a literal and the init-order rule needs the reader set before any file emits.
-
-One interaction is worth naming: `applyUntypedConstBoxCast` re-applies the `(@string)` default-type
-box cast to anything that does not already lead with it, and a hoisted name does not. It now skips a
-hoisted literal outright — an `@string` field needs no cast, and re-casting a PRE-BOXED `object`
-field would unbox and allocate a fresh box on every evaluation, defeating the hoist at exactly the
-`any`-slot sites it targets.
-
-Corpus effect (Go 1.23.1, 302 packages): **3,253 hoisted fields** across 467 files, 62 of them
-pre-boxed. Per *function* the blocks are small — 1,634 blocks, median 1, p90 4, p99 11, max **61**
-(`net/http`'s `StatusText`, the worst case the design accepted up front). Per file the median is 3
-and the max 127, in the 20k-line bundled `net/http/h2_bundle.cs`. A side effect worth recording: two
-dead deref-alias prologues disappeared (`runtime`'s `lfnodeValidate`, `go/types`' `suspendedCall`)
-because `bodyReferencesIdentAsValue` is a text test whose own comment names "a string" as a source of
-spurious matches — the words *node* and *call* inside those functions' message literals were the only
-textual occurrences keeping the aliases alive. Moving the literal out of the body drops the dead
-local; a genuinely live alias is still never dropped, since a real value use emits the identifier
-regardless. (Guarded by the `StringLiteralHoisting` behavioral test — every row of both tables above,
-plus slug-collision ordinals, cross-file dedupe, and the init-order case, output-compared vs
-`go run`.)
-
 ### Composite types render structurally (`[]*T` keeps the pointer)
 A slice/array type is rendered structurally in every type-name path: the `[N]`/`[]` marker plus the recursively resolved element, never from the `go/types` string form. The string form is path-qualified (`[]*internal/abi.Type`), and the cross-package last-segment strip would eat everything before the slash *including the pointer marker*, silently dropping the `ж<>` (reflect's `[]*abi.Type` fields compiled against the WRONG element type). The recursion also resolves lifted anonymous elements and cross-package generic elements:
 ```go
@@ -7274,105 +6679,6 @@ var ptrs = vals._<slice<ж<atomic.Int32>>>();
 Guarded by `ArrayOfCrossPackageType` (the type assert and a `var` declaration).
 
 A **SAME-PACKAGE instantiated generic** is rendered structurally for the same reason — the name plus each type argument recursively resolved, never from the `go/types` string. A *cross-package* generic already took the structural path (`getAliasQualifiedTypeName`/`getFullyQualifiedTypeName` both special-case `pkg != v.pkg`), but a generic whose OWN type is local while a type ARGUMENT is cross-package fell through to the `t.String()` form: `curve[*repro/sub.Item]`, whose slash-strip then ate everything before the `/` — **including the `curve[` header** — collapsing the wrapper. crypto/elliptic's `var p224 = &nistCurve[*nistec.P224Point]{…}` and its `p256Curve struct { nistCurve[*nistec.P256Point] }` embed emitted `ж<nistec.P224Point>>` / `ref go.nistec.P256Point> …` (a CS1519/CS1526 cascade, ~137 errors across elliptic/ecdh/mlkem768). Both `getAliasQualifiedTypeName` (the var-type path) and `getFullyQualifiedTypeName` (the struct-embed field path) now render a same-package generic as `Name[args…]` with each arg via the same function, so the arguments carry their short, slash-free package-qualified names and the header survives → `ж<nistCurve<ж<nistec.P224Point>>>`. Byte-identical across the behavioral corpus; an A/B of crypto/elliptic+ecdh shows only wrapper-restorations at every site (var types, adapter ctors, `GoImplement` attributes, the embed accessor, the unmarshaler array). (Guarded by the `CrossPkgUser` extension — a same-package `Holder[*CrossPkgLib.Sensor]` as a var type AND a struct embed, field read/write vs Go.)
-
-### A reference-type-pointee pointer parameter uses the nil-check-free `.ValueSlot` deref alias
-
-The entry deref-alias for a pointer parameter is `ref var p = ref Ꮡp.Value`. The `.Value` getter
-throws `NilPointerDereference` when the box reports `IsNull` — for a MANAGED box, `m_val is null`.
-That is correct when the pointee is a VALUE type (a null `m_val` means a genuinely nil pointer). But
-when the POINTEE is itself a reference type — `*error`, `*[]T`, `*map[K]V`, `**T`, `*func(…)`,
-`*chan T` — the box holds the reference VALUE directly, and that value is legitimately null when it
-is the zero value (a nil interface/slice/map). The pointer is still a valid, non-nil box (`Ꮡ(err)`),
-so establishing the entry ALIAS is a read of the held value, not a dereference of the box: in Go,
-`*(&err)` of a nil `error` yields nil, no panic. `.Value`'s `IsNull` check misfires on `m_val is
-null` and panics spuriously at function entry — text/scanner's `digits(…, invalid *bool)` and, for a
-reference pointee, text/tabwriter's `handlePanic(err *error)` (deferred from `Write`, whose `err` is
-a nil named-return interface) crashed with a nil-pointer panic before `recover()` even ran. The fix:
-when the pointee `isInherentlyHeapAllocatedType`, emit the nil-check-free `.ValueSlot` accessor
-(`ref var err = ref Ꮡerr.ValueSlot`), mirroring `namedResultBoxAccessor` — a named result of the same
-type already reads this way. `.ValueSlot` returns the same real `m_val` slot as `.Value` in every
-non-throwing case, so write-through and non-null reads are byte-behaviorally identical; only the
-spurious-panic case changes. Corpus-wide the swap touches 49 stdlib files + 10 behavioral goldens, all
-value-preserving (full behavioral suite Output 0-fail). (Guarded by the `PointerToInterfaceParamDeref`
-behavioral test
-— a `*error` parameter read through inside a deferred recover/re-panic where the pointee is nil at
-address-of time; before the fix the entry alias NREs, after it prints the re-panic message,
-output-compared vs `go run`.) ⚠ This fixes only the spurious CRASH. A SEPARATE latent defect remains:
-a non-heap-promoted address-taken named return — `Ꮡ(err)` boxes a COPY — so `*err = …` in the
-deferred handler writes the copy while `return err` reads the original; text/tabwriter's tests need
-that heap-promotion of address-taken named returns before they fully validate.
-
-The value-type nilable case — a genuinely nil `*rune`/`*bool`/`*int` optional-out-param, deref'd only
-under a body VALUE guard — was handled for a fortnight by a companion **call-site nil-argument**
-detection, and is now subsumed by the unconditional nil-deferring entry alias (see *A pointer
-PARAMETER is nil-deferring for exactly the reason a receiver is*). The problem it solved is worth
-keeping on the record, because it is the cleanest demonstration of why an entry-alias policy cannot be
-an analysis: `collectNilSafePtrParams` scanned only the body for `param == nil`/`!= nil`, so
-text/scanner's `digits(ch0 rune, base int, invalid *rune)` — whose sole deref `*invalid == 0` sits
-behind `ch >= max` (never `invalid != nil`) and which is called `digits(ch, 10, nil)` — kept the
-strict `.Value` entry hoist and NRE'd at entry, where Go never dereferences (`ch >= max` is false on
-the nil-call path). The remedy was a package-wide pre-pass (`collectNilArgPtrParams`) recording, per
-`*types.Func`, the pointer-parameter positions ever passed the untyped `nil` at a call site — which
-worked, but only for SAME-package call sites, because the converter processes one package at a time.
-A parameter passed nil solely from another package stayed strict and stayed broken; that residual is
-what `.DerefOrNull()` closes structurally, and the pre-pass was deleted with the rest of the analysis.
-(Still guarded by the `GuardedNilPointerParamDeref` behavioral test — a `*int` out-param deref'd under
-an `i >= base` guard, called once with a real pointer and once with nil; NREs at the entry hoist under
-either predecessor, matches `go run` now without one.)
-
-### A pointer-element composite literal takes the box for a deref-aliased ident
-
-A bare identifier element of a pointer-element composite literal (`[]*CommentGroup{c}`) renders
-the pointer VALUE — the box `Ꮡc` — not the deref'd receiver ref-local `c`. Every named pointer
-parameter is deref-aliased in C# (`ref var c = ref Ꮡc.Value`), and the bare name is the value
-alias; the array element type is `ж<CommentGroup>`, so the alias form was CS0029 (go/ast's
-`CommentMap.addComment` — the sibling `append(list, Ꮡc)` already took the box through the
-call-argument pointer arm). The routing mirrors the struct-field pointer arm: the element index
-is marked `argTypeIsPtr`, which convExprList turns into the pointer ident context:
-```csharp
-list = new ж<CommentGroup>[]{Ꮡc}.slice();
-```
-Gated to bare idents of pointer type — keyed elements (maps) and address-of/composite elements
-manage their own pointer rendering. Guarded by the `PointerParamWalk` extension `collect` (the
-literal arm and the append arm, aliasing proven by a post-collect write through the original).
-
-### A pointer value passed to an `any` argument takes the box
-A deref-aliased pointer passed WHOLE (as an argument, not `p.field`) to an EMPTY-interface (`any`)
-parameter renders the pointer VALUE — the box `Ꮡp` — not the deref'd value alias `p`. Go boxes the
-*pointer* into the interface, so dropping the box stores the pointed-to VALUE and loses pointer
-identity: a later `x.(*T)` assertion (rendered `._<ж<T>>()`) then finds a bare `T` and panics
-("interface conversion: … is T, not *T"). This is fmt's own `sync.Pool` round-trip —
-`func (p *pp) free() { … ppFree.Put(p) }` (Put's parameter is `any`) feeding `newPrinter`'s
-`ppFree.Get().(*pp)` — which crashed the SECOND time through the pool, blocking every multi-call fmt
-program. Both a pointer RECEIVER and a plain `*T` PARAMETER take the box:
-```go
-func (p *pp) free()  { poolPut(p) }   // p is *pp (pointer receiver); poolPut(x any)
-func keep(q *pp)     { poolPut(q) }   // a plain *T parameter, same shape
-```
-```csharp
-internal static void free(this ж<pp> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
-    …
-    poolPut(Ꮡp.OrTypedNil());          // NOT poolPut(p) — a pp VALUE loses pointer identity
-}
-internal static void keep(ж<pp> Ꮡq) {
-    poolPut(Ꮡq.OrTypedNil());
-}
-```
-(The `OrTypedNil()` suffix is the other half of the same boundary — see
-[A pointer crossing into an interface carries its static type](#a-pointer-crossing-into-an-interface-carries-its-static-type-however-the-pointer-was-produced),
-which generalized this arm from the call-argument slot to every empty-interface slot.)
-This mirrors the composite-literal element arm above: the argument index is marked `argTypeIsPtr`,
-which convExprList turns into the pointer ident context, so `convIdent` emits the parameter box
-(`Ꮡp`) or the current method's direct-ж receiver box. It fires ONLY for the empty interface — a
-NON-empty interface already routes the pointer through its `*T`→interface adapter (`interfaceTypes`),
-and the two arms are mutually exclusive. A pointer LOCAL is excluded (it already holds its box
-directly — the bare name IS the box), an `unsafe.Pointer` argument is excluded (not a `*types.Pointer`),
-and the treatment fans out across a variadic `...any`. The receiver form reaches through a closure
-too — `Ꮡs.Value.d.note(Ꮡs)` for `s.d.note(s)` inside a nested lambda (the database/sql `(*Stmt)`
-shape). Guarded by `PointerValueToInterfaceArg` (a minimal sync.Pool-shaped free list round-tripping
-a `*pp` via both a pointer receiver and a pointer param, each `.(*pp)`-asserted after the `any` hop —
-the 2nd pool Get panicked before the fix) and the `NestedLambdaReceiverField` receiver-in-closure case.
 
 ### Appending to an interface-typed slice casts the element
 A value appended to a `[]Iface` slice whose type is not already the interface -- a pointer rendering as the `*T`-to-interface adapter ctor, or a raw struct value -- leaves both golib `append` overloads applicable (`append<T>(ISlice, params T[])` infers the concrete/adapter type; `append<T>(slice<T>, params Span<T>)` infers the interface -- CS0121). The converter casts such elements to the element interface type:
@@ -7395,483 +6701,311 @@ ptrs  = append(ptrs,  (ж<nint>)(nil));                 // pointer element (nil 
 ```
 A nil element is only ever valid when the element type is nillable, so the cast target always exists. Spread appends (`append(dst, src...)`) are excluded (the existing `Ellipsis.IsValid()` guard). Guarded by the `AppendNilSliceElement` behavioral test (slice/map/pointer element types, output-compared vs Go).
 
-### A ONE-FIELD struct's positional `nil` literal names its field constructor
-The universe `nil` renders in a value context as the typeless `default!`, which takes its type from
-whatever it is assigned or returned into. A constructor ARGUMENT is the one position where nothing
-supplies that type, and a generated struct partial offers exactly two one-argument constructors: the
-nil constructor `T(NilType)` and the field constructor `T(F field = default!)`. `default!` converts
-to both, so a one-field struct's positional literal carrying `nil` is `CS0121 — the call is
-ambiguous`:
-```csharp
-new TestWriter_testClose(default!)          // ambiguous: T(NilType) vs T(error)
-new TestWriter_testClose((error)default!)   // names the field constructor, and only it
-```
-The argument now carries the field's type, via the same per-element `castArgToType` plumbing the
-narrow-integer and `any`-field element casts use. **Only** a one-field struct can reach this: Go
-requires a positional composite literal to list every field in order, so at any other arity the call
-already differs from `T(NilType)` in argument count — and only `nil` can, because every other element
-renders with a type of its own. A POINTER field is excluded and deliberately unchanged: there the
-literal renders golib's `nil`, whose type `NilType` is an *exact* match for `T(NilType)` and so beats
-the field constructor's user-defined conversion without ambiguity, producing the zero struct, which
-is the correct value. `archive/tar`'s `testClose{nil}` is the reported shape (×9, and the last wall
-in front of that package's 97 verdicts); `database/sql`'s `stubDriverStmt{nil}` is the same root.
+## Strings (`@string` and `sstring`)
 
-### A struct-literal interface field takes a pointer element's adapter
-A composite struct literal whose field is an INTERFACE type, initialized with a POINTER element whose pointer-receiver method set satisfies that interface, must record and route the same `*T`→interface adapter a call argument does — `&handlerWriter{l.Handler(), &logLoggerLevel, capturePC}` (log/slog SetDefault), where field `level` is `Leveler` and `*LevelVar` implements Leveler via a pointer-receiver `Level()`. The struct-field interface routing (`checkStructFields`) recorded/routed a NAMED VALUE element that satisfies the field (`DecodingError{InvalidIndexError(idx)}`) but matched only a `*types.Named` element, so a POINTER element fell through: no `GoImplement<LevelVar, Leveler>(Pointer = true)` was recorded, and the box `ᏑlogLoggerLevel` was passed bare to the interface-typed constructor parameter (CS1503). The detection now takes the concrete satisfying type from the element OR the pointee of a POINTER element (`types.Implements` tested on the element's own pointer method set, the non-interface guard tested on the pointee), so a pointer element records and routes exactly like the value case:
-```csharp
-new handlerWriter(l.Handler(), new LevelVarжLeveler(ᏑlogLoggerLevel), capturePC)
-// [assembly: GoImplement<LevelVar, Leveler>(Pointer = true)]  -- in package_info.cs
-```
-The record flows through the existing pointer-target arm of `convertToInterfaceType` (the `ж<T>`-wrapped name unwraps to `GoImplement<T, Iface>(Pointer = true)`, and the render wraps the box in the generated `TжIface` adapter), so a same-package local (`streamWriter`→`io.Closer` in net/http/fcgi) and a foreign pointee (`*ast.SelectorExpr`→`ast.Expr`, `*Basic`→`Type`, `*Func`→`Object` in go/types) route through their local or foreign adapters uniformly. Positional and keyed literals both resolve their field (a keyed element renders `d: new SettingжDescriber(Ꮡs)`); an already-interface element and a value element are unchanged. (Guarded by the `PointerInterfaceStructField` behavioral test — a pointer-receiver-only implementer placed in an interface-typed struct field, positional via an addressed global and keyed via an addressed local, output-compared vs Go.)
+Go's `string` becomes golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), never `System.String`. Go strings are immutable byte sequences, so `len`, indexing, `range`, comparison, concatenation and conversions must follow Go's byte model, not C#'s UTF-16 model. A second type, golib [`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs), is a stack-only view that allocates nothing, used where the converter can prove a string never escapes.
 
-### The struct-field interface routing also fires on an ELIDED element composite
-The routing above lived only on the TYPED composite path (`checkStructFields`, reached from
-`convCompositeLit`'s `*types.Named`/`*types.Struct` arms). An **elided** element composite — the inner
-`{v0, v1, …}` of a `[]struct{…}{…}` / `map[K]struct{…}{…}` / `[N]struct{…}{…}`, which drops the repeated
-struct type and resolves it by inference (`compositeLit.Type == nil`) — took the separate target-typed
-`new(…)` constructor branch, which emitted its element values through `convExprList` with **no** interface
-recording or routing at all. So a struct field of interface type in such a literal was passed bare: a
-POINTER form lost its `new TжIface(…)` adapter wrap, and a VALUE form whose concrete was used *only* in the
-elided literal (never converted to the interface anywhere else) was never `GoImplement`-recorded, so no
-`partial struct T : Iface` was generated for it. Both compile to **CS1503**. This is exactly errors'
-`wrap_test`, whose `[]struct{ err error; … }{ {&poser{…}, …}, {errorUncomparable{}, …} }` produced 17
-`cannot convert from 'ж<poser>' / 'errorUncomparable' to 'error'` at the `new(…)` sites while the sibling
-`multiErr{poser}` slice-element cast (a *different* path) wrapped its `poser` correctly.
+| Go | C# | Where |
+|:--|:--|:--|
+| a `string` value | `@string` | everywhere by default |
+| `"text"` | `"text"u8` (a `ReadOnlySpan<byte>`) | converts to `@string` where a value is needed |
+| a literal used as a value | `static readonly @string textˢ` | [hoisted literals](#a-value-materializing-string-literal-is-hoisted-to-a-static-readonly-field-beside-its-first-use) |
+| `const name = "text"` inside a function | `static readonly @string nameᶜ` | [local string constants](#a-function-local-string-const-hoists-to-a-static-readonly-field-under-its-own-name) |
+| a literal with raw non-UTF-8 bytes | `((@string)(new byte[]{…}))` | [raw-byte literals](#a-string-literal-with-raw-byte-escapes-emits-a-byte-array-string) |
+| `type Token string` | `[GoType("@string")] partial struct Token` | [named string types](#named-string-types) |
+| `string(b)` read and discarded | `(sstring)b` | [conversion views](#a-non-escaping-stringbyte-local-emits-the-stack-string-sstring) |
+| a registered function's `string` parameter | an `sstring` member plus a generated `@string` member | [sstring twins](#an-sstring-twin-a-registered-function-gains-an-sstring-overload-that-calls-bind) |
 
-The interface-field record+route loop was extracted from `checkStructFields` into a shared
-`recordStructFieldInterfaceCasts(compositeLit, structType, callContext)` and is now called from **both** the
-typed path and the elided path (against the inferred `*types.Struct`), so an elided struct composite routes
-its interface fields identically:
-```csharp
-new(new poserжerror(poser), err1, true)                      // *poser  → error  (Pointer = true)
-new(new errorUncomparableжerror(Ꮡ(new errorUncomparable(nil))), …)  // *errorUncomparable → error
-new(new errorUncomparable(nil), …)                            // value form: partial struct : error boxes
-// [assembly: GoImplement<poser, error>(Pointer = true)] + <errorUncomparable, error>[(Pointer = true)]
-```
-The extracted logic is byte-for-byte the proven typed-path logic (same keyed-vs-positional field resolution,
-same value/pointer method-set satisfaction test), so it inherits every guard the typed path already carried
-(the gif keyed-field bogus-record avoidance, the `types.Implements` pointee test). An isolated A/B
-full-reconvert of a production cross-section (fmt, errors, net/http, encoding/json, flag, go/types, os, time,
-text/template — 172 `.cs`) shows **zero** production emission change: the pattern is overwhelmingly a
-test-code shape, so the fix is inert for ordinary packages and only realizes the previously-uncompilable test
-literals. (Guarded by the `ElidedStructInterfaceField` behavioral test — a pointer-receiver `*pointerErr`
-and a value-receiver `valueErr`, each used *only* in an elided `[]struct{ err error; … }{…}`, output-compared
-vs Go; the pre-fix converter emits the bare box / bare value and fails CS1503 on both.)
+### `@string` is a byte string, and slicing it is a window
 
-**And on the elided POINTER element composite (2026-07-31).** There are *three* composite paths, not
-two: `[]*struct{…}{{…}, …}` — Go's shorthand where the `&` is implied — has its own arm in
-`convCompositeLit`, reached before the elided-struct arm above and emitting `Ꮡ(new T(…))` rather than
-the target-typed `new(…)`. That arm marked `any` field literals but never called
-`recordStructFieldInterfaceCasts`, so a concrete element in an interface slot again reached the
-generated constructor bare. net `ip_test`'s `[]*struct{ in IP; str string; byt []byte; error }` — an
-**embedded** `error` field — handed a `ж<AddrError>` to the `error` parameter with no
-`AddrErrorжerror` wrap (CS1503). The arm now makes the same record+route call its two siblings do:
-
-```csharp
-Ꮡ(new ipStringTestsᴛ1(new IP(…), "?0123456789abcdef"u8, default!,
-    new net_test_package.net_AddrErrorжerror(Ꮡ(new AddrError(Err: …, Addr: …)))))
-```
-
-The tell is worth carrying forward: each of the three paths grew its own field-marking sequence
-(`markStringFieldLits` / `markAnyFieldLits` / `recordStructFieldInterfaceCasts`) independently, and the
-one that fell behind is the one nobody had a failing case for — the same shape-versus-its-pointer-
-composition asymmetry as *An anonymous struct lifts from ANY depth of its declared type*. Behavioral
-CNR is byte-identical across the whole corpus: like its sibling, this is a test-code shape. (Guarded
-by the `ElidedStructInterfaceField` extension — a `[]*struct{ want string; error }` whose interface
-field is **embedded**, carrying both a pointer-receiver and a value-receiver implementer.)
-
-### A keyed element's interface target is the composite's own SLOT, never the LHS variable's type
-A composite literal assigned to an **interface-typed** variable converts to that interface as a
-WHOLE — `visitAssignStmt`'s `convertExprToInterfaceType` (and `visitValueSpec`'s
-`convInterfaceDeclValue` for a declaration) wraps the finished literal in its adapter. `convKeyValueExpr`
-*also* consulted the LHS variable's type (`context.ident`) for each keyed element, so the interface was
-applied a SECOND time, to values whose real slot is not an interface at all. On a map whose element type
-is a POINTER that is silently destructive: the element renders correctly as `Ꮡ(new T(…))`, the spurious
-`*T → Iface` conversion adds the deref prefix, and `convertToInterfaceType`'s
-"`~` of an immediate `Ꮡ(…)`" collapse then hands back the bare struct — a `map[K]*T` slot holding a
-VALUE (CS0029).
-
-os's `TestCopyFS` is the reached case: `fsys` is an `fs.FS` and the test *reassigns* it
+`@string` holds a backing byte array plus an **offset and a length**, the shape of Go's string header. `s[i:j]` returns a window over the same array: it is O(1) and allocates nothing. That keeps the common rune-walking loop linear:
 
 ```go
-fsys = fstest.MapFS{"william": {Data: []byte("Shakespeare\n")}}   // map[string]*MapFile
+for i := 0; i < len(s); {
+	r, size := utf8.DecodeRuneInString(s[i:])
+	i += size
+}
 ```
 
-which emitted `["william"u8] = new fstest.MapFile(Data: …)` instead of `Ꮡ(new fstest.MapFile(…))`, ×5.
-The same literal in a `var` declaration, as a call argument, or assigned to its own concrete type was
-always correct — only the reassignment path carried the LHS type down into the elements, which is the
-tell that the LHS was never the right source of truth.
+Sharing the array is safe because `@string` is immutable, and every conversion out to mutable storage copies: `[]byte(s)`, `[]rune(s)` and the `byte[]` operator. The backing array is private, so no consumer can read past its window by mistake. `unsafe.StringData` pins a window that does not start at the array's start by copying its bytes first.
 
-The element's target is now the composite's own value slot (`valueSlotType`, already computed for the
-`MapSource`/`StructSource` untyped-constant boxing just above), with the LHS ident kept only as the
-FALLBACK for a composite that does not state its slot type here — the sparse-array shape it was
-originally added for. A struct FIELD of interface type keeps its single conversion through
-`structFieldIfaceType`. An interface-VALUED container (`map[K]Iface{k: v}`) still converts every element,
-now through the slot rather than the variable, so the two agree by construction. Behavioral CNR is
-byte-identical across the corpus — the shape needs a *named* container of pointers reassigned to an
-interface variable, which the behavioral corpus did not contain. (Guarded by the
-`ElidedPtrElemIfaceAssign` behavioral test: a `map[string]*Item` and a `[]*Item`, each declared into,
-reassigned into, and passed into an interface, with a write through a stored element pointer proving the
-map holds the same object; plus an interface-VALUED map as the live control for the preserved
-conversion.)
+The zero value is null-safe and reads as `""`, so `default!` stands for Go's zero string. As a generic type argument a string is `@string` too (`Pair<nint, @string>`), which satisfies the `new()` constraint every converted type parameter carries.
 
-### A GoImplicitConv record needs at least one LOCAL operand
-`ImplicitConvGenerator` realizes a recorded conversion as a `partial struct <name>` inside THIS package's
-class, so the record has to name a type this package declares. The generator already relocates the host
-when exactly ONE side is foreign (its "foreign SOURCE via a local alias" / "foreign TARGET via a qualified
-reference" arms), and the converter's aliased-numeric arm swaps target and argument for the same reason —
-to anchor the record on the local operand. With NEITHER operand local the swap merely picks the other
-foreign one and the generator has nothing to extend: it declares `partial struct <simple name>` locally, a
-PHANTOM type of that name, and the operator body's `src.Value` does not exist (CS1061).
+### String literals render as `u8` spans
 
-os reaches it from `os_windows_test.go`'s privilege helper, `syscall.CloseHandle(syscall.Handle(t))` over a
-`syscall.Token` — both operands in `syscall`. Both the struct-conversion and the aliased-numeric arms of
-`checkForImplicitConversion` now require `conversionRecordHasLocalOperand`, stated once as the property
-rather than per-arm. Declining costs nothing: the call site already emits the explicit
-`((syscallꓸHandle)(uintptr)t)` cast chain, which needs no generated operator, and an operator between two
-foreign types could not be hosted in either of their assemblies from here in any case. Behavioral CNR is
-byte-identical. (Guarded by the `ForeignPairNumericConv` behavioral test — a sibling library declaring two
-named numerics and never converting between them, converted across in `main`, with the
-foreign→local and local→foreign directions as the live controls for the records that are still needed.)
-
-#### ...but the POINTER-BOXING route needs none, and a whitebox-production operand still counts
-The rule above is about HOSTING, so it stops where hosting does. A record of the form `T` → `ж<T>` —
-the shared Go pointer-boxing route, and the corpus's dominant record family at **193 of the 268**
-`GoImplicitConv` records across the emitted `package_info.cs` files — hosts nothing at all:
-`ж<T>` is golib's generic box, no converted package declares it, and `ImplicitConvGenerator` looks the
-target up by struct declaration and `continue`s when it finds none. No host is ever chosen, so no phantom
-can be minted and no closed assembly can be mutated. `recordsRequireProductionMutation` already stated
-exactly this when deciding whether a white-box test project can keep the reference model; the predicate is
-now written once (`pointerBoxConversionRecord`) and both readers share it.
-
-That matters because of the second refinement. On the internal `-tests` variant go/packages merges the
-production files into the test package, so a production type's `obj.Pkg()` IS the converted package while
-its C# lives in the CLOSED referenced production assembly — which is why `typeDeclaredInConvertedPackage`
-subtracts such a declaration (`whiteboxProductionObject`; internal/reflectlite's `flag(typ.Kind())` minted
-a phantom `partial struct flag` in the test class, CS1061). Subtracting it for the pointer-boxing route as
-well was one notch too far: it silently shrank every white-box package's committed `package_test_info.cs`
-on regen. `crypto/rc4` lost its `Cipher` → `ж<Cipher>` record **and** the
-`using testing = go.testing_package;` qualifier alias that the same record site registers;
-`go/types` lost three (`Basic`, `Interface`, `Tuple`). Nothing catches it: CNR never runs
-`-tests`, and the records are inert in the generator, so the only symptom is a `-tests` regen that no
-longer reproduces committed bytes.
-
-`conversionRecordHasLocalOperand` therefore takes the record shape as an argument and readmits a
-WHITEBOX-PRODUCTION operand — and only that — when the record is the pointer-boxing route. A
-BOTH-FOREIGN pair stays declined exactly as the section above describes, which is what keeps the change a
-restoration rather than a widening: `go/types`' test conversion also reaches `types.Basic` → `ж<types.Basic>`
-and `ast.FuncType` → `ж<ast.FuncType>`, and those must not start recording. (Guarded by
-`TestWhiteboxProductionPointerBoxConvStillRecorded`, whose both-foreign arm is the boundary, and
-`TestPointerBoxConversionRecordShape` for the shared predicate; the numeric phantom keeps its own guard,
-`TestWhiteboxProductionNumericConvNotRecorded`.)
-
-### Named-string wrapper surface (indexing, sub-slicing, span bridge)
-A named type over `string` is indexed and sub-sliced in Go (`tag[i]`, `tag[i:j]` -- reflect `StructTag.Get`), but C# indexing never applies user-defined conversions. The `InheritedType` template therefore forwards the `@string` surface on every named-string wrapper: `byte this[int]` / `byte this[nint]` indexers, a `Range` indexer returning the WRAPPER (a Go sub-slice of a named string keeps the named type), `nint Length` for `len()`, and an implicit `ReadOnlySpan<byte>` operator so `u8`-literal comparisons and assignments bind. Guarded by `NamedStringConversion`.
-
-### A `:=`-declared string local keeps its named type and its heap box
-A string-underlying local declared with `:=` takes its EXPLICIT declared type through the same general
-declaration path every other type uses (never `var` — a `u8` literal would infer `ReadOnlySpan<byte>`).
-The old dedicated string branch hardcoded `@string` as the declared type, which (a) DISCARDED a named
-string type — go/types check.go's `fileVersion := asGoVersion(…)` declared its `goVersion` locals as
-`@string`, so the `goVersion` extension methods `isValid()`/`cmp()` no longer bound (CS1929 ×4) — and
-(b) BYPASSED the escape-analysis heap-box check, so `cause := ""` followed by `&cause` emitted an
-unboxed local while the call site referenced the nonexistent box `Ꮡcause` (CS0103):
-```csharp
-goVersion fileVersion = asGoVersion((~@file).GoVersion);   // named type preserved
-ref var cause = ref heap<@string>(out var Ꮡcause);         // escaping local heap-boxes
-cause = ""u8;
-```
-A plain, non-escaping string local emits exactly as before (`@string s = "…"u8;` — the general path's
-explicit-type arm resolves to `@string`). The same explicit-type routing applies in the for-init
-tuple-declaration form. (Guarded by the `NamedStringDefine` behavioral test — a named-string `:=` with
-methods called on the local, an escaping `cause := ""` written through its pointer, and a plain string
-local, output-compared vs Go.)
-
-### A typed const of a named string type keeps the named type
-
-The CONST-DECL arm of the same materialization family: `visitValueSpec`'s string-constant emission
-hardcoded `@string`, so net/http pattern.go's `const equivalent relationship = "equivalent"` (with
-`type relationship string`) emitted `internal static readonly @string equivalent = …` — and every
-comparison `rel == equivalent` was then ambiguous, because the `[GoType("@string")]` wrapper and
-`@string` convert implicitly BOTH ways (CS0034 ×20 across pattern.cs). A typed string const now keeps
-its named type, initializing through the wrapper's `ReadOnlySpan<byte>` implicit operator (the
-`StringSurfaceMembers` u8 bridge):
-
-```csharp
-internal static readonly relationship equivalent = "equivalent"u8;
-```
-
-Function-body typed string consts take the same form (`relationship localRel = "moreSpecific"u8;`);
-an UNTYPED string const keeps `@string` (its type is not a `*types.Named`). Full-stdlib footprint:
-net/http pattern.cs, traceviewer's `ViewType` consts, and regexp/syntax parse.cs.
-
-**The u8 form is required for EVERY value expression, not just a bare literal.** The rule above got
-its `u8` from the literal path, which fires only when the spec's value expression is an
-`*ast.BasicLit` — i.e. the `const x T = "…"` spelling. Go's other spellings put a different node
-there: a **conversion** (`const opLoad = mapOp("Load")`) is a `CallExpr`, and a folded
-**concatenation** (`prefix + "Delete"`) is a `BinaryExpr`. Those fell to the folded-value path and
-emitted a plain C# string literal, from which the `[GoType("@string")]` wrapper is *two*
-user-defined conversions away (`string`→`@string`→wrapper) — which C# forbids, so the whole
-declaration group failed (CS0029 ×9 on sync `map_test.go`'s `mapOp` const block). The folded value
-now takes the same `u8` rendering whenever the declared type is named:
+A literal renders as a C# UTF-8 literal and converts to `@string` only where a string value is needed:
 
 ```go
-const opLoad  = mapOp("Load")            // conversion — CallExpr
-const opStore = mapOp("op" + "Store")    // folded concatenation
+var s string = "ready"
+bs := []byte("hello")
+rs := []rune("héllo")
 ```
 ```csharp
-internal static readonly mapOp opLoad = "Load"u8;
-internal static readonly mapOp opStore = "opStore"u8;
+@string s = "ready"u8;
+var bs = slice<byte>("hello"u8);
+var rs = slice<rune>((@string)"héllo");
 ```
 
-A RAW (backtick) value has no `u8`-suffixable verbatim form, so it takes an explicit `(@string)` cast
-instead — also a single conversion. A plain `@string` const is untouched (`string`→`@string` is
-already single-step), which is what keeps the folded-untyped-const emission byte-identical corpus-wide.
-(Guarded by `NamedStringConsts` — package-level and local typed consts compared against values and
-each other, a method called on a const, the conversion and folded-concatenation spellings at both
-package and function scope, and an untyped const staying plain, output-compared vs Go.)
+The span form is used in every slot that accepts it: assignments, `string` parameters, struct fields (positional or keyed), typed slice and array elements, and concatenations. C# folds `"a"u8 + "b"u8` into one literal. A concatenation with a string value binds golib's `operator +(@string, ReadOnlySpan<byte>)`, which copies the literal's bytes straight into the result.
 
-### A grouped var spec with one multi-result call deconstructs
-A grouped `var (name, offset, abs = t.locabs() ...)` spec is not a `:=`, so the assignment tuple machinery never saw it -- the per-name path assigned the WHOLE result tuple to the first name and silently DEFAULTED the rest (time appendFormat read a zero abs; a silent-wrongness class beyond the CS0029 that exposed it). Function-local specs now emit the C# tuple deconstruction, matching the `:=` form; package-level specs use the once-evaluated hidden-field component reads:
-```csharp
-var (ln, ls) = pair();
-```
-Guarded by `GlobalTupleVarDecl` (both levels, with a call-count check proving single evaluation).
+Some slots cannot take a span, and the literal changes form there:
 
-**The function-local gate asks whether a name has a BOX, not whether it "escapes" (2026-07-31).**
-That branch is gated to specs no name of which needs a `ref heap<T>` box declaration, and it read the
-raw `identEscapesHeap` flag — which the escape analysis **blanket-sets** for every *inherently*
-heap-allocated local (pointer, slice, map, chan, **interface**, **func**), because those are already
-references and get no box unless their address is genuinely taken. So the gate rejected specs that are
-entirely plain, and every tuple with an interface or func result fell back to the very per-name path
-this branch exists to replace:
+| Slot | Rendering | Why |
+|:--|:--|:--|
+| an `any` / interface slot | `(@string)"text"u8` | a span cannot be boxed |
+| `panic`, `print`, a vararg `...any` concatenation | `"text"` (a C# string) | the operand of an `object` concat cannot be a span |
+| a conversion to a named string type | `((errorString)(@string)"kaboom"u8)` | C# applies only one user-defined conversion |
+| `""` returned as a named string type | `(@string)""` | the same one-conversion limit |
+| a sliced literal in a concatenation | `((@string)"012345678"u8[..n]) + "000"u8[..m]` | a slice of a `u8` literal is not a literal, so C# cannot fold it |
+| `[]rune("…")`, or `[]byte` of a constant concatenation | `slice<rune>((@string)"héllo")` | the rune conversion goes through `@string` |
 
-```csharp
-context.Context ctx = context.WithCancel(context.Background());   // the WHOLE tuple  (CS0029)
-Action cancel = default!;                                          // silently defaulted
-```
+Parentheses are transparent: `(x)` renders exactly as `x` would in the same slot. The behavioral tests `StringLiteralSliceConversion`, `NamedStringConversion`, `NamedStringZeroValue`, `CompositeElementStringConcat`, `AnyStringLitComposite` and `ParenthesizedConcatContext` cover these forms.
 
-`identHasHeapBox` is the predicate that answers the gate's actual question, and it is what the branch
-now calls. This is the trap `paramAddressTakenNeedsBox` already documents from the other side — *a
-verdict the box gate then refuses leaves `identEscapesHeap` set with no box behind it* — and it stayed
-hidden because `(int, string)`-shaped tuples, the ones anyone reaches for when probing, work fine.
-net's `var ctx, cancel = context.WithCancel(context.Background())` is the corpus site. (Guarded by the
-`GlobalTupleVarDecl` extension — a local `var si, fi = ifaceAndFunc()` returning an interface and a
-func, both read back.)
+### A string literal with raw-byte escapes emits a byte-array `@string`
 
-### `string()` of an untyped constant reference hops through the default type
-`string(utf8.RuneError)` renders the argument as its cross-package `static readonly` Untyped* wrapper, from which `@string` has no conversion (CS0030). The conversion hops through the constant's DEFAULT Go type first -- exactly Go's conversion semantics; a plain literal is already a C# constant and keeps its direct form:
-```csharp
-fmt.Println("a" + ((@string)(rune)CrossPkgLib.Sep) + "b");
-```
-Guarded by `CrossPkgUser` (`string(CrossPkgLib.Sep)`).
-
-### A `:=` from a named untyped constant materializes the default type
-`codepoint := unicode.ReplacementChar` must not declare with `var`: the constant renders as its
-`static readonly` Untyped* wrapper (`UntypedInt`/`UntypedFloat`/`UntypedComplex`), so `var` binds the
-LOCAL to the wrapper type instead of Go's inferred default type, and a later Go conversion like
-`string(codepoint)` fails (CS0030 — no `UntypedInt`→`@string` form; go/types conversions.go). The
-declaration materializes the Go-inferred default type instead — exactly Go's `:=` typing:
-```csharp
-rune codepoint = replacementChar;    // NOT `var codepoint = …` (binds UntypedInt)
-float64 factor = scale;
-```
-The gate is an Ident/Selector RHS resolving to a `*types.Const` of untyped NUMERIC kind (int is already
-routed to the explicit `nint` form, and string consts to the explicit string path); literals and computed
-constant expressions render as plain C# literals and keep `var`. Applies in both the single-declaration
-and the mixed-statement paths. (Guarded by the `UntypedConstDefine` behavioral test — untyped rune and
-float package constants `:=`-bound then converted/multiplied, output-compared vs Go.)
-
-### A computed untyped float constant materializes at its destination's float width
-A named untyped constant can still need its `Untyped*` wrapper because another use demands a different
-type. When that name participates in a computed float constant, C# must not evaluate the expression
-through the wrapper's arithmetic operators:
-```go
-const repetitions = 100000
-var loopBound int = repetitions
-mean := .5 * repetitions
-var quarterMean float64 = .25 * repetitions
-```
-The wrapper form makes C# overload resolution prefer `UntypedInt.operator*`, converting `.5` or `.25`
-to an integer and truncating it to zero before the result reaches the float local. The converter instead
-folds the exact Go constant expression once at the destination's resolved `float32` or `float64` width.
-An explicitly typed destination is visible on the expression itself; for a new `:=` local, go/types keeps
-the RHS untyped and records the default type on the declared identifier, so the declaration edge supplies
-that width. Both paths reuse the same named-constant fold and leave bare references, non-float constants,
-and expressions without a wrapper-emitted named constant unchanged. Guarded by `UntypedConstDefine`;
-`hash/maphash`'s 100,000-sample SMHasher avalanche bounds are the corpus witness.
-
-### `complex()` over a NAMED untyped constant pins the element width
-golib's `complex` builtin is overloaded on element width — `complex(float32, float32) => complex64`,
-`complex(float64, float64) => complex128` — and `UntypedFloat` converts implicitly to **both**. C#
-then applies its better-conversion-target rule, which prefers the **narrower** target (`float32`
-converts to `float64`, not the reverse), so a `complex128` the Go checker typed as such was silently
-constructed at float32 width:
+A C# literal cannot always hold Go's bytes. Go's `\xHH` is exactly one byte, but C#'s `\x` takes one to four hex digits and names a UTF-16 code unit. A `u8` literal also re-encodes any character at or above U+0080 as two or more bytes. So a literal that holds a raw byte emits the exact bytes:
 
 ```go
-const maxFloat32 = 3.40282346638528859811704183484516925440e+38
-over := complex(maxFloat32*2, maxFloat32*2)     // complex128, 6.805646932770577e+38
+const zipdata = "\x50\x4b\xdb50\xff"
+const octal   = "\377\200A"
 ```
 ```csharp
-var over = complex((float64)(maxFloat32 * 2D), (float64)(maxFloat32 * 2D));
+internal static readonly @string zipdata = ((@string)(new byte[]{0x50, 0x4b, 0xdb, 0x35, 0x30, 0xff}));
+internal static readonly @string octal = ((@string)(new byte[]{0xff, 0x80, 0x41}));
 ```
 
-Without the casts `over` is `(+Inf+Infi)` — and `encoding/gob`'s `TestOverflow` then found nothing
-out of complex64's range to reject, because `float32FromBits` accepts +Inf at either width. A
-LITERAL argument never had the problem: the untyped-const analysis records the call's element type
-as the argument's context and `convBasicLit` renders the `F`/`D` suffix from it (`complex(1.5D,
-2.5D)`). A **named** untyped const (`Δmath.MaxFloat32`), or a constant expression over one, renders
-as the `UntypedFloat` symbol and cannot carry a width — so exactly those calls pin their untyped
-arguments explicitly, at the element width Go's own typing gives the call
-(`complexCallElementType`, resolving an untyped-complex-constant call through its recorded context
-and Go's `complex128` default). A MIXED call needs nothing and gets nothing: `complex(g, half)` with
-`g` a `float64` was always unambiguous, since `float64` has no implicit conversion to `float32`.
+The byte-array form is used when:
+- a `\xHH` escape is `\x80` or higher, or is followed by a hex digit (C# would read the digit as part of the escape);
+- a `\NNN` octal escape is `\200` or higher (octal escapes below `\200` render as `\uXXXX`);
+- a folded `const` value (a constant concatenation) is not valid UTF-8, or would need one of the escapes above.
 
-**The rule cannot be expressed from golib's side, and the attempt is instructive.** Naming the
-untyped pair explicitly (`complex(UntypedFloat, UntypedFloat) => complex128`) makes every MIXED call
-ambiguous — `complex(0D, gHalfPi)` has the float64 overload better on the first operand and the
-untyped one better on the second, so neither wins (CS0121). Completing all four width pairings does
-not rescue it either: `UntypedFloat` converts implicitly in **both directions** with `float32` and
-`float64`, so for an operand that is neither — `complex(7/2, 0D)`, an `int` — no candidate is
-strictly better and the ambiguity simply moves. Overload resolution has no way to say "prefer the
-width the *call* was typed at"; only the emitter knows that.
+A `var` initializer renders as an expression, so each literal piece of a concatenation takes its own form. The outer parentheses matter: `"…"[i]` must index the `@string`, not the inner `byte[]`. Literals written with real UTF-8 characters (`"Michał"`) keep the readable `u8` form. `convBasicLit.stringLiteralNeedsByteArray` decides it. The behavioral tests `HexByteStringLiteral`, `ByteTableStringConst` and `ByteTableStringVar` guard it.
 
-Corpus footprint: **zero**. The trigger is a named-untyped-const operand, and no `complex()` call in
-the standard library (math/cmplx included) has one — every corpus site is either width-pinned
-literals or has a typed operand. Guarded by the extended `ComplexConstContext` (the overflow pair,
-its float32-range question, a named-untyped-const pair in both a complex128 and an explicit
-complex64 context, and the mixed call that must stay unchanged; neuter-proven — with the arm removed
-the guard's `over` prints `(+Inf+Infi)` and `over-fits-float32 true` where Go says `false`).
+### Converting between strings and slices
+
+| Go | C# |
+|:--|:--|
+| `[]byte(s)`, `[]rune(s)` | `slice<byte>(s)`, `slice<rune>(s)`, which copy |
+| `string(b)`, `string(r)` | `(@string)b`, `(@string)r`, which copy (or a [view](#a-non-escaping-stringbyte-local-emits-the-stack-string-sstring)) |
+| a defined string type to `[]byte` | `slice<byte>((@string)v)`: the explicit `@string` step leaves one implicit conversion |
+| to or from a slice of a defined byte type | `widen<byte, Uint8>(slice<byte>((@string)"hello"u8), elemᴛ0 => (Uint8)elemᴛ0)`: an element-wise copy, which is what Go's conversion costs anyway |
+| a literal to a named `[]byte` type | `((htmlSig)slice<byte>((@string)"<!DOCTYPE HTML"u8))` |
+
+`string([]rune)` writes U+FFFD for each invalid rune (a surrogate, or a value outside `0..0x10FFFF`), as Go does. golib's `builtin.ToUTF8Bytes` is the single encoder. The behavioral tests `DefinedElemStringConversion`, `NamedByteSliceFromStringLit` and `InvalidRuneString` cover these.
+
+### A value-materializing string literal is HOISTED to a `static readonly` field beside its first use
+
+Go keeps literals in read-only memory, so `return "true"` allocates nothing. In C# each conversion of a `u8` literal to `@string` copies it. So a literal that becomes a value is hoisted: a package-wide pre-pass (`hoistedLiteralOperations.go`) gives each such literal one field, declared above the function that first uses it, and every use names the field:
+
+```go
+func FormatBool(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+```
+```csharp
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
+public static @string FormatBool(bool b) {
+    if (b) {
+        return trueˢ;
+    }
+    return falseˢ;
+}
+```
+
+**What hoists:** a returned value; an assignment to a local, parameter or field; a `string` or `...string` argument; an `any` target (argument, result, send, assignment); a standalone map-index key; a conversion to a named string type. A literal used **only** in `any` slots is hoisted pre-boxed, as `static readonly object xˢ = (@string)"…"u8;`, so those uses allocate nothing.
+
+**What stays inline:**
+
+| Context | Why |
+|:--|:--|
+| comparisons, including lowered `switch` chains | a `u8` span compares in place |
+| concatenation operands | the concat operator reads the span directly |
+| `[]byte("…")` / `[]rune("…")` sources | the result must be a fresh mutable copy anyway |
+| a format string: the `string` parameter before the `...any` of a callee named `…f` | it slugs badly (`"%v"`). When the callee is an [sstring twin](#an-sstring-twin-a-registered-function-gains-an-sstring-overload-that-calls-bind), the literal binds a view and costs nothing |
+| a slug with no ASCII word, or of 3 characters or fewer | the name would say less than the value |
+| `""` | it already costs nothing |
+| composite-literal elements and keys | thousands of fields would move table-building work into type initializers |
+| `func init()` bodies and package-level initializers | they run once |
+| a function literal outside any function declaration | there is nowhere to declare the field |
+| raw-byte literals | they already take the byte-array form |
+| declarations in a hand-owned file or function | the converter does not emit them |
+| arguments of builtins (`panic`, `print`, `copy`, …) | each builtin has its own emission path |
+
+**Naming.** The field is a camelCase slug of the literal's ASCII words, at most 24 characters in total, plus the `ˢ` marker (`HoistedLiteralMarker`). An all-caps word folds whole (`"TESTING KEY"` → `testingKeyˢ`). A literal whose first word alone exceeds 24 characters gets no name and stays inline. Colliding slugs take a package-wide ordinal (`fooˢ`, `fooˢ2`). The marker keeps the names clear of C# keywords and Go identifiers.
+
+**Initialization order.** C# runs static field initializers in text order within a file and in an unspecified order across files. A function that reads a hoisted field is registered as a reader, so a package-level `var` initializer that reaches one moves into the ordered static constructor (`initOrderOperations`), which runs after every field initializer. The `-tests` conversion has no static constructor to move into, so there a function a package-level initializer can reach does not hoist its literals.
+
+**Two-pass `-tests` conversion.** An internal test file emits into the production class, so its pass is seeded with the production literal-to-field map and may only reference those fields, never declare them again. An external `<pkg>_test` package declares its own. Production output is identical whether or not tests are converted.
+
+Emission is one substitution in `convExpr`'s `*ast.BasicLit` arm; the decisions are made before any file emits. The behavioral test `StringLiteralHoisting` covers every row above.
+
+### A function-LOCAL string const hoists to a `static readonly` field under its own name
+
+A string constant declared inside a function would otherwise be a local initialized from a `u8` literal, copied into a new `@string` on every call. It hoists to one field named after the constant, with the `ᶜ` marker (`HoistedConstMarker`, shared with [local big constants](#a-function-local-gobigconst-hoists-its-parse-to-a-static-readonly-field)). The local copies the field, which allocates nothing, so every reference is unchanged:
+
+```go
+func Atoi(s string) (int, error) {
+	const fnAtoi = "Atoi"
+	…
+}
+```
+```csharp
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+internal static readonly @string fnAtoiᶜ = "Atoi"u8;
+
+public static (nint, error) Atoi(@string s) {
+    @string fnAtoi = fnAtoiᶜ;
+    …
+}
+```
+
+- The same name in two functions takes an ordinal (`fnAtoiᶜ1`).
+- The field is `private`, or `internal` in a test-friend assembly (every standard-library package).
+- A named string type keeps its type (`static readonly Kind kᶜ = "kind"u8;`).
+- An empty constant stays a local. A package-level constant is already its own field and is unchanged.
+
+The decision is made in the literal pre-pass (`collectLocalConsts`), and the function joins the hoisted-field readers. So the initialization-order rule above applies, and so do the pre-pass's exclusions: hand-owned code and `func init()`. The behavioral test `LocalStringConstHoist` and the unit test `TestLocalStringConstHoistsUnderItsOwnName` cover it.
+
+### Named string types
+
+`type Token string` becomes a `[GoType("@string")]` wrapper struct. The `InheritedType` template gives it the string surface, since C# indexing and `+` do not apply user-defined conversions:
+- `byte this[int]` and `this[nint]` indexers;
+- a `Range` indexer that returns the wrapper, so a sub-slice keeps the named type;
+- `nint Length` for `len`;
+- an implicit `ReadOnlySpan<byte>` conversion, so `u8` literals compare and assign;
+- `+(T, T)`, `+(T, ReadOnlySpan<byte>)` and `+(ReadOnlySpan<byte>, T)`, so a concatenation keeps the named type and its methods.
+
+```go
+type Token string
+func (t Token) First() byte { return t[0] }
+const done Token = "done"
+next := done + "-next"
+```
+```csharp
+[GoType("@string")] partial struct Token;
+internal static readonly Token done = "done"u8;
+public static byte First(this Token t) => t[0];
+Token next = done + "-next"u8;
+```
+
+A typed constant keeps its named type, whatever its value expression (a literal, a conversion such as `mapOp("Load")`, or a folded concatenation). It renders through the `u8` bridge, or through `(@string)` for a raw backtick value. A `:=` local keeps its declared type, and heap-boxes like any other local when its address escapes. An untyped string constant stays `@string`. The behavioral tests `NamedStringConsts`, `NamedStringDefine` and `NamedStringConcat` cover these.
+
+### `sstring`: a string view that allocates nothing
+
+`sstring` is a `readonly ref struct` over a `ReadOnlySpan<byte>`. Because it is a `ref struct`, C# rejects every way a string could escape: storing it in a field, array or map, boxing it, capturing it in a lambda, or using it as a type argument. A misuse is therefore a compile error, never an aliasing bug.
+
+What it supports:
+
+| Operation | Behavior |
+|:--|:--|
+| from `@string`, `slice<byte>`, `byte[]` | an implicit zero-copy view |
+| from a `u8` literal | an implicit zero-copy view |
+| from a C# `string` | encodes to UTF-8 (allocates) |
+| to `@string`, `slice<byte>`, `byte[]` | copies (this is where an escaping string pays) |
+| `len`, `s[i]`, `s[i..j]` | as `@string`; a sub-slice is another view |
+| `==`, `<`, … against a `u8` literal, `@string` or `sstring` | compares the bytes in place |
+| `+` with any string form | returns a new `@string`, copying each operand once |
+| `for i, r := range s` | a `ref struct` enumerator that yields `(byte index, rune)` and allocates nothing |
+| `append(b, s...)` | the `ꓸꓸꓸ` spread, a `ReadOnlySpan<byte>` |
+
+The converter emits `sstring` in two places: conversion views (next) and [twins](#an-sstring-twin-a-registered-function-gains-an-sstring-overload-that-calls-bind).
+
+Performance: `src/tests/Performance/PerfStringView` measures the view on keyword comparisons over a runtime-built buffer, and `PerfString` is the `@string` baseline, whose conversions are not eligible.
 
 ### A non-escaping `string([]byte)` local emits the stack-string `sstring`
-Go elides the copy in `s := string(buf)` when `s` does not escape and `buf` is not observed to change,
-letting `s` alias `buf`. `@string` (a heap `byte[]` wrapper) cannot do this — every `string([]byte)` is an
-allocation + copy — which is the dominant cost the `PerfString` benchmark measures. The converter therefore
-emits, for the provably-safe case, a stack-only [`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs)
-(a `readonly ref struct` over `ReadOnlySpan<byte>`) that VIEWS the source with no allocation:
-`sstring s = ((sstring)buf);` instead of `@string s = ((@string)buf);`. Where the string escapes, the
-implicit `sstring`→`@string` conversion copies the bytes to the heap at that boundary.
 
-The escape pass (`markSStringEligible`) records the verdict; it is deliberately conservative — the MVP's
-safest idiom only. A local is eligible iff: it is the built-in `string` type bound by a single
-`s := string(x)`; `x` is an UNNAMED `[]byte` (a `[]rune`→string must UTF-8-encode — an allocation, no view;
-a named `[]byte` would need a two-hop cast C# will not chain); it does not escape by any channel the escape
-analysis detects; every use is a safe read — a `len`/`cap` argument, a byte index `s[i]`, or a comparison
-against a string literal OR a plain-`string` operand (a variable or field, `s == want`) — so anything else
-(passed to a function, stored, ranged, concatenated, RETURNED, reassigned) disqualifies it; and the source
-is never written except at its own declaration. (The comparison operand may be any plain-`string`
-expression, even a call, because the whole-function "never written" guard already means the source cannot
-change; only the built-in `string` type is allowed on the other side — a NAMED string type has no operator
-against `sstring`, so it stays `@string`.) Emission is
-two coordinated sites: `convCallExpr` retargets the conversion cast to `sstring` (after the Go→C# name
-map) under a transient flag; and `visitAssignStmt` declares the explicit type as `sstring` and sets that
-flag around the RHS. The comparison literal KEEPS its `"…"u8` `ReadOnlySpan<byte>` form: `sstring` has
-zero-allocation comparison operators against `ReadOnlySpan<byte>`, so `s == "x"u8` compares the backing
-spans in place. This is what makes the win real — rendering the literal as a plain C# string would force
-a `UTF8.GetBytes` allocation on every comparison, and `@string == "…"u8` allocates the literal-as-`@string`
-each time (a copy neither the JIT nor Native AOT elides); the `sstring` form is the only zero-allocation
-one. Measured: the comparison idiom (`string(buf) == "…"`) runs ~12× faster than `@string` on the JIT and
-~11× faster on Native AOT.
+Go skips the copy in `string(b)` when the string is only read while `b` cannot change. The converter recovers that for four shapes (`markSStringEligible` and the `markSString…` passes in the escape analysis):
 
-Because `sstring` is a `ref struct`, the escapes the predicate does NOT enumerate (storing into a field/
-array/map, boxing to an interface, channel send, closure capture) are C# COMPILE errors, not silent bugs;
-the two vectors that would be silently wrong — escape via `return` and mutation of the source buffer — are
-guarded explicitly.
+- **A local** `s := string(b)`, where `b` is an unnamed `[]byte` that the function never writes, and every use of `s` is `len`, an index, a comparison, a `switch` tag or a concatenation operand. It is never passed on, stored, ranged, returned or reassigned.
+- **A comparison operand**: `string(b) == other`.
+- **A `switch` tag**: `switch string(b) { … }`. A string switch lowers to a temp and `==` comparisons.
+- **A concatenation operand**: `string(b) + other`. The result is a new `@string`; only the operand's copy is skipped.
 
-A second, broader case needs **no escape analysis at all**. An UNNAMED `string(x)` temporary that is an
-operand of a comparison is created and consumed *within the single comparison expression*, so it cannot
-escape; it is emitted as `(sstring)x` (`markSStringComparisonConversions`, keyed per-`*ast.CallExpr`) as long
-as the OTHER operand cannot mutate `x` before the view is read. Three safe shapes qualify (`sstringOtherOperandSafe`):
+In the last three, `other` (or every `case` label) must be unable to change `b` before the view is read: a literal, a plain read of a variable or field, or another `string([]byte)`. A function call or a named string type keeps the `@string` copy.
 
-- a **string literal** (`string(buf[:4]) == "ZLIB"`, `string(item) != "null"`) — the literal keeps its
-  `"…"u8` span form and binds `sstring`'s zero-allocation `ReadOnlySpan<byte>` comparison operators;
-- a **pure-read plain-`string` expression** — a variable, field, or index read (`string(b[:n]) != magic`,
-  `string(word) != "package"`) — which runs no code, so it cannot write the buffer, and compares via the new
-  **mixed `sstring`/`@string` operators** (byte-ordinal span compare, no heap copy of either side);
-- **another `string(bytes)` conversion** (`string(a) == string(b)`) — both become zero-copy views and compare
-  `sstring == sstring`.
+```go
+if string(hdr[:4]) == "ZLIB" { … }
+switch string(cmd) {
+case "get": …
+}
+```
+```csharp
+if (((sstring)(hdr[..4])) == "ZLIB"u8) { … }
+var exprᴛ1 = ((sstring)cmd);
+if (exprᴛ1 == "get"u8) { … }
+```
 
-It stays `@string` when the other operand could mutate the source before the compare — a **function call**
-(`string(a) == next()`: Go's `string(a)` is a copy taken before `next()` runs, but a stack view would be read
-only at the `==`, after `next()` could have written `a`) — or when it is a NAMED string type (no operator
-against `sstring`). This byte-signature / header-check idiom is by far the most common `string([]byte)` pattern
-in the stdlib: the literal form alone reaches ~23 sites, and the plain-`string`-operand and two-conversion
-forms extend it further across `crypto/*` (`md5`·`sha1`·`sha256`·`sha512`, comparing against the `magic`
-gob-stream prefix), `crypto/tls` (downgrade-canary checks), `hash/*`, `go/internal/*importer`, `html/template`,
-and more.
+A conversion of a bare, never-written identifier that repeats (two or more uses, or one inside a loop) is hoisted to a single `sstring` temp at function scope (`planSStringHoists`), because the JIT does not hoist a `ref struct` view out of a loop. The behavioral test `SStringElision` covers every eligible and every rejected shape.
 
-The mixed comparison also widens the **named-local** case above: `s := string(x)` compared against a string
-variable or field (`s == want`, `s == cfg.name`) is now eligible, not only `s == "literal"`.
+### An sstring TWIN: a registered function gains an `sstring` overload that calls bind
 
-A **`switch string(x) { case … }`** is the same comparison family in statement form
-(`markSStringSwitchConversions`). A Go string switch ALWAYS lowers to a single temp assigned the tag value,
-then compared against each case label with `==` — an if/else chain, never a C# `switch` and never the
-constant-pattern (`is`) form, because string constants render as `static readonly @string` (not a C#
-`const`) and literals as `"…"u8`, neither of which is a C# case constant that a `ref struct` could be the
-subject of. So `var exprᴛN = ((sstring)x)` infers the stack string and every `exprᴛN == label` binds a
-zero-allocation operator (span for a `u8` literal, the mixed operator for an `@string` const/variable).
-Because the tag is evaluated exactly ONCE into the temp, the only requirement is that no case label can
-mutate `x` before the view is read — every label must be `sstringOtherOperandSafe` (a literal, a pure read,
-or another conversion — never a call, which is rejected, and never a named string type, which has no
-operator). This covers the common binary-format-detection idiom `switch string(magic) { case elfMagic: … }`,
-and applies both to an unnamed tag (`switch string(x)`) and to a named local used as the tag
-(`s := string(x); switch s { … }`, where the tag read is added to the named local's safe-use set).
+A `string` parameter is an `@string`, so every literal argument is copied into one: `fmt.Sprintf("xxx")` allocates the literal and then the result, where Go allocates only the result. A **twin** gives a registered function a second member that takes `sstring`:
 
-**Concatenation** (`string(x) + suffix`) is the same operand family in a `+` expression. A Go string
-concatenation always allocates a fresh result, so the result is a heap `@string` that may itself escape —
-only the *operand* is a stack value, and the win is skipping the intermediate `((@string)x)` copy of it.
-`golib`'s `sstring` gained `operator+` overloads (against `@string`, another `sstring`, a
-`ReadOnlySpan<byte>` u8 literal, and a plain C# `string`, both operand orders, all returning `@string`)
-that block-copy the operand span straight into the single result buffer instead. The plain-`string`
-overload resolves an otherwise-ambiguous `string + sstring` (both convert implicitly to the other): a
-literal in an object/vararg concat context renders without its `u8` suffix (the converter suppresses it),
-so `panic("incorrect mantissa: " + string(hm))` (math/big) becomes `"…" + ((sstring)hm)` where `"…"` is a
-plain C# `string` — the explicit overload makes it an exact match rather than a CS0034 ambiguity (mirroring
-why the comparison form keeps its literal as `u8`). A `string(x)` operand of a `+` is emitted as `sstring`
-under the same rules as a comparison operand — `markSStringBinaryOperandConversions` (formerly
-`…ComparisonConversions`) now also matches `token.ADD`, and requires the other operand to be mutation-safe
-(a literal, pure read, or another conversion — never a call); a named local used in a concatenation
-(`s := string(x); s + suffix`) is likewise added to `sstringUsesAreSafe`. `string(a) + string(b)` becomes
-`((sstring)a) + ((sstring)b)`, saving both operand copies.
+- **The converter** emits the member that carries the Go body, with each registered parameter typed `sstring` and marked `[GoStr]`:
 
-A third refinement is an **optimization**, not a widening of eligibility: **loop-invariant / repeated-conversion
-hoisting**. When the same eligible `string(x)` over a never-written source is emitted repeatedly — several
-comparison operands, or one inside a loop — the inline `((sstring)x)` re-materializes the view at every use,
-and the JIT will **not** hoist a `ref struct` view out of a loop (measured: a non-throwing
-`MemoryMarshal.CreateReadOnlySpan` golib view, added so the `ToSpan` bounds check could not block
-loop-invariant-code-motion, made *zero* difference and was reverted — the fix must be converter-level). A
-per-`FuncDecl` pre-pass (`planSStringHoists`) instead lifts each such group to ONE
-`sstring <temp> = ((sstring)x);` at function scope and rewrites every use to the temp (`convCallExpr` returns
-the temp name for a lifted `*ast.CallExpr`; `visitBlockStmt` injects the decl before the group's anchor —
-the first top-level body statement that contains a use). The safe gate is strong and needs no liveness
-analysis: the conversion operand must be a **bare identifier** `x` (never a sub-slice/index — `string(buf[:7])`
-and `string(buf[8:12])` are distinct views that must not share one temp), and that `x` must be a plain
-function-local or parameter that is NEVER written in the body (`objectIsWritten == false`), declared before the
-injection point, with no use inside a nested func literal (a `ref struct` cannot cross a closure boundary —
-that is a C# compile error, so the gate keeps the impossibility loud). Worth doing only when the conversion is
-genuinely repeated — ≥2 uses, or ≥1 use inside a loop — so a lone comparison stays inline. Real Go-1.23 stdlib `sstring` sites are mostly *single* comparisons where this
-is a no-op, so it changes few-to-zero stdlib goldens (the Go-1.23 reconvert hoists **zero** sites — the one
-candidate, net/http's `is408Message`, is `string(buf[:7])`/`string(buf[8:12])`, distinct sub-slices the
-bare-identifier gate keeps inline); the win is targeted at loop/tokenizer patterns — a scanner comparing
-`string(buf)` against several keywords — where a clean back-to-back A/B took `PerfStringView` from ~4.8× → ~3.0×
-Go on the JIT (35.9 → 22.5 ms) and ~4.5× → ~1.9× on Native AOT (34.4 → 14.1 ms). That is about the practical
-floor within .NET: a decomposition micro-benchmark confirmed the `sstring` `==` operator itself adds *zero*
-over a raw span compare — the whole recoverable cost is the per-use view reconstruction, and the residual is
-inherent (`SequenceEqual`'s per-call setup on a tiny buffer vs Go's inlined `memcmp`).
+  ```csharp
+  [GoStr] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
+      …
+  }
+  ```
 
-Guarded by the `SStringElision` behavioral test — the eligible cases (two eligible locals, an unnamed
-comparison operand, two repeated-conversion groups that each hoist to a single reused `sstring` temp — one in
-a loop, one straight-line — plus the mixed-comparison additions: a named local compared against a string
-variable and against a struct field, and two `string(bytes)` conversions compared directly; plus the switch
-additions: a `switch string(x)` with literal cases, a named local as the switch tag, and a magic-constant
-switch whose case labels are named `@string` consts; plus the concatenation additions: a named-local
-`s + suffix`, an unnamed `string(x) + literal` and `+ variable`, two conversions concatenated, and a concat
-into an object context — `fmt.Sprint("v=" + string(b))` — that exercises the plain-`string` `operator+`)
-emit `sstring`; source-mutated, print-escaped, and returned locals, a compare-against-a-function-call, a
-switch with a function-call case label, and a concat with a function-call operand stay `@string` —
-asserting emitted forms and byte-identical Go/C# stdout. Remaining phases (unnamed conversions
-passed to non-retaining callees / used as map keys, and a precise per-iteration liveness guard that would
-reach the `PerfString` loop) are deferred; see [`docs/Roadmap.md`](Roadmap.md).
+- **`StrGenerator`** (go2cs-gen) emits the companions into a generated file. The first is the `@string` member, which forwards under a lower overload priority. The second, for a package-level function only, is the canonical value delegate (attribute names shortened):
+
+  ```csharp
+  [GeneratedCode("go2cs-gen", …), OverloadResolutionPriority(-1)]
+  public static global::go.@string Sprintf(global::go.@string format, params global::System.Span<object> aʗp) => Sprintf((global::go.sstring)format, aʗp);
+
+  public static readonly global::go.Funcꓸꓸꓸ<global::go.@string, object, global::go.@string> Sprintfᶠ =
+      [global::go.GoTwinForwarder("Sprintf")] static (global::go.@string format, global::System.Span<object> aʗp) => Sprintf(format, aʗp);
+  ```
+
+**Calls do not change.** Wherever both members apply, the priority picks the `sstring` one. That covers a `u8` literal (through `sstring`'s implicit conversion), an `@string` (as a view) and a C# string. `fmt.Sprintf("xxx"u8)` copies nothing for its argument.
+
+**Function values name the delegate.** With two members there is no single method group, and converting one to a delegate typed on `@string` is CS0123, even with a cast. So the converter renders a func-value use of a package-level twin as `Nameᶠ` (`FuncValueMarker`):
+
+```csharp
+["printf"u8] = ((Funcꓸꓸꓸ<@string, any, @string>)(fmt.Sprintfᶠ)),
+Funcꓸꓸꓸ<@string, any, error> noVetErrorf = fmt.Errorfᶠ;
+```
+
+- One delegate object serves every site, so `reflect.ValueOf(fmt.Sprintf).Pointer()` is equal at every site, as in Go.
+- The lambda carries `[GoTwinForwarder("Sprintf")]`, so `runtime.FuncForPC(…).Name()` reads `fmt.Sprintf`.
+- The lambda's body is an ordinary call, which binds the `sstring` member directly.
+- A traceback skips both companions: the forwarder through `[GeneratedCode]`, the lambda through `[GoTwinForwarder]`.
+- A twinned method has no canonical delegate. Using one as a method value stops the conversion.
+
+**Deferred and `go` calls** take the temp-parameter lambda form, `defer(ᴛ1 => Count(ᴛ1), …)`. The arguments stay `@string` generic type arguments, since a `ref struct` cannot be one.
+
+**Pointer receivers.** RecvGenerator gives the `[GoStr]` member its `ж<T>` overload. A pointer-receiver call with an `@string` argument binds it through the implicit view, so the forwarder needs none.
+
+**Records.** `package_info.cs` publishes each exported package-level twin to other packages:
+
+```csharp
+// <SStringTwins>
+[assembly: GoSStringTwin("Sprintf")]
+// </SStringTwins>
+```
+
+A converting package reads the record, or the embedded standard-library metadata under `-recurse=nuget`, and renders its func values of `fmt.Sprintf` as `fmt.Sprintfᶠ`. The section is omitted when a package has no twins.
+
+**The list.** Twins are an explicit registry, `sstringTwins` in `sstringTwinOperations.go`, keyed `"<pkgPath>.<Func>"` or `"<pkgPath>.<Recv>.<method>"` and listing the twinned parameter indices. It holds fmt's format parameters and the helpers they pass them to, plus `unicode/utf8`'s `DecodeRuneInString` and `RuneCountInString`: 32 parameters in 29 functions. The converter refuses an entry (`validateSStringTwin`) that:
+- is hand-owned, has no body, or is generic;
+- registers an index that is out of range or is the variadic tail;
+- has a registered parameter that is not `string`;
+- has a blank parameter (`_` or unnamed), which the `@string` forwarder could not pass on;
+- captures a registered parameter in a closure, or uses it in a `defer` or `go` statement;
+- binds a registered parameter to a local, because the implicit `sstring` → `@string` conversion would copy silently.
+
+**Guards.**
+- `TestSStringTwinEmission` covers the emission, the value sites (bare and cross-package), the defer and go forms, and the records.
+- `TestNoSStringTwinMethodGroupInCorpus` fails on any method-group use of a twin in `src/core` or the behavioral goldens.
+- The behavioral test `SStringTwinPilot` compares every call form, value site, identity and name against Go.
 
 ## Maps and Channels
 Go maps and channels convert to the golib [`map<K,V>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/map.cs) and [`channel<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/channel.cs) structures. `make` becomes a constructor; channel send/receive use the runtime operators:
@@ -12724,6 +11858,27 @@ masked deeper `Builder.add`/`slice.Value` roots, now banked). GUARD OWED — the
 packages whose names collide so one import is forced non-canonical, not expressible in the
 single-library behavioral corpus.
 
+### A ONE-FIELD struct's positional `nil` literal names its field constructor
+The universe `nil` renders in a value context as the typeless `default!`, which takes its type from
+whatever it is assigned or returned into. A constructor ARGUMENT is the one position where nothing
+supplies that type, and a generated struct partial offers exactly two one-argument constructors: the
+nil constructor `T(NilType)` and the field constructor `T(F field = default!)`. `default!` converts
+to both, so a one-field struct's positional literal carrying `nil` is `CS0121 — the call is
+ambiguous`:
+```csharp
+new TestWriter_testClose(default!)          // ambiguous: T(NilType) vs T(error)
+new TestWriter_testClose((error)default!)   // names the field constructor, and only it
+```
+The argument now carries the field's type, via the same per-element `castArgToType` plumbing the
+narrow-integer and `any`-field element casts use. **Only** a one-field struct can reach this: Go
+requires a positional composite literal to list every field in order, so at any other arity the call
+already differs from `T(NilType)` in argument count — and only `nil` can, because every other element
+renders with a type of its own. A POINTER field is excluded and deliberately unchanged: there the
+literal renders golib's `nil`, whose type `NilType` is an *exact* match for `T(NilType)` and so beats
+the field constructor's user-defined conversion without ambiguity, producing the zero struct, which
+is the correct value. `archive/tar`'s `testClose{nil}` is the reported shape (×9, and the last wall
+in front of that package's 97 verdicts); `database/sql`'s `stubDriverStmt{nil}` is the same root.
+
 ## Struct Type Embedding
 Go structs use "[type embedding](https://go101.org/article/type-embedding.html)" instead of inheritance. Since converted structs are C# `struct`s (no inheritance), the `TypeGenerator` manages the equivalent: it adds a field for the embedded type and promotes the embedded type's fields and methods (selection shorthand). Both field and method promotion are **transitive through every embedding level**: when `top` embeds `mid` which embeds `inner`, `top` gets an accessor for `inner`'s field `n` (`top.n => ref mid.n`) and a forwarding receiver for `inner`'s method `describe` (`top.describe() => target.mid.describe()`), each resolving through `mid`'s own one-level promotion. The generator collects an embedded struct's members and methods recursively (following each field whose name equals its type's simple name — Go's embedding marker), with the closest declaration of a name winning, matching Go's promotion rules. **Pointer embeds promote too.** Go also embeds by pointer (`*traceBuf`), whose C# field type is `ж<traceBuf>`; its methods and fields are promoted exactly like a value embed (the field's ref-property is dereferenced — `target.traceBuf.Value.method()` — which binds the pointer-receiver method via the `[GoRecv]` `ж<T>` overload). The embedding-marker comparison dereferences the field type first, because a pointer field's simple name carries a `.Value` suffix (`traceBuf.Value`) that would never match the bare embed field name. This matters most *transitively*: `traceExpWriter` embeds `traceWriter` (value) which embeds `*traceBuf` (pointer), and `traceBuf`'s `varint`/`byte` must promote all the way up — without the deref-aware marker the nested pointer embed is skipped and the upper struct silently loses the method (CS1929). (Guarded by the `NestedEmbeddingPromotion` behavioral test for value embeds and the `PointerEmbeddingPromotion` test for one-level and two-level-transitive pointer embeds; runtime relies on the field case for `stackWorkBuf` → `stackWorkBufHdr` → `workbufhdr.nobj` and the pointer case for the trace writers.) Because the promotion is performed at conversion time by the generator, methods added later in hand-written C# are not automatically promoted; keeping the source in Go and re-converting (or using explicit interfaces) is the maintainable path.
 
@@ -14962,6 +14117,155 @@ canonical spelling, so the merge HashSet still dedupes them to a single record.
 The name set is computed once per `-tests` conversion from the two loaded variants and is empty
 otherwise, so nothing outside `-tests` changes (check-no-regression: byte-identical across all 495
 behavioral projects). Guarded by `TestAmbiguousVariantTypeNamesAreClassQualified`.
+
+### A struct-literal interface field takes a pointer element's adapter
+A composite struct literal whose field is an INTERFACE type, initialized with a POINTER element whose pointer-receiver method set satisfies that interface, must record and route the same `*T`→interface adapter a call argument does — `&handlerWriter{l.Handler(), &logLoggerLevel, capturePC}` (log/slog SetDefault), where field `level` is `Leveler` and `*LevelVar` implements Leveler via a pointer-receiver `Level()`. The struct-field interface routing (`checkStructFields`) recorded/routed a NAMED VALUE element that satisfies the field (`DecodingError{InvalidIndexError(idx)}`) but matched only a `*types.Named` element, so a POINTER element fell through: no `GoImplement<LevelVar, Leveler>(Pointer = true)` was recorded, and the box `ᏑlogLoggerLevel` was passed bare to the interface-typed constructor parameter (CS1503). The detection now takes the concrete satisfying type from the element OR the pointee of a POINTER element (`types.Implements` tested on the element's own pointer method set, the non-interface guard tested on the pointee), so a pointer element records and routes exactly like the value case:
+```csharp
+new handlerWriter(l.Handler(), new LevelVarжLeveler(ᏑlogLoggerLevel), capturePC)
+// [assembly: GoImplement<LevelVar, Leveler>(Pointer = true)]  -- in package_info.cs
+```
+The record flows through the existing pointer-target arm of `convertToInterfaceType` (the `ж<T>`-wrapped name unwraps to `GoImplement<T, Iface>(Pointer = true)`, and the render wraps the box in the generated `TжIface` adapter), so a same-package local (`streamWriter`→`io.Closer` in net/http/fcgi) and a foreign pointee (`*ast.SelectorExpr`→`ast.Expr`, `*Basic`→`Type`, `*Func`→`Object` in go/types) route through their local or foreign adapters uniformly. Positional and keyed literals both resolve their field (a keyed element renders `d: new SettingжDescriber(Ꮡs)`); an already-interface element and a value element are unchanged. (Guarded by the `PointerInterfaceStructField` behavioral test — a pointer-receiver-only implementer placed in an interface-typed struct field, positional via an addressed global and keyed via an addressed local, output-compared vs Go.)
+
+### The struct-field interface routing also fires on an ELIDED element composite
+The routing above lived only on the TYPED composite path (`checkStructFields`, reached from
+`convCompositeLit`'s `*types.Named`/`*types.Struct` arms). An **elided** element composite — the inner
+`{v0, v1, …}` of a `[]struct{…}{…}` / `map[K]struct{…}{…}` / `[N]struct{…}{…}`, which drops the repeated
+struct type and resolves it by inference (`compositeLit.Type == nil`) — took the separate target-typed
+`new(…)` constructor branch, which emitted its element values through `convExprList` with **no** interface
+recording or routing at all. So a struct field of interface type in such a literal was passed bare: a
+POINTER form lost its `new TжIface(…)` adapter wrap, and a VALUE form whose concrete was used *only* in the
+elided literal (never converted to the interface anywhere else) was never `GoImplement`-recorded, so no
+`partial struct T : Iface` was generated for it. Both compile to **CS1503**. This is exactly errors'
+`wrap_test`, whose `[]struct{ err error; … }{ {&poser{…}, …}, {errorUncomparable{}, …} }` produced 17
+`cannot convert from 'ж<poser>' / 'errorUncomparable' to 'error'` at the `new(…)` sites while the sibling
+`multiErr{poser}` slice-element cast (a *different* path) wrapped its `poser` correctly.
+
+The interface-field record+route loop was extracted from `checkStructFields` into a shared
+`recordStructFieldInterfaceCasts(compositeLit, structType, callContext)` and is now called from **both** the
+typed path and the elided path (against the inferred `*types.Struct`), so an elided struct composite routes
+its interface fields identically:
+```csharp
+new(new poserжerror(poser), err1, true)                      // *poser  → error  (Pointer = true)
+new(new errorUncomparableжerror(Ꮡ(new errorUncomparable(nil))), …)  // *errorUncomparable → error
+new(new errorUncomparable(nil), …)                            // value form: partial struct : error boxes
+// [assembly: GoImplement<poser, error>(Pointer = true)] + <errorUncomparable, error>[(Pointer = true)]
+```
+The extracted logic is byte-for-byte the proven typed-path logic (same keyed-vs-positional field resolution,
+same value/pointer method-set satisfaction test), so it inherits every guard the typed path already carried
+(the gif keyed-field bogus-record avoidance, the `types.Implements` pointee test). An isolated A/B
+full-reconvert of a production cross-section (fmt, errors, net/http, encoding/json, flag, go/types, os, time,
+text/template — 172 `.cs`) shows **zero** production emission change: the pattern is overwhelmingly a
+test-code shape, so the fix is inert for ordinary packages and only realizes the previously-uncompilable test
+literals. (Guarded by the `ElidedStructInterfaceField` behavioral test — a pointer-receiver `*pointerErr`
+and a value-receiver `valueErr`, each used *only* in an elided `[]struct{ err error; … }{…}`, output-compared
+vs Go; the pre-fix converter emits the bare box / bare value and fails CS1503 on both.)
+
+**And on the elided POINTER element composite (2026-07-31).** There are *three* composite paths, not
+two: `[]*struct{…}{{…}, …}` — Go's shorthand where the `&` is implied — has its own arm in
+`convCompositeLit`, reached before the elided-struct arm above and emitting `Ꮡ(new T(…))` rather than
+the target-typed `new(…)`. That arm marked `any` field literals but never called
+`recordStructFieldInterfaceCasts`, so a concrete element in an interface slot again reached the
+generated constructor bare. net `ip_test`'s `[]*struct{ in IP; str string; byt []byte; error }` — an
+**embedded** `error` field — handed a `ж<AddrError>` to the `error` parameter with no
+`AddrErrorжerror` wrap (CS1503). The arm now makes the same record+route call its two siblings do:
+
+```csharp
+Ꮡ(new ipStringTestsᴛ1(new IP(…), "?0123456789abcdef"u8, default!,
+    new net_test_package.net_AddrErrorжerror(Ꮡ(new AddrError(Err: …, Addr: …)))))
+```
+
+The tell is worth carrying forward: each of the three paths grew its own field-marking sequence
+(`markStringFieldLits` / `markAnyFieldLits` / `recordStructFieldInterfaceCasts`) independently, and the
+one that fell behind is the one nobody had a failing case for — the same shape-versus-its-pointer-
+composition asymmetry as *An anonymous struct lifts from ANY depth of its declared type*. Behavioral
+CNR is byte-identical across the whole corpus: like its sibling, this is a test-code shape. (Guarded
+by the `ElidedStructInterfaceField` extension — a `[]*struct{ want string; error }` whose interface
+field is **embedded**, carrying both a pointer-receiver and a value-receiver implementer.)
+
+### A keyed element's interface target is the composite's own SLOT, never the LHS variable's type
+A composite literal assigned to an **interface-typed** variable converts to that interface as a
+WHOLE — `visitAssignStmt`'s `convertExprToInterfaceType` (and `visitValueSpec`'s
+`convInterfaceDeclValue` for a declaration) wraps the finished literal in its adapter. `convKeyValueExpr`
+*also* consulted the LHS variable's type (`context.ident`) for each keyed element, so the interface was
+applied a SECOND time, to values whose real slot is not an interface at all. On a map whose element type
+is a POINTER that is silently destructive: the element renders correctly as `Ꮡ(new T(…))`, the spurious
+`*T → Iface` conversion adds the deref prefix, and `convertToInterfaceType`'s
+"`~` of an immediate `Ꮡ(…)`" collapse then hands back the bare struct — a `map[K]*T` slot holding a
+VALUE (CS0029).
+
+os's `TestCopyFS` is the reached case: `fsys` is an `fs.FS` and the test *reassigns* it
+
+```go
+fsys = fstest.MapFS{"william": {Data: []byte("Shakespeare\n")}}   // map[string]*MapFile
+```
+
+which emitted `["william"u8] = new fstest.MapFile(Data: …)` instead of `Ꮡ(new fstest.MapFile(…))`, ×5.
+The same literal in a `var` declaration, as a call argument, or assigned to its own concrete type was
+always correct — only the reassignment path carried the LHS type down into the elements, which is the
+tell that the LHS was never the right source of truth.
+
+The element's target is now the composite's own value slot (`valueSlotType`, already computed for the
+`MapSource`/`StructSource` untyped-constant boxing just above), with the LHS ident kept only as the
+FALLBACK for a composite that does not state its slot type here — the sparse-array shape it was
+originally added for. A struct FIELD of interface type keeps its single conversion through
+`structFieldIfaceType`. An interface-VALUED container (`map[K]Iface{k: v}`) still converts every element,
+now through the slot rather than the variable, so the two agree by construction. Behavioral CNR is
+byte-identical across the corpus — the shape needs a *named* container of pointers reassigned to an
+interface variable, which the behavioral corpus did not contain. (Guarded by the
+`ElidedPtrElemIfaceAssign` behavioral test: a `map[string]*Item` and a `[]*Item`, each declared into,
+reassigned into, and passed into an interface, with a write through a stored element pointer proving the
+map holds the same object; plus an interface-VALUED map as the live control for the preserved
+conversion.)
+
+### A GoImplicitConv record needs at least one LOCAL operand
+`ImplicitConvGenerator` realizes a recorded conversion as a `partial struct <name>` inside THIS package's
+class, so the record has to name a type this package declares. The generator already relocates the host
+when exactly ONE side is foreign (its "foreign SOURCE via a local alias" / "foreign TARGET via a qualified
+reference" arms), and the converter's aliased-numeric arm swaps target and argument for the same reason —
+to anchor the record on the local operand. With NEITHER operand local the swap merely picks the other
+foreign one and the generator has nothing to extend: it declares `partial struct <simple name>` locally, a
+PHANTOM type of that name, and the operator body's `src.Value` does not exist (CS1061).
+
+os reaches it from `os_windows_test.go`'s privilege helper, `syscall.CloseHandle(syscall.Handle(t))` over a
+`syscall.Token` — both operands in `syscall`. Both the struct-conversion and the aliased-numeric arms of
+`checkForImplicitConversion` now require `conversionRecordHasLocalOperand`, stated once as the property
+rather than per-arm. Declining costs nothing: the call site already emits the explicit
+`((syscallꓸHandle)(uintptr)t)` cast chain, which needs no generated operator, and an operator between two
+foreign types could not be hosted in either of their assemblies from here in any case. Behavioral CNR is
+byte-identical. (Guarded by the `ForeignPairNumericConv` behavioral test — a sibling library declaring two
+named numerics and never converting between them, converted across in `main`, with the
+foreign→local and local→foreign directions as the live controls for the records that are still needed.)
+
+#### ...but the POINTER-BOXING route needs none, and a whitebox-production operand still counts
+The rule above is about HOSTING, so it stops where hosting does. A record of the form `T` → `ж<T>` —
+the shared Go pointer-boxing route, and the corpus's dominant record family at **193 of the 268**
+`GoImplicitConv` records across the emitted `package_info.cs` files — hosts nothing at all:
+`ж<T>` is golib's generic box, no converted package declares it, and `ImplicitConvGenerator` looks the
+target up by struct declaration and `continue`s when it finds none. No host is ever chosen, so no phantom
+can be minted and no closed assembly can be mutated. `recordsRequireProductionMutation` already stated
+exactly this when deciding whether a white-box test project can keep the reference model; the predicate is
+now written once (`pointerBoxConversionRecord`) and both readers share it.
+
+That matters because of the second refinement. On the internal `-tests` variant go/packages merges the
+production files into the test package, so a production type's `obj.Pkg()` IS the converted package while
+its C# lives in the CLOSED referenced production assembly — which is why `typeDeclaredInConvertedPackage`
+subtracts such a declaration (`whiteboxProductionObject`; internal/reflectlite's `flag(typ.Kind())` minted
+a phantom `partial struct flag` in the test class, CS1061). Subtracting it for the pointer-boxing route as
+well was one notch too far: it silently shrank every white-box package's committed `package_test_info.cs`
+on regen. `crypto/rc4` lost its `Cipher` → `ж<Cipher>` record **and** the
+`using testing = go.testing_package;` qualifier alias that the same record site registers;
+`go/types` lost three (`Basic`, `Interface`, `Tuple`). Nothing catches it: CNR never runs
+`-tests`, and the records are inert in the generator, so the only symptom is a `-tests` regen that no
+longer reproduces committed bytes.
+
+`conversionRecordHasLocalOperand` therefore takes the record shape as an argument and readmits a
+WHITEBOX-PRODUCTION operand — and only that — when the record is the pointer-boxing route. A
+BOTH-FOREIGN pair stays declined exactly as the section above describes, which is what keeps the change a
+restoration rather than a widening: `go/types`' test conversion also reaches `types.Basic` → `ж<types.Basic>`
+and `ast.FuncType` → `ж<ast.FuncType>`, and those must not start recording. (Guarded by
+`TestWhiteboxProductionPointerBoxConvStillRecorded`, whose both-foreign arm is the boundary, and
+`TestPointerBoxConversionRecordShape` for the shared predicate; the numeric phantom keeps its own guard,
+`TestWhiteboxProductionNumericConvNotRecorded`.)
 
 ## Pointers
 Pointer conversions use the golib heap box [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) (read "zhe"). Taking the address of a value uses the address-of operator `Ꮡ` (e.g. `Ꮡx`); an escaping local is allocated via `heap(...)`, and addresses of a struct field or array element are taken through `.of(Type.ᏑField)` / `.at<T>(index)`.
@@ -17268,6 +16572,105 @@ A pointer **receiver** keeps the `FromRef` form — a `this ref T` receiver has 
 Guarded by `NilPointerParamUnsafePointer` (nil and non-nil arguments across all three pointee shapes,
 plus a case where the value alias stays genuinely live so the box rendering must not drop it).
 
+### A reference-type-pointee pointer parameter uses the nil-check-free `.ValueSlot` deref alias
+
+The entry deref-alias for a pointer parameter is `ref var p = ref Ꮡp.Value`. The `.Value` getter
+throws `NilPointerDereference` when the box reports `IsNull` — for a MANAGED box, `m_val is null`.
+That is correct when the pointee is a VALUE type (a null `m_val` means a genuinely nil pointer). But
+when the POINTEE is itself a reference type — `*error`, `*[]T`, `*map[K]V`, `**T`, `*func(…)`,
+`*chan T` — the box holds the reference VALUE directly, and that value is legitimately null when it
+is the zero value (a nil interface/slice/map). The pointer is still a valid, non-nil box (`Ꮡ(err)`),
+so establishing the entry ALIAS is a read of the held value, not a dereference of the box: in Go,
+`*(&err)` of a nil `error` yields nil, no panic. `.Value`'s `IsNull` check misfires on `m_val is
+null` and panics spuriously at function entry — text/scanner's `digits(…, invalid *bool)` and, for a
+reference pointee, text/tabwriter's `handlePanic(err *error)` (deferred from `Write`, whose `err` is
+a nil named-return interface) crashed with a nil-pointer panic before `recover()` even ran. The fix:
+when the pointee `isInherentlyHeapAllocatedType`, emit the nil-check-free `.ValueSlot` accessor
+(`ref var err = ref Ꮡerr.ValueSlot`), mirroring `namedResultBoxAccessor` — a named result of the same
+type already reads this way. `.ValueSlot` returns the same real `m_val` slot as `.Value` in every
+non-throwing case, so write-through and non-null reads are byte-behaviorally identical; only the
+spurious-panic case changes. Corpus-wide the swap touches 49 stdlib files + 10 behavioral goldens, all
+value-preserving (full behavioral suite Output 0-fail). (Guarded by the `PointerToInterfaceParamDeref`
+behavioral test
+— a `*error` parameter read through inside a deferred recover/re-panic where the pointee is nil at
+address-of time; before the fix the entry alias NREs, after it prints the re-panic message,
+output-compared vs `go run`.) ⚠ This fixes only the spurious CRASH. A SEPARATE latent defect remains:
+a non-heap-promoted address-taken named return — `Ꮡ(err)` boxes a COPY — so `*err = …` in the
+deferred handler writes the copy while `return err` reads the original; text/tabwriter's tests need
+that heap-promotion of address-taken named returns before they fully validate.
+
+The value-type nilable case — a genuinely nil `*rune`/`*bool`/`*int` optional-out-param, deref'd only
+under a body VALUE guard — was handled for a fortnight by a companion **call-site nil-argument**
+detection, and is now subsumed by the unconditional nil-deferring entry alias (see *A pointer
+PARAMETER is nil-deferring for exactly the reason a receiver is*). The problem it solved is worth
+keeping on the record, because it is the cleanest demonstration of why an entry-alias policy cannot be
+an analysis: `collectNilSafePtrParams` scanned only the body for `param == nil`/`!= nil`, so
+text/scanner's `digits(ch0 rune, base int, invalid *rune)` — whose sole deref `*invalid == 0` sits
+behind `ch >= max` (never `invalid != nil`) and which is called `digits(ch, 10, nil)` — kept the
+strict `.Value` entry hoist and NRE'd at entry, where Go never dereferences (`ch >= max` is false on
+the nil-call path). The remedy was a package-wide pre-pass (`collectNilArgPtrParams`) recording, per
+`*types.Func`, the pointer-parameter positions ever passed the untyped `nil` at a call site — which
+worked, but only for SAME-package call sites, because the converter processes one package at a time.
+A parameter passed nil solely from another package stayed strict and stayed broken; that residual is
+what `.DerefOrNull()` closes structurally, and the pre-pass was deleted with the rest of the analysis.
+(Still guarded by the `GuardedNilPointerParamDeref` behavioral test — a `*int` out-param deref'd under
+an `i >= base` guard, called once with a real pointer and once with nil; NREs at the entry hoist under
+either predecessor, matches `go run` now without one.)
+
+### A pointer-element composite literal takes the box for a deref-aliased ident
+
+A bare identifier element of a pointer-element composite literal (`[]*CommentGroup{c}`) renders
+the pointer VALUE — the box `Ꮡc` — not the deref'd receiver ref-local `c`. Every named pointer
+parameter is deref-aliased in C# (`ref var c = ref Ꮡc.Value`), and the bare name is the value
+alias; the array element type is `ж<CommentGroup>`, so the alias form was CS0029 (go/ast's
+`CommentMap.addComment` — the sibling `append(list, Ꮡc)` already took the box through the
+call-argument pointer arm). The routing mirrors the struct-field pointer arm: the element index
+is marked `argTypeIsPtr`, which convExprList turns into the pointer ident context:
+```csharp
+list = new ж<CommentGroup>[]{Ꮡc}.slice();
+```
+Gated to bare idents of pointer type — keyed elements (maps) and address-of/composite elements
+manage their own pointer rendering. Guarded by the `PointerParamWalk` extension `collect` (the
+literal arm and the append arm, aliasing proven by a post-collect write through the original).
+
+### A pointer value passed to an `any` argument takes the box
+A deref-aliased pointer passed WHOLE (as an argument, not `p.field`) to an EMPTY-interface (`any`)
+parameter renders the pointer VALUE — the box `Ꮡp` — not the deref'd value alias `p`. Go boxes the
+*pointer* into the interface, so dropping the box stores the pointed-to VALUE and loses pointer
+identity: a later `x.(*T)` assertion (rendered `._<ж<T>>()`) then finds a bare `T` and panics
+("interface conversion: … is T, not *T"). This is fmt's own `sync.Pool` round-trip —
+`func (p *pp) free() { … ppFree.Put(p) }` (Put's parameter is `any`) feeding `newPrinter`'s
+`ppFree.Get().(*pp)` — which crashed the SECOND time through the pool, blocking every multi-call fmt
+program. Both a pointer RECEIVER and a plain `*T` PARAMETER take the box:
+```go
+func (p *pp) free()  { poolPut(p) }   // p is *pp (pointer receiver); poolPut(x any)
+func keep(q *pp)     { poolPut(q) }   // a plain *T parameter, same shape
+```
+```csharp
+internal static void free(this ж<pp> Ꮡp) {
+    ref var p = ref Ꮡp.Value;
+    …
+    poolPut(Ꮡp.OrTypedNil());          // NOT poolPut(p) — a pp VALUE loses pointer identity
+}
+internal static void keep(ж<pp> Ꮡq) {
+    poolPut(Ꮡq.OrTypedNil());
+}
+```
+(The `OrTypedNil()` suffix is the other half of the same boundary — see
+[A pointer crossing into an interface carries its static type](#a-pointer-crossing-into-an-interface-carries-its-static-type-however-the-pointer-was-produced),
+which generalized this arm from the call-argument slot to every empty-interface slot.)
+This mirrors the composite-literal element arm above: the argument index is marked `argTypeIsPtr`,
+which convExprList turns into the pointer ident context, so `convIdent` emits the parameter box
+(`Ꮡp`) or the current method's direct-ж receiver box. It fires ONLY for the empty interface — a
+NON-empty interface already routes the pointer through its `*T`→interface adapter (`interfaceTypes`),
+and the two arms are mutually exclusive. A pointer LOCAL is excluded (it already holds its box
+directly — the bare name IS the box), an `unsafe.Pointer` argument is excluded (not a `*types.Pointer`),
+and the treatment fans out across a variadic `...any`. The receiver form reaches through a closure
+too — `Ꮡs.Value.d.note(Ꮡs)` for `s.d.note(s)` inside a nested lambda (the database/sql `(*Stmt)`
+shape). Guarded by `PointerValueToInterfaceArg` (a minimal sync.Pool-shaped free list round-tripping
+a `*pp` via both a pointer receiver and a pointer param, each `.(*pp)`-asserted after the `any` hop —
+the 2nd pool Get panicked before the fix) and the `NestedLambdaReceiverField` receiver-in-closure case.
+
 ## Implicit Pointer Dereferencing
 **Deciding whether a selector base is *already* dereferenced.** A field selector on a pointer-valued base auto-derefs in Go, so the converter must insert the deref (`(~x).field` / `x.Value.field`) — *unless* the base is itself an explicit dereference (`(*p).field`) or a pointer conversion whose dedicated branch appends its own `.Value`. That "is the base already deref'd" test was a whole-subtree scan for **any** `StarExpr`, which mistook a conversion star buried in a call **argument** for a dereferenced base — `stringStructOf((*string)(unsafe.Pointer(p))).n` (runtime `arena.go`): the `(*string)` star belongs to the argument's conversion, the *call result* (`ж<stringStruct>`) is not deref'd, and skipping the auto-deref left `.n` on the box (CS1061). The test now inspects only the base's own outermost shape (unwrapping parens; a pointer-conversion base still routes to the conversion branch), and the conversion-branch dispatch also unwraps **enclosing parens**, so an extra-paren conversion base — `((*specialWeakHandle)(unsafe.Pointer(…))).handle` (runtime `mheap.go`) — reaches it (the same extra-paren blind spot the reinterpret routing had). Reads through a conversion base are faithful; a **write** through one hits the copy box, the documented reinterpret-seam limitation shared by the whole `(ж<T>)(uintptr)` family (the runtime sites are reads). The corpus was byte-identical across all behavioral projects after the change — only previously-non-compiling shapes gained emissions. (Guarded by the `PointerSelectorDeref` behavioral test — both shapes, read values vs Go; cleared 3 runtime CS1061, 74 → 71.)
 
@@ -17976,9 +17379,10 @@ Several Go semantics cannot be written directly in C#, so the converter emits co
 * **`ImplementGenerator`** — wires up Go's duck-typed [interfaces](#interfaces): finds the concrete types that satisfy each `[GoType] partial interface` and emits the implementation glue and implicit conversions.
 * **`RecvGenerator`** — emits pointer-receiver overloads for receiver methods (`[GoRecv]`), so a method written against a value (`this ref T`) is also callable through the pointer/box form. A **variadic** method keeps its `params` in the generated overload: cryptobyte's `func (b *Builder) add(bytes ...byte)` emits the value form `add(this ref Builder b, params Span<byte> bytesʗp)`, but the `ж<Builder>` overload had dropped `params` (a bare `Span<byte>`), so a call passing individual elements through a box (`c.add(0xff)`, `c` a `ж<Builder>` closure parameter) could not bind it and fell back to the ref-receiver value method — CS1929. `GetMethodInfo` now preserves the `params` modifier (the Go variadic is always the last, non-receiver parameter, so it never lands on the `this ж<T>` receiver). Guarded by `VariadicBoxReceiver` (a `*sink` with `add(bytes ...byte)` called on a box — via a closure and directly — with zero, one, several, and spread arguments, values vs Go).
 * **`ImplicitConvGenerator`** — emits the implicit conversion operators that let a [named type](#type-definitions) and its underlying types be used interchangeably.
+* **`StrGenerator`** — driven by `[GoStr]`. For an [sstring twin](#an-sstring-twin-a-registered-function-gains-an-sstring-overload-that-calls-bind), emits the `@string` overload that forwards to the `[GoStr]` member under `[OverloadResolutionPriority(-1)]`, and for a package-level function the canonical value delegate `<Name>ᶠ`. Types are rendered fully qualified from the symbols, because the converted file's `using` aliases are not in scope in a generated file.
 * **`PartialStubGenerator`** — emits a throwing `partial` implementation for any bodyless `partial` method that has no other implementing part (e.g. assembly/cgo functions with no convertible body), while leaving real hand-written companion implementations untouched.
 
-Common attributes the converter emits for the generators (and tooling) to consume: `[GoType]` (type bodies), `[GoRecv]` (receiver methods), `[GoTag]` (struct field tags), `[GoPackage]` (package info), and the test-only `[GoTestMatchingConsoleOutput]`. The full vocabulary — every stamp, where it lands, who reads it, and which of them are kept off the visible declaration — is classified in [Extended attributes: what stays on the declaration and what moves](#extended-attributes-what-stays-on-the-declaration-and-what-moves).
+Common attributes the converter emits for the generators (and tooling) to consume: `[GoType]` (type bodies), `[GoRecv]` (receiver methods), `[GoStr]` (sstring twins), `[GoTag]` (struct field tags), `[GoPackage]` (package info), and the test-only `[GoTestMatchingConsoleOutput]`. The full vocabulary — every stamp, where it lands, who reads it, and which of them are kept off the visible declaration — is classified in [Extended attributes: what stays on the declaration and what moves](#extended-attributes-what-stays-on-the-declaration-and-what-moves).
 
 **A generator's view of ACCESSIBILITY is provisional — its own output is what supplies the access modifier (2026-07-25).** The converter emits a Go type as a bare `[GoType] partial interface X` (or `partial struct X`) nested in the package class and leaves the access modifier to `TypeGenerator`, which derives it from the Go export convention (`GetScope` — `public` for an exported name, `internal` otherwise; an explicit modifier on the converter's part wins). A C# nested type with no modifier is **private**, so until that generated partial exists the declaration is private — accessible from inside its own package class and *inaccessible from any other class in the assembly*. A generator cannot see its own output, so a semantic query that crosses package classes sees the provisional accessibility, not the real one.
 
@@ -18033,11 +17437,12 @@ That single criterion classifies the whole surface. The converter stamps nothing
 | `[GoLocalName("Point")]` | struct (lifted function-local named type) | golib's reflection bridge, `GoReflect.TypeNaming` | **Moved** |
 | `[GoTag("json:\"x\"")]` | **field** | golib reflection, via the `DescriptionAttribute` alias | **Must stay** — field-level. A `<TypeAccessibility>` record is an empty `{}` body; C# has no way for a second part to re-declare a field and attach an attribute to it |
 | `[GoRecv]` | **method** | `RecvGenerator` syntactically, plus runtime | **Must stay** — same reason, one level up: a method exists on the part that defines its body |
+| `[GoStr]` | **method** | `StrGenerator` syntactically | **Must stay** — as `[GoRecv]`: it marks the member whose signature the generator reads |
 | `[GoArrayDims(4, 8)]` | **parameter** | golib reflection — `GoReflect.FuncParamDims` off the delegate instance's `Method.GetParameters()`, or `MethodParamDims` off the method table's `ParameterInfo`s | **Must stay** — the sharpest case in the set: the datum is not type-keyed at all. It distinguishes two funcs that share one emitted delegate type (`func([32]byte) bool` and `func([64]byte) bool` are both `Func<array<byte>, bool>`), so a record keyed by type has nothing to key on, and the consumer reads the parameter's own metadata |
 | `[GoInit]` | **method** | the **C# compiler** — it is a `using` alias for `ModuleInitializerAttribute` | **Must stay** — the compiler requires it on the method it initializes with |
-| `[GoPackage]`, `[GoImplement<T,I>]`, `[GoImplicitConv<S,T>]`, `[GoTypeAlias]` | package class / assembly | generators, runtime, and the converter's own next run | **Already there** — these are emitted into `package_info.cs` and never touched a mainline declaration |
+| `[GoPackage]`, `[GoImplement<T,I>]`, `[GoImplicitConv<S,T>]`, `[GoTypeAlias]`, `[GoSStringTwin]` | package class / assembly | generators, runtime, and the converter's own next run | **Already there** — these are emitted into `package_info.cs` and never touched a mainline declaration |
 | `[GoManualConversion]`, `[GoRequiresUnsafe]` | module | the converter | **Already off** — hand-written, module-scoped |
-| `[GoInterfaceShell]`, `[GoReflectCompanion]` | interface / field | golib | **Not converter-emitted** — written by the generator and by hand respectively |
+| `[GoInterfaceShell]`, `[GoTwinForwarder]`, `[GoReflectCompanion]` | interface / lambda / field | golib | **Not converter-emitted** — the first two written by the generators (`[GoTwinForwarder]` by `StrGenerator`, on a twin delegate's lambda), the last by hand |
 
 So the movable set is `[GoValueClone]` and `[GoLocalName]`, and both moved. `[GoType] [GoValueClone("intbuf")] partial struct pp {` reads `[GoType] partial struct pp {`, with the record in `package_info.cs` carrying the rest:
 

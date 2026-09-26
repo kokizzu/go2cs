@@ -1318,34 +1318,19 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		v.replaceMarker(functionPartialMarker, "")
 	}
 
-	// An sstring TWIN (sstringTwinOperations.go): this declaration becomes the sstring member, which
-	// carries the body under [OverloadResolutionPriority(1)]; the @string member that forwards to it,
-	// and a package-level twin's canonical value delegate, are written after the body from the
-	// @string parameter list rendered above.
+	// An sstring TWIN (sstringTwinOperations.go): this declaration is the member that carries the
+	// Go body, each registered parameter typed sstring and marked [GoStr]. go2cs-gen's
+	// StrGenerator emits its companions (the @string forwarder, and a package-level twin's
+	// canonical value delegate), so the visible file keeps one method per Go function.
 	twinFunc, _ := v.info.ObjectOf(funcDecl.Name).(*types.Func)
-	twinIndices := sstringTwinIndices(twinFunc)
-	twinPriority := ""
-	var twinReceiverName string
-	var twinForwardArgs []string
+	twinMarker := ""
 
-	if len(twinIndices) > 0 {
+	if twinIndices := sstringTwinIndices(twinFunc); len(twinIndices) > 0 {
 		v.validateSStringTwin(funcDecl, twinFunc, twinIndices)
-
-		var twinSignature string
-		twinSignature, twinReceiverName, twinForwardArgs = sstringTwinSignatures(sstringTwinKey(twinFunc), parameterSignature, twinIndices, funcDecl.Recv != nil)
-
-		v.replaceMarker(functionParametersMarker, twinSignature)
-		v.addRequiredUsing("System.Runtime.CompilerServices")
-		twinPriority = "[OverloadResolutionPriority(1)] "
+		v.replaceMarker(functionParametersMarker, sstringTwinSignature(sstringTwinKey(twinFunc), parameterSignature, twinIndices, funcDecl.Recv != nil))
+		twinMarker = "[GoStr] "
 	} else {
 		v.replaceMarker(functionParametersMarker, parameterSignature)
-	}
-
-	// The attributes the @string member repeats: the frame-preserving mark and [GoRecv].
-	twinForwarderAttributes := v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))
-
-	if strings.HasPrefix(parameterSignature, "this ref ") {
-		twinForwarderAttributes += "[GoRecv] "
 	}
 
 	if isModuleInitializer {
@@ -1362,9 +1347,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoInit] ")
 		}
 	} else if strings.HasPrefix(parameterSignature, "this ref ") {
-		v.replaceMarker(functionAttributeMarker, twinPriority+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoRecv] ")
+		v.replaceMarker(functionAttributeMarker, twinMarker+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoRecv] ")
 	} else {
-		v.replaceMarker(functionAttributeMarker, twinPriority+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name)))
+		v.replaceMarker(functionAttributeMarker, twinMarker+v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name)))
 	}
 
 	var funcExecutionContext string
@@ -1452,10 +1437,6 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 	} else {
 		v.outputBuilder.WriteString(v.newline)
-	}
-
-	if len(twinIndices) > 0 {
-		v.writeSStringTwinCompanions(twinFunc, twinForwarderAttributes, functionAccess, resultSignature, csFunctionName, parameterSignature, twinReceiverName, twinForwardArgs)
 	}
 
 	v.inFunction = false

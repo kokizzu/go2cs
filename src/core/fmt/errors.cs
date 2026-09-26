@@ -5,7 +5,6 @@ namespace go;
 
 using errors = errors_package;
 using slices = slices_package;
-using System.Runtime.CompilerServices;
 using ꓸꓸꓸany = Span<any>;
 
 partial class fmt_package {
@@ -20,7 +19,7 @@ partial class fmt_package {
 // order they appear in the arguments.
 // It is invalid to supply the %w verb with an operand that does not implement
 // the error interface. The %w verb is otherwise a synonym for %v.
-[OverloadResolutionPriority(1)] public static error Errorf(sstring format, params ꓸꓸꓸany aʗp) {
+[GoStr] public static error Errorf(sstring format, params ꓸꓸꓸany aʗp) {
     var a = aʗp.slice();
 
     var p = newPrinter();
@@ -62,11 +61,6 @@ partial class fmt_package {
     p.free();
     return err;
 }
-
-[GoTwinForwarder] public static error Errorf(@string format, params ꓸꓸꓸany aʗp) => Errorf((sstring)format, aʗp);
-
-// The canonical func value of Errorf: a twinned function has no single method group (CS0123).
-public static readonly Funcꓸꓸꓸ<@string, any, error> Errorfᶠ = [GoTwinForwarder("Errorf")] static (@string format, ꓸꓸꓸany aʗp) => Errorf(format, aʗp);
 
 [GoType] partial struct wrapError {
     internal @string msg;

@@ -10,10 +10,11 @@ namespace go;
 
 /// <summary>
 /// Records that an exported package-level function of this assembly is an sstring TWIN
-/// (docs/phase4/DESIGN-sstring-twin-pilot.md): a <c>@string</c> member plus an <c>sstring</c> member
-/// under <c>[OverloadResolutionPriority(1)]</c>. The function therefore has no single method group, and a
-/// func value of it is the canonical delegate <c>&lt;Name&gt;ᶠ</c>, which a converted package in ANOTHER
-/// assembly must name instead of the method group (a method-group conversion is CS0123).
+/// (docs/phase4/DESIGN-sstring-twin-pilot.md): an <c>sstring</c> member marked <see cref="GoStrAttribute"/>
+/// that carries the Go body, plus the <c>@string</c> member go2cs-gen generates for it. The function
+/// therefore has no single method group, and a func value of it is the canonical delegate
+/// <c>&lt;Name&gt;ᶠ</c>, which a converted package in ANOTHER assembly must name instead of the method
+/// group (a method-group conversion is CS0123).
 /// </summary>
 /// <param name="functionName">The Go name of the function, as declared.</param>
 /// <remarks>
