@@ -16,8 +16,11 @@
 //
 //******************************************************************************************************
 
+using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace go.golib;
 
@@ -45,8 +48,21 @@ namespace go.golib;
 /// sporadic Gosched calls are all inert accrues one 1 ms sleep per 64 such calls, a negligible cost
 /// for sporadic use, and the clock reads a reset rule would add are the fast path this class must
 /// not tax.
+///
+/// THE 1 ms IS 1 ms ON WINDOWS TOO (i9, 2026-09-26, COORD ruling after 03df2f43aa). On Windows 11,
+/// <see cref="Thread.Sleep(int)"/> runs at the PROCESS's timer resolution, and a process that never
+/// asked for a finer one sleeps a whole tick: Sleep(1) measured in-process at p50 15.75 ms / p99 16.49
+/// ms while NtQueryTimerResolution reported 1 ms machine-wide. A lone yielder is inert on every call,
+/// so it paid ~15.7 ms per 64 yields, 237 s per million (Go: ~0.1 s), and runtime/pprof's
+/// TestGoroutineSwitch (10 x 1M Gosched) overran its 30 m package deadline. On Windows the escalation
+/// therefore waits on a high-resolution waitable timer, the object time_impl and Go's own Windows
+/// runtime use for sub-tick sleeps: 1 ms measured at ~1.1-1.5 ms, 24 s per million lone yields. The
+/// threshold and the sleep length are the ratified ones; only the clock that delivers them changed.
+/// Linux keeps Sleep(1), which is ~1 ms there. A timer is created per escalation (a few µs against a
+/// 1 ms wait) so no per-thread handle exists to classify or leak, and any failure to create or arm one
+/// falls back to Sleep(1).
 /// </remarks>
-internal static class GoschedBackoff
+internal static partial class GoschedBackoff
 {
     // Measured basis above: inert ≤ ~561 ns (p99) and effective ≥ ~4.1 µs (p50) on both hosts.
     private static readonly long s_inertYieldTicks = (long)(2_000e-9 * Stopwatch.Frequency);
@@ -89,6 +105,62 @@ internal static class GoschedBackoff
         // can have the processor, then re-probe from a clean count.
         t_consecutiveInertYields = 0;
         Interlocked.Increment(ref s_escalations);
-        Thread.Sleep(1);
+
+        if (!OperatingSystem.IsWindows() || !HighResolutionTimer.TrySleep(OneMillisecondIn100Ns))
+            Thread.Sleep(1);
+    }
+
+    private const long OneMillisecondIn100Ns = 10_000;
+
+    // time_impl's highResTimer shape (golib cannot reference time): a Windows high-resolution waitable
+    // timer wrapped as a WaitHandle, here created, armed, waited on and closed per call.
+    private sealed partial class HighResolutionTimer : WaitHandle
+    {
+        private const uint CreateHighResolution = 0x2;
+        private const uint TimerAllAccess = 0x1F0003;
+
+        private HighResolutionTimer(nint handle)
+        {
+            SafeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
+        }
+
+        // False when the timer cannot be created (pre-1803 Windows rejects the flag) or armed; the
+        // caller then sleeps the coarse way.
+        internal static bool TrySleep(long hundredNanoseconds)
+        {
+            nint handle;
+
+            try
+            {
+                handle = CreateWaitableTimerExW(0, null, CreateHighResolution, TimerAllAccess);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            if (handle == 0)
+                return false;
+
+            using HighResolutionTimer timer = new(handle);
+
+            // A NEGATIVE due time is a relative interval in 100 ns units. The handle is owned by this
+            // call alone and closed by the using, so no concurrent Dispose can race the kernel's use
+            // of it (the reason time_impl's Arm takes an explicit reference count).
+            long dueTime = -hundredNanoseconds;
+
+            if (!SetWaitableTimer(handle, ref dueTime, 0, 0, 0, resume: false))
+                return false;
+
+            timer.WaitOne();
+            return true;
+        }
+
+        [LibraryImport("kernel32.dll", EntryPoint = "CreateWaitableTimerExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+        private static partial nint CreateWaitableTimerExW(nint timerAttributes, string? timerName, uint flags, uint desiredAccess);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool SetWaitableTimer(nint timer, ref long dueTime, int period, nint completionRoutine, nint completionArg, [MarshalAs(UnmanagedType.Bool)] bool resume);
     }
 }
