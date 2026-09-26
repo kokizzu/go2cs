@@ -661,3 +661,102 @@ func TestRosterRowPatternsAgree(t *testing.T) {
 		t.Fatalf("the Go and Python roster readers disagree: %d rows against %d", len(fromGo), len(fromPython))
 	}
 }
+
+// TestCommittedValidationIndexMatchesWriter holds the committed docs/validation/index.md to what
+// writeValidationIndex produces from the committed roster and pages. A row banked by hand into the
+// roster without its index line (or the reverse) fails here, in every lane's plain `go test`, rather
+// than at the release census. The writer runs over a scratch copy: the committed index and roster,
+// and an empty stand-in for each page under current/, since only the page NAMES are read.
+func TestCommittedValidationIndexMatchesWriter(t *testing.T) {
+	root := repoRootFromPackageDir(t)
+	committedDocs := filepath.Join(root, "docs")
+	docsPath := t.TempDir()
+	currentPath := filepath.Join(docsPath, "validation", "current")
+
+	if err := os.MkdirAll(currentPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	committedIndex, err := os.ReadFile(filepath.Join(committedDocs, "validation", "index.md"))
+
+	if err != nil {
+		t.Fatalf("read committed index: %v", err)
+	}
+
+	roster, err := os.ReadFile(filepath.Join(committedDocs, validationRosterFileName))
+
+	if err != nil {
+		t.Fatalf("read roster: %v", err)
+	}
+
+	entries, err := os.ReadDir(filepath.Join(committedDocs, "validation", "current"))
+
+	if err != nil {
+		t.Fatalf("list committed pages: %v", err)
+	}
+
+	for _, entry := range entries {
+		if err := os.WriteFile(filepath.Join(currentPath, entry.Name()), nil, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := os.WriteFile(filepath.Join(docsPath, validationRosterFileName), roster, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	indexPath := filepath.Join(docsPath, "validation", "index.md")
+
+	if err := os.WriteFile(indexPath, committedIndex, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeValidationIndex(docsPath); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+
+	written, err := os.ReadFile(indexPath)
+
+	if err != nil {
+		t.Fatalf("read written index: %v", err)
+	}
+
+	committedLines := strings.Split(strings.ReplaceAll(string(committedIndex), "\r", ""), "\n")
+	writtenLines := strings.Split(strings.ReplaceAll(string(written), "\r", ""), "\n")
+
+	if strings.Join(committedLines, "\n") == strings.Join(writtenLines, "\n") {
+		return
+	}
+
+	// Name the rows that differ, so the fix is a line to add or remove rather than a diff to read.
+	inCommitted := make(map[string]bool)
+
+	for _, line := range committedLines {
+		inCommitted[line] = true
+	}
+
+	inWritten := make(map[string]bool)
+
+	for _, line := range writtenLines {
+		inWritten[line] = true
+	}
+
+	var missing, extra []string
+
+	for _, line := range writtenLines {
+		if !inCommitted[line] {
+			missing = append(missing, line)
+		}
+	}
+
+	for _, line := range committedLines {
+		if !inWritten[line] {
+			extra = append(extra, line)
+		}
+	}
+
+	t.Fatalf("docs/validation/index.md is not what the writer produces from the committed roster and pages "+
+		"(rows follow the roster's order; a banked row needs its page and its index line).\n"+
+		"missing from the committed index:\n  %s\nin the committed index but not written:\n  %s",
+		strings.Join(missing, "\n  "), strings.Join(extra, "\n  "))
+}
