@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -136,23 +137,62 @@ public class MainGoroutineIdentityTests
     // The primitive's contract: adopting the main identity mints nothing, is not "on a goroutine"
     // (runtime.Goexit stays gated exactly as on the registering thread), and ends with the scope.
     [TestMethod]
-    public void AdoptingTheMainIdentityIsScopedAndRegistersNothing()
+    public void AdoptingTheMainIdentityIsScopedAndRegistersNothing() => AssertAdoptionIsScoped(afterBaseline: null);
+
+    // An earlier test's goroutine retiring inside this one's window (StragglerStaging), staged.
+    [TestMethod]
+    public void AdoptionStaysScopedWhileAnEarlierGoroutineRetires()
     {
-        Goroutine? before = Goroutine.Current;
-        int count = Goroutine.Count;
+        for (int i = 0; i < StragglerStaging.Iterations; i++)
+            AssertAdoptionIsScoped(StragglerStaging.Stage());
+    }
 
-        using (Goroutine.EnterAsMain())
+    // On a DEDICATED thread with no identity: the MSTest thread can be the one golib's module
+    // initializer registered as the main goroutine, where EnterAsMain is inert and the adoption this
+    // test is about never happens (found making it fail: an adopting scope that retired the main
+    // goroutine read GREEN on the MSTest thread).
+    private static void AssertAdoptionIsScoped(Action? afterBaseline)
+    {
+        Exception? failure = null;
+
+        Thread thread = new(() =>
         {
-            Goroutine? current = Goroutine.Current;
+            try
+            {
+                // Asserted by identity (StragglerStaging): nothing minted, and the main goroutine -- the
+                // one this is about -- still registered; a live-count delta also moves when an earlier
+                // test's goroutine retires meanwhile.
+                Assert.IsNull(Goroutine.Current, "the adopting thread already carried an identity, so EnterAsMain would be inert");
+                HashSet<long> live = StragglerStaging.LiveIds();
+                afterBaseline?.Invoke();
+                long mainId;
 
-            Assert.IsNotNull(current, "no identity inside the scope");
-            Assert.IsTrue(current!.IsMain, "the identity inside the scope is not the main goroutine");
-            Assert.IsFalse(Goroutine.OnGoroutine, "the main goroutine reads as being on a goroutine -- the Goexit gate would open");
-            Assert.AreEqual(count, Goroutine.Count, "adopting the main identity minted a goroutine");
-        }
+                using (Goroutine.EnterAsMain())
+                {
+                    Goroutine? current = Goroutine.Current;
 
-        Assert.AreSame(before, Goroutine.Current, "the adopted identity outlived its scope");
-        Assert.AreEqual(count, Goroutine.Count, "disposing the adoption scope changed the goroutine count");
+                    Assert.IsNotNull(current, "no identity inside the scope");
+                    Assert.IsTrue(current!.IsMain, "the identity inside the scope is not the main goroutine");
+                    Assert.IsFalse(Goroutine.OnGoroutine, "the main goroutine reads as being on a goroutine -- the Goexit gate would open");
+                    Assert.AreEqual(0, StragglerStaging.Minted(live).Count, "adopting the main identity minted a goroutine");
+                    mainId = current.Id;
+                }
+
+                Assert.IsNull(Goroutine.Current, "the adopted identity outlived its scope");
+                Assert.AreEqual(0, StragglerStaging.Minted(live).Count, "disposing the adoption scope minted a goroutine");
+                Assert.IsNotNull(Goroutine.FromId(mainId), "disposing the adoption scope retired the main goroutine");
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+
+        thread.Start();
+        thread.Join();
+
+        if (failure is not null)
+            Assert.Fail(failure.ToString());
     }
 
     // A thread already running a goroutine keeps that identity: EnterAsMain nests like Enter, so a
@@ -160,7 +200,17 @@ public class MainGoroutineIdentityTests
     // retire it when the inert scope ends. On a dedicated thread so the MSTest thread's own state
     // is not the variable.
     [TestMethod]
-    public void AThreadAlreadyOnAGoroutineKeepsItsIdentity()
+    public void AThreadAlreadyOnAGoroutineKeepsItsIdentity() => AssertAGoroutineKeepsItsIdentity(afterBaseline: null);
+
+    // An earlier test's goroutine retiring inside this one's window (StragglerStaging), staged.
+    [TestMethod]
+    public void AGoroutineKeepsItsIdentityWhileAnEarlierGoroutineRetires()
+    {
+        for (int i = 0; i < StragglerStaging.Iterations; i++)
+            AssertAGoroutineKeepsItsIdentity(StragglerStaging.Stage());
+    }
+
+    private static void AssertAGoroutineKeepsItsIdentity(Action? afterBaseline)
     {
         Exception? failure = null;
 
@@ -170,8 +220,10 @@ public class MainGoroutineIdentityTests
             {
                 using Goroutine.Scope goroutine = Goroutine.Enter();
 
+                // By identity (StragglerStaging): nothing minted, and THIS goroutine still registered.
                 Goroutine? mine = Goroutine.Current;
-                int count = Goroutine.Count;
+                HashSet<long> live = StragglerStaging.LiveIds();
+                afterBaseline?.Invoke();
 
                 Assert.IsNotNull(mine);
                 Assert.IsFalse(mine!.IsMain);
@@ -179,11 +231,12 @@ public class MainGoroutineIdentityTests
                 using (Goroutine.EnterAsMain())
                 {
                     Assert.AreSame(mine, Goroutine.Current, "EnterAsMain re-labeled a running goroutine as main");
-                    Assert.AreEqual(count, Goroutine.Count);
+                    Assert.AreEqual(0, StragglerStaging.Minted(live).Count, "the inert scope minted a goroutine");
                 }
 
                 Assert.AreSame(mine, Goroutine.Current, "the inert scope retired the goroutine it never minted");
-                Assert.AreEqual(count, Goroutine.Count);
+                Assert.AreEqual(0, StragglerStaging.Minted(live).Count, "disposing the inert scope minted a goroutine");
+                Assert.IsNotNull(Goroutine.FromId(mine.Id), "the inert scope retired the goroutine it never minted from the registry");
             }
             catch (Exception ex)
             {
