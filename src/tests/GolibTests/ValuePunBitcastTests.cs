@@ -5,6 +5,7 @@
 // that can be found in the LICENSE file.
 
 using System;
+using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using static go.builtin;
@@ -38,6 +39,55 @@ public class ValuePunBitcastTests
         const uint payload32 = 0x7F800123U;
         Assert.AreEqual(payload32, bitcast<float, uint>(bitcast<uint, float>(payload32)));
         Assert.AreEqual(0x3FC00000U, bitcast<float, uint>(1.5f));
+    }
+
+    // A signalling NaN (quiet bit clear) passed as a CONSTANT: math.Float32frombits(0x7f800001), the shape
+    // reflect's TestConvertNaNs, TestSignalingNaNArgument and TestSignalingNaNReturn take. Only an optimizing
+    // JIT inlines bitcast into a caller and constant-folds it, and RyuJIT holds a folded float32 constant as
+    // a double, which QUIETS a signalling NaN: 0x7f800001 reads back 0x7fc00001. Validation rows run Release
+    // with tiered compilation off, so every method there is compiled fully optimized on its first call; the
+    // helpers below are AggressiveOptimization to be compiled that way under any tiering setting. The test
+    // above cannot see it (its method runs at tier 0, which does not inline), and neither can a Debug build,
+    // which does not optimize: these arms can go red only at Release. The float64 arm is not red at the seat
+    // that introduced bitcast (9ac6051e46; x64, net10): the JIT's double constant keeps its bits.
+    private const uint SignalingNaN32 = 0x7F800001U;
+    private const ulong SignalingNaN64 = 0x7FF0000000000001UL;
+
+    private static readonly float[] s_float32Slot = new float[1];
+    private static readonly double[] s_float64Slot = new double[1];
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static uint SignalingNaN32ReadDirectly() => bitcast<float, uint>(bitcast<uint, float>(SignalingNaN32));
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static uint SignalingNaN32ReadAfterAStore()
+    {
+        s_float32Slot[0] = bitcast<uint, float>(SignalingNaN32);
+        return bitcast<float, uint>(s_float32Slot[0]);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static ulong SignalingNaN64ReadDirectly() => bitcast<double, ulong>(bitcast<ulong, double>(SignalingNaN64));
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static ulong SignalingNaN64ReadAfterAStore()
+    {
+        s_float64Slot[0] = bitcast<ulong, double>(SignalingNaN64);
+        return bitcast<double, ulong>(s_float64Slot[0]);
+    }
+
+    [TestMethod]
+    public void AConstantSignalingNaN32KeepsItsBitsWhenTheJitFoldsTheCast()
+    {
+        Assert.AreEqual($"{SignalingNaN32:x8} direct, {SignalingNaN32:x8} stored",
+            $"{SignalingNaN32ReadDirectly():x8} direct, {SignalingNaN32ReadAfterAStore():x8} stored");
+    }
+
+    [TestMethod]
+    public void AConstantSignalingNaN64KeepsItsBitsWhenTheJitFoldsTheCast()
+    {
+        Assert.AreEqual($"{SignalingNaN64:x16} direct, {SignalingNaN64:x16} stored",
+            $"{SignalingNaN64ReadDirectly():x16} direct, {SignalingNaN64ReadAfterAStore():x16} stored");
     }
 
     // The emission bitcast replaces, verbatim (math/unsafe.cs at fa18863b94): the parameter heap-boxed
