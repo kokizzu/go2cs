@@ -372,13 +372,23 @@ public sealed class Goroutine
             return default;
 
         Goroutine goroutine = Register(isMain: false, creator, parentId, entry);
-        t_current = goroutine;
 
         // Go's `newg.labels = mp.curg.labels`, arriving through the ExecutionContext the creating
         // thread captured at Thread.Start. Seeding the mirror HERE rather than at the set site is
         // what makes an inherited label visible to a profile: the child never calls setProfLabel,
         // so nothing else would ever write its entry.
         goroutine.m_profileLabels = s_profileLabels.Value;
+
+        return Adopt(goroutine);
+    }
+
+    // Makes the calling thread the goroutine that `goroutine` records. A `go` statement registers its
+    // goroutine on the CREATING thread (StartWithCreator) and the new thread adopts that record here,
+    // so the identity, the count and the labels exist before the thread is scheduled; Enter mints and
+    // then adopts, for a thread that runs Go code without a `go` statement.
+    private static Scope Adopt(Goroutine goroutine)
+    {
+        t_current = goroutine;
 
         // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
         // is diagnosed. A host that named the thread itself keeps its own name.
@@ -785,7 +795,16 @@ public sealed class Goroutine
         SyncTestBubble? bubble = t_current?.m_bubble;
         bubble?.Spawned();
 
-        Thread thread = new(() => Run(body, creator, parentId, entry, bubble), s_stackReserve)
+        // The goroutine EXISTS from here, for the same reason and at the same point: Go's newproc puts
+        // the new g into allgs as _Grunnable, carrying `newg.labels = mp.curg.labels`, before the go
+        // statement completes. Registering on the child's own thread instead left a started goroutine
+        // out of NumGoroutine, runtime.Stack(all) and the goroutine profile until that thread was
+        // scheduled -- which runtime/pprof's "goroutine launches" subtest reads as a missing child.
+        // The labels are this thread's AsyncLocal, the value the child's flowed context would hold.
+        Goroutine goroutine = Register(isMain: false, creator, parentId, entry);
+        goroutine.m_profileLabels = s_profileLabels.Value;
+
+        Thread thread = new(() => Run(body, goroutine, bubble), s_stackReserve)
         {
             IsBackground = true
         };
@@ -796,6 +815,7 @@ public sealed class Goroutine
         }
         catch
         {
+            Unregister(goroutine);
             bubble?.SpawnFailed();
             throw;
         }
@@ -999,9 +1019,16 @@ public sealed class Goroutine
     internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry) =>
         Run(body, creator, parentId, entry, bubble: null);
 
-    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry, SyncTestBubble? bubble)
+    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry, SyncTestBubble? bubble) =>
+        Run(body, Enter(creator, parentId, entry), bubble);
+
+    // A `go` statement's root: the goroutine was registered by its creator (StartWithCreator).
+    private static void Run(Action body, Goroutine registered, SyncTestBubble? bubble) =>
+        Run(body, Adopt(registered), bubble);
+
+    private static void Run(Action body, Scope entered, SyncTestBubble? bubble)
     {
-        using Scope scope = Enter(creator, parentId, entry);
+        using Scope scope = entered;
 
         if (bubble is not null && t_current is { } member)
             member.m_bubble = bubble;
