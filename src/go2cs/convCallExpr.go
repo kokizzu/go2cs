@@ -2381,6 +2381,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								callExprContext.anyBoxedFuncArgs[j] = true
 							}
 
+							// The unsafe.Pointer sibling: a nil one is a null CLASS reference.
+							if isExactUnsafePointer(argType) {
+								callExprContext.markAnyBoxedUnsafePointerArg(j)
+							}
+
 							if _, argIsPtr := argType.(*types.Pointer); argIsPtr {
 								ident := getIdentifier(callExpr.Args[j])
 
@@ -2840,6 +2845,10 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 							if argType := v.getType(callExpr.Args[i], false); argType != nil {
 								if _, argIsFunc := argType.Underlying().(*types.Signature); argIsFunc {
 									callExprContext.anyBoxedFuncArgs[i] = true
+								}
+
+								if isExactUnsafePointer(argType) {
+									callExprContext.markAnyBoxedUnsafePointerArg(i)
 								}
 							}
 

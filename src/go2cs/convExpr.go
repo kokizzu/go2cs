@@ -68,6 +68,11 @@ type CallExprContext struct {
 	// an omission: a func type is not comparable, so hashing one panics at run time
 	// ("hash of unhashable type func(int) int") and the slot is unreachable for a func value.
 	anyBoxedFuncArgs map[int]bool
+	// anyBoxedUnsafePointerArgs is the unsafe.Pointer sibling of the two maps above, at the same
+	// slots: unsafe.Pointer is a CLASS in the managed model, so a nil one is a bare `null` that boxes
+	// as nothing (typedNilInterfaceBoxing.go's third arm). Marked only for an EXACT unsafe.Pointer —
+	// a named type over it renders as its wrapper struct.
+	anyBoxedUnsafePointerArgs map[int]bool
 	// genericResultInferredFuncArgs marks func-LITERAL arguments whose DECLARED parameter type
 	// is a signature with a type parameter in its RESULT list (`OnceValue[T any](f func() T)`).
 	// C# must infer that type argument FROM THE LAMBDA'S RETURN TYPE, so the arms' natural C#
@@ -172,6 +177,17 @@ func DefaultCallExprContext() *CallExprContext {
 		castArgToType:       nil,
 		deferredDecls:       nil,
 	}
+}
+
+// markAnyBoxedUnsafePointerArg marks slot i for the typed-nil boundary's unsafe.Pointer arm (see
+// anyBoxedUnsafePointerArgs). The map is created on first use: reading a nil map is safe, and the
+// arm is rare, so no context pays for it until one of its slots does.
+func (c *CallExprContext) markAnyBoxedUnsafePointerArg(i int) {
+	if c.anyBoxedUnsafePointerArgs == nil {
+		c.anyBoxedUnsafePointerArgs = make(map[int]bool)
+	}
+
+	c.anyBoxedUnsafePointerArgs[i] = true
 }
 
 // getDefault is what makes *CallExprContext satisfy ExprContext, and that conformance is

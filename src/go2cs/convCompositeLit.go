@@ -778,6 +778,11 @@ func (v *Visitor) convCompositeLitAs(compositeLit *ast.CompositeLit, elidedType 
 					if _, eltIsFunc := eltType.Underlying().(*types.Signature); eltIsFunc {
 						callContext.anyBoxedFuncArgs[i] = true
 					}
+
+					// And the unsafe.Pointer sibling: `[]any{nilUnsafePointer}`.
+					if isExactUnsafePointer(eltType) {
+						callContext.markAnyBoxedUnsafePointerArg(i)
+					}
 				}
 			}
 		}
@@ -1438,6 +1443,12 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 		if eltType := v.getType(elt, false); eltType != nil {
 			if _, eltIsFunc := eltType.Underlying().(*types.Signature); eltIsFunc {
 				context.anyBoxedFuncArgs[i] = true
+			}
+
+			// And the unsafe.Pointer sibling: `[]struct{ v any }{{(unsafe.Pointer)(nil)}}`, reflect's
+			// TestIsZero table row and CNR's ParenTypeConversionCall.
+			if isExactUnsafePointer(eltType) {
+				context.markAnyBoxedUnsafePointerArg(i)
 			}
 		}
 	}

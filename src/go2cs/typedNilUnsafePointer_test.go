@@ -49,6 +49,19 @@ func nilConversion() any              { return unsafe.Pointer(nil) }
 func fromVariable(p unsafe.Pointer) any { return p }
 func identityConversion(p unsafe.Pointer) any { return unsafe.Pointer(p) }
 
+// POSITIVES at the ARGUMENT-LIST boundary (convExprList's slot flags), a second route in: a positional
+// any-typed struct field (reflect's TestIsZero row), an []any element, a variadic ...any argument, an
+// append element.
+type row struct {
+	v    any
+	want bool
+}
+
+func structField() []row                 { return []row{{(unsafe.Pointer)(nil), true}} }
+func sliceElement(p unsafe.Pointer) []any { return []any{p} }
+func variadicArg(p unsafe.Pointer)       { fmt.Println(p) }
+func appendElement(p unsafe.Pointer) []any { return append([]any{}, p) }
+
 // CONTROLS - each renders a constructed Pointer or a wrapper struct.
 func fromPointer() any         { return unsafe.Pointer(&global) }
 func fromUintptr(u uintptr) any { return unsafe.Pointer(u) }
@@ -56,6 +69,8 @@ func fromNamed(p named) any    { return p }
 
 func main() {
 	fmt.Println(nilConversion(), fromVariable(nil), identityConversion(nil), fromPointer(), fromUintptr(0), fromNamed(nil))
+	fmt.Println(structField(), sliceElement(nil), appendElement(nil))
+	variadicArg(nil)
 }
 `)
 
@@ -98,7 +113,7 @@ func main() {
 		return match
 	}
 
-	for _, positive := range []string{"nilConversion", "fromVariable", "identityConversion"} {
+	for _, positive := range []string{"nilConversion", "fromVariable", "identityConversion", "structField", "sliceElement", "variadicArg", "appendElement"} {
 		if !regexp.MustCompile(accessor).MatchString(bodyOf(positive)) {
 			t.Errorf("%s: expected the value to cross into `any` through `@unsafe.Pointer.%s(…)`; emission:\n%s",
 				positive, TypedNilUnsafePointerAccessor, bodyOf(positive))
