@@ -23,6 +23,11 @@ internal static UntypedFloat floatConst => 1.5;
 internal static UntypedComplex cplxConst => /* 2i */ 2D.i();
 
 internal static C128 typedC128 => /* 1 */ 1D + 0D.i();
+internal static C128 typedC128r => /* 0.25 */ 0.25D + 0D.i();
+internal static C64 typedC64 => /* 0.25 */ 0.25F + 0F.i();
+internal static C64 typedC64n => /* 3 */ 3F + 0F.i();
+internal static C64 typedC64c => /* 1 + 2i */ 1F + 2F.i();
+internal static C128b typedC128b => /* 0.5 */ 0.5D + 0D.i();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string zeroˢ = "zero"u8;
@@ -127,7 +132,9 @@ internal static void Main() {
     C64 expr = 7F + 0F.i();
     fmt.Println(namedˢ, ni, nf, nc, ci, neg, expr, takeC128(intConst), takeC64(floatConst));
     fmt.Println(conversionˢ, ((C64)2F), ((C128)(-3D)), ((C128b)1.25D), ((C128)complex(0D, 0D)));
-    fmt.Println(typedˢ, typedC128, 2D + 0D.i(), classify(0D), classify(2.5D), classify(3D));
+    C64 localC64 = /* 1.5 */ 1.5F + 0F.i();
+    C128b localC128b = /* -2 */ -2D + 0D.i();
+    fmt.Println(typedˢ, typedC128, typedC128r, typedC64, typedC64n, typedC64c, typedC128b, localC64, localC128b, 0.5F + 0F.i(), 2D + 0D.i(), classify(0D), classify(2.5D), classify(3D));
     deferred();
     var ch = new channel<C64>(1);
     ch.ᐸꟷ(8F);

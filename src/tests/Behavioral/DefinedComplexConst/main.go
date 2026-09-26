@@ -24,8 +24,15 @@ const (
 	cplxConst  = 2i
 )
 
-// a typed constant of a defined complex type
-const typedC128 C128 = 1
+// typed constants of the defined complex types: real, integral and complex values
+const (
+	typedC128  C128  = 1
+	typedC128r C128  = 0.25
+	typedC64   C64   = 0.25
+	typedC64n  C64   = 3
+	typedC64c  C64   = 1 + 2i
+	typedC128b C128b = 0.5
+)
 
 func classify(c C128) string {
 	switch c {
@@ -101,7 +108,9 @@ func main() {
 	fmt.Println("conversion:", C64(2), C128(-3), C128b(1.25), C128(complex(0, 0)))
 
 	// typed constants, case labels, a deferred call's arguments
-	fmt.Println("typed:", typedC128, typedC128*2, classify(0), classify(2.5), classify(3))
+	const localC64 C64 = 1.5
+	const localC128b C128b = -2
+	fmt.Println("typed:", typedC128, typedC128r, typedC64, typedC64n, typedC64c, typedC128b, localC64, localC128b, typedC64*2, typedC128*2, classify(0), classify(2.5), classify(3))
 	deferred()
 
 	// channel send
