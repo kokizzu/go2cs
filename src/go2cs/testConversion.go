@@ -6980,13 +6980,30 @@ const (
 	structuralClass = "structural"
 )
 
+// compilerPropertyClass names a Go=pass / C#=skip pair whose skip is Go's OWN self-check for a property
+// of the Go COMPILER that the converted program cannot carry (OWNER RULING 2026-09-26, ledger
+// 4a122cd994: class I of docs/phase4/DESIGN-managed-profiling.md, ruled STRUCTURAL). The first
+// members are runtime/pprof's TestTryAdd and TestCPUProfileInlining, which ask whether the Go compiler
+// INLINED a function by scanning its PC range with runtime.FuncForPC; a synthetic-PC span resolves to
+// its own function by construction, and inlining decisions are not part of the program's semantics.
+// Owner ruling #13 keeps such a self-check out of platform-skip, which needs a platform condition in
+// Go's source; this class is the owner's separate ruling that THIS family is structural.
+//
+// It admits the pass/skip shape ALONE (classAdmitsSkipShape), and it is the ONE skip-shape class whose
+// signature-matched root ALSO withdraws the Go-only rows underneath it (see disclosureRoots in
+// matchTerminalStatuses): a test that skips at its own first statement never reaches its t.Run fan-out,
+// so TestTryAdd's ten subtests exist on the Go side only, and no entry could absorb them one by one
+// (a withdrawn row has no C# verdict to pin a signature against). A platform-skip or cgo-configuration
+// root withdraws nothing, exactly as before.
+const compilerPropertyClass = "compiler-property"
+
 // classAdmitsSkipShape reports whether a disclosure class may absorb a Go=pass / C#=skip pair.
 // ONE predicate, read by BOTH arms below -- the skip arm's admission and the generic arm's
 // exclusion -- so the two can never drift apart again. Drift is exactly what let cgo-configuration
 // be admitted by neither: the shape was named in one arm by a bare class comparison and excluded
 // in the other by a second, and a class that matched neither list simply fell through.
 func classAdmitsSkipShape(class string) bool {
-	return class == platformSkipClass || class == cgoConfigurationClass
+	return class == platformSkipClass || class == cgoConfigurationClass || class == compilerPropertyClass
 }
 
 // hostFatalClass names a test the converted host cannot RUN AT ALL -- not one whose verdict
@@ -7371,9 +7388,10 @@ type outOfScopeDisclosure struct {
 // substring — a disclosed test failing any OTHER way (a regression beyond the documented
 // divergence) is still a mismatch, and a package without a manifest compares strictly.
 //
-// The single exception to "Go=pass/C#=fail" is platformSkipClass, where the C# side SKIPS via
-// the upstream test's own skip statement because the managed corpus genuinely is the platform
-// that skip describes; see the arm in matchTerminalStatuses for the admission rule.
+// The exceptions to "Go=pass/C#=fail" are the skip-shape classes (classAdmitsSkipShape):
+// platformSkipClass, where the C# side SKIPS via the upstream test's own skip statement because the
+// managed corpus genuinely is the platform that skip describes, cgoConfigurationClass and
+// compilerPropertyClass; see the arm in matchTerminalStatuses for the admission rule.
 type testDisclosure struct {
 	Name      string `json:"name"`
 	Class     string `json:"class"`
@@ -7875,6 +7893,18 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 	// strict.
 	disclosureRoots := HashSet[string]{}
 	for name, disclosure := range disclosures {
+		// The compiler-property class roots on its ONE shape, Go pass / C# skip with the pinned
+		// signature in the C# side's own skip output: the test skipped at its own self-check before
+		// its t.Run fan-out, so the rows under it are Go-only by construction (see
+		// compilerPropertyClass). No other skip-shape class roots a withdrawal.
+		if disclosure.Class == compilerPropertyClass {
+			if goResults[name] == "pass" && csResults[name] == "skip" && strings.Contains(csOutputs[name], disclosure.Signature) {
+				disclosureRoots.Add(name)
+			}
+
+			continue
+		}
+
 		if csResults[name] != "fail" {
 			continue
 		}
@@ -7960,7 +7990,7 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 				continue
 			}
 
-			// The SKIP-SHAPE classes (classAdmitsSkipShape: platform-skip and cgo-configuration)
+			// The SKIP-SHAPE classes (classAdmitsSkipShape: platform-skip, cgo-configuration and compiler-property)
 			// are EXCLUDED here on purpose: each admits exactly one shape, the skip arm above, so
 			// a row of theirs whose C# side FAILS has moved and must read as a mismatch even if
 			// the failure text happens to contain the pinned skip message. Without this either

@@ -14,6 +14,12 @@
       "reason": "Drives seven table cases whose f -- blockChanRecv, blockChanSend, blockChanClose, blockSelectRecvAsync, blockSelectSendSync, blockMutex, blockCond -- each start a goroutine that awaits the blocked MAIN goroutine's own frames while main is parked on the channel, mutex or cond that goroutine was going to release. MEASURED ALONE: exit 2 in 122 s, attributed fail at pprof_test.go:816. Carries 3 verdict rows (top level, /debug=1, /proto). Host-fatal, not a verdict disclosure, for the reason the package note gives: the host DOES attribute a fail verdict carrying the panic text before it dies, so what is missing is the SURVIVAL, not the verdict, and no per-test capture can supply it. Withdrawn from BOTH sides by one --skip/-skip regexp and COUNTED IN DISCLOSED."
     },
     {
+      "name": "TestCPUProfileInlining",
+      "class": "compiler-property",
+      "signature": "Can't determine whether inlinedCallee was inlined into inlinedCaller.",
+      "reason": "containsInlinedCall(inlinedCaller, 4<<10) at pprof_test.go:284. Go's own compiler-inlining self-check, the first statement of the test, and the OWNER ruled the family STRUCTURAL on 2026-09-26 (ledger 4a122cd994, class I of docs/phase4/DESIGN-managed-profiling.md). The check scans the named function's PC range with runtime.FuncForPC for a PC that resolves to a DIFFERENT function, which exists only where the Go compiler inlined a callee. The converted program carries no inlining decisions: each function owns a synthetic-PC span that resolves to that function by construction (golib/GoSyntheticPC.cs), so the check can never succeed and the test skips at the line Go's source writes."
+    },
+    {
       "name": "TestMutexProfile",
       "class": "host-fatal",
       "signature": "",
@@ -36,6 +42,12 @@
       "class": "host-fatal",
       "signature": "",
       "reason": "Reaches goroutineDeep, blockChanDeep and blockMutexDeep through produceProfileEvents, each awaiting a deep foreign stack. MEASURED ALONE: exit 2 in 122 s, attributed fail at pprof_test.go:2544 -- and this arm produced TWO package-level death events, one per panicking goroutine, which is the plainest statement that the shape is structural rather than a single accident. Carries 5 verdict rows (top level, /block, /goroutine, /heap, /mutex). Host-fatal, not a verdict disclosure, for the reason the package note gives: the host DOES attribute a fail verdict carrying the panic text before it dies, so what is missing is the SURVIVAL, not the verdict, and no per-test capture can supply it. Withdrawn from BOTH sides by one --skip/-skip regexp and COUNTED IN DISCLOSED."
+    },
+    {
+      "name": "TestTryAdd",
+      "class": "compiler-property",
+      "signature": "Can't determine whether anything was inlined into inlinedCallerDump.",
+      "reason": "findInlinedCall(inlinedCallerDump, 4<<10) at pprof_test.go:2265. Go's own compiler-inlining self-check, the first statement of the test, and the OWNER ruled the family STRUCTURAL on 2026-09-26 (ledger 4a122cd994, class I of docs/phase4/DESIGN-managed-profiling.md). The check scans the named function's PC range with runtime.FuncForPC for a PC that resolves to a DIFFERENT function, which exists only where the Go compiler inlined a callee. The converted program carries no inlining decisions: each function owns a synthetic-PC span that resolves to that function by construction (golib/GoSyntheticPC.cs), so the check can never succeed and the test skips at the line Go's source writes. Its ten t.Run subtests are Go-only rows by construction (the skip precedes the fan-out), and the class withdraws them by name under this signature-matched root; a subtest that ever reaches the C# side compares strictly."
     }
   ],
   "notes": [
