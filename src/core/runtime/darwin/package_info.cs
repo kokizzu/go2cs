@@ -208,7 +208,7 @@ using static go.runtime_package;
 [assembly: go.GoPositionMap("runtime/netpoll_kqueue.go", "netpoll_kqueue.cs", "ABYsgoKCgpSCpoiygoKCgoTKlIKUgoKCgpSmptaCqKSClgAFFgAIAoKUgoKCpJSClJSUgoKCuIKCuIKUlIKCgoSCgoKmlJaClAAAFgAJArakgoKCpoKUgoKCgqaCpg==")]
 [assembly: go.GoPositionMap("runtime/netpoll_kqueue_event.go", "netpoll_kqueue_event.cs", "ABEegtqCgoKUuJSC6ILagoKClJSUguiCgoKUgpSmgpS4gg==")]
 [assembly: go.GoPositionMap("runtime/nonwindows_stub.go", "nonwindows_stub.cs", "ABAmyA==")]
-[assembly: go.GoPositionMap("runtime/os_darwin.go", "os_darwin.cs", "ABMogoLosoKUgoCCpICC+pKCgpSCgpSUgoKCgoKUgoKCgpSCgoKCgqb8soCCpIKCgpQACiAACgKUlIKCgpSCzKiSgqiSgoKCgoKCzLiChKaCkpKCqJIABhKUkpKSgoKUppSSkpKCgpSokoKmgqzSgoKYkoKCgoKYkoKClJaCgpqigoaCgoK6AAIQAAgEkoKCgoIABhCCgpSCloKCmqKCgoKCggADFOKqwoKCuLzGgpSCrNaClAACEPiSqJIADyiigoKCkoKUpoKqspiigoKCgpSCgoKCqqKCgqyyqqKmgqaCpoKokgAIDLSCgpSWpoIACRCS", "241-243:1")]
+[assembly: go.GoPositionMap("runtime/os_darwin.go", "os_darwin.cs", "ABMogoLosoKUgoCCpICC+pKCgpSCgpSUgoKCgoKUgoKCgpSCgoKCgqb8soCCpIKCgpQACiAACgKUlIKCgpSCzKiSgqiSgoKCgoKCzLiChKaCkpKCqJIABhKUkpKSgoKUppSSkpKCgpSokoKmgqzSgoKYkoKCgoKYkoKClJaCgpqigoaCgoK6AAIQAAgEkoKCgoIABhCCgpSCloKCmqKCgoKCggADFOKqwoKCuLzGgpSCrNaClAACEPiSqJIADyiigoKCkoKUpoKqspiigoKCgpSCgoKCqqKCgqyyqqKmggAGGJIACAy0goKUlqaCAAkQkg==", "241-243:1")]
 [assembly: go.GoPositionMap("runtime/os_nonopenbsd.go", "os_nonopenbsd.cs", "AAgWyg==")]
 [assembly: go.GoPositionMap("runtime/os_unix.go", "os_unix.cs", "AAsikg==")]
 [assembly: go.GoPositionMap("runtime/os_unix_nonlinux.go", "os_unix_nonlinux.cs", "AAgawqyy")]

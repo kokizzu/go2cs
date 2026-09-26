@@ -5,15 +5,42 @@
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-// The guard's view of the CPU-profiler setters on DARWIN (RuntimeCPUProfilerTests). The setters
-// themselves are still the converter's emission in os_darwin.cs in this commit.
+// runtime.setProcessCPUProfiler / runtime.setThreadCPUProfiler on DARWIN, hand-owned by
+// manualConversionFuncs["runtime"] (goosAny) under COORD's ruling of 2026-09-26 (ledger 4a122cd994,
+// increment I1 of docs/phase4/DESIGN-managed-profiling.md). The linux/darwin twin of
+// windows/cpuprof_windows_impl.cs.
+//
+// WHAT GO'S DARWIN BODIES DO. The process setter is setProcessCPUProfilerTimer (signal_unix.go): it installs
+// the SIGPROF handler (getsig / setsig) and arms the process-wide ITIMER_PROF with setitimer. The thread
+// setter is setThreadCPUProfilerHz, which records m.profilehz.
+//
+// WHAT THAT COST. The same leak linux measured (DESIGN-managed-profiling.md, class A): the process setter
+// reaches the signal-installation path, which has no managed body, so the first StartCPUProfile throws out
+// of runtime.SetCPUProfileRate with cpuprof.lock held and every later StartCPUProfile answers
+// "cpu profiling already in use". Predicted from the shared signal_unix.go path; not measured on darwin.
+//
+// WHAT THESE BODIES ARE. Go's OWN shape for a port with no profiling interrupts, runtime/os3_plan9.go:158-164,
+// the same shape the Windows file holds. The process setter does nothing; the thread setter records
+// m.profilehz. SetCPUProfileRate now completes, StartCPUProfile / StopCPUProfile round-trip, and the profile
+// is VALID with ZERO samples. A test that asserts on sample content ends in Go's own CPUProfilingBroken skip
+// or fails by its own cause, and a second StartCPUProfile without a Stop returns Go's own
+// "cpu profiling already in use" error rather than throwing. The store keeps the Windows file's atomic form.
 //
 // Hand-owned (no cpuprof_darwin_impl.go exists, so a reconvert never regenerates this file).
 [module: go.GoManualConversion]
 
 namespace go;
 
+using atomic = @internal.runtime.atomic_package;
+
 partial class runtime_package {
+
+internal static void setProcessCPUProfiler(int32 hz) {
+}
+
+internal static void setThreadCPUProfiler(int32 hz) {
+    atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
+}
 
 // ---- the guard's view (RuntimeCPUProfilerTests) ----
 

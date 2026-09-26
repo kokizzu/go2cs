@@ -648,18 +648,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// (pulled by runtime/pprof's TestBlockProfileBias) and mutexevent. Declared once, in mprof.go,
 		// hence goosAny.
 		"saveblockevent": goosAny,
-		// setProcessCPUProfiler / setThreadCPUProfiler on WINDOWS (COORD ruling 2026-09-22): Go's
-		// Windows bodies create a waitable timer and a profileLoop thread that SuspendThread /
-		// GetThreadContext-samples every m, all through stdcall -> asmcgocall, which has no managed
-		// body. The first StartCPUProfile threw out of SetCPUProfileRate AFTER pprof's cpu.profiling
-		// and runtime's cpuprof.on were set and with cpuprof.lock held, so every later
-		// StartCPUProfile in the process answered "cpu profiling already in use". The managed model
-		// has no interrupt sampler, which is exactly Go's plan9 port (os3_plan9.go): the process
-		// setter does nothing and the thread setter records m.profilehz. windows/
-		// cpuprof_windows_impl.cs keeps that shape: a profile starts, stops and is valid, with zero
-		// samples. Windows alone: the linux and darwin bodies are signal/timer based and stay converted.
-		"setProcessCPUProfiler": goosWindows,
-		"setThreadCPUProfiler":  goosWindows,
+		// setProcessCPUProfiler / setThreadCPUProfiler on EVERY target (COORD ruling 2026-09-22 for
+		// windows; widened to linux and darwin 2026-09-26, ledger 4a122cd994, increment I1 of
+		// DESIGN-managed-profiling.md). Go's Windows bodies create a waitable timer and a profileLoop
+		// thread that SuspendThread / GetThreadContext-samples every m, all through stdcall ->
+		// asmcgocall, which has no managed body. Go's linux and darwin bodies are signal based: the
+		// process setter's setProcessCPUProfilerTimer installs the SIGPROF handler through getsig /
+		// sigaction, which reaches rt_sigaction on linux, a PartialStubGenerator throw (measured on
+		// linux at db1bd885a2). On every target the first StartCPUProfile therefore threw out of
+		// SetCPUProfileRate AFTER pprof's cpu.profiling and runtime's cpuprof.on were set and with
+		// cpuprof.lock held, so every later StartCPUProfile in the process answered "cpu profiling
+		// already in use". The managed model has no interrupt sampler, which is exactly Go's plan9 port
+		// (os3_plan9.go): the process setter does nothing and the thread setter records m.profilehz.
+		// runtime/<goos>/cpuprof_<goos>_impl.cs keeps that shape per target: a profile starts, stops
+		// and is valid, with zero samples.
+		"setProcessCPUProfiler": goosAny,
+		"setThreadCPUProfiler":  goosAny,
 		// netpollGenericInit (netpoll_impl.cs) — the RUNTIME poller's one-time start-up, and a
 		// MODULE-INIT killer rather than a test failure, which is why it is here at all.
 		//
@@ -2447,8 +2451,8 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	"internal/testenv": {
 		// CPUProfilingBroken (COORD ruling 2026-09-22) answers true on the managed host: the runtime has
 		// no CPU sampler, the case Go's own plan9 arm answers true for ("Profiling unimplemented"). The
-		// Windows setters are hand-owned in that shape (runtime/windows/cpuprof_windows_impl.cs), so a
-		// CPU profile starts, stops and carries ZERO samples. Left converted, it answered false on
+		// setters are hand-owned in that shape on every target (runtime/<goos>/cpuprof_<goos>_impl.cs),
+		// so a CPU profile starts, stops and carries ZERO samples. Left converted, it answered false on
 		// windows, so runtime/pprof's testCPUProfile doubled its duration (5 s, 10, 20, ...) until the
 		// package deadline, and each CPU test ate most of what was left (315 / 155 / 35 s measured).
 		// Answering true gives those tests Go's own 10-second deadline and ends each one in Go's own

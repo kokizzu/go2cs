@@ -465,13 +465,9 @@ internal static void sigdelset(ref sigset mask, nint i) {
     mask &= unchecked((sigset)~(sigset)((sigset)((uint32)1 << (int)(((uint32)i - 1)))));
 }
 
-internal static void setProcessCPUProfiler(int32 hz) {
-    setProcessCPUProfilerTimer(hz);
-}
+// go2cs generated this placeholder — func setProcessCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void setThreadCPUProfiler(int32 hz) {
-    setThreadCPUProfilerHz(hz);
-}
+// go2cs generated this placeholder — func setThreadCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:nosplit
 internal static bool validSIGPROF(ref m mp, ref sigctxt c) {

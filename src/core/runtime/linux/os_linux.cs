@@ -648,76 +648,9 @@ internal static bool validSIGPROF(ж<m> Ꮡmp, ж<sigctxt> Ꮡc) {
     return setitimer;
 }
 
-internal static void setProcessCPUProfiler(int32 hz) {
-    setProcessCPUProfilerTimer(hz);
-}
+// go2cs generated this placeholder — func setProcessCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string timerDeleteˢ = "timer_delete"u8;
-internal static readonly @string timerSettimeˢ = "timer_settime"u8;
-
-internal static void setThreadCPUProfiler(int32 hz) {
-    var mp = getg().Value.m;
-    mp.Value.profilehz = hz;
-    // destroy any active timer
-    if (mp.of(m.ᏑprofileTimerValid).Load()) {
-        var timeridΔ1 = mp.Value.profileTimer;
-        mp.of(m.ᏑprofileTimerValid).Store(false);
-        mp.Value.profileTimer = 0;
-        var retΔ1 = timer_delete(timeridΔ1);
-        if (retΔ1 != 0) {
-            print((@string)"runtime: failed to disable profiling timer; timer_delete("u8, timeridΔ1, (@string)") errno="u8, -retΔ1, (@string)"\n"u8);
-            @throw(timerDeleteˢ);
-        }
-    }
-    if (hz == 0) {
-        // If the goal was to disable profiling for this thread, then the job's done.
-        return;
-    }
-    // The period of the timer should be 1/Hz. For every "1/Hz" of additional
-    // work, the user should expect one additional sample in the profile.
-    //
-    // But to scale down to very small amounts of application work, to observe
-    // even CPU usage of "one tenth" of the requested period, set the initial
-    // timing delay in a different way: So that "one tenth" of a period of CPU
-    // spend shows up as a 10% chance of one sample (for an expected value of
-    // 0.1 samples), and so that "two and six tenths" periods of CPU spend show
-    // up as a 60% chance of 3 samples and a 40% chance of 2 samples (for an
-    // expected value of 2.6). Set the initial delay to a value in the uniform
-    // random distribution between 0 and the desired period. And because "0"
-    // means "disable timer", add 1 so the half-open interval [0,period) turns
-    // into (0,period].
-    //
-    // Otherwise, this would show up as a bias away from short-lived threads and
-    // from threads that are only occasionally active: for example, when the
-    // garbage collector runs on a mostly-idle system, the additional threads it
-    // activates may do a couple milliseconds of GC-related work and nothing
-    // else in the few seconds that the profiler observes.
-    var spec = @new<itimerspec>();
-    spec.of(itimerspec.Ꮡit_value).setNsec(1 + (int64)cheaprandn((uint32)(1000000000 / hz)));
-    spec.of(itimerspec.Ꮡit_interval).setNsec(1000000000 / (int64)hz);
-    ref var timerid = ref heap(new int32(), out var Ꮡtimerid);
-    ref var sevp = ref heap(new sigevent(), out var Ꮡsevp);
-    sevp.notify = _SIGEV_THREAD_ID;
-    sevp.signo = _SIGPROF;
-    sevp.sigev_notify_thread_id = (int32)(~mp).procid;
-    var ret = timer_create(_CLOCK_THREAD_CPUTIME_ID, Ꮡsevp, Ꮡtimerid);
-    if (ret != 0) {
-        // If we cannot create a timer for this M, leave profileTimerValid false
-        // to fall back to the process-wide setitimer profiler.
-        return;
-    }
-    ret = timer_settime(timerid, 0, spec, nil);
-    if (ret != 0) {
-        print((@string)"runtime: failed to configure profiling timer; timer_settime("u8, timerid,
-            (@string)", 0, {interval: {"u8,
-            (~spec).it_interval.tv_sec, (@string)"s + "u8, (~spec).it_interval.tv_nsec, (@string)"ns} value: {"u8,
-            (~spec).it_value.tv_sec, (@string)"s + "u8, (~spec).it_value.tv_nsec, (@string)"ns}}, nil) errno="u8, -ret, (@string)"\n"u8);
-        @throw(timerSettimeˢ);
-    }
-    mp.Value.profileTimer = timerid;
-    mp.of(m.ᏑprofileTimerValid).Store(true);
-}
+// go2cs generated this placeholder — func setThreadCPUProfiler is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // perThreadSyscallArgs contains the system call number, arguments, and
 // expected return values for a system call to be executed on all threads.
