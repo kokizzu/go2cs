@@ -120,6 +120,16 @@ public unsafe class NativeStructMarshalTests
     }
 
     [TestMethod]
+    public void AZeroSizeTailGetsExactlyGoSizeofOnceTheLayoutCarriesTheTrailingByte()
+    {
+        // reflect's Go size carries the trailing byte of a zero-size last field, so the refused branch above
+        // is unreachable here: this arm pins the layout fix itself from the marshal's side (a regression
+        // back to an omitted byte reads refused, which the arm above would still accept).
+        Assert.AreEqual((nuint?)InotifyLikeGoSizeof, NativeStructMarshal.MarshalledSizeOf(typeof(InotifyLike)),
+            "a trailing-zero-size struct must marshal at Go's sizeof");
+    }
+
+    [TestMethod]
     public void ATermiosCrossesAsItsGoLayoutAndComesBackDecoded()
     {
         ref Termios termios = ref heap(new Termios(), out ж<Termios> box);
