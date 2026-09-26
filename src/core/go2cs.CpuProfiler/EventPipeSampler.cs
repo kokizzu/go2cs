@@ -111,12 +111,18 @@ public sealed class EventPipeSampler : IGoCpuSampler
     /// <summary>Samples the last <see cref="Stop"/> wrote.</summary>
     public int LastSamplesWritten { get; private set; }
 
+    /// <summary>Samples the last <see cref="Stop"/> wrote, per OS thread id (EventPipe's ThreadID).</summary>
+    public IReadOnlyDictionary<int, int> LastWrittenByThread => m_writtenByThread;
+
+    private readonly Dictionary<int, int> m_writtenByThread = [];
+
     public void Start(int hz)
     {
         LastSessionOpened = false;
         LastTraceBytes = 0;
         LastManagedSamples = 0;
         LastSamplesWritten = 0;
+        m_writtenByThread.Clear();
         m_hz = hz;
         golib.ProfileLabelEvents.Reset();
 
@@ -247,6 +253,7 @@ public sealed class EventPipeSampler : IGoCpuSampler
 
             write((int64)(at * 1_000_000.0), stack.ToArray().slice(), labels.TryGetValue(sample.ThreadID, out unsafe_package.Pointer? tag) ? tag : nil);
             LastSamplesWritten++;
+            m_writtenByThread[sample.ThreadID] = m_writtenByThread.GetValueOrDefault(sample.ThreadID) + 1;
         }
     }
 
