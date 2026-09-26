@@ -935,8 +935,11 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				}
 			} else if c.Val().Kind() == constant.Complex {
 				// Rendered from the two EXACT halves; the whole-text ParseComplex representability
-				// test it replaces could never succeed — see exactComplexConstString.
-				constVal, complexRepresentable = exactComplexConstString(c.Val(), csTypeName == "complex64")
+				// test it replaces could never succeed — see exactComplexConstString. The width comes
+				// from the UNDERLYING kind, not the C# type name: a defined `type C64 complex64` const
+				// rendered at complex128 (`0.25D + 0D.i()`) has no implicit conversion to C64 (CS0029).
+				declBasic, _ := declType.Underlying().(*types.Basic)
+				constVal, complexRepresentable = exactComplexConstString(c.Val(), declBasic != nil && declBasic.Kind() == types.Complex64)
 
 				if !complexRepresentable {
 					constVal = c.Val().ExactString()
