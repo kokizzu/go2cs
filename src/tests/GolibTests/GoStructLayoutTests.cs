@@ -135,6 +135,70 @@ public class GoStructLayoutTests
             this.X = X;
         }
     }
+
+    // Go's zero-size field shapes, as the converter emits them: `struct{}` is an empty value type
+    // and `[N]T` of a zero-size T (or `[0]T`) is an array<T> whose length rides its initializer.
+    private struct TestEmpty { }
+
+    // runtime_test.TestTrailingZero's T1: struct { n int32; z [0]byte }.
+    private struct TestTrailingZeroArray
+    {
+        public int32 n;
+        public array<byte> z = new(0);
+
+        public TestTrailingZeroArray() { }
+    }
+
+    // TestTrailingZero's T2: struct { n int64; z struct{} }.
+    private struct TestTrailingEmptyStruct
+    {
+        public int64 n;
+        public TestEmpty z;
+    }
+
+    // TestTrailingZero's T3: struct { n byte; z [4]struct{} }.
+    private struct TestTrailingEmptyArray
+    {
+        public byte n;
+        public array<TestEmpty> z = new(4);
+
+        public TestTrailingEmptyArray() { }
+    }
+
+    // TestTrailingZero's T4: struct { a int32; b int16; c int8; z struct{} }, where alignment
+    // already rounds the 7 bytes to 8 and absorbs the trailing byte.
+    private struct TestTrailingZeroAbsorbed
+    {
+        public int32 a;
+        public int16 b;
+        public int8 c;
+        public TestEmpty z;
+    }
+
+    // The noCopy shape: a LEADING zero-size field, which Go never pads.
+    private struct TestLeadingEmptyStruct
+    {
+        public TestEmpty noCopy;
+        public int64 v;
+    }
+
+    // Every field zero-size: the struct is size 0 and stays 0 (Go's rule is `size > 0 && ...`).
+    private struct TestAllZeroSize
+    {
+        public TestEmpty a;
+        public array<nint> b = new(0);
+
+        public TestAllZeroSize() { }
+    }
+
+    // An array OF a trailing-zero struct: the element's padded size is the stride.
+    private struct TestArrayOfTrailingZero
+    {
+        public array<TestTrailingEmptyStruct> s = new(3);
+        public int64 after;
+
+        public TestArrayOfTrailingZero() { }
+    }
 #pragma warning restore CS0649
 
     // The projection carries EMBEDDEDNESS because reflect's struct-identity walk compares it, and
@@ -331,6 +395,46 @@ public class GoStructLayoutTests
         CollectionAssert.AreEqual(new nint[] { 0, 16 }, GoReflect.GoFieldOffsets(typeof(TestListNode)));
         Assert.AreEqual((nint)24, GoReflect.GoSizeOf(typeof(TestListNode)));
         Assert.AreEqual((nint)8, GoReflect.GoAlignOf(typeof(TestListNode)));
+    }
+
+    // Go pads a non-zero-size struct whose LAST field is zero-size by one byte before the final
+    // alignment, so a pointer to that field cannot point past the object (cmd/compile's
+    // CalcStructSize; reflect.StructOf's `size > 0 && lastzero == size`). The converter folds
+    // unsafe.Sizeof from go/types, which applies the rule, so these are the numbers converted code
+    // already carries; a layout without the byte disagrees with the program's own Sizeof.
+    // The expected sizes are runtime_test.TestTrailingZero's.
+    [TestMethod]
+    public void TrailingZeroSizeField_IsPaddedLikeGo()
+    {
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(TestTrailingZeroArray)), "struct { n int32; z [0]byte }");
+        Assert.AreEqual((nint)16, GoReflect.GoSizeOf(typeof(TestTrailingEmptyStruct)), "struct { n int64; z struct{} }");
+        Assert.AreEqual((nint)2, GoReflect.GoSizeOf(typeof(TestTrailingEmptyArray)), "struct { n byte; z [4]struct{} }");
+
+        // The byte is PADDING after the last field, so no offset moves: the zero-size field still
+        // starts where the previous field ends.
+        CollectionAssert.AreEqual(new nint[] { 0, 4 }, GoReflect.GoFieldOffsets(typeof(TestTrailingZeroArray)));
+        CollectionAssert.AreEqual(new nint[] { 0, 8 }, GoReflect.GoFieldOffsets(typeof(TestTrailingEmptyStruct)));
+        CollectionAssert.AreEqual(new nint[] { 0, 1 }, GoReflect.GoFieldOffsets(typeof(TestTrailingEmptyArray)));
+    }
+
+    // The padded size is the element STRIDE, so every field after an array of such structs moves
+    // with it: Go's struct { s [3]struct{ n int64; z struct{} }; after int64 } is 3*16 + 8.
+    [TestMethod]
+    public void TrailingZeroSizeField_PaddedSizeIsTheArrayStride()
+    {
+        CollectionAssert.AreEqual(new nint[] { 0, 48 }, GoReflect.GoFieldOffsets(typeof(TestArrayOfTrailingZero)));
+        Assert.AreEqual((nint)56, GoReflect.GoSizeOf(typeof(TestArrayOfTrailingZero)));
+    }
+
+    // The three shapes the rule must NOT change. Alignment already absorbs the byte (T4); a LEADING
+    // zero-size field (the noCopy idiom) is never padded; and an all-zero-size struct stays size 0.
+    [TestMethod]
+    public void ZeroSizeField_NotLast_OrAbsorbed_OrAllZero_IsUnpadded()
+    {
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(TestTrailingZeroAbsorbed)), "T4: alignment absorbs the byte");
+        Assert.AreEqual((nint)8, GoReflect.GoSizeOf(typeof(TestLeadingEmptyStruct)), "a leading zero-size field is not padded");
+        CollectionAssert.AreEqual(new nint[] { 0, 0 }, GoReflect.GoFieldOffsets(typeof(TestLeadingEmptyStruct)));
+        Assert.AreEqual((nint)0, GoReflect.GoSizeOf(typeof(TestAllZeroSize)), "an all-zero-size struct stays 0");
     }
 
     [TestMethod]

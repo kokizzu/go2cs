@@ -533,6 +533,7 @@ public static partial class GoReflect
         GoFieldInfo[] fields = GoFields(t);
         nint[] offsets = new nint[fields.Length];
         nuint size = 0;
+        nuint lastzero = 0;
         nint maxAlign = 1;
         bool sizeKnown = true;
 
@@ -574,7 +575,22 @@ public static partial class GoReflect
             {
                 sizeKnown = false;
             }
+
+            if (fieldSize == 0)
+                lastzero = size;
         }
+
+        // Go's trailing byte: a non-zero-size struct whose LAST field is zero-size is padded by one
+        // byte before the final alignment, so a pointer to that field cannot point past the object
+        // (cmd/compile's CalcStructSize, and reflect.StructOf's identical `size > 0 && lastzero ==
+        // size`). The converter folds unsafe.Sizeof from go/types, which applies it, so without the
+        // byte this layout disagreed with the program's own Sizeof -- and every stride and every
+        // offset after an array of such structs disagreed with it. A leading or interior zero-size
+        // field (the noCopy idiom) never pads, and alignment often absorbs the byte.
+        // The byte can wrap only a struct already at the top of the address space, which StructOf
+        // panics on; the query says it cannot tell, as for the other three wraps above.
+        if (sizeKnown && size > 0 && lastzero == size && ++size == 0)
+            sizeKnown = false;
 
         nuint totalAlign = (nuint)maxAlign;
         nuint total = sizeKnown ? (size + totalAlign - 1) / totalAlign * totalAlign : 0;
