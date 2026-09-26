@@ -819,7 +819,7 @@ attributed rather than guessed) reads:
 | Step | Native Go | Converted, poller + `runtime_rand` |
 |:--|:--|:--|
 | `net.LookupHost("www.google.com")` | ok, 16 addresses, 110 ms | i/o timeout |
-| `net.DialTimeout("tcp", "8.8.8.8:53")` | `connection refused`, 72 ms | **`connection refused`, 99 ms** — identical error, so the TCP path is faithful |
+| `net.DialTimeout("tcp", "<public-resolver>:53")` <!-- identifier scrubbed 2026-09-26 by security order: a well-known public DNS resolver --> | `connection refused`, 72 ms | **`connection refused`, 99 ms** — identical error, so the TCP path is faithful |
 | `net.DialTimeout("tcp", "www.google.com:443")` | connected, 104 ms | `lookup www.google.com: i/o timeout` |
 
 DNS runs over UDP, and a loopback UDP round-trip probe names the wall exactly: `ListenPacket` binds

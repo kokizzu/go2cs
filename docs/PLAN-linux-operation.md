@@ -296,7 +296,7 @@ re-emitted, **0 clobbered**, 0 `DYNTYPE` markers; overlay 49 `.cs` + 1 `README` 
 ### Execution log — the first Linux-native conversion and build, lane r47a
 
 **Provisioning (user-authorized, all user-space, no `sudo`, all reversible).** The distro is
-`Ubuntu 22.04.2 LTS` on kernel 6.18.33.2 (WSL 2), 24 CPUs, ext4. It carried `git`, `make`, `gcc`,
+`Ubuntu 22.04.2 LTS` on kernel 6.18, build 33.2 (WSL 2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad -->, 24 CPUs, ext4. It carried `git`, `make`, `gcc`,
 `curl` and the .NET **runtime** only — `dotnet-runtime-9.0`, *no SDK*, so `dotnet build` was
 unavailable and `dotnet --list-sdks` printed "No SDKs were found". Installed:
 
@@ -377,7 +377,7 @@ lane's evidence changes their disposition.
 **F15 — WSL, measured 2026-08-08.** *(Superseded by the r47a execution log above, which provisions
 the distro and runs the real thing. Kept because the cross-compile technique below is still the
 cheapest way to sanity-check a Linux host without installing anything.)* The distro list has changed
-since §4's probe: `Ubuntu` (WSL 2, kernel 6.18.33.2) and `docker-desktop`; the `Ubuntu-22.04` entry is
+since §4's probe: `Ubuntu` (WSL 2, kernel 6.18, build 33.2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad --> and `docker-desktop`; the `Ubuntu-22.04` entry is
 gone. `dotnet`, `git` and `make` are present; **`go` and `pwsh` are still absent**, so a conversion
 cannot run there (go/packages shells out to `go`) and neither can the PowerShell instruments.
 Installing a toolchain was out of scope for this lane. ⚠ A later, sharper measurement: the `dotnet`

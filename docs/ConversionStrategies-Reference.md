@@ -249,9 +249,10 @@ root's generated `Directory.Build.props`** ([issue #36]):
 
 ```xml
 <PropertyGroup Condition="'$(go2csPath)' == ''">
-  <go2csPath>C:/Users/mason/go2cs-runtime/</go2csPath>
+  <go2csPath>C:/Users/<user>/go2cs-runtime/</go2csPath>
 </PropertyGroup>
 ```
+<!-- identifier scrubbed 2026-09-26 by security order: the profile path's account segment is now a placeholder -->
 
 The `-go2cspath` command-line flag is a conversion-time input — it is where the converter reads each
 imported package's `package_info.cs` from and what it resolves `$(go2csPath)core/…` references

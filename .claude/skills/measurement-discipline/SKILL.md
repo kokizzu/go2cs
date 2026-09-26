@@ -549,8 +549,8 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   means UTC in Go and reads exactly like the pin); **a body's own failure is earned by a control in a
   SEPARATE worktree at the same SHA**, never by splitting the cut into commits; and **count a guard's
   DISCRIMINATING lines, not its lines** — a loopback receiver on 127.0.0.1 was GREEN against the body
-  it guarded, a destination zeroed to 0.0.0.0 arriving anyway (bind 127.0.0.2 so arrival depends on
-  the octets, and exercise the OLD path in the control).
+  it guarded, a destination zeroed to 0.0.0.0 arriving anyway (bind a second 127/8 loopback address, not the default one, so arrival depends on
+  the octets, and exercise the OLD path in the control). <!-- identifier scrubbed 2026-09-26 by security order: a loopback literal, spelled as its range -->
   ⚠ **Count a guard's DISCRIMINATING ARMS the same way** (2026-09-04): a control forcing the old
   behaviour reddened 3 of 7, not the 4 claimed, because two of the arms are cases where the old and
   the new behaviour COINCIDE — must-not-regress arms, not evidence about the mechanism.

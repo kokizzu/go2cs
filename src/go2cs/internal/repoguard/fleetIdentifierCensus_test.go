@@ -222,8 +222,8 @@ var fleetNicknameHostSegments = map[string]bool{
 // scrub, and they collapse to the pairs below because the generic UNC placeholders repeat verbatim
 // across the converted platform flavours of the same upstream file.
 var fleetClearedSegments = map[string]string{
-	// A deliberately fictitious illustrative account in an emitted-XML example.
-	"docs/ConversionStrategies-Reference.md|mason": "fictitious name in a documentation example",
+	// The docs/ConversionStrategies-Reference.md entry (a fictitious account in an emitted-XML
+	// example) was retired 2026-09-26: the security-order scrub spelled that segment "<user>".
 	// Upstream Go doc comments and fixtures, carried verbatim into the converted corpus.
 	"src/core/runtime/traceback.cs|rsc":           "upstream Go doc comment: an example traceback path",
 	"src/core/os/user/linux/lookup_unix.cs|kevin": "upstream Go fixture: a passwd-format line in a doc comment",

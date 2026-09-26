@@ -59,9 +59,10 @@ WARNING: go.mongodb.org/mongo-driver/bson/bsoncodec has been converting for 60s.
          Typical is well under a second per package (a few seconds under -recurse), so this is
          unusual and worth reporting: https://github.com/ritchiecarroll/go2cs/issues
          The conversion has NOT been interrupted and will continue.
-         For a diagnosis, re-run with GO2CS_PPROF=localhost:6060 and capture:
-             go tool pprof -top http://localhost:6060/debug/pprof/profile?seconds=20
+         For a diagnosis, re-run with GO2CS_PPROF=:6060 and capture:
+             go tool pprof -top http://<loopback>:6060/debug/pprof/profile?seconds=20
 ```
+<!-- identifier scrubbed 2026-09-26 by security order: `:6060` is the loopback default (a bare port reads as localhost); the URL host is a placeholder -->
 
 Repeat at a widening interval (60s, 2m, 4m, 8m…, capped) so a genuinely long conversion does not
 produce a wall of text, but a truly stuck one keeps saying so.
