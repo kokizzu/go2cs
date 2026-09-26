@@ -1875,4 +1875,20 @@ partial class runtime_package
 
         return null;
     }
+
+    // ---- the guard's view (RuntimeCallerPCSpanTests): GolibTests is outside runtime's
+    //      InternalsVisibleTo grant, and its own methods are not Go frames, so this Go-prefixed
+    //      public helper owns the two call sites the guard needs ----
+
+    /// <summary>Returns the PCs <c>Callers(1, ...)</c> records at two DISTINCT call sites in this
+    /// one function: the frame each names is this probe, at a different site.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static (uintptr first, uintptr second) GoCallerSitesProbe()
+    {
+        slice<uintptr> a = new slice<uintptr>(1);
+        slice<uintptr> b = new slice<uintptr>(1);
+        Callers(1, a);
+        Callers(1, b);
+        return (a[0], b[0]);
+    }
 }
