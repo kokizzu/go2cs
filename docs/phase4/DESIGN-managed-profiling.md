@@ -175,6 +175,22 @@ it is predicted to move (linux). "Predicted" means read from code, not measured,
   (`internal/sync.Mutex`). I4 should land after it and add the event in that body too, or P1 leaves
   the call site named. Neither lane should write the other's file.
 
+> **AMENDED 2026-09-26 (COORD, mailbox 09:09:54Z, from R's review of P1's semaphore seat; P1's answer
+> 08:57:05Z).** The P1-overlap bullet above is WITHDRAWN: no contention in this corpus reaches
+> `runtime.semrelease1`. P1's `runtime/sema_impl.cs` forwards `semacquire1`/`semrelease1` to golib's
+> `RuntimeSemaphore` and names Go's profile branch as DROPPED, and only the runtime's OWN semaphores
+> (worldsema, gcsema, traceAdvanceSema) and export_test reach it. The seams I4 records at are therefore
+> the two managed wait primitives, both of which R reviews:
+> - **`sync.Mutex`**: the hand-owned `SemaphoreSlim` gate (`sync/mutex.cs:65-86`). `Lock`'s wait stamps
+>   the waiter's start, and `Unlock` computes Go's `dt` and calls `mutexevent`.
+> - **Everything on golib `RuntimeSemaphore`** (`golib/runtime/RuntimeSemaphore.cs`: `Acquire` parks at
+>   :111, `Release` dequeues at :135): `sync.RWMutex`, `WaitGroup` and the other `sync/runtime_impl.cs`
+>   pulls, `internal/sync`, and `internal/poll`. The waiter's enqueue time is kept at `Acquire`'s park and
+>   read at `Release`'s dequeue, which is Go's `semrelease1` accounting moved to where the queue lives.
+>   `RuntimeSemaphore` keeps only the FIFO of gates today (P1), so this is a golib change. Hooking the
+>   pull companions instead of the semaphore is the alternative, and R decides between them.
+> Neither lane writes the other's file: P1's `sema_impl.cs` stays as it is.
+
 **After I1 + I2 + I4, `net/http/pprof` is predicted bankable on linux** if class T is disclosed (§5):
 its only remaining divergences would be `/debug/pprof/trace` and the `TestHandlers` parent that rides
 it. Not measured; the Windows reading is owed at bank time.
