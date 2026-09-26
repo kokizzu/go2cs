@@ -1955,4 +1955,45 @@ partial class runtime_package
         // The event is not disposed: on a leak the parked goroutine still holds it.
         return (stopFailure, acquired.Wait(timeoutMs));
     }
+
+    /// <summary>
+    /// GolibTests' probe for shrinkstack's refusal (RuntimeHostFatalRefusalTests): shrinks the
+    /// calling goroutine's stack, as runtime's ShrinkStackAndVerifyFramePointers export does, and
+    /// returns what it raised, or null if it returned.
+    /// </summary>
+    public static string? GoShrinkstackRefusalProbe(int timeoutMs) =>
+        RunRefusalProbe(timeoutMs, "shrinkstack", () => shrinkstack(getg()));
+
+    /// <summary>
+    /// GolibTests' probe for newUserArena's refusal (RuntimeHostFatalRefusalTests): creates a user
+    /// arena, as runtime's NewUserArena export does, and returns what it raised, or null if it
+    /// returned.
+    /// </summary>
+    public static string? GoNewUserArenaRefusalProbe(int timeoutMs) =>
+        RunRefusalProbe(timeoutMs, "newUserArena", () => newUserArena());
+
+    private static string? RunRefusalProbe(int timeoutMs, string name, Action call)
+    {
+        string? failure = $"{name} never returned";
+
+        using ManualResetEventSlim returned = new(false);
+
+        Goroutine.Start(() =>
+        {
+            try
+            {
+                call();
+                failure = null;
+            }
+            catch (Exception ex)
+            {
+                failure = $"{ex.GetType().Name}: {ex.Message}";
+            }
+
+            returned.Set();
+        });
+
+        returned.Wait(timeoutMs);
+        return failure;
+    }
 }
