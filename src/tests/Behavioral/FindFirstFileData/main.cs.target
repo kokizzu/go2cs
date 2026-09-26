@@ -225,8 +225,11 @@ internal static @string shown(@string rel) {
     return rel;
 }
 
+// Hoisted Go string constant (single allocation; Go keeps it in RODATA)
+private static readonly @string hexDigitsᶜ = "0123456789abcdef"u8;
+
 internal static @string ascii(@string s) {
-    @string hexDigits = "0123456789abcdef"u8;
+    @string hexDigits = hexDigitsᶜ;
     var @out = new slice<byte>(0, len(s));
     foreach (var (_, r) in s) {
         if (r >= 0x20 && r < 0x7f) {
