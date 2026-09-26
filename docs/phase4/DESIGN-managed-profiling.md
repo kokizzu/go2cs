@@ -55,6 +55,7 @@ appendix.
 | **M** | no memory-profile records | 6 (+1 gated) | 0 | empty `heap profile: 0: 0` |
 | **I** | inlining probe cannot see Go's inliner | 12 | 0 | "Can't determine whether ... was inlined" |
 | **T** | no execution tracer (E4 capability) | 0 | 2 | `/debug/pprof/trace` 500, and the parent |
+| **G** | goroutine-profile label race, INTERMITTENT (queued 2026-09-26, not yet sized) | 0 to 3 | 0 | "profile #1's goroutines with label loop-i:0; 0 != 1" |
 
 Class A's 16 = `TestAtomicLoadStore64` (the infra-error, first alphabetically) plus 15
 "cpu profiling already in use". It is the same leak ruling `f545b18d4d` described on Windows, with a
@@ -62,6 +63,13 @@ linux root. **The registry comment at `src/go2cs/manualTypeOperations.go:651-662
 and darwin bodies are signal/timer based and stay converted." Measured on linux, that is false:**
 the converted `setProcessCPUProfilerTimer` reaches `getsig → sigaction → sysSigaction → rt_sigaction`,
 a PartialStubGenerator throw, from `SetCPUProfileRate` after `cpu.profiling` is set.
+
+**Class G, queued 2026-09-26 (COORD, mailbox 08:44:56Z).** `TestGoroutineProfileConcurrency`
+matched in the two full runs at master and under probe A, then failed in I1's reading (parent plus
+launches `#13` and `#77`) and in the class-I seat's (parent plus `#10`). Run alone with `-run`, it
+fails 3 to 5 rows on EVERY run of both the I1 host and the probe A host (8 runs each), so it is a race
+in the goroutine profile's label read that I1 does not move. COORD ruled it a separate finding: queued
+here for later sizing, not chased now.
 
 `TestCPUProfileMultithreadMagnitude` (+2 subtests) is in class A only on linux: its first statement
 skips every other GOOS (the audit classes it VACUOUS on Windows). **Linux exercises three rows the
@@ -228,7 +236,7 @@ it. Not measured; the Windows reading is owed at bank time.
 
 | class | rows | why the arc does not move it | decision owed |
 |---|---:|---|---|
-| **C** no CPU sampler | 11 (after I1) | A profile starts, stops and parses with zero samples; Go's `testCPUProfile` then skips via `CPUProfilingBroken`. Owner ruling #1 makes a Go=pass / C#=skip caused by OUR missing feature a feature gap, never a disclosure. | **OWNER.** Either (a) rule the CPU sampler out of scope for the managed runtime (as E4 did for the tracer), which makes these 11 disclosable; or (b) commission a sampler. (b) is possible in principle through an in-process EventPipe session with the SampleProfiler provider (a new package dependency, CLR stacks mapped to Go frames); it is not sized here and would be the largest item in either row. |
+| **C** no CPU sampler | 11 (after I1) | A profile starts, stops and parses with zero samples; Go's `testCPUProfile` then skips via `CPUProfilingBroken`. Owner ruling #1 makes a Go=pass / C#=skip caused by OUR missing feature a feature gap, never a disclosure. | **OWNER.** Either (a) rule the CPU sampler out of scope for the managed runtime (as E4 did for the tracer), which makes these 11 disclosable; or (b) commission a sampler. (b) is possible in principle through an in-process EventPipe session with the SampleProfiler provider (a new package dependency, CLR stacks mapped to Go frames); it is not sized here and would be the largest item in either row. **Sized in §9 (2026-09-26).** |
 | **I** inlining probe | 12 (1 skip + TestTryAdd skip + 10 absent) | `findInlinedCall` scans a function's PC span with `FuncForPC` for a different name. A synthetic-PC span resolves to its own function by construction, and Go's inlining decisions are a compiler property the converted program does not carry. | **OWNER**, and a PIPELINE question: the 10 absent subtests have no C# verdict, so no entry can absorb them today. Either an owner ruling that makes the family structural plus a comparison that admits Go-only rows under a disclosed parent, or the rows stay red. |
 | **T** execution tracer | 2 (net/http/pprof) | `runtime/trace` is excluded under E4 (2026-09-07). | **COORD**: for a single test the route is a disclosure; `/debug/pprof/trace` returns Go's own refusal text, and the `TestHandlers` parent rides it only if every other leaf matches. |
 
@@ -263,6 +271,112 @@ disclosure.**
 - Probe A is one run of each row, not repeated.
 - Every "moves" under I2-I6 is a code read. No red arm for them exists yet.
 - The cost of I3's stamp, I5's per-park stack capture and I6's charge-site hook is unmeasured.
+
+---
+
+## 9. Addendum, 2026-09-26: sizing class C, an in-process CPU sampler
+
+> **STATUS: SIZING for the owner's ruling (COORD, mailbox 2026-09-26, class C: "SIZE IT FIRST").
+> Docs only.** Until the owner rules, ruling #1 stands: the 11 class C rows are a feature gap, not
+> disclosures, and nothing below is designed around. Base: I1 (`claude/p2-cpuprof-setters-unix`
+> `d87c34ccc5`), which makes a CPU profile start, stop and parse with zero samples on every target.
+
+### 9.1 What was measured
+
+A standalone probe on the P2 linux container (.NET SDK 10.0.112, `linux-x64`, published the way the
+`-tests` host is published: self-contained, single-file, JIT, trimming off). It is not in the tree.
+The probe opens an EventPipe session on its OWN process with `DiagnosticsClient(Environment.ProcessId)`
+from `Microsoft.Diagnostics.NETCore.Client`. The session enables the `Microsoft-DotNETCore-SampleProfiler`
+provider plus the runtime provider's `Jit | Loader` keywords, with rundown. The probe runs a
+`[NoInlining]` hog loop on 1 or 4 threads, stops the session and parses the stream with `TraceLog`
+from `Microsoft.Diagnostics.Tracing.TraceEvent`.
+
+| question | measured answer |
+|---|---|
+| Can a process open a sampling session on itself? | **Yes.** Session start 72-84 ms; stop and drain 24-119 ms; parse 0.38-0.43 s for a 2 s run (590-623 KiB of trace). |
+| Do samples land on the hot threads? | **Yes.** 4 hog threads: frames of the hog function on all 4 threads (3,051-3,826 samples in 2 s). |
+| Does a frame map back to the converted method? | **Yes, exactly.** The frame's metadata token and module resolve through `Module.ResolveMethod` to the same `MethodBase` object as `typeof(Hog).GetMethod("cpuHog1")`. That `MethodBase` is what `GoSyntheticPC.Of` is keyed by. |
+| Can a sample tell running from waiting? | **Yes.** Every sample carries a thread-sample type: all hog samples read `Managed`, and every `External` sample (5,726 of 11,561 in one run) is on a non-hog stack. |
+| What does it cost running code? | **About 5%.** Iterations of a hot loop in 2 s with vs without the session: ratios 0.952, 0.950 and 0.936 over three runs. |
+| How close is the sample count to CPU time? | **Not close enough yet.** Samples come at about 1 ms per thread. Samples whose stack holds the hog driver, against the process's CPU time: 0.93 in one 4-thread run and 0.77 in another. |
+| What does the dependency weigh? | `Microsoft.Diagnostics.NETCore.Client` 0.2.745401: one 152 KB DLL. `Microsoft.Diagnostics.TraceEvent` 3.2.6: a 3.3 MB DLL plus three Windows-only helpers (20 MB package). |
+
+### 9.2 The stack-mapping path
+
+1. **Frames to functions.** Each sampled frame carries an instruction address. The session's
+   `MethodLoad` and rundown events name the method that owns it, as a metadata token plus a module.
+   `Module.ResolveMethod(token)` gives the `MethodBase`. `GoSyntheticPC.Of(method)` gives the synthetic
+   PC Go's profile builder already resolves (`runtime.FuncForPC`, `CallersFrames`), and `GoNameOf`
+   spells it `runtime/pprof.cpuHog1`, `time.now`, and so on. **No new name table is needed.** A frame
+   whose method is not a converted Go function (framework code, golib) is dropped, or recorded as one
+   placeholder frame, the way Go records a non-Go frame.
+2. **Samples to the profile.** Go's signal handler calls `cpuprof.add(&gp.labels, stk)` (cpuprof.go:106),
+   which writes one record to `cpuprof.log` under `prof.signalLock`. A managed sampler writes the same
+   record, from its own thread, with the synthetic PCs as `stk`. Everything downstream is already
+   converted and running: `readProfile`, pprof's `profileBuilder`, the proto encoder.
+3. **Labels.** In this runtime a goroutine is a dedicated thread for its whole life
+   (`runtime/stubs_impl.cs:126`), so a sample's thread id names its goroutine. Labels change over time
+   (`pprof.Do` sets and restores them), so reading the goroutine's labels when the sample is converted
+   would be wrong. The label seam is `runtime_setProfLabel`: while profiling is on, it would also emit
+   one event from a small `EventSource` into the same session. That event carries its thread id and
+   timestamp for free, and the sampler joins each sample to the latest label event on its thread.
+4. **Rate.** Go's profile values each record as `1e9 / hz` ns: 10 ms at the default 100 Hz. The
+   SampleProfiler samples about every 1 ms. Writing every sample would overstate CPU time about tenfold.
+   The sampler keeps only Managed-state samples and thins them per thread to one per `1 / hz` of
+   elapsed time. The 0.77 to 0.93 ratio above says this still needs work before the magnitude test can
+   hold its 10% tolerance.
+5. **When samples arrive.** Samples are read after `StopCPUProfile` stops the session, then written
+   before the profile's end-of-data. Go's `profileWriter` keeps reading until end-of-data, so the
+   profile carries them. Streaming them live (`TraceLog.CreateFromEventPipeSession`) is possible but
+   not needed by any of the 11 rows.
+
+### 9.3 Dependency and cost
+
+- **Packages.** The two above, referenced by `runtime` (or by a small golib companion that `runtime`
+  calls). `TraceEvent` is the heavy one: its 3.3 MB would ride in every converted program that
+  references `runtime`, which is every one. The lighter alternative is a minimal reader of the
+  documented nettrace format, owned by the tree. That trades the package for about a thousand lines to
+  maintain, and is not sized here.
+- **Where it cannot run.** The session uses the runtime's diagnostic IPC socket, which
+  `DOTNET_EnableDiagnostics=0` turns off. Native AOT's EventPipe support for the SampleProfiler was
+  not measured: the `-tests` host is JIT, but the performance tree also runs AOT. On either, the
+  sampler must fall back to I1's zero-sample profile, never throw.
+- **Runtime cost.** About 5% on running code while a profile is on, and nothing while it is off. The
+  label event costs one `IsEnabled` check per `setProfLabel` while off.
+- **Work, by piece.** The session and its lifetime tied to `setcpuprofilerate` (small). Frame
+  resolution and the synthetic-PC join (small, given 9.1). Rate thinning and the magnitude calibration
+  (medium; it is the one unknown). The label event and the join (small). The dependency or the owned
+  nettrace reader (the largest single choice). A GolibTests arm per step, red first. **Reviewers:** R
+  (golib, the label seam) and the owner (the dependency).
+
+### 9.4 Which of the 11 rows it moves (linux; every entry is a PREDICTION from reading the test)
+
+| row | needs | prediction |
+|---|---|---|
+| `TestCPUProfile` | samples in `cpuHog1` | **moves** |
+| `TestCPUProfileMultithreaded` | samples in `cpuHog1` and `cpuHog2` on two threads | **moves** |
+| `TestMathBigDivide` | enough samples; no stack match (`matches` is nil) | **moves** |
+| `TestCPUProfileLabel` | `cpuHogger` samples labeled `key=value` | **moves with the label join** (9.2 step 3) |
+| `TestLabelRace` | the same, under concurrent `pprof.Do` | **moves with the label join** |
+| `TestCPUProfileMultithreadMagnitude/serial` and `/parallel` | the profile's CPU time within 10% of `getrusage` (40% on some builders) | **uncertain**: rests on the thinning calibration (9.2 step 4) |
+| `TestCPUProfileRecursion` | a frame named `inlinedCallee` and at most one recursion frame per location | **uncertain**: the JIT may inline the small callee, which removes the frame the test needs. The converter's `[MethodImpl(NoInlining)]` closure (`callerInliningAnalysis.go`) is a possible lever, not sized. |
+| `TestTimeVDSO` | samples in `time.now` (hand-owned in `time/time_impl.cs:86`, so it is named `time.now`) | **uncertain**: the same JIT-inlining question for a small method |
+| `TestMorestack` | a stack holding `runtime.newstack` | **does not move**: there are no segmented stacks, so no such frame exists |
+| `TestLabelSystemstack` | labeled samples under `runtime.systemstack` during GC | **does not move**: the managed GC never runs on a `systemstack` frame |
+
+**Net: 5 predicted to move, 4 uncertain, 2 do not.** The 2 that cannot move would then be Go=pass /
+C#=fail on a STRUCTURAL property (no segmented stacks, no systemstack), which is the ground on which
+the owner ruled class I structural. That is a separate owner question, and it arises only after a
+sampler exists. `net/http/pprof` has no class C row.
+
+### 9.5 Not measured, stated
+
+- The probe is not the converted runtime: no `cpuprof.add`, no synthetic-PC join and no label event
+  were exercised end to end, and none of the 11 rows was run against a sampler.
+- Windows and darwin: not run. EventPipe and the SampleProfiler exist on both in CoreCLR, but the
+  diagnostic IPC transport differs (a named pipe on Windows).
+- Native AOT: not run.
+- The 5% overhead is one hot loop on one thread; parallel load was not measured.
 
 ---
 
