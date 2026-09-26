@@ -21,7 +21,9 @@
 //   - The SampleProfiler samples each managed thread about every millisecond; Go values a record at
 //     1/hz. Samples are thinned per thread to one per 1/hz of elapsed time (section 9.2 step 4). How
 //     close that comes to the process's CPU time is the magnitude piece's question, not this one's.
-// Labels (tag) are nil until the labels piece.
+//   - Each sample carries the labels its thread had when sampled: golib's ProfileLabelEvents writes
+//     one event into the same trace per label change, and the latest one on the sample's thread
+//     before the sample names the labels object, which is the tag (nil for none).
 //
 // It never throws into runtime: where a session cannot open (DOTNET_EnableDiagnostics=0, a runtime
 // without EventPipe) Start records the failure and Stop writes nothing, which is the zero-sample profile
@@ -62,6 +64,8 @@ public sealed class EventPipeSampler : IGoCpuSampler
 
     private const string SampleProfilerProvider = "Microsoft-DotNETCore-SampleProfiler";
 
+    private const string LabelsProvider = golib.ProfileLabelEvents.ProviderName;
+
     // ThreadSample's Type payload: the thread was running managed code (1 is External, 0 an error).
     private const int ManagedThreadSample = 2;
 
@@ -80,12 +84,14 @@ public sealed class EventPipeSampler : IGoCpuSampler
     public static void Register() => runtime_package.GoRegisterCpuSampler(new EventPipeSampler(OpenInProcessSession));
 
     /// <summary>Opens a SampleProfiler session on this process's own diagnostic port. The runtime
-    /// provider's JIT and loader events, with rundown, name the method behind each sampled frame.</summary>
+    /// provider's JIT and loader events, with rundown, name the method behind each sampled frame, and
+    /// golib's label events name each sample's labels.</summary>
     public static ISession OpenInProcessSession()
     {
         List<EventPipeProvider> providers =
         [
             new(SampleProfilerProvider, EventLevel.Informational),
+            new(LabelsProvider, EventLevel.Informational),
             new("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, (long)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader))
         ];
 
@@ -112,6 +118,7 @@ public sealed class EventPipeSampler : IGoCpuSampler
         LastManagedSamples = 0;
         LastSamplesWritten = 0;
         m_hz = hz;
+        golib.ProfileLabelEvents.Reset();
 
         try
         {
@@ -181,6 +188,7 @@ public sealed class EventPipeSampler : IGoCpuSampler
         }
         finally
         {
+            golib.ProfileLabelEvents.Reset();
             TryDelete(path);
 
             if (etlx is not null)
@@ -194,11 +202,23 @@ public sealed class EventPipeSampler : IGoCpuSampler
 
         double periodMSec = 1000.0 / (m_hz > 0 ? m_hz : 100);
         Dictionary<int, double> nextDue = [];
+        Dictionary<int, unsafe_package.Pointer> labels = [];
         FrameResolver frames = new();
         List<uintptr> stack = [];
 
         foreach (TraceEvent sample in log.Events)
         {
+            if (sample.ProviderName == LabelsProvider)
+            {
+                // Events are in time order, so this is the thread's labels from here on.
+                if (golib.ProfileLabelEvents.Resolve(LabelsId(sample)) is unsafe_package.Pointer set)
+                    labels[sample.ThreadID] = set;
+                else
+                    labels.Remove(sample.ThreadID);
+
+                continue;
+            }
+
             if (sample.ProviderName != SampleProfilerProvider || !IsManagedSample(sample))
                 continue;
 
@@ -225,10 +245,13 @@ public sealed class EventPipeSampler : IGoCpuSampler
             // Keep the thread's samples on a 1/hz grid; a thread idle past its next slot restarts from now.
             nextDue[sample.ThreadID] = at < due + periodMSec ? due + periodMSec : at + periodMSec;
 
-            write((int64)(at * 1_000_000.0), stack.ToArray().slice(), nil);
+            write((int64)(at * 1_000_000.0), stack.ToArray().slice(), labels.TryGetValue(sample.ThreadID, out unsafe_package.Pointer? tag) ? tag : nil);
             LastSamplesWritten++;
         }
     }
+
+    private static long LabelsId(TraceEvent labelsSet) =>
+        labelsSet.PayloadNames.Length > 0 && labelsSet.PayloadValue(0) is IConvertible id ? id.ToInt64(null) : 0;
 
     private static bool IsManagedSample(TraceEvent sample)
     {

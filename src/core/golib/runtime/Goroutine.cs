@@ -380,6 +380,10 @@ public sealed class Goroutine
         // so nothing else would ever write its entry.
         goroutine.m_profileLabels = s_profileLabels.Value;
 
+        // A CPU sampler joins each sample to its thread's latest labels; a thread that starts a
+        // goroutine starts with the inherited ones (or none), whatever the OS thread id last carried.
+        ProfileLabelEvents.Record(goroutine.m_profileLabels);
+
         // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
         // is diagnosed. A host that named the thread itself keeps its own name.
         Thread.CurrentThread.Name ??= $"goroutine-{goroutine.Id.ToString(CultureInfo.InvariantCulture)}";
@@ -647,6 +651,8 @@ public sealed class Goroutine
 
         if (t_current is { } goroutine)
             Volatile.Write(ref goroutine.m_profileLabels, labels);
+
+        ProfileLabelEvents.Record(labels);
     }
 
     /// <summary>
