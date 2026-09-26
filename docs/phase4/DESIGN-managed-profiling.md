@@ -396,6 +396,103 @@ sampler exists. `net/http/pprof` has no class C row.
 
 ---
 
+## 10. Addendum, 2026-09-26: sizing the targeted NoInlining option for profile stacks
+
+> **STATUS: SIZING for COORD (mailbox 2026-09-26 10:17Z: "SIZE the TARGETED option first, as a docs
+> addendum, no code").** Base: caller-pc-spans (`claude/p2-caller-pc-spans` `96ce90f997`). There,
+> `TestBlockProfileBias` names real call sites but still fails, because the JIT inlines
+> `blockFrequentShort` and the CLR `StackTrace` drops inlined frames. With `DOTNET_JitNoInline=1` the
+> row passes (linux). The question is whether marking only the functions a profile can record
+> `[MethodImpl(NoInlining)]` is small enough to be a targeted fix.
+
+### 10.1 The population
+
+`computeNoInliningClosure` (`src/go2cs/callerInliningAnalysis.go`) today seeds on direct
+`runtime.Caller` / `runtime.Callers` users and extends only through thin single-statement forwarders.
+To keep a block or mutex profile's frames honest it would have to cover every function that can be on
+the stack when `saveblockevent` records, because the profile keeps up to `debug.profstackdepth` (128)
+frames. That is every blocking site plus every function that can call one, transitively.
+
+A census tool (not in the tree) loaded `std` with its tests through `golang.org/x/tools/go/packages`
+(GOOS=linux, GOARCH=amd64, CGO_ENABLED=0, Go 1.24.13; `cmd/` and `vendor/` skipped). It counted every
+`FuncDecl` and `FuncLit` once, by position. **Seeds:** a channel send, receive or `select`, a range over
+a channel, a call to `sync.Mutex` / `RWMutex` Lock/Unlock/RLock/RUnlock, `Cond.Wait`, `WaitGroup.Wait`,
+or `runtime.blockevent`. **Edges:** static calls to a declared function or method (generic calls through
+their origin), and a function literal counted as a callee of the function that defines it. The closure
+is every function that reaches a seed over those edges.
+
+| population | functions | seeds | closure | closure share | closure with ≤3 statements |
+|---|---|---|---|---|---|
+| production | 18,811 | 521 | **5,018** | 27% | 2,427 |
+| test files | 20,628 | 822 | 10,536 | 51% | 5,144 |
+| all | 39,439 | 1,343 | 15,554 | 39% | 7,571 |
+
+**Packages:** 418 of the 531 production packages hold at least one closure member; 53 hold a seed.
+The largest are `net/http` 576, `go/types` 444, `net` 245, `runtime` 164, `math/big` 152,
+`crypto/tls` 148, `database/sql` 120, `encoding/gob` 119, `go/parser` 111 (no seed of its own) and
+`testing` 105.
+
+**This is a lower bound.** Calls through an interface or a function value are not followed, so a
+function that blocks inside an `io.Reader` implementation does not pull in the callers of `Read`.
+
+**Control, with the same tool:** seeding on `runtime.Caller` / `Callers` and taking the FULL transitive
+closure gives 3,942 production functions in 385 packages. The converter does not do that. It stops at
+thin forwarders, and the converted production tree carries **183** `MethodImplOptions.NoInlining` sites
+in 35 files (`src/core` minus golib and the `*_impl.cs` hand-owns, at `e4d73f6e22`). The widened
+closure is about **27 times** today's marking.
+
+### 10.2 JIT cost, estimated
+
+Not measured. `[MethodImpl(NoInlining)]` keeps every call to a marked method as a real call: a call and
+a return, plus the constant propagation and struct promotion the JIT loses across the boundary. That
+costs a few nanoseconds per call and matters only on small, hot methods, which are the ones the JIT
+inlines. 2,427 of the 5,018 production members have three statements or fewer. The closure includes
+every function that takes a `sync` lock or touches a channel, and every static caller of those, on
+every hot path in `net`, `net/http`, `crypto/tls` and `database/sql`. The cost would land on every
+converted program, whether or not it ever takes a profile. The only measured end of the range is
+`DOTNET_JitNoInline=1`, which marks everything. Its wall time was not recorded.
+
+### 10.3 Verdict
+
+**The targeted option collapses into the corpus-wide one.** 27% of production functions in 418 of 531
+packages is "every function NoInlining" in all but name, which is the option already rejected. Honest
+profile frames under JIT inlining need what Go's own toolchain records and the CLR does not expose: an
+inline tree beside each call site (Go's `expandInlinedFrames` reads it). The CLR `StackTrace` has no
+inlined-frame data. By the reading of the class-I ruling, a row that fails only for that reason is
+**STRUCTURAL**. `TestBlockProfileBias` would join that family, and its proof is the passing
+`DOTNET_JitNoInline=1` run above.
+
+A narrower variant was also counted: marking test-file functions only. It covers 10,536 of 20,628 test
+functions and leaves production frames unmarked. It would plausibly move `TestBlockProfileBias`
+(`blockFrequentShort` is in `pprof_test.go`), but it is an instance fix. It makes a test's frames
+honest, not a program's profile. Not recommended; the count is here so the ruling can weigh it.
+
+### 10.4 The extra `runtime/pprof.blockevent` frame
+
+`pprof_test.go:1221` declares `//go:linkname blockevent runtime.blockevent` with no body. Go binds the
+name to the runtime symbol, so no `runtime/pprof` frame exists. The converter emits the pull as a
+forwarder method (`writeLinknameForwarder`, `src/go2cs/visitFuncDecl.go:2417`). That is a real
+`go.*` / `<pkg>_package` method, so the managed `callers` counts it as a Go frame. In the
+`DOTNET_JitNoInline=1` run, the profile's first frame was `runtime/pprof.blockevent`, not
+`blockFrequentShort`. The row still passed. Why its check tolerates the extra frame was not traced.
+Every skip count taken through a pull is also off by one.
+
+**Population:** 150 bodyless two-argument `//go:linkname` pulls in 29 production packages, and 9 in
+test files. That is a source-text count over `GOROOT/src`, with every build-tag variant counted.
+**Proposed shape, not cut:** the converter marks each forwarder it emits (an attribute), and
+`captureCallers` skips a marked frame the way it already skips non-Go frames. A pull then leaves no
+frame, as in Go. It is small and independent of 10.3. It would be a separate increment with a red
+GolibTests arm first, and R would review the `captureCallers` change.
+
+### 10.5 Not measured, stated
+
+- The JIT cost in 10.2 is an estimate. No benchmark was run with the widened closure or with
+  `DOTNET_JitNoInline=1`.
+- The census is static and linux-only. Windows and darwin file sets differ slightly, and dynamic call
+  edges would only enlarge the closure.
+- The test-files-only variant's effect on `TestBlockProfileBias` is a prediction. It was not run.
+- The forwarder fix is not written, and the rows it would move were not identified.
+
 ## Appendix — the per-row list (linux, master `db1bd885a2`)
 
 `runtime/pprof`, Go=pass for every row below.
