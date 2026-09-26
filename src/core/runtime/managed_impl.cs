@@ -768,7 +768,9 @@ partial class runtime_package
         {
             System.Reflection.MethodBase? method = frame.GetMethod();
 
-            if (method is null)
+            // A [StackTraceHidden] linkname forwarder has no Go frame (isGoSourceFrame skips it for
+            // Callers by the same predicate), and StackTrace.GetFrames() still returns it.
+            if (method is null || method.IsDefined(typeof(System.Diagnostics.StackTraceHiddenAttribute), inherit: false))
                 continue;
 
             trace.Append(goFrameName(method, frame)).Append("()\n");
@@ -1652,8 +1654,9 @@ partial class runtime_package
     // The Go-frame test (see Callers). The frame's TOP-LEVEL declaring scope must be a
     // `<pkg>_package` class in namespace `go` — covering the package class itself, the struct
     // types nested in it, and a function literal's display class — and the method must not be
-    // go2cs machinery: a generated adapter (IGoAdapter, dispatch plumbing) or a go2cs-gen
-    // synthesized member (RecvGenerator's ж-forwarders carry [GeneratedCode("go2cs-gen", …)]).
+    // go2cs machinery: a generated adapter (IGoAdapter, dispatch plumbing), a go2cs-gen
+    // synthesized member (RecvGenerator's ж-forwarders carry [GeneratedCode("go2cs-gen", …)]), or a
+    // [StackTraceHidden] linkname forwarder.
     // Everything outside a package class — golib, the BCL, the test-host runtime — is not Go
     // code and never counts.
     private static bool isGoSourceFrame(System.Reflection.MethodBase method)
@@ -1664,6 +1667,11 @@ partial class runtime_package
             return false;
 
         if (typeof(IGoAdapter).IsAssignableFrom(declaring))
+            return false;
+
+        // A converted //go:linkname or assembly-trampoline forwarder (the converter marks it): Go binds
+        // the pull to the target's symbol, so no frame of the puller exists.
+        if (method.IsDefined(typeof(System.Diagnostics.StackTraceHiddenAttribute), inherit: false))
             return false;
 
         foreach (object attribute in method.GetCustomAttributes(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute), inherit: false))
@@ -1970,5 +1978,60 @@ partial class runtime_package
     public static (uintptr first, uintptr last) GoCallerSpanBand()
     {
         return (callerSpanStart(0), callerSpanStart(int.MaxValue) + (((nuint)1 << CallerSpanShift) - 1));
+    }
+
+    /// <summary>Records <c>Callers(1, ...)</c> two frames deep beneath a converted linkname forwarder's
+    /// shape: this probe calls a [StackTraceHidden] forwarder, which calls the recording function. Go
+    /// has no frame for a forwarder, so the second frame must name this probe.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static slice<uintptr> GoForwardedCallersProbe()
+    {
+        return goHiddenForwarderProbe();
+    }
+
+    [System.Diagnostics.StackTraceHidden]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static slice<uintptr> goHiddenForwarderProbe()
+    {
+        return goCallersRecordingProbe();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static slice<uintptr> goCallersRecordingProbe()
+    {
+        slice<uintptr> pc = new slice<uintptr>(2);
+        Callers(1, pc);
+        return pc;
+    }
+
+    /// <summary>Renders the crash traceback of a panic raised beneath a [StackTraceHidden] forwarder
+    /// probe, as an unrecovered panic's report prints it. Go has no frame for a forwarder, so the
+    /// traceback must name the raising function and this probe, and never the forwarder.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string GoForwardedPanicTraceProbe()
+    {
+        try
+        {
+            goHiddenPanicForwarderProbe();
+        }
+        catch (PanicException panic)
+        {
+            return crashTraceback(panic, panic);
+        }
+
+        return string.Empty;
+    }
+
+    [System.Diagnostics.StackTraceHidden]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void goHiddenPanicForwarderProbe()
+    {
+        goPanicRaisingProbe();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void goPanicRaisingProbe()
+    {
+        throw panic((@string)"probe");
     }
 }
