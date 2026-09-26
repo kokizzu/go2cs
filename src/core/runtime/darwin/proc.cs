@@ -1412,32 +1412,7 @@ internal static array<@string> stwReasonStrings = new golib.SparseArray<@string>
 // Protected by worldsema.
 internal static worldStop stopTheWorldContext;
 
-// stopTheWorld stops all P's from executing goroutines, interrupting
-// all goroutines at GC safe points and records reason as the reason
-// for the stop. On return, only the current goroutine's P is running.
-// stopTheWorld must not be called from a system stack and the caller
-// must not hold worldsema. The caller must call startTheWorld when
-// other P's should resume execution.
-//
-// stopTheWorld is safe for multiple goroutines to call at the
-// same time. Each will execute its own stop, and the stops will
-// be serialized.
-//
-// This is also used by routines that do stack dumps. If the system is
-// in panic or being exited, this may not reliably stop all
-// goroutines.
-//
-// Returns the STW context. When starting the world, this context must be
-// passed to startTheWorld.
-internal static worldStop stopTheWorld(stwReason reason) {
-    semacquire(Ꮡworldsema);
-    var gp = getg();
-    gp.Value.m.Value.preemptoff = reason.String();
-    systemstack(() => {
-        stopTheWorldContext = stopTheWorldWithSema(reason); // avoid write to stack
-    });
-    return stopTheWorldContext;
-}
+// go2cs generated this placeholder — func stopTheWorld is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // startTheWorld undoes the effects of stopTheWorld.
 //

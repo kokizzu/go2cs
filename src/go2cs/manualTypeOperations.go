@@ -472,6 +472,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// being skipped. ReadTrace and the rest of the tracer genuinely do stay auto: they are
 		// reached only from the goroutine trace.Start spawns AFTER it succeeds, which it never does.
 		"StopTrace": goosWindowsLinux,
+		// stopTheWorld refuses by name BEFORE it takes worldsema: the converted stopTheWorldWithSema
+		// died on the nil P while worldsema was held, which leaked the permit to every later caller
+		// once runtime's semaphore could park (sema_impl.cs). goroutineProfileWithLabels refuses by
+		// name before taking goroutineProfile.sema or the world, since its collector reads the
+		// throwing GetCallerSP/GetCallerPC intrinsics while holding both. See managed_impl.cs.
+		"stopTheWorld":               goosAny,
+		"goroutineProfileWithLabels": goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and

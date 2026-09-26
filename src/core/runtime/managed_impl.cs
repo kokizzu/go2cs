@@ -127,6 +127,8 @@ using go.golib;
 // The plain namespace using is what brings internal/runtime/atomic's [GoRecv] extension methods
 // (Int64.Load and friends) into scope — an alias alone does not participate in extension lookup.
 using go.@internal.runtime;
+using profilerecord = go.@internal.profilerecord_package;
+using @unsafe = go.unsafe_package;
 
 [module: go.GoManualConversion]
 
@@ -376,6 +378,38 @@ partial class runtime_package
     internal static void metricsLock() => s_metricsSema.Wait();
 
     internal static void metricsUnlock() => s_metricsSema.Release();
+
+    // stopTheWorld (proc.go) REFUSES BY NAME, and it refuses BEFORE it takes worldsema. Go's body
+    // takes worldsema and then stops every P (stopTheWorldWithSema: preemptall, retake Ps in
+    // syscalls, wait for sched.stopwait). There are no Ps here (m.p is nil by construction,
+    // stubs_impl.cs), so the converted stopTheWorldWithSema died on that nil P while worldsema was
+    // held. That leaked the permit to every later caller: a hang once runtime's semaphore could park
+    // (sema_impl.cs; TestDebugLogInterleaving held the linux row to its deadline).
+    //
+    // WHY A REFUSAL AND NOT A WORLDSEMA-ONLY STOP. A stop that only takes worldsema (branch
+    // claude/p1-stw-contract) lets each caller into its own stopped-world region, and every region
+    // the runtime row reaches fails there while holding the lock: the debuglog ring is Go-layout
+    // memory, flushallmcaches needs Ps, readMetricsLocked holds metricsSema, and AllThreadsSyscall's
+    // body has no managed form. Master failed every caller fast at this function's first line; this
+    // keeps that and drops the leak (COORD ruling, ledger 3fc0f21d91). Making the regions work is a
+    // later seat, gated on a census of each caller's region.
+    //
+    // Every converted caller calls stopTheWorld holding nothing (heapdump.cs, mprof.cs, os_linux.cs's
+    // AllThreadsSyscall, and the test exports), so the refusal leaks nothing. stopTheWorldGC, which
+    // takes gcsema first, has no caller in the converted runtime. startTheWorld is reached only
+    // after stopTheWorld returns, so it stays converted and unreachable.
+    internal static worldStop stopTheWorld(stwReason reason) =>
+        throw new PanicException($"runtime: stopTheWorld: the managed host cannot stop the world (reason: {reason.String()}); goroutines are CLR threads with no Ps to stop");
+
+    // goroutineProfileWithLabels (mprof.go), behind runtime.GoroutineProfile, takes
+    // goroutineProfile.sema and then the world, and its concurrent collector reads
+    // sys.GetCallerSP/GetCallerPC, intrinsics that stay throwing by ruling. Every call therefore
+    // died holding goroutineProfile.sema AND worldsema. This refuses by name BEFORE either is
+    // taken, so the refusal leaks nothing. runtime/pprof's goroutine profile does not come
+    // through here: it has its own managed body over golib's goroutine registry
+    // (runtime/pprof/pprof_impl.cs). Sharing that body with this function is a separate seat.
+    internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) =>
+        throw new PanicException("runtime: goroutineProfileWithLabels: the concurrent collector records each goroutine's stack through sys.GetCallerSP/GetCallerPC and stops the world to do it; neither exists in the managed model (runtime/pprof's goroutine profile has its own managed body)");
 
     // NumCgoCall returns the number of cgo calls made by the current process. Go's body walks the
     // scheduler's `allm` thread list summing per-m counters — a list the managed model never
