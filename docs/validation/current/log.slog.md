@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `log/slog` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-23 · converter `f95f88866`*
+*Validated 2026-09-26 · converter `d78c1e815`*
 
-**197 matched · 19 disclosed** — Go 1.24.13, `windows/amd64`, converted package
+**198 matched · 18 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog).
 
 Measured at `Release` (tiered JIT on), oracle `go version go1.24.13 windows/amd64`.
@@ -21,7 +21,7 @@ Measured at `Release` (tiered JIT on), oracle `go version go1.24.13 windows/amd6
 | `TestAlloc` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAlloc/2_pairs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAlloc/2_pairs_disabled` | pass | pass |
-| `TestAlloc/2_pairs_disabled_inline` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestAlloc/2_pairs_disabled_inline` | pass | pass |
 | `TestAlloc/9_kvs` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAlloc/Error` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestAlloc/Info` | pass | fail ([disclosed](#disclosed-divergences)) |
@@ -249,7 +249,6 @@ CLR *can* meet, pinned against the named plan that will retire it; every other c
 |:--|:--|:--|
 | `TestAlloc` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestAlloc/2_pairs` | `deferred` | wantAllocs assert with a NONZERO Go budget (2): the managed model pays a heap shell per boxed pair on top of Go's two budgeted allocations, so the divergence is the shell count rather than the assert's premise. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1); it replaces the ruling's fitted F6/F7 for this row: F6 is the per-call literal (the converter's degenerate-slug floor, hoistedLiteralOperations.go:103) and F7 the StringData element reference. |
-| `TestAlloc/2_pairs_disabled_inline` | `deferred` | wantAllocs assert with a nonzero Go budget: even on the level-disabled path the `...any` arguments are boxed before the level check can discard them, where Go's interface values cost nothing to form. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1); it replaces the ruling's fitted F6/F7 for this row: F6 is the per-call literal (the converter's degenerate-slug floor, hoistedLiteralOperations.go:103) and F7 the StringData element reference. |
 | `TestAlloc/9_kvs` | `deferred` | wantAllocs assert with a nonzero Go budget (10): nine key/value pairs box into nine heap shells above Go's budgeted slice growth. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1); it replaces the ruling's fitted F6/F7 for this row: F6 is the per-call literal (the converter's degenerate-slug floor, hoistedLiteralOperations.go:103) and F7 the StringData element reference. |
 | `TestAlloc/Error` | `deferred` | wantAllocs assert: same `...any` boxing as TestAlloc/Info on the Error level path — one heap shell per argument where Go's interface value allocates nothing. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1). |
 | `TestAlloc/Info` | `deferred` | wantAllocs assert: the variadic `...any` argument list boxes each value into a heap shell where Go's interface value is two words carrying the data pointer inline (DESIGN-iface-shell-caching §2 — 'C# has no two-word interface value; the shell IS the itab+data fused into an object'). RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1). |
