@@ -53,4 +53,16 @@ public class RuntimeFdSyscallTests
         Assert.IsNull(failure, $"mincore failed: {failure}");
         Assert.AreEqual(-EINVAL, result, "the sign is the test: -EINVAL, not EINVAL");
     }
+
+    // A real write1 reaches netpollBreak's write to netpollEventFd, which the managed host never
+    // creates (netpollGenericInit is a no-op, netpoll_impl.cs): -EBADF, then Go's throw, which ends
+    // the process. netpollBreak refuses by name instead, before the write.
+    [TestMethod]
+    public void NetpollBreakRefusesByNameBeforeItsWrite()
+    {
+        if (!OnLinux) Assert.Inconclusive("the primitives are the linux flavour's");
+        string? failure = GoNetpollBreakProbe(30000);
+        Assert.IsNotNull(failure, "netpollBreak returned: the managed host has no poller to break");
+        StringAssert.StartsWith(failure, "PanicException: runtime: netpollBreak:", failure);
+    }
 }
