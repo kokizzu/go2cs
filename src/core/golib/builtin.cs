@@ -2996,8 +2996,48 @@ public static partial class builtin
     /// to a register move. The converter emits it only for predeclared sized numerics of equal size and
     /// only for a read, so nothing is boxed and nothing is allocated (docs/phase4, the Float*bits seat).
     /// </summary>
+    /// <remarks>
+    /// A signalling NaN must keep its bits, and an optimizing JIT does not keep them for a CONSTANT: once
+    /// bitcast inlines into a caller passing one (Go's <c>math.Float32frombits(0x7f800001)</c>), RyuJIT
+    /// constant-folds the cast and holds the float32 result as a double, which QUIETS it (0x7f800001 reads
+    /// back 0x7fc00001). That is how validation rows run (Release, tiered compilation off), and it turned
+    /// reflect's TestConvertNaNs, TestSignalingNaNArgument and TestSignalingNaNReturn red. A NaN result
+    /// is therefore re-cast through <see cref="bitcastNoFold{TSrc, TDst}"/>, which the JIT cannot inline
+    /// and so cannot fold. The typeof tests are JIT-time constants per instantiation: a non-float target
+    /// compiles to the bare cast, and a float target's common path pays one self-compare, ordered so a
+    /// non-NaN result returns first (testing for the NaN first measured slower in a consuming loop). The
+    /// float64 arm is not red on x64 net10, where the JIT's double constant keeps its bits; it holds the
+    /// same guarantee for the other width. Unsafe.As, an explicit-layout union, BitConverter and a
+    /// Vector128 scalar all fold or quiet the same way (measured 2026-09-26, net10 x64); GolibTests
+    /// ValuePunBitcastTests holds the constant arms.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TDst bitcast<TSrc, TDst>(TSrc value) where TSrc : unmanaged where TDst : unmanaged
+    {
+        TDst result = Unsafe.BitCast<TSrc, TDst>(value);
+
+        if (typeof(TDst) == typeof(float))
+        {
+            if (!float.IsNaN(Unsafe.BitCast<TDst, float>(result)))
+                return result;
+
+            return bitcastNoFold<TSrc, TDst>(value);
+        }
+
+        if (typeof(TDst) == typeof(double))
+        {
+            if (!double.IsNaN(Unsafe.BitCast<TDst, double>(result)))
+                return result;
+
+            return bitcastNoFold<TSrc, TDst>(value);
+        }
+
+        return result;
+    }
+
+    // bitcast's NaN path: the same cast, out of line, so its argument is never a constant the JIT folds.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TDst bitcastNoFold<TSrc, TDst>(TSrc value) where TSrc : unmanaged where TDst : unmanaged
     {
         return Unsafe.BitCast<TSrc, TDst>(value);
     }
