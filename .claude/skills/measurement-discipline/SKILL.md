@@ -388,6 +388,8 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   switch every arm resets — and a check no OTHER check subsumes**; its red must name the RIGHT assertion. **A
   control whose modification cannot be EXHIBITED proves nothing**: an unapplied patch reads as a PASSED
   control over unmodified code, so the load-bearing row must fail ALONE with neighbours green.
+  - Fire every control, red-proved, **ON THE BOX THAT WILL SCORE** and before any scoring: a gate whose controls have not fired on the scoring box is not yet a gate there. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-19: COORD at H8 ordered the comparand instrument's self-test onto the scoring box before any scoring. mailbox-archive.md:76174 [M4#24] -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: the comparand's "content DIFFER" counter read 0 on every run because join -j0 failed into 2>/dev/null, while the tree hash carried the verdicts. mailbox-archive.md:82778; d7b0876ce6 [M4#32] -->
 - **A control only tests the AXIS YOU VARIED** — vary every axis the PREDICATE reads, not the ones the change
   targets (`ISlice<T> : IArray<T>` makes every array test a trap unless it excludes slices). **Five more ways
   a control does not control what it names**: no CALLER's input shape; no arm THROUGH THE CALLER, hiding a
@@ -411,6 +413,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   producing NO output makes every arm read DIFFERS** — control that it prints at all, THEN positive-control
   the arm that must go red; **a gate is ruled only after its BEFORE shows it can MOVE**, calibrated with the
   variable genuinely ABSENT (`TZ=` empty means UTC in Go).
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: a prediction (check-roster-format 2 -> 0, release-nuget -VerifyOnly 10 -> 0) was routed to a held roster seat on master lineage where both gates already read 0; a commit changing nothing would have met it, and the routing was withdrawn. board.md:25810-25811 [B#50] -->
 - **Count a guard's DISCRIMINATING lines and ARMS**: arms where old and new behaviour COINCIDE are
   must-not-regress arms. **A body's own failure is earned by a control in a SEPARATE worktree at the same
   SHA**, and **a ruling's load-bearing assumption is MEASURED before any code exists, with a negative control
@@ -832,6 +835,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      missing directory; the test took its `t.Skip` door and `go test` printed `ok` — a regression meant to
      prove the guard can FAIL proved instead that it can VANISH, in a pass costume. The same shape reaches
      any harness with a skip: the exit code is identical for "ran and passed" and "declined to run". -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-13: both registry guards t.Skip when src/core is not at ../core, and go test prints ok; the H5 guard reading takes -v and requires --- PASS with zero --- SKIP. mailbox-archive.md:29023 [M2#12] -->
 - **A CROSS-ARM ZERO IS ASSERTED AGAINST A DISJOINT ARM, NEVER AGAINST ALL OTHERS** — census arms overlap
   by construction, so "every other arm reads 0" is unsatisfiable on a CORRECT census. <!-- ⚠ 2026-09-13,
      i9 `1ae48b10b` s2. A profile path CONTAINS the account name and the drive prefix; the home path fires
@@ -975,6 +979,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   **Where a run STOPS is a property of the RUN whenever the death is asynchronous**; the only honest movement
   signal is the MOVED SET. **A COUNT that matches its prediction is not a SET that matches**, and **a
   falsified EXPLANATION does not falsify the MEASUREMENT it was invented for.**
+  - When a row's verdict count DROPS, test whether the new name set is a PREFIX of the old one (lost and gained printed) before calling it a regression; once the drop is attributed to a commit, every later comparison against the older figure names which side of that commit it sits on. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-13: i9 measured the runtime row's 185 -> 128 as a pure truncation (the 128-set was the first 128 of the 185-set, lost 57, gained 0), attributed to the merge 7d3d03284 whose first parent e7023b5c6 is the adjacent reading. board.md:24354, :24429-24430; 7d3d03284, e7023b5c6 [B#38] -->
 - **A defect REPORT is measured at the REPORTING BRANCH'S OWN BASE converter as well as at master before
   anything is built for it**: `CS1010` beside `CS1003` is the signature of a TEXT-CORRUPTED file, never of an
   emission decision. **The differential control has an ARITHMETIC form** — under standing corpus drift an
@@ -1218,6 +1223,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      RED 7's "zero converter code" was true of `linknamePushDeclMatches` and false of the registry's own
      TEST, which reads the same table and had to move with it. The claim was checked against exactly one
      of the two readers of the data. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-15: second instance, RED 8 read the emitting clause without the declaring one (rules/converter.md, the constraint-proxy rule). board.md:25211-25212; cacfc57c90, 94002c2d1d [B#12] -->
 - **A BEHAVIORAL ARM MUST MIRROR THE SHAPE THE CUT ACTUALLY REACHES; a sibling shape that misses is BANKED
   as a finding, never folded into the rule by widening it.** <!-- ⚠ 2026-09-15, G. The first RED 5 arm
      used a pointer-receiver method that does NOT return its receiver, which the converter emits as
@@ -1441,6 +1447,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      2 census. It tagged calls by AST FORM (`IndexExpr` = explicit) while the converter tests the
      INSTANTIATED parameter type, so `slices.Concat`'s `Grow[S](nil)` — explicit, but whose `S` is the
      enclosing generic's own parameter — was predicted NOT to move, and moved. -->
+  - It ports the gate's EXCLUSIONS as well as its test: a census that carries the predicate and drops the skip list sizes a population the gate never sees. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-15: one class of census miss on three lanes in one day (G's RED 2 took the AST form, C2's RED 3 labelled the Go side as the emission, C1's took the test and dropped the skip list). mailbox-archive.md:45734, :43337 [M3#5] -->
 - **A HOP CAN REBIND AN EXISTING SITE WITHOUT ADDING ONE: read by CLASS at both pins, because a census that
   counts sites TOTAL reads "unchanged" while the partition moved underneath it.** <!-- ⚠ 2026-09-15, C2's
      RED 5 review. The three `nistec` sites are the SAME three calls at both pins (16 sites at each), LOCAL
@@ -1462,6 +1469,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      instance — and that one was the only instrument already immune, because its predicate was anchored on
      the pragma's SHAPE (the quoted library) rather than on the token. The structural form keeps winning
      and the vocabulary form keeps getting written. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-22: regen-validation-index.py's fixture was written in the pattern's own spelling and passed while the real roster matched nothing; the real-root run was the gate (orphans 24 -> 14). ledger 2026-09-22 07:15 LANDING facb69304; f147fe5973 [L#57] -->
 - **GLYPH IDENTITY IS AN INSTRUMENT'S JOB, NOT A READING'S: census the file's CODEPOINTS and require the
   non-ASCII set to equal the corpus's.** <!-- ⚠ 2026-09-15, C1 `4757e2a971`. The box glyph was typed from
      memory as U+13A1 (Cherokee A) where the corpus uses U+13D1 `Ꮡ` — in a COMMENT, so it compiled, and no
@@ -1583,6 +1591,7 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      P(5 clean | p = 14%) = 0.47. n = 20 clean bounds the rate at <= 11.3% (95%, one-sided) and rules the
      14% out. Stated the other way round, one unattributed event in 27 is "a figure with an open question
      beside it", not a roster condition. -->
+  - **A row that has crashed the host even once is disqualified as a timing or calibration standard**, whatever its measured rate, and every run of a rate battery records the last test it reached, clean runs included. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-13: i9's archive/tar, a banked 97-verdict row, killed the test host once and was then proposed as an H10 shard-map timing standard; it was disqualified without reference to its rate, and compress/flate (4 clean reps, 64 verdicts each) stood. board.md:24498-24512; a02ac3df3 [B#37] -->
 
 ## Read the artifact before the sentence
 
