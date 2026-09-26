@@ -638,15 +638,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
 		// Caller(1) are the demonstrated consumers.
 		"callers": goosAny,
-		// saveblockevent (mprof_impl.cs): the block/mutex profile recorder, hand-owned as a REFUSAL BY
-		// NAME (COORD ruling (A), 2026-09-22). Its stack capture IS expressible (the callers branch,
-		// measured past the capture), but the store it records into is not: newBucket persistentallocs
-		// ONE block (a bucket header with reference-bearing next/allnext, the stk array, the record)
-		// reached by byte offset, and buckhash is a sysAlloc'd native array of *bucket -- the arm-2a
-		// class. The refusal replaces the stub's misleading "assembly, cgo, or linkname" throw. It is
-		// reached only above a block/mutex profile rate of 0 (Go's default), through runtime.blockevent
-		// (pulled by runtime/pprof's TestBlockProfileBias) and mutexevent. Declared once, in mprof.go,
-		// hence goosAny.
+		// The block/mutex/memory profile BUCKET STORE and its recorder (mprof_impl.cs), in managed
+		// storage: increment I2 of DESIGN-managed-profiling.md, ruling 8fc439415f (B), ordered cut
+		// 2026-09-26. Go's newBucket persistentallocs ONE block (a bucket header with reference-bearing
+		// next/allnext, the stk array, the record) reached by byte offset, and buckhash is a sysAlloc'd
+		// native array of *bucket -- the arm-2a class, which is why saveblockevent refused by name
+		// (COORD ruling (A), 2026-09-22). The managed store keeps the header as a box, its stack and
+		// record in a side record the accessors return, and the hash as a managed array; the
+		// all-buckets lists keep Go's shape, so the converted READERS (blockProfileInternal,
+		// mutexProfileInternal, memProfileInternal) walk it unchanged. saveblockevent takes Go's
+		// callers branch (the frame-pointer branch reads getfp()). Declared once, in mprof.go, hence
+		// goosAny.
+		"newBucket":      goosAny,
+		"bucket.stk":     goosAny,
+		"bucket.mp":      goosAny,
+		"bucket.bp":      goosAny,
+		"stkbucket":      goosAny,
 		"saveblockevent": goosAny,
 		// setProcessCPUProfiler / setThreadCPUProfiler on EVERY target (COORD ruling 2026-09-22 for
 		// windows; widened to linux and darwin 2026-09-26, ledger 4a122cd994, increment I1 of

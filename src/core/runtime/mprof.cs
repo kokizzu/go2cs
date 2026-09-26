@@ -214,142 +214,15 @@ internal static void increment(this ж<mProfCycleHolder> Ꮡc) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string invalidProfileBucketTypeˢ = "invalid profile bucket type"u8;
+// go2cs generated this placeholder — func newBucket is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// newBucket allocates a bucket with the given type and number of stack entries.
-internal static ж<bucket> newBucket(bucketType typ, nint nstk) {
-    var size = /* unsafe.Sizeof(bucket{}) */ (uintptr)48 + (uintptr)nstk * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8;
-    var exprᴛ1 = typ;
-    if (exprᴛ1 == memProfile) {
-        size += /* unsafe.Sizeof(memRecord{}) */ (uintptr)128;
-    }
-    else if (exprᴛ1 == blockProfile || exprᴛ1 == mutexProfile) {
-        size += /* unsafe.Sizeof(blockRecord{}) */ (uintptr)16;
-    }
-    else { /* default: */
-        @throw(invalidProfileBucketTypeˢ);
-    }
+// go2cs generated this placeholder — func stk is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var b = (ж<bucket>)(uintptr)(persistentalloc(size, 0, Ꮡmemstats.of(mstats.Ꮡbuckhash_sys)));
-    b.Value.typ = typ;
-    b.Value.nstk = (uintptr)nstk;
-    return b;
-}
+// go2cs generated this placeholder — func mp is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badProfileStackCountˢ = "bad profile stack count"u8;
+// go2cs generated this placeholder — func bp is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// stk returns the slice in b holding the stack. The caller can assume that the
-// backing array is immutable.
-internal static slice<uintptr> stk(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    var stk = (ж<array<uintptr>>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref b), /* unsafe.Sizeof(*b) */ (uintptr)48));
-    if (b.nstk > maxProfStackDepth) {
-        // prove that slicing works; otherwise a failure requires a P
-        @throw(badProfileStackCountˢ);
-    }
-    return (~stk).slice(-1, (int)(b.nstk), (int)(b.nstk));
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badUseOfBucketMpˢ = "bad use of bucket.mp"u8;
-
-// mp returns the memRecord associated with the memProfile bucket b.
-internal static ж<memRecord> mp(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    if (b.typ != memProfile) {
-        @throw(badUseOfBucketMpˢ);
-    }
-    @unsafe.Pointer data = (uintptr)add((uintptr)@unsafe.Pointer.FromRef(ref b), /* unsafe.Sizeof(*b) */ (uintptr)48 + b.nstk * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
-    return (ж<memRecord>)(uintptr)(data);
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badUseOfBucketBpˢ = "bad use of bucket.bp"u8;
-
-// bp returns the blockRecord associated with the blockProfile bucket b.
-internal static ж<blockRecord> bp(this ж<bucket> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    if (b.typ != blockProfile && b.typ != mutexProfile) {
-        @throw(badUseOfBucketBpˢ);
-    }
-    @unsafe.Pointer data = (uintptr)add((uintptr)@unsafe.Pointer.FromRef(ref b), /* unsafe.Sizeof(*b) */ (uintptr)48 + b.nstk * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
-    return (ж<blockRecord>)(uintptr)(data);
-}
-
-// Return the bucket for stk[0:nstk], allocating new bucket if needed.
-internal static ж<bucket> stkbucket(bucketType typ, uintptr size, slice<uintptr> stk, bool alloc) {
-    var bh = (ж<buckhashArray>)(uintptr)(Ꮡbuckhash.Load());
-    if (bh == nil) {
-        @lock(ᏑprofInsertLock);
-        // check again under the lock
-        bh = (ж<buckhashArray>)(uintptr)(Ꮡbuckhash.Load());
-        if (bh == nil) {
-            bh = (ж<buckhashArray>)(uintptr)(sysAlloc(/* unsafe.Sizeof(buckhashArray{}) */ (uintptr)1439992, Ꮡmemstats.of(mstats.Ꮡbuckhash_sys)));
-            if (bh == nil) {
-                @throw(runtimeCannotAllocateˢ);
-            }
-            Ꮡbuckhash.StoreNoWB(@unsafe.Pointer.FromPinnedBox(bh));
-        }
-        unlock(ᏑprofInsertLock);
-    }
-    // Hash stack.
-    uintptr h = default!;
-    foreach (var (_, pc) in stk) {
-        h += pc;
-        h += (h << (int)(10));
-        h ^= (uintptr)((h >> (int)(6)));
-    }
-    // hash in size
-    h += size;
-    h += (h << (int)(10));
-    h ^= (uintptr)((h >> (int)(6)));
-    // finalize
-    h += (h << (int)(3));
-    h ^= (uintptr)((h >> (int)(11)));
-    nint i = (nint)(h % (uintptr)buckHashSize);
-    // first check optimistically, without the lock
-    for (var bΔ1 = (ж<bucket>)(uintptr)(bh.at<atomic.UnsafePointer>(i).Load()); bΔ1 != nil; bΔ1 = bΔ1.Value.next) {
-        if ((~bΔ1).typ == typ && (~bΔ1).hash == h && (~bΔ1).size == size && eqslice(bΔ1.stk(), stk)) {
-            return bΔ1;
-        }
-    }
-    if (!alloc) {
-        return default!;
-    }
-    @lock(ᏑprofInsertLock);
-    // check again under the insertion lock
-    for (var bΔ2 = (ж<bucket>)(uintptr)(bh.at<atomic.UnsafePointer>(i).Load()); bΔ2 != nil; bΔ2 = bΔ2.Value.next) {
-        if ((~bΔ2).typ == typ && (~bΔ2).hash == h && (~bΔ2).size == size && eqslice(bΔ2.stk(), stk)) {
-            unlock(ᏑprofInsertLock);
-            return bΔ2;
-        }
-    }
-    // Create new bucket.
-    var b = newBucket(typ, len(stk));
-    copy(b.stk(), stk);
-    b.Value.hash = h;
-    b.Value.size = size;
-    ж<atomic.UnsafePointer> allnext = default!;
-    if (typ == memProfile){
-        allnext = Ꮡmbuckets;
-    } else 
-    if (typ == mutexProfile){
-        allnext = Ꮡxbuckets;
-    } else {
-        allnext = Ꮡbbuckets;
-    }
-    b.Value.next = (ж<bucket>)(uintptr)(bh.at<atomic.UnsafePointer>(i).Load());
-    b.Value.allnext = (ж<bucket>)(uintptr)(allnext.Load());
-    bh.at<atomic.UnsafePointer>(i).StoreNoWB(@unsafe.Pointer.FromPinnedBox(b));
-    allnext.StoreNoWB(@unsafe.Pointer.FromPinnedBox(b));
-    unlock(ᏑprofInsertLock);
-    return b;
-}
+// go2cs generated this placeholder — func stkbucket is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool eqslice(slice<uintptr> x, slice<uintptr> y) {
     if (len(x) != len(y)) {
