@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -126,6 +127,177 @@ func TestValidationIndexDeterministic(t *testing.T) {
 
 	if bufioAt < 0 || ioAt < 0 || bufioAt > ioAt {
 		t.Fatal("validation index rows are not sorted")
+	}
+}
+
+// TestValidationIndexKeepsHandTextAndNamesOnlyRosterRows pins the two things a sweep's index rewrite
+// got wrong. The page's hand-maintained text (the Frozen snapshots section above the CURRENT table,
+// and anything after it) is history, so it is kept byte for byte. And a page under current/ is not a
+// row just because it exists: a retired import path's page stays as its successor's relocation anchor,
+// and an excluded package's page stays as its exclusion's evidence, but the index lists only the
+// packages the roster banks.
+func TestValidationIndexKeepsHandTextAndNamesOnlyRosterRows(t *testing.T) {
+	docsPath := t.TempDir()
+	validationPath := filepath.Join(docsPath, "validation")
+	currentPath := filepath.Join(validationPath, "current")
+
+	if err := os.MkdirAll(currentPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pages: two banked, one retired (a relocation anchor), one excluded.
+	for _, dotID := range []string{"io", "bufio", "internal.weak", "internal.copyright"} {
+		if err := os.WriteFile(filepath.Join(currentPath, dotID+".md"), []byte("# page\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The roster banks io and bufio, and archive/tar, which has no page yet. The exclusion table's
+	// row shape is not a banked row and must not be read as one.
+	roster := "# Validated Test Packages\n\n" +
+		"| Package | Tests matched | Disclosed | What it exercises |\n" +
+		"|:--|--:|--:|:--|\n" +
+		"| [`io`](https://example.invalid/io) | 12 | 0 | Readers. |\n" +
+		"| [`bufio`](https://example.invalid/bufio) | 30 | 1 | Buffers. |\n" +
+		"| [`archive/tar`](https://example.invalid/tar) | 9 | 0 | Archives. |\n\n" +
+		"## Excluded packages\n\n" +
+		"| Package | Class | Why |\n" +
+		"|:--|:--|:--|\n" +
+		"| `internal/copyright` | E4 | No tests of its own. |\n"
+
+	if err := os.WriteFile(filepath.Join(docsPath, "ValidatedTestPackages.md"), []byte(roster), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	head := "# Validation proofs\n\nHand-written prose.\n\n## Frozen snapshots\n\n" +
+		"| Release | Snapshot | Proof pages | Roster as it stood |\n" +
+		"|:--|:--|--:|:--|\n" +
+		"| 1.24.13.9 | [`1.24.13.9/`](1.24.13.9/) | 3 | at the tag |\n\n" +
+		"| Package | Proof | Converted package |\n" +
+		"|:--|:--|:--|\n"
+	tail := "\nA closing note that is also hand-written.\n"
+	staleRow := "| `internal/weak` | [`internal.weak.md`](current/internal.weak.md) | [`src/core/internal/weak`](" + go2csRepositoryURL + "/tree/master/src/core/internal/weak) |\n"
+	indexPath := filepath.Join(validationPath, "index.md")
+
+	if err := os.WriteFile(indexPath, []byte(head+staleRow+tail), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeValidationIndex(docsPath); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+
+	written, err := os.ReadFile(indexPath)
+
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+
+	index := strings.ReplaceAll(string(written), "\r", "")
+	// The rows follow the roster's order (io before bufio), as the committed page does.
+	want := head +
+		"| `io` | [`io.md`](current/io.md) | [`src/core/io`](" + go2csRepositoryURL + "/tree/master/src/core/io) |\n" +
+		"| `bufio` | [`bufio.md`](current/bufio.md) | [`src/core/bufio`](" + go2csRepositoryURL + "/tree/master/src/core/bufio) |\n" +
+		tail
+
+	if index != want {
+		t.Fatalf("index is not the hand text around the roster's rows:\n--- got ---\n%s\n--- want ---\n%s", index, want)
+	}
+
+	// Stable: a second pass over the same tree writes nothing.
+	if err := writeValidationIndex(docsPath); err != nil {
+		t.Fatalf("rewrite index: %v", err)
+	}
+
+	again, err := os.ReadFile(indexPath)
+
+	if err != nil {
+		t.Fatalf("reread index: %v", err)
+	}
+
+	if string(again) != string(written) {
+		t.Fatal("regenerating an unchanged index rewrote it")
+	}
+
+	// A roster none of whose packages has a page yet leaves an empty table, never a full re-render
+	// that would drop the hand text.
+	if err := os.WriteFile(filepath.Join(docsPath, "ValidatedTestPackages.md"), []byte("| [`archive/tar`](https://example.invalid/tar) | 9 | 0 | Archives. |\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeValidationIndex(docsPath); err != nil {
+		t.Fatalf("write index with no banked page: %v", err)
+	}
+
+	emptied, err := os.ReadFile(indexPath)
+
+	if err != nil {
+		t.Fatalf("read emptied index: %v", err)
+	}
+
+	if index := strings.ReplaceAll(string(emptied), "\r", ""); index != head+tail {
+		t.Fatalf("an index with no banked page lost its hand text:\n%s", index)
+	}
+
+	if err := os.WriteFile(indexPath, written, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// A roster that exists but reads as no rows is a broken instrument, not an empty roster: the
+	// writer refuses rather than rewrite the index around nothing.
+	if err := os.WriteFile(filepath.Join(docsPath, "ValidatedTestPackages.md"), []byte("# Validated Test Packages\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeValidationIndex(docsPath); err == nil {
+		t.Fatal("a roster with no rows did not refuse")
+	}
+
+	unchanged, err := os.ReadFile(indexPath)
+
+	if err != nil {
+		t.Fatalf("read index after refusal: %v", err)
+	}
+
+	if string(unchanged) != string(written) {
+		t.Fatal("a refused regeneration still rewrote the index")
+	}
+}
+
+// TestValidationIndexWithoutCommittedPage covers a tree with a roster but no index yet: the writer
+// renders the full page, rows from the roster.
+func TestValidationIndexWithoutCommittedPage(t *testing.T) {
+	docsPath := t.TempDir()
+	currentPath := filepath.Join(docsPath, "validation", "current")
+
+	if err := os.MkdirAll(currentPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, dotID := range []string{"io", "internal.weak"} {
+		if err := os.WriteFile(filepath.Join(currentPath, dotID+".md"), []byte("# page\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	roster := "| [`io`](https://example.invalid/io) | 12 | 0 | Readers. |\n"
+
+	if err := os.WriteFile(filepath.Join(docsPath, "ValidatedTestPackages.md"), []byte(roster), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeValidationIndex(docsPath); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+
+	written, err := os.ReadFile(filepath.Join(docsPath, "validation", "index.md"))
+
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+
+	if index := strings.ReplaceAll(string(written), "\r", ""); index != renderValidationIndex([]string{"io"}) {
+		t.Fatalf("index without a committed page is not the full render of the roster's rows:\n%s", index)
 	}
 }
 
@@ -426,5 +598,66 @@ func TestDisclosedHeadingIsClassAware(t *testing.T) {
 
 	if strings.Contains(page, "The **Class** column says") || strings.Contains(page, "this conversion does not satisfy") {
 		t.Error("a page with no deferred entry gained the class-aware wording")
+	}
+}
+
+// TestRosterRowPatternsAgree holds the roster's three readers together. rosterRowPattern must be the
+// literal $RosterRowPattern of src/_roster.ps1, which the sweep and the release census read with; and
+// ROSTER_ROW in docs/phase4/hopA-inputs/regen-validation-index.py, which is spelled more loosely, must
+// read the same packages out of the committed roster. Nonzero, so a reader that matches nothing
+// cannot agree with another that matches nothing.
+func TestRosterRowPatternsAgree(t *testing.T) {
+	root := repoRootFromPackageDir(t)
+
+	readPattern := func(relativePath string, extract *regexp.Regexp) string {
+		t.Helper()
+
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(relativePath)))
+
+		if err != nil {
+			t.Fatalf("read %s: %v", relativePath, err)
+		}
+
+		match := extract.FindSubmatch(data)
+
+		if match == nil {
+			t.Fatalf("%s no longer declares its roster row pattern where this guard looks", relativePath)
+		}
+
+		return string(match[1])
+	}
+
+	powerShell := readPattern("src/_roster.ps1", regexp.MustCompile(`(?m)^\$RosterRowPattern = '([^']+)'`))
+
+	if powerShell != rosterRowPattern.String() {
+		t.Fatalf("rosterRowPattern has drifted from src/_roster.ps1:\n  go:  %s\n  ps1: %s", rosterRowPattern.String(), powerShell)
+	}
+
+	python := regexp.MustCompile(readPattern("docs/phase4/hopA-inputs/regen-validation-index.py", regexp.MustCompile(`(?m)^ROSTER_ROW = re\.compile\(r"([^"]+)"\)`)))
+
+	roster, err := os.ReadFile(filepath.Join(root, "docs", validationRosterFileName))
+
+	if err != nil {
+		t.Fatalf("read roster: %v", err)
+	}
+
+	var fromGo, fromPython []string
+
+	for _, line := range strings.Split(strings.ReplaceAll(string(roster), "\r", ""), "\n") {
+		if match := rosterRowPattern.FindStringSubmatch(line); match != nil {
+			fromGo = append(fromGo, match[1])
+		}
+
+		if match := python.FindStringSubmatch(line); match != nil {
+			fromPython = append(fromPython, match[1])
+		}
+	}
+
+	if len(fromGo) == 0 {
+		t.Fatal("the roster reads as no rows")
+	}
+
+	if strings.Join(fromGo, "\n") != strings.Join(fromPython, "\n") {
+		t.Fatalf("the Go and Python roster readers disagree: %d rows against %d", len(fromGo), len(fromPython))
 	}
 }

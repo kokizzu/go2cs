@@ -481,12 +481,17 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 	return page.String()
 }
 
-// renderValidationIndex renders the roster page from the dot-ids present under current/.
+// renderValidationIndex renders the roster page from the dot-ids present under current/, sorted.
 func renderValidationIndex(dotIDs []string) string {
 	sorted := make([]string, len(dotIDs))
 	copy(sorted, dotIDs)
 	sort.Strings(sorted)
 
+	return renderValidationIndexPage(sorted)
+}
+
+// renderValidationIndexPage renders the whole page with its rows in the order given.
+func renderValidationIndexPage(dotIDs []string) string {
 	var page strings.Builder
 
 	page.WriteString("# Validation proofs\n\n")
@@ -498,22 +503,33 @@ func renderValidationIndex(dotIDs []string) string {
 	page.WriteString("Versioned sibling directories are frozen publication snapshots: written once at release and never\n")
 	page.WriteString("rewritten, so the proof link for a published package stays the proof as of that binary.\n\n")
 
-	if len(sorted) == 0 {
+	if len(dotIDs) == 0 {
 		page.WriteString("*No proof pages have been generated yet.*\n")
 
 		return page.String()
 	}
 
-	page.WriteString("| Package | Proof | Converted package |\n")
+	page.WriteString(validationIndexTableHead + "\n")
 	page.WriteString("|:--|:--|:--|\n")
 
-	for _, dotID := range sorted {
-		importPath := validationProofImportPath(dotID)
-		fmt.Fprintf(&page, "| `%s` | [`%s.md`](%s/%s.md) | [`src/core/%s`](%s/tree/master/src/core/%s) |\n",
-			importPath, dotID, validationCurrentDirName, dotID, importPath, go2csRepositoryURL, importPath)
+	for _, row := range renderValidationIndexRows(dotIDs) {
+		page.WriteString(row + "\n")
 	}
 
 	return page.String()
+}
+
+// renderValidationIndexRows renders one CURRENT-table row per dot-id, in the order given.
+func renderValidationIndexRows(dotIDs []string) []string {
+	rows := make([]string, 0, len(dotIDs))
+
+	for _, dotID := range dotIDs {
+		importPath := validationProofImportPath(dotID)
+		rows = append(rows, fmt.Sprintf("| `%s` | [`%s.md`](%s/%s.md) | [`src/core/%s`](%s/tree/master/src/core/%s) |",
+			importPath, dotID, validationCurrentDirName, dotID, importPath, go2csRepositoryURL, importPath))
+	}
+
+	return rows
 }
 
 // proofStableContent strips a page down to the text the stability rule compares: the provenance
@@ -574,9 +590,79 @@ func writeValidationProofPage(docsPath string, provenance proofPageProvenance, c
 	return writeValidationIndex(docsPath)
 }
 
-// writeValidationIndex regenerates the roster from the pages on disk. It is computed on every
-// validated run rather than only when a page changed: identical content means needToWriteFile-style
-// gating writes nothing, and a missing or stale index heals itself.
+// rosterRowPattern matches one banked row of docs/ValidatedTestPackages.md and captures its import
+// path. It is a verbatim port of $RosterRowPattern in src/_roster.ps1, and must stay in step with it
+// and with ROSTER_ROW in docs/phase4/hopA-inputs/regen-validation-index.py: three readers of one
+// table. TestRosterRowPatternsAgree holds them together.
+var rosterRowPattern = regexp.MustCompile("^\\|\\s*\\[`([^`]+)`\\]\\([^)]*\\)\\s*\\|\\s*(\\d+)\\s*\\|\\s*(\\d*)\\s*\\|")
+
+// validationRosterFileName is the roster of record, beside docs/validation.
+const validationRosterFileName = "ValidatedTestPackages.md"
+
+// validationIndexTableHead is the CURRENT table's header row. Everything above it in the committed
+// index, and everything after its rows, is hand-maintained text the writer keeps.
+const validationIndexTableHead = "| Package | Proof | Converted package |"
+
+// readValidationRoster returns the import paths the roster banks, and whether the roster exists.
+func readValidationRoster(docsPath string) ([]string, bool, error) {
+	data, err := os.ReadFile(filepath.Join(docsPath, validationRosterFileName))
+
+	if os.IsNotExist(err) {
+		return nil, false, nil
+	}
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	var packages []string
+
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r", ""), "\n") {
+		if match := rosterRowPattern.FindStringSubmatch(line); match != nil {
+			packages = append(packages, match[1])
+		}
+	}
+
+	return packages, true, nil
+}
+
+// composeValidationIndex puts freshly rendered rows into the committed page: the text up to and
+// including the CURRENT table's header and separator is kept byte for byte (the Frozen snapshots
+// section lives there), the old rows are dropped, and whatever follows them is kept. It reports false
+// when the committed page has no CURRENT table to compose around.
+func composeValidationIndex(committed string, rows []string) (string, bool) {
+	lines := strings.Split(strings.ReplaceAll(committed, "\r", ""), "\n")
+	head := -1
+
+	for i, line := range lines {
+		if line == validationIndexTableHead && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "|:") {
+			head = i
+			break
+		}
+	}
+
+	if head < 0 {
+		return "", false
+	}
+
+	tail := head + 2
+
+	for tail < len(lines) && strings.HasPrefix(lines[tail], "| `") {
+		tail++
+	}
+
+	composed := append(append(append([]string{}, lines[:head+2]...), rows...), lines[tail:]...)
+
+	return strings.Join(composed, "\n"), true
+}
+
+// writeValidationIndex regenerates the index's rows: one per package the roster banks that has a page
+// under current/, in the roster's order. A page the roster does not bank (a retired import path kept
+// as its successor's relocation anchor, or an excluded package's evidence) is not a row, and a banked
+// package with no page yet has none. Without a roster (a bare temporary tree) every page is a row.
+// The hand-maintained text around the CURRENT table is kept (composeValidationIndex). It is computed
+// on every validated run rather than only when a page changed: identical content means
+// needToWriteFile-style gating writes nothing, and a missing or stale index heals itself.
 func writeValidationIndex(docsPath string) error {
 	validationPath := filepath.Join(docsPath, validationDocsDirName)
 
@@ -586,17 +672,59 @@ func writeValidationIndex(docsPath string) error {
 		return err
 	}
 
-	var dotIDs []string
+	pages := make(map[string]bool)
 
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
 			continue
 		}
 
-		dotIDs = append(dotIDs, strings.TrimSuffix(entry.Name(), ".md"))
+		pages[strings.TrimSuffix(entry.Name(), ".md")] = true
 	}
 
-	_, err = writeStableDocFile(filepath.Join(validationPath, validationIndexFileName), renderValidationIndex(dotIDs))
+	rosterPackages, hasRoster, err := readValidationRoster(docsPath)
+
+	if err != nil {
+		return err
+	}
+
+	// A roster that reads as no rows is a broken instrument, not an empty roster: rewriting the index
+	// around nothing would erase every row, so refuse by name instead.
+	if hasRoster && len(rosterPackages) == 0 {
+		return fmt.Errorf("the roster \"%s\" has no banked rows; the validation index was left as it is", filepath.Join(docsPath, validationRosterFileName))
+	}
+
+	// The rows follow the roster's own order, as regen-validation-index.py writes them; without a
+	// roster they are sorted.
+	var dotIDs []string
+
+	if hasRoster {
+		listed := make(map[string]bool)
+
+		for _, importPath := range rosterPackages {
+			if dotID := validationProofDotID(importPath); pages[dotID] && !listed[dotID] {
+				listed[dotID] = true
+				dotIDs = append(dotIDs, dotID)
+			}
+		}
+	} else {
+		for dotID := range pages {
+			dotIDs = append(dotIDs, dotID)
+		}
+
+		sort.Strings(dotIDs)
+	}
+
+	indexPath := filepath.Join(validationPath, validationIndexFileName)
+	page := renderValidationIndexPage(dotIDs)
+
+	if committed, err := os.ReadFile(indexPath); err == nil {
+		if composed, ok := composeValidationIndex(string(committed), renderValidationIndexRows(dotIDs)); ok {
+			page = composed
+		}
+	}
+
+	_, err = writeStableDocFile(indexPath, page)
 
 	return err
 }
