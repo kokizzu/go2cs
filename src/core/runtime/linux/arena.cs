@@ -259,18 +259,7 @@ internal static uintptr userArenaChunkReserveBytes() {
     internal atomic.Bool defunct;
 }
 
-// newUserArena creates a new userArena ready to be used.
-internal static ж<userArena> newUserArena() {
-    var a = @new<userArena>();
-    SetFinalizer(a.OrTypedNil(), (ж<userArena> aΔ1) => {
-        // If arena handle is dropped without being freed, then call
-        // free on the arena, so the arena chunks are never reclaimed
-        // by the garbage collector.
-        aΔ1.free();
-    });
-    a.refill();
-    return a;
-}
+// go2cs generated this placeholder — func newUserArena is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // new allocates a new object of the provided type into the arena, and returns
 // its pointer.
