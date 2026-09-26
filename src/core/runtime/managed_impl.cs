@@ -1942,4 +1942,11 @@ partial class runtime_package
         Callers(1, b);
         return (a[0], b[0]);
     }
+
+    /// <summary>Returns the first and last value the caller-span band can ever hold: the start of span 0
+    /// and the end of span <c>int.MaxValue</c>, the largest index the record list can reach.</summary>
+    public static (uintptr first, uintptr last) GoCallerSpanBand()
+    {
+        return (callerSpanStart(0), callerSpanStart(int.MaxValue) + (((nuint)1 << CallerSpanShift) - 1));
+    }
 }
