@@ -49,15 +49,20 @@ public class RuntimeCpuSamplerSeamTests
 
     // Drains the profile log to end-of-data and returns its records as (hdr, stack), skipping the
     // leading header record (hdr = hz, no stack). Bounded: a read that never reaches EOF is a failure.
-    private static List<(ulong hdr, ulong[] stack)> DrainRecords()
+    private static List<(ulong hdr, ulong[] stack)> DrainRecords() =>
+        DrainTaggedRecords().ConvertAll(r => (r.hdr, r.stack));
+
+    // As DrainRecords, with each record's tag (readProfile returns one tag per record).
+    private static List<(ulong hdr, ulong[] stack, unsafe_package.Pointer? tag)> DrainTaggedRecords()
     {
-        Task<List<(ulong, ulong[])>> task = Task.Run(() =>
+        Task<List<(ulong, ulong[], unsafe_package.Pointer?)>> task = Task.Run(() =>
         {
-            var records = new List<(ulong, ulong[])>();
+            var records = new List<(ulong, ulong[], unsafe_package.Pointer?)>();
 
             while (true)
             {
-                var (data, _, eof) = runtime_pprof_readProfile();
+                var (data, tags, eof) = runtime_pprof_readProfile();
+                int record = 0;
 
                 for (int i = 0; i < (int)len(data);)
                 {
@@ -67,7 +72,8 @@ public class RuntimeCpuSamplerSeamTests
                     for (int j = 0; j < stack.Length; j++)
                         stack[j] = data[i + 3 + j];
 
-                    records.Add((data[i + 2], stack));
+                    records.Add((data[i + 2], stack, record < (int)len(tags) ? tags[record] : null));
+                    record++;
                     i += n;
                 }
 
@@ -79,7 +85,7 @@ public class RuntimeCpuSamplerSeamTests
         if (!task.Wait(Bound))
             Assert.Fail($"the profile log did not reach end-of-data within {Bound.TotalSeconds} s");
 
-        List<(ulong, ulong[])> all = task.Result;
+        List<(ulong, ulong[], unsafe_package.Pointer?)> all = task.Result;
         Assert.IsTrue(all.Count >= 1 && all[0].Item2.Length == 0, "the first record is the header");
         all.RemoveAt(0);
         return all;
@@ -116,6 +122,32 @@ public class RuntimeCpuSamplerSeamTests
 
         int matching = records.FindAll(r => r.hdr == 1 && r.stack.Length == 2 && r.stack[0] == 0x1234 && r.stack[1] == 0x5678).Count;
         Assert.AreEqual(3, matching, "the three samples written on stop must be in the profile, one count each");
+    }
+
+    [TestMethod]
+    public void ASampleTagReachesTheProfileLogAsTheSameLabels()
+    {
+        // Go's cpuprof.add passes &gp.labels, and profBuf.write stores the labels pointer beside the
+        // record; runtime/pprof reads it back as the sample's *labelMap.
+        unsafe_package.Pointer label = unsafe_package.Pointer.FromPinnedBox(Ꮡ(7L));
+
+        s_proxy.OnStop = write =>
+        {
+            write(1000, new uintptr[] { 0x1234 }.slice(), label);
+            write(1001, new uintptr[] { 0x5678 }.slice(), nil);
+        };
+
+        SetCPUProfileRate(100);
+        SetCPUProfileRate(0);
+        List<(ulong hdr, ulong[] stack, unsafe_package.Pointer? tag)> records = DrainTaggedRecords();
+
+        var tagged = records.Find(r => r.stack.Length == 1 && r.stack[0] == 0x1234);
+        var untagged = records.Find(r => r.stack.Length == 1 && r.stack[0] == 0x5678);
+
+        Assert.IsNotNull(tagged.stack, "the labelled sample must be in the profile");
+        Assert.IsNotNull(untagged.stack, "the unlabelled sample must be in the profile");
+        Assert.IsTrue(ReferenceEquals(tagged.tag, label), "the labelled sample's tag is the labels it was written with");
+        Assert.IsTrue(untagged.tag is null || untagged.tag == nil, "the unlabelled sample has no tag");
     }
 
     [TestMethod]
