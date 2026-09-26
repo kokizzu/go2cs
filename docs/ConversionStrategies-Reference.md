@@ -20789,46 +20789,6 @@ compacting collect; `setPanicOnFault` is `[ThreadStatic]` because it is per-goro
 `modinfo`/`WriteHeapDump`/`SetTraceback`/`runtime_setCrashFD` are inert, matching a binary built
 without module or heap-dump support.
 
-**The GC measurement surface — one recorder, one ring, one snapshot** (`golib/runtime/GcPauseRecorder.cs`,
-landed 2026-08-21; design and measurements in
-[`docs/phase4/DESIGN-readmemstats-surface.md`](phase4/DESIGN-readmemstats-surface.md)). `ReadMemStats`
-and `readGCStats` used to answer independently, and both left the per-cycle facts zero — which made
-`runtime/debug`'s `TestReadGCStats` fail on two *length* assertions comparing the two surfaces to each
-other. The cheap way to make those pass is to report `NumGC = 0` on both; that is refused, because it
-would destroy a fact the CLR genuinely measures in order to satisfy an assert. Instead one definition
-is applied uniformly — **a Go GC cycle is a CLR gen2 collection**, which is what `NumGC` already meant —
-and one recorder supplies the missing half:
-
-* the mechanism is a **resurrecting finalizable sentinel**: an object nothing strongly references,
-  whose finalizer records the collection and then calls `GC.ReRegisterForFinalize(this)`, so it wakes
-  once per gen2 collection. `GC.RegisterForFullGCNotification` was refused (it requires background GC
-  off, process-wide), an in-process EventPipe listener was refused (events arrive ~117 ms late), and
-  polling from each read was refused (it loses every collection between two reads, which is a hole in
-  a ring whose slots are indexed by cycle number);
-* the ring is written in **Go's own order** — slot `observed % 256`, *then* the counter — so
-  `MemStats`' documented "the most recent pause is at `PauseNs[(NumGC+255)%256]`" and `ReadGCStats`'
-  backwards walk line up by construction rather than by agreement;
-* **`NumGC` is the recorder's count, not `CollectionCount`**, so the two surfaces cannot disagree. It
-  can lag the true gen2 count by at most one collection, for at most the finalizer's scheduling
-  latency — understating, never inventing — and `runtime.GC()`/`debug.FreeOSMemory()` **drain** the
-  recorder before returning, which closes the lag at the one boundary Go's tests read it across;
-* **`HeapReleased = max(0, committedHighWater − currentCommitted)`** over `TotalCommittedBytes`. A
-  *cumulative* decrease would be monotone; Go documents the field as a current quantity that falls
-  when the heap reacquires, and the monotone form was measured drifting ~33.6 MB per release cycle;
-* **`ReadMemStats` is allocation-free**, and that is a landing precondition rather than a nicety:
-  `net/textproto`'s banked `TestReadMIMEHeaderAllocations` brackets each header read between two
-  `ReadMemStats` calls. `GC.GetGCMemoryInfo()` allocates a `GCMemoryInfoData` box per call (288 B
-  measured), so the committed/heap-size figures come from the recorder's own per-gen2 sample and the
-  ring is copied into the caller's already-allocated `array<T>` backing. Guarded at **zero** by
-  `GolibTests.GcMeasurementSurfaceProbes.ReadMemStatsPerCallAllocation`;
-* always on, armed from `runtime`'s (and `runtime/debug`'s) module initializer, with a
-  `GO2CS_GC_PAUSE_HISTORY=0` escape hatch that restores the pre-recorder answers exactly. Measured
-  cost: one finalizer run and one `GetGCMemoryInfo` call per gen2 collection — below the noise floor
-  of a 1.25–1.64 ms collection.
-
-Guarded by `GolibTests.GcPauseHistorySurfaceTests` (the two surfaces held against each other,
-`HeapReleased` across a `FreeOSMemory`, `NumForcedGC`, and the refused-fields-stay-zero rule).
-
 **Two assembly primitives DO have exact managed forms** (`runtime/stubs_impl.cs`).
 `systemstack(fn)` is `fn()` — Go's own contract already says that a caller already on a system stack
 "calls fn directly and returns", and in the managed model there is one stack per goroutine and no g0
@@ -20960,6 +20920,47 @@ diagnose*, and `ex.Message` alone threw the evidence away: a `TypeInitialization
 message merely names the type and says "see inner exception", so the actual fault and its stack were
 lost (a whole `gob` run's real cause was invisible this way). The backstop now writes `ex.ToString()`
 for the non-panic case, carrying the full inner-exception chain and stacks.
+
+### The GC measurement surface — one recorder, one ring, one snapshot
+
+The recorder is `golib/runtime/GcPauseRecorder.cs`, landed 2026-08-21; the design and measurements are in
+[`docs/phase4/DESIGN-readmemstats-surface.md`](phase4/DESIGN-readmemstats-surface.md). `ReadMemStats`
+and `readGCStats` used to answer independently, and both left the per-cycle facts zero — which made
+`runtime/debug`'s `TestReadGCStats` fail on two *length* assertions comparing the two surfaces to each
+other. The cheap way to make those pass is to report `NumGC = 0` on both; that is refused, because it
+would destroy a fact the CLR genuinely measures in order to satisfy an assert. Instead one definition
+is applied uniformly — **a Go GC cycle is a CLR gen2 collection**, which is what `NumGC` already meant —
+and one recorder supplies the missing half:
+
+* the mechanism is a **resurrecting finalizable sentinel**: an object nothing strongly references,
+  whose finalizer records the collection and then calls `GC.ReRegisterForFinalize(this)`, so it wakes
+  once per gen2 collection. `GC.RegisterForFullGCNotification` was refused (it requires background GC
+  off, process-wide), an in-process EventPipe listener was refused (events arrive ~117 ms late), and
+  polling from each read was refused (it loses every collection between two reads, which is a hole in
+  a ring whose slots are indexed by cycle number);
+* the ring is written in **Go's own order** — slot `observed % 256`, *then* the counter — so
+  `MemStats`' documented "the most recent pause is at `PauseNs[(NumGC+255)%256]`" and `ReadGCStats`'
+  backwards walk line up by construction rather than by agreement;
+* **`NumGC` is the recorder's count, not `CollectionCount`**, so the two surfaces cannot disagree. It
+  can lag the true gen2 count by at most one collection, for at most the finalizer's scheduling
+  latency — understating, never inventing — and `runtime.GC()`/`debug.FreeOSMemory()` **drain** the
+  recorder before returning, which closes the lag at the one boundary Go's tests read it across;
+* **`HeapReleased = max(0, committedHighWater − currentCommitted)`** over `TotalCommittedBytes`. A
+  *cumulative* decrease would be monotone; Go documents the field as a current quantity that falls
+  when the heap reacquires, and the monotone form was measured drifting ~33.6 MB per release cycle;
+* **`ReadMemStats` is allocation-free**, and that is a landing precondition rather than a nicety:
+  `net/textproto`'s banked `TestReadMIMEHeaderAllocations` brackets each header read between two
+  `ReadMemStats` calls. `GC.GetGCMemoryInfo()` allocates a `GCMemoryInfoData` box per call (288 B
+  measured), so the committed/heap-size figures come from the recorder's own per-gen2 sample and the
+  ring is copied into the caller's already-allocated `array<T>` backing. Guarded at **zero** by
+  `GolibTests.GcMeasurementSurfaceProbes.ReadMemStatsPerCallAllocation`;
+* always on, armed from `runtime`'s (and `runtime/debug`'s) module initializer, with a
+  `GO2CS_GC_PAUSE_HISTORY=0` escape hatch that restores the pre-recorder answers exactly. Measured
+  cost: one finalizer run and one `GetGCMemoryInfo` call per gen2 collection — below the noise floor
+  of a 1.25–1.64 ms collection.
+
+Guarded by `GolibTests.GcPauseHistorySurfaceTests` (the two surfaces held against each other,
+`HeapReleased` across a `FreeOSMemory`, `NumForcedGC`, and the refused-fields-stay-zero rule).
 
 ### `iter.Pull`'s coro — a symmetric handoff between two threads, and the goroutine count that had never been wired
 
@@ -21462,6 +21463,8 @@ away from the emitted C# the census workflow reads; and a per-statement emission
 reads-like-Go goal. The side-car alternative pays neither of those but adds a file and a csproj item
 per package.
 
+### `codegen-liveness` — a frame holds what Go has already dropped
+
 A second disclosed-divergence class alongside `alloc-profile`, first pinned by `sync` (packages
 `TestOnceXGC` ×3 subtests and `TestPoolGC`). Go's GC consults **per-safepoint liveness maps**: a
 local dies at its last use, even in the middle of a running function. The CLR's GC info is
@@ -21485,6 +21488,15 @@ does drop the wrapped function — measured directly, the backing array is relea
 call — so the disclosure covers the CLR's frame conservatism, not a retention bug. The two real bugs
 the investigation *did* find (SetFinalizer keying on the pointer box; `Ꮡ`'s `in` parameter pinning the
 array) were fixed at their layers first; only what remained was disclosed.
+
+The class's bar and its standing measurements live with the roster's disclosure classes in [Validated
+Test Packages](ValidatedTestPackages.md): the 2026-08-30 tier-0 A/B found the first point above
+disappears under a Release publish with `DOTNET_TieredCompilation=0`, so a row that needs that
+configuration says so on its own line, `execution: release-tc0` (`internal/weak` is the first). `sync`'s
+three `TestOnceXGC` subtest pins, and how they count toward its Disclosed column, are recorded in
+[DATA-alloc-pins-rand-sync](phase4/DATA-alloc-pins-rand-sync.md);
+[CENSUS-type-name-erasure](phase4/CENSUS-type-name-erasure.md) §8 derives how `unique`'s GC rows move
+between matched and `codegen-liveness` once its subtest names match Go's.
 
 ### `host-limit` — the third disclosed-divergence class: what the test HOST cannot BE
 
