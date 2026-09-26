@@ -19,11 +19,22 @@
 //     other frame (golib, the BCL, the test host) is dropped. A sample with no Go frame is dropped, which
 //     drops the sampler's own threads too. The stack is written leaf first, as Go records it.
 //   - The SampleProfiler samples each managed thread about every millisecond; Go values a record at
-//     1/hz. Samples are thinned per thread to one per 1/hz of elapsed time (section 9.2 step 4). How
-//     close that comes to the process's CPU time is the magnitude piece's question, not this one's.
+//     1/hz. Samples are thinned per thread to one per 1/hz of elapsed time (section 9.2 step 4) --
+//     except as the magnitude piece below says.
 //   - Each sample carries the labels its thread had when sampled: golib's ProfileLabelEvents writes
 //     one event into the same trace per label change, and the latest one on the sample's thread
 //     before the sample names the labels object, which is the tag (nil for none).
+//
+// THE MAGNITUDE PIECE. The SampleProfiler samples a thread whenever it is in managed code, whether or
+// not it is on a CPU, so a runnable thread waiting for a core is sampled too: with more busy threads
+// than cores, one sample per 1/hz of WALL time over-counts (measured: five 1,500 ms hogs on four cores
+// each sampled for 1,500 ms while on a CPU for 748-1,169 ms). Go's SIGPROF counts CPU time. So while a
+// session runs, every thread's CPU time is polled (System.Diagnostics.ProcessThread.TotalProcessorTime:
+// GetThreadTimes on windows, /proc/self/task/<tid>/stat on linux) every CpuPollInterval, and at Stop a
+// thread with a reading keeps round(its CPU time x hz) of its samples, spread evenly over them, in
+// place of the wall-time grid. EventPipe's ThreadID is the OS thread id, the id ProcessThread reports.
+// A thread that exits between two polls loses at most one interval of CPU time; a thread with no
+// reading keeps the grid.
 //
 // It never throws into runtime: where a session cannot open (DOTNET_EnableDiagnostics=0, a runtime
 // without EventPipe) Start records the failure and Stop writes nothing, which is the zero-sample profile
@@ -33,9 +44,11 @@ namespace go.CpuProfiler;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
@@ -76,6 +89,16 @@ public sealed class EventPipeSampler : IGoCpuSampler
     private string? m_tracePath;
     private Task? m_drain;
     private int m_hz;
+
+    /// <summary>How often a running session reads every thread's CPU time. A thread that exits between two
+    /// reads loses at most this much CPU time from its weighting.</summary>
+    public static readonly TimeSpan CpuPollInterval = TimeSpan.FromMilliseconds(100);
+
+    private readonly object m_cpuLock = new();
+    private readonly Dictionary<int, TimeSpan> m_cpuAtStart = [];
+    private readonly Dictionary<int, TimeSpan> m_cpuLatest = [];
+    private Timer? m_cpuPoll;
+    private int m_polling;
 
     public EventPipeSampler(Func<ISession> open) => m_open = open;
 
@@ -126,6 +149,12 @@ public sealed class EventPipeSampler : IGoCpuSampler
         m_hz = hz;
         golib.ProfileLabelEvents.Reset();
 
+        lock (m_cpuLock)
+        {
+            m_cpuAtStart.Clear();
+            m_cpuLatest.Clear();
+        }
+
         try
         {
             ISession session = m_open();
@@ -138,6 +167,9 @@ public sealed class EventPipeSampler : IGoCpuSampler
             m_tracePath = path;
             m_session = session;
             LastSessionOpened = true;
+
+            PollThreadCpu(baseline: true);
+            m_cpuPoll = new Timer(_ => PollThreadCpu(baseline: false), null, CpuPollInterval, CpuPollInterval);
         }
         catch (Exception)
         {
@@ -155,6 +187,15 @@ public sealed class EventPipeSampler : IGoCpuSampler
 
         if (session is null)
             return;
+
+        using (ManualResetEvent stopped = new(false))
+        {
+            if (m_cpuPoll?.Dispose(stopped) == true)
+                stopped.WaitOne();
+        }
+
+        m_cpuPoll = null;
+        PollThreadCpu(baseline: false);
 
         bool drained = false;
 
@@ -206,9 +247,10 @@ public sealed class EventPipeSampler : IGoCpuSampler
     {
         using TraceLog log = new(etlx);
 
-        double periodMSec = 1000.0 / (m_hz > 0 ? m_hz : 100);
-        Dictionary<int, double> nextDue = [];
+        int hz = m_hz > 0 ? m_hz : 100;
+        double periodMSec = 1000.0 / hz;
         Dictionary<int, unsafe_package.Pointer> labels = [];
+        Dictionary<int, List<Candidate>> byThread = [];
         FrameResolver frames = new();
         List<uintptr> stack = [];
 
@@ -243,17 +285,115 @@ public sealed class EventPipeSampler : IGoCpuSampler
             if (stack.Count == 0)
                 continue;
 
-            double at = sample.TimeStampRelativeMSec;
+            if (!byThread.TryGetValue(sample.ThreadID, out List<Candidate>? candidates))
+                byThread[sample.ThreadID] = candidates = [];
 
-            if (nextDue.TryGetValue(sample.ThreadID, out double due) && at < due)
+            candidates.Add(new Candidate(sample.ThreadID, sample.TimeStampRelativeMSec, stack.ToArray(), labels.TryGetValue(sample.ThreadID, out unsafe_package.Pointer? tag) ? tag : nil));
+        }
+
+        List<Candidate> kept = [];
+
+        foreach ((int thread, List<Candidate> candidates) in byThread)
+        {
+            if (CpuTimeOf(thread) is TimeSpan used)
+                KeepByCpuTime(candidates, (int)Math.Round(used.TotalSeconds * hz), kept);
+            else
+                KeepOnGrid(candidates, periodMSec, kept);
+        }
+
+        kept.Sort(static (left, right) => left.AtMSec.CompareTo(right.AtMSec));
+
+        foreach (Candidate sample in kept)
+        {
+            write((int64)(sample.AtMSec * 1_000_000.0), sample.Stack.slice(), sample.Tag);
+            LastSamplesWritten++;
+            m_writtenByThread[sample.Thread] = m_writtenByThread.GetValueOrDefault(sample.Thread) + 1;
+        }
+    }
+
+    // One SampleProfiler sample of a Go stack, before it is kept or dropped.
+    private sealed record Candidate(int Thread, double AtMSec, uintptr[] Stack, unsafe_package.Pointer Tag);
+
+    // A thread whose CPU time was read keeps `count` of its samples, spread evenly over them in time.
+    private static void KeepByCpuTime(List<Candidate> candidates, int count, List<Candidate> kept)
+    {
+        count = Math.Min(count, candidates.Count);
+
+        for (int k = 0; k < count; k++)
+            kept.Add(candidates[(int)((k + 0.5) * candidates.Count / count)]);
+    }
+
+    // A thread with no CPU reading keeps its samples on a 1/hz grid of wall time; a thread idle past its
+    // next slot restarts from now.
+    private static void KeepOnGrid(List<Candidate> candidates, double periodMSec, List<Candidate> kept)
+    {
+        double due = double.NegativeInfinity;
+
+        foreach (Candidate sample in candidates)
+        {
+            if (sample.AtMSec < due)
                 continue;
 
-            // Keep the thread's samples on a 1/hz grid; a thread idle past its next slot restarts from now.
-            nextDue[sample.ThreadID] = at < due + periodMSec ? due + periodMSec : at + periodMSec;
+            due = sample.AtMSec < due + periodMSec ? due + periodMSec : sample.AtMSec + periodMSec;
+            kept.Add(sample);
+        }
+    }
 
-            write((int64)(at * 1_000_000.0), stack.ToArray().slice(), labels.TryGetValue(sample.ThreadID, out unsafe_package.Pointer? tag) ? tag : nil);
-            LastSamplesWritten++;
-            m_writtenByThread[sample.ThreadID] = m_writtenByThread.GetValueOrDefault(sample.ThreadID) + 1;
+    // The CPU time a thread used while the session ran: its last reading less its reading at Start (0 for
+    // a thread that did not exist then). Null when it was never read.
+    private TimeSpan? CpuTimeOf(int thread)
+    {
+        lock (m_cpuLock)
+        {
+            if (!m_cpuLatest.TryGetValue(thread, out TimeSpan latest))
+                return null;
+
+            TimeSpan used = latest - m_cpuAtStart.GetValueOrDefault(thread);
+
+            return used < TimeSpan.Zero ? TimeSpan.Zero : used;
+        }
+    }
+
+    // Reads every thread's CPU time. Timer callbacks can overlap on a busy machine; a late one skips.
+    private void PollThreadCpu(bool baseline)
+    {
+        if (Interlocked.Exchange(ref m_polling, 1) != 0)
+            return;
+
+        try
+        {
+            using Process self = Process.GetCurrentProcess();
+
+            foreach (ProcessThread thread in self.Threads)
+            {
+                using (thread)
+                {
+                    try
+                    {
+                        TimeSpan used = thread.TotalProcessorTime;
+
+                        lock (m_cpuLock)
+                        {
+                            if (baseline)
+                                m_cpuAtStart[thread.Id] = used;
+
+                            m_cpuLatest[thread.Id] = used;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // The thread exited between the enumeration and the read.
+                    }
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // No reading this time: threads keep their previous one.
+        }
+        finally
+        {
+            Volatile.Write(ref m_polling, 0);
         }
     }
 
