@@ -74,7 +74,50 @@ public unsafe class NativeStructMarshalTests
         public NoDims() => B = new array<byte>(4);
     }
 
+    // x/sys's InotifyEvent shape: a zero-size LAST field (Name [0]uint8) takes a trailing byte in Go.
+    // Measured on go1.24.13: unsafe.Offsetof(Name) = 16, unsafe.Sizeof = 20.
+    public struct InotifyLike
+    {
+        public int Wd;
+        public uint Mask;
+        public uint Cookie;
+        public uint Len;
+        public array<byte> Name;
+
+        public InotifyLike() => Name = new array<byte>(0);
+    }
+
+    private const uint InotifyLikeGoSizeof = 20;
+
     private static readonly uintptr Zero = new(0);
+
+    [TestMethod]
+    public void AZeroSizeTailIsRefusedOrGetsGoSizeofNeverLess()
+    {
+        // A buffer short of Go's sizeof would let the kernel write past it: heap corruption rather than
+        // EFAULT. So either the struct is refused (while a layout omits the trailing byte) or it gets a
+        // buffer of exactly Go's size (once the layout includes it); a smaller buffer is the defect.
+        nuint? size = NativeStructMarshal.MarshalledSizeOf(typeof(InotifyLike));
+
+        Assert.IsTrue(size is null || size == InotifyLikeGoSizeof,
+            $"a trailing-zero-size struct got a {size}-byte buffer; Go's sizeof is {InotifyLikeGoSizeof}");
+
+        if (size is not null)
+            return;
+
+        // Refused: the token reaches the kernel unchanged, which answers EFAULT.
+        heap(new InotifyLike(), out ж<InotifyLike> box);
+        uintptr token = box;
+        uintptr received = Zero;
+
+        NativeStructMarshal.Call(new uintptr(1), token, Zero, Zero, Zero, Zero, Zero, (num, a1, a2, a3, a4, a5, a6) =>
+        {
+            received = a1;
+            return (Zero, Zero, Zero);
+        });
+
+        Assert.AreEqual(token, received);
+    }
 
     [TestMethod]
     public void ATermiosCrossesAsItsGoLayoutAndComesBackDecoded()

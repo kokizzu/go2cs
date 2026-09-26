@@ -100,8 +100,11 @@ public static unsafe class NativeStructMarshal
         Span<uintptr> args = [a1, a2, a3, a4, a5, a6];
         ReadOnlySpan<uintptr> original = [a1, a2, a3, a4, a5, a6];
         Span<nint> buffers = stackalloc nint[6];
-        object?[] boxes = new object?[6];
-        Type?[] types = new Type?[6];
+
+        // Per-call scratch on the stack, not the heap: a raw `new T[6]` here would allocate on every
+        // marshalled call and is exactly the raw backing form the NoUncountedBackingAllocations guard names.
+        ArgumentBoxes boxes = default;
+        ArgumentTypes types = default;
 
         buffers.Clear();
 
@@ -200,16 +203,33 @@ public static unsafe class NativeStructMarshal
 
     private static Shape shapeOf(Type type) => s_shapes.GetOrAdd(type, static t => classify(t, 0));
 
+    /// <summary>
+    /// The native buffer size a token argument of Go struct type <paramref name="type"/> would get, or
+    /// null when the type is refused or left alone. Exposed for the guard's test.
+    /// </summary>
+    internal static nuint? MarshalledSizeOf(Type type) => shapeOf(type) is { Marshallable: true, Size: var size } ? size : null;
+
     // A value type cannot contain itself (CS0523), so nesting depth is bounded by the declared types;
     // the cap only turns a misclassification into "unsupported" rather than a stack overflow.
     private const int MaxDepth = 32;
 
     private static Shape classify(Type type, int depth)
     {
-        if (depth > MaxDepth || KindOf(type) != GoReflect.Struct || !TryGoSizeOf(type, null, out nuint size) || GoFieldOffsets(type) is null)
+        if (depth > MaxDepth || KindOf(type) != GoReflect.Struct || !TryGoSizeOf(type, null, out nuint size) || GoFieldOffsets(type) is not { } offsets)
             return Unsupported;
 
-        foreach (GoFieldInfo field in GoFields(type))
+        GoFieldInfo[] fields = GoFields(type);
+
+        // A LAST field of size zero (x/sys's `[0]uint8` flexible-array tails, InotifyEvent's Name) takes a
+        // trailing byte in Go, so that a pointer to it cannot point past the struct: Go's sizeof is then
+        // beyond that field's offset (InotifyEvent: offset 16, size 20). A layout that reports the size
+        // AT the offset has omitted the byte, and a buffer of that size would let the kernel write past
+        // its end, which is heap corruption, not EFAULT. Refused whatever the layout pass does, so this
+        // holds before and after GoReflect's own trailing-byte fix.
+        if (fields.Length > 0 && lastFieldIsZeroSize(fields[^1]) && size <= (nuint)offsets[^1])
+            return Unsupported;
+
+        foreach (GoFieldInfo field in fields)
         {
             // Only a plain field is read and written through its one FieldInfo; an embed's box hop or
             // a defined-type wrapper's descent is a path this class does not follow.
@@ -252,6 +272,22 @@ public static unsafe class NativeStructMarshal
         }
 
         return new Shape(true, size, null);
+    }
+
+    private static bool lastFieldIsZeroSize(GoFieldInfo field) =>
+        TryGoSizeOf(field.Type, KindOf(field.Type) == GoReflect.Array ? field.ArrayDims : null, out nuint size) && size == 0;
+
+    // Six-slot per-call scratch for Call(), held on the stack.
+    [InlineArray(6)]
+    private struct ArgumentBoxes
+    {
+        private object? m_element;
+    }
+
+    [InlineArray(6)]
+    private struct ArgumentTypes
+    {
+        private Type? m_element;
     }
 
     private static bool isReferenceKind(int kind) =>
