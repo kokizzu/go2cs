@@ -733,8 +733,10 @@ $ledgerScopeFixture = Read-FixtureLedger -Rows @(
     "| ``ex/moved`` | 7 | ``ex/successor`` 7 |"
 )
 
+# @() because ONE row comes back from the function as a bare [pscustomobject], and Windows PowerShell
+# 5.1 gives that no .Count (pwsh 6.1+ does): the arm read '' under powershell.exe (1.24.13.2 battery).
 Assert-Equal 'ledger scope: a ledger-shaped row under a LATER sibling heading is not a ledger row' 1 `
-    $ledgerScopeFixture.Count
+    @($ledgerScopeFixture).Count
 Assert-Equal 'ledger scope: the row that parsed is the in-section one' 'ex/one' $ledgerScopeFixture[0].Package
 
 $ledgerSubsectionFixture = Read-FixtureLedger -Rows @(
