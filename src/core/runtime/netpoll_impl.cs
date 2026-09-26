@@ -62,7 +62,9 @@
 //                  assembly stub deliberately keeps throwing, so an unported path fails loudly
 //                  instead of silently doing nothing"), and it is the right outcome for a test whose
 //                  premise — a poller wait that a break interrupts — the managed model does not
-//                  have. Making it a no-op would buy a green that means nothing.
+//                  have. Making it a no-op would buy a green that means nothing. On linux, where
+//                  write1 has a libc body, the auto body's write reaches Go's throw, so linux
+//                  hand-owns a refusal by name instead (linux/netpoll_epoll_impl.cs).
 //   netpoll      — needs no hand-own at all: its own guard (fact 2 above) already returns the empty
 //                  list on every flavor once init declines to create the poller.
 //

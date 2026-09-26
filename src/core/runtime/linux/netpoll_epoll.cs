@@ -71,34 +71,7 @@ internal static void netpollarm(ref pollDesc pd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string runtimeNetpollBreakWriteˢ = "runtime: netpollBreak write failed"u8;
-
-// netpollBreak interrupts an epollwait.
-internal static void netpollBreak() {
-    // Failing to cas indicates there is an in-flight wakeup, so we're done here.
-    if (!ᏑnetpollWakeSig.CompareAndSwap(0, 1)) {
-        return;
-    }
-    ref var one = ref heap(new uint64(), out var Ꮡone);
-    one = 1;
-    var oneSize = (int32)/* unsafe.Sizeof(one) */ (uintptr)8;
-    while (ᐧ) {
-        var n = write(netpollEventFd, (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡone)), oneSize);
-        System.GC.KeepAlive(Ꮡone);
-        if (n == oneSize) {
-            break;
-        }
-        if (n == (int32)(-_EINTR)) {
-            continue;
-        }
-        if (n == (int32)(-_EAGAIN)) {
-            return;
-        }
-        println((@string)"runtime: netpollBreak write failed with"u8, -n);
-        @throw(runtimeNetpollBreakWriteˢ);
-    }
-}
+// go2cs generated this placeholder — func netpollBreak is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;

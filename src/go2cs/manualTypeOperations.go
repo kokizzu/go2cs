@@ -720,6 +720,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// right outcome for a test whose premise (a poller wait that a break interrupts) the managed
 		// model does not have. A no-op there would buy a green that means nothing.
 		"netpollGenericInit": goosAny,
+		// EXCEPT on linux, where write1 has a libc body (runtime/linux/stubs2_impl.cs): the auto
+		// netpollBreak's write to the never-created eventfd answers -EBADF and takes Go's throw, a
+		// fatal that ends the test host. The linux hand-own refuses by name before the write, which
+		// keeps the one loud row. See runtime/linux/netpoll_epoll_impl.cs.
+		"netpollBreak": goosLinux,
 		// runtime.throw and runtime.fatal -- the FATAL path (runtime/panic_impl.cs;
 		// docs/phase4/DESIGN-fatal-path.md). Both converted bodies print Go's `fatal error: <text>`
 		// line through golib's print and then call fatalthrow, whose FIRST statement is
