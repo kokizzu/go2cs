@@ -107,7 +107,7 @@ Browse the whole set under [`src/core`](https://github.com/ritchiecarroll/go2cs/
 
 ## Features
 
-go2cs converts the full Go language surface — the same converter that emits the packages above:
+go2cs converts the full Go language surface except a generic type alias whose target is an anonymous struct or interface type (`type A[T any] = struct{…}`), which it reports and does not yet convert — the same converter that emits the packages above:
 
 **Types & values**
 
@@ -115,7 +115,7 @@ go2cs converts the full Go language surface — the same converter that emits th
 - `int` / `uint` as platform-width native integers; named numeric types and untyped-constant semantics
 - Constants and `iota`, preserving Go's numeric literal formatting (hex, binary, underscores, exponents)
 - Pointers with automatic heap-boxing driven by escape analysis; `nil`; `unsafe.Pointer`
-- Type definitions and aliases — including exported aliases that resolve across assembly boundaries, and Go 1.24 generic aliases, which render as their target type
+- Type definitions and aliases — including exported aliases that resolve across assembly boundaries, and Go 1.24 generic aliases, which render as their target type (except one whose target is an anonymous struct or interface)
 
 **Functions & methods**
 
