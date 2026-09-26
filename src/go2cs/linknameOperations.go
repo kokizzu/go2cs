@@ -286,6 +286,16 @@ func packageFuncAccess(goIDName string, isFreeFunction bool) string {
 		return "public"
 	}
 
+	// A target that assembly OUTSIDE GOROOT jumps to (asmJumpForwardTargets: syscall.gettimeofday,
+	// reached from x/sys/unix's asm_linux_amd64.s). Go's assembler resolving that jump is the
+	// authorization, so there is no handle to read here; the row names the assembly instead. The
+	// trampoline's forwarder compiles into another assembly, so the target must be public.
+	if isFreeFunction {
+		if _, jumpedTo := asmJumpForwardTargets[currentPackagePath+"."+goIDName]; jumpedTo {
+			return "public"
+		}
+	}
+
 	return getAccess(goIDName)
 }
 

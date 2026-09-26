@@ -36,6 +36,13 @@
 //
 // The nil case answers EFAULT rather than faulting, which is what the kernel does with a bad tv
 // pointer and what Go's callers are written against.
+//
+// PUBLIC, not internal, because assembly OUTSIDE the standard library jumps to it:
+// golang.org/x/sys v0.25.0's unix/asm_linux_amd64.s:56 is `JMP syscall·gettimeofday(SB)`, and Go's
+// assembler resolving that jump to an unexported symbol is Go's own authorization for the call. The
+// converter records it as an asmJumpForwardTargets row (src/go2cs/asmTrampolines.go), which emits the
+// generated declaration public and lets x/sys/unix's forwarder, compiled into another assembly, call
+// it. A partial's two halves must agree on accessibility, so this half is edited to match.
 
 using System;
 
@@ -46,8 +53,8 @@ namespace go;
 partial class syscall_package
 {
     // The declaration this supplies a body for lives in syscall_linux_amd64.cs:
-    //     internal static partial Errno /*err*/ gettimeofday(ж<Timeval> tv);
-    internal static partial Errno /*err*/ gettimeofday(ж<Timeval> tv)
+    //     public static partial Errno /*err*/ gettimeofday(ж<Timeval> tv);
+    public static partial Errno /*err*/ gettimeofday(ж<Timeval> tv)
     {
         if (tv == nil)
         {
