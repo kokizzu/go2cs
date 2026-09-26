@@ -242,6 +242,10 @@
     <ProjectReference Include="..\..\core\runtime\pprof\runtime.pprof.csproj" />
     <ProjectReference Include="..\..\core\internal\profile\internal.profile.csproj" />
 
+    <!-- RuntimeMetricsHistogramTests: runtime/metrics.Read's crossing into the runtime, observed through
+         its public surface (Value.Float64Histogram), which is where the reinterpret it guards fails. -->
+    <ProjectReference Include="..\..\core\runtime\metrics\runtime.metrics.csproj" />
+
     <!-- TestenvCPUProfilingBrokenTests: the hand-owned answer runtime/pprof's CPU tests consult. -->
     <ProjectReference Include="..\..\core\internal\testenv\internal.testenv.csproj" />
 
