@@ -307,7 +307,10 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 
 		for _, name := range disclosed {
 			if disclosure, pinned := disclosures[name]; pinned {
-				hasPlatformSkip = hasPlatformSkip || disclosure.Class == platformSkipClass
+				// compiler-property shares platform-skip's pass/skip shape, so the "not a skipped test" clause
+				// is false of it too. (cgo-configuration has the same shape and is NOT added here: that would
+				// re-word a banked page at its next regeneration, so it is named for its own ruling instead.)
+				hasPlatformSkip = hasPlatformSkip || disclosure.Class == platformSkipClass || disclosure.Class == compilerPropertyClass
 				hasDeferred = hasDeferred || disclosure.Class == deferredClass
 			}
 		}
@@ -374,6 +377,21 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 				"converted corpus genuinely and permanently holds. The skip is Go's, not the harness's — it is pinned\n"+
 				"to that upstream message, so the row moves to a hard mismatch if the converted side ever skips for a\n"+
 				"different reason, or stops skipping.\n", escapeProofCell(name))
+		}
+
+		// A compiler-property row's own note, for the same anti-laundering reason as platform-skip's: Go
+		// ran the test and the converted side skipped, and a reader must see that in words.
+		for _, name := range disclosed {
+			disclosure, pinned := disclosures[name]
+
+			if !pinned || disclosure.Class != compilerPropertyClass {
+				continue
+			}
+
+			fmt.Fprintf(&page, "\n`%s` is a **compiler-property skip**: `go test` reports **pass** and the converted\n"+
+				"suite reports **skip**, at the test's own upstream check for a decision of the Go compiler (inlining)\n"+
+				"that the converted program does not carry; the owner ruled the family structural. It is pinned to that\n"+
+				"upstream message, and any subtest Go ran beneath it is listed as withdrawn, never counted as matched.\n", escapeProofCell(name))
 		}
 
 		// A host-conditional row's own note, modeled on the roster's internal/zstd row: name the
