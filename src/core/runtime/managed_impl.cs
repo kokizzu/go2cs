@@ -1886,19 +1886,20 @@ partial class runtime_package
 
     // A synthetic PC resolved to the frame a traceback can print.
     //
-    // FILE AND LINE ARE DELIBERATELY EMPTY, and this is the registry's own promise held to rather
-    // than papered over: a token knows WHICH FUNCTION, never which instruction. Every route into the
-    // [GoPositionMap] records starts from a live StackFrame's PDB file name (goFramePosition and
-    // goFuncLiteralSuffix are goSourcePath's only two callers), and the records are keyed by C# FILE
-    // while a converted package is one partial class spread across every file in it — so a token,
-    // having no frame, has no derivable file either. Inventing one from reflection would be a guess
-    // wearing a number. Reading the portable PDB would supply file AND line together, and was
-    // rejected: a published single-file host carrying no PDB would leave the frames quietly unnamed,
-    // which looks exactly like a resolver that never fired. The honest fix, when a consumer measures
-    // the need, is a per-method file record emitted by the converter — its own increment.
+    // A token knows WHICH FUNCTION, never which instruction, so the position is the FUNCTION's: the
+    // method's first sequence point in its portable PDB (methodSourcePosition, the source the
+    // closure-name rule already reads), mapped through the file's [GoPositionMap] record exactly as
+    // goFramePosition maps a live frame's. That is a function's own declaration-site position, which
+    // is what Go's frame for a function-entry PC reports too. Go's runtime/pprof requires it: a
+    // location is `lookupFailed` when any frame has an empty Function, an empty File or Line 0
+    // (proto.go), and then its mapping's HasFunctions is false -- windows' TestConvertCPUProfile and
+    // TestConvertMemProfile read exactly that for FuncPCABIInternal(f1)/(f2), both synthetic here.
     //
-    // The visible gap against Go, named rather than hidden: Go's `debug=1` textual profile prints
-    // `name file:line` per frame and this prints the name alone. See DESIGN-pc-readback.md §3.1.
+    // WHERE NO PDB IS FOUND (none embedded, none beside the assembly) file and line stay empty and
+    // line 0, the answer this record gave before a PDB was read. That was once the reason not to read
+    // one at all: a published single-file host without a PDB would leave frames unnamed. The
+    // closure-name seat measured that the -tests host finds its PDBs, so the fallback now costs only
+    // the host that ships none, and it costs that host exactly what every host paid before.
     //
     // Keyed on the method rather than the pc because callers do arithmetic on a PC — runtime writes
     // `FuncPCABI0(goexit) + sys.PCQuantum`, pprof writes `+ 1` — so an unbounded set of pcs resolves
@@ -1917,16 +1918,39 @@ partial class runtime_package
 
             // A Go frame is named by the rule Callers applies (goFrameName: receivers, test variants,
             // function literals); anything else keeps the registry's own spelling.
+            (string file, int line) = syntheticFramePosition(method);
+
             CallerFrameRecord record = new()
             {
                 Function = isGoSourceFrame(method) ? goFrameName(method, null) : GoSyntheticPC.GoNameOf(method),
-                File = string.Empty,
-                Line = 0
+                File = file,
+                Line = line
             };
 
             s_syntheticFrames[handle] = record;
             return record;
         }
+    }
+
+    // A method's own position with no live frame: its first sequence point, reported the way
+    // goFramePosition reports a frame -- the Go position its file's record maps it to, or the converted
+    // C# position where the record has none -- and ("", 0) where no PDB names one.
+    private static (string file, int line) syntheticFramePosition(System.Reflection.MethodBase method)
+    {
+        (string? csFile, int csLine) = methodSourcePosition(method);
+
+        if (csFile is null || csLine <= 0)
+            return (string.Empty, 0);
+
+        string csPath = goSourcePath(csFile);
+        GoPositionMapRecord? record = goPositionMapRecord(method, csPath);
+
+        if (record is null)
+            return (csPath, csLine);
+
+        int goLine = record.GoLineFor(csLine);
+
+        return goLine <= 0 ? (csPath, csLine) : (record.ResolveGoFile(csPath), goLine);
     }
 
     // ------- FuncForPC / Func.Name / Func.Entry / Func.FileLine: a *Func recovered from a token -------
