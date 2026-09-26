@@ -798,11 +798,11 @@ internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸ
                 // start checking if we've run into a pointer cycle.
                 @unsafe.Pointer ptr = (uintptr)v.UnsafePointer();
                 {
-                    var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
+                    var (_, ok) = e.ptrSeen[@unsafe.Pointer.OrTypedNil(ptr), ꟷ]; if (ok) {
                         e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));
                     }
                 }
-                e.ptrSeen[ptr] = new EmptyStruct();
+                e.ptrSeen[@unsafe.Pointer.OrTypedNil(ptr)] = new EmptyStruct();
                 defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, ref ᒐ);
             }
         }
