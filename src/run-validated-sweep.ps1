@@ -548,6 +548,20 @@ function Get-DisclosedCount {
     return 0
 }
 
+# The committed proof page at HEAD, as lines, decoded as UTF-8. PowerShell decodes a native command's
+# output with [Console]::OutputEncoding, which is the OEM code page (IBM437 on the i9) under both 5.1
+# and pwsh 7, so `& git show` mis-decodes every non-ASCII verdict name on a page and each then reads
+# as MISSING against the UTF-8 comparison record. Measured 2026-09-26 on os (308 TestReadStdin
+# subtests named with non-ASCII text): 310 page names "missing" under the default decode, exactly the
+# 2 real ones under UTF-8, identically on both editions. The three page readers below all use this;
+# $LASTEXITCODE is git's, since the finally block runs no native command.
+function Get-CommittedPageLines([string] $PageRel) {
+    $previous = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    try { return & git -C $repo show "HEAD:$PageRel" 2>$null }
+    finally { [Console]::OutputEncoding = $previous }
+}
+
 # Reads the two evidence artifacts the delta check needs -- the run's own comparison record and
 # the committed proof page -- and applies Test-HostConditionalDelta. Every unreadable input is a
 # rejection with its reason, never an acceptance: the mechanism only absorbs what it can prove.
@@ -570,7 +584,7 @@ function Get-HostConditionalVerdict {
     # become discarded ErrorRecords rather than a terminating abort (the 'Stop' hazard the drift
     # section documents), and the rejection below already names the path loudly.
     $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
-    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    $pageLines = Get-CommittedPageLines $pageRel
     if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
         return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "no committed proof page at HEAD:$pageRel" }
     }
@@ -632,7 +646,8 @@ function Get-HostConditionalDisclosureVerdict {
 # count moves with it: see the measured note over Test-CapabilityAbsentDelta in _roster.ps1, which
 # is where the rule and its evidence live. "A lost verdict is never host-conditional" above stays
 # true for every OTHER shortfall: this path engages ONLY for a package registered here, and ONLY
-# when the shortfall matches that package's registered block size exactly -- anything else still
+# when the shortfall matches that package's registered block exactly (BlockSize for a FAIL root,
+# BlockSize - 1 for a SKIP root, which stays matched) -- anything else still
 # falls through to the same hard failure as before. In particular a host that HAS the capability but
 # whose converted side misses the runner's own deadline produces the identical shortfall with Go
 # PASSING, and this rule refuses it -- that shortfall is the converted side's, and it is absorbed
@@ -643,8 +658,16 @@ function Get-HostConditionalDisclosureVerdict {
 # itself plus every Go subtest under it) -- re-derive it from the committed proof page rather than
 # trust this number cold if the suite's own case matrix ever changes. ONE registration serves BOTH
 # shortfall rules on purpose: no package can reach either absorption without being named here.
+#
+# os: go1.24.13's TestOpenFileCreateExclDanglingSymlink calls testenv.MustHaveSymlink before
+# testMaybeRooted spawns its InRoot/NoRoot subtests, so a host without the Windows symbolic-link
+# creation privilege reports the root SKIP on both runtimes and never the two subtests. The roster
+# banks the privileged ceiling (1105, d81a14bbe8); an unprivileged host reads 1103 (d120e99eb7's page,
+# and the i9 2026-09-26). The root stays matched, so the expected shortfall is BlockSize - 1 = 2 --
+# the rule keys it on the collapsed verdict. Capability is printed on the PASS line when present.
 $capabilityConditionalBlocks = @{
     'crypto/tls' = @{ Test = 'TestBogoSuite'; BlockSize = 3419 }
+    'os'         = @{ Test = 'TestOpenFileCreateExclDanglingSymlink'; BlockSize = 3; Capability = 'the symbolic-link creation privilege (SeCreateSymbolicLinkPrivilege)' }
 }
 
 # Test-CapabilityAbsentDelta -- the pure decision rule -- lives in _roster.ps1 beside
@@ -668,7 +691,7 @@ function Get-CapabilityAbsentVerdict {
     }
 
     $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
-    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    $pageLines = Get-CommittedPageLines $pageRel
     if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
         return [PSCustomObject]@{ Accepted = $false; Reason = "no committed proof page at HEAD:$pageRel" }
     }
@@ -707,7 +730,7 @@ function Get-HostLimitVerdict {
     }
 
     $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
-    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    $pageLines = Get-CommittedPageLines $pageRel
     if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
         return [PSCustomObject]@{ Accepted = $false; Reason = "no committed proof page at HEAD:$pageRel" }
     }
@@ -1263,7 +1286,9 @@ foreach ($row in $rows) {
             'capability-absent' {
                 $pass++
                 $block = $capabilityConditionalBlocks[$pkg]
-                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($block.BlockSize) ($($block.Test) capability absent) [${rowSecs}s]" -ForegroundColor Green
+                # The shortfall, not BlockSize: a SKIP root stays matched, so the two differ by one.
+                $capabilityNamed = if ($block.Capability) { ": $($block.Capability)" } else { '' }
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($row.Effective.Expected - $got) ($($block.Test) capability absent$capabilityNamed) [${rowSecs}s]" -ForegroundColor Green
             }
             'host-limit' {
                 # A pass, and NOT a silent one: the line states the shortfall, the block that
