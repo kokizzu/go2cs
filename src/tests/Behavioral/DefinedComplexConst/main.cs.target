@@ -13,6 +13,10 @@ partial class main_package {
 
 [GoType("num:float64")] partial struct F64;
 
+[GoType("num:float32")] partial struct F32;
+
+[GoType("num:float32")] partial struct F32b;
+
 [GoType] partial struct pair {
     internal C128 a;
     internal C64 b;
@@ -28,6 +32,13 @@ internal static C64 typedC64 => /* 0.25 */ 0.25F + 0F.i();
 internal static C64 typedC64n => /* 3 */ 3F + 0F.i();
 internal static C64 typedC64c => /* 1 + 2i */ 1F + 2F.i();
 internal static C128b typedC128b => /* 0.5 */ 0.5D + 0D.i();
+
+internal static F32 typedF32 => 0.25f;
+internal static F32 typedF32n => 3f;
+internal static F32 typedF32t => 0.1f;
+internal static F32b typedF32b => 1.5f;
+internal static F64 typedF64 => 0.1;
+internal const float32 plainF32 = 0.1f;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string zeroˢ = "zero"u8;
@@ -99,6 +110,7 @@ private static readonly object namedˢ = (@string)"named:"u8;
 private static readonly object conversionˢ = (@string)"conversion:"u8;
 private static readonly object typedˢ = (@string)"typed:"u8;
 private static readonly object channelˢ = (@string)"channel:"u8;
+private static readonly object floatTypedˢ = (@string)"float typed:"u8;
 private static readonly object controlsˢ = (@string)"controls:"u8;
 
 internal static void Main() {
@@ -134,6 +146,9 @@ internal static void Main() {
     fmt.Println(conversionˢ, ((C64)2F), ((C128)(-3D)), ((C128b)1.25D), ((C128)complex(0D, 0D)));
     C64 localC64 = /* 1.5 */ 1.5F + 0F.i();
     C128b localC128b = /* -2 */ -2D + 0D.i();
+    F32 localF32 = -2.5f;
+    F32b localF32b = 0.75f;
+    F64 localF64 = 2.5;
     fmt.Println(typedˢ, typedC128, typedC128r, typedC64, typedC64n, typedC64c, typedC128b, localC64, localC128b, 0.5F + 0F.i(), 2D + 0D.i(), classify(0D), classify(2.5D), classify(3D));
     deferred();
     var ch = new channel<C64>(1);
@@ -142,6 +157,7 @@ internal static void Main() {
     complex128 pc = 3D;
     complex64 pc64 = 4F;
     F64 df = 5D;
+    fmt.Println(floatTypedˢ, typedF32, typedF32n, typedF32t, typedF32b, typedF64, plainF32, localF32, localF32b, localF64, typedF32 * 2F, (float32)typedF32t == plainF32);
     fmt.Println(controlsˢ, pc, pc64, df);
 }
 
