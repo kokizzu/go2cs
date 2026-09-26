@@ -224,6 +224,28 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     {
     }
 
+    /// <summary>
+    /// The canonical TYPED nil unsafe.Pointer -- what <c>any(unsafe.Pointer(nil))</c> holds.
+    /// </summary>
+    /// <remarks>
+    /// Go's nil unsafe.Pointer inside an interface is a VALUE with a dynamic type: the interface is
+    /// non-nil, <c>%T</c> prints <c>unsafe.Pointer</c> and <c>reflect.ValueOf</c> answers a valid
+    /// UnsafePointer-kind Value. This class renders its nil as a C# <c>null</c> reference, which boxes
+    /// as nothing, so the converter substitutes this instance at the empty-interface boundary through
+    /// <see cref="OrTypedNil"/> (the typed-nil boundary's third arm, beside the pointer and func arms).
+    /// ONE instance, so two typed nils compare reference-equal wherever the comparison is an untyped
+    /// object compare -- the same doctrine as <c>ж&lt;T&gt;.NilBox</c>.
+    /// </remarks>
+    public static readonly Pointer Nil = new(nil);
+
+    /// <summary>
+    /// The pointer itself, or <see cref="Nil"/> for a null reference -- the converter's
+    /// <c>TypedNilUnsafePointerAccessor</c>. A STATIC method rather than an extension: golib's
+    /// <c>OrTypedNil</c> extension binds <c>ж&lt;uintptr&gt;</c> and would answer that type's nil box,
+    /// a different dynamic type.
+    /// </summary>
+    public static Pointer OrTypedNil(Pointer? pointer) => pointer ?? Nil;
+
     // The mint the converter emits for `unsafe.Pointer(p)` over a managed Go pointer (`new
     // @unsafe.Pointer(p)`): the number is the box's stable address exactly as the uintptr overload
     // minted it. Identity (Equals/GetHashCode) holds for every pointee -- including one that carries

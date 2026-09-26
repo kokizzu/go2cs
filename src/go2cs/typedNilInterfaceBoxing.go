@@ -32,9 +32,18 @@
 // finite — the same set of slots boxUntypedConstAsDefaultType already serves, for the same reason
 // (a value's Go dynamic type must survive being boxed).
 //
-// The scope is a genuine `*T` (a `types.Pointer`). `unsafe.Pointer` is a Basic and renders as a
-// struct, and a NAMED pointer type renders as its generated wrapper struct — neither can be a null
-// reference, so neither has anything to carry.
+// The scope is a genuine `*T` (a `types.Pointer`), plus `unsafe.Pointer` as its own arm. A NAMED
+// pointer type renders as its generated wrapper struct, cannot be a null reference, and has nothing
+// to carry.
+//
+// ⚠ CORRECTED 2026-09-26 (R, seat (c2)): this paragraph said `unsafe.Pointer` "is a Basic and renders
+// as a struct" and so could not be null either, and excluded it on that premise. The premise had gone
+// false without anyone re-reading it: unsafe.Pointer is the hand-owned `class Pointer :
+// StandardBox<uintptr>`, a nil one renders `default!`, and `any(unsafe.Pointer(nil))` reached reflect
+// as the ZERO Value — reflect's TestIsZero panicked "call of reflect.Value.IsZero on zero Value" at its
+// `{unsafe.Pointer(nil), true}` row, once seat (c) let it run that far. It is now the boundary's third
+// arm (applyTypedNilUnsafePointerBox), with its own canonical nil, since the pointer arm's accessor
+// binds ж<uintptr> and would answer a different dynamic type.
 //
 // A SECOND value shape loses its Go type at this same boundary, for a different reason, so it is
 // owned here too:
@@ -105,6 +114,10 @@ func (v *Visitor) applyTypedNilPointerBox(value ast.Expr, rendered string) strin
 
 	valueType := v.getType(value, false)
 
+	if isExactUnsafePointer(valueType) {
+		return v.applyTypedNilUnsafePointerBox(valueType, v.unsafePointerExprNeverRendersNull(value), rendered)
+	}
+
 	if _, isPointer := valueType.(*types.Pointer); !isPointer {
 		// The sibling treatments this file owns, at the same boundary and mutually exclusive
 		// with the pointer one: a VARIADIC func value must carry its Go func type, or C#'s
@@ -139,6 +152,10 @@ func (v *Visitor) applyTypedNilPointerBox(value ast.Expr, rendered string) strin
 func (v *Visitor) applyTypedNilPointerBoxToType(valueType types.Type, rendered string) string {
 	if rendered == "" || valueType == nil {
 		return rendered
+	}
+
+	if isExactUnsafePointer(valueType) {
+		return v.applyTypedNilUnsafePointerBox(valueType, false, rendered)
 	}
 
 	if _, isPointer := valueType.(*types.Pointer); !isPointer {
@@ -249,6 +266,81 @@ func (v *Visitor) pointerExprNeverRendersNull(expr ast.Expr) bool {
 
 				return v.pointerExprNeverRendersNull(expr.Args[0])
 			}
+		}
+	}
+
+	return false
+}
+
+// isExactUnsafePointer reports whether t IS unsafe.Pointer (through an alias), never a NAMED type over
+// it: a defined `type P unsafe.Pointer` renders as its generated wrapper struct, which cannot be null
+// and so has nothing to carry.
+func isExactUnsafePointer(t types.Type) bool {
+	basic, ok := types.Unalias(t).(*types.Basic)
+
+	return ok && basic.Kind() == types.UnsafePointer
+}
+
+// applyTypedNilUnsafePointerBox carries unsafe.Pointer's Go type across the empty-interface boundary
+// when the value can be null — the THIRD arm, beside the pointer and func ones. `unsafe.Pointer` is
+// the hand-owned `class Pointer : StandardBox<uintptr>`, so a nil one renders `default!`, a C# null
+// that boxes as nothing: `any(unsafe.Pointer(nil))` reached reflect as the ZERO Value, and TestIsZero
+// panicked "call of reflect.Value.IsZero on zero Value" at its `{unsafe.Pointer(nil), true}` row. The
+// pointer arm's `OrTypedNil()` cannot serve it: that extension binds `ж<uintptr>` and would hand back
+// ж<uintptr>'s nil box, a different dynamic type. So the canonical nil is the Pointer class's own,
+// reached through a static call — the type name comes from the same renderer every other spelling of
+// unsafe.Pointer uses.
+func (v *Visitor) applyTypedNilUnsafePointerBox(valueType types.Type, neverNull bool, rendered string) string {
+	if neverNull {
+		return rendered
+	}
+
+	return fmt.Sprintf("%s.%s(%s)", v.getCSharpTypeName(valueType), TypedNilUnsafePointerAccessor, rendered)
+}
+
+// unsafePointerExprNeverRendersNull reports whether an unsafe.Pointer-typed expression's RENDERING
+// provably cannot be null: a CONVERSION FROM A POINTER OR A uintptr constructs a Pointer
+// (`new @unsafe.Pointer(…)` / `FromPinnedBox(…)`), and a nil box or a zero address constructs the
+// structurally-nil one rather than a null reference. Everything else is left conservative: the nil
+// conversion renders a cast of null (`(@unsafe.Pointer)default!`, TestIsZero's row), a conversion of
+// an operand that is ALREADY an unsafe.Pointer renders as that operand, and a variable, a field or a
+// call result can each hold null.
+func (v *Visitor) unsafePointerExprNeverRendersNull(expr ast.Expr) bool {
+	switch expr := expr.(type) {
+	case *ast.ParenExpr:
+		return v.unsafePointerExprNeverRendersNull(expr.X)
+	case *ast.CallExpr:
+		if len(expr.Args) != 1 {
+			return false
+		}
+
+		// Asked of go/types directly: the converter's isTypeConversion answers false for
+		// `unsafe.Pointer(&x)`, which it lowers through its own pinned-box route (FromPinnedBox).
+		if tv, ok := v.info.Types[expr.Fun]; !ok || !tv.IsType() {
+			return false
+		}
+
+		operandExpr := expr.Args[0]
+
+		if tv, ok := v.info.Types[operandExpr]; ok && tv.IsNil() {
+			return false
+		}
+
+		if ident, ok := operandExpr.(*ast.Ident); ok && ident.Name == "nil" {
+			return false
+		}
+
+		operandType := v.getType(operandExpr, false)
+
+		if operandType == nil {
+			return false
+		}
+
+		switch operand := operandType.Underlying().(type) {
+		case *types.Pointer:
+			return true
+		case *types.Basic:
+			return operand.Kind() == types.Uintptr
 		}
 	}
 
