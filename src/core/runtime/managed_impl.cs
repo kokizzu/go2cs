@@ -883,7 +883,7 @@ partial class runtime_package
             if (close > 1)
             {
                 string outer = name[1..close];
-                string? recorded = frame is null ? null : goFuncLiteralSuffix(method, frame);
+                string? recorded = frame is null ? goFuncLiteralSuffix(method) : goFuncLiteralSuffix(method, frame);
 
                 if (recorded is not null)
                 {
@@ -935,6 +935,117 @@ partial class runtime_package
             return null;
 
         return record.FuncLiteralFor(goLine);
+    }
+
+    // The same suffix for a method with NO live frame: a synthetic PC (a CPU profile's sampled method,
+    // a goroutine's start PC) names a function, never an instruction, so the C# line the record is
+    // read against is the method's FIRST sequence point in its portable PDB, which lies inside the
+    // literal's own span exactly as any frame in its body does. The PDB is the source a StackFrame
+    // reads too; where none is found (no PDB beside the assembly and none embedded) the caller keeps
+    // the derived fallback, the same answer a frame with no file information gets.
+    private static string? goFuncLiteralSuffix(System.Reflection.MethodBase method)
+    {
+        (string? csFile, int csLine) = methodSourcePosition(method);
+
+        if (csFile is null || csLine <= 0)
+            return null;
+
+        GoPositionMapRecord? record = goPositionMapRecord(method, goSourcePath(csFile));
+
+        if (record is null)
+            return null;
+
+        int goLine = record.GoLineFor(csLine);
+
+        return goLine <= 0 ? null : record.FuncLiteralFor(goLine);
+    }
+
+    private static readonly object s_pdbLock = new();
+    private static readonly Dictionary<System.Reflection.Assembly, System.Reflection.Metadata.MetadataReaderProvider?> s_pdbs = new();
+
+    // A method's first non-hidden sequence point (document name, line), or (null, 0).
+    private static (string? file, int line) methodSourcePosition(System.Reflection.MethodBase method)
+    {
+        System.Reflection.Assembly assembly = method.Module.Assembly;
+        System.Reflection.Metadata.MetadataReaderProvider? provider;
+
+        lock (s_pdbLock)
+        {
+            if (!s_pdbs.TryGetValue(assembly, out provider))
+            {
+                provider = openPortablePdb(assembly);
+                s_pdbs[assembly] = provider;
+            }
+        }
+
+        if (provider is null)
+            return (null, 0);
+
+        try
+        {
+            lock (s_pdbLock)
+            {
+                System.Reflection.Metadata.MetadataReader pdb = provider.GetMetadataReader();
+                var definition = System.Reflection.Metadata.Ecma335.MetadataTokens.MethodDefinitionHandle(method.MetadataToken);
+                System.Reflection.Metadata.MethodDebugInformation information = pdb.GetMethodDebugInformation(definition.ToDebugInformationHandle());
+
+                foreach (System.Reflection.Metadata.SequencePoint point in information.GetSequencePoints())
+                {
+                    if (point.IsHidden)
+                        continue;
+
+                    return (pdb.GetString(pdb.GetDocument(point.Document).Name), point.StartLine);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // An unreadable PDB names no position.
+        }
+
+        return (null, 0);
+    }
+
+    // The assembly's portable PDB: embedded in the image, or `<name>.pdb` beside the assembly, or
+    // beside the application for a single-file host, whose bundled assemblies have no location.
+    private static System.Reflection.Metadata.MetadataReaderProvider? openPortablePdb(System.Reflection.Assembly assembly)
+    {
+        try
+        {
+            #pragma warning disable IL3000 // Location is empty for a bundled assembly, which the fallback below covers.
+            string location = assembly.Location;
+            #pragma warning restore IL3000
+
+            if (location.Length > 0 && System.IO.File.Exists(location))
+            {
+                using var pe = new System.Reflection.PortableExecutable.PEReader(System.IO.File.OpenRead(location));
+
+                foreach (System.Reflection.PortableExecutable.DebugDirectoryEntry entry in pe.ReadDebugDirectory())
+                {
+                    if (entry.Type == System.Reflection.PortableExecutable.DebugDirectoryEntryType.EmbeddedPortablePdb)
+                        return pe.ReadEmbeddedPortablePdbDebugDirectoryData(entry);
+                }
+
+                if (pe.TryOpenAssociatedPortablePdb(location, path => System.IO.File.Exists(path) ? System.IO.File.OpenRead(path) : null, out System.Reflection.Metadata.MetadataReaderProvider? associated, out _))
+                    return associated;
+            }
+
+            string? name = assembly.GetName().Name;
+
+            if (name is not null)
+            {
+                string beside = System.IO.Path.Combine(AppContext.BaseDirectory, name + ".pdb");
+
+                if (System.IO.File.Exists(beside))
+                    return System.Reflection.Metadata.MetadataReaderProvider.FromPortablePdbStream(System.IO.File.OpenRead(beside));
+            }
+        }
+        catch (Exception)
+        {
+            // No readable PDB: the derived fallback names the literal.
+        }
+
+        return null;
     }
 
     // Spells the receiver qualifier of a converted Go method frame, or null when the frame is not a
@@ -1812,9 +1923,11 @@ partial class runtime_package
             if (s_syntheticFrames.TryGetValue(handle, out CallerFrameRecord? cached))
                 return cached;
 
+            // A Go frame is named by the rule Callers applies (goFrameName: receivers, test variants,
+            // function literals); anything else keeps the registry's own spelling.
             CallerFrameRecord record = new()
             {
-                Function = GoSyntheticPC.GoNameOf(method),
+                Function = isGoSourceFrame(method) ? goFrameName(method, null) : GoSyntheticPC.GoNameOf(method),
                 File = string.Empty,
                 Line = 0
             };
