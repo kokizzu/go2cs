@@ -16,9 +16,9 @@ packages (95.2%) pass their own Go 1.24.13 test suites in C#**, compared verdict
 `go test -json`, with every difference disclosed. Each row of the
 [validated roster](ValidatedTestPackages.md) links a proof page that lists Go's verdict beside
 go2cs's, test by test. Converted programs can use Go 1.24's new APIs, such as `os.Root`,
-`weak.Pointer` and `crypto/mlkem`, and the converted library ships as **NuGet 1.24.13.1**,
-targeting .NET 10. `net/http` shipped in 1.24.13.2 before it validated; it validates on master since 2026-09-25 (1,387
-verdicts). The
+`weak.Pointer` and `crypto/mlkem`, and the converted library ships as **NuGet 1.24.13.2**,
+targeting .NET 10. `net/http` shipped in 1.24.13.2 before it validated; it validates on master since
+2026-09-25 (1,387 verdicts). The
 [full announcement](NEWS.md#september-24-2026--the-converted-standard-library-moves-to-go-12413-and-218-packages-validate-against-it)
 has the details.
 
@@ -443,10 +443,13 @@ Contributors: see [`CLAUDE.md`](../CLAUDE.md) for an architecture overview and
 
 ## Status
 
-The converter builds idiomatic C# for the full range of Go language features, gated by 519 Go-vs-C#
-behavioral regression projects — each transpiled, compiled, byte-compared against a committed golden and,
-where it is a runnable program, executed with its stdout compared against the Go original's. The entire Go
-standard library (342 packages, Go 1.24.13) compiles cleanly as .NET assemblies.
+The converter builds idiomatic C# for the full range of Go language features, gated by nearly 700
+Go-vs-C# behavioral regression projects (2026-09-26) — each transpiled, compiled, byte-compared against a
+committed golden and, where it is a runnable program, executed with its stdout compared against the Go
+original's. The entire Go standard library (342 packages, Go 1.24.13) compiles cleanly as .NET assemblies.
+<!-- "nearly 700" counted 2026-09-26 at master db1bd885a2: 697 directories under src/tests/Behavioral
+     carry a committed .cs.target golden; the two harness directories (BehavioralRunner, BehavioralTests)
+     carry none and are not counted. -->
 
 The converted standard library reproduces **Go built with `-tags purego`** — a managed runtime cannot
 execute Go's hand-written `.s` assembly, so the portable pure-Go variants of the asm-backed crypto and hash
@@ -475,6 +478,7 @@ so you can read the exact C# that runs — and re-run the validation yourself. Y
 #    The second argument is the package's home in the converted tree; the converter locates the
 #    runtime and its stdlib dependencies from there — no flags or environment setup required.
 #    (On Windows, Go's source lives under "C:\Program Files\Go\src"; elsewhere use "$(go env GOROOT)/src".)
+#    Off Windows the converter binary is `go2cs`, not `go2cs.exe`.
 #    The first run builds the converted runtime and its dependencies, so it allows 10 minutes.
 go2cs.exe -tests -test-action all -test-timeout 10m \
     "C:\Program Files\Go\src\unicode\utf8" \
@@ -512,8 +516,8 @@ _Everyone asks:_ how fast is the transpiled C# compared to the original Go — i
 memory, and Native AOT builds? See the [performance comparison](Performance.md) — **`TL;DR`**: _usually
 slower than native Go, [but not always](Background.md#why-convert-go-to-c)_: maps and the optimized
 [stack string](ConversionStrategies.md#strings-string-and-sstring) path run at **parity with Go or
-faster in both C# variants** (as measured against go1.23.1, 2026-08-25). Most compute-shaped code — channels included — sits within a small
-multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
+faster in both C# variants** (measured against go1.23.1 on 2026-08-25; a rerun on the current Go 1.24.13
+pin is queued). Most compute-shaped code — channels included — sits within a small multiple of Go, with runtime structural-interface satisfaction the honest outlier. Save for
 the [ref struct](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/ref-struct)
 based stack string and [stack slice](ConversionStrategies.md#slices-and-arrays) work already landed, broad
 optimization is targeted for _after_ Phase 4 — the parity rows show the ceiling, not the finish line.
@@ -547,6 +551,8 @@ High level timeline of the project's major turning points.
 | 2026-08-29 | [**Over 90% of the standard library's test suites pass in C#**](NEWS.md#august-29-2026--over-90-of-the-standard-librarys-test-suites-pass-in-c) | `773afa2c2` · `d2da277f5` · `nuget-1.23.12.2` | **189/215** packages, 26,043 matching verdicts, 148 disclosed — **189/208 = 90.9%** against the implementable set; `net` aboard at 472 verdicts, `reflect` executing for the first time; 189 proof pages frozen for the 1.23.12.2 release. |
 | 2026-09-07 | [**Go 1.23.12's record closes at its anchor; the corpus hops to Go 1.24**](NEWS.md#september-7-2026--the-go-12312-record-closes-at-its-anchor-the-corpus-hops-to-go-124) | `95daed007` | **204/215** packages, 28,459 matching verdicts, 167 disclosed — **204/209 = 97.6%** against the implementable set, frozen as the Go 1.23.12 anchor; the five rows still unbanked re-validate under Go 1.24.13, where a hop re-derives every row from scratch. |
 | 2026-09-24 | [**The converted standard library moves to Go 1.24.13**](NEWS.md#september-24-2026--the-converted-standard-library-moves-to-go-12413-and-218-packages-validate-against-it) | `509828948` · `nuget-1.24.13.1` | **218/230** packages, 56,974 matching verdicts, 283 disclosed — **218/224 = 97.3%** against the implementable set; every row re-derived from Go 1.24.13's own test sources; `net/http` not validated at Go 1.24.13, its 17 divergences all under Go 1.24's new `internal/synctest`; published as NuGet 1.24.13.1 (51 new package IDs, 14 ended). |
+| 2026-09-24 | NuGet 1.24.13.2 published | `4c53b02a0` · `nuget-1.24.13.2` | Platform-varying packages ship `win-x64` and `linux-x64` flavors that a consumer both compiles and runs against, so the real-world walkthrough builds and runs on `linux/amd64`; 232 proof pages frozen for the release, at **218/230** packages and 56,975 matching verdicts. |
+| 2026-09-25 | [`net/http` validates again, at Go 1.24.13](ValidatedTestPackages.md) | `db1bd885a` | **219/230** packages, 58,364 matching verdicts, 280 disclosed; `net/http` returns to the roster at 1,387 verdicts, release-tiered as at Go 1.23.12. |
 
 ## C# to Go?
 
