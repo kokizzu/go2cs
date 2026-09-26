@@ -403,6 +403,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDeferVariadicCallee() => CheckTarget("DeferVariadicCallee");
 
     [TestMethod]
+    public void CheckDefinedComplexConst() => CheckTarget("DefinedComplexConst");
+
+    [TestMethod]
     public void CheckDefinedElemStringConversion() => CheckTarget("DefinedElemStringConversion");
 
     [TestMethod]

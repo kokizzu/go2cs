@@ -380,6 +380,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferVariadicCallee() => CheckTarget("DeferVariadicCallee");
 
     [TestMethod]
+    public void CheckDefinedComplexConst() => CheckTarget("DefinedComplexConst");
+
+    [TestMethod]
     public void CheckDefinedElemStringConversion() => CheckTarget("DefinedElemStringConversion");
 
     [TestMethod]

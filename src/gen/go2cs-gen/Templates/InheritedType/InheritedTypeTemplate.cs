@@ -370,6 +370,40 @@ internal class InheritedTypeTemplate : TemplateBase
 
         """ : "";
 
+    // A named type over a COMPLEX type needs the bridges from the values an untyped constant renders
+    // as: a real literal (`0D`, or `0F` for complex64) and the golib Untyped* wrapper of a named untyped
+    // const. Each reaches the underlying (System.Numerics.Complex or golib complex64) only through a
+    // user-defined conversion, so `C128 c = 0D` would chain two, which C# never composes (CS0029,
+    // CS1503; CS0019 on `c * 2D`, since the wrapper's own operators hide Complex's). The bridges only
+    // ever see what go/types already accepted: Go converts an untyped constant to a defined complex type
+    // implicitly, and never a typed float value.
+    private string ComplexBridgeOperators => TypeName switch
+    {
+        "complex128" => $"""
+
+                public static implicit operator {ObjectName}(float64 value) => new {ObjectName}(value);
+
+                public static implicit operator {ObjectName}(UntypedInt value) => new {ObjectName}((complex128)value);
+
+                public static implicit operator {ObjectName}(UntypedFloat value) => new {ObjectName}((float64)value);
+
+                public static implicit operator {ObjectName}(UntypedComplex value) => new {ObjectName}((complex128)value);
+
+        """,
+        "complex64" => $"""
+
+                public static implicit operator {ObjectName}(float32 value) => new {ObjectName}(value);
+
+                public static implicit operator {ObjectName}(UntypedInt value) => new {ObjectName}((complex64)value);
+
+                public static implicit operator {ObjectName}(UntypedFloat value) => new {ObjectName}((float32)value);
+
+                public static implicit operator {ObjectName}(UntypedComplex value) => new {ObjectName}((complex64)value);
+
+        """,
+        _ => ""
+    };
+
     // A named type over `string` is indexed and sub-sliced in Go (`tag[i]`, `tag[i:j]` -
     // reflect StructTag.Get); C# indexing never applies user-defined conversions, so the
     // wrapper forwards the @string surface: element indexers, a Range indexer returning the
@@ -583,7 +617,7 @@ internal class InheritedTypeTemplate : TemplateBase
                 public static bool operator !=({{ObjectName}} left, {{ObjectName}} right) => !(left == right);
         
         {{UnderlyingConversionOperators}}
-                    {{UintptrBridgeOperators}}{{UntypedIntBridgeOperator}}{{UntypedFloatBridgeOperator}}{{StringSurfaceMembers}}
+                    {{UintptrBridgeOperators}}{{UntypedIntBridgeOperator}}{{UntypedFloatBridgeOperator}}{{ComplexBridgeOperators}}{{StringSurfaceMembers}}
                 // Handle comparisons between 'nil' and {{ObjectKind}} '{{ObjectName}}'
                 public static bool operator ==({{ObjectName}} value, NilType nil) => {{NilComparisonExpression}};
         
