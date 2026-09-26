@@ -6,8 +6,8 @@
 // version 3 only, which can be found in the LICENSE file.
 // Additional permission for emitted output: see LICENSE-EXCEPTION (AGPL section 7).
 
-// The sstring TWIN pilot (docs/phase4/DESIGN-sstring-twin-pilot.md; ruled by COORD on the i9 twin probe
-// b919919c96). A registered function keeps an `@string` member and gains an `sstring` member of the
+// The sstring TWIN (designed in docs/phase4/DESIGN-sstring-twin-pilot.md; ruled by COORD on the i9 twin
+// probe b919919c96). A registered function keeps an `@string` member and gains an `sstring` member of the
 // same name, and overload resolution prefers the sstring member:
 //
 //   - the SSTRING member carries the converted body. The converter emits it, marked [GoStr].
@@ -155,7 +155,7 @@ func (v *Visitor) isSStringTwin(fn *types.Func) bool {
 
 // sstringTwinFuncValue renders a func-VALUE reference to a twin: the canonical delegate of a
 // package-level function. A twinned METHOD referenced as a value has no canonical delegate (it would
-// have to bind its receiver), and the pilot's population has none, so it stops the conversion rather
+// have to bind its receiver), and the registered population has none, so it stops the conversion rather
 // than emitting a method group that is CS0123.
 func (v *Visitor) sstringTwinFuncValue(fn *types.Func, renderedName string) (string, bool) {
 	if !v.isSStringTwin(fn) {
@@ -163,7 +163,7 @@ func (v *Visitor) sstringTwinFuncValue(fn *types.Func, renderedName string) (str
 	}
 
 	if signature, ok := fn.Type().(*types.Signature); ok && signature.Recv() != nil {
-		panic(fmt.Sprintf("@sstringTwinFuncValue - %s is an sstring twin referenced as a method value; the pilot has no canonical delegate for a method (DESIGN-sstring-twin-pilot.md §3.3)", sstringTwinKey(originFunc(fn))))
+		panic(fmt.Sprintf("@sstringTwinFuncValue - %s is an sstring twin referenced as a method value; a twin has no canonical delegate for a method (DESIGN-sstring-twin-pilot.md §3.3)", sstringTwinKey(originFunc(fn))))
 	}
 
 	return renderedName + FuncValueMarker, true

@@ -6871,6 +6871,8 @@ What it supports:
 
 The converter emits `sstring` in two places: conversion views (next) and [twins](#an-sstring-twin-a-registered-function-gains-an-sstring-overload-that-calls-bind).
 
+Performance: `src/tests/Performance/PerfStringView` measures the view on keyword comparisons over a runtime-built buffer, and `PerfString` is the `@string` baseline, whose conversions are not eligible.
+
 ### A non-escaping `string([]byte)` local emits the stack-string `sstring`
 
 Go skips the copy in `string(b)` when the string is only read while `b` cannot change. The converter recovers that for four shapes (`markSStringEligible` and the `markSString…` passes in the escape analysis):
@@ -6918,7 +6920,7 @@ A `string` parameter is an `@string`, so every literal argument is copied into o
       [global::go.GoTwinForwarder("Sprintf")] static (global::go.@string format, global::System.Span<object> aʗp) => Sprintf(format, aʗp);
   ```
 
-**Calls do not change.** Wherever both members apply, the priority picks the `sstring` one. That covers a `u8` literal (through `sstring`'s implicit conversion), an `@string` (as a view) and a C# string. `fmt.Sprintf("xxx"u8)` now copies nothing for its argument.
+**Calls do not change.** Wherever both members apply, the priority picks the `sstring` one. That covers a `u8` literal (through `sstring`'s implicit conversion), an `@string` (as a view) and a C# string. `fmt.Sprintf("xxx"u8)` copies nothing for its argument.
 
 **Function values name the delegate.** With two members there is no single method group, and converting one to a delegate typed on `@string` is CS0123, even with a cast. So the converter renders a func-value use of a package-level twin as `Nameᶠ` (`FuncValueMarker`):
 
@@ -6949,7 +6951,9 @@ A converting package reads the record, or the embedded standard-library metadata
 
 **The list.** Twins are an explicit registry, `sstringTwins` in `sstringTwinOperations.go`, keyed `"<pkgPath>.<Func>"` or `"<pkgPath>.<Recv>.<method>"` and listing the twinned parameter indices. It holds fmt's format parameters and the helpers they pass them to, plus `unicode/utf8`'s `DecodeRuneInString` and `RuneCountInString`: 32 parameters in 29 functions. The converter refuses an entry (`validateSStringTwin`) that:
 - is hand-owned, has no body, or is generic;
+- registers an index that is out of range or is the variadic tail;
 - has a registered parameter that is not `string`;
+- has a blank parameter (`_` or unnamed), which the `@string` forwarder could not pass on;
 - captures a registered parameter in a closure, or uses it in a `defer` or `go` statement;
 - binds a registered parameter to a local, because the implicit `sstring` → `@string` conversion would copy silently.
 
@@ -17339,7 +17343,7 @@ That single criterion classifies the whole surface. The converter stamps nothing
 | `[GoInit]` | **method** | the **C# compiler** — it is a `using` alias for `ModuleInitializerAttribute` | **Must stay** — the compiler requires it on the method it initializes with |
 | `[GoPackage]`, `[GoImplement<T,I>]`, `[GoImplicitConv<S,T>]`, `[GoTypeAlias]`, `[GoSStringTwin]` | package class / assembly | generators, runtime, and the converter's own next run | **Already there** — these are emitted into `package_info.cs` and never touched a mainline declaration |
 | `[GoManualConversion]`, `[GoRequiresUnsafe]` | module | the converter | **Already off** — hand-written, module-scoped |
-| `[GoInterfaceShell]`, `[GoReflectCompanion]` | interface / field | golib | **Not converter-emitted** — written by the generator and by hand respectively |
+| `[GoInterfaceShell]`, `[GoTwinForwarder]`, `[GoReflectCompanion]` | interface / lambda / field | golib | **Not converter-emitted** — the first two written by the generators (`[GoTwinForwarder]` by `StrGenerator`, on a twin delegate's lambda), the last by hand |
 
 So the movable set is `[GoValueClone]` and `[GoLocalName]`, and both moved. `[GoType] [GoValueClone("intbuf")] partial struct pp {` reads `[GoType] partial struct pp {`, with the record in `package_info.cs` carrying the rest:
 

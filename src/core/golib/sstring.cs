@@ -229,8 +229,8 @@ public readonly ref struct sstring
     // parameter with no copy: the sstring twin of a function (docs/phase4/DESIGN-sstring-twin-pilot.md)
     // takes `F("..."u8)` straight into the view. It was EXPLICIT to avoid a CS0034/CS0121 clash with
     // @string's own implicit ReadOnlySpan<byte> operator. That clash can only arise where both an @string
-    // and an sstring overload are applicable, which is exactly a twin pair, and the twin's
-    // [OverloadResolutionPriority(1)] resolves it (i9 twin probe b919919c96, arm n1). The flip itself
+    // and an sstring overload are applicable, which is exactly a twin pair, and the generated @string
+    // forwarder's [OverloadResolutionPriority(-1)] resolves it (i9 twin probe b919919c96, arm n1). The flip itself
     // measured 0 errors across both solutions (COORD's census, ledger 7baf01e424).
     public static implicit operator sstring(ReadOnlySpan<byte> value)
     {

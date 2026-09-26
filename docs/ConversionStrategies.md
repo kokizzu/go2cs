@@ -875,10 +875,12 @@ indexing, slicing, `len`, comparison, `+` and the type's own methods.
 ```go
 type Token string
 func (t Token) First() byte { return t[0] }
+const done Token = "done"
 next := done + "-next"    // still a Token
 ```
 ```csharp
 [GoType("@string")] partial struct Token;
+internal static readonly Token done = "done"u8;
 public static byte First(this Token t) => t[0];
 Token next = done + "-next"u8;
 ```
