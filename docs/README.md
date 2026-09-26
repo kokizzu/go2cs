@@ -330,8 +330,10 @@ internal static void Main() {
 > platform's flavor: `win-x64` for a Windows conversion, `linux-x64` for a Linux one. Windows needs go2cs
 > packages **1.24.13.1 or later**, the release matching the converter's Go 1.24.13 toolchain. Linux needs
 > packages **1.24.13.2 or later** AND a converter built from a checkout that includes the 1.24.13.2
-> changes. The output matches `go run`, except that in an interactive terminal the C# build does not yet
-> print `fatih/color`'s colors. Other platforms and architectures are tracked in the Roadmap's
+> changes. The output matches `go run`, including `fatih/color`'s colors in an interactive console on
+> Windows. In an interactive terminal on Linux the colors do not show yet, because the terminal query
+> cannot yet hand its struct to the kernel, so the output stays plain there. Other platforms and
+> architectures are tracked in the Roadmap's
 > [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress), with the
 > operational detail in [PLAN-linux-operation.md](PLAN-linux-operation.md)._
 
