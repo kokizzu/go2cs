@@ -192,18 +192,18 @@ internal static void Main() {
     var seen = new map<any, EmptyStruct>{};
     var backing = new map<@string, nint>{["a"u8] = 1};
     var mv = reflect.ValueOf(backing);
-    seen[(uintptr)mv.UnsafePointer()] = new EmptyStruct();
-    var (_, again) = seen[(uintptr)reflect.ValueOf(backing).UnsafePointer(), ꟷ];
+    seen[@unsafe.Pointer.OrTypedNil((uintptr)mv.UnsafePointer())] = new EmptyStruct();
+    var (_, again) = seen[@unsafe.Pointer.OrTypedNil((uintptr)reflect.ValueOf(backing).UnsafePointer()), ꟷ];
     var sl = new nint[]{1, 2, 3}.slice();
     var sv = reflect.ValueOf(sl);
-    seen[(uintptr)sv.UnsafePointer()] = new EmptyStruct();
-    var (_, slAgain) = seen[(uintptr)reflect.ValueOf(sl).UnsafePointer(), ꟷ];
-    var (_, other) = seen[(uintptr)reflect.ValueOf(new map<@string, nint>{["b"u8] = 2}).UnsafePointer(), ꟷ];
+    seen[@unsafe.Pointer.OrTypedNil((uintptr)sv.UnsafePointer())] = new EmptyStruct();
+    var (_, slAgain) = seen[@unsafe.Pointer.OrTypedNil((uintptr)reflect.ValueOf(sl).UnsafePointer()), ꟷ];
+    var (_, other) = seen[@unsafe.Pointer.OrTypedNil((uintptr)reflect.ValueOf(new map<@string, nint>{["b"u8] = 2}).UnsafePointer()), ꟷ];
     fmt.Println(pointerIdentityˢ, again, slAgain, other, len(seen));
     var boxed = new map<any, EmptyStruct>{};
-    boxed[new sliceKey((uintptr)sv.UnsafePointer(), sv.Len())] = new EmptyStruct();
-    var (_, keyAgain) = boxed[new sliceKey((uintptr)reflect.ValueOf(sl).UnsafePointer(), len(sl)), ꟷ];
-    var (_, keyOther) = boxed[new sliceKey((uintptr)reflect.ValueOf(sl).UnsafePointer(), len(sl) - 1), ꟷ];
+    boxed[new sliceKey(@unsafe.Pointer.OrTypedNil((uintptr)sv.UnsafePointer()), sv.Len())] = new EmptyStruct();
+    var (_, keyAgain) = boxed[new sliceKey(@unsafe.Pointer.OrTypedNil((uintptr)reflect.ValueOf(sl).UnsafePointer()), len(sl)), ꟷ];
+    var (_, keyOther) = boxed[new sliceKey(@unsafe.Pointer.OrTypedNil((uintptr)reflect.ValueOf(sl).UnsafePointer()), len(sl) - 1), ꟷ];
     fmt.Println(sliceKeyIdentityˢ, keyAgain, keyOther, len(boxed));
 }
 
