@@ -75,7 +75,7 @@ receive/send helpers, not the socket, not the poller, and not the address encodi
 
 | consumer | today | with the eight |
 |:--|:--|:--|
-| **DNS, hence every name lookup** | `net.LookupHost` times out (the query is never received); with the stub present it *threw*, which is what made `crypto/tls` eat a 30-minute deadline | resolution works; `net.Dial("tcp", "host:port")` by NAME works |
+| **DNS, hence every name lookup** | `net.LookupHost` times out (the query is never received); with the stub present it *threw*, which is what made `crypto/tls` eat a 30-minute deadline | resolution works; `net.Dial("tcp", "<host>:<port>")` <!-- identifier scrubbed 2026-09-26 by security order: a placeholder the host-assignment arm reads as an assignment --> by NAME works |
 | `crypto/tls` **`TestVerifyHostname`** (roster) | one of the row's two divergences — it dials `www.google.com` | closes, leaving `TestCertCache` (an object-lifetime divergence) as the row's only residual |
 | `net`'s own UDP suite (off-roster) | unreachable | reachable, and worth a census then |
 | every converted program that resolves a name | fails | works |

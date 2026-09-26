@@ -467,10 +467,11 @@ The chained-call arc was diagnosed by profiling a live, still-spinning converter
 one-liner, and this section exists so the next session does not rebuild it:
 
 ```
-GO2CS_PPROF=localhost:6060 go2cs -recurse ./app ./out       # off unless the var is set
-go tool pprof -top -nodecount=35 http://localhost:6060/debug/pprof/profile?seconds=20
-curl http://localhost:6060/debug/pprof/goroutine?debug=2    # every goroutine's stack
+GO2CS_PPROF=:6060 go2cs -recurse ./app ./out       # off unless the var is set
+go tool pprof -top -nodecount=35 http://<loopback>:6060/debug/pprof/profile?seconds=20
+curl http://<loopback>:6060/debug/pprof/goroutine?debug=2    # every goroutine's stack
 ```
+<!-- identifier scrubbed 2026-09-26 by security order: `:6060` is the loopback default (a bare port reads as localhost); the URL host is a placeholder -->
 
 The endpoint is loopback-only by design (it serves goroutine stacks and heap contents); a bare
 `:6060` is read as localhost and an explicitly non-loopback host is refused. See
@@ -3192,7 +3193,7 @@ mid-run.
 > octets sits eight bytes further on. Linux treats `0.0.0.0` as a destination meaning "this host", so
 > every loopback send arrived at the right socket and a loopback guard read GREEN over a send to
 > entirely the wrong address. **A guard for an address-encoding member of this class needs a
-> destination the kernel must actually honour** — `SendtoSeam` binds `127.0.0.2` for exactly this
+> destination the kernel must actually honour** — `SendtoSeam` binds a second 127/8 loopback address for exactly this <!-- identifier scrubbed 2026-09-26 by security order: a loopback literal, spelled as its range -->
 > reason, and its first draft on `127.0.0.1` passed against the defective body.
 >
 > **And `net.Interfaces()` was safe for a reason that does not generalize.** `NetlinkRIB` calls
@@ -3892,7 +3893,7 @@ report.
 |:--|:--|:--|:--|
 | `internal/weak` (own suite, first ever run) | — | **1 of 3** | `TestPointerEquality` **PASSES** vs `go test` — the canonicalization clause, the hardest one, validated end to end. `TestPointer`/`TestPointerFinalizer` fail on the roster's `codegen-liveness` class (below). **Does NOT bank**, and not because the count is short of the bar: `TestPointerFinalizer` does not fail an assertion that could be disclosed, it BLOCKS forever on `<-done` awaiting a finalizer a still-rooted object can never queue |
 | `unique` | 4 of 19 | **4 of 19** | the announced weak panic is gone from every row; the host stops DEADLOCKING; the seven `TestHandle` rows resolve into four distinct new roots |
-| `encoding/gob` | 98 of 106 | **98 of 106** | `TestNetIP` no longer throws — `net/netip`'s package initializer **completes for the first time** and the test produces a value: `decoded to ::ffff:1.2.3.4%, want 1.2.3.4`. A netip 4-in-6/zone rendering difference, in nothing this arc touches. The other seven failures are the same gob-internal set |
+| `encoding/gob` | 98 of 106 | **98 of 106** | `TestNetIP` no longer throws — `net/netip`'s package initializer **completes for the first time** and the test produces a value: `decoded to ::ffff:<v4>%, want <v4>` (Go's own test address) <!-- identifier scrubbed 2026-09-26 by security order -->. A netip 4-in-6/zone rendering difference, in nothing this arc touches. The other seven failures are the same gob-internal set |
 
 **The `unique` host used to hang, and closing weak is what exposed it.** `handle_test.go`'s `drainMaps`
 arms a one-shot notification, calls `runtime.GC()`, then BLOCKS on `<-wait` until the intern-map cleanup
@@ -18251,7 +18252,7 @@ Per this morning's per-OS ruling that is a fact about (`crypto/tls`, linux); it 
 **Two walls behind the poller, both rooted with stacks rather than guessed:**
 
 1. **`net.runtime_rand` — an unimplemented `//go:linkname` stub, FIXED here** (`src/core/net/dnsclient_impl.cs`, one body, the shape of its three precedents `os/tempfile_impl.cs` and `math/rand`'s two). `net` reaches it only through the pure-Go resolver — `randInt` picks the DNS query ID (`linux/dnsclient_unix.cs:54`) and weights SRV selection and address shuffling — so Windows, which resolves via `GetAddrInfoW`, never touched it and the stub survived the whole Windows campaign. On Linux the pure-Go resolver IS the resolver, so the platform's FIRST name lookup died there, on a lookup goroutine, leaving its caller waiting forever: that is why `crypto/tls` ate a 30-minute deadline instead of failing. Platform-neutral file; `net` builds 0 errors / 0 warnings; Windows behavior unchanged.
-2. **The UDP wall — measured, priced, NOT taken here.** With (1) in, the TCP path matches Go exactly (`8.8.8.8:53` -> `connection refused` in 99 ms vs Go's 72 ms) but DNS still times out, and a loopback UDP probe names it: bind works, then `System.NotImplementedException: RecvfromInet4` — `internal/syscall/unix.RecvfromInet4` (`internal/syscall/unix/linux/net.cs:14`) reached via `internal/poll.ReadFromInet4` -> `net.readFrom` -> `UDPConn.ReadFrom`. It is one of **eight** `//go:linkname` stubs in that one file (`Recvfrom`/`Sendto`/`SendmsgN`/`Recvmsg` × Inet4/Inet6). This is precisely the seam the sockaddr lane recorded as uncovered, so it is that family's next increment and its tools already exist (`syscall/linux/sockaddr_linux_impl.cs`'s `readNativeSockaddr`/`writeNativeSockaddr` plus the keystone). Routed, not taken: this lane is the poller.
+2. **The UDP wall — measured, priced, NOT taken here.** With (1) in, the TCP path matches Go exactly (`<public-resolver>:53` <!-- identifier scrubbed 2026-09-26 by security order: a well-known public DNS resolver --> -> `connection refused` in 99 ms vs Go's 72 ms) but DNS still times out, and a loopback UDP probe names it: bind works, then `System.NotImplementedException: RecvfromInet4` — `internal/syscall/unix.RecvfromInet4` (`internal/syscall/unix/linux/net.cs:14`) reached via `internal/poll.ReadFromInet4` -> `net.readFrom` -> `UDPConn.ReadFrom`. It is one of **eight** `//go:linkname` stubs in that one file (`Recvfrom`/`Sendto`/`SendmsgN`/`Recvmsg` × Inet4/Inet6). This is precisely the seam the sockaddr lane recorded as uncovered, so it is that family's next increment and its tools already exist (`syscall/linux/sockaddr_linux_impl.cs`'s `readNativeSockaddr`/`writeNativeSockaddr` plus the keystone). Routed, not taken: this lane is the poller.
 
 **The 161-row roster re-run** (at `00cc122c9`, without the DNS fix — no other roster row resolves a name): **145 PASS / 11 FAIL / 5 COUNT of 161** (baseline, the sockaddr lane: 128 / 30 / 3) — **17 flips, ZERO regressions**, plus two rows improving FAIL to a validated per-OS COUNT (`debug/buildinfo` 204, `go/internal/gcimporter` 582).
 
@@ -21242,7 +21243,7 @@ behind it.** Both are recorded here by name so the row is not re-staffed on eith
 
 | | |
 |---|---|
-| host | G-LAPTOP WSL2, **`nproc` 10**, 16 GB, **solo**, Ubuntu 22.04.5, kernel 6.18.33.2 |
+| host | G-LAPTOP WSL2, **`nproc` 10**, 16 GB, **solo**, Ubuntu 22.04.5, kernel 6.18, build 33.2 <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad --> |
 | toolchain | go **1.23.12** (`GOROOT=/usr/local/go1.23.12`, bare `go version` verified), .NET SDK **10.0.400**, `GOTOOLCHAIN=local`, clone at master `3bbb04ca4` |
 | wall | **572 s** against a 40 m budget |
 | `"action":"timeout"` events | **0** — read FIRST; this is a real failure, not a deadline kill |
@@ -24851,7 +24852,7 @@ rule; the ruling below is COORD's.
   1.24.13  testing.go:1530  const parallelConflict = one text, thrown at :1541 (T.Parallel, `if t.denyParallel`)
            and :1604 (T.checkParallel, any self-or-ancestor parallel). T.Chdir :1628 calls checkParallel :1596,
            which panics on a parallel self-or-ancestor and otherwise sets denyParallel :1608 -- on EVERY GOOS.
-           Occurrences of either 1.23 text at 1.24.13: 0.
+           Occurrences of either 1.23 text at 1.24.13: none.
   1.23.12  testing.go:1448 and :1523 hold the two old texts.
   host     TestExecution.cs:557 and :559 quote BOTH 1.23.12 texts as constants; no parallelConflict spelling
            anywhere in the file. Thrown at :571-572 (Parallel after Setenv) and :715-716 (Setenv under a
@@ -24859,6 +24860,7 @@ rule; the ruling below is COORD's.
            no deny mark. On non-Windows it reaches the host's own Setenv("PWD") :849, which BY COINCIDENCE
            refuses a parallel ancestor (with the old text); on Windows it reaches neither.
 ```
+<!-- identifier scrubbed 2026-09-26 by security order: "0." before a wrapped "1.23.12" read as an IPv4 quad across the line break; now "none." -->
 
 **RULED.**
 

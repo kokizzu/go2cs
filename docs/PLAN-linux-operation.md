@@ -296,7 +296,7 @@ re-emitted, **0 clobbered**, 0 `DYNTYPE` markers; overlay 49 `.cs` + 1 `README` 
 ### Execution log — the first Linux-native conversion and build, lane r47a
 
 **Provisioning (user-authorized, all user-space, no `sudo`, all reversible).** The distro is
-`Ubuntu 22.04.2 LTS` on kernel 6.18.33.2 (WSL 2), 24 CPUs, ext4. It carried `git`, `make`, `gcc`,
+`Ubuntu 22.04.2 LTS` on kernel 6.18, build 33.2 (WSL 2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad -->, 24 CPUs, ext4. It carried `git`, `make`, `gcc`,
 `curl` and the .NET **runtime** only — `dotnet-runtime-9.0`, *no SDK*, so `dotnet build` was
 unavailable and `dotnet --list-sdks` printed "No SDKs were found". Installed:
 
@@ -377,7 +377,7 @@ lane's evidence changes their disposition.
 **F15 — WSL, measured 2026-08-08.** *(Superseded by the r47a execution log above, which provisions
 the distro and runs the real thing. Kept because the cross-compile technique below is still the
 cheapest way to sanity-check a Linux host without installing anything.)* The distro list has changed
-since §4's probe: `Ubuntu` (WSL 2, kernel 6.18.33.2) and `docker-desktop`; the `Ubuntu-22.04` entry is
+since §4's probe: `Ubuntu` (WSL 2, kernel 6.18, build 33.2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad --> and `docker-desktop`; the `Ubuntu-22.04` entry is
 gone. `dotnet`, `git` and `make` are present; **`go` and `pwsh` are still absent**, so a conversion
 cannot run there (go/packages shells out to `go`) and neither can the PowerShell instruments.
 Installing a toolchain was out of scope for this lane. ⚠ A later, sharper measurement: the `dotnet`
@@ -517,7 +517,7 @@ for Linux, because `pwsh` reached the distro only after the porting. It is now m
 ported instrument runs on Linux green on its first attempt — no port needed a fix**, so this lane's
 repair budget went unspent and the reasoning behind the ports is confirmed rather than corrected.
 
-**Host.** WSL2 Ubuntu 22.04, kernel `6.18.33.2-microsoft-standard-WSL2`, 24 CPUs. Go 1.23.1
+**Host.** WSL2 Ubuntu 22.04, kernel `6.18.<build>-microsoft-standard-WSL2` (6.18, build 33.2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad -->, 24 CPUs. Go 1.23.1
 linux/amd64 (`$HOME/golang`), .NET SDK 9.0.316 (`$HOME/.dotnet`), pwsh 7.5.4 (dotnet tool), git
 2.34.1 — all user-space, nothing installed system-wide. Clone at `$HOME/go2cs-linux` on **ext4**
 (not `/mnt`), reset to master `82fe15fe8`, which is three lines of `CLAUDE.md` ahead of this
@@ -1393,12 +1393,13 @@ The test systems run WSL 2 with the same project folder visible from Linux. Meas
 
 ```
 $ wsl --list --verbose         →  Ubuntu-22.04 (Running), Ubuntu, docker-desktop*  [WSL 2]
-$ wsl -e uname -a              →  Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
+$ wsl -e uname -a              →  Linux 6.18.<build>-microsoft-standard-WSL2 x86_64
 $ mount | grep 9p              →  C:\ on /mnt/c type 9p (rw,noatime,aname=drvfs;path=C:\;…;msize=65536)
 $ ls -la /mnt/c/…/src/*.ps1    →  -rwxrwxrwx  (no `metadata` mount option → everything executable)
 $ ls /mnt/c/Projects/go2cs/src/tests  →  resolves, though `src/Tests` was what was on disk (probed pre-rename)
 $ command -v pwsh dotnet go    →  all missing in Ubuntu-22.04 (only git is present)
 ```
+<!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad; the uname line above is kernel 6.18, build 33.2 -->
 
 Four consequences:
 
@@ -1525,7 +1526,7 @@ Every command below is read-only. Run from the repository root unless noted.
 | # | Probe | Result |
 |:--|:--|:--|
 | P1 | `wsl --list --verbose` | `Ubuntu-22.04` (Running, WSL 2), `Ubuntu`, `docker-desktop`, `docker-desktop-data` |
-| P2 | `wsl -e uname -a` | `Linux … 6.18.33.2-microsoft-standard-WSL2 … x86_64 GNU/Linux` |
+| P2 | `wsl -e uname -a` | `Linux … 6.18.<build>-microsoft-standard-WSL2 … x86_64 GNU/Linux` (6.18, build 33.2) <!-- identifier scrubbed 2026-09-26 by security order: a version string the address arm reads as an IPv4 quad --> |
 | P3 | `wsl -d Ubuntu-22.04 -e bash -lc 'command -v pwsh dotnet go git make'` | only `/usr/bin/git`; **pwsh, dotnet, go, make all missing** |
 | P4 | `wsl … 'mount \| grep -E "9p\|drvfs\|virtiofs"'` | `C:\ on /mnt/c type 9p (rw,noatime,aname=drvfs;path=C:\;uid=1000;gid=1000;…;msize=65536)` — **9p, no `metadata`** |
 | P5 | `wsl … 'ls -la /mnt/c/Projects/go2cs/src/*.ps1'` | all `-rwxrwxrwx <user> <user>` |

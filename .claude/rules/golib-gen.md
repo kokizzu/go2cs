@@ -518,7 +518,7 @@ A byte endpoint quoted off an unconverged instrument is a false measurement.
      passes a reference-bearing pointee (the refuse door). Precedent for the companion shape:
      `zsyscall_windows_version_impl.cs`. -->
 - **A NATIVE ADDRESS LIST IS COPIED BY LENGTH, NEVER AS A C STRING, AND A MIRROR'S FIELD ORDER IS READ AT
-  THE PIN, NEVER RECALLED.** <!-- ⚠ 2026-09-15, C1. IPv4 `10.0.0.1` has interior zero bytes, so a
+  THE PIN, NEVER RECALLED.** <!-- ⚠ 2026-09-15, C1. a 10/8 IPv4 address with two zero octets has interior zero bytes (identifier scrubbed 2026-09-26 by security order: an example address), so a
      C-string copy truncates it at the first octet boundary that happens to be zero; and `Servent` orders
      `Proto` before `Port`, which is not the order it is usually remembered in. -->
 ## The native boundary, class 2: LIFETIME — pins, retention, function pointers
