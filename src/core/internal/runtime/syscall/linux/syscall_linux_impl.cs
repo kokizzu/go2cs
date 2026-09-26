@@ -121,6 +121,22 @@ public static partial (uintptr r1, uintptr r2, uintptr errno) Syscall6(uintptr n
     // (runtime/os_linux.go, runtime/netpoll_epoll.go) pass no pointer-derived argument at all —
     // Go's own unsafe.Pointer rule (4) does not even apply to them. There is nothing left for a
     // tether at this boundary to protect.
+    //
+    // WHAT DOES STAND HERE is a LAYOUT remedy, not a lifetime one: an argument carrying the managed
+    // pointer token tag names a Go struct with no native image (a fixed array inside it is a managed
+    // array<T>), and golib's NativeStructMarshal carries it across as a Go-layout native copy. A
+    // resolve miss there keeps the token and the kernel's EFAULT, the answer every such call got
+    // before, so the 68% lesson above bounds it rather than defeats it. No standard-library caller
+    // passes a token (measured: 0 of 16,882,986 arguments), so this is x/sys's path alone.
+    if (NativeStructMarshal.AnyToken(a1, a2, a3, a4, a5, a6))
+        return NativeStructMarshal.Call(num, a1, a2, a3, a4, a5, a6, s_rawSyscall6);
+
+    return rawSyscall6(num, a1, a2, a3, a4, a5, a6);
+}
+
+private static readonly NativeStructMarshal.Syscall6Invoker s_rawSyscall6 = rawSyscall6;
+
+private static (uintptr r1, uintptr r2, uintptr errno) rawSyscall6(uintptr num, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
     nint result = libc_syscall(ToNative(num), ToNative(a1), ToNative(a2), ToNative(a3), ToNative(a4), ToNative(a5), ToNative(a6));
 
     // r1 is the raw return in both outcomes: on failure libc returns -1 and so does Go's asm

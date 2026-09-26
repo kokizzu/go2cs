@@ -1291,15 +1291,19 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// machinery the managed model cannot run — to a stub that panics naming the pair.
 	linknamePanic := ""
 
+	// A forwardable assembly block may also drop a trailing target result or bridge a parameter; a
+	// linkname forward never does, so this stays zero for one.
+	var asmForwardPlan asmForward
+
 	if funcDecl.Body == nil {
 		if linknameAlias, linknameFunc, hasLinknameForward = v.funcLinknameForward(funcDecl); !hasLinknameForward {
 			linknameAlias, linknameFunc, linknamePanic, hasLinknameForward = v.funcLinknamePush(funcDecl)
 		}
 
-		// A pure-JMP assembly trampoline (asmTrampolines.go) is the same frame-identical shape as a
+		// A forwardable assembly block (asmTrampolines.go) is the same frame-compatible shape as a
 		// linkname pull, so it takes the same forwarder.
 		if !hasLinknameForward {
-			linknameAlias, linknameFunc, hasLinknameForward = v.funcAsmTrampolineForward(funcDecl)
+			linknameAlias, linknameFunc, asmForwardPlan, hasLinknameForward = v.funcAsmTrampolineForward(funcDecl)
 		}
 	}
 
@@ -1440,7 +1444,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			v.writeLinknamePanicStub(linknamePanic)
 		} else if hasLinknameForward {
 			// Cross-package //go:linkname pull or push — emit a forwarder body calling the target.
-			v.writeLinknameForwarder(signature, linknameAlias, linknameFunc)
+			v.writeLinknameForwarder(signature, linknameAlias, linknameFunc, asmForwardPlan)
 		} else {
 			// Bodyless (assembly/cgo) function: emit a `partial` declaration; the body is
 			// supplied by a hand-written companion or the PartialStubGenerator.
@@ -2451,21 +2455,30 @@ func (v *Visitor) linknameForwardArgName(param *types.Var, i int, dupBlank bool,
 // That compatibility is the CALLER's precondition, never checked here. A linkname pull has it by Go's
 // own link-time contract. A pure-JMP assembly trampoline (funcAsmTrampolineForward) proves only an
 // identical FRAME, which two DIFFERENT pointer types satisfy (x/sys/unix's gettimeofday takes its own
-// *Timeval and jumps to syscall's), so that caller checks types.Identical before it reaches here.
-func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias string, targetFunc string) {
+// *Timeval and jumps to syscall's), so that caller checks the Go types before it reaches here and
+// describes in `forward` what the call must adapt: pointer parameters bridged across layout-identical
+// structs, and trailing target results the local signature does not return.
+func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias string, targetFunc string, forward asmForward) {
 	params := signature.Params()
 	dupBlank := hasDuplicateBlankParams(params) || bodyUsesBlankDiscard(v.currentFuncDecl)
 	args := make([]string, params.Len())
+	locals := make([]string, params.Len())
 
 	for i := 0; i < params.Len(); i++ {
 		param := params.At(i)
 		name := v.linknameForwardArgName(param, i, dupBlank, signature.Variadic() && i == params.Len()-1)
+		locals[i] = name
 
 		if v.isUintptrBridgeable(param.Type()) {
 			name = "(uintptr)" + name
 		}
 
 		args[i] = name
+	}
+
+	if len(forward.bridges) > 0 || forward.dropResults > 0 {
+		v.writeAdaptedForwarder(signature, alias, targetFunc, forward, args, locals)
+		return
 	}
 
 	// An empty alias signals a golib-builtin target (in scope unqualified via `using static
@@ -2505,6 +2518,108 @@ func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias strin
 		body.WriteString(fmt.Sprintf("%svar (%s) = %s;", bodyIndent, strings.Join(names, ", "), call))
 		body.WriteString(v.newline)
 		body.WriteString(fmt.Sprintf("%sreturn (%s);", bodyIndent, strings.Join(bridged, ", ")))
+	}
+
+	body.WriteString(v.newline)
+	body.WriteString(closeIndent)
+	body.WriteString("}")
+
+	v.writeOutputLn("%s", body.String())
+	v.indentLevel = savedIndent
+}
+
+// writeAdaptedForwarder emits a forwarder whose call needs adapting beyond writeLinknameForwarder's
+// pass-through. Each bridged pointer parameter goes through a box of the TARGET's pointee type: the
+// fields are copied in before the call and back out after it (a nil local pointer passes a nil box and
+// copies nothing). The call's results are taken into temps, including any trailing ones the local
+// signature drops, so the copy-back runs before the return.
+func (v *Visitor) writeAdaptedForwarder(signature *types.Signature, alias string, targetFunc string, forward asmForward, args []string, locals []string) {
+	savedIndent := v.indentLevel
+	v.indentLevel = 0
+
+	bodyIndent := v.indent(savedIndent + 1)
+	innerIndent := v.indent(savedIndent + 2)
+	closeIndent := v.indent(savedIndent)
+
+	var pre, post []string
+
+	for i := 0; i < len(args); i++ {
+		bridge, bridged := forward.bridges[i]
+
+		if !bridged {
+			continue
+		}
+
+		local := locals[i]
+		box := fmt.Sprintf("%sb%d", TempVarMarker, i+1)
+		value := fmt.Sprintf("%sv%d", TempVarMarker, i+1)
+		boxType := v.getCSharpTypeName(types.NewPointer(bridge.targetPointee))
+		pointeeType := v.getCSharpTypeName(bridge.targetPointee)
+
+		pre = append(pre,
+			fmt.Sprintf("%s%s %s = default!;", bodyIndent, boxType, box),
+			fmt.Sprintf("%sif (%s != nil) {", bodyIndent, local),
+			fmt.Sprintf("%sref var %s = ref heap(new %s(), out %s);", innerIndent, value, pointeeType, box))
+
+		post = append(post, fmt.Sprintf("%sif (%s != nil) {", bodyIndent, local))
+
+		for _, field := range bridge.fields {
+			name := getSanitizedIdentifier(field)
+			pre = append(pre, fmt.Sprintf("%s%s.%s = %s.Value.%s;", innerIndent, value, name, local, name))
+			post = append(post, fmt.Sprintf("%s%s.Value.%s = %s.Value.%s;", innerIndent, local, name, box, name))
+		}
+
+		pre = append(pre, bodyIndent+"}")
+		post = append(post, bodyIndent+"}")
+		args[i] = box
+	}
+
+	call := fmt.Sprintf("%s(%s)", targetFunc, strings.Join(args, ", "))
+
+	if alias != "" {
+		call = fmt.Sprintf("%s.%s(%s)", alias, targetFunc, strings.Join(args, ", "))
+	}
+
+	results := signature.Results()
+	targetResults := results.Len() + forward.dropResults
+	names := make([]string, targetResults)
+
+	for i := range names {
+		names[i] = fmt.Sprintf("%s%d", TempVarMarker, i+1)
+	}
+
+	var body strings.Builder
+	body.WriteString(" {")
+
+	for _, line := range pre {
+		body.WriteString(v.newline + line)
+	}
+
+	switch targetResults {
+	case 0:
+		body.WriteString(fmt.Sprintf("%s%s%s;", v.newline, bodyIndent, call))
+	case 1:
+		body.WriteString(fmt.Sprintf("%s%svar %s = %s;", v.newline, bodyIndent, names[0], call))
+	default:
+		body.WriteString(fmt.Sprintf("%s%svar (%s) = %s;", v.newline, bodyIndent, strings.Join(names, ", "), call))
+	}
+
+	for _, line := range post {
+		body.WriteString(v.newline + line)
+	}
+
+	switch results.Len() {
+	case 0:
+	case 1:
+		body.WriteString(fmt.Sprintf("%s%sreturn %s;", v.newline, bodyIndent, v.bridgeLinknameResult(names[0], results.At(0).Type())))
+	default:
+		bridged := make([]string, results.Len())
+
+		for i := range bridged {
+			bridged[i] = v.bridgeLinknameResult(names[i], results.At(i).Type())
+		}
+
+		body.WriteString(fmt.Sprintf("%s%sreturn (%s);", v.newline, bodyIndent, strings.Join(bridged, ", ")))
 	}
 
 	body.WriteString(v.newline)

@@ -10,11 +10,81 @@ package main
 
 import (
 	"go/build"
+	"go/token"
+	"go/types"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+// TestLayoutIdenticalStructs pins the field-by-field proof the pointer bridge rests on, in both
+// directions: the layout-identical Timeval passes, and every difference the bridge could not copy
+// faithfully is refused.
+func TestLayoutIdenticalStructs(t *testing.T) {
+	sizes := types.SizesFor("gc", "amd64")
+
+	field := func(name string, typ types.Type) *types.Var {
+		return types.NewField(token.NoPos, nil, name, typ, false)
+	}
+
+	int32T, int64T := types.Typ[types.Int32], types.Typ[types.Int64]
+	timeval := types.NewStruct([]*types.Var{field("Sec", int64T), field("Usec", int64T)}, nil)
+
+	cases := []struct {
+		name  string
+		other *types.Struct
+		want  bool
+	}{
+		{"identical", types.NewStruct([]*types.Var{field("Sec", int64T), field("Usec", int64T)}, nil), true},
+		{"a narrower field type", types.NewStruct([]*types.Var{field("Sec", int32T), field("Usec", int64T)}, nil), false},
+		{"swapped field names", types.NewStruct([]*types.Var{field("Usec", int64T), field("Sec", int64T)}, nil), false},
+		{"an extra field", types.NewStruct([]*types.Var{field("Sec", int64T), field("Usec", int64T), field("Pad", int64T)}, nil), false},
+		{"a pointer field", types.NewStruct([]*types.Var{field("Sec", int64T), field("Usec", types.NewPointer(int64T))}, nil), false},
+	}
+
+	for _, c := range cases {
+		fields, got := layoutIdenticalStructs(timeval, c.other, sizes)
+
+		if got != c.want {
+			t.Errorf("%s: layoutIdenticalStructs = %v, want %v", c.name, got, c.want)
+		}
+
+		if got && strings.Join(fields, ",") != "Sec,Usec" {
+			t.Errorf("%s: fields to copy = %v, want [Sec Usec]", c.name, fields)
+		}
+	}
+
+	// A blank field has no name to copy by, so even two identical structs carrying one are refused.
+	blank := types.NewStruct([]*types.Var{field("_", int64T), field("Usec", int64T)}, nil)
+
+	if _, got := layoutIdenticalStructs(blank, blank, sizes); got {
+		t.Errorf("a struct with a blank field was proven layout-identical; its field cannot be copied by name")
+	}
+}
+
+// TestPackageFuncAccessPublicizesAsmJumpTargets pins the other half of an asmJumpForwardTargets row:
+// the listed target is emitted public in its OWN package, and nothing else moves.
+func TestPackageFuncAccessPublicizesAsmJumpTargets(t *testing.T) {
+	saved := currentPackagePath
+	defer func() { currentPackagePath = saved }()
+
+	currentPackagePath = "syscall"
+
+	if got := packageFuncAccess("gettimeofday", true); got != "public" {
+		t.Errorf("syscall.gettimeofday: access %q, want public (it has an asmJumpForwardTargets row)", got)
+	}
+
+	if got := packageFuncAccess("settimeofday", true); got == "public" {
+		t.Errorf("syscall.settimeofday was publicized without a row")
+	}
+
+	currentPackagePath = "example.com/other"
+
+	if got := packageFuncAccess("gettimeofday", true); got == "public" {
+		t.Errorf("another package's gettimeofday was publicized by syscall's row")
+	}
+}
 
 // asmTrampolineFixtureGo declares one bodyless function per trampoline SHAPE; asm_linux_amd64.s
 // (asmTrampolineFixtureAsm) supplies their bodies, exactly as golang.org/x/sys/unix does.
@@ -37,8 +107,9 @@ func LoadUintptr(addr *uintptr) uintptr
 
 var _ = atomic.LoadUint64
 
-// Shape 2: the REAL x/sys/unix gettimeofday. The jump target is syscall·gettimeofday, but the
-// parameter is this package's OWN Timeval, so the Go signatures are not identical: stays a stub.
+// Shape 2: the REAL x/sys/unix gettimeofday. The jump target is the UNEXPORTED syscall·gettimeofday,
+// authorized by its asmJumpForwardTargets row, and the parameter is this package's OWN Timeval, whose
+// layout is identical to syscall's field by field: forwards through a bridge box.
 type Timeval struct {
 	Sec  int64
 	Usec int64
@@ -46,11 +117,36 @@ type Timeval struct {
 
 func gettimeofday(tv *Timeval) (err syscall.Errno)
 
-// Shape 3: a JMP to an UNEXPORTED function of another package: stays a stub.
+// Shape 2b: the same authorized jump over a Timeval whose FIELD TYPE differs: stays a stub.
+type TimevalNarrow struct {
+	Sec  int32
+	Usec int64
+}
+
+func gettimeofdayNarrow(tv *TimevalNarrow) (err syscall.Errno)
+
+// Shape 2c: the same authorized jump over a Timeval whose FIELD NAMES are swapped (same types and
+// offsets): stays a stub, because a field copy by position would not be a copy by meaning.
+type TimevalSwapped struct {
+	Usec int64
+	Sec  int64
+}
+
+func gettimeofdaySwapped(tv *TimevalSwapped) (err syscall.Errno)
+
+// Shape 3: a JMP to an UNEXPORTED function of another package with no asmJumpForwardTargets row:
+// stays a stub.
 func rawNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr)
 
-// Shape 4: real machine code (a raw SYSCALL), not a trampoline: stays a stub.
+// Shape 4: the REAL x/sys/unix raw-SYSCALL NoError blocks: SyscallNoError (bracketed by
+// entersyscall/exitsyscall) forwards to syscall.Syscall, RawSyscallNoError to syscall.RawSyscall, each
+// dropping the target's errno.
 func SyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr)
+
+func RawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr)
+
+// Shape 4b: real machine code that is NOT one of those exact blocks: stays a stub.
+func SyscallNoErrorShort(trap, a1, a2, a3 uintptr) (r1, r2 uintptr)
 
 // Shape 5: a JMP within the same package to a target whose parameters stay boxed: forwards.
 func localAlias(x int) int
@@ -85,10 +181,44 @@ TEXT ·LoadUintptr(SB),NOSPLIT,$0-16
 TEXT ·gettimeofday(SB),NOSPLIT,$0-16
 	JMP	syscall·gettimeofday(SB)
 
+TEXT ·gettimeofdayNarrow(SB),NOSPLIT,$0-16
+	JMP	syscall·gettimeofday(SB)
+
+TEXT ·gettimeofdaySwapped(SB),NOSPLIT,$0-16
+	JMP	syscall·gettimeofday(SB)
+
 TEXT ·rawNoError(SB),NOSPLIT,$0-48
 	JMP	syscall·rawSyscallNoError(SB)
 
 TEXT ·SyscallNoError(SB),NOSPLIT,$0-48
+	CALL	runtime·entersyscall(SB)
+	MOVQ	a1+8(FP), DI
+	MOVQ	a2+16(FP), SI
+	MOVQ	a3+24(FP), DX
+	MOVQ	$0, R10
+	MOVQ	$0, R8
+	MOVQ	$0, R9
+	MOVQ	trap+0(FP), AX	// syscall entry
+	SYSCALL
+	MOVQ	AX, r1+32(FP)
+	MOVQ	DX, r2+40(FP)
+	CALL	runtime·exitsyscall(SB)
+	RET
+
+TEXT ·RawSyscallNoError(SB),NOSPLIT,$0-48
+	MOVQ	a1+8(FP), DI
+	MOVQ	a2+16(FP), SI
+	MOVQ	a3+24(FP), DX
+	MOVQ	$0, R10
+	MOVQ	$0, R8
+	MOVQ	$0, R9
+	MOVQ	trap+0(FP), AX	// syscall entry
+	SYSCALL
+	MOVQ	AX, r1+32(FP)
+	MOVQ	DX, r2+40(FP)
+	RET
+
+TEXT ·SyscallNoErrorShort(SB),NOSPLIT,$0-48
 	MOVQ	a1+8(FP), DI
 	MOVQ	trap+0(FP), AX	// syscall entry
 	SYSCALL
@@ -203,6 +333,29 @@ func TestAsmTrampolinesForwardByShape(t *testing.T) {
 		"localAlias": {
 			"return local(x);",
 		},
+		// The raw-SYSCALL NoError blocks forward with the target's errno dropped.
+		"SyscallNoError": {
+			"var (ᴛ1, ᴛ2, ᴛ3) = syscall.Syscall((uintptr)trap, (uintptr)a1, (uintptr)a2, (uintptr)a3);",
+			"return ((uintptr)(uintptr)ᴛ1, (uintptr)(uintptr)ᴛ2);",
+		},
+		"RawSyscallNoError": {
+			"var (ᴛ1, ᴛ2, ᴛ3) = syscall.RawSyscall((uintptr)trap, (uintptr)a1, (uintptr)a2, (uintptr)a3);",
+			"return ((uintptr)(uintptr)ᴛ1, (uintptr)(uintptr)ᴛ2);",
+		},
+		// The authorized jump to the unexported syscall.gettimeofday, bridged field by field: copied in,
+		// called, copied back, and a nil pointer passes a nil box. A nested line carries its own extra
+		// indent.
+		"gettimeofday": {
+			"ж<syscall.Timeval> ᴛb1 = default!;",
+			"if (tv != nil) {",
+			"    ref var ᴛv1 = ref heap(new syscall.Timeval(), out ᴛb1);",
+			"    ᴛv1.Sec = tv.Value.Sec;",
+			"    ᴛv1.Usec = tv.Value.Usec;",
+			"var ᴛ1 = syscall.gettimeofday(ᴛb1);",
+			"    tv.Value.Sec = ᴛb1.Value.Sec;",
+			"    tv.Value.Usec = ᴛb1.Value.Usec;",
+			"return (syscall.Errno)(uintptr)ᴛ1;",
+		},
 	}
 
 	for name, calls := range forwards {
@@ -225,10 +378,11 @@ func TestAsmTrampolinesForwardByShape(t *testing.T) {
 		t.Fatalf("precondition: Phase A no longer lowers deref's parameter, so shape 6 proves nothing:\n%s", deref)
 	}
 
-	// Shapes that must NOT forward: signatures that differ in Go types (the real x/sys gettimeofday),
-	// an unexported cross-package target, real machine code, and a same-package target whose parameter
-	// Phase A lowered.
-	for _, name := range []string{"LoadUintptr", "gettimeofday", "rawNoError", "SyscallNoError", "derefAlias"} {
+	// Shapes that must NOT forward: signatures that differ in Go types beyond a layout-identical pointee
+	// (a pointee of another element type; Timevals whose field TYPE or field NAMES differ), an unexported
+	// cross-package target with no asmJumpForwardTargets row, machine code that is not an exact NoError
+	// block, and a same-package target whose parameter Phase A lowered.
+	for _, name := range []string{"LoadUintptr", "gettimeofdayNarrow", "gettimeofdaySwapped", "rawNoError", "SyscallNoErrorShort", "derefAlias"} {
 		if body := emittedFunction(t, linux, name); !strings.Contains(body, " partial ") {
 			t.Errorf("shape %s: must stay a partial stub:\n%s", name, body)
 		}
@@ -238,7 +392,7 @@ func TestAsmTrampolinesForwardByShape(t *testing.T) {
 	// trampoline to read and every shape keeps its stub.
 	windows := convertAsmTrampolineFixture(t, "windows/amd64")
 
-	for _, name := range []string{"Syscall", "LoadUintptr", "gettimeofday", "rawNoError", "SyscallNoError", "localAlias", "derefAlias"} {
+	for _, name := range []string{"Syscall", "LoadUintptr", "gettimeofday", "rawNoError", "SyscallNoError", "RawSyscallNoError", "localAlias", "derefAlias"} {
 		if body := emittedFunction(t, windows, name); !strings.Contains(body, " partial ") {
 			t.Errorf("windows control: %s forwarded although its assembly is not in the windows build:\n%s", name, body)
 		}
@@ -390,11 +544,18 @@ func TestAsmTrampolinesSkipGoRootPackages(t *testing.T) {
 		t.Fatalf("control: outside GOROOT the Syscall trampoline must forward, so this arm proves nothing:\n%s", body)
 	}
 
-	// Under options.goRoot/src the same package is corpus code: every shape keeps its stub.
+	// The same control for the authorized unexported jump: outside GOROOT gettimeofday forwards.
+	if body := emittedFunction(t, control, "gettimeofday"); strings.Contains(body, " partial ") {
+		t.Fatalf("control: outside GOROOT the authorized gettimeofday jump must forward, so this arm proves nothing:\n%s", body)
+	}
+
+	// Under options.goRoot/src the same package is corpus code: every shape keeps its stub. That
+	// includes gettimeofday, whose asmJumpForwardTargets row authorizes a jump from OUTSIDE GOROOT only:
+	// a jump inside the standard library to an unexported symbol still needs Go's //go:linkname handle.
 	fakeGoRoot := t.TempDir()
 	underGoRoot := convert(fakeGoRoot, filepath.Join(fakeGoRoot, "src", "tramp"))
 
-	for _, name := range []string{"Syscall", "localAlias"} {
+	for _, name := range []string{"Syscall", "localAlias", "gettimeofday", "SyscallNoError"} {
 		if body := emittedFunction(t, underGoRoot, name); !strings.Contains(body, " partial ") {
 			t.Errorf("%s forwarded in a package under GOROOT's src/:\n%s", name, body)
 		}

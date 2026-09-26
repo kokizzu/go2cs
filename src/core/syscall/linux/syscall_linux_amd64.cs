@@ -70,7 +70,7 @@ public static error /*err*/ Lstat(@string path, ж<Stat_t> Ꮡstat) {
 //sys	futimesat(dirfd int, path string, times *[2]Timeval) (err error)
 
 //go:noescape
-internal static partial Errno /*err*/ gettimeofday(ж<Timeval> tv);
+public static partial Errno /*err*/ gettimeofday(ж<Timeval> tv);
 
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
     var errno = gettimeofday(Ꮡtv);
