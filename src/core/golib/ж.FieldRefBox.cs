@@ -78,7 +78,15 @@ public sealed class FieldRefBox<T> : ж<T>, INativeRooted
     // the field's within its IMMEDIATE parent, which is what keeps alignment composing correctly
     // down a nested chain.
     public override nuint PointerOrderToken =>
-        unchecked(AllocationBase(SourceIdentityHash(m_source)) + GoFieldDisplacement(m_source, m_token));
+        m_pointerOrderToken != 0 ? m_pointerOrderToken :
+        m_pointerOrderToken = unchecked(AllocationBase(SourceIdentityHash(m_source)) + GoFieldDisplacement(m_source, m_token));
+
+    // The token above, computed once per view. It is a pure function of this view's immutable source
+    // identity and field, and a view is cached per (box, accessor), so a repeated conversion of the same
+    // field (a reference-bearing field answers its token on every ж -> uintptr) reads it back instead of
+    // re-resolving the field's name and Go offset, which allocates. A token is never 0 (AllocationBase sets
+    // bit 63), so 0 means "not yet computed"; a racing first read computes the same value twice, harmlessly.
+    private nuint m_pointerOrderToken;
 
     /// <summary>
     /// The field slot's REAL address when this reference's root is native memory, else 0.
@@ -157,7 +165,17 @@ public sealed class FieldRefBox<T> : ж<T>, INativeRooted
     // tokenised `жfd.of(жpfd).of(жSysfd)` and the kernel refused it on every Windows TCP dial.
     // The pointee there is reference-FREE and its address was correct before the merge; the root
     // being reference-bearing is a fact about the container, not about whether an address exists.
+    //
+    // The one exception is the FIELD's own type, mirroring ElemRefBox (ruling 2026-09-22): a field
+    // that itself holds managed references answers None, so ж -> uintptr hands out an order token,
+    // never its raw address. The CLR lays such a struct out automatically and the address is
+    // unpinned, so a native writer given it writes its own layout over object references: os's
+    // `unix.Fstatat(parent, n, &fs.sys, ...)` had the kernel write 144 bytes of `struct stat` over
+    // a reference-bearing syscall.Stat_t (every Root Stat/Lstat read size 1000 and mode p---------).
+    // A token is refused by the kernel (EFAULT) and carried by the linux keystone's marshal. The
+    // repair above is untouched: the TCP dial's Sysfd is reference-free and keeps its address.
     public override PointerStorage StorageKind =>
+        RuntimeHelpers.IsReferenceOrContainsReferences<T>() ? PointerStorage.None :
         PinnableStorage is null ? PointerStorage.Unpinnable : PointerStorage.Pinnable;
 
     /// <inheritdoc/>
