@@ -177,6 +177,13 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
 
         /// <summary>Gets or sets the value stored under the nil key (meaningful only when <see cref="HasNilKey"/>).</summary>
         public TValue NilKeyValue = default!;
+
+        /// <summary>
+        /// Counts the overwrites that REPLACED a stored key (a signed zero; see setReplacingKey). A
+        /// range over a store where this is non-zero re-reads the stored key of a zero-bearing entry,
+        /// since a key it snapshotted can have been replaced underneath it.
+        /// </summary>
+        public int KeyEpoch;
     }
 
     // Go compares interface KEYS by (dynamic type, dynamic value) — the same relation `==` uses — but
@@ -185,6 +192,16 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     // unfindable after a type assertion. Null for every other key type, which keeps
     // EqualityComparer<TKey>.Default's fast path. See GoEqualityComparer.
     private static readonly IEqualityComparer<TKey>? s_comparer = GoEqualityComparer.ForKeys<TKey>();
+
+    // Go's map hashes an INTERFACE key's dynamic value before it touches the table, so an
+    // unhashable one (a slice, map or func) panics on every operation -- including on an empty or nil
+    // map, where Dictionary never hashes. A per-instantiation constant: no other key type pays.
+    private static readonly bool s_hashMayPanic = typeof(TKey).IsInterface || typeof(TKey) == typeof(object);
+
+    // Go REPLACES the stored key on an overwrite when == admits distinguishable keys (NeedKeyUpdate),
+    // and for a Go program the observable case is a signed zero: `m[+0] = v; m[-0] = v` keeps -0.
+    // Dictionary keeps the FIRST key and has no way to replace one. A per-instantiation constant.
+    private static readonly bool s_keyMayNeedUpdate = GoEqualityComparer.MayHoldSignedZero(typeof(TKey));
 
     private readonly NilKeyDictionary m_map;
 
@@ -281,6 +298,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
 
             if (isNilKey(key))
                 setNilKey(value);
+            else if (s_keyMayNeedUpdate && keyCarriesZero(key))
+                setReplacingKey(key, value);
             else
                 m_map[key] = value;
         }
@@ -356,6 +375,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
 
         if (isNilKey(key))
             setNilKey(value);
+        else if (s_keyMayNeedUpdate && keyCarriesZero(key))
+            setReplacingKey(key, value);
         else
             m_map[key] = value;
     }
@@ -366,7 +387,11 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (isNilKey(key))
             return removeNilKey();
 
-        // delete() on a nil map is a no-op in Go (no panic).
+        // delete() on a nil map is a no-op in Go (no panic) -- but the key is hashed first, so an
+        // unhashable one still panics there.
+        if (s_hashMayPanic && m_map is not { Count: > 0 })
+            GoEqualityComparer.CheckHashable(key);
+
         return m_map?.Remove(key) ?? false;
     }
 
@@ -391,6 +416,10 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (isNilKey(key))
             return tryGetNilKey(out value);
 
+        // A populated store hashes the key itself; an empty or nil one does not, and Go still does.
+        if (s_hashMayPanic && m_map is not { Count: > 0 })
+            GoEqualityComparer.CheckHashable(key);
+
         if (m_map is not null)
             return m_map.TryGetValue(key, out value!);
 
@@ -404,9 +433,72 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (isNilKey(key))
             return m_map is { HasNilKey: true };
 
+        if (s_hashMayPanic && m_map is not { Count: > 0 })
+            GoEqualityComparer.CheckHashable(key);
+
         // A nil map contains no keys.
         return m_map?.ContainsKey(key) ?? false;
     }
+
+    #region [ Key replacement ]
+
+    // Whether a key may carry a zero whose sign an overwrite must keep. The typeof tests are JIT-time
+    // constants, so a raw float or complex key reads its own value without boxing; any other
+    // signed-zero-capable key (an interface, a struct or array holding a float, a defined float type)
+    // takes the general test, which is conservative for the composite shapes.
+    private static bool keyCarriesZero(TKey key)
+    {
+        // A reference-type key runs SHARED generic code, where each typeof(TKey) test below is a
+        // run-time lookup rather than a constant; send it straight to the general test.
+        if (!typeof(TKey).IsValueType)
+            return GoEqualityComparer.KeyMayCarryZero(key);
+
+        if (typeof(TKey) == typeof(double))
+            return (double)(object)key! == 0;
+
+        if (typeof(TKey) == typeof(float))
+            return (float)(object)key! == 0;
+
+        if (typeof(TKey) == typeof(System.Numerics.Complex))
+            return ((System.Numerics.Complex)(object)key!).Real == 0 || ((System.Numerics.Complex)(object)key!).Imaginary == 0;
+
+        return GoEqualityComparer.KeyMayCarryZero(key);
+    }
+
+    // Go's key update. Dictionary cannot replace a stored key in place, so an existing entry is
+    // removed and re-added under the new key. Remove puts the freed entry on Dictionary's free list
+    // and the very next Add takes it, so the entry keeps its position and the enumeration order
+    // holds -- a BCL implementation fact, guarded loudly by GolibTests (MapKeyReplacementTests).
+    // An absent key (a NaN, which equals nothing, is always absent) takes the ordinary store.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void setReplacingKey(TKey key, TValue value)
+    {
+        if (m_map.Remove(key))
+        {
+            m_map.Add(key, value);
+            m_map.KeyEpoch++;
+        }
+        else
+        {
+            m_map[key] = value;
+        }
+    }
+
+    // The key a range must produce for a snapshotted entry when a key was replaced during the range:
+    // the stored one, found by the store's own comparer. Paid only after a replacement happened.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TKey storedKey(NilKeyDictionary store, TKey snapshotKey)
+    {
+        foreach (TKey key in store.Keys)
+        {
+            if (store.Comparer.Equals(key, snapshotKey))
+                return key;
+        }
+
+        return snapshotKey;
+    }
+
+    #endregion
 
     #region [ Nil-key slot ]
 
@@ -541,7 +633,16 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
             // overwritten it, and Go reads the bucket on arrival.
             if (store.TryGetValue(entry.Key, out TValue? value))
             {
-                yield return new KeyValuePair<TKey, TValue>(entry.Key, value);
+                // A key REPLACED during the range (a signed zero overwritten) is produced as the
+                // stored key, as Go reads the bucket's key on arrival; the snapshot holds the old one.
+                // Keyed on "this map has EVER replaced a key", not on a snapshot of the count: a
+                // snapshot is one more field on every range's iterator (measured +8 B per range),
+                // while this costs nothing on a map that never saw a signed zero overwritten.
+                TKey key = s_keyMayNeedUpdate && store.KeyEpoch != 0 && keyCarriesZero(entry.Key)
+                    ? storedKey(store, entry.Key)
+                    : entry.Key;
+
+                yield return new KeyValuePair<TKey, TValue>(key, value);
                 continue;
             }
 

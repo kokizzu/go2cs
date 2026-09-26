@@ -958,6 +958,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckMapCommaOk() => CheckTarget("MapCommaOk");
 
     [TestMethod]
+    public void CheckMapKeyUpdateAndHashPanic() => CheckTarget("MapKeyUpdateAndHashPanic");
+
+    [TestMethod]
     public void CheckMapMutateDuringRange() => CheckTarget("MapMutateDuringRange");
 
     [TestMethod]

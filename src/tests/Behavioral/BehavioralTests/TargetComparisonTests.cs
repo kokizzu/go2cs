@@ -961,6 +961,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckMapCommaOk() => CheckTarget("MapCommaOk");
 
     [TestMethod]
+    public void CheckMapKeyUpdateAndHashPanic() => CheckTarget("MapKeyUpdateAndHashPanic");
+
+    [TestMethod]
     public void CheckMapMutateDuringRange() => CheckTarget("MapMutateDuringRange");
 
     [TestMethod]

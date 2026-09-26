@@ -7,6 +7,7 @@
 // ReSharper disable CheckNamespace
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace go;
@@ -88,6 +89,11 @@ internal sealed class GoEqualityComparer<T> : IEqualityComparer<T>
         // non-null shape.
         if (root is IValueAdapter { Value: null } && GoReflect.ValueAdapterWrappedType(root.GetType()) is { } wrapped)
             throw new PanicException($"runtime error: hash of unhashable type {builtin.GetGoTypeName(wrapped)}");
+
+        // Go hashes an interface key's DYNAMIC value, and a slice, map or func there is unhashable:
+        // every map operation panics rather than answering (runtime.TestEmptyMapWithInterfaceKey).
+        // The BCL would hash the slice/map struct's fields, or the delegate, and carry on.
+        GoEqualityComparer.CheckHashableRoot(root);
 
         return root?.GetHashCode() ?? 0;
     }
@@ -204,4 +210,139 @@ internal static class GoEqualityComparer
 
         return value;
     }
+
+    private static readonly ConcurrentDictionary<Type, Type?> s_unhashableTypes = new();
+    private static readonly ConcurrentDictionary<Type, bool> s_signedZeroTypes = new();
+
+    /// <summary>
+    /// Panics with Go's text when an interface key's dynamic value cannot be hashed.
+    /// </summary>
+    /// <param name="key">The key, adapters and all.</param>
+    /// <remarks>
+    /// Go's map hashes the key before it touches the table, so this fires on EVERY operation --
+    /// including a lookup or delete on an EMPTY or NIL map, which is where a Dictionary never hashes
+    /// at all and so needs the explicit call (runtime_swiss.go's mapKeyError on the Used() == 0 path).
+    /// </remarks>
+    public static void CheckHashable(object? key) => CheckHashableRoot(RootOf(key));
+
+    internal static void CheckHashableRoot(object? root)
+    {
+        // The dominant dynamic types are hashable and answer without the per-type cache.
+        if (root is null or IConvertible or @string)
+            return;
+
+        if (s_unhashableTypes.GetOrAdd(root.GetType(), static t => unhashableWithin(t, 0)) is { } unhashable)
+            throw new PanicException($"runtime error: hash of unhashable type {GoReflect.GoTypeName(unhashable)}");
+    }
+
+    // The type Go's mapKeyError names: the slice, map or func itself, found by recursing through
+    // struct fields and array elements -- so `struct{ s []int }` reports `[]int`, as Go does. An
+    // interface-typed FIELD is not followed (its dynamic value is not in the type); Go would hash
+    // it, and that residual is stated rather than walked by value here.
+    private static Type? unhashableWithin(Type type, int depth)
+    {
+        if (depth > 64)
+            return null;
+
+        switch (GoReflect.KindOf(type))
+        {
+            case GoReflect.Slice:
+            case GoReflect.Map:
+            case GoReflect.Func:
+                return type;
+            case GoReflect.Array:
+                return GoReflect.ElementType(type) is { } element ? unhashableWithin(element, depth + 1) : null;
+            case GoReflect.Struct:
+                foreach (GoReflect.GoFieldInfo field in GoReflect.GoFields(type))
+                {
+                    if (unhashableWithin(field.Type, depth + 1) is { } unhashable)
+                        return unhashable;
+                }
+
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// Reports whether a key of <paramref name="keyType"/> can hold a SIGNED ZERO -- the one case
+    /// where two keys Go's <c>==</c> calls equal are still distinguishable, so an overwrite must
+    /// replace the stored key (Go's NeedKeyUpdate; strings are also in Go's set, but no Go program
+    /// can observe which of two equal strings a map kept).
+    /// </summary>
+    /// <param name="keyType">A map key type.</param>
+    public static bool MayHoldSignedZero(Type keyType) =>
+        s_signedZeroTypes.GetOrAdd(keyType, static t => signedZeroWithin(t, 0));
+
+    private static bool signedZeroWithin(Type type, int depth)
+    {
+        if (depth > 64)
+            return false;
+
+        switch (GoReflect.KindOf(type))
+        {
+            case GoReflect.Float32:
+            case GoReflect.Float64:
+            case GoReflect.Complex64:
+            case GoReflect.Complex128:
+            case GoReflect.Interface:
+                return true;
+            case GoReflect.Array:
+                return GoReflect.ElementType(type) is { } element && signedZeroWithin(element, depth + 1);
+            case GoReflect.Struct:
+                foreach (GoReflect.GoFieldInfo field in GoReflect.GoFields(type))
+                {
+                    if (signedZeroWithin(field.Type, depth + 1))
+                        return true;
+                }
+
+                return false;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Reports whether a key VALUE may carry a zero whose sign an overwrite has to preserve. Exact for
+    /// a raw float or complex; conservative (true) for a struct, an array or a named float, which
+    /// only costs such a key an extra remove-and-add on overwrite.
+    /// </summary>
+    /// <param name="key">The key, adapters and all.</param>
+    public static bool KeyMayCarryZero(object? key)
+    {
+        // The raw dynamic values an interface key overwhelmingly holds, before any adapter unwrap.
+        switch (key)
+        {
+            case null:
+                return false;
+            case double value:
+                return value == 0;
+            case @string:
+                return false;
+        }
+
+        object? root = RootOf(key);
+
+        return root switch
+        {
+            null => false,
+            double value => value == 0,
+            float value => value == 0,
+            System.Numerics.Complex value => value.Real == 0 || value.Imaginary == 0,
+            complex64 value => value.Real == 0 || value.Imaginary == 0,
+            IConvertible or @string => false,
+            _ => MayHoldSignedZero(root.GetType())
+        };
+    }
+}
+
+public static partial class GoReflect
+{
+    /// <summary>
+    /// Panics with Go's "hash of unhashable type" text when a map key's dynamic value cannot be
+    /// hashed -- for reflect's nil-map arms, which answer without reaching the map at all.
+    /// </summary>
+    /// <param name="key">The marshalled key.</param>
+    public static void CheckMapKeyHashable(object? key) => GoEqualityComparer.CheckHashable(key);
 }
