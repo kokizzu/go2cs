@@ -104,7 +104,9 @@ built the exe. That one is H1 step 1's, and it is verified by running, never by 
 behind each "(ruled)" remain recorded in that plan's §8. **Steps marked GATE are pass/fail and block
 the next; steps marked ⟲ are re-measured at every migration and never carried forward.**
 
-**Three orderings are not negotiable**, and each has a mechanical reason rather than a preference:
+**Four orderings are not negotiable**, and each has a mechanical reason rather than a preference (the fourth is the
+AMENDED 2026-09-07 block below: the outgoing corpus's final release ships ahead of the H1↔H2 pair).
+*(Edited in place 2026-09-26, §7 fix A1: this line read "Three" after the fourth ordering was added below it.)*
 
 - **The toolchain step and the pin bump land as ONE reviewable pair.** Between them the binary claims
   the new release (its embedded runtime version is what the NuGet compatibility guard reads) while
@@ -150,11 +152,35 @@ Everything else may be reordered by the executing lane.
 > scratch at the new release regardless**, so they re-bank there on exactly the footing of the rows
 > that did bank.
 
+### Readiness — before H0 **GATE**
+
+*(Edited in place 2026-09-26, §7 lessons 1-3: added from the 1.24.13 hop, where each item below surfaced mid-campaign
+as a stalled lane, a
+re-route or an owner ruling.)*
+
+A per-box record, taken and read before H0:
+
+- **Host.** DNS on public IPv4 resolvers per adapter (IPv6 unbound where there is no v6 path), qualified by Go's own
+  `go test -count=1 -timeout 40m net` (`TestLookupCNAME` is the tolerated drift); WSL `localhost` resolving `::1`;
+  unelevated symlinks (Developer Mode) and `LongPathsEnabled=1`; pwsh 7 and the pinned .NET SDK reachable by every
+  launcher; a many-core Windows host for crypto/tls's standard BoGo wall (only `GOFLAGS` reaches BoGo's nested
+  `go test`, so a raised wall is an owner ruling); any cloud quota requested now.
+- **Instruments.** Every instrument a later stage depends on is landed on master and red-proved BEFORE that stage —
+  the H10 recon wrapper as one blob, the sweep's `-Hop` mode (under PowerShell 5.1 and pwsh 7), the H6 completeness
+  gate, the H11 existence-plus-monotonicity check reading local AND origin tags.
+- **Fleet.** Addressed comms from day one (ledger, per-lane inboxes, one message per event), one OWNER-HAND line per
+  owner action, and resume prompts written on the rule that nothing local survives a restart.
+
 ### H0 — Baseline capture ⟲
 
 Capture, on the **outgoing** toolchain and the **new** converter build, everything the migration will
 diff against: the hand-own `.cs.auto` baseline, the package census, the roster snapshot, the
-disclosure manifests.
+disclosure manifests — and three comparands later stages otherwise reconstruct mid-hop: the outgoing
+three-target `-platform-census` manifest (H8's comparand, produced under the outgoing pin into a fresh
+directory), the behavioral suite's failing set **by name** (H9's base), and each box's bare `go`
+(`GOTOOLCHAIN=local go version` from a directory with no `go.mod`).
+*(Edited in place 2026-09-26, §7 lesson 6: the last three were added; H8 and H9 had to produce the first two
+mid-hop.)*
 
 ⚠ **Generate the `.cs.auto` baseline fresh, from a seeded old-release regen — never from the committed
 siblings.** The overlay rule excludes `*.cs.auto` in order to protect the hand-owned `.cs` beside it,
@@ -213,6 +239,16 @@ the differential. This is a ruled decision, not a preference.
    binary's embedded release against the live toolchain) before any harness runs. This is a check,
    not a task: the guard fires on its own, and the step exists only to confirm the rebuild it forces
    actually happened.
+
+6. **Every go-invoking instrument asserts its toolchain three ways and prints them** — the PATH-resolved
+   `go version` output, the resolved binary, GOROOT's `VERSION` — from a directory with no module, in its own
+   run environment. `-goroot` does not steer the package loader (the converter now refuses a mismatch), and
+   `GO111MODULE=off` cancels a `GOTOOLCHAIN` redirect.
+7. **`go vet` under the new directive is step 2's own bill**: the directive alone enables the new release's vet
+   checks, and their fixes block step 4.
+8. **Read the release's GODEBUG default changes against the test host** (1.24 dropped `winsymlink=0`, refusing
+   junction-staged hosts).
+*(Edited in place 2026-09-26, §7 lessons 7-9: steps 6-8 added.)*
 
 **Gate:** converter unit tests green **and** `go2cs.exe` demonstrably built by the new toolchain.
 
@@ -342,6 +378,14 @@ package set (ruled), and naming them explicitly is what stops a later reader re-
 Deliverable: a census document under `docs/phase4/`, in the shape of the existing census docs. **A
 patch-level migration should produce an empty census; a non-empty one is a finding.**
 
+**Every count here and after states its axes**: the population (convertible, or raw `go list std`), the tags
+(`purego,math_big_pure_go`), `CGO_ENABLED=0`, `ReleaseTags` pinned per side, the toolchain driven by its own GOROOT,
+and the GOEXPERIMENT baseline read from `internal/buildcfg` at the target (H8's amendment (d) is the detail). **New
+package IDs** get their NuGet prefix reservation filed now, not at H11.
+*(Edited in place 2026-09-26, §7 lessons 11-12: two rulings were withdrawn over counts with unstated axes, and the
+reservation was still an
+external wait after the release.)*
+
 ### H4 — Converter feature work **GATE**
 
 Whatever the release's language delta requires, plus whatever the census surfaced. Each item follows
@@ -393,6 +437,12 @@ lands with the hop on the version branch, never on master ahead of it.
 **A corpus migration is that regen.** Schedule the bundle **before H5**, for one reason: H5's overlay
 diff is the migration's primary signal, and every un-levelled artifact is noise inside it. Levelling
 first is what makes the upstream delta readable.
+
+**Two shapes.** While the outgoing record is live, H4a is the landed bundle below. When the outgoing record is
+frozen at its anchor, H4a is ONE seeded three-target old-release regen into staging, committing nothing — H0's
+`.cs.auto` baseline, H6's old side and H5's overlay comparand (Amendment 2026-09-13 below).
+*(Edited in place 2026-09-26, §7 fix A3: the "one commit series" text stood alone while the 1.23 → 1.24 hop ran the
+second shape.)*
 
 **The bundle owes, in one commit series:**
 
@@ -568,8 +618,19 @@ skip a step of it, so the non-negotiables are restated rather than referenced:
   `package_info.cs` and `README.md` are never re-emitted. **A migration that adds a package to that
   class must notice.**
 
-**Gate:** overlay completes with the marker gate at zero violations and **every diff classified**
-(§4).
+- **Rehearse first, on a scratch at the union tree, with every count written down**, and report projects built
+  beside the error count — one failing leaf skips everything above it. Commit progress as CHECKPOINTs even while
+  red, moving `src/go2cs.slnx` in the same commit. A BUILD's seed adds `src/gen` and `src/Directory.Build.props`;
+  the overlay carries the root attribution files.
+- **H5c's selection is the converter's**: bare `-stdlib`, the printed tag line quoted, never a second tag
+  resolution, never an mtime or a seeded root's presence; a hop-stale census; every class count printed at zero;
+  an orphaned hand-own relocates with its principal (`git mv` plus its namespace and class lines).
+*(Edited in place 2026-09-26, §7 lessons 16-17: the two bullets above.)*
+
+**Gate:** H5c applied (a dry run, then `-Apply` with zero UNRESOLVED and full flavour agreement), then the overlay
+completes with the marker gate at zero violations and **every diff classified** (§4).
+*(Edited in place 2026-09-26, §7 fix A4: the gate named no deletion step, though the H5c amendments of 2026-09-07 and
+09-13 make it one.)*
 
 #### Amendment 2026-09-07 — the DELETION PASS is a required step, and it has an instrument
 
@@ -1295,7 +1356,10 @@ converter re-emits. A supplemental `*_impl.cs` companion has no Go counterpart a
 > delta record in that migration's audit file, and every (c) is either closed or explicitly deferred
 > with an owner.
 
-Mechanically: re-measure the line-anchored census over `src/core`; assert every marked path appears
+Mechanically — the instrument is `src/check-h6-completeness.ps1` (it dot-sources `handown-census.ps1`'s predicate,
+refuses a vacuous run with rc 2, exits 1 on any violation); run it at H6 AND before the release, and row each
+hand-own created during the hop AS IT LANDS: re-measure the line-anchored census over `src/core`; assert every marked
+path appears
 exactly once in the audit file; assert every row's class is one of `unchanged`/`a`/`b`/`c`; assert
 every `b` carries a non-empty reason and every `c` a work-item reference; assert **zero** rows in the
 "no `.auto` emitted" state. Exit non-zero on any violation — the same shape as the repository's other
@@ -1303,6 +1367,16 @@ preflights: cheap, by-path, and impossible to pass vacuously.
 
 Deliverable: one audit file per migration under `docs/phase4/` (ruled), rather than per-package notes,
 because the completeness gate must be checkable in one place.
+*(Edited in place 2026-09-26, §7 fix A5 and lesson 20: the instrument is named; at the 1.24.13 pre-release gate 21
+hop-time hand-owns had no row.)*
+
+**Four arms beyond the `.auto` diff.** (1) STRANDED: a principal that adds a bodyless declaration to a package
+with a companion — the q82 census lists them. (2) A hand-owned host that quotes Go text is re-diffed at the new
+pin. (3) Each row's observer is re-derived at the pin. (4) A hand-own deleted with its package owes a re-census,
+from the merge-base, of the class it cured. A relocated hand-own whose principal changed is re-derived BEFORE the
+H5 gate reads green.
+*(Edited in place 2026-09-26, §7 lessons 21-22: the arms H6 missed at the 1.24.13 hop, two of which killed test
+hosts.)*
 
 #### Amendment 2026-09-13 — for the 1.23 → 1.24 hop, where the `.auto` pair comes from
 
@@ -1562,9 +1636,13 @@ if it does not, the fold is incomplete and the rows it still reports are the gap
 the reverse, and nothing about a cure that exists in **neither** — a class that was broken before the hop
 began stays broken and is H6's and H7's to find, not this step's.
 
-*What this step is not:* a licence to take master's tip mid-hop whenever it is convenient. It is **one**
-merge at **one** boundary, sized and predicted, because a release branch that keeps re-merging master has
-stopped being a release branch.
+*What this step is not:* a licence to take master's tip mid-hop whenever it is convenient. It is one merge per
+planned boundary, sized and predicted, because a release branch that keeps re-merging master has stopped being a
+release branch. **Plan two:** this fold, and the campaign-tip merge after H10's tooling (roster seat, plan,
+shardmap, driver) lands on master. An EMITTED file in a fold's conflict set is re-minted from the merged
+converter, never resolved by side; the fold is gated before the push.
+*(Edited in place 2026-09-26, §7 fix A6 and lesson 25: this read "one merge at one boundary"; the 1.24.13 hop needed
+the second fold to launch H10.)*
 
 
 ### H8 — Multi-platform re-emission **GATE** ⟲
@@ -1922,7 +2000,11 @@ golden before banking**. A migration is not a licence to rebank unexamined diffs
 > cheap enough to exercise. Deliberately NO up-to-date predicate on either path: a stale
 > COMPARISON is recoverable, a stale RECORD is not.
 
-**Gate:** the full behavioral suite green across all four phases. Note the runner's **own** internal
+**Gate:** Transpile, Compile and Target at zero failures, and Output's failing set equal **by name** to the
+outgoing base H0 captured, with APPEARED empty; the prediction is re-derived at the tip of record on the banking
+platform. *(Edited in place 2026-09-26, §7 fix A7 and lesson 27: this read "green across all four phases", which
+master's own base could not meet.)*
+Note the runner's **own** internal
 budgets are independent of the caller's, and a budget that expires reports `NOT MEASURED`, which fails
 the run and must **never** be read as a corpus regression.
 
@@ -2221,6 +2303,17 @@ Per banked package:
 5. **Re-check the per-package deadline floors** in the sweep's long-timeout table — a migration can
    change a suite's cost.
 
+**Order and launch.** H10 runs: (1) a census of the relocated rows' successors, and a conversion-only `-tests`
+pre-stage of them; (2) the recon leg, in a throwaway linked worktree detached at the tip — `-tests -test-action all`
+per row, the tree's own wrapper by blob, derived floors (never the 2-minute default), each row's execution pin;
+(3) only then the roster seat, the plan and the driver. Every launcher exports the Go overrides per worker and the
+.NET pins where its pwsh needs them, asserts pwsh starts under that environment before row 1, greps a `DRIVER_EXIT=`
+marker rather than trusting `$LASTEXITCODE`, and excludes the harness's own pwsh hosts from its sibling wait. A linux
+READING (`GoTargetOS=linux`, CGO 0, privilege stated) runs alongside the recon leg; the linux BANK stays a separate
+leg. *(Edited in place 2026-09-26, §7 lessons 28-30: seat-before-recon made the generator refuse, launch traps cost a
+40-minute false wait and a
+parsed-nothing exit 0, and the late linux leg found a linux-only partial on 25 of its 30 FAIL rows.)*
+
 > **Pre-staging a flagged row — the technique, and it is cheap.** A row the census or the upstream
 > survey flags as risky can be answered *before* the campaign reaches it: run the NEW release's test
 > suite against the **current** corpus through the real pipeline, with the Go control side on the
@@ -2254,9 +2347,10 @@ candidate BY NAME, with the header recomputed by the guard** — never by the ro
 The coordinator re-dispatches them with a raised budget; pass 3 (at 8fc439415f) banked three and routed
 the rest by class (ledger 16:03 · c660a17d8c).
 
-**One arithmetic cross-check, free and worth running here:** the count of banked test project files
-must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
-a migration ends with the two unequal the badge census miscounts — loudly, by design.
+**One arithmetic cross-check, free and worth running here:** the release census's NAMED IDENTITIES —
+tests.csproj, current proof pages, validated badges and index rows, each term named (the close amendment's
+"THE RELEASE CENSUS, CORRECTED" states them). A plain "project files equal rows" equality is false by design.
+*(Edited in place 2026-09-26, §7 fix A8: this read "must equal the roster's row count".)*
 
 #### Amendment 2026-09-20 (C1) — the LAUNCH, in stage: the order, the dispatch mechanism, the host rule, and the checklist a reader starting here needs
 
@@ -2321,8 +2415,10 @@ principal targets bank — nine and not eleven, because one target is the princi
 two targets are nobody's principal and stay candidates. Each source's 1.23.12 anchor appears exactly
 once, on the target taking the majority of its banked **verdicts** (never its declarations: one row
 banks 2,195 verdicts from 5 declarations, so a declaration share routes them to a package carrying
-none of them). **204 → 203 banked, 32 → 23 candidates, and the corpus axis is 226** — a figure
-independent of how the derivation comes out.
+none of them). **204 → 203 banked, 32 → 23 candidates.** *(Edited in place 2026-09-26, §7 fix A9: "and the corpus
+axis is
+226 — a figure independent of how the derivation comes out" struck. The population is the committed enumeration,
+checked by two routes; the AMENDED block below shows why.)*
 
 ⚠ **AMENDED 2026-09-22 (H10 closing arithmetic, coordinator ruling). "The corpus axis is 226" is
 FALSE as a statement about the population, and the way it is false is the lesson: 226 is the
@@ -2396,8 +2492,11 @@ rather than guess: the driver's `-Plan`, `-Worker` and `-FleetSize` are mandator
 reproduce dispatches nothing. **The recon leg predates the plan and therefore runs from hand-listed
 per-worker name lists through the per-package pipeline** — the driver's first use is the costed pass.
 
-⚠ **`testing` IS NOT A `-tests` ROW AND IS EXCLUDED FROM EVERY LIST**, until the converter seat that
-refuses it lands. It is a wholly hand-owned package, and the pipeline converts production **in place
+⚠ **`testing` is admissible and runs LAST in its list** — the converter seat that refuses its production landed
+(AMENDED block below). *(Edited in place 2026-09-26, §7 fix A10: this read "IS NOT A `-tests` ROW AND IS EXCLUDED
+FROM EVERY LIST, until the
+converter seat that refuses it lands".)* Before that seat it was excluded: it is a wholly hand-owned package, and the
+pipeline converts production **in place
 with no restore between rows**, so the row converts Go's `testing.go` straight over the hand-owned
 host every later row must then compile against. Measured at the 1.24 hop: the row left **14 tracked
 files modified and 19 new auto files** beside the 10 marked ones in `src/core/testing`, with CS0111
@@ -3198,14 +3297,19 @@ FROM THE CLOSE SEAT ITSELF.** The seat stopped three times and each stop was rul
   binary's own runtime version — which H1 rebuilt. That coupling is exactly the H1↔H2 window §2 warns
   about.
 - **New packages need new package IDs; removed packages need a disposition** — ruled: **deprecate,
-  with a pointer to the last release that carried it. Never unlist.**
+  with a pointer to the last release that carried it. Never unlist.** The deprecations are an owner step AFTER the
+  publish, because each points at an alternate that must already exist on the feed.
+- **H11 follows H10 by construction**: its pre-flight cannot pass until every roster row banks at the new base.
+  *(Edited in place 2026-09-26, §7 lesson 38: the two lines above.)*
 - The published-release stamp is a **repository-recorded fact** written by the publish ritual; a feed
   query is advisory only, never the gate.
 
 ### H12 — Docs, badges, READMEs **GATE**
 
 - **Every validation badge on every package README moves** as a matter of course: two of them read the
-  toolchain and follow H1, two read `version.props` and follow H2. **State the expected diff size
+  toolchain and follow H1, two follow the PUBLISHED stamp (they move at the publish, not the pin, and are omitted
+  when nothing is published). *(Edited in place 2026-09-26, §7 fix A11: this read "read `version.props` and
+  follow H2".)* **State the expected diff size
   before the overlay** so it is not mistaken for drift.
   > **AMENDED 2026-09-20 — THE UNPUBLISHED LINE, where the expected diff size is ZERO for half of them.**
   > The two H2-following badges — the **C# Source** badge's tag and the **Tests** badge's proof-page path
@@ -3227,8 +3331,11 @@ FROM THE CLOSE SEAT ITSELF.** The seat stopped three times and each stop was rul
   every migration.
 - **The GOROOT-vendored `golang.org/x/*` packages re-pin** from the new GOROOT's own vendor manifest —
   on a patch-level migration this is the badge family most likely to actually move.
-- The Go version appears in prose in the top-level docs, the roadmap, the roster and CLAUDE.md's
-  architecture row.
+- The Go version appears in prose under `docs/` (the README, roadmap, roster, background and strategy docs), in the
+  hand-owned READMEs and in CLAUDE.md. `migrate-gorelease.ps1` anchors only full-release spellings (about a quarter
+  of the edits), so this rung is a scan AND a full read, each reference classed KEEP-HISTORICAL / MIGRATE /
+  RERUN-THEN-MIGRATE / GENERATED-CHECK / OWNER-ASK; the Try-it command is timed cold.
+  *(Edited in place 2026-09-26, §7 fix A12 and lesson 38: this read "top-level docs".)*
   > **AMENDED 2026-09-20 — "top-level docs" is a NAMING DEFECT in this line, not a file that went
   > missing.** A lane reading it looks for a root `README.md` and finds none; `git ls-tree master` has
   > no root README at all, so nothing was lost in any hop. The prose sites this rung means are the ones
@@ -3262,6 +3369,30 @@ FROM THE CLOSE SEAT ITSELF.** The seat stopped three times and each stop was rul
 > A rehearsal exercises all five on the migration's own tree. **Signing is mandatory and
 > single-machine** — the feed rejects an unsigned push — so a rehearsal proves the ritual, never the
 > credential; the credential is proved once, by the machine that holds it.
+
+- **The rehearsal's shape**: the tag mint in an isolated clone with no remote, discarded after; the pack dry run in a
+  throwaway worktree (push-nuget writes package READMEs even in a dry run). State the badges that dangle until the
+  publish (new or relocated packages have no page in the last published snapshot).
+  *(Edited in place 2026-09-26, §7 lesson 38: a pack-only dry run mints no tag, so the ritual's element 2 was
+  otherwise unrehearsed.)*
+
+#### Release day
+
+*(Edited in place 2026-09-26, §7 lesson 39: the 1.24.13.1 and 1.24.13.2 releases, both on 2026-09-24.)*
+
+1. **Order.** Master moves first, after §6's full sweep, and the release is cut from master. Nothing that moves
+   golib or runtime lands between the sweep and the release. `release/go1.<old>` fast-forwards to the outgoing
+   line's final release tag; `release/go1.<new>` is minted only at the next cutover.
+2. **The owner's gate** is the README walkthrough on linux AND windows, from packages repacked at the tree that
+   ships (it caught a windows-only compile surface); GolibTests is gated at Debug AND Release.
+3. **The publish** is the owner's act at the release machine's own console, from a checkout with empty porcelain
+   (an agent's credential checks are refused by the permission classifier). **No GPG signing on the release
+   machine during NuGet Phase 2, or `disable-scdaemon` in gpg-agent.conf when no GPG key lives on a card** (the
+   owner's call): the likely cause was a woken scdaemon resetting the signing card's session per package.
+4. **To resume a failed Phase 2, NEVER re-run release-nuget** — it re-bumps the version. Run the signer's census,
+   then the signer with `-Apply -Overwrite` (one PIN), then Phase 3's exact push. Nothing is re-packed.
+5. **After the publish**, "indexed" means every id in the walkthrough's restore closure is listed — a partial
+   index fails restore loudly (NU1102). Then the post-publish smoke, the removed-ID deprecations, the release record.
 
 ---
 
@@ -3614,6 +3745,11 @@ tail as **one** defect at its first empty row. And note the ordering consequence
 to the crashing case is *unreachable* until the process survives the test, so the fix is the process
 first, the disclosure second, never the other way round.
 
+**Two more dispositions.** A HOST-TIMING reading — a deferred allocation disclosure that fires on one host and not
+another — is not a regression, and the page of record stands. An infrastructure-error verdict from a throwing stub
+is never disclosed; its cure is a refuse-by-name body whose text is the signature.
+*(Edited in place 2026-09-26, §7 lesson 37: both surfaced at the 1.24.13 hop.)*
+
 **And classify closures as carefully as breaks.** A row that *matched* because both runtimes were
 wrong the same way can newly diverge, and a **disclosed divergence can silently close**. A closure is
 a good outcome and must still be **retired with evidence** — the arithmetic must move, visibly, or
@@ -3630,8 +3766,8 @@ Master merges only when all five hold, each stated so it can be **checked, not f
 |:--|:--|
 | **Compile parity** | errors zero **and** skipped-dependents zero, at **100 %** of the migration's package set, under the default target OS |
 | **Roster parity** | every roster row appears in exactly one shard ledger (nothing lost) **and** the absolute row count ≥ prior, with upstream-deleted-package losses as **recorded** exceptions. Both absolute and percentage reported. Every row backed by a regenerated proof page and a re-derived, re-signed manifest |
-| **Behavioral parity** | all four phases green, **zero** `NOT MEASURED`, every moved golden classified T0–T4 with **zero T5** |
-| **Hand-own audit** | §H6's completeness gate passes: every marked path in the **re-measured** census appears exactly once; every (b) carries a written reason; every (c) a work item; **zero** "no `.auto` emitted" rows |
+| **Behavioral parity** | Transpile/Compile/Target zero failures and Output's failing set equal to H0's named base with APPEARED empty *(edited in place 2026-09-26, §7 fix A7)*, **zero** `NOT MEASURED`, every moved golden classified T0–T4 with **zero T5** |
+| **Hand-own audit** | §H6's completeness gate (`src/check-h6-completeness.ps1`) passes: every marked path in the **re-measured** census appears exactly once; every (b) carries a written reason; every (c) a work item; **zero** "no `.auto` emitted" rows |
 | **Release ritual rehearsed** | tag mint, write-once snapshot, every badge retarget, recomputed re-verification — exercised on the migration's own tree |
 
 **Performance is deliberately NOT a parity gate.** A full AOT pass is hours and must run solo; the
@@ -3646,17 +3782,250 @@ frame schedules it **once per ladder** plus coordinator discretion, not once per
 | converter `go test ./...` | **yes**, at H1 and after every converter change. Carries the shared-project registration guard, the metadata-sync guard, the capability-gate guard and the platform hand-own guard |
 | `check-no-regression.ps1` | **yes**, at H4 and per converter-touching commit. It re-transpiles **unconditionally** and is the authoritative drift instrument — **never add an up-to-date skip to it** |
 | `go2cs-stdlib.slnx`, every buildable target-OS flavor | **yes**, at H7 |
-| master folded into the release branch | **once**, at H7a — sized, predicted, and scored; H6's retired-hand-own step re-run after it as the closing check |
+| master folded into the release branch | at H7a and again at the campaign tip (§2 H7a) — each sized, predicted, and scored; H6's retired-hand-own step re-run after H7a as the closing check. *(Edited in place 2026-09-26, §7 fix A6.)* |
 | `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members. In any non-Debug configuration pin `-p:go2csPath=<repo>/src/`, or every behavioral project resolves the machine deploy root instead of the tree (R-B16, H10's close amendment) |
 | full behavioral suite (four phases) | **yes**, at H9 and at the parity gate |
-| seeded full reconvert | **once** per phase — H4a's bundle and H5. Never twice into one staging root |
+| seeded full reconvert | **once** per phase — H4a's bundle and H5 — plus H10's close regen whenever a converter fix landed after H5, plus any proving regen the release rules; count each. Never twice into one staging root. *(Edited in place 2026-09-26, §7 fix A13: the 1.24.13 hop ran a third at the close and a fourth before the release.)* |
 | multi-target emission + platform census | **yes**, at H8 |
-| full validated-roster sweep | **once**, at the parity gate: coordinator-owned, backgrounded, on the fastest available machine, **never parked by a lane** — a lane's process tree is reaped at its turn boundary, and sweeps have been lost to exactly that. Recovery is `roster − logged`, re-run inline, with the verdict arithmetic checked to close |
+| full validated-roster sweep | **once**, at the parity gate: coordinator-owned, backgrounded, on the fastest available machine, **never parked by a lane** — a lane's process tree is reaped at its turn boundary, and sweeps have been lost to exactly that. Recovery is `roster − logged`, re-run inline, with the verdict arithmetic checked to close *(§7 lesson 37: a survival canary before row 1; `clean-bin -Root` explicit and `src/gen` purged separately; disk preflight at the row boundaries.)* |
 | release-ritual dry run | **yes**, at H12 |
 
 Budget every one from CLAUDE.md's measured budget table, **from the top of each range**, and
 **re-measure and update the table** when a healthy run exceeds a row. A stale baseline is what makes a
 healthy run look hung — and, in the other direction, what lets a hung one look healthy.
+
+---
+
+## 7. Lessons from the 1.24.13 hop — dated 2026-09-26
+
+> **What this is.** This section records the lessons of the first official corpus hop, go1.23.12 → go1.24.13
+> (2026-09-07 to the 1.24.13.1 publish on 2026-09-24, and 1.24.13.2 the same day). The owner ordered it on
+> 2026-09-23. It is written for the NEXT hop and keeps only what makes that hop quicker or smoother. Where a lesson
+> changes a step, the step itself was edited IN PLACE on the same date (**Step text:** names where), and each such
+> edit carries a one-line dated note. The rest of this section is the record. Every lesson cites its source in the
+> HTML comment beside it.
+>
+> One-off code findings stay on the BOARD. The general instrument discipline this hop taught (false greens, census
+> controls, shell traps) goes to the `gate-forensics` and `measurement-discipline` skills, in a separate seat. The
+> H10 close amendment's lessons 1-7 stand where they are and are not restated here.
+>
+> **Fixes A1-A13.** Thirteen places where the step text still said what a later dated block had corrected (the
+> fourth ordering, H7a's "one merge", H9's "all four phases green", H10's row-count equality and its "226", among
+> them) were corrected in place. Each carries a one-line dated note naming its fix, so the old text stays readable.
+<!-- Owner order: ledger 2026-09-23 14:52 · OWNER ORDER · c9e15c73a0 (seed list claude/coord-handover
+     docs/phase4/briefs/lessons-learned-seed.md). The owner excluded the i9's hardware issues as temporal. Derived by
+     C1 on 2026-09-26: seven read-only agents over the ledger (09-20..09-25), the mailbox archives (09-07..09-20), the
+     BOARD at db1bd885a2, this runbook's 31 dated blocks, the RESUME-SESSIONS STATE DELTAs and the 41 briefs and
+     reviews produced 449 cited candidates. A script found every quote in its source. The outline
+     (claude/c1-hop-lessons-outline ddb47b72b7) was RULED by COORD on 2026-09-26. Three adversarial checkers then
+     re-read every cited line: 52 items, 11 KEEP, 41 KEEP-CORRECTED, 0 DROP. Mailbox line numbers refer to
+     claude/mailbox docs/phase4/MAILBOX-archive-2026-09-13.md (from line 121655 = 2026-09-07) and
+     docs/phase4/archive/MAILBOX-through-2026-09-20.md. -->
+
+### 7.1 Before H0: readiness
+
+1. **Qualify every host before H0**: DNS by Go's own `net` suite, WSL `::1`, symlinks and long paths, pwsh 7 and the
+    pinned .NET, a many-core host for crypto/tls's BoGo wall, cloud quota early. Each gap stalled a lane or forced a
+    re-route mid-campaign. **Step text:** Readiness.
+    <!-- ledger 2026-09-22 19:34 · FINDING · 43d149b87d (the router relay turns NXDOMAIN into SERVFAIL; no box passed
+    Go's net suite); 2026-09-23 10:10 · OWNER RULING · fc6269b0bf (a qualified host fails only TestLookupCNAME);
+    2026-09-24 00:33 · FINDING · 836004dd20 (public IPv4 resolvers per adapter, IPv6 unbound; Developer Mode off,
+    LongPathsEnabled=0); 2026-09-23 22:36 · FINDING · 020365abcd (WSL hosts file maps localhost to 127.0.0.1 only;
+    BoGo listens on [::1]); 2026-09-22 00:05 · RULING · 0adf2e431 (pwsh 7 absent on one worker; DOTNET_ROOT not
+    exported); 2026-09-22 21:55 · FINDING · 7462befde0 and 2026-09-23 11:59 · OWNER RULING · fad839a224 (the BoGo
+    wall; a 48-vCPU host met 600 s at 213 s); briefs/az1-tls-brief.md:44-45 (only GOFLAGS reaches BoGo's nested go
+    test); seed items 1 (lessons-learned-seed.md:26-34). -->
+2. **Land and red-prove each instrument BEFORE the stage that needs it** — the recon wrapper as one blob, `-Hop`
+    mode, the H6 gate, the H11 origin-tag check. All four were built or fixed on the critical path. **Step text:**
+    Readiness.
+    <!-- ledger 2026-09-22 14:52 · RULING · 158ce37f6c and 2026-09-22 18:02 · SEAT · d095fe8108 (the wrapper's floor
+    replaced an asked timeout and ignored the roster execution pin, found at pass 3 and fixed red-first);
+    mailbox-archive.md:113793 (fifteen wrapper commits, mostly during launch; the next hop starts from the landed
+    blob); mailbox-0907-0913.md:41281 and mailbox-archive.md:5645-5651 (-Hop was open instrument debt, and its first
+    cut broke the ordinary gate under PS 5.1); 2026-09-24 02:10 · STAMP · bccf8d977b (RN-15 the H6 gate had no
+    instrument; H11 finding (2) the next-release check read local tags only); 2026-09-23 23:41 · RULING · fa18863b94
+    (RN-9). -->
+3. **Addressed comms from day one** (ledger, per-lane inboxes, one message per event, one OWNER-HAND line); the
+    broadcast mailbox measured 59% protocol work. A cloud lane's state is only what is at origin. **Step text:**
+    Readiness.
+    <!-- mailbox-archive.md:115567-115579 (the owner steer; PROTOCOL v4 rules 2-6); ledger 2026-09-20 13:15 · RULING ·
+    77a03bd82; 2026-09-22 00:09 · RULING · 93c9f43a6 (ONE OWNER-HAND line); mailbox-archive.md:41717 (nothing local
+    survives a cloud-container restart); mailbox-archive.md:38414 (the weekly-limit shutdown during H5). -->
+4. **Before the pin moves**, commit every unbanked reading (a hop destroys scratch), freeze EVERY current proof page
+    in the outgoing snapshot, and derive the "must land first" list from master — two of three quoted blockers were
+    stale.
+    <!-- mailbox-0907-0913.md:8224-8226; ledger 2026-09-23 23:41 · RULING · fa18863b94 (RN-6: 21 links dangled under
+    the 1.23.12.3 snapshot, so 1.24.13.1 froze all 232 current pages). -->
+5. **Keep a next-hop notes record**: a seat whose census reaches the next release's tree records the spread there
+    (this hop, one construct goes from 2 sites to 6 at 1.25.1).
+    <!-- mailbox-archive.md:89265, :89380-89386 (C1's read of R's seat ce8d0bd654; "worth a line in the hop-B notes"). -->
+
+### 7.2 H0 – H3
+
+6. **H0 captures the next hop's comparands**: the outgoing `-platform-census` manifest, the behavioral failing set by
+    name, each box's bare `go`. H8 and H9 reconstructed the first two mid-hop. **Step text:** H0.
+    <!-- mailbox-archive.md:76101-76106 (the H0 baseline "contains no platform manifest"; the comparand was produced
+    in about 1,116 s); mailbox-archive.md:79905-79907 (the base two fail identically at pre-hop master; H9 restated BY
+    NAME); mailbox-archive.md:54051 (bare go read 1.24.7 and 1.23.1 on different boxes). The committed corpus's drift
+    from the pre-hop converter is H4a's `d-level` comparand (mailbox-archive.md:42579), not a separate capture. -->
+7. **Assert the toolchain three ways, from a no-module directory, and print them**; `-goroot` does not steer the
+    loader and `GO111MODULE=off` cancels a redirect. **Step text:** H1.
+    <!-- mailbox-archive.md:8624-8633 (the loader follows the environment; a wrong-release run exited 0);
+    mailbox-archive.md:88151 (the three-way fleet preflight); mailbox-archive.md:76147; §2 H2 ruling 2026-09-08 (the
+    pairing); the converter refusal 7c1d8832f. -->
+8. **`go vet` under the new directive is H1's own bill**: the directive alone failed the converter suite at 10 sites.
+    **Step text:** H1.
+    <!-- mailbox-0907-0913.md:10977-11008 (G; COORD's ruling at :11101). -->
+9. **Read the release's GODEBUG default changes against the test host**: 1.24's `winsymlink` refused junction-staged
+    hosts. **Step text:** H1.
+    <!-- mailbox-archive.md:104090 (the host seat applies GODEBUG=winsymlink=0 on the junction fallback). -->
+10. **Run `migrate-gorelease`'s bare census whenever docs restructure**, not first at H2; a registry re-key lands
+    with the stage whose witness it reads (GOROOT → H2, corpus → H5).
+    <!-- mailbox-archive.md:1280-1292 (45b58dc86 at ddd509c1e); mailbox-0907-0913.md:12875-12877 (re-key, never
+    retire) and :15262 (db071b422 the H2 seat, e7e976f9d the H5 seat, "decided by the guard's WITNESS"). The
+    build-number reset missed at 0f97dcc8db reached 335 README badges (mailbox-archive.md:79202-79230) and is held by
+    TestPublishedCounterMatchesTheRecordedReleases (H2's AMENDED block). -->
+11. **Every count states its axes** — population, tags, `CGO_ENABLED=0`, ReleaseTags per side, toolchain,
+    GOEXPERIMENT baseline; two rulings were withdrawn over unstated axes. **Step text:** H3.
+    <!-- mailbox-0907-0913.md:7935-7965 (346 raw vs 342 convertible; runtime/cgo under CGO_ENABLED=1);
+    mailbox-archive.md:4312-4337 (experimentBaseline: SwissMap, SpinbitMutex, SyncHashTrieMap on at 1.24.13);
+    :76147-76149; :78200; :78653 (a disposition withdrawn within the hour); H8 amendment (d). -->
+12. **File the NuGet ID-prefix reservation when H3 names new IDs**; it was still an external wait after the release.
+    **Step text:** H3.
+    <!-- resume.md:1078 and :259. -->
+
+### 7.3 H4 – H5c
+
+13. **The `testing` host's bill for new TB/B/F members goes first**, sized by receiver-typed call sites of the NEW
+    members (a name census over-matched 2.6×); an H4 item lands early only if gated green at the OUTGOING corpus.
+    <!-- mailbox-0907-0913.md:8210-8218 (COORD owner ruling 2026-09-07); :8612-8648 (8 rows / 2,425 verdicts
+    blocked); :29089-29124 and :29239 (a golib member compiled at both releases and was refused by a guard). -->
+14. **Re-key registry entries by SIGNATURE, not a similar name** (`getgcmask` became `pointerMask`); a target-only
+    entry lands on the version branch with the H5 set.
+    <!-- mailbox-archive.md:30251-30290; :23918-23945 (unlock2Wake; TestManualConversionRegistrationsDisplaceSomething
+    red at master); c8d50e014f. -->
+15. **Seat rules**: re-baseline moved goldens in the same commit; reach censuses cover `src/tests/Behavioral`; read a
+    prediction's probe unfiltered; rule union classes and one resolver per shared file before the battery; build
+    SDK-less C# on a scratch merge first.
+    <!-- mailbox-archive.md:77791-77830 (32 emission-touching commits, 4 banked a golden); ledger 2026-09-22 15:09 ·
+    FINDING · f9f3c1039 (CNR red on RangeOverIntegerTypes, missed by a std-only census); mailbox-archive.md:50525;
+    2026-09-22 00:05 · RULING · 1271662ec (batch 3 stopped on a projitems adjacent insert); 2026-09-20 15:35 · RULING
+    · 6d814e2d3 (one resolver for convCallExpr.go); mailbox-archive.md:53580-53600; 2026-09-22 06:13 · RULING ·
+    34d8a5be0 (batch 4 did not stamp on three reds in uncompiled C#). -->
+16. **Rehearse H5 at the union tree with written predictions**, reporting projects built (predicted 300-325, built
+    70); CHECKPOINT commits; the BUILD seed and the attribution overlay. **Step text:** H5.
+    <!-- mailbox-0907-0913.md:12341-12424 (R's rehearsal 917f8bfac); mailbox-archive.md:20883-20918 (i9's union rung;
+    62 false errors without src/gen); :21015 (0687402db); :34106-34121 (7ae5355bb CHECKPOINT 2; the slnx in the same
+    commit); :33664-33740; :74972-74985 (src/core/VERSION still read go1.23.12 at the 1.24.13 tip). -->
+17. **H5c's selection is the converter's** — no second tag resolution, no mtime or seeded-root presence, a hop-stale
+    census, zero counts printed, orphans relocated with their namespace. **Step text:** H5.
+    <!-- mailbox-archive.md:34580-34597 (bb3a1a747: five live files marked deletable by a second tag resolution);
+    :19784-19838 and :20288-20300 (8f2eafdc8, then 79b555fcc withdrew presence-in-a-seeded-root); :52550 (q87, the
+    hop-stale census; crypto/ecdh/package_init.cs); :33716, :33840, :34280-34290 (the slnx post-condition passed 0 == 0
+    over an empty population); :32383 (8f800233b). -->
+18. **Measure each converter batch's corpus footprint AT the batch**: the close inherited 154 converter-touching
+    commits unmeasured, and the release packs `src/core` as committed.
+    <!-- ledger 2026-09-22 08:18 · STAMP · ae2f25198; briefs/h10-close-obligations.md:49, :56 (54dec61728..d1a0d314d5);
+    briefs/packaging-train-seats-2-3-review-2026-09-24.md:195. -->
+19. **This hop's declared-set guards (q82, RED 8 (d), q84) fail at the next hop by design**, naming the new members;
+    read those reds as H6 input.
+    <!-- mailbox-archive.md:48061, :48211, :50085 (q82, d87d2f94a4); :49382-49390 (RED 8 (d)); :50859-50862 (q84);
+    ledger 2026-09-22 08:18 · STAMP · ae2f25198 (three corpus guards moved mid-hop). -->
+
+### 7.4 H6 – H9
+
+20. **Run `src/check-h6-completeness.ps1` at H6 and before the release, and row each hop-time hand-own as it lands**;
+    21 had no row at the pre-release gate. **Step text:** H6.
+    <!-- ledger 2026-09-24 02:10 · STAMP · bccf8d977b (RN-15); 2026-09-24 02:24 · RULING · 4fa5eff2df (the script;
+    23 violations); 2026-09-24 02:50 · STAMP · 33b6623eab (rows 146-166; PASS 166/166 on the i7). -->
+21. **H6 has four more arms** — stranded bodyless declarations (the q82 census), hand-owned hosts quoting Go text,
+    observers re-derived at the pin, retired hand-owns' classes re-censused. **Step text:** H6.
+    <!-- mailbox-archive.md:48183-48210 (time.runtimeNow, RED 7); :41916-41935 (the testing host's 1.23.12
+    Setenv/Parallel texts); board.md:25361 (39ddead63e); mailbox-archive.md:64588-64600, :65210-65225 (merge-base
+    271300cea0). -->
+22. **A relocated hand-own whose principal changed is re-derived before the H5 gate reads green**; read the gate by
+    project, since each fix unmasks the next package. **Step text:** H6.
+    <!-- mailbox-archive.md:38185-38234 (i9's H5 gate reading on f0f8826894); :38912 (COORD: H5 green needs row 20
+    re-derived; this reversed :33511's order); 5a03aac159. -->
+23. **The H6 pair**: one `-trimpath -buildvcs=false` binary, bare `-stdlib`, the old `version.props` for half B, an
+    `.auto`-empty stage, `git archive` seeds, CR-stripped hashes.
+    <!-- mailbox-archive.md:34951-34960 (42bac7cf7 / 1bec764b4); :35190-35215; :35589 (G's advice, "for anyone
+    repeating this hop"); :39542-39548 (f6c60275e); :41108-41120 (6c820a2115). -->
+24. **The first post-H5 build is the H7 baseline**: list each unmasked package's referencing projects, size a red by
+    whole-corpus census (5 errors were 29 sites), cure it as ONE seat, and run q82 before claiming parity.
+    <!-- mailbox-archive.md:42997-43036; :46095 (RED 4); :46521; board.md:25160-25174. -->
+25. **Plan two master folds** — H7a and the campaign tip after H10's tooling lands on master; re-mint conflicted
+    emitted files and gate the fold before the push. **Step text:** H7a, §6.
+    <!-- mailbox-archive.md:70405 (H7a fc275f1ac3); ledger 2026-09-21 23:52 · RULING · 0adf2e431 (the campaign tip,
+    c6fdbe73c3); mailbox-archive.md:70207-70235 (a pre-hop mgc.cs emission reinstated by side-taking, CS1615 ×4). -->
+26. **H8**: `classify` takes the `manifest` builder's input, class counts are per file, byte-identity views run on
+    linux/WSL, platform-exclusive packages come from their native emission, and every L3 csproj is diffed after the
+    regen.
+    <!-- mailbox-archive.md:78210-78240 (bdc016826a); :79653; :79605; ledger 2026-09-24 01:46 · STAMP · 61724860b4
+    (RN-5); 2026-09-23 18:39 · RULING · 1a328f3ee8 (R-B15). -->
+27. **H9's gate is Output's failing set equal to H0's named base, APPEARED empty**, with the prediction re-derived at
+    the tip on the banking platform. **Step text:** H9, §5.
+    <!-- mailbox-archive.md:79899-79915 (972012f070; FuncLiteralCallerNames and GoroutineWaitState fail at pre-hop
+    master too); :77420-77500 (06b1636cae); :78839-78850; §2 H9 Closure 2026-09-20; resume.md:360. -->
+
+### 7.5 H10 – §6
+
+28. **H10 order**: successor census and conversion-only pre-stage, then the recon leg in a throwaway detached
+    worktree, then seat, plan and driver; seat-before-recon made the generator refuse. **Step text:** H10.
+    <!-- mailbox-archive.md:78194, :78562, :85580 (aa66874ff7), :87189, :88148, :87818; ledger 2026-09-23 12:56 ·
+    RULING · b57703b1cd; 2026-09-22 16:17 · RULING · 3469154a95; 2026-09-22 18:02 · SEAT · d095fe8108. -->
+29. **Launch preconditions**: Go overrides per worker, .NET pins where the pwsh flavour needs them, a `DRIVER_EXIT=`
+    marker, the sibling wait excluding the harness's own hosts. **Step text:** H10.
+    <!-- ledger 2026-09-20 15:32 · RULING · 0adf2e431; 2026-09-22 00:05 · RULING · 0adf2e431; 2026-09-22 03:33 ·
+    STAMP · c6fdbe73c; 2026-09-21 23:52 · RULING · 0adf2e431 (a 40-minute false-sibling wait); 2026-09-22 03:45 ·
+    RULING · c6fdbe73c; mailbox-archive.md:85605. -->
+30. **Take a linux READING alongside the recon**; late, it found a linux-only partial on 25 of 30 FAIL rows and a
+    GolibTests linux build broken for eight days. **Step text:** H10.
+    <!-- ledger 2026-09-23 06:18 · RULING · 5da426433b; 2026-09-22 03:45 · RULING · c6fdbe73c; 2026-09-23 10:13 ·
+    ACCEPT · ce065f8aa9; 2026-09-23 08:51 · ACCEPT · 971d919113 (b293973e9f); seed item 2. -->
+31. **Allocation labels**: a reading run (committed TSV), then the relabel, then rulings, then page banking; the host
+    records only the first nonzero `AllocsPerRun` unit.
+    <!-- ledger 2026-09-22 16:39 · RULING · c8e6ca9034; 2026-09-23 02:17 · FINDING · ac9f8251ee; 2026-09-23 07:12 ·
+    STAMP · 74bae27672. -->
+32. **Re-derive the roster header from the table at every leg** (crypto/cipher went from 13 verdicts to 27,272), and
+    put hand-owned READMEs on the bank checklist.
+    <!-- ledger 2026-09-22 04:14 · RULING · 854b94107; 2026-09-23 04:03 · STAMP · 1719e3b87f (testing's badge stayed
+    37/52 after a 53+15 bank); 2026-09-22 15:42 · CORRECTION · 3469154a95; 2026-09-22 14:45 · RULING · d5414aa151. -->
+33. **Every leg brief runs the FULL converter suite; push measurement commits before a page cites them; record a
+    non-default environment (GOFLAGS) on the page and in an execution pin.**
+    <!-- ledger 2026-09-22 08:18 · STAMP · ae2f25198; briefs/h10-close-obligations.md:93-94 (a page cited converter
+    4c5b0a3b7, not an object on origin). -->
+34. **Size a repair before ruling a hold**: "about two days" was 4 working days to 3 weeks, and a golib-wide repair
+    lands after the hop with the row demoted by name.
+    <!-- ledger 2026-09-22 17:18 · OWNER RULING, 17:27 · FINDING and 17:33 · OWNER RULING, all · 43d149b87d. -->
+35. **Derive the close brief from this runbook with adversarial checkers, and audit the close through three lenses**;
+    the audit found four real misses.
+    <!-- ledger 2026-09-22 16:31 · FINDING · 3469154a95 (31 claimed, 6 verified, 4 real); 2026-09-23 13:36 · RULING ·
+    3ec2c9ff39 (36 brief defects repaired). -->
+36. **Keep the recon leg's per-row TSVs as the next shard basis**: dispatch cost is fixed setup, uncorrelated with
+    verdict count (r = 0.08).
+    <!-- mailbox-archive.md:13074; :106663 (47c60b1d3, "the next hop's leg is planned from them"). -->
+37. **§4 gains HOST-TIMING and throwing-stub dispositions; §6's sweep takes a survival canary, an explicit `clean-bin
+    -Root`, a separate `src/gen` purge and row-boundary disk checks.** **Step text:** §4, §6.
+    <!-- resume.md:182-183 and ledger 2026-09-24 04:58 · STAMP · 5098289482 (context TestAllocs 57|1 vs 58|0); resume.md:876,
+    2026-09-22 05:00 · RULING · 4aa8a36fb, 05:10 · RULING · f401c4ea0; briefs/full-roster-sweep-brief.md:107, :118,
+    :209; 2026-09-24 04:25 and 04:37 · FINDING · 61724860b4; 2026-09-22 12:24 · RULING · 71d03e812. -->
+
+### 7.6 H11, H12 and release day
+
+38. **H11 follows H10 by construction; removed-ID deprecations come after the publish; docs get a scan AND a read;
+    the tag mint is rehearsed in an isolated clone.** **Step text:** H11, H12.
+    <!-- mailbox-archive.md:84061 (a9749f5e3); ledger 2026-09-22 19:06 · FINDING · 43d149b87d; resume.md:1179-1181;
+    2026-09-24 02:10 · STAMP · bccf8d977b; 2026-09-24 00:25 · OWNER ORDER · fa18863b94;
+    briefs/docs-go-version-migration-plan.md:680; 2026-09-24 04:01 · STAMP · 9c9b1a81af;
+    briefs/postclose-h11-h12-brief.md:440 (RN-7); briefs/postclose-h11-h12-repair-log.md:44; briefs/h10-close-obligations.md:109. -->
+39. **Release day is procedure**: master first, the owner's console publish with no GPG in Phase 2, a signer resume
+    that never re-runs release-nuget, the walkthrough on both OSes at the shipping tree. **Step text:** H12, "Release
+    day".
+    <!-- ledger 2026-09-24 00:04 · OWNER RULING · fa18863b94; 00:45 · ACCEPT · 0b6bf15ab0; 07:24 · ANNOUNCE ·
+    b6746ab185; 05:48 · RULING · 6ab65f3409; 04:59 · STAMP · ffa5c1015a; 15:57 · STAMP · e06494c6f8; 11:27 · STAMP ·
+    53f52233fc; 14:10 · ANNOUNCE · 4c53b02a0a; 16:17 · STAMP · 9a5f63041b; 06:44 · FINDING · 38529c765a (CS0426
+    'Rlimit' on linux; seats 501b7e4c27, 43c8d5aac7, 26042b3a92); seed items 13, 14, 16, 17. -->
 
 ---
 
