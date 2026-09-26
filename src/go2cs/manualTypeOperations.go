@@ -664,6 +664,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// and is valid, with zero samples.
 		"setProcessCPUProfiler": goosAny,
 		"setThreadCPUProfiler":  goosAny,
+		// profBuf.write (profbuf_impl.cs): the CPU profile log's writer, hand-owned for its ONE tag store.
+		// Go writes the labels pointer with no write barrier, `*(*uintptr)(unsafe.Pointer(&b.tags[wt])) =
+		// uintptr(*tagPtr)`, because it runs in a signal handler. The conversion reinterprets a reference
+		// slot of b.tags as an integer, which cannot hold a managed reference, so the first labelled sample
+		// threw and a labelled CPU profile lost every sample after it. The managed body stores the reference
+		// itself (there is no signal handler, and the CLR's store barrier is what keeps it reachable); every
+		// other line is Go's. Reached by the opt-in CPU sampler's drain (runtime/cpusampler_impl.cs) with
+		// the labels of a pprof.Do. Declared once, in profbuf.go, hence goosAny.
+		"profBuf.write": goosAny,
 		// netpollGenericInit (netpoll_impl.cs) — the RUNTIME poller's one-time start-up, and a
 		// MODULE-INIT killer rather than a test failure, which is why it is here at all.
 		//
