@@ -163,7 +163,11 @@ namespace GolibTests
         //     CallersFrames (runtime/pprof's allFrames). The PC must name the frame exactly as Callers
         //     does above, closures included, or a profiled closure reads as the CLR's
         //     `<>c.<Outer>b__0_0` where Go prints `Outer.func1`.
-        internal static string SyntheticFunctionName(MethodBase method)
+        internal static string SyntheticFunctionName(MethodBase method) => SyntheticFrame(method).Function;
+
+        // The frame CallersFrames resolves a function's synthetic PC to: what runtime/pprof's profile
+        // builder reads for a location (FuncPCABIInternal hands pprof exactly such a PC).
+        internal static runtime_package.Frame SyntheticFrame(MethodBase method)
         {
             slice<uintptr> pcs = new slice<uintptr>(1);
             pcs[0] = (uintptr)GoSyntheticPC.Of(method);
@@ -171,7 +175,7 @@ namespace GolibTests
             var frames = runtime_package.CallersFrames(pcs);
             var (frame, _) = frames.Next();
 
-            return frame.Function;
+            return frame;
         }
 
         // The backing method of the one lambda declared inside `outer` on `packageClass`.
@@ -186,6 +190,28 @@ namespace GolibTests
             Assert.AreEqual(
                 "slcguard/probe.productionShapedFrame",
                 SyntheticFunctionName(typeof(go.slcguard.probe_package).GetMethod(nameof(go.slcguard.probe_package.productionShapedFrame))!));
+        }
+
+        // A synthetic PC's frame is COMPLETE: Go's runtime/pprof marks a location lookupFailed -- and its
+        // mapping HasFunctions false -- when any frame has an empty Function, an empty File or Line 0.
+        // A function with a position record reports the Go file and line its first statement maps to;
+        // one without reports its converted C# position, as a live frame with no record does.
+        [TestMethod]
+        public void SyntheticPCOfARecordedFunctionReportsItsGoFileAndLine()
+        {
+            var frame = SyntheticFrame(LiteralOf(typeof(go.litguard.probe_package), nameof(go.litguard.probe_package.recordedOuterLiteralFrame)));
+
+            StringAssert.EndsWith(frame.File.ToString(), "litguard/probe/probe.go", "the recorded Go file, got: " + frame.File);
+            Assert.IsTrue(frame.Line >= 100 && frame.Line <= 120, $"a Go line inside the recorded span, got {frame.Line}");
+        }
+
+        [TestMethod]
+        public void SyntheticPCOfAnUnrecordedFunctionReportsItsConvertedPosition()
+        {
+            var frame = SyntheticFrame(typeof(go.slcguard.probe_package).GetMethod(nameof(go.slcguard.probe_package.productionShapedFrame))!);
+
+            StringAssert.EndsWith(frame.File.ToString(), "CallerFrameTestVariantNamingTests.cs", "the converted C# file, got: " + frame.File);
+            Assert.IsTrue(frame.Line > 0, $"a real line, got {frame.Line}");
         }
 
         [TestMethod]
