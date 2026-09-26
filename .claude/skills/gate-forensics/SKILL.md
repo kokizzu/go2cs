@@ -251,6 +251,8 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      ⚠ The `git -C <drive-letter path>` producer's narrative is the NINTH launch trap, carried whole under
      "Launch hazards" (`MSYS_NO_PATHCONV` cuts three ways, 2026-09-04); the build-summary producer's is the
      EIGHTH there (13,779 in-window assemblies stood behind a wrapper line that read zero). -->
+  - Two more false-empty doors: **GNU grep 3.0 handed thousands of `-e` patterns ABORTS and, piped, reads 0** — drive a list census with ONE `-E` alternation (or `-f`), positive-controlled; and **an instrument that materialises its own tool files floors each one on SIZE and HASH before its first arm** — `git -C` under `MSYS_NO_PATHCONV` wrote 0-byte tool files and `arms=0` read as clean. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20/22: ledger 2026-09-20 15:29 STAMP 0adf2e431 (a batch-2 census gate FALSE GREEN on 0-byte tool files, caught by the size/hash floor); ledger 2026-09-22 07:05 STAMP 07240495e (grep 3.0 multi -e aborted on 14.5k-line lists and read 0 when piped); resume.md:914 [L#58, L#60(a), R#11] -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-19/20: a crashing grep -Fi inside if grep -q read as NO MATCH and the guard printed clean (plant a token; grep rc > 1 is UNSOUND), mailbox-archive.md:75882; go test -run X against the ROOT package answered ok [no tests to run] with rc 0 (name the package the test lives in), mailbox-archive.md:86935 [M4#69, M4#73] -->
 - **A broken instrument producing a PLAUSIBLE FULL COUNT is worse than one producing a ZERO** — it confirms the
   wrong branch and talks its author out of a right diagnosis. **A zero invites suspicion; a plausible total
   recruits the reader.** The tell is arithmetic. <!-- 2026-09-08, the collapsed $'…' pattern one door over: it
@@ -310,6 +312,8 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      into a keystone-caller count because the separator is non-ASCII, and it was caught by LOOKING at five
      matched lines, which also produced the better predicate (the real sites all pass
      `abi.FuncPCABI0(<x>_trampoline)`). -->
+  - Where a clean reading is itself EMPTY, "assert non-empty" cannot apply: gate the arm on the command's OWN exit code, never on the shape of its output — `wc -l` or `grep -c` over a `git` that died prints the passing 0. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-16: three guards added to the per-flavour H7 script died under MSYS_NO_PATHCONV=1 (a POSIX path reached native git) and still printed PASS values; fixed with drive-letter spelling and every git arm gated on git's own rc. mailbox-archive.md:74104; 46307b4704, docs seat cbf8c63c15 [M3#24] -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-14: H5c printed its orphan block only when orphans existed, and its slnx post-condition compared 0 with 0 over an empty population ("a zero that can only be observed as silence is worth one printed line"). mailbox-archive.md:33716 [M2#22] -->
 ## Instruments that cannot fail: shell and patching traps
 - **A `sed` that matches nothing and a `grep` that matches nothing BOTH EXIT 0 and both look like the work
   being done**; **deriving a script from the previous one by pattern substitution is a SILENT-NO-OP GENERATOR
@@ -320,6 +324,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      derivation kept the OLD payload; five further generations were derived from THAT one, each with a pattern
      naming the payload it believed it was replacing, each matching nothing. Compare before/after, or grep the
      result for the new value. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-15: a sed anchored on spaces missed TAB-indented source, changed nothing, and the arm measured the unmodified tree. board.md:25398 "AN EDIT IS NOT APPLIED UNTIL THE LINE THAT PROVES IT IS READ BACK." [B#51] -->
 - **A patch fed through a Bash-tool heredoc whose anchor ENDS in a backslash arrives collapsed (`SyntaxError`)
   and the chain CONTINUES past the dead patch**: patch with Edit, **assert the substitution landed (`grep -c`
   of the NEW token, >= 1) BEFORE any launch**, gate each step on the previous exit. **`sed -i` on a CRLF file
@@ -390,6 +395,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      measuring nearby shapes got opposite verdicts. The published sentence was refuted by its own author on its
      own box, and the instrument that caught it was the other lane REPORTING A DISAGREEMENT rather than a
      refutation. -->
+  - When the producer an early-exit consumer kills is a **STATE-WRITING tool**, SIGPIPE can kill it before its side effect with no refusal printed: never pipe a state-writing tool into `head`; send its output to a file and read that. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: `| head -N` SIGPIPE-killed a mailbox post before its side effect, silently. mailbox-archive.md:90755 [M4#72] -->
 - **QUOTE THE HEREDOC DELIMITER — `<<'EOF'`, never `<<EOF` — and a BACKTICK inside a DOUBLE-QUOTED bash
   argument is a COMMAND SUBSTITUTION**: write verbatim content with a quoted heredoc or the Write tool, pass
   code-carrying subjects through single quotes or a file, READ BACK any pushed subject whose command printed a
@@ -477,6 +483,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
 - **POWERSHELL VARIABLE NAMES ARE CASE-INSENSITIVE: `$Hop` and `$hop` ARE ONE VARIABLE**, and the file
   parses GREEN in both editions while REFUSING at run. <!-- ⚠ 2026-09-13, i9 on C2's `-Hop`, ruled
      `2b9d3a39b`. The ordinary gate broke with it, so the tell was not a parse error anywhere. -->
+  - So are its JSON objects: **PS 5.1's `ConvertFrom-Json` builds a case-insensitive dictionary and THROWS on keys that differ only by case**, which Go subtest names do (`…/h1/GZIP` beside `…/h1/gzip`). Parse comparison records case-sensitively (a Python reader), and read a parse failure as NOVERDICT by name. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20/23: two recon rows read NOVERDICT from a case-insensitive dictionary and a Python re-classifier recovered both to PASS from the same bytes (mailbox-archive.md:105873); ConvertFrom-Json refused GZIP/gzip keys in the net/http record (ledger 2026-09-23 14:47 FINDING ed694cd6f3; 2026-09-22 07:05 STAMP 07240495e) [L#60(b), M4#56] -->
 - **MATCH A ROW AT LINE START, NEVER A PHRASE AS A SUBSTRING** — a report that states its counts IN WORDS
   contains every string an assertion about those findings would look for. <!-- ⚠ 2026-09-13, G `8a90a913e`
      s3(b). `*"DUPLICATE patch-id"*` is TRUE on the clean verdict line `0 DUPLICATE patch-id(s)`. One
@@ -774,6 +781,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      test completed because the converted lock counts read 0,0 where Go wants 1,0, the teardown fatal ahead of
      it; the host produces nothing after it), and six of the 43 failures are managed-pointer-token refusals,
      reported as a count and a shape and NOT as a claim about the refusals' correctness. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-23: an H10 attribution window counted 734 commits on a shallow clone against a true 1,152 first-parent on a full clone, and the figure was withdrawn. board.md:26021-26022; b6026b9246, bb54ff0920 [B#40] -->
 - **READING AN INSTRUMENT'S CODE TELLS YOU WHAT IT DOES; COUNTING ITS EVIDENCE BASE TELLS YOU WHAT IT CAN
   KNOW**; **a comment presenting a bug as the reason to TRUST the code recruits the reader against finding
   it**; **make vacuity VISIBLE before fixing the schema.** **Verify the NAMES, not only the number — READ THE
@@ -870,6 +878,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      re-base does not clear it. Companion converter root from the same post: a REF-LOWERED pointer parameter
      meeting a BOX-FORM defer emission (`defer(Ꮡr.Value.root.decref, …)`) -- the defer lowering does not consult
      the parameter's ref-lowering decision, the `[GoRecv]` ref-receiver box-form trap one construct over. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: a p256.cs 2 -> 0 cure was read at a tip another lane had announced but not pushed; every git show failed under 2>/dev/null, and the in-run untouched-file control (runtime/alg.cs 6 -> 0) exposed it. A NEGATIVE control alone cannot validate a negative result: a fabricated target cannot tell an absent file from a wrong predicate. board.md:25833-25835; c7eb36d845 [B#48] -->
 - **A STATED CAVEAT IS NOT PROTECTION IF IT NAMES THE WRONG HAZARD** — a hedge pointed the wrong way reads as
   care. **A regex over source counts every platform; `go test -list` under the pin counts the BUILT set** —
   reconcile to zero residue. **A census contradicting a COMMITTED RECORD states the PRIOR VALUE and the
@@ -1045,6 +1054,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      beside its own, and eight staggered 60 s poll loops were classified as "monitor iterations" from their
      cadence when one belonged to a sub-agent; classify from the parent bash's command line via
      Get-CimInstance, and remember a sub-agent's poller dies with the sub-agent. -->
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: a recon wrapper post-processing with no child read zero converters by name for minutes; answered by sampling the wrapper PID's CPU twice, a stated wall apart. mailbox-archive.md:95914; d8fe647ae8. Also 2026-09-20: the pattern go2cs.*\.exe read 0 while a converter built under another name ran (mailbox-archive.md:89750) [M4#53, M4#71] -->
 - **A CLAIM is closed by its owner's release POST, never by an absence somebody else observed**: `Get-Process
   go2cs` = 0 and a MISSING `go2cs.exe` between two legs is exactly what a REBUILD looks like. **A ROW WHOSE
   DEADLINE FLOOR EXCEEDS A HOST'S UPTIME IS NOT MEASURABLE THERE, and is not retried.** **A measurement taken
@@ -1147,6 +1157,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      harness task does not stop `check-no-regression.ps1`'s PowerShell driver, which kept spawning converter
      workers for minutes -- the box was NOT free when the task read "stopped"; terminate the driver by command
      line and sweep workers by worktree path. -->
+  - The same holds when the SESSION or the REPORTER dies: before any re-run, look in the run's own per-run root and launch log (its floors, its rc). A reading that survived is read, not repeated. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-19/21: a census cut off by the weekly limit survived in a per-run temp root whose launch log stated its floors and rc, so the 802 s census was not repeated (mailbox-archive.md:77535); the H10 rehearsal was reported "died at row 1" while the driver had run all seven rows clean and only the reporting sub-agent died (resume.md:720-722; 0adf2e4318) [M4#25, R#23] -->
 - **Killing `go2cs.exe` alone ORPHANS its `dotnet run` child and the test host under it**, keeping
   `runtime.dll` locked; **`dotnet build-server shutdown` is ALSO machine-global** (same truncated-log signature
   with no `Stop-Process` anywhere) — isolate your own builds instead (`MSBUILDDISABLENODEREUSE=1`,
@@ -1179,6 +1190,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      the train battery instead. 2026-09-02: a third rebuild attempt met the second chain's in-flight reflect
      -tests convert as untracked *_test.cs and aborted on its dirt gate, the r41 overlap hazard caught only
      because that gate existed. -->
+  - Every battery script writes its PID and takes a `mkdir` lock on its worktree as its FIRST act, and REFUSES when the lock exists: a relaunch that runs twice can be neither killed nor edited under auto mode. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: a relaunched battery script ran twice in one worktree (floor 1), and under auto mode the agent could neither kill it nor edit the running script. resume.md:1280-1282 [R#14] -->
 - **THE QUERYING SHELL IS MATCHED BY ITS OWN QUERY** — a kill filter excludes the CALLER's process chain
   AND any line containing the query text. <!-- ⚠ 2026-09-13, COORD, the train-47 run-2 kill (`ecdfa2500`
      s0). Killing a battery's children by "command line contains the worktree path" matched the tool
@@ -1264,6 +1276,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      would have banked as a green canary run. The rewritten battery reported NOT MEASURED on its next failure
      instead of PASS — the whole difference between a false green and a caught one. Only a positive artifact
      can make that distinction. -->
+  - A driver whose argument list fails to PARSE runs nothing and leaves `$LASTEXITCODE` UNSET, which reads as rc 0: a launcher gates on an explicit `DRIVER_EXIT=<rc>` marker line the driver prints last. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-22: an unparsed driver argument list left $LASTEXITCODE unset and read rc 0 (ledger 2026-09-22 03:33 STAMP c6fdbe73c; resume.md:803-805). The net8-apphost pwsh mirror of the DOTNET_ROOT trap is already in "A NESTED pwsh -NoProfile -File" below [R#10] -->
 - **A battery's VERDICTS must land in the log the watcher tails, or a red leg is INVISIBLE**: every leg stamps
   its EXIT CODE and one-line verdict (count, changed set), the monitor's pattern includes `exit=[1-9]`, and a
   leg that CONTINUES past a failure by design says so in the same stamp. **Gate on the CODE (`GUARD
@@ -1339,6 +1352,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      The box's largest build output, 87 GB, sat in the MAIN checkout nobody had built from in two days while
      two batteries fought over the last 20 GB. The standard `find … -name bin … -exec rm -rf` idiom DELETES
      src/go2cs/bin/go2cs.exe; it failed loudly with rc=127 that time. -->
+- **A WRAPPER'S OWN POST-PROCESSING CAN OUTRUN THE WORK IT WRAPS: time it on a SYNTHETIC LARGE RECORD before launch.** Parse big records in LINEAR time — never per-property reflection over a multi-MB JSON — and read a tail with a BOUNDED byte read, never `Get-Content -Tail` over a one-line file. gawk 5.0.0's `gsub` is quadratic in line length and stalls on long JSON lines the same way. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: in the H10 recon wrapper, per-property reflection over a 4.77 MB comparison JSON ran about 52x the converter's time, and Get-Content -Tail 400 over a 10.7 MB one-line results file took 17,541 s (292 min). mailbox-archive.md:110448; 0ff8d5f8d7. gawk gsub: ledger 2026-09-22 07:05 STAMP 07240495e [M4#52] -->
 - **A BATTERY LEG REFUSED BY ITS OWN PREFLIGHT STAMPS A PLAUSIBLE-LOOKING VERDICT LINE** and the chain rolls on
   into more UNMEASURED legs; **the tell is the CLOCK.** **A chain reads every leg's log for REFUSAL markers and
   STOPS on one**, and **a leg's stamp carries its ROW COUNT.** **A chain whose FULL-SUITE leg FAILS must not
@@ -1501,6 +1515,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      seats into the wrong tree was the dirt gate reading an untracked .claude/ folder. 2026-09-07: the spelling
      mismatch failed SAFE with "wrong worktree" and still cost a launch — the same namespace split as a bash -f
      test against a native tool's path argument, met inside a safety check rather than inside the work. -->
+  - `set -uo pipefail` WITHOUT `-e` runs on past a FAILED `cd`, and the next `git reset --hard` hits whatever repository the cwd is: write `cd <p> || exit`, or address git with `git -C <p>` spelled for the active path namespace. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: a lane script under set -uo pipefail continued after a failed cd and git reset --hard hit the lane's own checkout. mailbox-archive.md:89413 [M4#74] -->
 - **A NESTED `pwsh -NoProfile -File` UNDER A PINNED `DOTNET_ROOT` CANNOT RUN WHERE THE ONLY `pwsh` IS A DOTNET
   GLOBAL TOOL**: it targets an OLDER runtime the pin hides, so the child exits with a large negative code in a
   tenth of a second having run NOTHING, its message naming the missing runtime version. **Invoke the harness
@@ -1594,6 +1609,7 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      not quote a path containing a space (`C:\Program Files\Go` dies as `Failed to access input file
      path "C:\Program"`, reading exactly like a missing GOROOT — three lanes paid this); pass ONE
      pre-quoted argument string. -->
+  - Bare `bash` from PowerShell resolves to the **WSL launcher** on the Windows boxes (it boots the VM): every PS-side launch of a bash script names Git Bash by its full path. <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-22: DNS lane probe notes §8, bare bash on the i7's PATH is the WSL launcher; the probe driver calls Git Bash by full path. briefs/dns-probe-NOTES.md:254-255 [R#12] -->
 - **`MSB4166 "child node exited prematurely"` IS BUILD INFRASTRUCTURE, NOT A PACKAGE ROOT** — set
   `MSBUILDDISABLENODEREUSE=1` for back-to-back `-tests` queues before believing a diagnostic-free build
   failure. **A WSL reconfiguration can silently change which USER automation runs as**, and the wrapper EXITS 0
@@ -1885,6 +1901,7 @@ The host reports in sorted order, in TWO phases: serial tests, then the parallel
   build succeeded and the record is NEWER than the edit.** **The `-tests` pipeline is SILENT on success**
   (no stdout, no stderr, exit 0), so a run's evidence is its ARTIFACTS — `*_test.cs`, host, csproj — and
   never its exit code.
+  <!-- 2026-09-26 routing (C1, hop lessons appendix D): 2026-09-20: the recon wrapper read a stale, gitignored comparison record that survived git clean as PASS; fixed by gating each read on the record's write time falling inside the row's run window, stale or unreadable = NOVERDICT. mailbox-archive.md:105615; 4083f2c8e4 [M4#55] -->
 - **A gated (`-test-filter`) run REWRITES the record and it is not bank-eligible until an UNGATED run
   overwrites it** — but it is SELF-MARKING: `testFilter` carries the filter expression
   (`commandLineOptions.go:61`), guarded both ways by `filterZeroMatch_test.go` (`:149`/`:176` require
