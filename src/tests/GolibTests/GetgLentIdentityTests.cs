@@ -219,4 +219,83 @@ public class GetgLentIdentityTests
         Assert.AreNotEqual(0UL, lentGoid, "inside the lent scope getg() must answer goroutine 1");
         Assert.AreEqual(0UL, afterGoid, "after the lent scope ends getg() must stop answering goroutine 1");
     }
+
+    // TRAIN D union (R's request on the i9's cut, measured rather than assumed): a thread that is BOTH
+    // pooled and then lent the main identity. At the pool's post-body seam the worker still caches the
+    // finished coroutine goroutine's g (GoroutineThreadState's reset runs after the seam), so a lent
+    // scope opened there must re-mint on the identity change and park its own g.
+    [TestMethod]
+    public void APooledThreadLaterLentMainParksItsOwnG()
+    {
+        ConcurrentQueue<Exception> failures = new();
+        using ManualResetEventSlim done = new(), bodyRan = new(), holderMinted = new(), release = new();
+        using ReadyPanics panics = new();
+        int worker = 0;
+
+        // The precondition that makes the arm discriminate: goroutine 1's record already names ANOTHER
+        // holder's running g (the -tests host's main thread, which minted first).
+        Thread holder = StartThread(() =>
+        {
+            using Goroutine.Scope main = Goroutine.EnterAsMain();
+            _ = Δruntime.GoGetgSnapshot();
+            holderMinted.Set();
+            Await(release, "the release", failures);
+        }, failures);
+
+        Await(holderMinted, "the other holder's mint", failures);
+
+        GoroutineThreadPool.AfterBodyForTest = () =>
+        {
+            if (Environment.CurrentManagedThreadId != Volatile.Read(ref worker) || done.IsSet)
+                return;
+
+            try
+            {
+                using Goroutine.Scope main = Goroutine.EnterAsMain();
+                _ = Δruntime.GoGetgSnapshot();
+                DriveACoroToExit();
+            }
+            catch (Exception ex)
+            {
+                failures.Enqueue(ex);
+            }
+            finally
+            {
+                done.Set();
+            }
+        };
+
+        try
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    Coro.Start(() =>
+                    {
+                        Volatile.Write(ref worker, Environment.CurrentManagedThreadId);
+                        _ = Δruntime.GoGetgSnapshot();
+                    }).Switch();
+                }
+                catch (Exception ex)
+                {
+                    failures.Enqueue(ex);
+                }
+                finally
+                {
+                    bodyRan.Set();
+                }
+            });
+
+            Await(bodyRan, "the pooled coroutine body", failures);
+            Await(done, "the lent scope at the pool's post-body seam", failures);
+            AssertNoReadyPanic(panics, failures);
+        }
+        finally
+        {
+            GoroutineThreadPool.AfterBodyForTest = null;
+            release.Set();
+            holder.Join(TimeoutMs);
+        }
+    }
 }

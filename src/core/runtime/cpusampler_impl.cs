@@ -54,6 +54,8 @@ private static IGoCpuSampler? s_cpuSampler;
 
 [ThreadStatic] private static bool t_cpuSamplerDraining;
 
+private static readonly bool s_cpuSamplerDrainingReset = go.golib.GoroutineThreadState.Register(static () => t_cpuSamplerDraining = false);
+
 /// <summary>Registers the process's CPU sampler. The first registration wins; a later one is refused
 /// (returns false), since swapping samplers while a profile runs would split its samples.</summary>
 public static bool GoRegisterCpuSampler(IGoCpuSampler sampler)

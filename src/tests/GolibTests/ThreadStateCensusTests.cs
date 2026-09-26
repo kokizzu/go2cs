@@ -71,6 +71,8 @@ public class ThreadStateCensusTests
         ("golib/runtime/Goroutine.cs|t_current", Disposition.RetiredByRun, "t_current = null;", "the goroutine identity; Goroutine.Run's scope retires it"),
         ("golib/runtime/Goroutine.cs|s_profileLabels", Disposition.FlowsWithContext, "AsyncLocal<object?> s_profileLabels", "pprof labels, inherited at goroutine creation"),
         ("runtime/stubs_impl.cs|t_getg", Disposition.Registered, "GoroutineThreadState.Register(static () => t_getg = null)", "getg()'s cache of the goroutine's g"),
+        ("runtime/stubs_impl.cs|t_getgOwner", Disposition.Registered, "GoroutineThreadState.Register(static () => t_getgOwner = null)", "the golib identity getg()'s cache was minted for"),
+        ("runtime/cpusampler_impl.cs|t_cpuSamplerDraining", Disposition.Registered, "GoroutineThreadState.Register(static () => t_cpuSamplerDraining = false)", "true only inside a CPU sampler's Stop drain (also cleared in its finally)"),
         ("runtime/debug/stubs_impl.cs|t_panicOnFault", Disposition.Registered, "GoroutineThreadState.Register(static () => t_panicOnFault = false)", "debug.SetPanicOnFault, per goroutine in Go"),
         ("runtime/lock_managed_impl.cs|t_heldLocks", Disposition.Registered, "Array.Clear(held);", "the runtime locks this goroutine holds"),
         ("runtime/lock_managed_impl.cs|t_heldCount", Disposition.Registered, "t_heldCount = 0;", "the runtime locks this goroutine holds"),
