@@ -32,7 +32,8 @@
 // profilehz store keeps the Windows body's own atomic form (profileLoop reads it concurrently in Go);
 // nothing reads it here, but the field keeps its meaning.
 //
-// Windows alone: the linux and darwin setters are signal/timer based and stay converted.
+// The linux and darwin setters take the same shape in their own cpuprof_<goos>_impl.cs (2026-09-26,
+// ledger 4a122cd994): their converted signal/timer bodies throw at the signal-installation path too.
 //
 // Hand-owned (no cpuprof_windows_impl.go exists, so a reconvert never regenerates this file).
 [module: go.GoManualConversion]
@@ -50,7 +51,7 @@ internal static void setThreadCPUProfiler(int32 hz) {
     atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
 }
 
-// ---- the guard's view (RuntimeCPUProfilerWindowsTests) ----
+// ---- the guard's view (RuntimeCPUProfilerTests) ----
 
 /// <summary>What the calling goroutine's m records as its profiling rate.</summary>
 public static int GoThreadProfileHz => (int)(~(~getg()).m).profilehz;

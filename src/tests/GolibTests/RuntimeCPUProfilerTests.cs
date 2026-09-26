@@ -9,16 +9,18 @@ using pprof = go.runtime.pprof_package;
 namespace GolibTests;
 
 /// <summary>
-/// Guards the Windows CPU-profiler setters (runtime/windows/cpuprof_windows_impl.cs, Go's plan9
+/// Guards the CPU-profiler setters on every target (runtime/<goos>/cpuprof_<goos>_impl.cs, Go's plan9
 /// no-interrupt shape) and the readProfile push they make reachable. Red against the converted
-/// bodies: setcpuprofilerate's first call, setThreadCPUProfiler(0), goes stdcall6 -> asmcgocall
-/// and throws NotImplementedException. That leaves pprof's cpu.profiling and runtime's cpuprof.on
-/// set and cpuprof.lock HELD, so the next StartCPUProfile in the process BLOCKS on that lock. Every
-/// pprof call is therefore bounded, so the red reads as a named failure and not as a hung host. The
-/// arms run in this order because that state is process-wide (MSTest runs this assembly serially).
+/// bodies. Windows: setcpuprofilerate's first call, setThreadCPUProfiler(0), goes stdcall6 -> asmcgocall
+/// and throws NotImplementedException. Linux (measured 2026-09-26) and darwin: setProcessCPUProfiler's
+/// setProcessCPUProfilerTimer reaches getsig -> sigaction -> rt_sigaction (linux), a PartialStubGenerator
+/// throw. Either way pprof's cpu.profiling and runtime's cpuprof.on stay set and cpuprof.lock is HELD,
+/// so the next StartCPUProfile in the process BLOCKS on that lock. Every pprof call is therefore
+/// bounded, so the red reads as a named failure and not as a hung host. The arms run in this order
+/// because that state is process-wide (MSTest runs this assembly serially).
 /// </summary>
 [TestClass]
-public class RuntimeCPUProfilerWindowsTests
+public class RuntimeCPUProfilerTests
 {
     private static readonly TimeSpan Bound = TimeSpan.FromSeconds(30);
 
