@@ -1875,4 +1875,50 @@ partial class runtime_package
 
         return null;
     }
+
+    // ---- the guard's view (GolibTests RuntimeStopTheWorldTests) ----
+
+    /// <summary>
+    /// A stop-the-world call on a goroutine, then a plain acquisition of worldsema on another. Returns
+    /// the call's failure as type and message, if it failed, and whether the second goroutine got
+    /// worldsema within the timeout. A call that fails while holding worldsema leaves the second
+    /// goroutine parked for ever; one that refuses before taking it leaves worldsema free.
+    /// </summary>
+    public static (string? stopFailure, bool worldsemaFree) GoStopTheWorldRefusalProbe(int timeoutMs)
+    {
+        string? stopFailure = null;
+
+        using (ManualResetEventSlim stopped = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    worldStop stw = stopTheWorld(stwUnknown);
+                    startTheWorld(stw);
+                }
+                catch (Exception ex)
+                {
+                    stopFailure = $"{ex.GetType().Name}: {ex.Message}";
+                }
+
+                stopped.Set();
+            });
+
+            if (!stopped.Wait(timeoutMs))
+                return ("stopTheWorld never returned", false);
+        }
+
+        ManualResetEventSlim acquired = new(false);
+
+        Goroutine.Start(() =>
+        {
+            semacquire(Ꮡworldsema);
+            acquired.Set();
+            semrelease(Ꮡworldsema);
+        });
+
+        // The event is not disposed: on a leak the parked goroutine still holds it.
+        return (stopFailure, acquired.Wait(timeoutMs));
+    }
 }
