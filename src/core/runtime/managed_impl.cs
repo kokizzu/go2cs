@@ -1498,6 +1498,21 @@ partial class runtime_package
     private static readonly Dictionary<string, nuint> s_callerTokens = new();
     private static readonly List<CallerFrameRecord> s_callerRecords = new();
 
+    // EVERY CALL SITE OWNS A SPAN, AND ITS TOKEN SITS IN THE MIDDLE. Go's consumers do arithmetic on a
+    // return PC: runtime.expandFrames and runtime/pprof's expandInlinedFrames write `f.PC + 1`, and Go's
+    // Frames.Next takes `pc--` on a return PC, so the pair round-trips inside one function. Tokens once
+    // were dense (1, 2, 3, ...) and resolved by exact match, so that `+1` named the NEXT minted call
+    // site: every block-profile stack symbolized as the wrong function (TestBlockProfileBias, measured
+    // at the I2 store, 2026-09-26). The span is GoSyntheticPC's stride, for the same reason it has one.
+    //
+    // The space starts at 2^32, which keeps it disjoint from the corpus's other two token spaces by
+    // construction: managed-pointer tokens are 32-bit hashes (below 2^32), and synthetic PCs sit in
+    // the canonical high half. 64-bit only, as the corpus is (the synthetic registry refuses 32-bit).
+    private const int CallerSpanShift = 12;
+    private static readonly nuint s_callerSpanBase = unchecked((nuint)(1UL << 32));
+
+    private static nuint callerSpanStart(int index) => s_callerSpanBase + ((nuint)index << CallerSpanShift);
+
     // Callers fills pc with the return PCs of function invocations on the calling goroutine's
     // stack, skipping `skip` frames (0 identifies the frame for Callers itself, 1 its caller).
     // The auto body enters the raw-metal unwinder on its first step (callers → getcallersp, an
@@ -1578,8 +1593,9 @@ partial class runtime_package
     // findfunc's linker-built funcInfo tables, which have no managed form; the records minted by
     // Callers carry the same answers (Function in Go's spelling, File, Line). A PC this runtime
     // never minted resolves like Go's !funcInfo.valid() — skipped, not fatal. Frame.Func stays
-    // nil (allowed by contract: "may be nil for non-Go code"), and Entry mirrors PC — entry
-    // points are not distinct from call sites in the token model.
+    // nil (allowed by contract: "may be nil for non-Go code"). Entry is the start of the call
+    // site's span: entry points are not distinct from call SITES in the token model, so two sites
+    // in one function report two entries where Go reports one (named, not modeled).
     [GoRecv] public static (Frame frame, bool more) Next(this ref Frames ci)
     {
         while (len(ci.callers) > 0)
@@ -1592,13 +1608,19 @@ partial class runtime_package
             if (record is null)
                 continue;
 
+            // Go's own step: a recorded PC is a RETURN pc, "the start of the instruction following
+            // the call", so Frames.Next reports the call pc one before it. Consumers add the 1 back
+            // (expandFrames, pprof's expandInlinedFrames), and the span keeps both inside the site.
+            uintptr entry = frameEntry(pcToken);
+            uintptr callPC = pcToken > entry ? pcToken - 1 : pcToken;
+
             Frame frame = new()
             {
-                PC = pcToken,
+                PC = callPC,
                 Function = record.Function,
                 File = record.File,
                 Line = record.Line,
-                Entry = pcToken
+                Entry = entry
             };
 
             return (frame, moreCallerFrames(ci.callers));
@@ -1686,10 +1708,37 @@ partial class runtime_package
             };
 
             s_callerRecords.Add(record);
-            token = (nuint)s_callerRecords.Count; // index + 1 — 0 stays the invalid sentinel
+            // The middle of the new site's span; never 0, so Go's zero-pc sentinel stays invalid.
+            token = callerSpanStart(s_callerRecords.Count - 1) + ((nuint)1 << (CallerSpanShift - 1));
             s_callerTokens[key] = token;
             return token;
         }
+    }
+
+    // The call site whose span holds pc, or null. Callers hold s_callerTableLock.
+    private static int? callerSpanIndex(nuint pc)
+    {
+        if (pc < s_callerSpanBase)
+            return null;
+
+        nuint index = (pc - s_callerSpanBase) >> CallerSpanShift;
+        return index < (nuint)s_callerRecords.Count ? (int)index : null;
+    }
+
+    // The ENTRY of the span holding pc: a caller span's start, or a synthetic PC's function span
+    // start. Any other pc is its own entry, as a function value's token is (FuncForPC(fn.Pointer())).
+    private static uintptr frameEntry(uintptr pc)
+    {
+        lock (s_callerTableLock)
+        {
+            if (callerSpanIndex(pc) is int index)
+                return callerSpanStart(index);
+        }
+
+        if (GoSyntheticPC.Resolve(pc) is { } method)
+            return GoSyntheticPC.Of(method);
+
+        return pc;
     }
 
     private static CallerFrameRecord? callerFrameRecord(uintptr token)
@@ -1698,8 +1747,8 @@ partial class runtime_package
 
         lock (s_callerTableLock)
         {
-            if (value != 0 && value <= (nuint)s_callerRecords.Count)
-                return s_callerRecords[(int)(value - 1)];
+            if (callerSpanIndex(value) is int index)
+                return s_callerRecords[index];
         }
 
         // SECOND SOURCE, ONE RENDERER. A pc outside the caller table is not necessarily foreign: it
@@ -1707,9 +1756,9 @@ partial class runtime_package
         // whose address Go takes without calling it (runtime/pprof's lostProfileEvent is the first
         // consumer — its frame printed as `0x0` until this arm existed, because Frames.Next skips a
         // pc this returns null for). The two spaces are disjoint BY CONSTRUCTION and it is asserted
-        // rather than assumed: caller tokens are `s_callerRecords.Count`, small integers; synthetic
-        // PCs sit in the canonical high half, above 2^32 (GolibTests.SyntheticPCRegistryTests). So
-        // the caller table always answers first and this arm can never shadow it.
+        // rather than assumed: caller tokens sit in spans from 2^32 up (callerSpanStart); synthetic
+        // PCs sit in the canonical high half (GolibTests.SyntheticPCRegistryTests). So the caller
+        // table always answers first and this arm can never shadow it.
         return syntheticFrameRecord(value);
     }
 
@@ -1780,7 +1829,8 @@ partial class runtime_package
     // structurally, not intermittently, which is why TestCaller (runtime_test, symtab_test.go)
     // crashed the whole host on any goroutine that happened to reach Entry(). The record below
     // widens to carry the PC beside the name rather than adding a second table, so FuncForPC mints
-    // both in the one mint site. Entry() returns that PC directly — this host's documented answer
+    // both in the one mint site. Entry() returns the start of the span holding that PC (2026-09-26,
+    // caller spans; the PC itself before) — this host's documented answer
     // to "what identifies this function" (PC values are opaque process-lifetime tokens, never
     // addresses; see the file header) — and FileLine(pc) resolves the SAME Go-position data
     // Callers()/Frames.Next() already serve, through callerFrameRecord. firstmoduledata and
@@ -1803,7 +1853,7 @@ partial class runtime_package
             return default!;
 
         ж<Func> box = Ꮡ(new Func());
-        s_funcRecords.Add(box, new FuncRecord { Name = name!, Pc = pc });
+        s_funcRecords.Add(box, new FuncRecord { Name = name!, Pc = frameEntry(pc) });
         return box;
     }
 
@@ -1817,7 +1867,8 @@ partial class runtime_package
         return s_funcRecords.TryGetValue(Ꮡf, out FuncRecord? record) ? (@string)record.Name : ""u8;
     }
 
-    // Entry returns the PC token this *Func was minted from. Go's Entry() names "the entry
+    // Entry returns the start of the span holding the PC this *Func was minted from (the PC itself
+    // for a token outside every span, such as a function value's). Go's Entry() names "the entry
     // address of the function"; this host has no addresses, only opaque per-call-site tokens
     // (the file header's standing doctrine), and a token already IS this host's answer to which
     // function a *Func names — the same identity Name() reads out of the same record. A Func
@@ -1837,7 +1888,7 @@ partial class runtime_package
     // one function's *Func spans many pcs). Go's own doc is explicit that pc need not belong to f
     // ("anyone can call this function, and they might just be wrong about targetpc belonging to
     // f"), so this reads pc alone; the common case is a caller passing Ꮡf.Entry() straight back in,
-    // which resolves because Entry() returns exactly the token FuncForPC minted Ꮡf from. No record
+    // which resolves because Entry() returns the start of the span FuncForPC minted Ꮡf from. No record
     // for pc answers Go's own no-position case: ("", 0).
     public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc)
     {
@@ -1888,5 +1939,21 @@ partial class runtime_package
             return goFrameName(method, null);
 
         return null;
+    }
+
+    // ---- the guard's view (RuntimeCallerPCSpanTests): GolibTests is outside runtime's
+    //      InternalsVisibleTo grant, and its own methods are not Go frames, so this Go-prefixed
+    //      public helper owns the two call sites the guard needs ----
+
+    /// <summary>Returns the PCs <c>Callers(1, ...)</c> records at two DISTINCT call sites in this
+    /// one function: the frame each names is this probe, at a different site.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static (uintptr first, uintptr second) GoCallerSitesProbe()
+    {
+        slice<uintptr> a = new slice<uintptr>(1);
+        slice<uintptr> b = new slice<uintptr>(1);
+        Callers(1, a);
+        Callers(1, b);
+        return (a[0], b[0]);
     }
 }
