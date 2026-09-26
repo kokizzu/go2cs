@@ -21,8 +21,8 @@ public class RuntimeBlockEventTests
     private static (int64 count, int64 cycles, nint records) BlockTotals()
     {
         var (n, _) = BlockProfile(default);
-        var records = new BlockProfileRecord[(int)n + 16];
-        var (m, ok) = BlockProfile(records.slice());
+        var records = new slice<BlockProfileRecord>((int)n + 16); // Go's make: each element's Stack0 is constructed
+        var (m, ok) = BlockProfile(records);
         Assert.IsTrue(ok, "BlockProfile must fit a buffer sized from its own count");
 
         int64 count = 0, cycles = 0;
@@ -83,24 +83,22 @@ public class RuntimeBlockEventTests
         {
             GoBlockEventProbe(1_000_000, 1);
 
-            var (n, _) = BlockProfile(default);
-            var records = new BlockProfileRecord[(int)n + 16];
-            var (m, _) = BlockProfile(records.slice());
+            // The records as the bucket holds them, through the reader runtime/pprof calls (one of the
+            // five forwarders), symbolized the way Go's consumers do it: CallersFrames over the stack.
+            var (n, _) = pprof_blockProfileInternal(default);
+            var records = new slice<go.@internal.profilerecord_package.BlockProfileRecord>((int)n + 16);
+            var (m, ok) = pprof_blockProfileInternal(records);
+            Assert.IsTrue(ok, "the block reader must fit a buffer sized from its own count");
 
             bool found = false;
             for (int i = 0; i < (int)m && !found; i++)
             {
-                foreach (var (_, pc) in records[i].StackRecord.Stack())
-                {
-                    if (FuncForPC(pc).Name() == "runtime.GoBlockEventProbe")
-                    {
-                        found = true;
-                        break;
-                    }
-                }
+                var frames = CallersFrames(records[i].Stack);
+                var (first, _) = frames.Next();
+                found = first.Function == "runtime.GoBlockEventProbe";
             }
 
-            Assert.IsTrue(found, "some recorded stack must resolve a frame to runtime.GoBlockEventProbe, the probe that called blockevent");
+            Assert.IsTrue(found, "some bucket's first frame must be runtime.GoBlockEventProbe, the probe that called blockevent (Go's skip arithmetic: saveblockevent and blockevent skipped)");
         }
         finally
         {
