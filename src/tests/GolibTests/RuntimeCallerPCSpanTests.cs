@@ -69,8 +69,8 @@ public class RuntimeCallerPCSpanTests
     // THE BAND'S NEIGHBOURS. A caller PC must never equal a value of another space: managed-pointer
     // hashes (below 2^32), tagged pointer tokens (bit 63 set, bit 47 clear; ManagedPointerTokens),
     // synthetic PCs (from 0xFFFF_8000_0000_0000; GoSyntheticPC), and user-mode addresses, which a
-    // pinned data pointer or a marshal buffer can be. The first three hold at 2^32; the fourth does
-    // not, because 2^32 is a valid x64 user-mode address (the i9's hardening note on 96ce90f997).
+    // pinned data pointer or a marshal buffer can be. The band first started at 2^32, a valid x64
+    // user-mode address (the i9's hardening note on 96ce90f997); 0x8000_0000_0000_0000 would be tagged.
     private static uintptr[] BandSamples()
     {
         var (first, last) = GoCallerSpanBand();
