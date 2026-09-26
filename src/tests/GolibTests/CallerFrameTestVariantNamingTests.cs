@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
@@ -154,6 +156,65 @@ namespace GolibTests
                 function,
                 "slcguard/probe.fallbackLiteralFrame.func",
                 "an unrecorded literal frame must keep the pre-record derived shape, got: " + function);
+        }
+
+        // (7)-(10) THE SAME NAMES FROM A SYNTHETIC PC. A CPU profile has no live frame: the sampler maps
+        //     a sampled method to GoSyntheticPC.Of(method), and pprof resolves that PC through
+        //     CallersFrames (runtime/pprof's allFrames). The PC must name the frame exactly as Callers
+        //     does above, closures included, or a profiled closure reads as the CLR's
+        //     `<>c.<Outer>b__0_0` where Go prints `Outer.func1`.
+        internal static string SyntheticFunctionName(MethodBase method)
+        {
+            slice<uintptr> pcs = new slice<uintptr>(1);
+            pcs[0] = (uintptr)GoSyntheticPC.Of(method);
+
+            var frames = runtime_package.CallersFrames(pcs);
+            var (frame, _) = frames.Next();
+
+            return frame.Function;
+        }
+
+        // The backing method of the one lambda declared inside `outer` on `packageClass`.
+        private static MethodBase LiteralOf(Type packageClass, string outer) =>
+            packageClass.GetNestedTypes(BindingFlags.NonPublic)
+                .SelectMany(nested => nested.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                .Single(method => method.Name.StartsWith("<" + outer + ">", StringComparison.Ordinal));
+
+        [TestMethod]
+        public void SyntheticPCOfAFunctionNamesTheImportPath()
+        {
+            Assert.AreEqual(
+                "slcguard/probe.productionShapedFrame",
+                SyntheticFunctionName(typeof(go.slcguard.probe_package).GetMethod(nameof(go.slcguard.probe_package.productionShapedFrame))!));
+        }
+
+        [TestMethod]
+        public void SyntheticPCOfARecordedLiteralNamesGoCounter()
+        {
+            Assert.AreEqual(
+                "litguard/probe.recordedOuterLiteralFrame.func2",
+                SyntheticFunctionName(LiteralOf(typeof(go.litguard.probe_package), nameof(go.litguard.probe_package.recordedOuterLiteralFrame))),
+                "a profiled literal must answer the RECORDED counter suffix, as its live frame does");
+        }
+
+        [TestMethod]
+        public void SyntheticPCOfARecordedNestedLiteralNamesDottedCounter()
+        {
+            Assert.AreEqual(
+                "litguard/probe.recordedNestedLiteralFrame.func2.1",
+                SyntheticFunctionName(LiteralOf(typeof(go.litguard.probe_package), nameof(go.litguard.probe_package.recordedNestedLiteralFrame))),
+                "a profiled nested literal must answer the recorded DOTTED counter, innermost span first");
+        }
+
+        [TestMethod]
+        public void SyntheticPCOfAnUnrecordedLiteralKeepsTheDerivedOrdinal()
+        {
+            string function = SyntheticFunctionName(LiteralOf(typeof(go.slcguard.probe_package), nameof(go.slcguard.probe_package.fallbackLiteralFrame)));
+
+            StringAssert.StartsWith(
+                function,
+                "slcguard/probe.fallbackLiteralFrame.func",
+                "a profiled unrecorded literal must take the derived fallback, got: " + function);
         }
     }
 }
