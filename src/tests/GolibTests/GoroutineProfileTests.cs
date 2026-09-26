@@ -80,6 +80,9 @@ public class GoroutineProfileTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ParkLabelled(channel<int> c) => c.Receive();
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ParkLaunched(channel<int> c) => c.Receive();
+
     // A field rather than a captured local, so the two system bodies below can be METHOD GROUPS:
     // StartForGuard records the delegate's own Method as the start function, and a closure would
     // record the lambda instead of the function this test asserts on. `channel<T>` is a struct, so
@@ -258,6 +261,66 @@ public class GoroutineProfileTests
         finally
         {
             s_systemGate.Close();
+        }
+    }
+
+    // MECHANISM 4. A goroutine is in the profile, carrying the labels its creator had, the moment its
+    // `go` statement returns -- Go's newproc puts the new g into allgs as _Grunnable with
+    // `newg.labels = mp.curg.labels` before the statement completes, so a runnable, never-run
+    // goroutine is counted. runtime/pprof's TestGoroutineProfileConcurrency ("goroutine launches")
+    // depends on exactly that: a launcher relabels itself loop-i:i before each `go`, and a profile in
+    // which the launcher already carries i+1 while child i is absent fails. This is the same shape
+    // with the profile taken after EVERY go statement, with no wait at all.
+    //
+    // THE RED IS PROBABILISTIC AND THE GREEN IS DETERMINISTIC. Registering on the child's own thread
+    // (the defect) loses the race only when that thread has not yet been scheduled; checking each of
+    // a few hundred launches gives it a few hundred chances. (Checking only once, after the last
+    // launch, measured red in 2 of 6 runs: only the newest child can still be unscheduled then.)
+    // Registering at the go statement leaves no race to lose, so the green cannot flake.
+    [TestMethod]
+    public void AGoroutineIsProfiledWithItsLabelsTheMomentItsGoStatementReturns()
+    {
+        const int launches = 256;
+
+        channel<int> c = new(0);
+        object[] labels = new object[launches];
+
+        try
+        {
+            using (Goroutine.Enter())
+            {
+                try
+                {
+                    MethodBase launched = MethodOf(nameof(ParkLaunched));
+
+                    for (int i = 0; i < launches; i++)
+                    {
+                        labels[i] = new object();
+                        Goroutine.SetProfileLabels(labels[i]);
+                        builtin.goǃ(ParkLaunched, c);
+
+                        // No wait: this is the point of the test.
+                        Assert.AreEqual(i + 1, CountOf(Goroutine.ProfileSnapshot(), launched),
+                            $"launch {i}: every goroutine whose go statement has returned must be in the profile -- Go counts a runnable, never-run g");
+                    }
+
+                    GoroutineProfileEntry[] profile = Goroutine.ProfileSnapshot();
+                    GoroutineProfileEntry[] children = [.. profile.Where(e => e.Function is not null && e.Function.MethodHandle == launched.MethodHandle)];
+
+                    // The profile lists goroutines in creation order, so child i is entry i and must
+                    // carry the label its creator held at ITS go statement, not a later one.
+                    for (int i = 0; i < launches; i++)
+                        Assert.AreSame(labels[i], children[i].Labels, $"child {i} must carry the label its creator held at its go statement");
+                }
+                finally
+                {
+                    Goroutine.SetProfileLabels(null);
+                }
+            }
+        }
+        finally
+        {
+            c.Close();
         }
     }
 }
