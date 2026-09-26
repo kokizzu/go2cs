@@ -92,7 +92,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
     // w/o locks.
     var mp = acquirem();
     span.ensureSwept();
-    KeepAlive(ptr); // make sure ptr is still alive after span is swept
+    KeepAlive(@unsafe.Pointer.OrTypedNil(ptr)); // make sure ptr is still alive after span is swept
     var objIndex = span.objIndex((uintptr)ptr);
     @lock(span.of(mspan.Ꮡspeciallock)); // guard against concurrent calls of setPinned on same span
     var pinnerBits = span.getPinnerBits();

@@ -292,7 +292,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     // receiver copies it out. The sudog has a pointer to the
     // stack object, but sudogs aren't considered as roots of the
     // stack tracer.
-    KeepAlive(ep);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(ep));
     // someone woke us up.
     if (mysg != (~gp).waiting) {
         @throw(gWaitingListIsCorruptedˢ);

@@ -974,7 +974,7 @@ internal static void freeUserArenaChunk(ж<mspan> Ꮡs, @unsafe.Pointer x) {
             lc.mspan.setUserArenaChunkToFault();
         }
         // Until the chunks are set to fault, keep them alive via the fault list.
-        KeepAlive(x);
+        KeepAlive(@unsafe.Pointer.OrTypedNil(x));
         KeepAlive(faultList);
     } else {
         // Put the user arena on the fault list.

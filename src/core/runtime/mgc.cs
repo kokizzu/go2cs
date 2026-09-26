@@ -1734,7 +1734,7 @@ internal static @string gcTestPointerClass(@unsafe.Pointer Δp) {
             return bssˢ;
         }
     }
-    KeepAlive(Δp);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
     return otherˢ;
 }
 

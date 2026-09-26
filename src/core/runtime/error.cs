@@ -367,7 +367,7 @@ internal static void printanycustomtype(any iʗp) {
         print(typestring, ~(ж<complex128>)(uintptr)((~eface).data));
     }
     else { /* default: */
-        print((@string)"("u8, typestring, (@string)") "u8, (~eface).data);
+        print((@string)"("u8, typestring, (@string)") "u8, @unsafe.Pointer.OrTypedNil((~eface).data));
     }
 
 }

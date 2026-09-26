@@ -73,7 +73,7 @@ internal static void sysMapOS(@unsafe.Pointer v, uintptr n) {
         @throw(runtimeOutOfMemoryˢ);
     }
     if (Δp != v || err != 0) {
-        print((@string)"runtime: mmap("u8, v, (@string)", "u8, n, (@string)") returned "u8, Δp, (@string)", "u8, err, (@string)"\n"u8);
+        print((@string)"runtime: mmap("u8, @unsafe.Pointer.OrTypedNil(v), (@string)", "u8, n, (@string)") returned "u8, @unsafe.Pointer.OrTypedNil(Δp), (@string)", "u8, err, (@string)"\n"u8);
         @throw(runtimeCannotMapPagesInˢ);
     }
 }

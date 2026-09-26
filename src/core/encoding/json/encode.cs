@@ -803,7 +803,7 @@ internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸ
                     }
                 }
                 e.ptrSeen[@unsafe.Pointer.OrTypedNil(ptr)] = new EmptyStruct();
-                defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, ptr, ref ᒐ);
+                defer((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡe.Value.ptrSeen, @unsafe.Pointer.OrTypedNil(ptr), ref ᒐ);
             }
         }
         Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'{');
@@ -891,7 +891,7 @@ internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflect�
                 // Here we use a struct to memorize the pointer to the first element of the slice
                 // and its length.
                 ref var ptr = ref heap<encode_ptr>(out var Ꮡptr);
-                ptr = new encode_ptr((uintptr)v.UnsafePointer(), v.Len());
+                ptr = new encode_ptr(@unsafe.Pointer.OrTypedNil((uintptr)v.UnsafePointer()), v.Len());
                 {
                     var (_, ok) = e.ptrSeen[ptr, ꟷ]; if (ok) {
                         e.error(new UnsupportedValueErrorжerror(Ꮡ(new UnsupportedValueError(v, fmt.Sprintf("encountered a cycle via %s"u8, v.Type())))));

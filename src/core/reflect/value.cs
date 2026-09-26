@@ -472,7 +472,7 @@ break_stepsLoop:;
     if (nout == 0){
         if (stackArgs != nil) {
             typedmemclr(frametype, stackArgs);
-            framePool.Put(stackArgs);
+            framePool.Put(@unsafe.Pointer.OrTypedNil(stackArgs));
         }
     } else {
         if (stackArgs != nil) {
@@ -1053,7 +1053,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     // This must happen after the statement above, so that the return
     // values will always be scanned by someone.
     typedmemclr(methodFrameType, methodFrame);
-    methodFramePool.Put(methodFrame);
+    methodFramePool.Put(@unsafe.Pointer.OrTypedNil(methodFrame));
     // See the comment in callReflect.
     runtime.KeepAlive(Ꮡctxt.OrTypedNil());
     // Keep valueRegs alive because it may hold live pointer results.
@@ -1621,7 +1621,7 @@ public static uintptr UnsafeAddr(this ΔValue v) {
         throw panic("reflect.Value.UnsafeAddr of unaddressable value");
     }
     // The compiler loses track as it converts to uintptr. Force escape.
-    escapes(v.ptr);
+    escapes(@unsafe.Pointer.OrTypedNil(v.ptr));
     return (uintptr)v.ptr;
 }
 

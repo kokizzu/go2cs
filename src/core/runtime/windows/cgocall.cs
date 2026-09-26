@@ -207,8 +207,8 @@ internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
     // time moved backwards, GC would see these arguments as dead
     // and then live. Prevent these undead arguments from crashing
     // GC by forcing them to stay live across this time warp.
-    KeepAlive(fn);
-    KeepAlive(arg);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(fn));
+    KeepAlive(@unsafe.Pointer.OrTypedNil(arg));
     KeepAlive(mp.OrTypedNil());
     return errno;
 }

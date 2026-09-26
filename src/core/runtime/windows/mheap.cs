@@ -1830,7 +1830,7 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs, bool forc
     releasem(ref (mp).DerefOrNull());
     // We're converting p to a uintptr and looking it up, and we
     // don't want it to die and get swept while we're doing so.
-    KeepAlive(Δp);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
     return !exists || force; // already exists or addition was forced
 }
 
@@ -2085,7 +2085,7 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     // Explicitly keep ptr alive. This seems unnecessary since we return ptr,
     // but let's be explicit since it's important we keep ptr alive across the
     // call to shade.
-    KeepAlive(ptr);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(ptr));
     return ptr;
 }
 
@@ -2130,7 +2130,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
         var handleΔ1 = getWeakHandle(Δp); if (handleΔ1 != nil) {
             // Keep p alive for the duration of the function to ensure
             // that it cannot die while we're trying to do this.
-            KeepAlive(Δp);
+            KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
             return handleΔ1;
         }
     }
@@ -2161,7 +2161,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
         // There's a window where it might die if we don't keep it
         // alive explicitly. Returning it here is probably good enough,
         // but let's be defensive and explicit. See #70455.
-        KeepAlive(Δp);
+        KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
         KeepAlive(handle.OrTypedNil());
         return handle;
     }
@@ -2182,7 +2182,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     // that it cannot die while we're trying to do this.
     //
     // Same for handle, just to be defensive.
-    KeepAlive(Δp);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
     KeepAlive(handle.OrTypedNil());
     return handle;
 }
@@ -2212,7 +2212,7 @@ internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
     releasem(ref (mp).DerefOrNull());
     // Keep p alive for the duration of the function to ensure
     // that it cannot die while we're trying to do this.
-    KeepAlive(Δp);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
     return handle;
 }
 
