@@ -65,4 +65,47 @@ public class RuntimeCallerPCSpanTests
         Assert.AreNotEqual(FuncForPC(first).Entry(), FuncForPC(second).Entry(), "two sites must own two spans");
         Assert.AreNotEqual(FuncForPC(second).Entry(), FuncForPC(first + 1).Entry(), "first + 1 must never land in the second site's span");
     }
+
+    // THE BAND'S NEIGHBOURS. A caller PC must never equal a value of another space: managed-pointer
+    // hashes (below 2^32), tagged pointer tokens (bit 63 set, bit 47 clear; ManagedPointerTokens),
+    // synthetic PCs (from 0xFFFF_8000_0000_0000; GoSyntheticPC), and user-mode addresses, which a
+    // pinned data pointer or a marshal buffer can be. The band first started at 2^32, a valid x64
+    // user-mode address (the i9's hardening note on 96ce90f997); 0x8000_0000_0000_0000 would be tagged.
+    private static uintptr[] BandSamples()
+    {
+        var (first, last) = GoCallerSpanBand();
+        var (site1, site2) = GoCallerSitesProbe();
+        return new[] { first, last, site1, site2 };
+    }
+
+    // x86-64 canonicality: an address has bits 63..47 all equal.
+    private static bool IsCanonicalAddress(uintptr value)
+    {
+        ulong top = (ulong)value >> 47;
+        return top == 0 || top == 0x1FFFF;
+    }
+
+    [TestMethod]
+    public void TheCallerBandIsNeverAnAddress()
+    {
+        foreach (var value in BandSamples())
+            Assert.IsFalse(IsCanonicalAddress(value), $"caller PC 0x{(ulong)value:X16} is a canonical x64 address");
+    }
+
+    [TestMethod]
+    public void TheCallerBandIsNeverATaggedToken()
+    {
+        foreach (var value in BandSamples())
+            Assert.IsFalse(ManagedPointerTokens.IsTaggedToken(value), $"caller PC 0x{(ulong)value:X16} reads as a tagged pointer token");
+    }
+
+    [TestMethod]
+    public void TheCallerBandSitsBetweenHashesAndSyntheticPCs()
+    {
+        foreach (var value in BandSamples())
+        {
+            Assert.IsTrue((ulong)value > uint.MaxValue, $"caller PC 0x{(ulong)value:X16} is inside the hash space");
+            Assert.IsTrue((ulong)value < 0xFFFF_8000_0000_0000UL, $"caller PC 0x{(ulong)value:X16} is inside the synthetic-PC space");
+        }
+    }
 }

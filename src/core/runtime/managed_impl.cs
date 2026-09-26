@@ -1505,11 +1505,18 @@ partial class runtime_package
     // site: every block-profile stack symbolized as the wrong function (TestBlockProfileBias, measured
     // at the I2 store, 2026-09-26). The span is GoSyntheticPC's stride, for the same reason it has one.
     //
-    // The space starts at 2^32, which keeps it disjoint from the corpus's other two token spaces by
-    // construction: managed-pointer tokens are 32-bit hashes (below 2^32), and synthetic PCs sit in
-    // the canonical high half. 64-bit only, as the corpus is (the synthetic registry refuses 32-bit).
+    // THE BAND IS NON-CANONICAL AND UNTAGGED. It starts at 0x8000_8000_0000_0000: bits 63 and 47 set,
+    // bits 62..48 clear. That keeps it disjoint by construction from every other space a uintptr can
+    // hold in this corpus: managed-pointer hashes (below 2^32); tagged pointer tokens (bit 63 set, bit
+    // 47 CLEAR; ManagedPointerTokens.IsTaggedToken); synthetic PCs (from 0xFFFF_8000_0000_0000,
+    // GoSyntheticPC); and every x64 user-mode or kernel address, which has bits 63..47 all equal, so
+    // a pinned data pointer or a marshal buffer can never name a call site. The band holds 2^35 spans
+    // before a carry into bit 48 would clear bit 47 and make a tagged token; the record list is an
+    // int-indexed List, so it can never reach that. (It first started at 2^32, a valid user-mode
+    // address: the i9's hardening note on 96ce90f997. The i9's 0x8000_0000_0000_0000 is tagged.)
+    // 64-bit only, as the corpus is (the synthetic registry refuses 32-bit).
     private const int CallerSpanShift = 12;
-    private static readonly nuint s_callerSpanBase = unchecked((nuint)(1UL << 32));
+    private static readonly nuint s_callerSpanBase = unchecked((nuint)0x8000_8000_0000_0000UL);
 
     private static nuint callerSpanStart(int index) => s_callerSpanBase + ((nuint)index << CallerSpanShift);
 
@@ -1756,8 +1763,9 @@ partial class runtime_package
         // whose address Go takes without calling it (runtime/pprof's lostProfileEvent is the first
         // consumer — its frame printed as `0x0` until this arm existed, because Frames.Next skips a
         // pc this returns null for). The two spaces are disjoint BY CONSTRUCTION and it is asserted
-        // rather than assumed: caller tokens sit in spans from 2^32 up (callerSpanStart); synthetic
-        // PCs sit in the canonical high half (GolibTests.SyntheticPCRegistryTests). So the caller
+        // rather than assumed: caller tokens sit in spans from 0x8000_8000_0000_0000 (callerSpanStart,
+        // GolibTests.RuntimeCallerPCSpanTests); synthetic PCs sit in the canonical high half
+        // (GolibTests.SyntheticPCRegistryTests). So the caller
         // table always answers first and this arm can never shadow it.
         return syntheticFrameRecord(value);
     }
@@ -1955,5 +1963,12 @@ partial class runtime_package
         Callers(1, a);
         Callers(1, b);
         return (a[0], b[0]);
+    }
+
+    /// <summary>Returns the first and last value the caller-span band can ever hold: the start of span 0
+    /// and the end of span <c>int.MaxValue</c>, the largest index the record list can reach.</summary>
+    public static (uintptr first, uintptr last) GoCallerSpanBand()
+    {
+        return (callerSpanStart(0), callerSpanStart(int.MaxValue) + (((nuint)1 << CallerSpanShift) - 1));
     }
 }
