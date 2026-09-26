@@ -10,6 +10,17 @@
 // Every named function here is //go:noinline: gc renames a closure whose ENCLOSING function is
 // inlined into its caller (`main.main.deep.func2.1.1` under default optimization on this exact
 // program), and go2cs performs no inlining, so the un-inlined naming is the semantics being pinned.
+//
+// For the same reason every literal that CONTAINS another literal is invoked through the
+// //go:noinline run below rather than called directly. Go 1.24's gc also inlines a literal called in
+// place, and a literal cloned into the function it was inlined into takes the inliner's name (measured
+// on go1.24.13 with this program's direct calls: `main.nested.nested.func1.func3`,
+// `main.deep.deep.func1.deep.deep.func1.func2.func3`; with -gcflags=-l, and on go1.23.12,
+// `main.nested.func1.1` and `main.deep.func1.1.1`). A leaf literal still inlines, but an inlined frame
+// keeps its own name, so its calls stay direct and keep the local-function emission covered.
+// Inlining-derived observables are STRUCTURAL on this host: the owner's class-I ruling (ledger
+// 2026-09-26 02:42, 4a122cd994) holds that Go's inlining decisions are a compiler property the
+// converted program cannot carry. So the un-inlined naming is what this test pins.
 package main
 
 import (
@@ -57,7 +68,7 @@ func nested() {
 		fmt.Println("nested-outer:", who())
 		inner()
 	}
-	outer()
+	run(outer)
 	after := func() { fmt.Println("after-nest:", who()) }
 	after()
 }
@@ -80,10 +91,10 @@ func deep() {
 			l3()
 			fmt.Println("deep-2:", who())
 		}
-		l2()
+		run(l2)
 		fmt.Println("deep-1:", who())
 	}
-	l1()
+	run(l1)
 }
 
 // Two siblings inside one nested literal: func1.1 and func1.2.
@@ -96,12 +107,12 @@ func nestedSiblings() {
 		a()
 		b()
 	}
-	o()
+	run(o)
 }
 
-// run invokes its argument, so viaArg's literal stays a first-class function value — in C# a real
-// lambda rather than the local function the only-ever-called literals above emit as; both emissions
-// must answer the recorded name.
+// run invokes its argument, so viaArg's literal (and each literal that contains another, see the file
+// comment) stays a first-class function value — in C# a real lambda rather than the local function the
+// only-ever-called literals above emit as; both emissions must answer the recorded name.
 //
 //go:noinline
 func run(f func()) { f() }
