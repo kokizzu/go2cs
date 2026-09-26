@@ -12,6 +12,10 @@ type C64 complex64
 type C128b C128
 
 type F64 float64
+type F32 float32
+
+// A defined type over another defined float32 type
+type F32b F32
 
 type pair struct {
 	a C128
@@ -32,6 +36,16 @@ const (
 	typedC64n  C64   = 3
 	typedC64c  C64   = 1 + 2i
 	typedC128b C128b = 0.5
+)
+
+// typed constants of the defined float types: fractional and integral values, and plain controls
+const (
+	typedF32  F32     = 0.25
+	typedF32n F32     = 3
+	typedF32t F32     = 0.1
+	typedF32b F32b    = 1.5
+	typedF64  F64     = 0.1
+	plainF32  float32 = 0.1
 )
 
 func classify(c C128) string {
@@ -110,6 +124,9 @@ func main() {
 	// typed constants, case labels, a deferred call's arguments
 	const localC64 C64 = 1.5
 	const localC128b C128b = -2
+	const localF32 F32 = -2.5
+	const localF32b F32b = 0.75
+	const localF64 F64 = 2.5
 	fmt.Println("typed:", typedC128, typedC128r, typedC64, typedC64n, typedC64c, typedC128b, localC64, localC128b, typedC64*2, typedC128*2, classify(0), classify(2.5), classify(3))
 	deferred()
 
@@ -122,5 +139,6 @@ func main() {
 	var pc complex128 = 3
 	var pc64 complex64 = 4
 	var df F64 = 5
+	fmt.Println("float typed:", typedF32, typedF32n, typedF32t, typedF32b, typedF64, plainF32, localF32, localF32b, localF64, typedF32*2, float32(typedF32t) == plainF32)
 	fmt.Println("controls:", pc, pc64, df)
 }

@@ -842,6 +842,13 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				declType = tightenedType
 			}
 
+			// The width of a float or complex const comes from the UNDERLYING kind, never the C# type
+			// name: a defined `type F32 float32` or `type C64 complex64` is named for itself, and a
+			// value rendered at the 64-bit width has no implicit conversion to it (CS0266, CS0029).
+			declBasic, _ := declType.Underlying().(*types.Basic)
+			isFloat32Decl := declBasic != nil && declBasic.Kind() == types.Float32
+			isComplex64Decl := declBasic != nil && declBasic.Kind() == types.Complex64
+
 			goTypeName := v.getAliasQualifiedTypeName(declType, false)
 			csTypeName := convertToCSTypeName(goTypeName)
 			access := v.testDeclaredValueAccess(getAccess(goIDName), ident.Pos(), declType)
@@ -931,15 +938,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						srcExpr = valueSpec.Values[i]
 					}
 
-					constVal = exactFloatConstString(c.Val(), srcExpr, csTypeName == "float32")
+					constVal = exactFloatConstString(c.Val(), srcExpr, isFloat32Decl)
 				}
 			} else if c.Val().Kind() == constant.Complex {
 				// Rendered from the two EXACT halves; the whole-text ParseComplex representability
-				// test it replaces could never succeed — see exactComplexConstString. The width comes
-				// from the UNDERLYING kind, not the C# type name: a defined `type C64 complex64` const
-				// rendered at complex128 (`0.25D + 0D.i()`) has no implicit conversion to C64 (CS0029).
-				declBasic, _ := declType.Underlying().(*types.Basic)
-				constVal, complexRepresentable = exactComplexConstString(c.Val(), declBasic != nil && declBasic.Kind() == types.Complex64)
+				// test it replaces could never succeed — see exactComplexConstString.
+				constVal, complexRepresentable = exactComplexConstString(c.Val(), isComplex64Decl)
 
 				if !complexRepresentable {
 					constVal = c.Val().ExactString()
@@ -1192,6 +1196,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				var constExpr string
 				constValExpr := constVal
 
+				// A float32 const initialized from a (double) literal needs an `f` suffix —
+				// `const float hashLoad = 6.5` is CS0664 without it, and a defined float32 type's
+				// `static readonly F32 x => 0.25` is CS0266. Applied to the emitted value only
+				// (constVal is still used above for the doc-comment elision check).
+				if c.Val().Kind() == constant.Float && isFloat32Decl {
+					constValExpr += "f"
+				}
+
 				if isNamedType {
 					constExpr = "static readonly"
 
@@ -1221,13 +1233,6 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					constExpr = "static readonly"
 				} else {
 					constExpr = "const"
-
-					// A float32 const initialized from a (double) literal needs an `f` suffix —
-					// `const float hashLoad = 6.5` is CS0664 without it. Applied to the emitted value
-					// only (constVal is still used above for the doc-comment elision check).
-					if c.Val().Kind() == constant.Float && csTypeName == "float32" {
-						constValExpr += "f"
-					}
 				}
 
 				if v.inFunction {
