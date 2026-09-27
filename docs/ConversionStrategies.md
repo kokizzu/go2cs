@@ -1,330 +1,802 @@
 # Conversion Strategies
 
-> **A high-level, example-driven tour of how `go2cs` maps each Go construct to C#.** This is the
-> readable overview -- every section ends with a **Reference →** link into the exhaustive
-> [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md), where the same topic
-> is documented in full: every emitted form, edge case, phase-level fix, and the [behavioral test](Glossary.md#guard)
-> that guards it. Read the summary for the *shape*; open the reference for the *why*.
+> **How `go2cs` turns each Go construct into C#, one short section per topic, with the Go and the C# it
+> becomes side by side.** This page is for a Go developer reading converted code, or anyone evaluating
+> go2cs. Each section ends with a link into the [reference](ConversionStrategies-Reference/README.md),
+> which holds every emitted form, edge case and guard test, for maintainers.
 
-The guiding goal is that the generated C# is both **behaviorally** and **visually** similar to the
-original Go, so a Go developer can read the output and follow it. Two things the visible code does not
-show in full make that possible: a hand-written runtime library, **`golib`** (`src/core/golib/`,
-supplying `slice<T>`, `map<K,V>`, `channel<T>`, `@string`, `ж<T>`, `nil`, the builtins, …), and a set
-of **[Roslyn](Glossary.md#roslyn) source generators** (`src/gen/go2cs-gen/`) that synthesize the Go semantics C# cannot spell
-directly (interface satisfaction, receiver overloads, struct-embedding promotion, named-type operators).
+The converted C# aims to be both **behaviorally** and **visually** similar to the Go it came from, so a Go
+developer can read it and follow it. Two things make that possible: a hand-written runtime library,
+[golib](#the-golib-runtime-library), and a set of Roslyn [source generators](#source-generators) that add
+the members C# cannot spell directly.
 
 > The C# snippets below are drawn from the actual converted standard library (`src/core/`,
-> Go 1.24.13) wherever possible, paired with their original Go source. A few use small illustrative
-> programs where that reads more clearly. Glyphs you will see throughout: **`ж<T>`** a heap "box"
-> (pointer, read "zhe"), **`Ꮡ`** address-of, **`Δ`** a disambiguation rename (read "delta"),
-> **`@string`** the Go string type, **`default!`** = `nil` in value position, and a handful of
-> operator glyphs (`ᐸꟷ`/`ꟷᐳ` channel receive, `goǃ` goroutine, `ꟷ`/`ᐧ` comma-ok/type sentinels).
+> Go 1.24.13) wherever possible, paired with their original Go source; the rest come from the behavioral
+> tests. Each code block carries an HTML comment naming the file and line it was copied from. The glyphs
+> you will see, such as `ж`, `Ꮡ` and `Δ`, are listed in
+> [Reading Converted Code](#reading-converted-code-names-and-glyphs).
 
 ---
 
 ## Contents
 
-- **Packages & project structure:** [Package Conversion](#package-conversion) ·
-  [Variable Init Order](#package-level-variable-initialization-order) ·
-  [Library versus Source](#compiled-library-versus-source-code)
-- **Numbers, constants & nil:** [Constants](#constant-values) ·
-  [Native/Narrow Integers](#native-and-narrow-integer-types) ·
-  [Named Numeric Types](#named-numeric-types-and-constant-contexts) ·
-  [Nil and Zero Values](#nil-and-zero-values) · [`any`](#empty-interface-any)
-- **Assignment & scope:** [Multi-Assignment](#multi-assignment-and-evaluation-order) ·
-  [Shadowing](#short-variable-redeclaration-shadowing) ·
-  [Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)
-- **Composite & named types:** [Slices and Arrays](#slices-and-arrays) ·
-  [Strings](#strings-string-and-sstring) · [Maps and Channels](#maps-and-channels) ·
-  [Generic Constraints](#generic-constraints) · [Type Aliasing](#type-aliasing)
-- **Functions & control flow:** [Value-Receiver Delegates](#delegates-to-value-receiver-instances) ·
-  [Defer/Panic/Recover](#defer--panic--recover) · [Expression Switch](#expression-switch-statements) ·
-  [Type Switch](#type-switch-statements) · [Labels & Loop Variables](#labeled-control-flow-and-loop-variables)
-- **Types & polymorphism:** [Struct Types](#struct-types) · [Struct Embedding](#struct-type-embedding) ·
-  [Interfaces](#interfaces)
-- **Pointers & memory:** [Pointers](#pointers) · [Implicit Dereferencing](#implicit-pointer-dereferencing)
-- **The machinery:** [`go.golib`](#the-gogolib-support-namespace) · [Source Generators](#source-generators) ·
-  [Manually-Converted Declarations](#manually-converted-declarations) · [Deterministic Output](#deterministic-output)
+- **Start here:** [At a glance](#at-a-glance) · [Reading Converted Code: Names and Glyphs](#reading-converted-code-names-and-glyphs) · [The golib Runtime Library](#the-golib-runtime-library)
+- **Packages & projects:** [Package Conversion](#package-conversion) · [Package-Level Variable Initialization Order](#package-level-variable-initialization-order) · [Converted Tests](#converted-tests) · [Compiled Library versus Source Code](#compiled-library-versus-source-code)
+- **Numbers, constants & nil:** [Constant Values](#constant-values) · [Integer Types and Arithmetic](#integer-types-and-arithmetic) · [Named Numeric Types and Constant Contexts](#named-numeric-types-and-constant-contexts) · [Nil and Zero Values](#nil-and-zero-values) · [Built-in Functions](#built-in-functions) · [Empty Interface (`any`)](#empty-interface-any)
+- **Assignment & scope:** [Multi-Assignment and Evaluation Order](#multi-assignment-and-evaluation-order) · [Short Variable Redeclaration (Shadowing)](#short-variable-redeclaration-shadowing) · [Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)
+- **Composite types:** [Slices and Arrays](#slices-and-arrays) · [Strings (`@string` and `sstring`)](#strings-string-and-sstring) · [Maps](#maps) · [Generics](#generics) · [Type Aliasing](#type-aliasing)
+- **Functions & control flow:** [Functions and Methods](#functions-and-methods) · [Function Values and Closures](#function-values-and-closures) · [Loops, Range and Labels](#loops-range-and-labels) · [Expression Switch Statements](#expression-switch-statements) · [Type Switch Statements](#type-switch-statements) · [Defer / Panic / Recover](#defer--panic--recover)
+- **Concurrency:** [Goroutines](#goroutines) · [Channels and `select`](#channels-and-select)
+- **Types & polymorphism:** [Struct Types](#struct-types) · [Struct Type Embedding](#struct-type-embedding) · [Interfaces](#interfaces) · [Reflection (`reflect`)](#reflection-reflect)
+- **Pointers & memory:** [Pointers](#pointers) · [Implicit Pointer Dereferencing](#implicit-pointer-dereferencing) · [`unsafe.Pointer` and `uintptr`](#unsafepointer-and-uintptr)
+- **The machinery:** [Source Generators](#source-generators) · [Functions Without a Go Body](#functions-without-a-go-body) · [Manually-Converted Declarations](#manually-converted-declarations) · [The standard library reproduces Go `-tags purego`](#the-standard-library-reproduces-go--tags-purego) · [Comments](#comments) · [Packages That Do Not Type-Check](#packages-that-do-not-type-check) · [Deterministic Output](#deterministic-output)
 
 ---
 
 ## At a glance
 
-| Go | C# rendering | Machinery |
+Each Go construct becomes a C# form a Go developer can read line by line. The table pairs each construct
+with the form it takes, and its first column links to the section that explains it.
+
+The last column, Provided by, names who supplies the C# form. The converter writes it, [golib](#the-golib-runtime-library)
+implements it at run time, or a named [source generator](#source-generators) adds members at compile time.
+
+The table uses a few glyphs. `ж`, `Ꮡ` and `~` are for pointers, `Δ` marks a renamed variable, and `@`
+escapes a C# keyword. `ꟷ` and `ᐧ` pick comma-ok forms, `ᒐ` is the defer frame, and `goǃ` and `ᐸꟷ` are
+for goroutines and channels. [Reading Converted Code](#reading-converted-code-names-and-glyphs) defines
+each one.
+
+<!-- sources, one per row, top to bottom (every C# form is copied from real emission):
+  src/core/bufio/bufio.cs:17 · src/core/bufio/bufio.cs:14 ·
+  src/tests/Behavioral/PackageVarInitOrder/registry.cs.target:22 + src/core/image/png/reader.cs:1227 ·
+  src/core/reflect/all_test.cs:59 + src/core/reflect/go2cs_test_host.cs:1 ·
+  src/tests/Behavioral/MapCommaOk/MapCommaOk.csproj:150 (ProjectReference; NuGet via -recurse=nuget) ·
+  src/core/unicode/utf8/utf8.cs:23 + src/core/archive/zip/struct.cs:34 ·
+  src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:17 + src/core/strconv/atoi.cs:145 ·
+  src/core/golib/uintptr.cs:39 · src/core/bufio/bufio.csproj:131 (from src/go2cs/csproj-template.xml:116) ·
+  src/core/encoding/gob/codec_test.cs:1156 ·
+  src/core/golib/NilType.cs + src/tests/Behavioral/LambdaFunctions/LambdaFunctions.cs.target:62 ·
+  src/tests/Behavioral/SliceAliasing/main.cs.target:8 · src/tests/Behavioral/MapCommaOk/MapCommaOk.csproj:104 ·
+  src/tests/Behavioral/NamedReturnDefer/main.cs.target:41 · src/tests/Behavioral/ShadowedCompoundAssign/main.cs.target:10 ·
+  src/core/strconv/atoi.cs:263 · src/tests/Behavioral/MapCommaOk/main.cs.target:12 ·
+  src/tests/Behavioral/RangeStatements/RangeStatements.cs.target:20 · src/core/strconv/atoi.cs:260 ·
+  src/tests/Behavioral/MapCommaOk/main.cs.target:11 · src/tests/Behavioral/GenericFuncDecl/GenericFuncDecl.cs.target:7 +
+  src/tests/Behavioral/GenericInterfaceConstraint/GenericInterfaceConstraint.go:53 + GenericInterfaceConstraint.cs.target:53 ·
+  src/tests/Behavioral/TypeConversionReturnType/TypeConversionReturnType.cs.target:1 ·
+  src/tests/Behavioral/PackageVarInitOrder/registry.cs.target:14 · src/tests/Behavioral/LambdaFunctions/LambdaFunctions.cs.target:59 +
+  src/tests/Behavioral/LocalFunctionEmission/main.cs.target:15 (local function only from a `name := func…` short declaration
+  whose variable is only called; a `var f T = func…` stays a lambda, LambdaFunctions.go:49,52) ·
+  src/tests/Behavioral/ForVariants/ForVariants.cs.target:53,59 ·
+  src/tests/Behavioral/ExprSwitch/ExprSwitch.cs.target:101 · src/tests/Behavioral/TypeAssert/TypeAssert.cs.target:46,77 +
+  src/tests/Behavioral/TypeSwitch/TypeSwitch.cs.target:52 · src/tests/Behavioral/DeferSimple/DeferSimple.cs.target:13-20 +
+  src/tests/Behavioral/PanicRecover/PanicRecover.cs.target:26,49 · src/tests/Behavioral/SelectStatement/SelectStatement.cs.target:80 ·
+  src/tests/Behavioral/SelectStatement/SelectStatement.cs.target:10,34,79,82 · src/tests/Behavioral/PackageVarInitOrder/registry.cs.target:5 ·
+  src/tests/Behavioral/StructPromotion/StructPromotion.cs.target:30 · src/core/io/io.cs:86 ·
+  src/tests/Behavioral/ReflectValueSingles/ReflectValueSingles.cs.target:56 + src/core/reflect/type.cs:1135 + src/core/golib/GoReflect.cs:19 ·
+  src/tests/Behavioral/PointerToPointer/PointerToPointer.go:25 + PointerToPointer.cs.target:22,28 + src/core/golib/ж.cs:665 ·
+  src/tests/Behavioral/ClosureSelfShadowCapture/main.cs.target:24 · src/tests/Behavioral/UnsafeOperations/UnsafeOperations.cs.target:80,93 ·
+  src/core/math/dim_asm.cs:11 · src/core/unicode/utf8/utf8.cs:23 -->
+
+| Section | Go | C# | Provided by |
+|---|---|---|---|
+| [Packages](#package-conversion) | `package bufio` | `partial class bufio_package` in `namespace go`; functions are `static` methods | converter |
+| [Packages](#package-conversion) | `import "unicode/utf8"` | `using utf8 = unicode.utf8_package;` and a reference to that package's project | converter |
+| [Initialization](#package-level-variable-initialization-order) | `var names = []string{…}` · `func init()` | a `static` field · `[GoInit] internal static void init()`, a .NET module initializer | converter |
+| [Converted tests](#converted-tests) | `func TestBool(t *testing.T)` | a `static` method in a separate `<pkg>.tests` program, whose generated host runs each test | converter |
+| [Library or source](#compiled-library-versus-source-code) | an imported package | a project reference, or a NuGet reference to the pre-converted standard library | converter |
+| [Constants](#constant-values) | `const UTFMax = 4` · `Deflate uint16 = 8` | `public static UntypedInt UTFMax => 4;` · `public const uint16 Deflate = 8;` | converter |
+| [Integers](#integer-types-and-arithmetic) | `int` · `uint` | `nint` · `nuint`, the C# native-sized integers | converter |
+| [Integers](#integer-types-and-arithmetic) | `uintptr` | golib's `uintptr` struct | golib |
+| [Integers](#integer-types-and-arithmetic) | `int32` · `rune` · `float64` · … | same-named aliases, declared in each project file, such as `<Using Include="System.Int32" Alias="rune" />` | converter |
+| [Named numbers](#named-numeric-types-and-constant-contexts) | `type Float float64` | `[GoType("num:float64")] public partial struct Float;` | TypeGenerator |
+| [Nil and zero](#nil-and-zero-values) | `nil` | `default!`, or golib's `nil` in a pointer comparison or pointer argument | golib |
+| [Built-ins](#built-in-functions) | `len(s)` · `append(s, x)` · `make([]uint32, 6)` | `len(s)` · `append(s, x)` · `new slice<uint32>(6)`, the first two from golib's `builtin` class | golib |
+| [`any`](#empty-interface-any) | `any` · `interface{}` | `any`, an alias for `object` declared in each project file | converter |
+| [Multi-assignment](#multi-assignment-and-evaluation-order) | `a, b = b, a` | `(a, b) = (b, a);` | converter |
+| [Shadowing](#short-variable-redeclaration-shadowing) | an inner `x := 5` | `nint xΔ1 = 5;` | converter |
+| [Multiple results](#multi-result-values-and-comma-ok-forms) | `func Atoi(s string) (int, error)` | `public static (nint, error) Atoi(@string s)` | converter |
+| [Comma-ok](#multi-result-values-and-comma-ok-forms) | `v, ok := m["a"]` | `var (v, ok) = m["a"u8, ꟷ];` | golib |
+| [Slices and arrays](#slices-and-arrays) | `[]int{2, 3, 4}` · `[N]T` | `new nint[]{2, 3, 4}.slice()` · `array<T>` | golib |
+| [Strings](#strings-string-and-sstring) | `string` · `"Atoi"` | `@string` · `"Atoi"u8` | golib |
+| [Maps](#maps) | `map[string]int{"a": 1, "b": 2}` | `new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2}` | golib |
+| [Generics](#generics) | `func Swap[T any](a, b T) (T, T)` · `[S Shape]` | `public static (T, T) Swap<T>(T a, T b)` · `where S : Shape` | converter |
+| [Type aliasing](#type-aliasing) | `type P = *bool` | `global using P = go.ж<bool>;` | converter |
+| [Methods](#functions-and-methods) | `func (r *reg) add(name string) string` | `[GoRecv] internal static @string add(this ref reg r, @string name)`, plus a `ж<reg>` overload | RecvGenerator |
+| [Closures](#function-values-and-closures) | `func() string { … }` as a value | a lambda typed `Func<@string>`, or a C# local function when a `name := func…` variable is only ever called | converter |
+| [Loops](#loops-range-and-labels) | `for _, n := range nums` · `break scan` | `foreach (var (_, n) in nums)` · `goto break_scan;` | converter |
+| [Switch](#expression-switch-statements) | `case 4, 5, 6:` | `case 4 or 5 or 6:` | converter |
+| [Type switch](#type-switch-statements) | `i.(string)` · `s, ok := i.(string)` · `switch i.(type)` | `i._<@string>()` · `var (s, ok) = i._<@string>(ᐧ)` · `switch (i.type())` | golib |
+| [Defer and panic](#defer--panic--recover) | `defer f()` · `panic(v)` · `recover()` | `defer(…, ref ᒐ)` inside `try`/`catch`/`finally` · `throw panic(v)` · `recover()` | golib |
+| [Goroutines](#goroutines) | `go generate(ch)` | `goǃ(generate, …)` | golib |
+| [Channels](#channels-and-select) | `make(chan int)` · `ch <- 12` · `<-ch` · `select` | `new channel<nint>(0)` · `ch.ᐸꟷ(12)` · `ᐸꟷ(ch)` · `switch (select(…))` | golib |
+| [Structs](#struct-types) | `type reg struct { entries []string; … }` | `[GoType] partial struct reg { internal slice<@string> entries; … }` | TypeGenerator |
+| [Embedding](#struct-type-embedding) | `type Record struct { Person; Employee }` | `public partial ref Person Person { get; }`, plus the promoted fields and methods | TypeGenerator |
+| [Interfaces](#interfaces) | `type Reader interface { … }` | `[GoType] partial interface Reader`, plus the glue that lets each type used as a `Reader` implement it | ImplementGenerator |
+| [Reflection](#reflection-reflect) | `reflect.TypeOf(want)` | `reflect.TypeOf(want)`, unchanged: the converted `reflect` package, backed by golib | converter |
+| [Pointers](#pointers) | `*T` · `&x` · `*p` | `ж<T>` · `Ꮡx` · `~p` or `p.Value` | golib |
+| [Implicit dereferencing](#implicit-pointer-dereferencing) | `s.val`, where `s` is a `*span` | `s.Value.val` | converter |
+| [`unsafe`](#unsafepointer-and-uintptr) | `unsafe.Pointer` · `unsafe.Sizeof(x)` | `@unsafe.Pointer` · the constant `/* unsafe.Sizeof(x) */ 32` | converter |
+| [No Go body](#functions-without-a-go-body) | `func archMax(x, y float64) float64` | `internal static partial float64 archMax(float64 x, float64 y);`, with a hand-written body or a throwing stub | PartialStubGenerator |
+| [Comments](#comments) | `// maximum number of bytes …` | the same comment, in the same place | converter |
+
+The machinery behind these forms has its own sections: [Source Generators](#source-generators),
+[Manually-Converted Declarations](#manually-converted-declarations),
+[the `purego` build](#the-standard-library-reproduces-go--tags-purego),
+[Packages That Do Not Type-Check](#packages-that-do-not-type-check) and [Deterministic Output](#deterministic-output).
+
+**Full detail:** [Reference → Contents](ConversionStrategies-Reference/README.md#contents) — one page per topic, with every emitted form, edge case and guard test.
+
+---
+
+## Reading Converted Code: Names and Glyphs
+
+Converted C# keeps Go's names wherever it can: `bindAdd` stays `bindAdd`, and the entry point `main` becomes
+`Main`. The naming rules below and the glyphs in the table are the exceptions. The glyphs mark the names and
+helpers the converter adds; most are Unicode letters that C# accepts in identifiers and ordinary Go code does not use.
+Go types such as `slice<T>` and `@string` come from golib: see [The golib Runtime Library](#the-golib-runtime-library).
+
+<!-- sources, in row order (behavioral paths under src/tests/Behavioral/): GoCallVariations/GoCallVariations.cs.target:58; UnsafeOperations/UnsafeOperations.cs.target:26; GoCallVariations.cs.target:40 and UnsafeOperations.cs.target:26; GoCallVariations.cs.target:42; ReservedNameShadows/main.cs.target:39, src/core/time/time.cs:324, src/core/bufio/bufio_test.cs:11; ExprSwitch/ExprSwitch.cs.target:144, MultiFileInitOrder/a_first.cs.target:11; GoCallVariations.cs.target:25; src/core/errors/join.cs:19 (heap-moved value parameter: AddressOfParamWrite/main.cs.target:50); GoCallVariations.cs.target:21, ChannelRendezvous/main.cs.target:32, InitOrderTupleSpecs/main.cs.target:9; GoCallVariations.cs.target:9, src/core/strconv/atoi.cs:260; SStringTwinPilot/main.cs.target:42; src/core/encoding/json/package_info.cs:17;
+src/core/errors/join.cs:7, ExprSwitch.cs.target:27 (also src/core/flag/flag.cs:1176), ChannelRendezvous/main.cs.target:33; AnyStringLitChanSend/main.cs.target:66, GoCallVariations.cs.target:39, ChannelRendezvous/main.cs.target:34; GoCallVariations.cs.target:21; ChannelCapLen/main.cs.target:28, AnonymousStructs/AnonymousStructs.cs.target:39; src/core/strconv/atoi.cs:293, ExprSwitch.cs.target:129, src/core/strings/iter.cs:57; ExprSwitch.cs.target:283; AppendOfMake/AppendOfMake.cs.target:76; src/core/errors/join.cs:39, CaptureHoistThroughConversion/main.cs.target:41;
+DefinedTypeOverInterface/main.cs.target:10; GenericTypeNameCompanion/main.cs.target:24; GenericTypeInstantiation/GenericTypeInstantiation.cs.target:44; AdapterNameInterfaceCollision/main.cs.target:25; GoCallVariations.cs.target:46; GoCallVariations.cs.target:47; UnsafeOperations.cs.target:4 and 23; src/core/strings/strings.cs:19; src/core/strings/export_test.cs:8 and strings_test.cs:24.
+appendꓸꓸꓸ: InterfaceCasting/InterfaceCasting.cs.target:323 (Funcꓸꓸꓸ: BlankIdentifierCollision/main.cs.target:88).
+Buffer.Ꮡoff: PointerToPointer/PointerToPointer.cs.target:40; ᒐdone: NamedReturnDefer/main.cs.target:92; [GoRecv]: ReservedNameShadows/main.cs.target:61.
+/*<-*/: SelectStatement/SelectStatement.cs.target:70; _<T>(): TypeAssert/TypeAssert.cs.target:77 (comma-ok: src/core/strconv/atoi.cs:293); ᴋ: src/core/internal/syscall/unix/linux/getrandom.cs:38; break_/continue_: ForVariants/ForVariants.cs.target:59 (goto break_scan;) and :63 (continue_scan:;); main_point: LiftedLocalTypes/main.cs.target:17.
+Glyph constants: src/go2cs/symbols.go, generated from src/core/go2cs/symbols.json (DescriptorCarrierSuffix in src/go2cs/visitTypeSpec.go, DescriptorCompanionSuffix in src/go2cs/descriptorCompanion.go). Values of ᐧ, ᐧᐧ, ꟷ and ꓸꓸꓸ: src/core/golib/builtin.cs:160-196. The slice spread s.ꓸꓸꓸ: src/core/golib/slice.cs:490.
+ᶠ is FuncValueMarker (symbols.json:172-183): only an sstring-twinned function has it, because a twinned function has no single method group; an ordinary function value stays a plain method group (GoCallVariations.cs.target:24).
+_ΔpN: src/go2cs/visitFuncDecl.go:1226-1240 and :2416-2424 (a lone blank parameter stays `_`; `_Δp%d` only when blanks would collide); a lone one: CaptureHoistThroughConversion/main.cs.target:7 `public delegate void Handler(nint _);`; several: GenericTypeInstantiation.cs.target:44; interface method: AnonymousInterfaces.cs.target:51.
+Other renames beyond `main` -> `Main`: a Go function named `Main` becomes `ΔMain` (identifierNaming.go getSanitizedFunctionName). -->
+
+| Glyph or pattern | Meaning | Example | Explained in |
+|---|---|---|---|
+| `ж<T>`, `StandardBox<T>` | Go pointer `*T`: a golib heap box (read "zhe"); `StandardBox<T>` is the box class for an ordinary value | `ж<accum> Ꮡa`, `new StandardBox<Outer>(default(Outer))` | [Pointers](#pointers) |
+| `Ꮡ` | Address-of `&x`; as a prefix, a variable that holds a box, or a field reference that `&s.f` uses | `Ꮡ(new accum(nil))`, `ᏑgOuter`, `Buffer.Ꮡoff` | [Pointers](#pointers) |
+| `~p` | Reads through a pointer, and panics on nil like Go's `*p` | `(~acc).total` | [Implicit Pointer Dereferencing](#implicit-pointer-dereferencing) |
+| `Δ` prefix | A name renamed to avoid a clash, including a package alias | `ΔGoFrame`, `ΔMonth`, `using Δio = io_package;` | The naming rules in this section |
+| `Δ1` suffix | A second declaration of the same name: a variable that shadows an outer one, or a repeated `init` function | `hourΔ1`, `initΔ1` | [Shadowing](#short-variable-redeclaration-shadowing) |
+| `ʗ1` suffix | A copy of a variable, taken for the lambda that uses it | `var f1ʗ1 = f1;` | [Function Values and Closures](#function-values-and-closures) |
+| `ʗp` suffix | An incoming parameter the body redeclares: a variadic pack, or a value moved to the heap | `params ꓸꓸꓸerror errsʗp` | [Slices and Arrays](#slices-and-arrays) |
+| `ᴛ` | A name the converter makes up: a temporary, a lambda parameter or an init helper | `ᴛ1`, `selᴛ2`, `initᴛsingle` | [Multi-Assignment](#multi-assignment-and-evaluation-order) |
+| `ᴋ` | A temporary that keeps a pointer passed to a system call alive until the call returns | `var ᴋ0 = @unsafe.SliceData(p);` | [`unsafe.Pointer` and `uintptr`](#unsafepointer-and-uintptr) |
+| `ˢ`, `ᶜ`, `ᶠ` suffix | A string literal or local constant stored once in a static field; `ᶠ` is the shared delegate used when a function with an `sstring` twin is taken as a value | `firstˢ`, `fnAtoiᶜ`, `fmt.Sprintfᶠ` | [Strings](#strings-string-and-sstring) |
+| `ꓸ` | A dot inside one name, such as a package-qualified alias | `reflectꓸValue` | [Type Aliasing](#type-aliasing) |
+| `ꓸꓸꓸ` | Go's `...`: `ꓸꓸꓸT` aliases `Span<T>` for a variadic parameter; `s.ꓸꓸꓸ` and `appendꓸꓸꓸ` spread a slice; `Funcꓸꓸꓸ<…>` is a variadic func type; a lone `ꓸꓸꓸ` marks a `select` case | `using ꓸꓸꓸerror = Span<error>;`, `fmt.Sprintf(format, a.ꓸꓸꓸ)`, `appendꓸꓸꓸ(all, batch)`, `ᐸꟷ(selᴛ2, ꓸꓸꓸ)` | [Slices and Arrays](#slices-and-arrays) |
+| `ᐸꟷ`, `ꟷᐳ` | Channel send, receive, and receive inside `select` | `ch.ᐸꟷ(textˢ)`, `ᐸꟷ(done)`, `selᴛ2.ꟷᐳ(out var v)` | [Channels and `select`](#channels-and-select) |
+| `/*<-*/` | A channel's direction, kept as a comment: `/*<-*/channel<T>` is `<-chan T`, `channel/*<-*/<T>` is `chan<- T` | `/*<-*/channel<nint> src` | [Channels and `select`](#channels-and-select) |
+| `goǃ` | The `go` statement | `goǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ)` | [Goroutines](#goroutines) |
+| `ꟷ`, `ᐧ` | golib's `const bool ꟷ = false` and `const bool ᐧ = true`: `ꟷ` picks a comma-ok form; `ᐧ` does so for a type assertion, and is the `true` of a tagless switch or endless loop | `var (v, ok) = ᐸꟷ(d, ꟷ);`, `seen[memo, ꟷ]`, `switch (ᐧ)`, `while (ᐧ)` | [Comma-Ok Forms](#multi-result-values-and-comma-ok-forms) |
+| `ᐧᐧ` | A `true` that C# does not treat as a constant | `case {} when ᐧᐧ:` | [Expression Switch](#expression-switch-statements) |
+| `._<T>()` | Type assertion `x.(T)`; with `ᐧ`, its comma-ok form | `i._<@string>()`, `err._<ж<NumError>>(ᐧ)` | [Empty Interface (`any`)](#empty-interface-any) |
+| `ᒐ` | The `GoFrame` local that runs a function's deferred calls; names that start with `ᒐ`, such as the label `ᒐdone`, belong to the same frame | `GoFrame ᒐ = default;`, `ᒐdone: return (@out, label);` | [Defer / Panic / Recover](#defer--panic--recover) |
+| `break_L`, `continue_L` | `goto` targets for Go's labeled `break L` and `continue L` | `goto break_scan;`, `continue_scan:;` | [Loops, Range and Labels](#loops-range-and-labels) |
+| `XжI`, `XᴠI` | An adapter class: pointer `*X` (`ж`) or value `X` (`ᴠ`) as interface `I` | `new joinErrorжerror(e)`, `new HandlerᴠIface(…)` | [Interfaces](#interfaces) |
+| `ᴅ`, `ᴺ` suffix | Keep a Go type name: `ᴅ` is an empty interface for a type converted to a C# alias; `ᴺ` is an extra type parameter for a type argument's name | `public interface Tokenᴅ { }`, `nameOf<T, Tᴺ>` | [Reflection](#reflection-reflect) |
+| `_Δp0` | A made-up name for an unnamed Go parameter when a plain `_` will not do, such as several in one signature | `Seq2Like<K, V>(K _Δp0, V _Δp1)` | [Functions and Methods](#functions-and-methods) |
+| `default!` | Go `nil` (golib `nil` in pointer contexts), and the zero value of a variable declared without a value | `return (n, default!);` | [Nil and Zero Values](#nil-and-zero-values) |
+| `[GoType]`, `[GoRecv]` | Mark a converted Go type, or a pointer-receiver method; a source generator completes it | `[GoType] partial struct accum`, `[GoRecv] internal static nint len(this ref box b)` | [Source Generators](#source-generators) |
+| `nint`, `nuint` | Go `int`, `uint` | `internal nint total;` | [Integer Types and Arithmetic](#integer-types-and-arithmetic) |
+| `@name` | A C# keyword used as a name | `@in`, `@unsafe`, `@string` | The naming rules in this section |
+| `<pkg>_package` | The static partial class that holds a package | `partial class strings_package` | [Package Conversion](#package-conversion) |
+| `<func>_<type>` | A type declared inside a function, lifted to package scope | `main_point` | [Struct Types](#struct-types) |
+| `<pkg>_internal_test_package`, `<pkg>_test_package` | The classes for in-package test files and for the external `_test` package | `strings_internal_test_package` | [Converted Tests](#converted-tests) |
+
+**A C# keyword is escaped with `@`.** Go names such as `in`, `base` and `unsafe` are C# keywords. The `@`
+prefix lets C# use them as names, so `import "unsafe"` becomes `using @unsafe = unsafe_package;`.
+
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.go:21 -->
+```go
+type Outer struct {
+	head byte
+	in   Inner
+}
+```
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.cs.target:21 -->
+```csharp
+[GoType] partial struct Outer {
+    internal byte head;
+    internal Inner @in;
+}
+```
+
+**A name that would clash gets a `Δ` prefix.** The emitted code relies on golib names such as `GoFrame`,
+`builtin` and `slice`, so a Go name that matches one is renamed. A Go type that shares its name with a method
+is renamed the same way, for example time's `ΔMonth`.
+
+<!-- reserved-name list: src/go2cs/identifierNaming.go:89-94; type-vs-method rename: src/core/time/time.cs:324 `[GoType("num:nint")] partial struct ΔMonth;` (Go type Month and method Time.Month) -->
+<!-- source: src/tests/Behavioral/ReservedNameShadows/main.go:45 -->
+```go
+type GoFrame struct{ k int }
+```
+<!-- source: src/tests/Behavioral/ReservedNameShadows/main.cs.target:39 -->
+```csharp
+[GoType] partial struct ΔGoFrame {
+    internal nint k;
+}
+```
+
+**A capitalized Go name becomes `public`; any other name becomes `internal`.** This is Go's export rule in C#
+terms. A method takes the stricter of its own name and its receiver type's name. A package-level struct or
+interface type usually leaves its modifier to the [source generator](#source-generators), which adds it on its
+own half of the `partial` type. A named function type becomes a delegate, which carries its own modifier.
+
+<!-- receiver clamp: src/go2cs/visitFuncDecl.go:730-738 (receiverAccess from :1654-1671; getAccess at src/go2cs/identifierNaming.go:262); example src/core/errors/join.cs:46 `[GoRecv] internal static @string Error(this ref joinError e) {` -->
+<!-- generator adds the modifier: src/gen/go2cs-gen/Templates/StructType/StructTypeTemplate.cs:55, Templates/InterfaceType/InterfaceTypeTemplate.cs:50 (`{{Scope}} partial struct/interface`). "usually": lifted local types carry `internal` (LiftedLocalTypes/main.cs.target:37) and an unexported type an exported field exposes carries `public` (PublicizedFieldType/main.cs.target:9); package-level declarations otherwise emit `[GoType] partial` bare (about 1150 of about 1280 [GoType] lines in the behavioral goldens). -->
+<!-- func type as delegate carrying its own modifier: src/tests/Behavioral/CaptureHoistThroughConversion/main.cs.target:7 `public delegate void Handler(nint _);` (Go main.go:23 `type Handler func(int)`); GenericTypeInstantiation.cs.target:44 `public delegate bool Seq2Like<K, V>(K _Δp0, V _Δp1);` -->
+<!-- source: src/tests/Behavioral/GoCallVariations/GoCallVariations.go:42 -->
+```go
+type accum struct{ total int }
+…
+func GetPrintLn() func(string) {
+```
+<!-- source: src/tests/Behavioral/GoCallVariations/GoCallVariations.cs.target:46 (GetPrintLn at :63; Go GetPrintLn at GoCallVariations.go:58) -->
+```csharp
+[GoType] partial struct accum {
+    internal nint total;
+}
+…
+public static Action<@string> GetPrintLn() {
+```
+
+<!-- The glyph table's intended reference home is a names-and-glyphs reference page (naming.md), which does not exist yet; until it lands, this section links shadowing.md, which is also the Shadowing section's reference page. -->
+**Full detail:** [Reference → Shadowing the names go2cs itself spells](ConversionStrategies-Reference/shadowing.md#shadowing-the-names-go2cs-itself-spells-nil-golib-names-emitter-spelled-type-names-c-keywords) —
+which Go names are `@`-escaped or `Δ`-renamed to avoid a clash with C# keywords or emitted names, and why.
+
+---
+
+<a id="the-gogolib-support-namespace"></a>
+
+## The golib Runtime Library
+
+Go's built-in types and behaviors become types and functions in [golib](../src/core/golib/), the
+hand-written C# library behind every converted project. The project file go2cs writes references golib,
+either as a project reference or as the NuGet package `go.lib`. Its names appear throughout converted
+code, such as `slice<T>`, `@string`, `len` and `nil`.
+[Reading Converted Code: Names and Glyphs](#reading-converted-code-names-and-glyphs) explains their glyphs.
+
+**Go built-ins that .NET has no match for have golib counterparts.** This table points to the section that explains each one.
+
+| Go | golib | Section |
 |---|---|---|
-| `package foo` · top-level `func Bar()` | `partial class foo_package` · `static` methods (receiver methods → extension methods) | converter |
-| `import "x/y"` | `using y = go.x.y_package;` + a `ProjectReference` | converter |
-| `int` / `uint` / `uintptr` | `nint` / `nuint` / [`uintptr`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/uintptr.cs) (a distinct golib struct) | [BCL](Glossary.md#bcl) / golib |
-| `int32`, `byte`, `rune`, `float64`, … | same-named C# aliases (`global using rune = System.Int32;`) | global usings |
-| untyped constant | [`UntypedInt`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/UntypedInt.cs) / [`UntypedFloat`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/UntypedFloat.cs) / [`UntypedComplex`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/UntypedComplex.cs) wrapper | golib |
-| `type Celsius float64` | [`[GoType("num:float64")]`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoTypeAttribute.cs) `partial struct Celsius` | `TypeGenerator` |
-| `nil` | `nil` (golib [`NilType`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/NilType.cs)) or `default!` in value position | golib |
-| `interface{}` / `any` | `any` (a global alias for `object`) | BCL |
-| `[]T` slice · `[N]T` array | [`slice<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/slice.cs) · [`array<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/array.cs) | golib |
-| `map[K]V` · `chan T` | [`map<K,V>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/map.cs) · [`channel<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/channel.cs) | golib |
-| `string` | [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs) (heap) · [`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs) (non-escaping stack view) | golib |
-| `v, ok := m[k]` (comma-ok) | [`var (v, ok) = m[k, ꟷ];`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/map.cs) | golib |
-| `a, b = b, a` | `(a, b) = (b, a);` | C# tuples |
-| `*T` · `&x` | [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) heap box · [`Ꮡx`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) address-of | golib |
-| `type I interface{…}` | [`[GoType]`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoTypeAttribute.cs) `partial interface` + [generated implementing glue](https://github.com/ritchiecarroll/go2cs/blob/master/src/gen/go2cs-gen/ImplementGenerator.cs) | `ImplementGenerator` |
-| struct embedding | [promoted field accessors + method forwarders](https://github.com/ritchiecarroll/go2cs/blob/master/src/gen/go2cs-gen/TypeGenerator.cs) | `TypeGenerator` |
-| `func (t T) M()` / `func (t *T) M()` | [`[GoRecv]`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoRecvAttribute.cs)/`this` extension method + a [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) overload | `RecvGenerator` |
-| `f := func(…){…}`, only ever called | a C# **local function** `ret f(…) {…}` — captures with no display class and no delegate | converter |
-| `defer f()` · `panic(x)` · `recover()` | body INLINE in `try`/`catch`/`finally` beside a [`GoFrame`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/GoFrame.cs) local; `defer(f, ref ᒐ)`; [`throw panic(x)`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/PanicException.cs) | golib |
-| `go f()` · `select {…}` | [`goǃ(…)`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) · [`switch (select(…))`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) | golib |
-| `x.(T)` · `switch x.(type)` | [`x._<T>()`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) · [`x.type()`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/builtin.cs) | golib / converter |
-| generic `[T Constraint]` | `where T : <lifted interface(s)>` | golib / .NET |
+| `[]T`, `[N]T` | `slice<T>`, `array<T>` | [Slices and Arrays](#slices-and-arrays) |
+| `string` | `@string`, `sstring` | [Strings](#strings-string-and-sstring) |
+| `map[K]V` | `map<K, V>` | [Maps](#maps) |
+| `chan T` | `channel<T>` | [Channels and `select`](#channels-and-select) |
+| `*T` | `ж<T>`, a heap box | [Pointers](#pointers) |
+| `nil` | `nil`, a `NilType` value | [Nil and Zero Values](#nil-and-zero-values) |
+| `error` | the `error` interface | [Interfaces](#interfaces) |
+| `uintptr` | `uintptr` | [`unsafe.Pointer` and `uintptr`](#unsafepointer-and-uintptr) |
+| `len`, `cap`, `append`, `copy`, `delete`, `close`, `clear`, `min`, `max` | methods of `builtin` | [Built-in Functions](#built-in-functions) |
+| `defer`, `panic`, `recover` | `defer`, `panic`, `recover` in `builtin` | [Defer / Panic / Recover](#defer--panic--recover) |
+| `go f(x)` | `goǃ(…)` in `builtin` | [Goroutines](#goroutines) |
+
+**Built-in functions keep their Go names.** The project file go2cs writes imports golib's
+[`builtin`](../src/core/golib/builtin.cs) class with `using static`, so a call such as `len(ch)` reads as
+it does in Go ([Built-in Functions](#built-in-functions)).
+
+<!-- source: src/tests/Behavioral/ChannelCapLen/main.go:11 -->
+```go
+ch := make(chan int, 3)
+fmt.Println(len(ch), cap(ch))
+```
+<!-- source: src/tests/Behavioral/ChannelCapLen/main.cs.target:8 -->
+```csharp
+var ch = new channel<nint>(3);
+fmt.Println(len(ch), cap(ch));
+```
+
+`nint` is Go's `int`, a native-width integer ([Integer Types and Arithmetic](#integer-types-and-arithmetic)).
+
+**golib's core types sit in the `go` namespace.** Converted packages live in `go` or a namespace nested inside it
+([Package Conversion](#package-conversion)), so converted code names `slice<T>` or `@string` with no `using`.
+
+**An import alias takes the [`Δ`](#reading-converted-code-names-and-glyphs) rename mark when a namespace of the same
+name would hide it.** Converting `io/fs` creates the namespace `go.io`. In namespace `go`, an alias named `io` would
+lose to `go.io` in a package whose imports reach `io/fs`. There the alias is `using Δio = io_package;`, and uses read `Δio.EOF`.
+
+**Some golib support types live in `go.golib`.** golib's runtime helpers, such as `SparseArray<T>`,
+sit in this child namespace. No Go standard-library package is named `golib`, so this namespace never hides a
+standard-library import alias. Converted code names these helpers through it, as in `golib.SparseArray<T>`, which
+builds a slice from a keyed literal:
+
+<!-- source: src/tests/Behavioral/IotaEnum/IotaEnum.go:62 -->
+```go
+var kindNames = []string{
+	Invalid:       "invalid",
+	…
+}
+```
+<!-- source: src/tests/Behavioral/IotaEnum/IotaEnum.cs.target:59 -->
+```csharp
+internal static slice<@string> kindNames = new golib.SparseArray<@string>{
+    [Invalid] = "invalid"u8,
+    …
+}.slice();
+```
+
+**Full detail:** [Reference → The go.golib support namespace](ConversionStrategies-Reference/golib-namespace.md#the-gogolib-support-namespace) — why golib's helpers avoid Go package names, exactly when an import alias takes the `Δ` rename mark, and how renamed types and aliases from other packages are spelled.
 
 ---
 
 ## Package Conversion
 
-A Go package becomes a C# **static partial class** named `<pkg>_package`, inside a root `go` namespace;
-the import path's leading segments become the namespace. Go's package-level functions are `static`
-methods; receiver methods are emitted as **extension methods** (decorated `[GoRecv]`). Using a *partial*
-class lets the functions from a package's many files coalesce under one import. A program with `main`
-converts to an executable project; imported packages convert to referenced library projects.
+A Go package becomes one C# project holding a `static partial class` named `<name>_package`. Every Go
+file in the package adds its code to that one class.
 
+**Package-level functions become static methods of the package class.** Methods become C# extension
+methods; [Functions and Methods](#functions-and-methods) shows how receivers map. The `ж<Reader>` result
+is golib's heap box for Go's `*Reader`; see [Names and Glyphs](#reading-converted-code-names-and-glyphs).
+
+<!-- source: GOROOT/src/bufio/bufio.go:62 -->
 ```go
-import "unicode/utf8"
+func NewReader(rd io.Reader) *Reader {
+	return NewReaderSize(rd, defaultBufSize)
+}
 ```
+<!-- source: src/core/bufio/bufio.cs:17 -->
 ```csharp
-using utf8 = go.unicode.utf8_package;    // one alias; per-file `package_info.cs` carries the global usings
+partial class bufio_package {
+…
+public static ж<Reader> NewReader(io.Reader rd) {
+    return NewReaderSize(rd, defaultBufSize);
+}
 ```
 
-Go initializes an imported package **before** the importer, whatever the import looks like. A converted
-`init` is a .NET `[ModuleInitializer]`, which fires only at first use of something in *its own*
-assembly — so an assembly the program has not touched yet has not initialized. The converter closes
-that gap with a hook, once per assembly, ahead of the file's own `init`s. It is emitted for any import
-whose package initializes something transitively; forcing an empty module constructor would be a
-guaranteed no-op, so those are skipped.
+**An import becomes a `using` alias named for the package.** The import path's leading segments name a
+namespace under the root `go`, which holds the package's class. So `unicode/utf8` is `utf8_package` in
+`namespace go.unicode`. Its import also opens `unicode`, because C# finds extension methods by namespace.
 
+<!-- source: GOROOT/src/bufio/bufio.go:10 -->
 ```go
 import (
-    _ "image/png"    // registers the PNG decoder with image.Decode
-    "log/slog"       // its init captures a value log's init installs
+	…
+	"io"
+	…
+	"unicode/utf8"
 )
 ```
+<!-- source: src/core/bufio/bufio.cs:12 -->
 ```csharp
-// blank import: go.image.png_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
-using slog = go.log.slog_package;
-
-[GoInit] internal static void initᴛᴛimportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
-[GoInit] internal static void initᴛᴛimportꓸlogꓸslog() { builtin.initPackage(typeof(go.log.slog_package)); }
+using io = io_package;
+…
+using utf8 = unicode.utf8_package;
+using unicode;
 ```
 
-A blank import still emits no `using` (a `using _` alias would hijack C#'s discard) — it is a comment
-plus its hook. NAMED imports went unforced until 2026-08-26, which is why `log/slog` — whose `init`
-captures `log/internal.DefaultOutput`, a value **`log`'s** `init` installs — captured nil whenever a
-program touched `slog` first, and then dereferenced it.
+**Each package also gets a `package_info.cs`.** It sits at the package root, or in each per-OS folder
+when the package has them. It declares the package class and holds package-wide `global using` aliases.
 
-A converted **test** project gets one more hook for the same reason. Go runs every `init` in the
-package under test — the production files' included — before the first test, but a `-tests` project
-*references* the production assembly rather than recompiling it, so that `init` would otherwise wait
-for the first touch of a production symbol. `package_test_info.cs` therefore forces the production
-module directly; see
-[the reference](ConversionStrategies-Reference/package-conversion.md#a--tests-production-reference-project-forces-the-package-under-tests-own-init).
+**A `main` package becomes an executable; every other package becomes a library.** The executable
+project has `<OutputType>Exe</OutputType>`. Each imported package is its own library project, and the
+importer references it.
 
-A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
-`.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
-`windows`. Files identical on every platform stay flat, so this touches only the packages that genuinely
-vary: **37** of 344. A package whose *imports* also differ by platform — **22** of them, `os` reaching
-`internal/syscall/windows` on Windows and `internal/syscall/unix` elsewhere — states its common references
-once and selects the rest the same way:
+**Imported packages initialize first, blank imports included.** A Go `init` becomes a method marked
+`[GoInit]`, which .NET runs only when something in its assembly is first used. That can come late, and
+for a blank import it never comes. So `package_info.cs` forces each import that has anything to
+initialize, directly or through its own imports, ahead of the package's own `init`.
 
+<!-- source: GOROOT/src/crypto/internal/fips140/aes/cast.go:7 -->
+```go
+import (
+	"bytes"
+	…
+	_ "crypto/internal/fips140/check"
+	…
+)
+```
+<!-- source: src/core/crypto/internal/fips140/aes/package_info.cs:92 -->
+```csharp
+[GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+…
+[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸcheck() => builtin.initPackage(typeof(go.crypto.@internal.fips140.check_package));
+```
+
+**Build constraints pick each target's Go files.** The converter selects Go files by their build
+constraints and file-name suffixes, as `go build` does. Files that differ between Windows, Linux and
+macOS sit in `windows/`, `linux/` and `darwin/` subfolders. The project compiles the flat files plus
+the one folder named by the `GoTargetOS` build property, which defaults to `windows`:
+
+<!-- source: src/core/os/os.csproj:161 -->
 ```xml
-<ItemGroup Condition="'$(GoTargetOS)'=='windows'">
-  <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/internal.syscall.windows.csproj" />
-</ItemGroup>
+<Compile Include="*.cs" Exclude="package_info.cs" />
+…
+<Compile Include="$(GoTargetOS)/*.cs" Exclude="$(GoTargetOS)/package_info.cs" />
 ```
 
-A **hand-owned** file needs the same treatment and cannot get it from the classifier, which compares
-emissions and never sees a file nothing emits. Such a file belongs in exactly the platform builds its
-*principal* takes part in — `<name>.cs` for an `<name>_impl.cs` companion, the `<name>.cs.auto` review
-sibling for a `[module: GoManualConversion]` whole-file replacement — after which the ordinary rule applies:
-shared by every platform means flat, a subset means one copy per folder. So
-`runtime/lock_sema_impl.cs` lives in `runtime/windows/` **and** `runtime/darwin/` (Linux takes
-`lock_futex.go`), while `os/proc_impl.cs` stays flat even though `proc.cs` is per-GOOS, because every
-platform has one.
-
-**Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference/package-conversion.md#package-conversion) —
-cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
-packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
-[imported-package initialization order](ConversionStrategies-Reference/package-conversion.md#an-import-forces-the-imported-packages-init-to-run),
-build-tag/`GOOS`/`GOARCH` file selection,
-[per-`GOOS` source folders](ConversionStrategies-Reference/package-conversion.md#per-goos-sources-layout-l3-and-gotargetos),
-and the auto-generated `.slnx` solutions (the stdlib solution, and
-the `-recurse` per-project solutions grouped into `src`/`pkg`/`core` folders).
+**Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference/package-conversion.md#package-conversion) — project names and paths, cross-package references and NuGet use, exported type aliases, the import-initialization rules including blank imports and test projects, build-constraint file selection, the per-OS layout including hand-written files, and the generated solution files.
 
 ---
 
 ## Package-Level Variable Initialization Order
 
-Go initializes package vars in **dependency order** (resolved through function calls); C# static field
-initializers run in an **undefined order across** a partial class's files. A var whose initializer
-depends — directly, through a package function, or via a func literal — on a var in another file (or
-declared later in the same file) is emitted as a bare field plus an init method beside it, and a
-generated `package_init.cs` static constructor calls those methods in Go's `InitOrder`. C# runs all
-field initializers before any static-ctor body, so the relocated initializers always see their
-non-relocated dependencies ready. Everything else keeps the readable inline form.
+Go initializes package-level vars in dependency order. C# runs static field initializers in file order,
+and in no defined order across files. Only a var that could read an unset value changes form.
 
+**Such a var becomes a bare field plus an init method.** The method sits beside the field and is named
+`initᴛ<name>`. Here `first` reads `base`, declared after it, so only `first` moves. The `ᴛ` marks a
+generated name, and `@base` escapes the C# keyword `base` ([glyphs](#reading-converted-code-names-and-glyphs)).
+
+<!-- source: src/tests/Behavioral/PackageVarInitOrder/main.go:8 -->
 ```go
-var procSetFilePointerEx = modkernel32.NewProc("SetFilePointerEx") // modkernel32: another file
+var first = base + 1
+
+var base = 41
 ```
+<!-- source: src/tests/Behavioral/PackageVarInitOrder/main.cs.target:7 -->
+```csharp
+internal static nint first;
+internal static void initᴛfirst() { first = @base + 1; }
+
+internal static nint @base = 41;
+```
+
+**A dependency in another file moves the reader.** A var also moves when it reads a var declared later
+in its own file, or a var that has itself moved. The read can be direct, or inside a function the
+initializer calls.
+
+In `syscall`, `procSetFilePointerEx` reads `modkernel32`, which is declared in another file, so it
+moves (`ж<LazyProc>` is Go's `*LazyProc`; see [Pointers](#pointers)).
+
+<!-- source: GOROOT src/syscall/syscall_windows.go:489 -->
+```go
+var procSetFilePointerEx = modkernel32.NewProc("SetFilePointerEx")
+```
+<!-- source: src/core/syscall/windows/syscall_windows.cs:493 -->
 ```csharp
 internal static ж<LazyProc> procSetFilePointerEx;
 internal static void initᴛprocSetFilePointerEx() { procSetFilePointerEx = modkernel32.NewProc("SetFilePointerEx"u8); }
-// package_init.cs: static syscall_package() { …; initᴛprocSetFilePointerEx(); … }
 ```
 
-A **constant** can be a dependency too, but only the two forms that stay initialized fields rather
-than [get-only properties](#constant-values) — a string const and a `GoBigConst` const. Go lists no
-initialization order for constants at all, so that edge is one the conversion has to add itself.
+**A generated `package_init.cs` calls the init methods in Go's dependency order.** It holds the package
+class's static constructor. A package that moves nothing has no `package_init.cs`.
 
-**Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference/variable-initialization-order.md#package-level-variable-initialization-order) —
-the three hazard shapes, transitive dependency analysis, moved-dependency closure, addressed globals,
-[tuple-deconstructing specs relocated as one unit](ConversionStrategies-Reference/variable-initialization-order.md#a-tuple-deconstructing-package-var-relocates-as-one-unit),
-the [constant-dependency edge](ConversionStrategies-Reference/variable-initialization-order.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
-and the `PackageVarInitOrder` / `InitOrderTupleSpecs` behavioral guards.
+<!-- source: src/core/syscall/windows/package_init.cs:9 -->
+```csharp
+partial class syscall_package {
+    static syscall_package() {
+        initᴛprocSetFilePointerEx();
+        …
+    }
+} // end syscall_package
+```
+
+This order is safe because C# runs every static field initializer, in every file, before the static
+constructor body. Each moved initializer therefore finds its unmoved dependencies already set.
+
+**A var that reads another package's var needs no ordering.** .NET initializes that package's class
+before its field is first read.
+
+**Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference/variable-initialization-order.md#package-level-variable-initialization-order) — how dependencies are traced through called functions and func literals; the constants that count as dependencies; blank, addressed and tuple-deconstructing vars; test-conversion initializers; and the tests that guard each shape.
+
+---
+
+## Converted Tests
+
+`go2cs -tests` converts a package's Go test suite along with its code. Each `x_test.go` becomes `x_test.cs` beside the production sources, and a file that holds only examples or benchmarks gets no `.cs`. A generated host program runs the tests on go2cs's hand-written [`testing`](../src/core/testing/) package, the way `go test` does.
+
+**A test function keeps its Go shape.** `func TestX(t *testing.T)` becomes a `public static void` method that takes `ж<testing.T>`, golib's heap box standing in for Go's `*testing.T`. The parameter is named `Ꮡt`, with the address mark `Ꮡ`, and `@string` is Go's `string` (the [glyph table](#reading-converted-code-names-and-glyphs) lists all three). Calls such as `t.Errorf` go through that pointer, as `Ꮡt.Errorf`:
+
+<!-- source: GOROOT/src/strings/clone_test.go:5 -->
+```go
+package strings_test
+…
+func TestClone(t *testing.T) {
+	…
+	for _, input := range cloneTests {
+		clone := strings.Clone(input)
+		if clone != input {
+			t.Errorf("Clone(%q) = %q; want %q", input, clone, input)
+		}
+```
+<!-- source: src/core/strings/clone_test.cs:11 -->
+```csharp
+partial class strings_test_package {
+…
+public static void TestClone(ж<testing.T> Ꮡt) {
+    …
+    foreach (var (_, input) in cloneTests) {
+        @string clone = strings.Clone(input);
+        if (clone != input) {
+            Ꮡt.Errorf("Clone(%q) = %q; want %q"u8, input, clone, input);
+        }
+```
+
+**Each kind of test file has its own class.** An external test package, `package strings_test`, becomes the class `strings_test_package`. A same-package test file normally goes to `<pkg>_internal_test_package`, a separate class that can still reach the package's unexported names.
+
+External test files import the internal class with `using static`. So Go's `export_test.go` pattern needs no hand edits: a same-package file exposes internals, and the external tests use them.
+
+**A generated host registers every runnable test.** `go2cs_test_host.cs` is the test program's `Main`. It registers each test by its Go name, its method, and its Go file and line. Tests are found at conversion time, not by reflection, so each `-json` result names the Go file and line where the test is declared:
+
+<!-- source: src/core/container/list/go2cs_test_host.cs:6 -->
+```csharp
+internal static class Go2CsTestHost
+{
+    public static int Main(string[] args)
+    {
+        TestRegistry registry = new("container/list", new string[]
+        …
+        registry.Add("TestExtending", list_internal_test_package.TestExtending, "list_test.go", 159);
+        …
+        return TestHost.Run(registry, args);
+    }
+}
+```
+
+The host takes `go test`'s flags, such as `-run`, `-v`, `-count` and `-json`.
+
+**Examples, benchmarks and fuzz targets convert but do not run.** Their methods still appear in any converted test file that also holds tests, as `BenchmarkClone` does in `clone_test.cs`. The host registers only tests and `TestMain`.
+
+**A test project normally references the production project.** It does not recompile the production sources. Production types then keep one identity, shared with every other converted package that uses them. The production project grants the `.tests` assembly access to its internals, so same-package tests reach unexported names.
+
+**Known differences from Go are listed beside the package.** A hand-written `go2cs_test_disclosures.json` names the tests whose C# result is known to differ from `go test`. Each entry gives its reason and, in most cases, the failure text the C# run must show. A test that fails in any other way still counts as a mismatch.
+
+**Full detail:** [Reference → Test suites reference the production project](ConversionStrategies-Reference/shadowing.md#test-suites-reference-the-production-project-instead-of-recompiling-it) — the test-project models and when each applies, the internal bridge class and its metadata files, test-side name collisions, and exactly which test files get no `.cs`.
 
 ---
 
 ## Compiled Library versus Source Code
 
-Go compiles all source together (including the stdlib), which lets its compiler do whole-program escape
-analysis. The go2cs converter **assumes values can escape to the heap** except in the
-simplest-to-detect cases (see [Pointers](#pointers)) — a safe default that can cost an unnecessary heap
-box, and the one that holds when converted packages are consumed as compiled libraries: the standard
-library is published on NuGet as `go.<pkg>` / `go.lib` / `go.gen`, which fits how C# developers usually
-consume dependencies, and a `-recurse=nuget` conversion references those packages directly.
+Go builds every package from source, so its compiler knows whether each pointer parameter escapes. go2cs
+converts each Go package into its own C# library, as if its callers were compiled separately. As a result,
+some values Go keeps on the stack become heap boxes, and the standard library can come from NuGet.
 
-**Full detail:** [Reference → Compiled Library versus Source Code](ConversionStrategies-Reference/compiled-library-vs-source.md#compiled-library-versus-source-code).
+**An exported function's pointer parameter is a heap box.** It is a golib `ж<T>` box
+([glyphs](#reading-converted-code-names-and-glyphs)) in every package, so the signature never depends on
+the function body. A local whose address is passed to it lives in a box too, even where Go keeps it on
+the stack.
+
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.go:48 -->
+```go
+	b := Buffer{}
+	PrintValPtr(&b.off)
+	…
+func PrintValPtr(ptr *int) {
+	fmt.Printf("Value available at *ptr = %d\n", *ptr)
+```
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:38 -->
+```csharp
+    ref var b = ref heap<Buffer>(out var Ꮡb);
+    b = new Buffer(nil);
+    PrintValPtr(Ꮡb.of(Buffer.Ꮡoff));
+    …
+public static void PrintValPtr(ж<nint> Ꮡptr) {
+    ref var ptr = ref Ꮡptr.DerefOrNull();
+    …
+```
+
+`heap<Buffer>(out var Ꮡb)` allocates the box `Ꮡb` and returns a `ref` to its value, so `b` reads like a Go local.
+`Ꮡb.of(Buffer.Ꮡoff)` is `&b.off`. In the callee, `ref var ptr` lets the body read like Go's `*ptr` ([Pointers](#pointers)).
+
+**An unexported function can take a `ref` instead.** The converter sees all its callers, so a pointer
+parameter that is only dereferenced usually becomes a C# `ref`. A local whose address reaches only such
+parameters stays a plain local, as [Pointers](#pointers) shows.
+
+**`go2cs -recurse=nuget` references the standard library as NuGet packages.** Each is `go.` plus its import
+path, with dots for slashes. The program's own packages are converted from source. A program that imports
+`fmt` also gets `go.lib`, the [golib runtime](#the-golib-runtime-library), and `go.gen`, the
+[source generators](#source-generators):
+
+<!-- expected app .csproj lines; emitted by src/go2cs/projectFileWriter.go:387,390,471 -->
+<!-- source: src/go2cs/moduleConverter_integration_test.go:262 -->
+```xml
+<PackageReference Include="go.fmt" Version="$(GoStdLibVersion)" />
+<PackageReference Include="go.lib" Version="$(GoStdLibVersion)" />
+<PackageReference Include="go.gen" Version="$(GoStdLibVersion)" PrivateAssets="all" />
+```
+
+**`$(GoStdLibVersion)` defaults to the Go toolchain's release.** Restore takes its newest NuGet revision unless you
+set the value. `-recurse=nuget` refuses a module on a Go language version the packages are not published for.
+
+**Full detail:** [Reference → Compiled Library versus Source Code](ConversionStrategies-Reference/compiled-library-vs-source.md#compiled-library-versus-source-code) — why source availability shapes Go's escape analysis, and how the converter chooses between NuGet and source references.
 
 ---
 
 ## Constant Values
 
-A **typed** Go constant emits with its concrete C# type. An **untyped** constant emits as a golib
-`Untyped*` wrapper, so it adapts to whatever numeric type its use site needs — just like an untyped Go
-constant taking its type from context. Numeric literal *formatting* is preserved where Go and C#
-overlap (hex, binary, `_` separators), so bit masks and addresses stay recognizable.
+A typed numeric or boolean Go constant keeps its own type: it is a C# `const` where C# allows one, and
+a get-only property otherwise, as for [named types](#named-numeric-types-and-constant-contexts). An
+untyped numeric constant at package level is a get-only property of a golib wrapper:
+[`UntypedInt`](../src/core/golib/UntypedInt.cs), [`UntypedFloat`](../src/core/golib/UntypedFloat.cs) or
+[`UntypedComplex`](../src/core/golib/UntypedComplex.cs). Like an untyped Go constant, it takes its type
+from context.
 
-```go
-const MaxRetries = 3          // typed by use
-const win = 100               // untyped
-const mask = 0x4000           // formatting preserved
-```
-```csharp
-public const nint MaxRetries = 3;
-internal static UntypedInt win => 100;
-internal static UntypedInt mask => 0x4000;   // not flattened to 16384
-```
+**An untyped constant is a property of its wrapper type.** `name => value` returns the value on each
+read and never stores it, so the package can read it in any order. A `/* … */` comment keeps the Go
+expression, and hex formatting is kept so masks stay recognizable:
 
-Whenever C# can say `const` it does. When it cannot — a `[GoType]` struct such as the `Untyped*`
-wrappers, a named type, `uintptr`, or a complex is not a legal constant type — the declaration is a
-get-only **property**, not a `static readonly` field. A Go constant has no initialization at all,
-while C# runs static field *initializers* in class-textual order, so as a field a constant could be
-read as its type's DEFAULT by any package-level variable declared ahead of it — silently. That is how
-`compress/flate`'s Huffman decode table was allocated at length 0 instead of 512. (Two allocating
-forms — `@string` and `GoBigConst` — stay fields on purpose; see the
-[reference](ConversionStrategies-Reference/constants.md#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field).)
-
-Float constant values emit **exactly**: the Go source literal verbatim when it is valid C#, else the
-shortest round-trip form — never a shortened decimal. And a **function-local** untyped constant whose
-every use resolves to one concrete type is **tightened** to that type — declared with C#'s `const`
-where legal, with the now-redundant per-use casts dropped (one value-changing cast stays: the
-sub-int32 shift width retype) — so the emitted code reads like the Go source (math `cbrt`; uses that
-stay genuinely untyped, feed other constants, or participate in constant folding conservatively keep
-the wrapper form):
-
+<!-- source: GOROOT/src/compress/lzw/reader.go:39 -->
 ```go
 const (
-    C = 5.42857142857142815906e-01 // 19/35 = 0x3FE15F15F15F15F1
-    G = 3.57142857142857150787e-01 // 5/14  = 0x3FD6DB6DB6DB6DB7
+	maxWidth           = 12
+	decoderInvalidCode = 0xffff
+	flushBuffer        = 1 << maxWidth
 )
-s := C + r*t
-t *= G + F/(s+E+D/s)
 ```
+<!-- source: src/core/compress/lzw/reader.cs:32 -->
 ```csharp
-const float64 C = 5.42857142857142815906e-01; // 19/35     = 0x3FE15F15F15F15F1
-const float64 G = 3.57142857142857150787e-01; // 5/14      = 0x3FD6DB6DB6DB6DB7
-var s = C + r * t;
-t *= G + F / (s + E + D / s);
+internal static UntypedInt maxWidth => 12;
+internal static UntypedInt decoderInvalidCode => 0xffff;
+internal static UntypedInt flushBuffer => /* 1 << maxWidth */ 4096;
 ```
 
-A **complex** constant emits a real complex value, built from its two halves by the same exact-float
-rendering and recombined in the postfix `.i()` form written imaginary literals use — as a property,
-because C# forbids `const` of a struct and both `complex128` (`System.Numerics.Complex`) and `complex64`
-are structs:
+**An untyped constant reads the same at its use site.** Each wrapper converts implicitly to the Go
+integer and float types, and Go has already checked that the value fits. Here `r.last` is a `uint16`,
+and no cast appears:
 
+<!-- source: GOROOT/src/compress/lzw/reader.go:165 -->
 ```go
-const cRational = 5.5 + 1.5i
+			r.last = decoderInvalidCode
+```
+<!-- source: src/core/compress/lzw/reader.cs:162 -->
+```csharp
+            r.last = decoderInvalidCode;
+```
+
+**A typed constant of a C# built-in type is a C# `const` when C# accepts its value as a constant.** An
+untyped `bool` constant is a plain `const bool` as well. A `nint` or `nuint` constant must fit the
+32-bit `int` range, and a wider value takes the property form. Go `int` is C# `nint` (see
+[Reading Converted Code](#reading-converted-code-names-and-glyphs)):
+
+<!-- source: GOROOT/src/os/file.go:80 -->
+```go
+	O_RDONLY int = syscall.O_RDONLY // open the file read-only.
+```
+<!-- source: src/core/os/windows/file.cs:86 -->
+```csharp
+public const nint O_RDONLY = /* syscall.O_RDONLY */ 0;             // open the file read-only.
+```
+
+**A constant group folds `iota` and implicit repetition to plain values.** Each name gets its own
+declaration. Here the first keeps `/* iota */` as a reminder of where the numbering starts:
+
+<!-- source: GOROOT/src/compress/lzw/reader.go:31 -->
+```go
+const (
+	…
+	LSB Order = iota
+	…
+	MSB
+)
+```
+<!-- source: src/core/compress/lzw/reader.cs:29 -->
+```csharp
+public static Order LSB => /* iota */ 0;
+public static Order MSB => 1;
+```
+
+**A local constant takes its type from its uses.** When every use agrees on one type, it is declared
+at that type, as a C# `const` where C# allows one. Otherwise it keeps its wrapper type.
+
+**A complex constant is a real complex value.** It is its real part plus its imaginary part, written
+with golib's `.i()` suffix:
+
+<!-- source: src/tests/Behavioral/ComplexConstContext/main.go:17 -->
+```go
+	cRational   = 5.5 + 1.5i          // …
+…
 const c64 complex64 = 1.5 + 2.5i
 ```
+<!-- source: src/tests/Behavioral/ComplexConstContext/main.cs.target:9 -->
 ```csharp
 internal static UntypedComplex cRational => /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
+…
 internal static complex64 c64 => /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
 ```
 
-A native-sized constant whose value doesn't fit a C# `const` (e.g. `^uintptr(0)`) falls back to the
-same property form with an `unchecked` cast. Note `uintptr` is a **distinct golib struct**, not an alias of
-`System.UIntPtr` — Go treats `uint` and `uintptr` as different types, and the struct preserves that
-identity.
-
-**Full detail:** [Reference → Constant Values](ConversionStrategies-Reference/constants.md#constant-values) — the
-exact-float, complex-halves, and local-const tightening rules, the wrapper's value-conversion and
-value-comparison contracts, the `unchecked` native-int cast rules, wide-unsigned named consts, and the
-full `uintptr` conversion matrix.
+**Full detail:** [Reference → Constant Values](ConversionStrategies-Reference/constants.md#constant-values) — why a property rather than a field (and the string and big-integer forms that stay fields), the bare-`iota` form, the exact-float and complex rendering rules, when a local constant keeps its wrapper, `unchecked` casts for native-width values such as `^uintptr(0)`, and how an untyped constant takes its width at each use.
 
 ---
 
-## Native and Narrow Integer Types
+<a id="native-and-narrow-integer-types"></a>
 
-Go's `int`/`uint` are platform-sized; C#'s are always 32-bit. C# 9's native integers `nint`/`nuint`
-behave exactly like Go's, so `int` → `nint`, `uint` → `nuint` (and `uintptr` → the `uintptr` struct). The
-fixed-width types keep readable same-named aliases (`int32`, `byte`, `rune`, …).
+## Integer Types and Arithmetic
 
-The one semantic gap is **narrow arithmetic**: Go evaluates `int8`/`uint8`/`int16`/`uint16` math at that
-width with wrap-around, but C# promotes it to `int`. Where a narrow result flows into a narrow-typed slot,
-the converter inserts a cast back — which both compiles and restores Go's wrapping:
+Go's platform-sized `int` and `uint` become C#'s native-sized `nint` and `nuint`, and the fixed-width types
+keep their Go names. Most arithmetic reads as in Go. Narrow arithmetic, unsigned negation, shifts and slice
+bounds differ in C#, so there the converter adds a cast, a rewrite or a [golib](#the-golib-runtime-library) call.
 
+**The fixed-width names are aliases.** `int8` through `uint64`, and `rune`, are aliases of the C# primitives
+that each project file declares, such as `<Using Include="System.Int32" Alias="rune" />`. `byte` is C#'s own
+`byte`, the same type as `uint8`.
+<!-- src/core/bufio/bufio.csproj:131, from src/go2cs/csproj-template.xml:105-116 -->
+
+<!-- source: src/tests/Behavioral/GoShiftSemantics/main.go:21 -->
+```go
+c := []uint{0, 1, 63, 64, 65, 200}
+var u uint64 = 0x8000000000000001
+```
+<!-- source: src/tests/Behavioral/GoShiftSemantics/main.cs.target:14 -->
+```csharp
+var c = new nuint[]{0, 1, 63, 64, 65, 200}.slice();
+uint64 u = 0x8000000000000001UL;
+```
+
+**`uintptr` is its own type.** It becomes golib's [`uintptr`](../src/core/golib/uintptr.cs), a struct that
+holds one `nuint`. Go keeps `uint` and `uintptr` distinct, so `%T` and type switches tell them apart.
+<!-- uintptr: a distinct golib struct, not an alias of nuint, so an alias cannot erase the uint/uintptr
+     difference (src/core/golib/uintptr.cs:16-20, :39). Golden:
+     src/tests/Behavioral/SwitchPointerSentinelCase/main.cs.target:89. -->
+
+**Narrow arithmetic is cast back to its type.** Go computes `int8`, `uint8`, `int16` and `uint16` arithmetic
+at that width, so `200 + 100` wraps to 44. C# promotes it to `int`, so the converter casts the result back
+when it is passed, assigned, returned or compared. `int32` and wider types are not promoted, and C#
+arithmetic is unchecked, so they wrap as in Go with no cast.
+
+<!-- source: src/tests/Behavioral/NarrowArithmeticArg/main.go:28 -->
 ```go
 var a, b uint8 = 200, 100
-take(a + b)         // Go: 44 (300 mod 256)
+…
+fmt.Println(takeU8(a + b)) // 300 wraps to 44
 ```
+<!-- source: src/tests/Behavioral/NarrowArithmeticArg/main.cs.target:29 -->
 ```csharp
-uint8 a = 200, b = 100;
-take((uint8)(a + b));   // wraps to 44, not 300
+uint8 a = 200;
+uint8 b = 100;
+fmt.Println(takeU8((uint8)(a + b)));
 ```
 
+**Unsigned negation subtracts from zero.** C#'s unary minus never keeps an unsigned type: it rejects `uint64`
+and `nuint`, and widens smaller unsigned values to a signed type. Go's `-x` on an unsigned value of type `T`
+becomes `((T)0 - x)`, which wraps the same way.
+<!-- unsigned negation: src/go2cs/convUnaryExpr.go:1228-1234; golden
+     src/tests/Behavioral/ShiftPrecedenceUnsigned/main.cs.target:19
+     `fmt.Println((uint64)(z & ((uint64)0 - z)));` for Go `fmt.Println(z & -z)` (main.go:29).
+     C# spec: unary minus on uint converts to long, on byte/ushort promotes to int, on ulong/nuint
+     is a compile error. -->
+
+**A shift count that can reach the width calls a golib helper.** Go gives 0 for a shift by the full width or
+more, or -1 when a negative value is shifted right. C# masks the count, so a 64-bit value shifted by 64 comes
+back unchanged. Such a count turns `>>` into `.Rsh(…)` and `<<` into `.Lsh(…)`, from
+[`GoShift`](../src/core/golib/GoShift.cs).
+
+**A count provably below the width keeps the native operator.** C#'s shift takes an `int` count, while Go
+accepts any integer type, so the count is cast to `int`.
+
+<!-- source: src/tests/Behavioral/GoShiftSemantics/main.go:25 -->
+```go
+for _, k := range c {
+	fmt.Println(u>>k, u<<k)
+}
+…
+fmt.Println(u >> (c[3] & 63)) // 64 & 63 = 0 -> u
+```
+<!-- source: src/tests/Behavioral/GoShiftSemantics/main.cs.target:16 -->
+```csharp
+foreach (var (_, k) in c) {
+    fmt.Println(u.Rsh(k), u.Lsh(k));
+}
+…
+fmt.Println((u >> (int)(((nuint)(c[3] & 63)))));
+```
+
+Division and remainder keep C#'s `/` and `%`. A zero divisor panics with Go's `integer divide by zero`, which
+[`recover`](#defer--panic--recover) catches.
+
+**Slice ranges cast their bounds to `int`**, because C#'s range syntax accepts only `int` ([Slices and Arrays](#slices-and-arrays)).
+
 **Full detail:** [Reference → Native and Narrow Integer Types](ConversionStrategies-Reference/native-and-narrow-integers.md#native-and-narrow-integer-types) —
-narrow-arithmetic casts across argument/assignment/return contexts, wide-const overflow folding, signed
-minima sign-folding, and the `Index`/`Range` `nint`→`int` caveat.
+every narrowing context, the rules that prove a shift count in range, named-type shifts, and the literal edge cases.
 
 ---
 
 ## Named Numeric Types and Constant Contexts
 
-General untyped constant representation is covered in [Constant Values](#constant-values). This section
-focuses on what happens after numeric context is known: Go defined types over numeric bases, constants that
-must flow into those named or native-width types, and the casts needed to keep C# overload resolution and
-operator binding aligned with Go.
+A Go type over a numeric base, such as `type Duration int64`, becomes a C# `partial struct` marked
+[`[GoType("num:<base>")]`](../src/core/golib/GoTypeAttribute.cs). The [`TypeGenerator`](#source-generators) gives it
+its base's operators and conversions, so method bodies read almost line for line as in Go:
 
-A Go type over a numeric base — `type Celsius float64`, `type Duration int64` — becomes a `[GoType("num:…")]`
-partial struct whose body (operators, comparisons, conversions to/from the underlying) the `TypeGenerator`
-fills in. It's a distinct C# type that still behaves like its base, so method bodies read almost
-line-for-line the same:
-
+<!-- source: GOROOT/src/time/time.go:911 -->
 ```go
-type Duration int64                       // time/time.go
+type Duration int64
+…
 func (d Duration) Seconds() float64 {
-    sec := d / Second
-    nsec := d % Second
-    return float64(sec) + float64(nsec)/1e9
+	sec := d / Second
+	nsec := d % Second
+	return float64(sec) + float64(nsec)/1e9
 }
 ```
+<!-- source: src/core/time/time.cs:910 -->
 ```csharp
-[GoType("num:int64")] partial struct Duration;      // time/time.cs
+[GoType("num:int64")] partial struct Duration;
+…
 public static float64 Seconds(this Duration d) {
     var sec = d / ΔSecond;
     var nsec = d % ΔSecond;
@@ -332,1719 +804,2900 @@ public static float64 Seconds(this Duration d) {
 }
 ```
 
-The wrapper carries the full operator surface (integer underlyings also get `~`, shifts, and bitwise ops),
-so `Word >> s` stays a `Word`. Converting *between* a named type and a non-underlying basic routes through
-the underlying (`traceArg(procs)` → `(traceArg)(uint64)procs`), mirroring Go's numeric-conversion rules.
-Unsigned unary minus lowers to `(T)0 - x` (C# forbids unary negation, i.e., `-` prefix, on unsigned).
+`ΔSecond` is Go's `Second` constant. It carries a `Δ` prefix because `Time` also has a `Second()` method.
+C# cannot give two members of one class the same name (see [Names and Glyphs](#reading-converted-code-names-and-glyphs)).
 
-**Full detail:** [Reference → Named Numeric Types and Constant Contexts](ConversionStrategies-Reference/named-numeric-types.md#named-numeric-types-and-constant-contexts) —
-this is one of the deepest topics: `++/--` operators, to/from conversions, cross-assembly conversion
-operators, named slice/array/map wrappers, `append` element casting, shift-width and bit-mask casts, and
-the `&^=` bit-clear lowering.
+**A conversion goes through the underlying type.** The struct declares its conversions against its exact underlying
+type, plus untyped constants. So `float64(sec)` becomes `(float64)(int64)sec`, which gives the value Go's conversion gives.
+
+**Constants of a named type become static properties typed with it.** They follow [Constant Values](#constant-values):
+the value is folded, and an explicit Go expression stays beside it as a comment. Go's `int` base appears as
+`num:nint` (see [Integer Types and Arithmetic](#integer-types-and-arithmetic)). `ΔMonth` takes its `Δ` for the same reason as `ΔSecond`.
+
+<!-- source: GOROOT/src/time/time.go:320 -->
+```go
+type Month int
+
+const (
+	January Month = 1 + iota
+	February
+	…
+)
+```
+<!-- source: src/core/time/time.cs:324 -->
+```csharp
+[GoType("num:nint")] partial struct ΔMonth;
+
+public static ΔMonth January => /* 1 + iota */ 1;
+public static ΔMonth February => 2;
+…
+```
+
+**Operators keep the named type.** The struct has Go's arithmetic and comparison operators, plus bitwise and shift
+operators on an integer base. Each arithmetic, bitwise and shift operator returns the named type, so `math/big`'s `Word`,
+shifted right, is still a `Word`. C# shift counts are `int`, which is why the count gets an `(int)` cast:
+
+<!-- source: GOROOT/src/math/big/arith.go:16 -->
+```go
+type Word uint
+…
+	c = x[len(z)-1] >> ŝ
+```
+<!-- source: src/core/math/big/arith.cs:16 -->
+```csharp
+[GoType("num:nuint")] partial struct Word;
+…
+    c = (x[len(z) - 1] >> (int)(ŝ));
+```
+
+<!-- source: src/core/runtime/mgcmark.cs:1394 (Go: GOROOT/src/runtime/mgcmark.go:1425) -->
+**A constant takes the type Go gives it in context.** Where C# would bind a bare constant to a different operator or overload,
+or to none, the converter casts it to Go's type. So `runtime`'s `min(n, maxObletBytes)` becomes `min(n, (uintptr)(maxObletBytes))`.
+
+**Values print as Go prints them.** A folded constant keeps its named type, so `8 * time.Hour` prints
+through `Duration`'s own `String` method as `8h0m0s`, not as a count of nanoseconds
+([detail](ConversionStrategies-Reference/floating-point-formatting.md#a-folded-constant-of-a-named-type-carries-its-type-in-the-fold)).
+
+**Full detail:** [Reference → Named Numeric Types and Constant Contexts](ConversionStrategies-Reference/named-numeric-types.md#named-numeric-types-and-constant-contexts) — how `++`/`--` are generated, conversions in both directions and between assemblies, the `(T)0 - x` form of unsigned unary minus, casts on `min`/`max` constant arguments, shift-width and bit-mask casts, constants wider than 64 bits, the `&^=` lowering, the operator sets of named boolean and complex types, and when a cast gets parentheses.
 
 ---
 
 ## Nil and Zero Values
 
-`nil` maps to the golib `NilType` value `nil` (from `go.builtin`), which defines comparison operators so
-`x == nil` / `x != nil` work across slices, maps, channels, pointers, and interfaces — each defining what
-"nil" means for it (a nil `map<K,V>` reads zero values, has `len` 0, ranges empty, panics on write). In
-*value* position (a `return`, an assignment), `nil` is written **`default!`**:
+Go's `nil` and zero values mostly become C#'s `default!`. A pointer compared with `nil` or passed `nil` uses
+[golib](#the-golib-runtime-library)'s `nil`. Fixed-size arrays, some structs and directional channels are constructed.
 
+**`nil` is `default!`, except in a written pointer comparison (`p == nil`) or a pointer argument, where it is
+golib's `nil`.** `default!` is C#'s default value for the target type, and the `!` tells the compiler the null
+is intended. A nil pointer that is returned, assigned or declared stays `default!`.
+
+A Go pointer is a golib `ж<T>` box, and a pointer parameter takes the `Ꮡ` prefix
+([glyph table](#reading-converted-code-names-and-glyphs)). A nil pointer to an array keeps the array's length,
+as `ж<array<T>>.NilBoxOfDims(N)`. Other pointers follow the rule:
+
+<!-- source: src/tests/Behavioral/NilPointerParamMethods/main.go:32 -->
 ```go
-func Unwrap(err error) error {      // errors/wrap.go
-    u, ok := err.(interface{ Unwrap() error })
-    if !ok {
-        return nil
-    }
-    return u.Unwrap()
+func checkArg(p *node, op string) error {
+	if p == nil {
+		return errNilArg
+	}
+	return nil
 }
 ```
+<!-- source: src/tests/Behavioral/NilPointerParamMethods/main.cs.target:16 -->
 ```csharp
-public static error Unwrap(error err) {     // errors/wrap.cs
-    var (u, ok) = err._<Unwrap_type>(ᐧ);
-    if (!ok) {
-        return default!;
+internal static error checkArg(ж<node> Ꮡp, @string op) {
+    if (Ꮡp == nil) {
+        return errNilArg;
     }
-    return u.Unwrap();
+    return default!;
 }
 ```
 
-A nil→pointer **conversion** — Go's typed nil, `(*T)(nil)` — instead yields the pointer type's
-**canonical typed nil instance** (`ж<T>.NilBox`), so the boxed value keeps its Go dynamic type:
-`any((*T)(nil)) != nil`, `%T` prints `*T`, and the stdlib's descriptor idiom
-`reflect.TypeOf((*T)(nil)).Elem()` resolves — a bare `null` erased all three:
+**Slices, maps, channels and interfaces compare against `default!`.** Each golib type gives its nil value Go's
+behavior. A slice's nil-ness is its representation, not its length, so `[]T{}` stays non-nil. A nil value of
+each kind, pointers included, behaves like this:
 
+| Nil value | What happens |
+|---|---|
+| slice | `len` and `cap` are 0, `append` works, and `s[0:0]` is still nil. |
+| map | Reads return the zero value, `len` is 0, `range` is empty and `delete` does nothing. A write panics. |
+| channel | A send or receive blocks, and in a `select` its case is never chosen. A nil directional channel keeps its direction, as `channel<T>.RecvOnly` or `channel<T>.SendOnly`. |
+| pointer | Comparing it is safe, and a method can be called on it. Reading or writing through it panics with Go's `invalid memory address or nil pointer dereference`, which `recover` catches. |
+| interface | `== nil` is true only when it holds nothing at all. |
+
+**A nil pointer stored in an interface keeps its type.** In Go, `any((*int)(nil))` is not nil, and `%T`
+prints `*int`. A pointer entering an interface value passes through golib's `OrTypedNil()`, which gives the
+pointer type's shared nil instance:
+
+<!-- source: src/tests/Behavioral/TypedNilInterface/TypedNilInterface.go:79 -->
 ```go
-var errorType = reflectlite.TypeOf((*error)(nil)).Elem()   // errors/wrap.go
+var dp *int
+…
+var dpi any = dp
 ```
+<!-- source: src/tests/Behavioral/TypedNilInterface/TypedNilInterface.cs.target:101 -->
 ```csharp
-internal static reflectliteꓸType errorType = reflectlite.TypeOf(((ж<error>)nil)).Elem();
+ж<nint> dp = default!;
+…
+any dpi = dp.OrTypedNil();
 ```
 
-Go draws no distinction between a nil it was handed that way and a pointer's zero value, so neither
-does the conversion — a pointer entering interface space carries its static type **however it was
-produced**. A non-empty interface gets that from its generated adapter; an `any` slot has no adapter,
-so the box passes through `OrTypedNil()`, which substitutes the canonical instance for a plain null:
+**Fixed-size arrays, and structs that hold one or embed another type, are constructed.** The golib `array<T>`
+for Go's `[N]T` keeps its length in the instance, so an unnamed `[N]T` with no initializer becomes `new(N)`.
+C# `default` runs no constructor, so it skips field initializers and the box an embedded field lives in. A
+struct with an array field becomes `new()`, one with an embedded type becomes `new(nil)`, and one of plain
+fields keeps `default!`:
 
+<!-- source: src/tests/Behavioral/ZeroValueStructVar/main.go:18 -->
 ```go
-var ip *int
-fmt.Printf("%T %v\n", ip, any(ip) == nil)   // *int false
+tbl  [8]int
+…
+var z holder
 ```
+<!-- source: src/tests/Behavioral/ZeroValueStructVar/main.cs.target:9 -->
 ```csharp
-ж<nint> ip = default!;
-fmt.Printf("%T %v\n"u8, ip.OrTypedNil(), ((any)ip.OrTypedNil()) == default!);
+internal array<nint> tbl = new(8);
+…
+holder z = new();
 ```
 
-Reflection reaches the same boundary from the other side. `reflect.Value.Interface()` is Go's
-`packEface` — an interface built from a **type** and a **data word** — so a nil `*T` read out of a
-slot packs as a non-nil `(type=*T, value=nil)` and a type assertion on it SUCCEEDS, dispatching the
-method on the nil receiver. The bridge re-encodes a null pointer-kinded slot read as that same
-canonical instance, which is what lets `encoding/gob` reach `big.Int.GobEncode`'s `if x == nil` arm
-for a zero-filled `make([]*Int, 1)` element.
+**Full detail:** [Reference → Nil and Zero Values](ConversionStrategies-Reference/nil-and-zero-values.md#nil-and-zero-values) — how nil and zero values behave for each golib type, typed-nil boxing at every interface boundary, the reflection read path, and pointer-to-interface assignment through selector fields.
 
-Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction, and
-which slots the boundary covers):
-[Canonical typed-nil pointer boxing](ConversionStrategies-Reference/nil-and-zero-values.md#canonical-typed-nil-pointer-boxing)
-and [the reflection read path](ConversionStrategies-Reference/nil-and-zero-values.md#reflectvalueinterface-is-a-boundary-into-interface-space-so-it-packs-the-typed-nil-too).
+---
 
-Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than
-throwing.
+## Built-in Functions
 
-But `default!` is the Go zero value only for a type whose all-bits-zero form is already usable
-storage, and a **fixed-size array is not**: golib's `array<T>` carries its length in the constructed
-instance, and C# `default` runs neither a constructor nor a field initializer. So every declaration
-with no initializer — a `var x T`, a package global, or a **named result** — climbs one shared
-ladder: an unnamed `[N]T` constructs (`new(N)`), a struct with a promoted embed constructs
-(`new(nil)`), a struct carrying a fixed array at any depth constructs (`new()`), and everything else
-keeps `default!`.
+Most of Go's built-in functions keep their Go names. They are static methods of the
+[golib](#the-golib-runtime-library) [`builtin`](../src/core/golib/builtin.cs) class. Every converted
+project imports that class with a global `using static go.builtin`, so `len(x)` in C# reads as it does in Go.
 
+| Go | C# | More in |
+|---|---|---|
+| `len(x)`, `cap(x)` | `len(x)`, `cap(x)`, both returning `nint` (Go's `int`) | [Slices and Arrays](#slices-and-arrays), [Strings](#strings-string-and-sstring) |
+| `append(s, a, b)`; `append(s, t...)` for a slice `t` | `append(s, a, b)`; [`appendꓸꓸꓸ(s, t)`](#reading-converted-code-names-and-glyphs) | [Slices and Arrays](#slices-and-arrays) |
+| `copy(dst, src)` | `copy(dst, src)` | [Slices and Arrays](#slices-and-arrays) |
+| `clear(x)` | `clear(x)`: zeroes a slice's elements, empties a map | [Slices and Arrays](#slices-and-arrays), [Maps](#maps) |
+| `make(T, …)` | a constructor: `new slice<T>(n)`, `new map<K, V>()`, `new channel<T>(n)` | [Slices and Arrays](#slices-and-arrays), [Maps](#maps), [Channels and `select`](#channels-and-select) |
+| `new(T)` | usually `@new<T>()`, returning a [`ж<T>`](#reading-converted-code-names-and-glyphs) heap box; `@` escapes the C# keyword | [Pointers](#pointers) |
+| `delete(m, k)` | `delete(m, k)` | [Maps](#maps) |
+| `close(ch)` | `close(ch)` | [Channels and `select`](#channels-and-select) |
+| `min(…)`, `max(…)` | `min(…)`, `max(…)` | — |
+| `complex(r, i)`, `real(c)`, `imag(c)` | the same calls, over `complex64` or `complex128` | [Constant Values](#constant-values) |
+| `print(…)`, `println(…)` | the same calls, writing to standard error as Go does | — |
+| `panic(v)`, `recover()` | `throw panic(v)` (the `throw` tells C# the path ends); `recover()` | [Defer / Panic / Recover](#defer--panic--recover) |
+
+**Most calls are unchanged.** The arguments and their order stay as Go wrote them, and a length is
+an `nint`:
+
+<!-- source: src/tests/Behavioral/MinMaxBuiltin/main.go:75 -->
 ```go
-func (ip Addr) As16() (a16 [16]byte)                    // Go: sixteen zeroed bytes
+n := min(len(x), len(y))
 ```
+<!-- source: src/tests/Behavioral/MinMaxBuiltin/main.cs.target:41 -->
 ```csharp
-public static array<byte> /*a16*/ As16(this ΔAddr ip) {
-    array<byte> a16 = new(16);                          // not default! — that is length 0
+nint n = min(len(x), len(y));
 ```
 
-Getting this wrong stays silent until it isn't: `a16[:8]` on a length-0 array is a slice-bounds
-fault, which golib now raises as Go's own recoverable `runtime error: slice bounds out of range
-[:8] with capacity 0` panic rather than a .NET `ArgumentException` — a non-panic exception is
-*contained* by a converted test host, which turns a crash into a hang.
+**`make` becomes a constructor.** A slice, map or channel is a golib type, so `make` builds one with
+`new` and passes its size arguments through. Inside a generic function, `make(S, n)` over a type
+parameter calls golib's `make<S>(n)` instead.
 
-Nilness is **representation** identity, not emptiness: `s == nil` on a slice is true exactly for the
-nil slice (null backing array), so a non-nil empty (`[]byte{}`, `make([]T, 0)`, `s[len(s):]`) stays
-observably non-nil, and nil survives reslicing (`nil[0:0]`) and no-op appends — the distinctions
-Go programs (and the stdlib's own tests) rely on. The same holds for a DEFINED slice type
-(`type S []int`): the generated wrapper's `== nil` delegates to the wrapped `slice<T>`'s own
-`== nil` (representation nilness), so `S{}` is non-nil while the zero value is nil (named map/channel
-wrappers were already correct — their backing compares by reference). It holds across a VARIADIC
-parameter too, where the pack reaches the callee through a C# `params Span<T>` rather than through a
-slice header: a zero-argument call materializes nil, a spread passes exactly the slice it was given,
-and the two are told apart by the span's data reference — null for exactly the headers Go calls nil.
+<!-- source: src/tests/Behavioral/AppendOfMake/AppendOfMake.go:40 -->
+```go
+s := make([]int, 2, 4)
+```
+<!-- source: src/tests/Behavioral/AppendOfMake/AppendOfMake.cs.target:55 -->
+```csharp
+var s = new slice<nint>(2, 4);
+```
 
-**Full detail:** [Reference → Nil and Zero Values](ConversionStrategies-Reference/nil-and-zero-values.md#nil-and-zero-values) —
-null-safe zero values and pointer-to-interface assignment through selector fields; and
-[Reference → Nil-vs-empty slice identity](ConversionStrategies-Reference/slices-and-arrays.md#nil-vs-empty-slice-identity-s--nil-is-representation-nilness-not-emptiness)
-— the full construction-identity enumeration.
+**A slice spread has its own name.** `append(s, t...)` becomes `appendꓸꓸꓸ(s, t)`, where the `ꓸꓸꓸ`
+glyph stands for Go's `...`. The whole slice `t` passes as one argument, as it does in Go.
+
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.go:310 -->
+```go
+var all []sink
+all = append(all, batch...)
+```
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.cs.target:322 -->
+```csharp
+slice<sink> all = default!;
+all = appendꓸꓸꓸ(all, batch);
+```
+
+**A method named like a built-in makes the call `builtin.<name>`.** A converted
+[method](#functions-and-methods) is a static member of the package class, so C# would bind a bare
+`len(…)` to it. Naming the class keeps the call on Go's built-in
+([detail](ConversionStrategies-Reference/shadowing.md#a-declaration-shadowing-a-built-in-makes-the-call-an-ordinary-call)):
+
+<!-- source: src/tests/Behavioral/ReservedNameShadows/main.go:57 -->
+```go
+func (b *box) len() int { return len(b.items) + 1 }
+```
+<!-- source: src/tests/Behavioral/ReservedNameShadows/main.cs.target:61 -->
+```csharp
+[GoRecv] internal static nint len(this ref box b) {
+    return builtin.len(b.items) + 1;
+}
+```
+
+**Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference/slices-and-arrays.md#slices-and-arrays) — how `make`, `append`, `copy` and `clear` build, grow and zero elements, the spread forms and the append-of-make form, and their edge cases.
 
 ---
 
 ## Empty Interface (`any`)
 
-Every Go type satisfies `interface{}` (spelled `any`), which behaves like .NET's `object`, so the empty
-interface maps directly to **`any`** (a global alias for `object`). `func(i interface{})` → `void f(any i)`;
-`map[any]string` → `map<any, @string>`.
+Go's empty interface, `interface{}` or `any`, becomes C# `any`: a global alias for `object` that every
+converted project declares. A value is boxed with its Go type wherever it enters an `any`, so type
+assertions, type switches and `==` see the dynamic type Go sees.
 
-One wrinkle worth knowing: a Go string literal normally emits as a `"…"u8` `ReadOnlySpan<byte>`, which has
-no conversion to `object`, and a plain C# `"…"` boxes a `System.String` where Go boxes `string`. So a
-string literal materialized *as `any`* is boxed through `@string` at **every** interface position —
-argument included, so `fmt.Println("x")` emits `fmt.Println((@string)"x"u8)` — preserving Go string
-identity for a later `x.(string)`, `case string:`, or `==`. The `(@string)` cast is what makes the
-combination legal (it converts the ROM span to a heap string, which boxes); the `u8` suffix is then free
-and keeps the literal's bytes compile-time constant instead of transcoding them from UTF-16 on every
-evaluation. A NAMED string constant needs nothing (it is already emitted as an `@string` member), which
-is the exact mirror of the numeric rule below.
+**A string literal boxes as a Go `string`.** A literal in an `any` slot is cast to golib
+[`@string`](#reading-converted-code-names-and-glyphs), Go's string, so `x.(string)` and `case string:`
+match it. A literal used only in `any` slots is [hoisted](#strings-string-and-sstring) once, into a
+pre-boxed `object` field marked `ˢ`, such as `helloˢ`.
 
-The numeric twin: Go materializes an untyped constant into an interface at its **default type** — untyped
-int → `int` (go2cs `nint`), untyped rune → `rune` (`int32`), untyped float → `float64` — and every
-observation of an interface value dispatches on the boxed CLR type. So an untyped constant boxed *as
-`any`* is cast to that type at **every** interface position (`Ꮡv.Store((nint)(42))`,
-`fmt.Sprintf("%s%c", d, (int32)(os.PathSeparator))`), else a later `x.(int)` — `x._<nint>()` — finds an
-`Int32` and panics, a `case int:` falls through, and interface `==` reports unequal. Two renderings need
-it: a bare int literal, which C# makes `System.Int32`; and anything referencing a **named untyped
-constant** (`const fsize = 5`), which is a golib `UntypedInt`/`UntypedFloat` *wrapper struct* matching no
-Go type at all — leaving it uncast made `fmt`'s dynamic-type dispatch fall back to reflection and print
-`{6 %!d(bool=false)}` instead of `6` (go/token's `TestIssue57490`). The variadic `...any` slot and `any`
-map keys were once carved out as "cosmetic"; both were real divergences the moment the box was compared
-rather than printed (`encoding/base32`'s `testEqual(…, n, 0)` reported `n = 0, expected 0` UNEQUAL; a
-`map[any]V` lookup by a real `int` value missed its literal-stored key), so neither is carved out now.
+**An assertion reads the dynamic type back.** `x.(T)` becomes `x._<T>()`, a golib helper that returns
+the value or panics with Go's `interface conversion` message. Comma-ok forms and type switches read
+the same type ([comma-ok](#multi-result-values-and-comma-ok-forms), [type switches](#type-switch-statements)):
 
-A related identity wrinkle: a deref-aliased pointer (a `*T` parameter or a pointer receiver) passed *as
-`any`* renders the box `Ꮡp`, not the deref'd value alias `p` — Go boxes the *pointer*, and dropping the box
-would store the pointed-to value, so a later `x.(*T)` would find a bare `T` and panic. This surfaced as
-fmt's `sync.Pool` round-trip (`ppFree.Put(p)` then `Get().(*pp)`), which crashed every multi-call fmt
-program before the fix.
+<!-- source: src/tests/Behavioral/TypeAssert/TypeAssert.go:60 -->
+```go
+var i interface{} = "hello"
+…
+s := i.(string)
+```
+<!-- source: src/tests/Behavioral/TypeAssert/TypeAssert.cs.target:76 -->
+```csharp
+any i = helloˢ;
+@string s = i._<@string>();
+```
 
-**Full detail:** [Reference → Empty Interface (`any`)](ConversionStrategies-Reference/empty-interface.md#empty-interface-any) — the
-`@string` and default-type boxing across argument, return, assignment, composite-literal, map-key, and
-channel-send positions, and the box for a pointer value passed to an `any` argument.
+**An untyped constant boxes at its Go default type.** Go's `int` is C# `nint`, so `7` in an `any` slot
+is cast to `nint`. A bare C# `7` would box as `Int32`, and a later `.(int)` would panic:
+
+<!-- source: src/tests/Behavioral/UntypedIntInterfaceBox/main.go:33 -->
+```go
+var a any = 7
+fmt.Println(a.(int))
+```
+<!-- source: src/tests/Behavioral/UntypedIntInterfaceBox/main.cs.target:40 -->
+```csharp
+any a = (nint)(7);
+fmt.Println(a._<nint>());
+```
+
+**`==` on interfaces compares dynamic type, then value**, through golib's `AreEqual` ([Interfaces](#interfaces)).
+A test against `nil` stays a plain `== default!`.
+
+**A pointer keeps its box.** Go stores the pointer itself in the interface, not the value it points to.
+So when `keep` hands its `*pp` to `poolPut(x any)`, it passes the heap box itself,
+[`Ꮡq`](#reading-converted-code-names-and-glyphs), of golib type `ж<pp>`.
+`OrTypedNil()` keeps a nil pointer's [type](#nil-and-zero-values) ([detail](ConversionStrategies-Reference/pointers.md#a-pointer-value-passed-to-an-any-argument-takes-the-box)):
+
+<!-- source: src/tests/Behavioral/PointerValueToInterfaceArg/main.go:45 -->
+```go
+func keep(q *pp) { poolPut(q) }
+```
+<!-- source: src/tests/Behavioral/PointerValueToInterfaceArg/main.cs.target:42 -->
+```csharp
+internal static void keep(ж<pp> Ꮡq) {
+    poolPut(Ꮡq.OrTypedNil());
+}
+```
+
+**Full detail:** [Reference → Empty Interface (`any`)](ConversionStrategies-Reference/empty-interface.md#empty-interface-any) — every position where a string literal or untyped constant is boxed, how named untyped constants are represented, and the exact rules for the uncomparable-type panic.
 
 ---
 
 ## Multi-Assignment and Evaluation Order
 
-Go evaluates every right-hand operand before assigning, which C# expresses with tuple deconstruction:
+Go's parallel assignment becomes a C# tuple deconstruction. Both languages read every right-hand value before storing any, so the converted line reads like the Go one.
 
+**Reassigning several variables is one tuple.** All targets are written only after every value is read. A `:=` that declares only new names cannot lose an old value, so it may stay as separate declarations.
+
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.go:26 -->
 ```go
+x, y := 0, 1
+…
 x, y = y, x+y
 ```
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.cs.target:29 -->
 ```csharp
+nint x = 0;
+nint y = 1;
+…
 (x, y) = (y, x + y);
 ```
 
-The deconstruction is **mandatory** whenever the targets alias, and that includes fields — regexp's
-`inst.Out, inst.Arg = inst.Arg, inst.Out` must not shatter into two stores, or both fields end up holding
-the original `Arg`:
+**A swap stays one statement, even for fields.** Written as two stores, the second would read the value the first just wrote. Fields, slice elements and pointer targets get the same tuple as plain locals. Here `inst` is a Go pointer, a golib `ж<T>`, and `.Value` reaches the struct it points to ([Pointers](#pointers)).
 
+<!-- source: GOROOT/src/regexp/onepass.go:327 -->
+```go
+inst.Out, inst.Arg = inst.Arg, inst.Out
+matchOut, matchArg = matchArg, matchOut
+```
+<!-- source: src/core/regexp/onepass.cs:355 -->
 ```csharp
 (inst.Value.Out, inst.Value.Arg) = (inst.Value.Arg, inst.Value.Out);
+(matchOut, matchArg) = (matchArg, matchOut);
 ```
 
-Go's **partial redeclaration** (`a, b := f()` where `a` already exists) reuses `a` and declares only the
-new names, so the converter emits `var` per newly-declared element: `(frac, var e) = normalize(frac);`. A
-blank element is a discard with no `var` (`_ = fi;`).
+**A `:=` that reuses a name declares only the new ones.** Go's `frac, e := normalize(frac)` assigns the existing `frac` and declares `e`. The converter declares each new element inside the tuple, as `var e` here, and leaves a reused one bare.
 
-A multi-value **`return`** needs the same care from the opposite direction. Go orders a return's *calls*
-and leaves its plain operands unordered against them; gc spills every call to a temporary first, so a plain
-operand is read **after** them. A C# tuple literal reads strictly left to right, so where a later call can
-write what an earlier operand reads, the converter emits gc's own rewrite:
-
+<!-- source: GOROOT/src/math/ldexp.go:30 -->
 ```go
-return o, o.unmarshalOIDText(oid)   // gc: the call runs, THEN o is read
+frac, e := normalize(frac)
 ```
+<!-- source: src/core/math/ldexp.cs:33 -->
 ```csharp
-var ᴛ1 = o.unmarshalOIDText(oid);
-return (o, ᴛ1);
+(frac, var e) = normalize(frac);
 ```
 
-**Full detail:** [Reference → Multi-Assignment and Evaluation Order](ConversionStrategies-Reference/multi-assignment.md#multi-assignment-and-evaluation-order) —
-per-element `var` mechanics, escaping/heap-boxed tuple elements, interface-converting deconstruction,
-address-taken value locals (the `Ꮡ(value)` copy-vs-box distinction), and the return-operand spill's scope.
+**A multi-value `return` runs its calls before it reads plain operands.** The Go compiler runs every function and method call in a return first and reads the plain operands after. A C# tuple reads strictly left to right. So when a call can change an earlier operand, the converter first moves the call into a temporary named with a `ᴛ` prefix.
+
+<!-- source: GOROOT/src/crypto/x509/oid.go:28 -->
+```go
+func ParseOID(oid string) (OID, error) {
+	var o OID
+	return o, o.unmarshalOIDText(oid)
+}
+```
+<!-- source: src/core/crypto/x509/oid.cs:27 -->
+```csharp
+public static (OID, error) ParseOID(@string oid) {
+    OID o = default!;
+    var ᴛ1 = o.unmarshalOIDText(oid);
+    return (o, ᴛ1);
+}
+```
+
+Without the temporary, `o` would be copied while still empty, and the parsed OID would be lost. `@string` is golib's Go `string` ([Strings](#strings-string-and-sstring)).
+
+**Full detail:** [Reference → Multi-Assignment and Evaluation Order](ConversionStrategies-Reference/multi-assignment.md#multi-assignment-and-evaluation-order) — which targets count as reassignments, the read-after-write rule for a mixed `:=`, blank `_` elements, the element types that keep sequential stores, deconstruction into interface variables, and every case where a return moves its calls into temporaries.
 
 ---
 
 ## Short Variable Redeclaration (Shadowing)
 
-C# forbids a local from shadowing an enclosing local (CS0136). Where Go's `:=` legally shadows, the
-converter **renames** the inner variable with a `Δ` suffix and rewrites its references, leaving the outer
-one untouched (so its value is naturally preserved):
+Go lets a nested block declare a variable with a name its enclosing block also declares. C# forbids a local
+from reusing an enclosing local's name, even one declared later, because C# scopes a local over its whole block.
+So the converter renames the inner variable with a `Δ` suffix (`errΔ1`), and the outer one keeps its Go name.
+The glyphs are listed in [Reading Converted Code: Names and Glyphs](#reading-converted-code-names-and-glyphs).
 
+**Only the inner variable is renamed.** Every reference inside the inner scope uses the new name. The extra
+braces around the C# `if` keep `n` scoped to the `if`, as in Go.
+
+<!-- source: src/tests/Behavioral/NestedVarShadow/main.go:44 -->
 ```go
-func sumWithLenLocal(buf []int) int {
-    total := 0
-    len := len(buf)          // a local shadowing the builtin
-    for i := 0; i < len; i++ { total += i }
-    return total + len
+	if n := len(s); n >= 0 {
+		v, err := check("")
+		…
+		_ = v
+	}
+	v, err := check(s)
+```
+<!-- source: src/tests/Behavioral/NestedVarShadow/main.cs.target:42 -->
+```csharp
+    {
+        nint n = len(s); if (n >= 0) {
+            var (vΔ1, errΔ1) = check(""u8);
+            …
+            _ = vΔ1;
+        }
+    }
+    var (v, err) = check(s);
+```
+
+**A local named like a built-in the function calls is renamed, and the call keeps its name.** Go's
+built-ins are methods of the [golib](#the-golib-runtime-library) [`builtin`](../src/core/golib/builtin.cs)
+class, which converted code imports with `using static`. A C# local named `cap` would hide that method.
+
+<!-- source: src/tests/Behavioral/BuiltinShadowLocal/main.go:29 -->
+```go
+func capPlusOne(s []int) int {
+	cap := cap(s)
+	return cap + 1
 }
 ```
+<!-- source: src/tests/Behavioral/BuiltinShadowLocal/main.cs.target:19 -->
 ```csharp
-internal static nint sumWithLenLocal(slice<nint> buf) {
-    nint total = 0;
-    nint lenΔ1 = len(buf);           // renamed; the builtin call stays len(...)
-    for (nint i = 0; i < lenΔ1; i++) { total += i; }
-    return total + lenΔ1;
+internal static nint capPlusOne(slice<nint> s) {
+    nint capΔ1 = cap(s);
+    return capΔ1 + 1;
 }
 ```
 
-The mirror case — a local shadowing a package **global** — qualifies the *global* instead
-(`runtime_package.Δtrace`), which a local can never shadow. Related renames cover type-vs-method name
-collisions (`Δfoo` type vs `foo` method), closure parameters, and consts.
+**A local that shadows a package-level variable the function uses is renamed.** Go starts a local's scope
+after its declaration, but C# scopes a local over its whole block. When the local sits directly in the
+function body, each reference to the global also names the [package class](#package-conversion), here `main_package`.
 
-A collision rename is visible **across packages** — `time` declares both `const Second` and
-`func (Time) Second() int`, so the const is `ΔSecond` and every consumer must spell it that way:
-
+<!-- source: src/tests/Behavioral/GlobalShadowedByLocal/main.go:31 -->
 ```go
-d := 2 * time.Second                     // any Go program
+func plainGlobalShadow() int {
+	x := plainCounter * 2 // …
+	plainCounter := 5     // local shadows the global
+	return x + plainCounter // …
+}
 ```
+<!-- source: src/tests/Behavioral/GlobalShadowedByLocal/main.cs.target:29 -->
 ```csharp
-var d = 2 * time.ΔSecond;                // the const, not the Second() method group
+internal static nint plainGlobalShadow() {
+    nint x = main_package.plainCounter * 2;
+    nint plainCounterΔ1 = 5;
+    return x + plainCounterΔ1;
+}
 ```
 
-The consumer derives that spelling from the **dependency's own declarations**, so it is the same whether or
-not `time` happens to be converted in the same run — which is what makes a standalone `go2cs <dir>` (and
-`-recurse`) conversion of such a program compile. It is likewise the same however the source *named* the
-type: a renamed type reached through a **dot import** is a bare ident with no package qualifier to rewrite,
-and it still resolves through the same imported alias (`Info{…}` and `types.Info{…}` both emit `typesꓸInfo`)
-— see [Reference → A DOT-IMPORTED renamed type](ConversionStrategies-Reference/golib-namespace.md#a-dot-imported-renamed-type-is-spelled-through-the-same-alias-as-the-qualified-reference).
-
-**Full detail:** [Reference → Short Variable Redeclaration](ConversionStrategies-Reference/shadowing.md#short-variable-redeclaration-shadowing) —
-a large family: forward-collision detection at every block level, package-function shadowing, builtin-method
-shadowing, box-name rules for renamed receivers/pointers, and nested-closure capture state.
+**Full detail:** [Reference → Short Variable Redeclaration (Shadowing)](ConversionStrategies-Reference/shadowing.md#short-variable-redeclaration-shadowing) — shadows of built-ins, packages and golib names, locals that shadow package-level constants, package-level names that collide with methods, and how renamed variables are captured by closures.
 
 ---
 
 ## Multi-Result Values and Comma-Ok Forms
 
-Go functions returning `(value, ok)` / `(value, error)` become ordinary C# value tuples, destructured at
-the call site. The runtime's own comma-ok forms (map read, type assertion) use a discard **sentinel** to
-select a second overload — `ꟷ` for indexers, `ᐧ` for assertions:
+A Go function with several results returns a C# value tuple, which the caller deconstructs with
+`var (a, b) = f();`. Go's comma-ok forms call a second [golib](#the-golib-runtime-library) overload that
+returns the same kind of tuple. Glyphs are listed in [Reading Converted Code](#reading-converted-code-names-and-glyphs).
 
+**Named results keep their names.** A named result the body uses is a local, declared at the top with
+its zero value. A bare `return` returns those locals' current values.
+
+<!-- source: GOROOT/src/io/io.go:329 -->
 ```go
-func Atoi(s string) (int, error) {        // strconv/atoi.go
-    i64, err := ParseInt(s, 10, 0)
-    if nerr, ok := err.(*NumError); ok {
-        nerr.Func = fnAtoi
-    }
-    return int(i64), err
+func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error) {
+	…
+	return
 }
 ```
+<!-- source: src/core/io/io.cs:341 -->
 ```csharp
-public static (nint, error) Atoi(@string s) {     // strconv/atoi.cs
-    var (i64, err) = ParseInt(s, 10, 0);
-    {
-        var (nerr, ok) = err._<ж<NumError>>(ᐧ); if (ok) {
-            nerr.Value.Func = fnAtoi;
-        }
-    }
-    return ((nint)i64, err);
+public static (nint n, error err) ReadAtLeast(Reader r, slice<byte> buf, nint min) {
+    nint n = default!;
+    error err = default!;
+    …
+    return (n, err);
 }
 ```
 
-The single-value assertion `i.(T)` → `i._<T>()` panics on failure; the comma-ok `i._<T>(ᐧ)` returns safely.
-An assertion to a *pointer* type renders the box type: `i.(*box)` → `i._<ж<box>>()`.
+**A multi-result call passed straight to another call goes through temporaries.** C# cannot pass one
+tuple as several arguments, so `f(g())` deconstructs `g()` first. The `ᴛ` prefix marks a temporary:
 
-**Full detail:** [Reference → Multi-Result Values and Comma-Ok Forms](ConversionStrategies-Reference/multi-result-and-comma-ok.md#multi-result-values-and-comma-ok-forms) —
-package-level `var a, b = f()` component reads, variadic pointer-arg boxing, named-func-result signatures,
-and variadic-closure `params` rebinding.
+<!-- source: src/tests/Behavioral/DeferFrameScopes/main.go:129 -->
+```go
+fmt.Println(classify(2))
+```
+<!-- source: src/tests/Behavioral/DeferFrameScopes/main.cs.target:177 -->
+```csharp
+var (ᴛ1, ᴛ2) = classify(2);
+fmt.Println(ᴛ1, ᴛ2);
+```
+
+**A comma-ok form calls a second overload.** C# cannot overload on return type alone, so golib adds an
+overload with one extra argument that returns `(value, ok)`. That argument is `ꟷ` or `ᐧ`, golib's
+constants `false` and `true`, and it only selects the overload. `ᐸꟷ` is golib's receive function,
+drawn to look like Go's `<-`.
+
+| Go operation | Single value | Comma-ok |
+|---|---|---|
+| Map read `m[k]` | `m[k]` | `m[k, ꟷ]` |
+| Channel receive `<-ch` | `ᐸꟷ(ch)` | `ᐸꟷ(ch, ꟷ)` |
+| Type assertion `x.(T)` | `x._<T>()` | `x._<T>(ᐧ)` |
+
+A failed single-value assertion panics as in Go. A failed comma-ok form returns the zero value and `false` instead.
+
+**A comma-ok form in an `if` initializer keeps Go's scope** inside a C# `{ … }` block (`ж<T>` is golib's [heap box](#pointers), read through `.Value`):
+
+<!-- source: GOROOT/src/strconv/atoi.go:273 -->
+```go
+if nerr, ok := err.(*NumError); ok {
+	nerr.Func = fnAtoi
+}
+```
+<!-- source: src/core/strconv/atoi.cs:292 -->
+```csharp
+{
+    var (nerr, ok) = err._<ж<NumError>>(ᐧ); if (ok) {
+        nerr.Value.Func = fnAtoi;
+    }
+}
+```
+
+**Full detail:** [Reference → Multi-Result Values and Comma-Ok Forms](ConversionStrategies-Reference/multi-result-and-comma-ok.md#multi-result-values-and-comma-ok-forms) — how a type assertion finds its target at run time, `var a, b = f()` at package level and in grouped declarations, when a named result is declared, and the rules for variadic parameters.
 
 ---
 
 ## Slices and Arrays
 
-Go slices and arrays convert to golib `slice<T>` and `array<T>`. A composite literal builds a C# array and
-projects it with `.slice()` / `.array()`; `make` uses a constructor:
+Go slices become [golib](#the-golib-runtime-library) [`slice<T>`](../src/core/golib/slice.cs): a struct
+over a shared `T[]` backing array, with a start, a length and a capacity. Go arrays become
+[`array<T>`](../src/core/golib/array.cs): a fixed-length array. Indexing, `len`, `cap`, `append` and
+`copy` keep their Go names and read as they do in Go ([Built-in Functions](#built-in-functions)); a
+`range` loop becomes a `foreach` over `(index, value)` pairs
+([Loops, Range and Labels](#loops-range-and-labels)). Go's `int` appears as C# `nint`.
 
+**Literals and `make`.** A positional composite literal builds a C# array and projects it with `.array()`
+or `.slice()`. `make` calls a constructor. So `[]uint32{7, 8, 9}` becomes
+`new uint32[]{7, 8, 9}.slice()`, and `make([]uint32, 6)` becomes `new slice<uint32>(6)`.
+
+**A sub-slice shares its backing array.** `s[i:j]` becomes the C# range `s[i..j]`. A write through either
+slice shows through the other, as in Go. (`base` is a C# keyword, so it appears as `@base`; see
+[Names and Glyphs](#reading-converted-code-names-and-glyphs).)
+
+<!-- source: src/tests/Behavioral/SliceAliasing/main.go:18 -->
 ```go
-primes := [6]int{2, 3, 5, 7, 11, 13}   // array literal
-nums := []int{10, 20, 30}              // slice literal
-buf := make([]byte, 4)                 // make
+base := make([]uint32, 6)
+d := base[2:5]
+copy(d, []uint32{7, 8, 9})
+…
+d[0] = 42
+base[3] = 43
 ```
+<!-- source: src/tests/Behavioral/SliceAliasing/main.cs.target:8 -->
 ```csharp
-var primes = new nint[]{2, 3, 5, 7, 11, 13}.array();
-var nums = new nint[]{10, 20, 30}.slice();
-var buf = new slice<byte>(4);
+var @base = new slice<uint32>(6);
+var d = @base[2..5];
+copy(d, new uint32[]{7, 8, 9}.slice());
+…
+d[0] = 42;
+@base[3] = 43;
 ```
 
-A `[N]T` literal that writes fewer than `N` elements passes the declared length to the projection, because
-Go zero-fills the remainder — `[8]byte{}` is eight zero bytes, not an empty array. A full literal keeps the
-plain `.array()`, and a slice literal never pads:
+`append` writes into the shared backing while capacity allows, and reallocates when it runs out, as in Go.
 
+**A slice range bound is cast to `int`.** C# range indices are `int`, but Go's `int` is `nint`. So a range
+bound that is not an integer literal is cast: `p.items[:len(p.items)-1]` becomes
+`p.items[..(int)(len(p.items) - 1)]`.
+<!-- source: src/tests/Behavioral/GenericStructFields/GenericStructFields.go:86 and src/tests/Behavioral/GenericStructFields/GenericStructFields.cs.target:76 -->
+
+**A three-index slice calls `.slice(low, high, max)`.** A C# range has no capacity bound, so
+`base[1:3:4]` becomes `@base.slice(1, 3, 4)`. An omitted low bound is passed as `-1`.
+<!-- source: src/tests/Behavioral/SliceAliasing/main.go:51 and src/tests/Behavioral/SliceAliasing/main.cs.target:29 -->
+<!-- A three-index bound is cast only when it is wide or unsigned: `arr[:n:n]` over a `uintptr` n becomes `arr.slice(-1, (int)(n), (int)(n))` (src/tests/Behavioral/Slice3IndexWideBound/main.go:19 and main.cs.target:11); `nint` bounds such as `len(anys)` pass uncast (src/tests/Behavioral/AppendUntypedConst/main.cs.target:28). -->
+
+**A nil slice is the default value.** `var zero []byte` becomes `slice<byte> zero = default!;`, and
+`zero == nil` becomes `zero == default!`. An empty literal such as `[]byte{}` is not nil, as in Go
+([Nil and Zero Values](#nil-and-zero-values)).
+<!-- source: src/tests/Behavioral/SliceNilVsEmpty/main.go:15 and src/tests/Behavioral/SliceNilVsEmpty/main.cs.target:34 -->
+
+**Arrays are values.** `array<T>` is a struct over a shared `T[]`, so a plain C# copy would share
+elements. The converter adds `.Clone()` at Go's array copy sites: assignment, parameters, returns and
+the other places Go copies a value. A `range` over an array with a value variable iterates a copy, as in
+Go ([Loops, Range and Labels](#loops-range-and-labels)).
+<!-- The array-copy claim is scoped to "Go's array copy sites": a fixed array reached only through an embedded (promoted) struct field is not seen by the value-clone stamping, so a by-value copy of such a struct leaves the array backing shared (src/go2cs/arrayCloneOperations.go:44-52, :80-83). -->
+
+<!-- source: src/tests/Behavioral/ArrayPassByValue/ArrayPassByValue.go:53 -->
 ```go
-seed := [8]byte{1, 2}   // 1, 2, then six zeros
+d := garr
 ```
+<!-- source: src/tests/Behavioral/ArrayPassByValue/ArrayPassByValue.cs.target:47 -->
 ```csharp
-var seed = new byte[]{1, 2}.array(8);
+var d = garr.Clone();
 ```
 
-See [the reference](ConversionStrategies-Reference/slices-and-arrays.md#a-fixed-array-composite-literal-carries-its-declared-length-arrayn)
-for the keyed/`SparseArray` form and the nested-array gap.
+**A struct with array fields copies them too.** A Go struct copy `c := d` becomes `var c = d.ΔClone();`.
+A [source generator](#source-generators) writes `ΔClone()`. The `Δ` prefix keeps it from clashing with a
+`Clone` method a Go type may declare.
+<!-- source: src/tests/Behavioral/StructArrayFieldValueCopy/StructArrayFieldValueCopy.go:60 and src/tests/Behavioral/StructArrayFieldValueCopy/StructArrayFieldValueCopy.cs.target:66 -->
 
-`array<T>` carries its element type but not its LENGTH — C# has no const generic to hold the `N` of
-`[N]T` — so wherever the length has to be recoverable at runtime it comes from the emitted code: a
-value measures itself, and a struct field reads the dimension back out of the field initializer the
-converter emits (`= new(32)`). A func **parameter** is the one position with neither, so it carries
-the dimension as an attribute instead — which is what makes `reflect.TypeOf(f).In(0).Len()` answer
-32 rather than 0, and `testing/quick` generate a real 32-byte array rather than an empty one:
+**A slice-to-array conversion copies.** `[4]byte(src)` becomes `new array<byte>(src, 4)`. The pointer form
+`(*[4]byte)(dst)` becomes `Ꮡ(array<byte>.Alias(dst, 4))`, which aliases the slice instead. `Ꮡ` is go2cs's
+address-of, Go's `&` ([Pointers](#pointers)).
+<!-- source: src/tests/Behavioral/SliceToArrayPointerAlias/main.go:38 and src/tests/Behavioral/SliceToArrayPointerAlias/main.cs.target:16; src/tests/Behavioral/SliceToArrayPointerAlias/main.go:29 and src/tests/Behavioral/SliceToArrayPointerAlias/main.cs.target:8 -->
 
+**Variadic parameters.** A Go `...T` parameter becomes `params ꓸꓸꓸT`. The glyph `ꓸꓸꓸ` stands for Go's
+`...`, and `ꓸꓸꓸT` is a file-level alias for `Span<T>`. The raw pack keeps a `ʗp`-suffixed name
+([Names and Glyphs](#reading-converted-code-names-and-glyphs)).
+<!-- A type-parameter element type has no legal alias name and keeps `params Span<T>`. -->
+
+When every use of the pack stays inside the call, the body binds the Go name to
+[`sslice<T>`](../src/core/golib/sslice.cs), a stack-only view that allocates nothing. Otherwise it binds
+`xsʗp.slice()`, a heap `slice<T>` copy.
+
+<!-- source: src/tests/Behavioral/VariadicPackPassThrough/VariadicPackPassThrough.go:21 -->
 ```go
-f1 := func(in [32]byte, sc Scalar) bool { … }
+func sum(xs ...int) int {
 ```
+<!-- source: src/tests/Behavioral/VariadicPackPassThrough/VariadicPackPassThrough.cs.target:23 -->
 ```csharp
-var f1 = ([GoArrayDims(32)] array<byte> @in, Scalar sc) => { … };
+internal static nint sum(params ꓸꓸꓸnint xsʗp) {
+    var xs = xsʗp.sslice();
 ```
 
-See [the reference](ConversionStrategies-Reference/README.md) (*A func PARAMETER is the one position an
-array's LENGTH cannot be recovered from*) for the delegate-instance read behind it.
+**A spread uses the `ꓸꓸꓸ` glyph.** `append(dst, xs...)` becomes `appendꓸꓸꓸ(dst, xs)`. `forward(a...)`
+becomes `forward(a.ꓸꓸꓸ)`, which passes the slice's own storage as a span. When the callee binds the view,
+a write to one of its elements reaches the caller's slice, as in Go. More on variadic parameters:
+[Reference → Multi-Result Values and Comma-Ok Forms](ConversionStrategies-Reference/multi-result-and-comma-ok.md#multi-result-values-and-comma-ok-forms).
+<!-- source: src/tests/Behavioral/VariadicPackPassThrough/VariadicPackPassThrough.go:31 and :63; src/tests/Behavioral/VariadicPackPassThrough/VariadicPackPassThrough.cs.target:36 and :106 -->
+<!-- Known divergence, kept out of the summary body: a callee that binds `.slice()` (for example `keep`) works on a copy, so a spread of a caller's slice into it does not let its element writes or its returned slice reach the caller's storage as Go's would. VariadicPackPassThrough.go:44-48 records it as a pre-existing divergence that test does not claim to fix. -->
 
-A struct field takes the same attribute wherever its initializer cannot reach — that route recovers
-an array the field IS, and nothing an array is BEHIND. The zero instance of a field declared
-`*[3]float64` holds a nil pointer with no pointee to measure, and one declared
-`map[[2]string][2]*float64` holds a nil map whose key and element types no entry could reveal. Both
-are ordinary shapes at a **decode target**, which is exactly a struct nothing has populated yet, so
-the two accessors get their cargo from the declaration:
-
-```go
-type T1 struct {                              // encoding/gob's TestEndToEnd
-    Marr map[[2]string][2]*float64
-    N    *[3]float64
-}
-```
-```csharp
-[GoType] partial struct T1 {
-    [GoArrayDims(2), GoMapKeyDims(2)]
-    public map<array<@string>, array<ж<float64>>> Marr;
-    [GoArrayDims(3)]
-    public ж<array<float64>> N;
-}
-```
-
-`[GoArrayDims]` is what `Elem()` hands down and `[GoMapKeyDims]` what `Key()` does, so one stamp
-covers any pointer depth (`***[3]int` carries the same `[GoArrayDims(3)]`, the cargo passing down
-unshifted at every hop). A field that IS an array keeps its initializer, and a DEFINED array or map
-type is not stamped — its managed form is a generated wrapper with no slot to carry cargo. See the
-[field dims cargo](ConversionStrategies-Reference/manual-conversions.md#a-struct-fields-type-only-array-dims--goarraydims--gomapkeydims-2026-08-20)
-section of the reference.
-
-`append`, `len`, `make`, and sub-slicing map to golib builtins/methods. A variadic `...T` parameter arrives
-as `params ꓸꓸꓸT`, where `ꓸꓸꓸT` is a using alias for `Span<T>` whose identifier mirrors the Go name
-(`...*RangeTable` → `ꓸꓸꓸжRangeTable`, `...unsafe.Pointer` → `ꓸꓸꓸunsafeꓸPointer`), falling back to an inline
-`params Span<T>` for an element type that cannot form a legal alias identifier (a type parameter, or a
-constructed type such as `[]byte`). At the top of the body, a variadic used only through `len`/`cap`,
-indexing, or range binds to the allocation-free stack view `sslice<T>`; a value that may escape, grow,
-or cross a closure/execution-wrapper boundary keeps the heap `slice<T>` fallback. On the CALL side, an
-argument that Go reads as one element but C# could bind as the whole pack is cast to the element type —
-a bare `nil`, and a `[]E`/`[N]E` passed without `...` (`f(a)` with `a []any` means a pack of ONE, since
-spreading needs `a...`); both otherwise bind C#'s preferred *normal* form and silently lose an argument
-or a level of nesting. See
-[untyped constants boxed as `any`](ConversionStrategies-Reference/empty-interface.md#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
-in the reference. From the real stdlib:
-
-```go
-func Join(errs ...error) error {          // errors/join.go
-    // ...
-    e := &joinError{errs: make([]error, 0, n)}
-    for _, err := range errs {
-        if err != nil { e.errs = append(e.errs, err) }
-    }
-    return e
-}
-```
-```csharp
-public static error Join(params ꓸꓸꓸerror errsʗp) {     // errors/join.cs
-    var errs = errsʗp.sslice();
-    // ...
-    var e = Ꮡ(new joinError(errs: new slice<error>(0, n)));
-    foreach (var (_, err) in errs) {
-        if (err != default!) { e.Value.errs = append((~e).errs, err); }
-    }
-    return new joinErrorжerror(e);
-}
-```
-
-Arrays are Go **values**: every transfer copies the whole array. `array<T>` is a struct over a
-shared `T[]`, so the converter appends a strongly-typed `.Clone()` wherever an array value is read
-out of existing storage — assignment, range elements, composite-literal elements and struct fields,
-returns, channel sends, `append` elements, and function parameters (cloned in the callee preamble).
-Named array types clone the same way through their generated wrapper's own `Clone()`, and the copy
-is **deep** for nested arrays (`[2][3]int` copies its inner arrays too, matching Go):
-
-The range **expression** is one of those sites: Go evaluates it once, so `for i, v := range a` over an
-array value iterates a COPY and a write to `a` inside the body is invisible to later iterations. It
-gets its own member rather than `.Clone()`, because a snapshot cannot outlive its loop — that makes it
-Go's inline, stack-resident copy, which costs zero allocations, so golib takes it from a pooled buffer
-released when the loop ends. A range with no value variable (`for i := range a`), over a pointer to an
-array, or over a slice copies nothing in Go, and neither does the emission.
-
-```go
-data := ints                          // an independent copy — writes to data never reach ints
-for _, row := range m { row[0] = 9 }  // row is a per-iteration copy — m is never written
-for i, v := range a {                 // v is read from a SNAPSHOT taken before the loop
-    if i == 0 { a[1] = 91 }           // …so this write is invisible to the next iteration
-}
-```
-```csharp
-var data = ints.Clone();
-foreach (var (_, vᴛ1) in m.ΔRangeSnapshot()) { var row = vᴛ1.Clone(); row[0] = 9; }
-foreach (var (i, v) in a.ΔRangeSnapshot()) {
-    if (i == 0) { a[1] = 91; }
-}
-```
-
-A **struct** whose field is a fixed-size array carries the same shared `T[]` into a plain struct copy,
-so it clones at exactly the same sites. The converter stamps the struct with the fields that need the
-deep copy and go2cs-gen generates it, under a `Δ`-marked name so it cannot shadow a Go type's own
-`Clone` method. crypto/sha256's `Sum` is the real case — it copies the digest so the caller can keep
-writing, then destroys the copy finalizing it:
-
-```go
-d0 := *d                 // sha256.go — Go copies the [8]uint32 state and [64]byte block INLINE
-hash := d0.checkSum()
-```
-```csharp
-[GoType] partial struct digest { internal array<uint32> h = new(8); … }
-
-// package_info.cs names the fields the copy must deep-copy, keeping the declaration Go-shaped
-[GoValueClone("h", "x")] internal partial struct digest {}
-
-ref var d0 = ref heap<digest>(out var Ꮡd0);
-d0 = d.ΔClone();         // sha256.cs — without the clone, checkSum destroyed the CALLER's state
-var hash = Ꮡd0.checkSum();
-```
-
-Go's two array-**pointer** conversions are the exception to that copying: each yields a *view* of
-storage that already exists, so `array<T>` carries a `(low, length)` window and both emit an alias
-rather than a snapshot. `(*[N]T)(s)` windows a slice; `(*[N]T)(unsafe.Pointer(p))` with `p` a `*T`
-windows the storage `p` is an element of — internal/poll's console read buffer, filled by os's own
-test through exactly this shape:
-
-```go
-d := (*[4]byte)(dst)                                        // image/png writer.go — shares dst's array
-n = copy((*[10000]uint16)(unsafe.Pointer(buf))[:n:n], s16)  // os os_windows_test.go
-```
-```csharp
-var d = Ꮡ(array<byte>.Alias(dst, 4));
-n = copy((~array<uint16>.AliasPointer(Ꮡbuf, 10000)).slice(-1, n, n), s16);
-```
-
-A write through either has to reach the caller's buffer; against a copy it is discarded silently,
-which is a wrong answer rather than a slow one. The value forms — `[4]byte(s)`, `*p` — still copy,
-exactly as Go's do.
-
-**Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference/slices-and-arrays.md#slices-and-arrays) —
-named slice/array wrappers, pointer-to-array slicing, named-slice pointer reinterpretation, structural
-composite rendering, array value-copy cloning (deep for nested arrays), the
-[struct-carrying-arrays clone](ConversionStrategies-Reference/slices-and-arrays.md#a-struct-carrying-array-fields-copies-through-its-generated-δclone),
-[element-pointer array aliasing](ConversionStrategies-Reference/pointers.md#an-element-pointer-reinterpreted-as-an-array-pointer-aliases-the-elements-storage)
-and slice-aliasing/write-through semantics.
+**Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference/slices-and-arrays.md#slices-and-arrays) — named slice and array wrappers, keyed and sparse literals, declared-length array literals, zero-value element construction, every array clone site and deep copy, and nil-versus-empty identity.
 
 ---
 
 ## Strings (`@string` and `sstring`)
 
-Go's `string` becomes golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
-an immutable byte string. `len`, indexing, `range`, comparison and concatenation work on bytes, as in Go,
-not on UTF-16 characters. Slicing is cheap: `s[i:j]` is a window over the same bytes, not a copy
+Go's `string` becomes golib [`@string`](../src/core/golib/string.cs): an immutable byte string. `len`,
+indexing, comparison and concatenation work on bytes, as in Go, not on UTF-16 characters. Slicing is
+cheap: `s[i:j]` is a window over the same bytes, not a copy
 ([detail](ConversionStrategies-Reference/strings.md#string-is-a-byte-string-and-slicing-it-is-a-window)).
+A `range` loop becomes a `foreach` that yields each rune at its byte offset, as in Go.
 
-**Literals** render as C# UTF-8 literals, `"…"u8`, and become an `@string` only where a string value is
-needed:
+**Most literals** render as C# UTF-8 literals, `"…"u8`, and become an `@string` only where a string value
+is needed.
 
+**Conversions to and from `[]byte` copy**, as they do in Go. `[]byte(s)` becomes a golib
+[`slice<byte>`](#slices-and-arrays), and `string(b)` becomes `(@string)b`:
+
+<!-- source: src/tests/Behavioral/StringLiteralSliceConversion/main.go:26 -->
 ```go
-var s string = "ready"
-b := []byte("hi")
+bs := []byte("hello")
+…
+fmt.Println(len(bs), string(bs))
 ```
+<!-- source: src/tests/Behavioral/StringLiteralSliceConversion/main.cs.target:21 -->
 ```csharp
-@string s = "ready"u8;
-var b = slice<byte>("hi"u8);
+var bs = slice<byte>("hello"u8);
+…
+fmt.Println(len(bs), ((@string)bs));
 ```
 
 **A literal that becomes a value is created once.** Go keeps literals in read-only memory, so they cost
-nothing at run time. The converter moves such a literal into a `static readonly` field above the function
-that uses it. The `ˢ` suffix marks the generated name:
+nothing at run time. The converter moves such a literal into a `static readonly` field declared just
+before the first function that uses it. The `ˢ` suffix marks the generated name:
 
+<!-- source: src/tests/Behavioral/StringLiteralHoisting/main.go:12 -->
 ```go
-func FormatBool(b bool) string {
-	if b { return "true" }
-	return "false"
+func kind(n int) string {
+	if n == 0 {
+		return "zero value return"
+	}
+
+	return "other value return"
 }
 ```
+<!-- source: src/tests/Behavioral/StringLiteralHoisting/main.cs.target:8 -->
 ```csharp
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
+private static readonly @string zeroValueReturnˢ = "zero value return"u8;
+private static readonly @string otherValueReturnˢ = "other value return"u8;
 
-public static @string FormatBool(bool b) {
-    if (b) { return trueˢ; }
-    return falseˢ;
+internal static @string kind(nint n) {
+    if (n == 0) {
+        return zeroValueReturnˢ;
+    }
+    return otherValueReturnˢ;
 }
 ```
 
-A literal that is already free where it appears stays inline: in a comparison, in a concatenation, as a
-format string, and a few other places.
+A literal stays inline where it is already free or a field would not help. That covers comparisons,
+concatenations, format strings and a few other places.
 
 **A string constant declared inside a function** gets the same treatment. Its field takes the constant's
-own name with a `ᶜ` suffix, and the local copies the field, which allocates nothing:
+own name with a `ᶜ` suffix: `const fnAtoi = "Atoi"` becomes the field `fnAtoiᶜ`. The local `fnAtoi`
+copies the field, which allocates nothing.
 
+**Named string types** (`type version string`) are wrapper structs that keep the full string surface:
+indexing, slicing, `len`, comparison, `+` and the type's own methods. A concatenation keeps the named type:
+
+<!-- source: src/tests/Behavioral/NamedStringConcat/main.go:13 -->
 ```go
-func Atoi(s string) (int, error) {
-	const fnAtoi = "Atoi"
+type version string
+…
+func bump(v version) version { return v + "-next" }
+```
+<!-- source: src/tests/Behavioral/NamedStringConcat/main.cs.target:7 -->
+```csharp
+[GoType("@string")] partial struct version;
+…
+internal static version bump(version v) {
+    return v + "-next"u8;
+}
+```
+
+**`sstring` is a string view that allocates nothing.** Golib's [`sstring`](../src/core/golib/sstring.cs)
+is a stack-only `ref struct` over a span of bytes. C# rejects at compile time any code that stores a
+`ref struct` in a field, array or map, boxes it, or captures it in a lambda. `sstring` appears in two
+places:
+
+- **A `string([]byte)` conversion that does not escape.** Go skips the copy when the string is only read
+  while its bytes cannot change, and the converter does the same where it can prove it:
+
+  <!-- source: src/tests/Behavioral/SStringElision/main.go:288 -->
+  ```go
+  return string(buf[3:6]) == " /x"
+  ```
+  <!-- source: src/tests/Behavioral/SStringElision/main.cs.target:224 -->
+  ```csharp
+  return ((sstring)(buf[3..6])) == " /x"u8;
+  ```
+
+- **String parameters of selected functions** (the sstring *twin*). Such a function, for example
+  `fmt.Sprintf`, takes its string as an `sstring`, so a literal argument binds with no copy:
+
+  <!-- source: src/tests/Behavioral/SStringTwinPilot/main.go:19 -->
+  ```go
+  fmt.Println(fmt.Sprintf("xxx"))
+  ```
+  <!-- source: src/tests/Behavioral/SStringTwinPilot/main.cs.target:35 -->
+  ```csharp
+  fmt.Println(fmt.Sprintf("xxx"u8));
+  ```
+
+  The callee's signature takes the `sstring`:
+
+  <!-- source: src/core/fmt/print.cs:268 -->
+  ```csharp
+  [GoStr] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) {
+  ```
+
+  The [source generators](#source-generators) add an `@string` overload that forwards to it. Where Go
+  uses the function as a value, the converter names one shared delegate, `Sprintfᶠ`. The `ꓸꓸꓸ`, `ʗ` and
+  `ᶠ` glyphs are explained in [Names and Glyphs](#reading-converted-code-names-and-glyphs).
+
+**Full detail:** [Reference → Strings (`@string` and `sstring`)](ConversionStrategies-Reference/strings.md#strings-string-and-sstring) — windows and conversions, literal rendering and byte-array literals, the exact hoisting rules, named-string wrappers, `sstring` eligibility, and how functions are chosen to take `sstring`.
+
+---
+
+<a id="maps-and-channels"></a>
+## Maps
+
+Go's `map[K]V` becomes golib [`map<K, V>`](../src/core/golib/map.cs), a small struct over a .NET
+`Dictionary` whose copies share one store, as in Go. `len`, `delete` and `clear` read as they do in Go,
+and the examples use the [names and glyphs](#reading-converted-code-names-and-glyphs) of converted code.
+
+**A literal becomes an index initializer, and comma-ok adds the `ꟷ` sentinel.** The sentinel is a
+second index that asks for the `ok` result, as described in
+[Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms):
+
+<!-- source: src/tests/Behavioral/MapCommaOk/main.go:15 -->
+```go
+m := map[string]int{"a": 1, "b": 2}
+…
+v, ok := m["a"]
+```
+<!-- source: src/tests/Behavioral/MapCommaOk/main.cs.target:11 -->
+```csharp
+var m = new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2};
+var (v, ok) = m["a"u8, ꟷ];
+```
+
+**`range` becomes a `foreach` over key-value pairs.** The body may add and delete entries of the map
+it walks, as Go allows. The order is unspecified, as in Go:
+
+<!-- source: src/tests/Behavioral/MapMutateDuringRange/main.go:42 -->
+```go
+for k, v := range insert {
+	if len(k) == 1 {
+		visited++
+		insert[k+"!"] = v * 10
+	}
+}
+```
+<!-- source: src/tests/Behavioral/MapMutateDuringRange/main.cs.target:37 -->
+```csharp
+foreach (var (k, v) in insert) {
+    if (len(k) == 1) {
+        visited++;
+        insert[k + "!"u8] = v * 10;
+    }
+}
+```
+
+**A nil map reads as empty and panics on write.** A nil map is `default!`, the C# spelling of
+[Go's nil](#nil-and-zero-values). Reading it yields the zero value, and `len` is 0. A write panics
+with Go's message, "assignment to entry in nil map".
+
+**A named map type is a wrapper struct.** The converter declares a `[GoType]` partial struct, and a
+[source generator](#source-generators) fills in the full map surface. Its literal wraps a plain map
+literal, and `make` passes the size hint to the constructor:
+
+<!-- source: src/tests/Behavioral/EmptyStructMapSet/EmptyStructMapSet.go:37 -->
+```go
+type registry map[uint32]entry
+…
+reg := registry{2: {tag: "leaf", size: 8}}
+…
+reg2 := make(registry, 4)
+```
+<!-- source: src/tests/Behavioral/EmptyStructMapSet/EmptyStructMapSet.cs.target:21 -->
+```csharp
+[GoType("map[uint32, entry]")] partial struct registry;
+…
+var reg = new registry(new map<uint32, entry>{[2] = new(tag: "leaf"u8, size: 8)});
+…
+var reg2 = new registry(4);
+```
+
+**A lookup keyed by `string(b)` does not copy the bytes.** A map read never keeps its key, so Go
+skips the `[]byte`-to-string copy there. Golib's `tmpstring(b)` does the same by viewing the slice's
+bytes. A store keeps its key, so it still copies with a plain `(@string)` conversion:
+
+<!-- source: src/tests/Behavioral/MapStringBytesLookup/main.go:31 -->
+```go
+v, ok := interned[string(b)]
+…
+w[string(k)] = 42
+```
+<!-- source: src/tests/Behavioral/MapStringBytesLookup/main.cs.target:20 -->
+```csharp
+var (v, ok) = interned[tmpstring(b), ꟷ];
+…
+w[((@string)k)] = 42;
+```
+
+**Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference/maps-and-channels.md#maps-and-channels) — how a range survives changes to its own map (NaN keys included), the nil-key slot, the Go-equality key comparer and its limits, exactly which `string(b)` lookups skip the copy, named map types, and map access through type parameters.
+
+---
+
+<a id="generic-constraints"></a>
+## Generics
+
+Go type parameters become C# generic type parameters, and Go's square brackets become angle brackets.
+A constraint that C# can express becomes a `where` clause on the parameter. `any` and `comparable` add
+none. Attributes such as `[GoType]` are listed in
+[Reading Converted Code](#reading-converted-code-names-and-glyphs), and golib types such as `slice<T>`
+in [The golib Runtime Library](#the-golib-runtime-library).
+
+**An operator type set becomes `System.Numerics` operator interfaces**, so `+` and `<` compile
+on the type parameter. The `where` clause lists those interfaces and names the Go constraint in a
+comment. Each such clause also ends in `new()`.
+
+<!-- source: GOROOT src/cmp/cmp.go:28 -->
+```go
+func Less[T Ordered](x, y T) bool {
+```
+<!-- source: src/core/cmp/cmp.cs:29 -->
+```csharp
+public static bool Less<T>(T x, T y)
+    where T : /* Ordered */ IAdditionOperators<T, T, T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>, new()
+```
+
+**A method-set interface constraint becomes a plain `where` clause** that names the converted
+interface. Go's `func totalArea[S Shape](shapes []S)` gets `where S : Shape`.
+<!-- provenance for the inline example: src/tests/Behavioral/GenericInterfaceConstraint/GenericInterfaceConstraint.go:53 and GenericInterfaceConstraint.cs.target:52-53 -->
+
+**A generic type keeps its type parameters, and each method repeats them.** A method becomes a generic
+extension method on the type, and a pointer receiver takes `[GoRecv] this ref`, as described in
+[Functions and Methods](#functions-and-methods). An extension method cannot borrow its receiver type's
+parameters. So each one declares `<T>` and restates the constraint:
+
+<!-- source: src/tests/Behavioral/GenericTypeInstantiation/GenericTypeInstantiation.go:6 -->
+```go
+type Stack[T ~int | ~string] struct {
+…
+func (s *Stack[T]) Push(element T) {
+```
+<!-- source: src/tests/Behavioral/GenericTypeInstantiation/GenericTypeInstantiation.cs.target:7 -->
+```csharp
+[GoType] partial struct Stack<T>
+    where T : /* ~int | ~string */ IAdditionOperators<T, T, T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>, new()
+…
+[GoRecv] public static void Push<T>(this ref Stack<T> s, T element)
+    where T : /* ~int | ~string */ IAdditionOperators<T, T, T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>, new()
+```
+
+**Type arguments are written out when Go writes them or C# cannot infer them.** Go's
+`describe[fmt.Stringer]` becomes `describe<fmt.Stringer>`. Go also infers a type parameter that
+appears only in a constraint, such as `E` in `Sort[S ~[]E, E cmp.Ordered](x S)`. C# never does, so
+that call spells its type arguments, while calls C# can infer stay bare:
+<!-- provenance for describe: src/tests/Behavioral/GenericTypeInstantiation/GenericTypeInstantiation.go:76 and GenericTypeInstantiation.cs.target:77 -->
+
+<!-- source: GOROOT src/slices/iter.go:63 -->
+```go
+func Sorted[E cmp.Ordered](seq iter.Seq[E]) []E {
+	s := Collect(seq)
+	Sort(s)
+```
+<!-- source: src/core/slices/iter.cs:70 -->
+```csharp
+public static slice<E> Sorted<E>(iter.Seq<E> seq)
+…
+    var s = Collect(seq);
+    Sort<slice<E>, E>(s);
+```
+
+**A slice type set becomes the golib interface for that shape, plus helpers.** `~[]E` becomes
+[golib](#the-golib-runtime-library)'s `ISlice<E>`, the interface every slice type implements.
+`ISupportMake<S>` lets `make(S, n)` build an `S`. `ISliceWrap<S, E>` lets `s[i:j]` and `append`
+return `S` again, as they do in Go.
+
+<!-- source: GOROOT src/slices/slices.go:96 -->
+```go
+func Index[S ~[]E, E comparable](s S, v E) int {
+	for i := range s {
+		if v == s[i] {
 	…
 ```
+<!-- source: src/core/slices/slices.cs:112 -->
 ```csharp
-internal static readonly @string fnAtoiᶜ = "Atoi"u8;
-
-public static (nint, error) Atoi(@string s) {
-    @string fnAtoi = fnAtoiᶜ;
+public static nint Index<S, E>(S s, E v)
+    where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
+{
+    foreach (var (i, _) in s) {
+        if (AreEqual(v, s[i])) {
     …
 ```
 
-**Named string types** (`type Token string`) are wrapper structs that keep the full string surface:
-indexing, slicing, `len`, comparison, `+` and the type's own methods.
+**`comparable` adds no clause, and `==` on type-parameter operands calls `AreEqual`.** No C# constraint
+admits every type Go can compare with `==`. Go's checker has already validated each instantiation, so
+the parameter stays unconstrained and golib's `AreEqual` does the comparison. This holds under every
+constraint, so an `Ordered` value's `x != x` becomes `!AreEqual(x, x)`.
+<!-- provenance for the Ordered case: src/core/cmp/cmp.cs:71 -->
 
-```go
-type Token string
-func (t Token) First() byte { return t[0] }
-const done Token = "done"
-next := done + "-next"    // still a Token
-```
-```csharp
-[GoType("@string")] partial struct Token;
-internal static readonly Token done = "done"u8;
-public static byte First(this Token t) => t[0];
-Token next = done + "-next"u8;
-```
+**Conversions to or from an integer type parameter go through golib**, because C# has no numeric cast
+to or from a type parameter. Go's `Int(uint64(n) / 2)` becomes `ConvertToType<Int>(ConvertToUInt64<Int>(n) / 2)`.
+<!-- provenance for the inline example: src/tests/Behavioral/GenericTypeInference/GenericTypeInference.go:247 and GenericTypeInference.cs.target:252 -->
 
-**`sstring` is a string view that allocates nothing.** Golib's
-[`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs) is a stack-only
-`ref struct` over a span of bytes. C# does not let a `ref struct` be stored, boxed or captured. So if the
-converter ever used one where the string could escape, the result would be a compile error, not a silent
-bug. `sstring` appears in two places:
-
-- **A `string([]byte)` conversion that does not escape.** Go skips the copy when the string is only read
-  while its bytes cannot change, and the converter does the same:
-
-  ```go
-  if string(hdr[:4]) == wantMagic { … }
-  ```
-  ```csharp
-  if (((sstring)(hdr[..4])) == wantMagic) { … }
-  ```
-
-- **String parameters of selected functions** (the sstring *twin*). A listed function, for example
-  `fmt.Sprintf`, takes its string as an `sstring`, so a literal argument binds with no copy:
-
-  ```csharp
-  [GoStr] public static @string Sprintf(sstring format, params ꓸꓸꓸany aʗp) { … }
-
-  fmt.Sprintf("xxx"u8);   // no @string is created for "xxx"
-  ```
-
-  The [`StrGenerator`](#source-generators) adds an `@string` overload that forwards to it. For a
-  package-level function it also adds one shared delegate, `Sprintfᶠ`, which the converter names wherever
-  Go uses the function as a value.
-
-**Full detail:** [Reference → Strings (`@string` and `sstring`)](ConversionStrategies-Reference/strings.md#strings-string-and-sstring) —
-windows and conversions, literal rendering and byte-array literals, the exact hoisting rules, named-string
-wrappers, `sstring` eligibility, and the twin rule, records and guard tests.
-
----
-
-## Maps and Channels
-
-Go maps and channels convert to golib `map<K,V>` and `channel<T>`; `make` becomes a constructor, and
-send/receive/`select` use runtime operators. Map reads honor Go's nil-map and comma-ok semantics:
-
-```go
-m := make(map[string]int)
-c := make(chan int, 3)
-u := make(chan int)             // unbuffered: rendezvous
-unit, ok := unitMap[u]          // comma-ok read (time/format.go)
-```
-```csharp
-var m = new map<@string, nint>();
-var c = new channel<nint>(3);
-var u = new channel<nint>(0);        // capacity 0 — real rendezvous semantics
-var (unit, ok) = unitMap[u, ꟷ];      // two-value indexer via the ꟷ sentinel
-```
-
-A **nil key** is an ordinary key in Go wherever the key type can be nil (`map[any]V`, `map[error]V`,
-`map[*T]V`), and it renders as `default!` — `m[nil] = "x"` → `m[default!] = xˢ`. `Dictionary<K,V>`
-rejects a null key outright, so golib's backing store is a Dictionary subclass carrying a dedicated
-nil-key slot that every map member routes to; the test that finds it is a JIT-time constant, so a
-value-type key (`map[string]V`, `map[int]V`) compiles to exactly the code it did before and `PerfMap`
-stays flat.
-
-A **`range` body may mutate the map it is ranging over**, because Go's spec says it may: an entry
-removed before it is reached is not produced, and an entry created during the range "may be produced
-… or may be skipped". `Dictionary<K,V>`'s enumerator allows neither — a structural insert bumps its
-version and the next `MoveNext` throws `InvalidOperationException` — so `map<K,V>` implements the
-contract itself, walking a snapshot of the entries and re-reading each value on arrival. The emitted
-code is an ordinary `foreach`; the fidelity lives in the runtime type. Overwrites and deletes never
-threw (both are version-free since .NET Core 3.0), which is exactly why the insert case survived so
-long: it is what hung `net/http`'s HTTP/2 server in `promoteUndeclaredTrailers`. A **NaN key** is the
-one shape the arrival lookup cannot settle — it is equal to nothing, itself included, so the lookup
-always misses and the entry would vanish from the range — so a miss is disambiguated with the store's
-own comparer; `encoding/json`'s `TestMarshalTextFloatMap` is what reads that out. See the
-[range-over-map](ConversionStrategies-Reference/maps-and-channels.md#a-range-body-may-mutate-the-map-it-is-ranging-over--the-enumerator-walks-a-key-snapshot)
-section of the reference.
-
-An **interface key compares by Go equality, not by wrapper identity**. Go compares interface values by
-(dynamic type, dynamic value), and that one relation serves both `==` and map lookup. But a converted
-interface value is presented through whichever generated adapter its current static interface calls for,
-so asserting an `Object` to a narrower `dependency` hands back a *different* wrapper over the same
-receiver box. A map keyed by an interface therefore installs golib's `GoEqualityComparer`, which projects
-the same `builtin.AreEqual` that emitted `==` uses and hashes the unwrapped root; without it the asserted
-value could not find its own entry, while `==` on that very pair still said `true`. That split is what
-stopped `go/types` from type-checking anything — `initorder.dependencyGraph` is exactly this shape — and
-it is scoped to interface/`any` keys, so concrete keys keep `EqualityComparer<K>.Default`'s fast path.
-See the [interface map key](ConversionStrategies-Reference/maps-and-channels.md#an-interface-map-key-compares-by-go-equality-never-by-adapter-identity)
-section of the reference.
-
-A **`m[string(b)]` READ does not copy the key**, matching the Go compiler's own special case
-(`runtime.slicebytetostringtmp`): a lookup hashes and compares its key but never retains it, so the
-converter emits golib's `tmpstring(b)` — a transient `@string` windowing the slice's live bytes,
-zero allocation. Everywhere the string escapes (a store `m[string(b)] = v`, `delete`, a return) the
-copying conversion stays:
-
-```go
-if v := commonHeader[string(a)]; v != "" { return v, true }   // net/textproto reader.go
-```
-```csharp
-@string v = commonHeader[tmpstring(a)]; if (v != ""u8) { return (v, true); }
-```
-
-golib's `channel<T>` is a faithful port of Go's runtime channel (hchan + selectgo): an unbuffered
-send really waits for a receiver, `cap`/`len` report Go's values, a blocking `select` commits
-exactly ONE case chosen uniformly at random among the ready ones, and close/panic semantics match
-Go — see the [channel runtime](ConversionStrategies-Reference/maps-and-channels.md#real-channel-runtime--the-hchanselectgo-port-rendezvous-caplen-single-fire-uniform-random)
-section of the reference. One channel has an owner that can take a value BACK: Go 1.23's synchronous
-timer channel, where `Stop`/`Reset` guarantee that no tick from before the call can be received after
-it — so `time.Timer.C` reports `len` and `cap` of 0 even while it holds a tick, and the pre-1.23
-"drain the channel if `Stop` returned false" idiom is unnecessary. golib models it with Go's own
-`hchan.timer` hook rather than a `time` special case.
-
-A channel's **DIRECTION** is part of its Go type and is the one part `channel<T>` cannot express —
-`chan T`, `chan<- T` and `<-chan T` all emit as one managed type, distinguished for the reader only
-by a `/*<-*/` marker comment. So it rides on the VALUE and reaches `reflect` as descriptor cargo,
-exactly the way a fixed-size array's length does, stamped at the three places a directional channel
-value is born (a `make`, a struct field's zero, and `new`):
-
-```go
-ch := make(chan<- int)                       // text/template's TestIssue43065
-type holder struct{ x chan<- string }
-```
-```csharp
-var ch = new channel/*<-*/<nint>(0, GoChanDir.Send);
-[GoType] partial struct holder {
-    internal channel/*<-*/<@string> x = channel/*<-*/<@string>.SendOnly;
-}
-```
-
-`reflect.Type.ChanDir()` and `String()` then answer `chan<- int` rather than the bidirectional type,
-which is what lets `text/template`'s `walkRange` refuse a range over a send-only channel — and that
-guard is why `reflect.Value.Recv`/`Send` are bridged in the same change: a working receive behind a
-direction that always read bidirectional turns that refusal into an unbounded hang. A NARROWING
-conversion (`var s chan<- int = ch`) and a DEFINED channel type are deliberately not stamped. See the
-[chan direction cargo](ConversionStrategies-Reference/manual-conversions.md#the-chan-direction-is-carried-by-the-value--descriptor-cargo-exactly-like-an-arrays-length-2026-08-20)
-section of the reference.
-
-A goroutine over a `select` — the concurrency core — lowers to `goǃ(...)` and a `switch` over `select(...)`,
-with `ᐸꟷ` marking a receive-case and `ꟷᐳ` performing the receive. Every case's operands are hoisted
-into select-scoped temps (`selᴛN`) emitted in strict source order and evaluated exactly once at
-select entry — Go's evaluation rule — so the registration list names only temps: a receive case's
-channel operand (used by both the registration and the winning case's guard), and a send case's whole
-registration call, which only builds the case descriptor and so moves no send:
-
-```go
-go func() {                     // context/context.go
-    select {
-    case <-parent.Done():
-        child.cancel(false, parent.Err(), Cause(parent))
-    case <-child.Done():
-    }
-}()
-```
-```csharp
-goǃ(() => {                     // context/context.cs
-    var selᴛ2 = parent.Done();
-    var selᴛ3 = child.Done();
-    switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
-    case 0 when selᴛ2.ꟷᐳ(out _): {
-        child.cancel(false, parent.Err(), Cause(parent));
-        break;
-    }
-    case 1 when selᴛ3.ꟷᐳ(out _): { break; }}
-});
-```
-
-With a `default:` clause the select becomes non-blocking: the same registrations feed `trySelect(…)`,
-which commits at most ONE ready case (uniformly at random among the ready ones) and returns -1 when
-none is — so the C# `default:` label runs exactly when Go's would. A full channel falls to the
-`default:` exactly as in Go, and a send on a closed channel panics even though a default exists:
-
-```go
-select {                        // os/signal/signal.go
-case c <- sig:
-default:                        // send but do not block for it
-}
-```
-```csharp
-var selᴛ1 = c.ᐸꟷ(sig, ꓸꓸꓸ);            // os/signal/signal.cs
-switch (trySelect(selᴛ1)) {
-case 0: {
-    break;
-}
-default: {
-    break;
-}}
-```
-
-**Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference/maps-and-channels.md#maps-and-channels) —
-the nil map key's dedicated slot, the `m[string(b)]` no-copy read key (`tmpstring`), named map/channel
-types, constrained map access through type parameters, the real channel runtime
-(hchan + selectgo: rendezvous, cap/len, single-fire, uniform-random), and full `select` lowering
-(terminating/empty clauses, escaping comm-clause bindings).
-
----
-
-## Generic Constraints
-
-A Go generic constraint becomes a C# `where` clause. Type-set constraints lift to the matching golib/.NET
-interface (`[]T`→`ISlice<T>`, `[N]E`→`IArray<E>`, `map[K]V`→`IMap<K,V>`, `chan T`→`IChannel<T>`), and an
-operator-bearing type set additionally lifts the `System.Numerics` operator interfaces so the body's
-`+`/`<`/`==` compile. `comparable` emits no C# constraint beyond `new()` (no C# interface can admit
-Go's full `==`-able set): Go's checker already validated every instantiation, and emitted equality on
-a type-parameter operand routes through golib's `AreEqual`. A generic struct's own generated `Equals`
-follows the same rule **per field** — fields whose type carries its own `==` (a `ж<T>` pointer, a
-golib wrapper, another `[GoType]` struct) compare with `==`, and only genuine type-parameter fields
-route through `AreEqual`.
-
-```go
-type Ordered interface {                  // cmp/cmp.go
-    ~int | ~int8 | /* … */ | ~float64 | ~string
-}
-func Less[T Ordered](x, y T) bool {
-    return (isNaN(x) && !isNaN(y)) || x < y
-}
-```
-```csharp
-[GoType("operators = Sum, Comparable, Ordered")]      // cmp/cmp.cs
-partial interface Ordered<ΔT> { /* type set + derived operators, as comments */ }
-
-public static bool Less<T>(T x, T y)
-    where T : /* Ordered */ IAdditionOperators<T, T, T>, IEqualityOperators<T, T, bool>,
-              IComparisonOperators<T, T, bool>, new()
-{
-    return (isNaN(x) && !isNaN(y)) || x < y;
-}
-```
-
-**Full detail:** [Reference → Generic Constraints](ConversionStrategies-Reference/generic-constraints.md#generic-constraints) —
-array-core `~[N]E` lifting, single-term pointer constraints (`[P *T]` → `ж<T>`), method-set interface
-constraints and self-referential proxies, `comparable`, per-field generic-struct equality, unions
-(`string | []byte`), and explicit type-argument handling.
+**Full detail:** [Reference → Generic Constraints](ConversionStrategies-Reference/generic-constraints.md#generic-constraints) — array and map type sets, pointer and self-referential constraints, unions such as `string | []byte`, per-field equality in generic structs, and how explicit type arguments and constant arguments are chosen.
 
 ---
 
 ## Type Aliasing
 
-Go has two forms. A **type definition** (`type Celsius float64`) is a distinct type sharing an underlying;
-because converted types are structs (no inheritance), the source generators emit the bridging (implicit
-conversions to the underlying, interface implementations, receiver-method proxies). A **type alias
-declaration** (`type P = *bool`) is true aliasing, emitted as a C# **global using**:
+A Go alias declaration, `type A = B`, becomes a C# `global using` directive that every file in the package's
+project can see. Variables, parameters and results declared with a non-generic alias keep the alias name as their type.
 
+**A type definition is not an alias.** `type Celsius float64` declares a distinct type that becomes a struct, as
+[Named Numeric Types](#named-numeric-types-and-constant-contexts) describes. The exception is a definition over an
+interface type, such as `type Token any`. It can have no methods of its own, so it becomes a `global using` too:
+
+<!-- source: src/tests/Behavioral/CrossPkgLib/lib.go:16 -->
 ```go
-type P = *bool
-type table = map[string]int
+type Celsius float64
+…
+type Temperature = Celsius
+…
+type Token any
 ```
+<!-- source: src/tests/Behavioral/CrossPkgLib/lib.cs.target:1 -->
 ```csharp
-global using P = go.ж<bool>;
-global using table = go.map<go.@string, nint>;
+global using Temperature = go.CrossPkgLib_package.Celsius;
+global using ΔToken = object;
+…
+[GoType("num:float64")] partial struct Celsius;
 ```
 
-The RHS is namespace-rooted all the way down, unlike every other rendering the converter emits. C#
-resolves a using alias's target *as if the compilation unit had no using directives*, which puts it
-outside the file's `namespace go;` and outside the package class — so a nested `@string` would name
-nothing there, and neither would a same-package `Header` (it is `go.main_package.Header`) or the `Func`
-of a func-type alias (`System.Func`). The golib csproj-alias names go the other way and are substituted
-rather than rooted, since `uint64` and friends stand for C# keywords: `type fe = [4]uint64` emits
-`global using fe = go.array<ulong>;`.
+Go's `any` is C# `object` ([Empty Interface](#empty-interface-any)). The `Δ` is the [rename mark](#reading-converted-code-names-and-glyphs): the package also has a `Token` method.
 
-A **generic alias** (Go 1.24, `type A[T any] = Box[T]`) has no C# form: a `using` directive cannot declare
-type parameters. Every use renders the alias's target, which Go says it is, and the declaration keeps the Go
-text as a comment:
+**An alias target is written out in full.** C# resolves it outside `namespace go;`, so each [golib](#the-golib-runtime-library)
+and package type in it carries its `go.` path and a .NET type its `System.` path. Go's integer and floating-point types, and `any`, become C# keywords such as `nint` and `object`, while `uintptr` and the complex types keep their golib or `System.Numerics` names:
 
+<!-- source: src/tests/Behavioral/PackageAliasRootedTypeArgs/main.go:44 -->
 ```go
-type Alias[T any] = Box[T]
-func Get(a Alias[int]) int { return a.V }
+type (
+	…
+	names = []string
+	…
+	fn  = func(string) int
+	…
+)
 ```
+<!-- source: src/tests/Behavioral/PackageAliasRootedTypeArgs/main.cs.target:1 -->
 ```csharp
-// type Alias[T any] = Box[T]
-public static nint Get(Box<nint> a) { ... }
+global using names = go.slice<go.@string>;
+…
+global using fn = System.Func<go.@string, nint>;
 ```
 
-**Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference/type-aliasing.md#type-aliasing) — self-boxing
-pointer conversions, the rooted-nesting RHS and its four qualifiers, keyword-safe RHS rendering,
-`types.Unalias` at type-switched decision points, and same-package alias-target namespace qualification.
+**An importing package gets its own copy of each exported alias.** A `global using` reaches only its own
+project. So each importer declares the alias again as `<Package>ꓸ<Alias>`, where `ꓸ` stands in for Go's dot:
+
+<!-- source: src/tests/Behavioral/AliasImport/main.go:15 -->
+```go
+var d AliasImportLib.DurFn = func(t time.Duration) int { return int(t / time.Second) }
+```
+<!-- source: src/tests/Behavioral/AliasImport/main.cs.target:19 -->
+```csharp
+AliasImportLibꓸDurFn d = (time.Duration t) => (nint)(int64)(t / time.ΔSecond);
+```
+
+**A generic alias is replaced by its target at every use.** A C# `using` cannot declare type parameters.
+A Go alias is identical to its target, so each use names the target, and the declaration survives as a comment:
+
+<!-- source: src/tests/Behavioral/GenericTypeAlias/main.go:15 -->
+```go
+type P[K comparable, V any] = Pair[K, V]
+…
+func swap[T comparable](p P[T, T]) P[T, T] { return P[T, T]{Key: p.Val, Val: p.Key} }
+```
+<!-- source: src/tests/Behavioral/GenericTypeAlias/main.cs.target:15 -->
+```csharp
+// type P[K comparable, V any] = Pair[K, V]
+…
+internal static Pair<T, T> swap<T>(Pair<T, T> p) {
+    return new Pair<T, T>(Key: p.Val, Val: p.Key);
+}
+```
+
+**Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference/type-aliasing.md#type-aliasing) — the bridging generated for type definitions, the qualification rules for every kind of alias target, which Go names become C# keywords, how importers read an alias record, aliases of aliases, and the generic-alias forms that are not supported.
 
 ---
 
-## Delegates to Value Receiver Instances
+## Functions and Methods
 
-In Go a function is a value, and a **value-receiver method value** captures a *copy* of the receiver at the
-moment it's taken — a subtlety that surprises non-Go programmers:
+A Go function becomes a `static` method of its package class, and a method becomes a C# extension method
+on its receiver. The receiver's form, `this T`, `this ref T` or the heap box `this ж<T>`
+([glyphs](#reading-converted-code-names-and-glyphs)), shows how the method uses it.
 
+**Go's export rule becomes C# access**, as [Names and Glyphs](#reading-converted-code-names-and-glyphs) describes,
+so `func main` becomes `internal static void Main()`. An unexported type that appears in an exported signature
+is emitted `public` itself, because C# forbids a public member from exposing an internal type.
+
+<!-- source: src/tests/Behavioral/MultiFileInitOrder/a_first.cs.target:7 ([GoInit] internal static void init()), a_first.cs.target:11 (initΔ1) and b_second.cs.target:5 (initΔ2) -->
+**Each `init` becomes a `[GoInit]` method.** C# cannot declare two methods with the same name and signature.
+The first `init` keeps its name, and the rest take a `Δ` suffix ([glyphs](#reading-converted-code-names-and-glyphs))
+and a number, `initΔ1`, `initΔ2`, …, in file order across the package.
+
+**A single named result stays on the signature as a comment:** `func RuneCountInString(s string) (n int)` becomes
+`nint /*n*/ RuneCountInString(…)`. Several become a named tuple ([Multi-Result Values](#multi-result-values-and-comma-ok-forms)).
+
+<!-- source: src/tests/Behavioral/VariadicPackPassThrough/VariadicPackPassThrough.go:10 (func bump(xs ...int)) and VariadicPackPassThrough.cs.target:9 (internal static void bump(params ꓸꓸꓸnint xsʗp)) -->
+**A variadic parameter is a `params` span:** `xs ...int` becomes `params ꓸꓸꓸnint xsʗp`, which
+[Slices and Arrays](#slices-and-arrays) explains.
+
+**A value receiver is `this T`.** The method gets its own copy of the value, as in Go:
+
+<!-- source: GOROOT/src/time/time.go:267 -->
+```go
+func (t Time) After(u Time) bool {
+	…
+```
+<!-- source: src/core/time/time.cs:269 -->
+```csharp
+public static bool After(this Time t, Time u) {
+    …
+```
+
+**A pointer receiver is `[GoRecv] this ref T`.** The method reads and writes the caller's storage through a C#
+`ref`, with no box and no allocation. `[GoRecv]` tells a [source generator](#source-generators) to add an
+overload that takes the box, `this ж<T>`, and forwards to this method.
+
+<!-- source: GOROOT/src/container/list/list.go:66 -->
+```go
+func (l *List) Len() int { return l.len }
+```
+<!-- source: src/core/container/list/list.cs:74 -->
+```csharp
+[GoRecv] public static nint Len(this ref List l) {
+    return l.len;
+}
+```
+
+**A method that needs the pointer itself takes the box, `this ж<T>`.** This happens when the body returns or
+compares the receiver, or takes `&l.field`. `Init` takes `&l.root` and returns `l`. The `Ꮡ` prefix names a
+pointer: the body binds `l` to the box's value, and `Ꮡl.of(List.Ꮡroot)` is Go's `&l.root` ([Pointers](#pointers)):
+
+<!-- source: GOROOT/src/container/list/list.go:54 -->
+```go
+func (l *List) Init() *List {
+	l.root.next = &l.root
+	…
+	return l
+}
+```
+<!-- source: src/core/container/list/list.cs:58 -->
+```csharp
+public static ж<List> Init(this ж<List> Ꮡl) {
+    ref var l = ref Ꮡl.DerefOrNull();
+
+    l.root.next = Ꮡl.of(List.Ꮡroot);
+    …
+    return Ꮡl;
+}
+```
+
+**A call picks the form that fits, as Go's automatic `&x` and `*p` do.** On a value, a `this ref` method is
+called directly, as `c.Get()` is here. `Set` takes `&c.n`, so it needs a box. `heap(…)` puts `c` on the heap,
+binds `c` to the heap value and hands back the box `Ꮡc` for the `Set` call:
+
+<!-- source: src/tests/Behavioral/ReceiverFieldAddress/main.go:21 -->
+```go
+var c Counter // …
+c.Set(100)
+fmt.Println("after Set:", c.Get())   // 100
+```
+<!-- source: src/tests/Behavioral/ReceiverFieldAddress/main.cs.target:37 -->
+```csharp
+ref var c = ref heap(new Counter(), out var Ꮡc);
+Ꮡc.Set(100);
+fmt.Println(afterSetˢ, c.Get());
+```
+
+`afterSetˢ` is the hoisted string literal ([Strings](#strings-string-and-sstring)).
+
+On a pointer, a `this ref` method binds its generated `ж<T>` overload. A value-receiver method runs on a copy, so
+`pb.Len()` on a pointer `pb` becomes `(~pb).Len()`, where `~pb` is Go's `*pb`
+([Implicit Pointer Dereferencing](#implicit-pointer-dereferencing)).
+
+**Full detail:** [Reference → Pointers](ConversionStrategies-Reference/pointers.md#pointers) — box-taking methods called through fields, globals and slice elements, how a method that calls one on its receiver takes the box too, and nil and re-pointed receivers.
+
+---
+
+<a id="delegates-to-value-receiver-instances"></a>
+
+## Function Values and Closures
+
+Go func types become C# delegates, and func literals become lambdas or C# local functions. A closure shares
+the variables it captures, as in Go.
+
+**A func type becomes `Func<…>` or `Action<…>`.** Parameters map in order, a func with no result is an
+`Action`, and several results become one tuple result. A variadic func type uses golib's
+[`Funcꓸꓸꓸ<…>`](../src/core/golib/variadic.cs) or `Actionꓸꓸꓸ<…>`, where `ꓸꓸꓸ` reads as Go's `...`. A nil
+func is a null delegate ([Nil and Zero Values](#nil-and-zero-values)).
+
+<!-- source: src/tests/Behavioral/MethodValueReceiverEscape/main.go:42 -->
+```go
+func applyInt(f func(int) int, a int, b int) int { return f(a) + f(b) }
+```
+<!-- source: src/tests/Behavioral/MethodValueReceiverEscape/main.cs.target:32 -->
+```csharp
+internal static nint applyInt(Func<nint, nint> f, nint a, nint b) {
+```
+
+**A named func type becomes a C# `delegate`.** Its methods become extension methods on the delegate, as for
+any named type ([Functions and Methods](#functions-and-methods)). A named func type with no methods, no type
+parameters and no named func type in its signature has no declaration of its own. Its uses are written as the
+underlying `Func<…>` or `Action<…>`, because Go converts freely between such a type and its underlying func type.
+
+<!-- source: src/tests/Behavioral/MethodExpression/main.go:74 -->
+```go
+type reader func() int
+
+func (f reader) sum(extra int) int { return f() + extra }
+```
+<!-- source: src/tests/Behavioral/MethodExpression/main.cs.target:61 -->
+```csharp
+internal delegate nint reader();
+
+internal static nint sum(this reader f, nint extra) {
+    return f() + extra;
+}
+```
+
+**A func literal becomes a C# local function when its own `name := func…` statement declares it and it is
+only ever called.** Every other literal becomes a lambda. C# closures capture variables, not values, as Go's
+do, so a plain `int` local needs nothing extra. In the next example, `bump` is a local function.
+
+**A heap-boxed local written after capture is reached through its box.** Here `t` lives in the
+[heap box](#pointers) `Ꮡt`, where the [`Ꮡ` prefix](#reading-converted-code-names-and-glyphs) marks the box,
+and `t` is a `ref` alias of its value. A C# closure cannot capture a `ref` local, so the local function `bump`
+writes through the box. Both sides change the same variable.
+
+<!-- source: src/tests/Behavioral/ClosureWriteVisibility/main.go:26 -->
+```go
+t := Tally{5, "s"}
+bump := func() { t.total += 100 }
+bump()
+t.total++
+```
+<!-- source: src/tests/Behavioral/ClosureWriteVisibility/main.cs.target:18 -->
+```csharp
+ref var t = ref heap<Tally>(out var Ꮡt);
+t = new Tally(5, "s"u8);
+void bump() {
+    Ꮡt.Value.total += 100;
+}
+bump();
+t.total++;
+```
+
+**A captured variable that nothing writes after the closure exists is read through a snapshot.** This covers
+a struct, array, slice, map or channel, and any heap-boxed variable. The copy always matches, because the
+variable never changes afterward. Its name takes the `ʗ` suffix and a number, as in `tʗ1` ([detail](ConversionStrategies-Reference/pointers.md#a-capture-that-is-written-after-the-capture-point-routes-to-shared-storage-not-a-snapshot)).
+
+**A value-receiver method value copies its receiver.** `d.printName` binds the value `d` has at that
+moment, so this program prints `Name = James` twice. The converter snapshots `d` as `dʗ1` and calls the
+method on it from a lambda. `gretchenˢ` is the hoisted `"Gretchen"` literal ([Strings](#strings-string-and-sstring)).
+
+<!-- source: src/tests/Behavioral/VariableCapture/VariableCapture.go:14 -->
 ```go
 d := data{name: "James"}
 f1 := d.printName
-f1()                 // "Name = James"
+f1()
 d.name = "Gretchen"
-f1()                 // "Name = James" again — f1 bound a copy of d
+f1()
+```
+<!-- source: src/tests/Behavioral/VariableCapture/VariableCapture.cs.target:22 -->
+```csharp
+var d = new data(name: "James"u8);
+
+var dʗ1 = d;
+var f1 = () => dʗ1.printName();
+f1();
+d.name = gretchenˢ;
+f1();
 ```
 
-To preserve this, the converter copies the receiver value into the delegate's capture (a snapshot taken at
-assignment time), rather than capturing by reference. Method *expressions* (`(*T).M`), bound method values,
-pointer-receiver method values, and conversions to named func types each have a tailored emission (a cast to
-the concrete delegate, a box-bound method group, or `new NamedDelegate(...)`).
+**A pointer-receiver method value binds the variable itself.** `c.dec` is Go shorthand for `(&c).dec`, so
+`c` moves into a heap box and the delegate binds to that box. Every write `dec` makes lands in `c`.
 
-A **pointer**-receiver method value is the mirror image and needs the opposite treatment: `c.dec` is Go
-shorthand for `(&c).dec`, so it must alias the receiver, not copy it. That implicit address-of heap-promotes
-the local exactly like an explicit `&c` would — the escape analysis treats the two identically, and the
-method group binds to the box:
-
+<!-- source: src/tests/Behavioral/MethodValueReceiverEscape/main.go:53 -->
 ```go
 c := counter{n: 100}
-applyInt(c.dec, 5, 7)        // (&c).dec — c.n is 88 afterwards
+sum := applyInt(c.dec, 5, 7)
 ```
+<!-- source: src/tests/Behavioral/MethodValueReceiverEscape/main.cs.target:43 -->
 ```csharp
 ref var c = ref heap<counter>(out var Ꮡc);
 c = new counter(n: 100);
-applyInt(Ꮡc.dec, 5, 7);      // Ꮡc aliases c
+nint sum = applyInt(Ꮡc.dec, 5, 7);
 ```
 
-That holds in **argument and assignment position alike** (`f = c.dec` emits the same `Ꮡc.dec` group), and in
-assignment position it also means *no* receiver snapshot is taken — there is no copy to snapshot.
-
-A direct call `c.dec()` is *not* a method value — it binds C#'s `this ref` extension receiver against the
-variable and needs no box.
-
-**Full detail:** [Reference → Delegates to Value Receiver Instances](ConversionStrategies-Reference/value-receiver-delegates.md#delegates-to-value-receiver-instances) —
-method expressions (local & foreign), bound/interface/pointer/value-receiver method values, the go-statement
-sibling, named and generic func-type conversions.
+**Full detail:** [Reference → Delegates to Value Receiver Instances](ConversionStrategies-Reference/value-receiver-delegates.md#delegates-to-value-receiver-instances) — how each method-value and method-expression form binds its receiver, receiver evaluation order, and bare or discarded function values.
 
 ---
 
-## Defer / Panic / Recover
+<a id="labeled-control-flow-and-loop-variables"></a>
+## Loops, Range and Labels
+<!-- Length: 90 visible lines. Three rule groups here (for shapes and the constant-true loop, the Coro handoff and panic rethrow, init-clause blocks) have no home on the linked reference page yet, so they stay here in brief. -->
 
-A Go function that defers or recovers keeps its body exactly where Go put it: the statements are
-emitted **inline** in the method, inside `try`/`catch`/`finally`, beside a `GoFrame` local that holds
-this call's defer list. The `catch` parks a panic where `recover()` can read it; the `finally` drains
-the deferred calls, which is Go's guarantee that they run on every exit path; and the frame is a
-`ref struct`, so it lives in the stack frame and allocates nothing. A deferred call registers with
-`defer(fn, args…, ref ᒐ)` — the arguments are captured there because Go evaluates them at the `defer`
-statement. `panic(x)` lowers to `throw panic(x)`:
+Go's one loop keyword becomes C# `for`, `while` or `foreach`, chosen by the loop's shape. A `ᴛ` suffix
+marks a temporary where Go needs a fresh variable. A `goto` stands in for a `break` or `continue` whose target C# cannot name.
+Glyphs such as `ᴛ` and `Δ` are listed in [Reading Converted Code](#reading-converted-code-names-and-glyphs).
 
+<!-- source: src/tests/Behavioral/ForVariants/ForVariants.go:12, :22, :78 -> ForVariants.cs.target:19, :25, :70 -->
+<!-- The constant matters for reachability: golib builtin.cs documents that an infinite loop relies on ᐧ folding to avoid CS0161 (not all code paths return a value). -->
+**A `for` keeps its shape.** A three-clause loop stays a C# `for`, and `for i < 10 {` becomes
+`while (i < 10) {`. An infinite `for {` becomes `while (ᐧ) {`, where `ᐧ` is golib's constant `true`.
+C# treats a constant-true loop as endless, so a function that ends in one needs no trailing `return`.
+
+<!-- sources by row (Go -> C#; GOROOT is Go 1.24.13; short paths are under src/tests/Behavioral/):
+GOROOT/src/slices/iter.go:16 -> src/core/slices/iter.cs:17; ArrayRangeSnapshot/ArrayRangeSnapshot.go:18 -> .cs.target:21;
+StringByteSemantics/main.go:12 -> main.cs.target:12; GenericTypeInference/GenericTypeInference.go:138 -> .cs.target:145;
+ChannelSendToClosed/ChannelSendToClosed.go:15 -> .cs.target:18; RangeOverIntegerTypes/main.go:98 -> main.cs.target:80
+Moved to the reference (range over every integer type): the row `for i := range b` -> `foreach (var i in range<uint8>(b))`,
+RangeOverIntegerTypes/main.go:46 -> main.cs.target:37 -->
+**Every `range` becomes a `foreach`.** Each golib collection enumerates in Go's own terms:
+
+| Go | C# | Notes |
+|---|---|---|
+| `for i, v := range s` | `foreach (var (i, v) in s)` | slice: index and element |
+| `for i, v := range a` | `foreach (var (i, v) in a.ΔRangeSnapshot())` | array value: iterates a copy ([Slices and Arrays](#slices-and-arrays)) |
+| `for i, r := range s` | `foreach (var (i, r) in s)` | string: byte offset and rune |
+| `for k, v := range m` | `foreach (var (k, v) in m)` | map ([Maps](#maps)) |
+| `for i := range c` | `foreach (var i in c)` | channel: ends when closed and drained ([Channels](#channels-and-select)) |
+| `for i := range size` | `foreach (var i in range(size))` | integer: golib's `range` helper |
+
+<!-- Moved to the reference ("Reassigned or ref-bound range variable"): a range variable the body reassigns
+iterates a temporary and the body declares a writable copy, foreach (var (_, rᴛ1) in s) { var r = rᴛ1; … }
+(src/tests/Behavioral/RangeVarReassign/main.cs.target:22); and the = form, for i, num = range nums ->
+foreach (var (iᴛ1, vᴛ1) in nums) { i = iᴛ1; num = vᴛ1; … } (src/tests/Behavioral/RangeStatements/RangeStatements.go:18
+-> RangeStatements.cs.target:25). -->
+<!-- A defer or go call that references i also selects the per-iteration form (src/go2cs/visitForStmt.go:337);
+the copy-back fires when the body writes i or the variable is heap-boxed (visitForStmt.go:353; golden
+src/tests/Behavioral/ForLoopPerIterationVars/main.cs.target:52-55, where the body only takes &i). -->
+**Loop variables are per-iteration.** Go gives each iteration of `for i := …` its own `i`, but a C# `for`
+shares one. When a closure captures `i` or the body takes its address, the loop counts with a hidden `iᴛ1`
+and declares a fresh `i` from it. A body that writes `i` or takes its address copies `i` back to `iᴛ1`.
+
+<!-- source: src/tests/Behavioral/ForLoopPerIterationVars/main.go:20 -->
 ```go
-func withLock(lk sync.Locker, fn func()) {   // database/sql/sql.go
-    lk.Lock()
-    defer lk.Unlock() // in case fn panics
-    fn()
+for i := 0; i < 3; i++ {
+	fs = append(fs, func() int { return i })
 }
 ```
+<!-- source: src/tests/Behavioral/ForLoopPerIterationVars/main.cs.target:21 -->
 ```csharp
-internal static void withLock(sync.Locker lk, Action fn) {   // database/sql/sql.cs
-    GoFrame ᒐ = default;
-    try {
-        lk.Lock();
-        defer(lk.Unlock, ref ᒐ);
-        // in case fn panics
-        fn();
+for (nint iᴛ1 = 0; iᴛ1 < 3; iᴛ1++) {
+    var i = iᴛ1;
+    fs = append(fs, () => i);
+}
+```
+
+<!-- Reference gap: range over a function is covered only in generic-constraints.md (the named/generic Seq rule: .Invoke, spelled-out type arguments, yield false on break). No page states the Coro handoff or the panic rethrow into the ranging function (golib runtime/YieldFunctionEnumerator.cs). Move or add the rule in labels-and-loop-variables.md with its guard tests, and extend the Full detail line. -->
+**Range over a function passes it a `yield` callback.** The iterator function becomes a lambda that
+takes `Func<…, bool> yield`. A named func type such as `KVSeq[K, V]` becomes a C# delegate. The loop
+passes the delegate's `.Invoke` method to golib's `range<…>` helper, with the element types spelled out:
+
+<!-- source: src/tests/Behavioral/GenericTypeInference/GenericTypeInference.go:177 -->
+```go
+for k, v := range letters() {
+	fmt.Println(k, v)
+}
+```
+<!-- source: src/tests/Behavioral/GenericTypeInference/GenericTypeInference.cs.target:185 -->
+```csharp
+foreach (var (k, v) in range<@string, nint>(letters().Invoke)) {
+    fmt.Println(k, v);
+}
+```
+<!-- The iterator itself (GenericTypeInference.go:125 -> GenericTypeInference.cs.target:132):
+func letters() KVSeq[string, int] { return func(yield func(string, int) bool) { _ = yield("a", 1) && yield("b", 2) } }
+becomes internal static KVSeq<@string, nint> letters() { return (Func<@string, nint, bool> yield) => { _ = yield("a"u8, 1) && yield("b"u8, 2); }; } -->
+
+The golib runtime runs the iterator on a second goroutine, a `Coro`, and hands each value across. A `break` or
+`return` makes `yield` return false, so the iterator finishes and runs its defers. A panic in the
+iterator is rethrown in the ranging function, where its defers can recover it.
+
+**Labels become `goto` targets.** C# `break` and `continue` cannot name a label. So the converter keeps
+the Go label and adds `continue_L:;` at the end of the loop body and `break_L:;` after the loop. A
+labeled `switch` gets the same `break_L:;`, and a plain Go `goto L` stays `goto L;`.
+
+<!-- The elided lines hold `if n+m > 5 { break scan }` and a print; the C# elision holds `goto break_scan;` (ForVariants.cs.target:58-61). -->
+<!-- source: src/tests/Behavioral/ForVariants/ForVariants.go:59 -->
+```go
+scan:
+	for _, n := range nums {
+		for _, m := range nums {
+			if n == m {
+				continue scan
+			}
+			…
+		}
+	}
+```
+<!-- source: src/tests/Behavioral/ForVariants/ForVariants.cs.target:52 -->
+```csharp
+scan:
+    foreach (var (_, n) in nums) {
+        foreach (var (_, m) in nums) {
+            if (n == m) {
+                goto continue_scan;
+            }
+            …
+        }
+continue_scan:;
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
-}
+break_scan:;
 ```
 
-One shape skips the registration entirely. A deferred call on a **field of the receiver** with no
-arguments — `defer c.mu.Unlock()` — would have to box that field to hold it (`Ꮡc.of(counter.Ꮡmu)`),
-and the call already runs on exactly the paths a `finally` runs on, so it is emitted straight into the
-`finally` behind a `bool` set at the defer's own position, in reverse source order (Go's LIFO), ahead
-of `ᒐ.Run()`. Nothing is allocated. A method on the receiver itself (`defer fd.writeUnlock()`) lowers
-the same way, saving its delegate. It applies only where Go's registration-time semantics are
-provably unobservable — the receiver is never reassigned, the defer is not inside a loop or a function
-literal (a conditional one lowers behind its flag, since the LIFO argument needs only forward control
-flow), and something that provably executed before it already dereferences the same path — and it is
-all-or-nothing per function, so a function that mixes shapes keeps registration throughout. 225 of
-the 332 such sites in Go 1.23.12's standard library qualify; see
-[the reference](ConversionStrategies-Reference/defer-panic-recover.md#a-deferred-receiver-field-call-with-no-arguments-is-lowered-into-the-frames-finally).
+<!-- source: src/tests/Behavioral/IfStatements/IfStatements.go:6 -> IfStatements.cs.target:17 -->
+<!-- Reference gap: labels-and-loop-variables.md has no rule for the if/switch init-clause block; add it there, with its guard tests, and extend the Full detail line. -->
+**An `if` or `switch` init clause opens a block.** C# `if` and `switch` have no init clause, so the
+declaration and the statement share new braces: `if a := -1; a < 0 {` becomes `{ nint a = -1; if (a < 0) { … } }`.
 
-A function with **named results** that deferred code mutates declares them ahead of the `try` and
-returns them after the `finally`, because Go runs the deferred calls after the results are assigned
-and before the caller sees them — which a `finally` cannot do to a value a `return` has already
-evaluated. Every exit inside the `try` therefore leaves through a `goto`, which runs the `finally`
-exactly as a return would.
-
-An unrecovered panic — even in a goroutine — crashes the process exactly as in Go: golib's
-`AppDomain.UnhandledException` backstop writes the `panic: …` report to stderr and exits with code 2.
-The VALUE in that report follows Go's `preprintpanics` rule, so an `error` prints its `Error()` and a
-`Stringer` its `String()` — `panic: open final.txt: code 13`, never the pointer's address — and the
-substitution runs only on the printing path, so a recovered panic never calls either.
-
-`recover()` is a static call reading the one thread-local slot the emitted `catch` parked the panic
-in — which is what lets a deferred closure recover without holding any handle on the frame that
-registered it. A re-`panic` is `throw panic(err)`:
-
-```go
-if err := recover(); err != nil {   // fmt/print.go
-    // ...
-    if p.panicking { panic(err) }
-```
-```csharp
-var err = recover(); if (err != default!) {   // fmt/print.cs
-    // ...
-    if (p.panicking) { throw panic(err); }
-```
-
-A **traceback** taken while a panic is being handled (`runtime.Stack`, `debug.Stack`) reports what Go
-reports. Go keeps the panicking frames on the stack until the panic completes; the CLR unwinds them
-before a `finally`-based defer runs, so golib snapshots the panic's origin at the first catch — and a
-re-`panic` inherits it, which is what keeps the origin visible through Go's
-`defer func(){ panic(recover()) }()` idiom. The frames render in Go's shape
-(`sync_test.onceFuncPanic()` over a tab-indented `file:line`), not the CLR's
-`at go.sync_test_package.onceFuncPanic(…)`, because a traceback is observable output that programs
-and tests read by package-qualified name.
-
-The **programmatic** traceback — `runtime.Caller`, `runtime.Callers`, `Frames.Next` — walks the same
-managed stack, filtered to the frames the *Go source* declares, so relative depths and `skip`
-counting behave as in Go (go2cs's own adapter shells and generated forwarders are invisible, exactly
-as Go's interface dispatch adds no frame). The one honest difference is `file`/`line`: they name the
-**converted `.cs`** position, because that is the source the running program actually has.
-
-**Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference/defer-panic-recover.md#defer--panic--recover) —
-the frame's emitted forms and why the body is not a lambda, the named-result `goto` exit, the
-registration ladder, unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees,
-value-returning goroutine wrapping, func-literal argument capture hoisting, the golib family-delegate
-cast a VARIADIC deferred literal needs (a `params` lambda converts to no `Action<…>`), and box-bound
-deferred pointer-receiver methods; plus
-[Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference/manual-conversions.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
+**Full detail:** [Reference → Labeled Control Flow and Loop Variables](ConversionStrategies-Reference/labels-and-loop-variables.md#labeled-control-flow-and-loop-variables) — the copy-back rules and heap-boxed loop variables, when a range variable is copied, the `=` range form, range over every integer type, blank range variables, allocation-free enumerators, and labels on empty statements.
 
 ---
 
 ## Expression Switch Statements
+<!-- Length: four lowered forms, each needs its own example; secondary rules (break wrapping, default placement, relational patterns) live in the reference. -->
 
-Go's expression `switch` (no automatic fall-through) usually lowers to `if / else if`, which handles cases
-whose labels aren't C# compile-time constants (variables, `static readonly` consts, addresses). When every
-label *is* a constant and there's no `fallthrough`, a real C# `switch` is used. A tag-less
-`switch { case cond: }` lowers to a `switch` over the sentinel `ᐧ` with each arm a `when` guard:
+Go's expression `switch` runs one case and never falls into the next unless the case says `fallthrough`.
+The converter emits a real C# `switch` where the labels allow one, and `if` statements where they do not.
+Converter temporaries end in `ᴛ` and a number, such as `exprᴛ1`, and a name ending in `ˢ` is a hoisted string
+literal ([glyphs](#reading-converted-code-names-and-glyphs)).
 
+**Constant labels become a C# `switch`.** This needs every label to be a number or rune literal or a constant
+of a plain numeric or boolean type, and no `fallthrough`. A tag of a named type or `uintptr` rules it out, because
+a literal label takes the tag's type. A list of labels becomes an `or` pattern (`case 4, 5, 6:` becomes
+`case 4 or 5 or 6:`), and each body ends in `break;` or a `return`.
+
+**Other labels become an `if / else if` chain.** A C# case label must be a `const`, so variables, calls and Go
+strings take the chain. So do constant names such as `true` and `false`, and named-type constants such as
+`time.Saturday` ([constant values](#constant-values)). The tag is evaluated once into `exprᴛ1`, and `default`
+becomes the final `else`.
+
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.go:72 -->
 ```go
-switch {                              // path/path.go
-case path[r] == '/':
-    r++
-case path[r] == '.' && (r+1 == n || path[r+1] == '/'):
-    r++
-}
+switch time.Now().Weekday() {
+case time.Saturday, time.Sunday:
+	fmt.Println("It's the weekend")
+…
 ```
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.cs.target:117 -->
 ```csharp
-switch (ᐧ) {                          // path/path.cs
-case {} when path[r] is (rune)'/': {
-    r++;
-    break;
+var exprᴛ1 = time.Now().Weekday();
+if (exprᴛ1 == time.Saturday || exprᴛ1 == time.Sunday) {
+    fmt.Println(itSTheWeekendˢ);
 }
-case {} when path[r] == (rune)'.' && (r + 1 == n || path[r + 1] == (rune)'/'): {
-    r++;
-    break;
-}}
+…
 ```
 
-`fallthrough` expands to an if-chain with a fall flag and `goto`; a switch-targeting `break` inside an
-if-else arm is wrapped in a one-shot `do { … } while (false)`. Because the chain emits clauses in
-source order, a `default:` that Go places *before* some of its cases is guarded on a predicate
-precomputed over **every** case label — never on the running match flag, which has not yet seen the
-arms below it.
+**A switch with no tag becomes `switch (ᐧ)`.** `ᐧ` is golib's constant `true`, and each case is
+`case {} when <condition>:`, so the condition alone decides. A comparison with a number literal may become a
+C# pattern such as `is < 12`.
+
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.go:85 -->
+```go
+switch {
+case t.Hour() < 12: // Before noon
+…
+```
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.cs.target:129 -->
+```csharp
+switch (ᐧ) {
+case {} when t.Hour() is < 12: {
+…
+```
+
+**A switch that uses `fallthrough`, tagged or not, becomes an `if` chain in which each case that can be fallen
+into starts a new `if`.** A local `matchᴛN` records that a case has matched. A case that falls through sets
+`fallthrough`, a golib flag that clears when read. A case that can be fallen into runs when that flag is set, or
+when nothing has matched and its own label does.
+
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.go:188 -->
+```go
+switch Foo(2) {
+case Foo(1), Foo(2), Foo(3):
+	fmt.Println("First case")
+	fallthrough
+case Foo(4):
+…
+```
+<!-- source: src/tests/Behavioral/ExprSwitch/ExprSwitch.cs.target:268 -->
+```csharp
+var exprᴛ6 = Foo(2);
+var matchᴛ5 = false;
+if (exprᴛ6 == Foo(1) || exprᴛ6 == Foo(2) || exprᴛ6 == Foo(3)) { matchᴛ5 = true;
+    fmt.Println(firstCaseˢ);
+    fallthrough = true;
+}
+if (fallthrough || !matchᴛ5 && exprᴛ6 == Foo(4)) {
+…
+```
 
 **Full detail:** [Reference → Expression Switch Statements](ConversionStrategies-Reference/expression-switch.md#expression-switch-statements) —
-constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns,
-non-trailing `default` clauses, and index/named-type case labels.
+how a `break` inside a case leaves it, where `default` may sit when cases fall through, and when a condition becomes a C# pattern.
 
 ---
 
 ## Type Switch Statements
 
-A Go type switch maps cleanly to C#'s type-pattern `switch`. The dynamic type comes from `.type()`, and
-each `case T:` binds the value with a type pattern:
+A Go type switch becomes a C# pattern `switch` over `x.type()`, a [golib](#the-golib-runtime-library)
+method that returns the value the interface holds. Each concrete-type `case` is a C# type pattern. Each
+clause is a braced arm that ends in `break` or its own `return`, because Go clauses never fall through.
 
+<!-- source: src/tests/Behavioral/TypeSwitch/TypeSwitch.go:13 -->
 ```go
-func do(i interface{}) {
-    switch v := i.(type) {
-    case int:
-        fmt.Printf("Twice %v is %v\n", v, v*2)
-    case string:
-        fmt.Printf("%q is %v bytes long\n", v, len(v))
-    default:
-        fmt.Printf("I don't know about type %T!\n", v)
-    }
+switch t := i.(type) {
+case nil:
+	// A nil interface matches `case nil` — emitted as the C# `case null:` pattern.
+	fmt.Println("I'm nil")
+case bool:
+	fmt.Println("I'm a bool")
+case int, int64, uint64:
+	fmt.Printf("I'm an int, specifically type %T\n", t)
+default:
+	fmt.Printf("Don't know type %T\n", t)
 }
 ```
+<!-- source: src/tests/Behavioral/TypeSwitch/TypeSwitch.cs.target:22 -->
 ```csharp
-internal static void @do(any i) {
-    switch (i.type()) {
-    case nint v: {
-        fmt.Printf("Twice %v is %v\n"u8, v, v * 2);
-        break;
-    }
-    case @string v: {
-        fmt.Printf("%q is %v bytes long\n"u8, v, len(v));
-        break;
-    }
-    default: {
-        // ...
-    }}
+switch (i.type()) {
+case null: {
+    fmt.Println(iMNilˢ);
+    break;
 }
+case bool t: {
+    fmt.Println(iMABoolˢ);
+    break;
+}
+case nint _:
+case int32 _:
+case int64 _:
+case uint64 _: {
+    var t = i;
+    fmt.Printf("I'm an int, specifically type %T\n"u8, t);
+    break;
+}
+default: {
+    var t = i;
+    fmt.Printf("Don't know type %T\n"u8, t);
+    break;
+}}
 ```
 
-Cases that match an *anonymous interface* (`case interface{ Unwrap() error }:`) synthesize a named
-`[GoType("dyn")]` interface and test it with `case {} Δx when Δx._<is_typeᴛ1>(out var x):`.
+`iMNilˢ` is a string literal stored once in a static field ([glyphs](#reading-converted-code-names-and-glyphs)), and `"…"u8` is a UTF-8 literal.
 
-**Full detail:** [Reference → Type Switch Statements](ConversionStrategies-Reference/type-switch.md#type-switch-statements) —
-the tag-evaluates-once guarantee, default-arm binding, astral rune literals, and generic/embedded arms.
+**A single-type case binds its variable at that type.** `case bool` binds `bool t`. Go gives the case
+variable the listed type only when the clause lists exactly one type.
+
+**`default` and multi-type cases rebind the interface value.** Their body opens with `var t = i;`, so
+`t` keeps the interface type, as in Go. A multi-type case stacks its labels over one body, and each
+label binds only a discard, `_`.
+
+**`case nil:` becomes `case null:`.** A nil interface is a C# `null`. No C# type pattern matches
+`null`, so only this arm catches it.
+
+**`case int:` also gets a `case int32:` label, unless the switch lists `int32` itself.** Go's `int`
+becomes C#'s native-sized `nint` ([Integer Types](#integer-types-and-arithmetic)). A plain C# `int` in an
+interface has the dynamic type `int32`, and that label routes it to Go's `int` clause. `case uint:` adds `case uint32:`.
+
+<!-- source: src/tests/Behavioral/PanicRecover/PanicRecover.cs.target:79 (`case {} Δv when Δv._<error>(out var v): {`) -->
+**An interface case matches by method set.** Go's `case error:` becomes
+`case {} Δv when Δv._<error>(out var v):`. The `{}` pattern captures any non-null value in a hidden
+`Δv`. The guard calls `_<T>`, golib's type assertion, in a form that returns false instead of panicking.
+
+**Full detail:** [Reference → Type Switch Statements](ConversionStrategies-Reference/type-switch.md#type-switch-statements) — switches with no case variable, how cases that share one C# type merge, anonymous interface labels, and how interface cases find methods declared on a pointer.
 
 ---
 
-## Labeled Control Flow and Loop Variables
+## Defer / Panic / Recover
 
-Go labels sit immediately before their statement; C# reproduces the behavior with a placed label and a
-`goto`:
+A Go function that defers or recovers keeps its body inline, inside a C# `try`/`catch`/`finally`.
+You will notice a local named `ᒐ`, `defer(…, ref ᒐ)` calls, and `throw panic(x)`. Other names here, such
+as `default!`, `ᴛ1` and the `ˢ` suffix, are explained in [Reading Converted Code](#reading-converted-code-names-and-glyphs).
 
+<!-- Condensed to the forms a reader meets: the inline body with its frame, eager defer arguments, named
+results, and which runtime errors recover() sees. In the reference: the receiver-field call lowered into the
+finally (golden DeferFinallyLowering/main.cs.target:61; never in a function that calls recover() or has
+named results), runtime.Goexit, the crash report, and (manual-conversions.md, runtime.Stack sections) the
+Go-shaped tracebacks, the main-goroutine Goexit gate and the NoInlining pin on runtime.Caller callers.
+src/core/golib/GoFrame.cs: m_d0..m_d3 are the inline slots; a fifth registration allocates the
+List<Action> overflow. PanicException: src/core/golib/PanicException.cs:20. -->
+**`ᒐ` is this call's defer list.** It is a golib [`GoFrame`](../src/core/golib/GoFrame.cs), a stack-only
+`ref struct` that holds up to four deferred calls without allocating. `defer(…, ref ᒐ)` pushes a call, and
+the `catch` parks a panic (a golib `PanicException`) for `recover()`. The `finally` runs `ᒐ.Run()`, which
+calls them in reverse order on every exit path.
+
+**`recover()` is a plain static call, and `panic(x)` is `throw panic(x)`.** A deferred closure needs no
+handle on the frame, because `recover()` reads the panic that the `catch` parks. This is the Go blog's example:
+
+<!-- source: src/tests/Behavioral/PanicRecover/PanicRecover.go:11 -->
 ```go
-Outer:
-    for i := 0; i < n; i++ {
-        for j := 0; j < m; j++ {
-            if done { break Outer }
-        }
-    }
+func f() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+	…
+}
+
+func g(i int) {
+	…
+		panic(fmt.Sprintf("%v", i))
+	…
+	defer fmt.Println("Defer in g", i)
+	…
+}
 ```
+<!-- source: src/tests/Behavioral/PanicRecover/PanicRecover.cs.target:21 -->
 ```csharp
-    for (nint i = 0; i < n; i++) {
-        for (nint j = 0; j < m; j++) {
-            if (done) { goto break_Outer; }
-        }
+internal static void f() {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Println(recoveredInFˢ, r);
+                }
+            }
+        }, ref ᒐ);
+        …
     }
-    break_Outer:;
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+internal static void g(nint i) {
+    …
+            throw panic(fmt.Sprintf("%v"u8, i));
+    …
+        defer((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, ref ᒐ);
+    …
+}
 ```
 
-**Full detail:** [Reference → Labeled Control Flow and Loop Variables](ConversionStrategies-Reference/labels-and-loop-variables.md#labeled-control-flow-and-loop-variables) —
-break vs continue label placement, labels on empty statements, and per-iteration loop-variable semantics
-(Go 1.22).
+**`defer` evaluates its arguments where it stands**, as Go does. `deferInGˢ` and `i` are passed to
+`defer` at once, and the lambda receives them later as `ᴛ1` and `ᴛ2`.
+
+**Named results are declared before the `try` and returned after the `finally`.** Go runs deferred calls
+after `return` assigns the results, so a deferred call can still change them. A C# `finally` cannot change
+a value already returned. So each `return` only assigns the results, and an early one jumps to `ᒐdone`:
+
+<!-- source: src/tests/Behavioral/NamedReturnDefer/main.go:57 -->
+```go
+func compute(x int) (out int, label string) {
+	defer func() { out += 1000 }() // proves the named result is returned post-defer
+	if x < 0 {
+		out, label = -1, "neg"
+		return out, label // …
+	}
+	return double(x), fmt.Sprintf("v=%d", x)
+}
+```
+<!-- source: src/tests/Behavioral/NamedReturnDefer/main.cs.target:76 -->
+```csharp
+internal static (nint @out, @string label) compute(nint x) {
+    nint @out = default!;
+    @string label = default!;
+    GoFrame ᒐ = default;
+    try {
+        …
+        if (x < 0) {
+            (@out, label) = (-1, negˢ);
+            goto ᒐdone;
+        }
+        (@out, label) = (@double(x), fmt.Sprintf("v=%d"u8, x));
+    }
+    …
+    finally { ᒐ.Run(); }
+    ᒐdone: return (@out, label);
+}
+```
+
+<!-- Verified against src/go2cs/refLoweringEmissionOperations.go:532 (the eager `nonnil(ref …)` wrap on a
+pointer's deref alias, golden DirectBoxReceiverPassedWhole/main.cs.target:22), src/core/golib/builtin.cs
+`nonnil`, src/core/golib/ж.cs `operator ~` and ж.StandardBox.cs `Value`, all throwing
+RuntimeErrorPanic.NilPointerDereference(). No divide check is emitted anywhere in src/go2cs. -->
+**Runtime errors are panics too.** A nil dereference, an integer divide by zero and an index out of range
+each reach `recover()` with Go's `runtime error` message. The frame's `catch` maps the matching .NET
+exception, and golib's own nil and bounds checks raise the rest.
+
+<!-- An unrecovered panic crashes the process as in Go: the `panic: …` report on stderr and exit code 2,
+even from a goroutine (reference: defer-panic-recover.md, crash-report section).
+runtime.Stack, runtime.Caller and the crash report name frames Go's way with the Go file and line
+(a hand-owned whole-file replacement has no GoPositionMap record and reports its C# position); inside a
+deferred call the rendered tracebacks still show the panic site. Reference:
+manual-conversions.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site. -->
+**Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference/defer-panic-recover.md#defer--panic--recover) — why the body is not a lambda, every named-result form, which deferred calls move into the `finally`, variadic and value-returning deferred calls, each runtime panic value, and the crash report.
+
+---
+
+## Goroutines
+
+Go's `go` statement becomes a call to [golib](#the-golib-runtime-library)'s
+[`goǃ`](../src/core/golib/builtin.GoroutineLaunchers.cs), which runs the call on a new goroutine. The name
+ends in `ǃ`, a letter that looks like `!`, because a C# name cannot contain `!`. Each goroutine is a
+dedicated operating-system thread, which is the main difference from Go.
+
+**Arguments are evaluated at the `go` statement.** `goǃ` takes the function and its arguments
+separately, so the arguments are computed before the goroutine starts. When the function cannot be passed
+as it is, the converter writes a lambda over temporary parameters `ᴛ1`, `ᴛ2`, …
+([glyphs](#reading-converted-code-names-and-glyphs)):
+
+<!-- source: src/tests/Behavioral/GoCallVariations/GoCallVariations.go:83 -->
+```go
+func printSquare(n int) {
+	go fmt.Println("Go thread square:", n*n)
+	n++
+	fmt.Println("Immediate n:", n)
+}
+```
+<!-- source: src/tests/Behavioral/GoCallVariations/GoCallVariations.cs.target:100 -->
+```csharp
+internal static void printSquare(nint n) {
+    goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), goThreadSquareˢ, n * n);
+    n++;
+    fmt.Println(immediateNˢ, n);
+}
+```
+
+Called as `printSquare(5)`, the goroutine prints 25 even if it runs after `n` has become 6. A name
+ending in `ˢ` is a string literal hoisted to a static field.
+
+**A call to a named function that returns a value is wrapped in a lambda that drops the result.** Go
+discards whatever a goroutine's function returns, and the lambda drops the result the same way:
+
+<!-- source: src/tests/Behavioral/GoStmtValueReturn/main.go:48 -->
+```go
+go nib() // …
+```
+<!-- source: src/tests/Behavioral/GoStmtValueReturn/main.cs.target:44 -->
+```csharp
+goǃ(() => nib());
+```
+
+**A function literal becomes a lambda.** `go func() { … }()` becomes `goǃ(() => { … })`. A captured
+local is often first copied into a local with a `ʗ` suffix, as
+[Function Values and Closures](#function-values-and-closures) explains.
+
+**An unrecovered panic in any goroutine ends the whole program**, as in Go: Go's `panic:` report goes to
+standard error and the process exits with code 2. [Defer / Panic / Recover](#defer--panic--recover) covers `throw panic(…)`.
+
+<!-- source: src/tests/Behavioral/GoroutinePanicExitCode/main.go:26 -->
+```go
+go func() {
+	panic("goroutine boom")
+}()
+```
+<!-- source: src/tests/Behavioral/GoroutinePanicExitCode/main.cs.target:13 -->
+```csharp
+goǃ(() => {
+    throw panic("goroutine boom");
+});
+```
+
+**A goroutine keeps its thread from start to finish.** golib's
+[`Goroutine`](../src/core/golib/runtime/Goroutine.cs) class starts a new background thread for every
+`goǃ`. A goroutine that blocks on a channel, a lock or a sleep blocks only its own thread. As in Go, the
+process exits when `main` returns.
+
+`goǃ` never uses the thread pool, because a blocked goroutine would hold a shared pool thread. golib does
+not multiplex goroutines onto fewer threads either, because .NET cannot switch a running call to another
+stack.
+
+Go stacks grow, but a .NET stack overflow ends the process. Each goroutine thread therefore reserves 256 MB
+of address space, committed only as it is used. The `GO2CS_GOROUTINE_STACK` environment variable sets a different size.
+
+**Operating-system threads bound live goroutines at roughly ten thousand.** Go's goroutines reach about
+a million. A Go program that starts hundreds of thousands of goroutines at once does not run the same
+way after conversion.
+
+**`runtime` keeps Go's goroutine contracts on top of threads.** `runtime.Goexit` runs the goroutine's
+deferred calls and ends only that goroutine. `runtime.LockOSThread` keeps its guarantee because each
+goroutine already owns its thread. These functions are hand-written C#
+([detail](ConversionStrategies-Reference/manual-conversions.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism)).
+
+**`sync` and `sync/atomic` run on .NET primitives.** A `sync.Mutex` is a binary `SemaphoreSlim`. Most
+`sync/atomic` bodies are one line: `AddInt32` returns `Interlocked.Add(ref addr.Value, delta)`.
+
+**Full detail:** [Reference → Goroutine callees](ConversionStrategies-Reference/defer-panic-recover.md#a-value-returning-goroutine-callee-is-wrapped-in-a-discarding-lambda) —
+the other `go`-statement forms (named function types, builtins, value receivers, multi-value arguments),
+where captured locals are copied, and the tests that guard each form.
+
+---
+
+## Channels and `select`
+
+Go's `chan T` becomes golib [`channel<T>`](../src/core/golib/channel.cs), a port of Go's own channel
+runtime. What the reader notices is the arrow glyph `ᐸꟷ`, which spells both send and receive
+([glyph table](#reading-converted-code-names-and-glyphs)).
+
+**Send is a method call and receive is a function call.** `c <- v` becomes `c.ᐸꟷ(v)`, and `<-c` becomes
+`ᐸꟷ(c)`. `make` becomes a constructor whose argument is the buffer size, and `len`, `cap` and `close`
+keep their names. A comma-ok receive passes the `ꟷ` sentinel, as a comma-ok map read does
+([comma-ok forms](#multi-result-values-and-comma-ok-forms)):
+
+<!-- source: src/tests/Behavioral/ChannelCapLen/main.go:18 -->
+```go
+fmt.Println(<-ch, len(ch))
+…
+d := make(chan int, 2)
+d <- 7
+…
+close(d)
+v, ok := <-d
+```
+<!-- source: src/tests/Behavioral/ChannelCapLen/main.cs.target:15 -->
+```csharp
+fmt.Println(ᐸꟷ(ch), len(ch));
+…
+var d = new channel<nint>(2);
+d.ᐸꟷ(7);
+…
+close(d);
+var (v, ok) = ᐸꟷ(d, ꟷ);
+```
+
+**Blocking, closing and nil match Go.** An unbuffered channel has capacity 0, so a send waits for a
+receiver. A closed channel yields its buffered values, then the zero value with `ok` false. A nil
+channel is `default!` ([nil and zero values](#nil-and-zero-values)), and a send or receive on it blocks forever.
+
+**A channel's direction shows as a marker comment.** `<-chan T` renders as `/*<-*/channel<T>` and
+`chan<- T` as `channel/*<-*/<T>`. All three directions are one C# type. The direction travels with the
+value, so `reflect` still reports it.
+
+**`range` over a channel becomes `foreach`,** which ends when the channel is closed and drained:
+
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.go:62 -->
+```go
+func filter(src <-chan int, dst chan<- int, prime int) {
+	for i := range src { // Loop over values received from 'src'.
+		…
+	}
+}
+```
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.cs.target:70 -->
+```csharp
+internal static void filter(/*<-*/channel<nint> src, channel/*<-*/<nint> dst, nint prime) {
+    foreach (var i in src) {
+        …
+    }
+}
+```
+
+**`select` becomes a `switch` over golib's `select(…)`.** Each case registers with the runtime,
+`c.ᐸꟷ(v, ꓸꓸꓸ)` for a send and `ᐸꟷ(c, ꓸꓸꓸ)` for a receive, where `ꓸꓸꓸ` marks a registration rather
+than an operation. `select` waits for a ready case, commits one chosen at random as in Go, and returns
+its position. A receive case's `when` guard calls `ꟷᐳ`, which hands over the received value:
+
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.go:28 -->
+```go
+select {
+case f <- x:
+	x, y = y, x+y
+case <-quit:
+	fmt.Println("quit")
+	return
+}
+```
+<!-- source: src/tests/Behavioral/SelectStatement/SelectStatement.cs.target:32 -->
+```csharp
+var selᴛ1 = f.ᐸꟷ(x, ꓸꓸꓸ);
+var selᴛ2 = quit;
+switch (select(selᴛ1, ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+case 0: {
+    (x, y) = (y, x + y);
+    break;
+}
+case 1 when selᴛ2.ꟷᐳ(out _): {
+    fmt.Println(quitˢ);
+    return;
+}}
+```
+
+**Case operands are evaluated once, in source order,** as Go requires. Each lands in a `selᴛN` temp
+before the `switch`. Names ending in `ˢ` are [hoisted string literals](#strings-string-and-sstring).
+
+**With a `default:` clause, the select calls `trySelect` instead.** It polls the same registrations
+without blocking and returns -1 when none is ready. The C# `default:` label then runs exactly when Go's would.
+
+**Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference/maps-and-channels.md#named-channel-types) — how golib ports Go's channel and `select` runtime, nil and closed channels inside a select, the exact operand-hoisting rules, a select that ends a function, comm-clause variables that escape to the heap, and named channel types.
 
 ---
 
 ## Struct Types
 
-Go structs become C# `struct`s (stack-friendly; heap-boxed as `ж<T>` when they escape). The converter emits
-a `[GoType]` partial struct with just the fields; the `TypeGenerator` synthesizes equality, `ISupportMake`,
-and embedding promotion. Access modifiers follow Go's exported/unexported naming:
+A Go struct becomes a C# `partial struct` marked `[GoType]` that holds only the fields. A
+[source generator](#source-generators) writes everything else, so the declaration reads like the Go original.
 
+**The declaration keeps Go's fields in Go's order.** An exported field is `public` and an unexported one
+is `internal`. Go's `int` is C# `nint`; see [Integer Types and Arithmetic](#integer-types-and-arithmetic).
+
+<!-- source: src/tests/Behavioral/AddressOfParamWrite/main.go:18 -->
 ```go
-type List struct {                    // container/list/list.go
-    root Element
-    len  int
+type Rect struct {
+	Min, Max int
 }
 ```
+<!-- source: src/tests/Behavioral/AddressOfParamWrite/main.cs.target:7 -->
 ```csharp
-[GoType] partial struct List {        // container/list/list.cs
-    internal Element root;
-    internal nint len;
+[GoType] partial struct Rect {
+    public nint Min, Max;
 }
 ```
 
-Inline/anonymous types are "lifted" out (a local `type x struct{…}` in `main` → `main_x`; an anonymous
-struct → `settingsᴛ1`) from **any depth** of the declared type — `[]*struct{…}` and `map[K]*struct{…}`
-lift exactly as a bare `struct{…}` does. The empty `struct{}` maps to the shared golib `EmptyStruct`,
-and an empty `interface{}` field to `any` — neither is lifted.
+The [generator](../src/gen/go2cs-gen/Templates/StructType/StructTypeTemplate.cs) adds to every struct:
 
-**Full detail:** [Reference → Struct Types](ConversionStrategies-Reference/struct-types.md#struct-types) — field-name
-collisions in generated equality, combined field lines, local/anonymous-type lifting (and the recursive
-descent that reaches an anonymous type through pointer/slice/map/channel composition), and recorded
-implicit conversions between structurally-identical anon structs.
+- a constructor that takes every field as an optional named argument, and one from `nil` for the zero value;
+- `==` and `!=`, which compare field by field, as Go's `==` does;
+- a field reference, `Ꮡname`, for each field, which `&s.name` uses (`Ꮡ` is the [address-of glyph](#reading-converted-code-names-and-glyphs));
+- a `ToString()` that prints the fields in Go's `%v` form.
+
+**A struct literal calls the generated constructor.** A keyed literal passes named arguments, an omitted
+field keeps its zero value, and an empty named-type literal passes `nil`. `&T{…}` boxes it in `ж<T>` with `Ꮡ(…)`:
+
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.go:66 -->
+```go
+person := Person{name: "Dr. Michał", age: 29}
+…
+l := &ledger{}
+```
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.cs.target:64 -->
+```csharp
+var person = new Person(name: "Dr. Michał"u8, age: 29);
+…
+var l = Ꮡ(new ledger(nil));
+```
+
+**A declared zero value is `default!` when C#'s default already equals Go's zero**; a struct that embeds a type or holds a fixed-size array is constructed instead ([Nil and Zero Values](#nil-and-zero-values)).
+
+**A struct is copied by value, as in Go.** A C# struct assignment copies the fields, and a struct holding a fixed-size array copies it through a generated `ΔClone()` ([Slices and Arrays](#slices-and-arrays)).
+<!-- shown by: src/tests/Behavioral/StructArrayFieldValueCopy/StructArrayFieldValueCopy.go:60 (c := d) -> StructArrayFieldValueCopy.cs.target:66 (var c = d.ΔClone();) -->
+
+**A struct type declared inside a function moves to package scope**, since C# allows no type in a method body.
+It takes the function's name as a prefix and is marked `[GoType("dyn")]`; `%T` still prints Go's `main.point`:
+
+<!-- source: src/tests/Behavioral/LiftedLocalTypes/main.go:31 -->
+```go
+type point struct{ X, Y int }
+```
+<!-- source: src/tests/Behavioral/LiftedLocalTypes/main.cs.target:17 -->
+```csharp
+[GoType("dyn")] internal partial struct main_point {
+    public nint X, Y;
+}
+```
+
+**An anonymous struct is also lifted under `[GoType("dyn")]`.** It usually takes the name of the
+variable or parameter where it first appears, prefixed by the function when local. Identical anonymous
+structs in one function, or at package level in one file, reuse that type, as Go treats them as one type.
+Here the variable itself is named `settings`, so the type takes a `ᴛ1` suffix to stay unique (`ᴛ` marks a converter-made name):
+
+<!-- source: src/tests/Behavioral/AnonymousStructs/AnonymousStructs.go:16 -->
+```go
+var settings = struct {
+	Verbose bool
+	Retries int
+}{Verbose: true, Retries: 3}
+```
+<!-- source: src/tests/Behavioral/AnonymousStructs/AnonymousStructs.cs.target:13 -->
+```csharp
+[GoType("dyn")] partial struct settingsᴛ1 {
+    public bool Verbose;
+    public nint Retries;
+}
+```
+
+**Full detail:** [Reference → Struct Types](ConversionStrategies-Reference/struct-types.md#struct-types) — field-name and combined-field rules, access modifiers, the zero-value forms and their exceptions, how lifted types are found at any depth and deduplicated, `[GoLocalName]`, the empty struct as `EmptyStruct`, conversions between identical anonymous structs, and positional literals such as the one-field `nil` literal.
 
 ---
 
 ## Struct Type Embedding
 
-Go uses embedding instead of inheritance. Since C# structs can't inherit, the `TypeGenerator` adds a field
-for the embedded type and **promotes** its fields and methods — transitively through every level, and for
-both value and pointer (`*T`) embeds:
+Go embedding promotes an embedded type's fields and methods to the outer struct. C# structs cannot
+inherit, so the converter declares each embed as a member and the [source generator](#source-generators)
+writes the promotion. Promoted names are then used almost exactly as they are in Go. Names such as
+`ж<T>` and `Ꮡ` are listed in [Reading Converted Code: Names and Glyphs](#reading-converted-code-names-and-glyphs).
 
+**An embedded struct becomes a `ref` property named for its type.** The converter emits
+`partial ref T T { get; }`, and the generator supplies the body. It is a `ref` because a Go selection
+such as `record.Person` is a variable. It can be assigned, have its address taken, or be a receiver.
+
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.go:29 -->
 ```go
-type reverse struct {                 // sort/sort.go
-    Interface                         // embedded — Len/Less/Swap promoted
-}
-func (r reverse) Less(i, j int) bool {
-    return r.Interface.Less(j, i)     // this method overrides the promoted Less
+type Record struct {
+	Person
+	Employee
 }
 ```
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.cs.target:29 -->
 ```csharp
-[GoType] partial struct reverse {     // sort/sort.cs
-    public Interface Interface;        // the embed becomes an explicitly-named field
-}
-internal static bool Less(this reverse r, nint i, nint j) {
-    return r.Interface.Less(j, i);
+[GoType] partial struct Record {
+    public partial ref Person Person { get; }
+    public partial ref Employee Employee { get; }
 }
 ```
 
-The embed field is named by **Go**, not by the C# rendering of its type: Go calls the field of `struct{ *myInt }`
-`myInt`, and that name — with its Go exportedness — is what the member, the generated constructor parameter and
-the promotion accessor all carry. The two strings coincide for an ordinary embed; they diverge whenever the
-converter renames the type, as it does when hoisting a function-local one to package scope.
+The embed is stored inline, not in a separate heap allocation. Copying the outer struct copies the
+embedded one, as in Go.
+<!-- Value copy: EmbeddedStructValueCopy (a := mid{...}; b := a; b.n = 2 leaves a.n == 1). -->
 
-An embed is an **inline field**, so a Go value copy copies it exactly as Go does — it was held in a shared
-`ж<T>` box until 2026-08-14, which gave the embed reference semantics a C# struct assignment then aliased,
-and that is the defect that made the converted `go/types` judge a type parameter not identical to itself.
-Promoted-embed structs still construct through a generated constructor when the embedded type needs one of
-its own (a fixed-size array at some depth). Cross-package embeds resolve through the compiled type's metadata, and pointer-receiver methods
-promoted through a value embed are routed at the call site (`t.of(timeTimer.Ꮡtimer).modify(…)`) so writes
-land on the real storage. Such a method is *also* emitted as a `ж<T>`-receiver extension on the outer type,
-because that emitted set is what golib reads back at run time as the type's Go **method set** — so a
-promotion the generator skips is not a missing shortcut but a Go method the type is then judged not to have,
-and every duck-typed assertion against it quietly misses. A field promoted through a **pointer** embed takes the hop before its reference is
-built, so its address is rooted where Go roots it — `f.pfd` for `type File struct{ *file }` *is* `f.file.pfd`,
-one address whichever spelling reaches it:
+**Promoted fields and methods are used on the outer value directly.** The generator writes a `ref`
+accessor for each promoted field and a forwarding method for each promoted method. A method the outer
+type declares itself hides the promoted one: `Record` has its own `IsDr`, so that is the one called.
 
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.go:72 -->
+```go
+	record.age = 18
+	…
+	fmt.Println(record.IsAdult())   // true
+	fmt.Println(record.IsManager()) // false
+	fmt.Println(record.IsDr())      // false
+```
+<!-- source: src/tests/Behavioral/StructPromotion/StructPromotion.cs.target:69 -->
 ```csharp
-// os/File — the generated promoted field reference
-internal static ж<FD> Ꮡpfd(ref File instance) => instance.@file.of(global::go.os_package.file.Ꮡpfd);
+    record.age = 18;
+    …
+    fmt.Println(record.IsAdult());
+    fmt.Println(record.IsManager());
+    fmt.Println(record.IsDr());
 ```
+
+**A pointer-receiver method promoted through a value embed receives the real field's address, never a
+copy.** When the outer value is a pointer, the converter writes that address out: Go's `o.bump(5)` becomes
+`o.of(outer.Ꮡinner).bump(5)`, and `o.of(outer.Ꮡinner)` is the address of `o`'s `inner` field. When the
+receiver is already addressable, Go's `c.set(1)` becomes a direct call on the field, `c.flags.set(1)`.
+<!-- source: src/tests/Behavioral/EmbeddedValuePointerMethod/main.go:75; src/tests/Behavioral/EmbeddedValuePointerMethod/main.cs.target:68; src/tests/Behavioral/EmbeddedValuePointerMethod/main.go:54; src/tests/Behavioral/EmbeddedValuePointerMethod/main.cs.target:50 -->
+
+**An embedded pointer holds a `ж<T>`.** `ж<T>` is golib's [pointer](#pointers) type, and promoted
+members go through it. Copying the outer struct copies the pointer, so both copies share one pointee.
+<!-- Shared pointee after a copy: EmbeddedStructValueCopy, ptrHolder (h3 := h1; h3.n = 70). -->
+
+<!-- source: src/tests/Behavioral/PointerEmbeddingPromotion/main.go:12 -->
+```go
+type holder struct {
+	*leaf
+	tag string
+}
+```
+<!-- source: src/tests/Behavioral/PointerEmbeddingPromotion/main.cs.target:19 -->
+```csharp
+[GoType] partial struct holder {
+    internal partial ref ж<leaf> leaf { get; }
+    internal @string tag;
+}
+```
+
+**An embedded interface is a plain field.** A direct call goes through it: Go's `c.Done()`, on a struct
+that embeds `context.Context`, becomes a call to the `Context` field's `Done` method. When the outer type
+is used as an [interface](#interfaces), the generated implementation forwards to that field.
+<!-- source: src/core/os/signal/signal.cs:303 (pointer receiver form: (~cʗ1).Context.Done()); interface dispatch: src/tests/Behavioral/ReverseSortNaNOrder/package_info.cs:42 GoImplement<reverse, Interface>(Promoted = true). -->
 
 **Full detail:** [Reference → Struct Type Embedding](ConversionStrategies-Reference/struct-embedding.md#struct-type-embedding) —
-transitive/pointer promotion, the inline-field copy rule, zero-value construction, cross-package (metadata)
-embeds, pointer-embed field identity, interface-adapter projection through embeds, and box-receiver primaries.
+how embed members are named, transitive promotion and Go's depth rule, value copies, zero-value construction,
+embeds from other packages, how promoted pointer-receiver calls are routed, nil embedded pointers, and the address
+of a field promoted through a pointer.
 
 ---
 
 ## Interfaces
 
-Go interfaces are duck-typed. The converter emits each user interface as a `[GoType] partial interface`, and
-the **`ImplementGenerator`** discovers which concrete types satisfy it and emits the implementing glue plus
-implicit conversions — so assigning a concrete value to an interface variable is direct, no reflection:
+A Go interface becomes a C# `partial interface` marked `[GoType]`, the attribute that tells a
+[source generator](#source-generators) to write the code that lets each Go type satisfy it. In
+converted code a struct value from the same package enters an interface directly, while a pointer
+enters wrapped in a generated adapter.
 
+**An interface keeps its method list, and an embedded interface becomes a C# base interface.**
+Method types use golib types such as `@string` ([Strings](#strings-string-and-sstring)).
+
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.go:270 -->
 ```go
-type Color interface {                // image/color/color.go
-    RGBA() (r, g, b, a uint32)
+type rdr interface{ read() string }
+type clsr interface{ close() string }
+
+type rdCloser interface {
+	rdr
+	clsr
 }
-type RGBA struct { R, G, B, A uint8 }
-func (c RGBA) RGBA() (r, g, b, a uint32) { /* … */ return }
 ```
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.cs.target:260 -->
 ```csharp
-[GoType] partial interface Color {    // image/color/color.cs
-    (uint32 r, uint32 g, uint32 b, uint32 a) RGBA();
+[GoType] partial interface rdr {
+    @string read();
 }
-[GoType] partial struct ΔRGBA {       // Δ-renamed: the struct name collides with its RGBA() method
-    public uint8 R, G, B, A;
+…
+[GoType] partial interface rdCloser :
+    rdr,
+    clsr
+{
 }
-public static (uint32 r, uint32 g, uint32 b, uint32 a) RGBA(this ΔRGBA c) { /* … */ return (r, g, b, a); }
 ```
 
-Each "concrete implements interface" pairing is recorded as `[assembly: GoImplement<ΔRGBA, Color>]` for the
-generator to consume. The well-known built-ins (`error`, `fmt.Stringer`, …) are hand-written in golib but
-implemented the same duck-typed way. A cross-package satisfaction is witnessed by the idiomatic
-`var _ I = T{}` assertion in the type's own package.
+The empty interface is C# `any`, covered in [Empty Interface](#empty-interface-any). Methods promoted by
+embedding satisfy interfaces as they do in Go ([Struct Type Embedding](#struct-type-embedding)).
 
-A record is **exported**, so an importer reads it back and skips work it does not need. `image/png` writing
-`d.palette[i] = color.RGBA{…}` emits exactly that — the bare struct into the `color.Color` slot — because
-image/color's assembly already carries `ΔRGBA : Color`. Only when the declaring assembly *cannot* realize the
-pair as a partial struct (a named FUNC type, which is a C# delegate — `net/http`'s `HandlerFunc`) does the
-importer wrap the value in its own `<pkg>_<T>ᴠ<Iface>` adapter class.
+**A struct value goes into an interface as itself.** The generator adds the interface to the struct's
+own declaration. The struct converts by a copy, just as Go copies a value into an interface.
 
-A **pointer**-sourced record (`(Pointer = true)`) answers the same question for `*T`, and its answer is
-simpler: that record *is* the declaring assembly's public `<T>ж<Iface>` adapter class, so the importer
-references it rather than minting a local one. `text/template`'s `s.walk(value, t.Root)` emits
-`new parse.ListNodeжNode(t.Root)` — reaching into `text/template/parse` — not a second adapter of its own:
-
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.go:14 -->
+```go
+func f() error {
+	return MyError{"foo"}
+}
+```
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.cs.target:15 -->
 ```csharp
-state.walk(value, new parse.ListNodeжNode(t.Root));   // text/template/exec.cs
+internal static error f() {
+    return new MyError("foo"u8);
+}
 ```
 
-Both halves of that decision — the one key spelling every record and cast site share, and the
-partial-struct trust rule the VALUE form additionally needs — are in
-[Reference → A foreign implement record is keyed in ONE spelling](ConversionStrategies-Reference/package-conversion.md#a-foreign-implement-record-is-keyed-in-one-spelling-and-a-value-one-is-trusted-only-for-a-partial-struct).
+A named function type becomes a C# delegate, and a delegate cannot implement an interface. So a value of
+such a type always goes in wrapped in a value adapter, such as net/http's `HandlerFuncᴠΔHandler` (the
+glyphs are listed in [Names and Glyphs](#reading-converted-code-names-and-glyphs)).
 
-Beyond one bounded exception, a record is only written for a conversion the source **declares** — an
-assignment, a call argument, a `var _ I = T{}` witness. It is not inferred in general, because a
-compile-time inference cannot be complete: a dynamic type may live in a package converted **after** the
-interface's own (io/fs is converted before os, so nothing in `fs` could record `os.dirFS`) — and an
-interface *literal* (`x.(interface{ Len() int })`) can never be recorded at all. The exception is the case
-where inference IS complete: when a type and an EXPORTED interface are declared in the **same** package,
-both are in hand as that package converts, so the pairs it satisfies are recorded even with no cast
-anywhere — `encoding/binary`'s `var BigEndian bigEndian` carries no `var _ ByteOrder = BigEndian`, and
-without the record every consumer minted a `binary_bigEndianᴠByteOrder` wrapper that became a second
-identity for the value (89 constructions across the stdlib). The **pointer** method set is recorded on the
-same reasoning, with one extra gate: a `(Pointer = true)` record is consumed by NAMING the generated
-adapter class, and that class is `public` only when both the type and the interface are exported, so an
-unexported participant is excluded. Named FUNC types and generics are excluded from both forms — see
-[Reference → A package records the pairs it SATISFIES](ConversionStrategies-Reference/package-conversion.md#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses). Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
-shells** beside every non-generic, non-constraint, non-empty interface — named or anonymous alike — found
-through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and
-a reflective `object`-held shell for a value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's
-`AdapterBinder` picks the tier, owns all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly
-as Go answers. A declared record still wins first, as the ~1.1 ns nominal fast path; the shells answer
-everything else. This is the ONLY duck-typing surface a converted interface has, and the only one it needs:
-there are no per-interface conversion methods to reach reflectively (which Native AOT could not close) and no
-converter-side structural guessing at named-interface pairs:
+**A pointer goes into an interface wrapped in an adapter.** `Ꮡ(x)` takes an address and yields a `ж<T>`,
+the golib heap box a Go pointer refers to. The generated class `CounterжIncrementer` holds that box and
+forwards each interface method to it.
 
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.go:134 -->
+```go
+c := &Counter{}
+var inc Incrementer = c // …
+inc.Inc()
+```
+<!-- source: src/tests/Behavioral/InterfaceCasting/InterfaceCasting.cs.target:156 -->
 ```csharp
-[global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]
-public partial interface Speaker { }
+var c = Ꮡ(new Counter(nil));
+Incrementer inc = new CounterжIncrementer(c);
+inc.Inc();
 ```
 
-**Full detail:** [Reference → Interfaces](ConversionStrategies-Reference/interfaces.md#interfaces) — a large topic:
-the runtime shells and their AOT tiering, cross-package pointer/value adapters, unexported-sealing markers,
-keyword-named method escaping, publicized unexported types, structural (C# inheritance) satisfaction, and
-adapter accessibility.
+Because the adapter holds the box itself, `inc.Inc()` changes the `Counter` that `c` points to. An
+assertion back to `*Counter` returns that same pointer.
+
+**Calls and nil checks read as ordinary C#; an assertion is golib's `_<T>()`.** A call through an
+interface is a plain C# interface call, `animal.Speak()`. A nil interface is `default!`, a null
+reference, so `err == nil` becomes `err == default!`. The assertion `back, ok := inc.(*Counter)` becomes
+`inc._<ж<Counter>>(ᐧ)`, where `ᐧ` selects the comma-ok form ([Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)).
+
+**Comparing interface values goes through golib's [`AreEqual`](../src/core/golib/builtin.cs).** C#'s `==`
+compares interface references, and it has no operator between an interface and the struct that implements it.
+Go compares an interface value by its dynamic type and value, and `AreEqual` does the same.
+
+<!-- source: src/tests/Behavioral/InterfaceImplementation/InterfaceImplementation.go:84 -->
+```go
+if err == errAgain {
+```
+<!-- source: src/tests/Behavioral/InterfaceImplementation/InterfaceImplementation.cs.target:82 -->
+```csharp
+if (AreEqual(err, errAgain)) {
+```
+
+Adapters are unwrapped first, so two interfaces holding the same pointer are equal. Comparing two values
+of a type Go cannot compare, such as a slice or map, panics as it does in Go. Map keys of interface type
+compare the same way ([Maps](#maps)).
+
+**Full detail:** [Reference → Interfaces](ConversionStrategies-Reference/interfaces.md#interfaces) — how the converter records which types satisfy which interfaces across packages, adapter naming and accessibility, value adapters for types from other packages, the run-time interface shells, keyword-named methods, and publicized unexported types.
+
+---
+
+## Reflection (`reflect`)
+
+Go's `reflect` converts like any other package, but its entry points are hand-written. They read each converted
+value and its .NET `System.Type`, plus a few attributes the converter puts on converted types. The glyphs are in
+[Reading Converted Code](#reading-converted-code-names-and-glyphs).
+
+**The entry points read a `System.Type`, not a type word.** Go's `reflect` reads an interface's type and data
+words through `unsafe.Pointer`, but a converted `any` is one `object` reference. So the
+[hand-written files](#manually-converted-declarations) of [`reflect`](../src/core/reflect/value_impl.cs) and
+`internal/abi` carry the value's `System.Type` and the boxed value instead. Golib's
+[`GoReflect`](../src/core/golib/GoReflect.cs) answers every question from those two.
+
+**`Kind` follows the C# representation.** Each Go kind has its own C# form, so the kind is read off the type:
+
+| C# type | `reflect.Kind` |
+|---|---|
+| `bool`, `nint`, `nuint`, `int8` … `uint64`, `uintptr`, `float32`, `float64`, `complex64`, `complex128` | the matching scalar kind (`nint` is `Int`) |
+| `@string`, `slice<T>`, `array<T>`, `map<K, V>`, `channel<T>` | `String`, `Slice`, `Array`, `Map`, `Chan` |
+| `ж<T>`, `@unsafe.Pointer` | `Pointer`, `UnsafePointer` |
+| a delegate | `Func` |
+| `object` (Go `any`) or a C# interface | `Interface` |
+| a `[GoType]` struct | `Struct` |
+| a named type, such as `[GoType("num:nint")] partial struct Code` | its underlying kind, here `Int` |
+
+**A struct tag is copied verbatim into `[GoTag]`.** A C# field has no place for a Go tag, so the converter
+writes it as an attribute, and `StructField.Tag` reads it back:
+
+<!-- source: src/tests/Behavioral/ReflectStructTagCopy/main.go:30 -->
+```go
+type record struct {
+	Version  int
+	Name     string `json:"name" asn1:"optional,explicit,tag:0"`
+	…
+}
+```
+<!-- source: src/tests/Behavioral/ReflectStructTagCopy/main.cs.target:8 -->
+```csharp
+[GoType] partial struct record {
+    public nint Version;
+    [GoTag(@"json:""name"" asn1:""optional,explicit,tag:0""")]
+    public @string Name;
+    …
+}
+```
+
+**Other attributes carry what a CLR type cannot hold.** `[GoArrayDims]` and `[GoMapKeyDims]` give an array
+length that the type `array<T>` does not hold. `[GoChanDir]` marks a named directional channel type, and
+`[GoEmbedded]` an embedded predeclared type such as `struct{ int }`. `[GoLocalName]` keeps the Go name of a
+function-local type lifted to package scope.
+
+**A type defined over a named interface gets a descriptor carrier.** `type eface any` becomes a C#
+`global using` alias rather than a struct of its own, which lets any value be assigned to it. An alias leaves
+nothing in compiled code, so the converter also emits an empty interface, marked `ᴅ`, whose `[GoLocalName]` carries
+the Go name. A field of that type points `reflect` at it with `[GoDescriptorType]`:
+
+<!-- source: src/tests/Behavioral/DescriptorCarrierFieldName/main.go:23 -->
+```go
+type eface any // …
+…
+type holder struct {
+	E eface
+	…
+```
+<!-- source: src/tests/Behavioral/DescriptorCarrierFieldName/main.cs.target:1 -->
+```csharp
+global using eface = object;
+…
+[GoLocalName("eface")] internal interface efaceᴅ { }
+…
+[GoType] partial struct holder {
+    [GoDescriptorType(Self = typeof(efaceᴅ))]
+    public eface E;
+    …
+```
+
+**A generic function that passes a type parameter to `reflect.TypeFor` gains a companion, marked `ᴺ`.** A type
+argument cannot carry an attribute, and `eface` and `any` are one CLR type. So each call passes the carrier as the
+`ᴺ` argument when a C# alias erases the type, and the type argument itself otherwise:
+
+<!-- source: src/tests/Behavioral/GenericTypeNameCompanion/main.go:45 -->
+```go
+func nameOf[T any](label string) {
+	t := reflect.TypeFor[T]()
+	…
+nameOf[eface]("eface")
+…
+nameOf[any]("any")
+```
+<!-- source: src/tests/Behavioral/GenericTypeNameCompanion/main.cs.target:24 -->
+```csharp
+internal static void nameOf<T, Tᴺ>(@string label) {
+    var t = reflect.TypeFor<Tᴺ>();
+    …
+nameOf<eface, efaceᴅ>(efaceˢ);
+…
+nameOf<any, any>(anyˢ);
+```
+
+**Types built at run time are real CLR types.** `PointerTo`, `SliceOf`, `ArrayOf`, `MapOf` and `ChanOf`
+instantiate the matching golib generic type, recording any array length or channel direction beside it. `FuncOf`
+builds a delegate type, and `MakeFunc` compiles a delegate that calls your function. `StructOf` emits a new
+value type with `System.Reflection.Emit`, so downstream code treats it like a converted struct.
+
+**Full detail:** [Reference → Manually-Converted Declarations: `StructField.Tag` and the reflection bridge rules that follow it](ConversionStrategies-Reference/manual-conversions.md#structfieldtag-is-a-real-read--the-converter-has-always-emitted-the-tag-nothing-had-ever-read-it) — the bridge's rules one by one: tag reads, `Copy`, type names, assignability, the channel-direction and array-length attributes, embedded fields, `Bytes`/`SetBytes`, map entries, and the `ArrayOf`, `StructOf` and `SliceOf` constructors.
 
 ---
 
 ## Pointers
 
-Pointer conversions use the golib heap box **`ж<T>`** (read "zhe"). Taking an address uses **`Ꮡ`**; an
-escaping local is allocated with `heap(...)`; a field/element address goes through `.of(Type.ᏑField)` /
-`.at<T>(i)` / `Ꮡ(slice, i)`. A pointer parameter is deref-aliased with `ref var x = ref Ꮡx.Value`, and
-writes through a pointer field use `.Value`:
+Go's `*T` becomes golib [`ж<T>`](../src/core/golib/%D0%B6.cs) (read "zhe"): a reference-type box that
+holds, or points at, one `T`. The glyph `Ꮡ` marks an address: `Ꮡ(…)` makes a pointer, and a name such
+as `Ꮡa` is the box that holds `a`. The [glyph table](#reading-converted-code-names-and-glyphs) lists the
+other glyphs. <!-- ж<ж<T>>: src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:19 (also :80, `PrintValPtr2Ptr(ж<ж<nint>> Ꮡpptr)`) ; box nil compare: src/tests/Behavioral/NilPointerParamMethods/main.cs.target:17 -->
 
+**An address-taken local has two names for one storage.** golib's `heap(…)` allocates the local in a box,
+so a pointer to it can outlive the function, as in Go. `a` is a C# `ref` alias for ordinary reads and
+writes, and `Ꮡa` is the box, used wherever Go writes `&a`:
+
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.go:17 -->
 ```go
-func (l *List) insert(e, at *Element) *Element {   // container/list/list.go
-    e.prev = at
-    e.next = at.next
-    e.prev.next = e
-    e.next.prev = e
-    e.list = l
-    l.len++
-    return e
-}
+var a int
+…
+ptr = &a
 ```
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:17 -->
 ```csharp
-internal static ж<Element> insert(this ж<List> Ꮡl, ж<Element> Ꮡe, ж<Element> Ꮡat) {  // list.cs
-    ref var l = ref Ꮡl.Value;
-    ref var e = ref Ꮡe.Value;
-    ref var at = ref Ꮡat.Value;
-    e.prev = Ꮡat;
-    e.next = at.next;
-    e.prev.Value.next = Ꮡe;      // write through the pointer field
-    e.next.Value.prev = Ꮡe;
-    e.list = Ꮡl;
-    l.len++;
-    return Ꮡe;
-}
+ref var a = ref heap(new nint(), out var Ꮡa);
+…
+ptr = Ꮡa;
 ```
 
-The box's `Value` is the strict (nil-panicking) dereference; `ValueSlot` is its no-check twin; a
-package-level global whose address is taken is backed by a real box so `&global` writes are observed. Using
-`ж<T>` rather than C# `ref` sidesteps escape-analysis complications, at the cost of an occasional heap
-allocation.
+A local that a closure, a `go` statement or a `defer` statement shares with its caller can also get this
+form, so both sides see one variable. [Function Values and Closures](#function-values-and-closures)
+covers captures. <!-- other routes to the box: `&a`, a method that keeps its receiver's address, a pointer-method value: src/go2cs/escapeAnalysisOperations.go:1143, 1150. rule: src/go2cs/escapeAnalysisOperations.go:1127-1129 (`escapes = (closureContainsIdent && !isValueType(...)) || takesAddress || usedAsRef`; isValueType is true only for basic types, variableAnalysisOperations.go:2834-2843); go/defer arms: escapeAnalysisOperations.go:982, 1026; written-after-capture picks box versus snapshot routing: variableAnalysisOperations.go:2092-2097. reference-shaped types: escapeAnalysisOperations.go:2036-2044, 1852-1866; probeI1 main.go:152 -> main.cs.target:162. Examples in src/tests/Behavioral/ClosureWriteVisibility: probeA1 boxed and written through the box, main.cs.target:18-22 (`ref var t = ref heap<Tally>(out var Ꮡt);` … `Ꮡt.Value.total += 100;`); probeA3 boxed but read-only after all writes, so the closure takes a snapshot, main.cs.target:37-41 (`var tʗ1 = t;`); probeN1 captured int stays plain, main.go:193-197 -> main.cs.target:210-215 (`nint n = 0; void inc() { n++; }`). Reference: pointers.md:311 -->
 
-**Where no escape exists, the box does not either — the ref-lowering.** An *unexported package-level
-function's* pointer parameter whose every use is a dereference (or a forward into another such position)
-emits as a C# **`ref T` parameter**, and every call site passes a `ref` expression instead of minting a
-box: `ref` reads as Go's `&`, the signature reads as Go's `*T`, and an address-taken local whose address
-only feeds such positions reverts to a plain stack local (no `heap()` box, no pinnable slot). Any use the
-classifier does not positively recognize — identity/nilness, escapes, `unsafe`, method calls on the
-pointer, re-points, exported/func-value/linkname/hand-owned functions — keeps the boxed convention, and
-`defer f(&x)` / `go f(&x)` sites stay boxed with the thunk deriving the ref at invoke time. A nil base at
-a lowered field address panics eagerly via golib's zero-allocation `nonnil` (Go's timing); a nil pointer
-argument still enters the callee and faults at first use:
+**`&T{…}` and `new(T)` allocate a box directly.** `Ꮡ(…)` boxes a new value, and golib's `@new<T>()`
+boxes a zero value. <!-- @new: src/tests/Behavioral/PointerToArrayElementAddress/main.cs.target:20 -->
 
+<!-- source: src/tests/Behavioral/IncDecPointerField/main.go:21 -->
 ```go
-func p224Sub(out1, arg1, arg2 *p224MontgomeryDomainFieldElement)   // nistec/fiat/p224_fiat64.go
-p224Sub(&e.x, &t1.x, &t2.x)
+base := &counter{n: 5}
 ```
+<!-- source: src/tests/Behavioral/IncDecPointerField/main.cs.target:21 -->
 ```csharp
-internal static void p224Sub(ref p224MontgomeryDomainFieldElement out1, ref p224MontgomeryDomainFieldElement arg1, ref p224MontgomeryDomainFieldElement arg2)
-p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
+var @base = Ꮡ(new counter(n: 5));
 ```
 
-Detail (the classification whitelist, the seven call-site emission rows and their boxed fallbacks, the
-hoisted-temp rule for wrapper reinterprets, the locals reversion, the nil doctrine and the defer/go
-carve-out): [A pointer parameter whose every use is a dereference is a `ref`
-parameter](ConversionStrategies-Reference/pointers.md#a-pointer-parameter-whose-every-use-is-a-dereference-is-a-ref-parameter--the-ж-box-ref-lowering).
+**`*p` is `.Value`, and it reads and writes the real storage.** `Ꮡ(s, i)` is the address of a slice
+element, so a write through it lands in the slice itself, as in Go. A field address points into its
+box the same way. <!-- field: src/tests/Behavioral/PointerToPointer/PointerToPointer.go:49 -> PointerToPointer.cs.target:40 (`Ꮡb.of(Buffer.Ꮡoff)`) ; array element `.at<T>(i)`: src/tests/Behavioral/PointerToArrayElementAddress/main.cs.target:22 -->
 
-An **ENTRY alias** — the `ref` a pointer RECEIVER or pointer PARAMETER binds on the way in — must not use
-`Value`. Go permits calling a method through a nil `*T`, and equally permits *passing* one: the body RUNS,
-and the panic happens only where it dereferences the pointee. That is why `os`'s fifteen nil-tolerant
-`*File` methods return `ErrInvalid` instead of panicking, and why `internal/sync`'s
-`newIndirectNode(nil)` — which merely stores its argument — is not an error at all. So every entry alias
-uses `DerefOrNull()`, which binds a *null ref* for a nil box: legal to hold, and it faults on first use,
-so the panic is deferred to Go's own point rather than raised at entry (or, as a shared `default(T)`
-slot would, lost entirely):
-
+<!-- source: src/tests/Behavioral/SlicePointerIdentity/main.go:51 -->
 ```go
-func (f *File) Chdir() error {                  // os/file_posix.go
-    if err := f.checkValid("chdir"); err != nil { return err }
-    ...
-}
+p := &s[1]
+*p = 42
 ```
+<!-- source: src/tests/Behavioral/SlicePointerIdentity/main.cs.target:58 -->
 ```csharp
-public static error Chdir(this ж<File> Ꮡf) {    // file.cs
-    ref var f = ref Ꮡf.DerefOrNull();           // binds; a nil receiver does NOT throw here
-    { var err = Ꮡf.checkValid(chdirˢ); if (err != default!) { return err; } }
-    ...
-}
+var p = Ꮡ(s, 1);
+p.Value = 42;
 ```
 
-A pointer PARAMETER binds identically — `ref var parent = ref Ꮡparent.DerefOrNull();` — and so does the
-re-alias after a pointer is re-pointed, since a repoint is not a dereference either. The fault surfaces as
-Go's own `runtime error: invalid memory address or nil pointer dereference`, and is recoverable. Detail
-(both emission sites — the converter preamble and go2cs-gen's `ref`-receiver bridge — and the three
-retired body analyses that used to admit nil parameters one shape at a time):
-[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference/pointers.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish)
-and [A pointer PARAMETER is nil-deferring for exactly the reason a receiver is](ConversionStrategies-Reference/pointers.md#a-pointer-parameter-is-nil-deferring-for-exactly-the-reason-a-receiver-is).
+**A pointer receiver is `this ref T`**, or the box `this ж<T>` when the method stores or returns its
+receiver ([Functions and Methods](#functions-and-methods)). <!-- source: src/core/container/list/list.cs:104 -->
 
-Pointer **equality is by address**, so `ж<T>.Equals` compares each referent shape by its real storage, not
-by the box: a struct-field ref by (source object, field identity), and an element ref by (backing array,
-absolute index). That last canonicalization is load-bearing — `Ꮡ(slice, i)` boxes the slice HEADER anew on
-every call, so comparing the boxes made `&s[0] == &s[0]` *false*, and hashing them put two aliasing element
-pointers in different `map[*T]` buckets. Reducing to the backing array plus `Low + index` makes every Go
-alias of one element equal: `&s[1:][0] == &s[1]`, an in-capacity `append` result, and `&a[:][i] == &a[i]`.
+**A pointer parameter the body dereferences binds a `ref` alias on entry**, so the body reads like Go
+and a nil pointer panics at its first dereference
+([Implicit Pointer Dereferencing](#implicit-pointer-dereferencing)). <!-- DerefOrNull returns Unsafe.NullRef<T>() for a nil box; the NullReferenceException at first use maps to "invalid memory address or nil pointer dereference": src/core/golib/ж.PointerExtensions.cs:445. box-only parameter, no alias: src/tests/Behavioral/IncDecPointerField/main.cs.target:15-17 -->
 
-Identity and nilness are **structural** — properties of the storage, never of the value stored there. A
-standard heap box *is* its storage, so it compares and hashes by its own identity (two boxes over one
-referent are two addresses, as `&c == &d` is false in Go), while two boxes aliasing the same native address
-are one pointer. `IsNilPointer` answers "is this THE nil pointer" and drives every identity question; the
-value-peeking `IsNull` survives only where reading the slot is the actual question, because a real address
-whose pointee is nil (`&i` with `i == nil`) and a field/element reference box are both perfectly good
-addresses.
+**An unexported package-level function that only dereferences a pointer parameter takes `ref T`.** At an
+ordinary call, `&x` becomes `ref x`, so a local whose address feeds only such calls needs no box (a
+`defer` or `go` call still passes the box). golib's `nonnil` raises Go's nil panic when the pointer is
+nil: <!-- signature `internal static void addTo(ref uint64 @out, uint64 v)` at src/tests/Behavioral/RefLoweredParams/main.cs.target:11 (Go: main.go:16). Stdlib instance: src/core/crypto/internal/fips140/nistec/fiat/p224.cs:127. defer keeps the box: main.go:73 `defer printVal(&x)` -> main.cs.target:68 `defer(ᴛ1 => printVal(ref ᴛ1.DerefOrNull()), Ꮡx, ref ᒐ);`; reference: docs/ConversionStrategies-Reference/pointers.md:186, :190 -->
 
-The same reasoning answers **lifetime**: because the box is an expression temporary, anything asking
-"when does this object die?" or "is this the same object?" asks the *referent*, exposed as
-`ReferentObject` — the backing storage for an element ref, the **root** allocation for a (possibly
-nested) field ref. `runtime.SetFinalizer(&buf[0], f)` finalizes `buf`'s allocation, as in Go, rather
-than the throwaway `ж<byte>` the argument expression allocated; and `sync.Cond`'s copy detector, whose
-Go implementation stores its own *address* (unsound on a moving collector), compares root-allocation
-identity instead.
+<!-- source: src/tests/Behavioral/RefLoweredParams/main.go:23 -->
+```go
+addTo(&v.x, k)
+```
+<!-- source: src/tests/Behavioral/RefLoweredParams/main.cs.target:16 -->
+```csharp
+addTo(ref nonnil(ref v).x, k);
+```
 
-A pointer **reinterpret** — `(*U)(p)` between two types that share an underlying — names `p`'s own storage
-in Go, so a write through the derived pointer is visible through `p`. The converter emits golib's aliasing
-`p.Reinterpret<T, U>()` rather than boxing a converted copy. `flag`'s `newBoolValue` returning
-`(*boolValue)(p)` is the shape that makes the difference visible: under the copy form a parsed flag never
-reached the caller's variable.
-And it answers **address stability**. Go's collector never moves a heap object, so
-`uintptr(unsafe.Pointer(&x))` names an address that stays valid while native code uses it; the CLR's
-does move them, so go2cs **pins** the root storage whenever a pointer's address is taken and holds it
-for that pointer's lifetime — a heap box pins its own value slot, an element ref the backing array, a
-field ref the allocation containing the field. That is also why a standard heap box keeps an unmanaged
-pointee's value in a one-element array rather than in a field of the box: a class carrying references
-cannot be pinned at all, so the value needs somewhere pinnable to live. Without this, every address
-handed to a syscall was a *former* address — a collection during a blocking `ReadFile` moved the
-byte-count box out from under the kernel, the count stayed zero, and `internal/poll` reported that as
-a premature `io.EOF`.
+**A conversion between pointer types with the same underlying type shares the storage.** golib's
+`Reinterpret<T, U>()` returns a view of the same box, not a copy. So `(*point)(c)` becomes
+`Ꮡc.Reinterpret<coord, point>()`, and a write through either pointer shows through the other. <!-- src/tests/Behavioral/NamedNumericPointerReinterpret/main.go:67-68 `p := (*point)(c)` / `p.X, p.Y = 3, 4` -> main.cs.target:60-61 `var p = Ꮡc.Reinterpret<coord, point>();` / `(p.Value.X, p.Value.Y) = (3, 4);` ; stdlib instance: GOROOT/src/flag/flag.go:130 `return (*boolValue)(p)` -> src/core/flag/flag.cs:133 `return Ꮡp.Reinterpret<bool, boolValue>();` -->
 
-**Full detail:** [Reference → Pointers](ConversionStrategies-Reference/pointers.md#pointers) — per-iteration
-range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
-identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`
-conversions, and reinterpret casts.
+**Pointers compare by address.** Two pointers are equal when they point to the same storage, so a
+pointer works as a map key. Raw addresses are covered in
+[`unsafe.Pointer` and `uintptr`](#unsafepointer-and-uintptr). <!-- equality: src/tests/Behavioral/SlicePointerIdentity/main.go:20-69 (two pointers to one element are equal even when taken through different slices, and element pointers work as map keys). pinning: golib pins the storage only where it is pinnable, src/core/golib/ж.cs:62 (PointerStorage: None = order token, Unpinnable = correct when taken but may move, Pinnable = pinned), ж.cs:547 (EnsureStableAddress), ж.cs:979 (uintptr conversion returns an order token for a reference-holding pointee) -->
+
+**Full detail:** [Reference → Pointers](ConversionStrategies-Reference/pointers.md#pointers) — which parameters become `ref` and their call forms, the deferred nil panic, per-iteration loop boxes, closures over boxed locals, equality and pinning, and `unsafe.Pointer` conversions.
 
 ---
 
 ## Implicit Pointer Dereferencing
 
-Go auto-dereferences pointers on field access and method calls. The converter binds a `ref` local to the
-box's value for a pointer parameter, so the body reads like Go:
+In Go, `p.f` means `(*p).f`, and calling a pointer method on a variable `v` means `(&v).M()`. Converted
+C# keeps these short forms wherever a C# `ref` can carry the pointer. Where a pointer local holds a golib
+[`ж<T>` heap box](#pointers), the dereference is visible: [`~p`](#reading-converted-code-names-and-glyphs) or `p.Value`.
 
+**A pointer parameter's body reads like Go.** The function binds a `ref` alias to the pointed-to value
+under the Go name, so the body needs no dereference. The box keeps the name with a `Ꮡ` address prefix.
+<!-- Moved to the reference (pointers.md): some pointer parameters instead become plain ref T parameters. -->
+
+<!-- source: src/tests/Behavioral/PointerToArrayElementAddress/main.go:18 -->
 ```go
-func PrintValPtr(ptr *int) {
-    fmt.Printf("Value available at *ptr = %d\n", *ptr)
-    *ptr++
+func populate(t *row, base uint32) {
+	for i := 0; i < len(t); i++ {
+		t[i] = base + uint32(i)
+	}
 }
 ```
+<!-- source: src/tests/Behavioral/PointerToArrayElementAddress/main.cs.target:11 -->
 ```csharp
-public static void PrintValPtr(ж<nint> Ꮡptr) {
-    ref var ptr = ref Ꮡptr.Value;
-    fmt.Printf("Value available at *ptr = %d\n"u8, ptr);
-    ptr++;
+internal static void populate(ж<row> Ꮡt, uint32 @base) {
+    ref var t = ref Ꮡt.DerefOrNull();
+
+    for (nint i = 0; i < 4; i++) {
+        t[i] = @base + (uint32)i;
+    }
 }
 ```
 
-A pointer *local* dereferences through its box on access — a read as `(~x).field`, a write as
-`x.Value.field = …` (the assignable form). Promoted fields, nested LHS chains, `++`/`--`, and indexed
-targets all thread the same assignment context so the write path stays assignable.
+`DerefOrNull()` lets a nil pointer panic at first use, as in Go. `row` is `[4]uint32`, so `len(t)` is 4. `@base` is Go's `base`, [escaped](#reading-converted-code-names-and-glyphs) because it is a C# keyword.
+<!-- source: src/tests/Behavioral/PointerToArrayElementAddress/main.go:11 (type row [4]uint32) -->
 
-**Full detail:** [Reference → Implicit Pointer Dereferencing](ConversionStrategies-Reference/implicit-dereferencing.md#implicit-pointer-dereferencing) —
-selector-base deref detection, nested LHS `.Value` chains, index-expression assignment targets, and
-`*p.field` field-deref through parameters/receivers.
+**A pointer local reads through `~` and writes through `.Value`.** `~p` returns a copy of the value and
+panics on nil, like Go's `*p`. A write, `++` or `--` goes through `p.Value`, a `ref` to the real storage.
+
+<!-- source: src/tests/Behavioral/IncDecPointerField/main.go:21 -->
+```go
+	base := &counter{n: 5}
+	base.sub.k = 3
+	…
+	fmt.Println(base.n, base.sub.k) // …
+```
+<!-- source: src/tests/Behavioral/IncDecPointerField/main.cs.target:21 -->
+```csharp
+    var @base = Ꮡ(new counter(n: 5));
+    @base.Value.sub.k = 3;
+    …
+    fmt.Println((~@base).n, (~@base).sub.k);
+```
+<!-- Moved to the reference: a value method called through a pointer copies the same way, rq.BumpedRecv() becomes (~rq).BumpedRecv() (src/tests/Behavioral/AddressOfParamWrite/main.go:191; main.cs.target:169). Each pointer in a chain gets its own ~: a.next.data reads (~(~a).next).data (src/tests/Behavioral/ReceiverPointerValue/main.go:64; main.cs.target:48). -->
+
+**A pointer method on a variable takes its address for you.** Its receiver is `this ref T` ([Functions and Methods](#functions-and-methods)), so
+`c.alloc(5)` stays `c.alloc(5)` and C# passes `c` by reference. `[GoRecv]` asks the [source generators](#source-generators) for a `ж<T>` overload.
+<!-- source: src/tests/Behavioral/EmbeddedValuePointerMethod/main.go:90-91 and main.cs.target:77-78 (c := chunk{}; c.alloc(5) stays c.alloc(5)); src/tests/Behavioral/ReceiverPointerValue/main.go:69; src/tests/Behavioral/ReceiverPointerValue/main.cs.target:52 (b.linkTo(c)); src/tests/Behavioral/ReceiverPointerValue/main.cs.target:18 (the [GoRecv] this ref ring declaration) -->
+<!-- Moved to the reference (pointers.md): a method that keeps its receiver as a pointer takes this ж<T>, and a variable used as its receiver lives in a heap box, so b.Grow(n) becomes Ꮡb.Grow(n) (src/core/strings/strings.cs:522-523; src/core/strings/builder.cs:76). -->
+
+<!-- source: src/tests/Behavioral/EmbeddedValuePointerMethod/main.go:51 -->
+```go
+func (c *chunk) alloc(n uint16) {
+```
+<!-- source: src/tests/Behavioral/EmbeddedValuePointerMethod/main.cs.target:47 -->
+```csharp
+[GoRecv] internal static void alloc(this ref chunk c, uint16 n) {
+```
+
+**Full detail:** [Reference → Implicit Pointer Dereferencing](ConversionStrategies-Reference/implicit-dereferencing.md#implicit-pointer-dereferencing) — how the converter decides that a selector base needs a dereference, promoted fields through a pointer local, nested and indexed write targets, and `*p.field` through parameters and receivers.
 
 ---
 
-## The `go.golib` support namespace
+## `unsafe.Pointer` and `uintptr`
+<!-- length: six rules a reader meets in converted runtime and syscall code; four carry an example pair, the syscall keep-alive shows its C# only (its Go lives in GOROOT, quoted inline), order tokens have no emitted form and are described in words; the address-arithmetic example, unsafe.Slice/String aliasing and their copy cases live in the reference -->
 
-golib's hand-written support types (`SparseArray<T>`, `PinnedBuffer`, `HashCode`, …) live in the
-**`go.golib`** child namespace — deliberately *not* `go.<any Go package name>`, because a child namespace
-visible from every referenced assembly would win simple-name lookup over an import alias (`go.runtime` would
-shadow `using runtime = runtime_package;`, CS0576). The general form of that collision — a real
-parent/child package pair — is handled by **Δ-renaming the import alias** (`using Δruntime = …`).
+Go's `unsafe.Pointer` becomes [`@unsafe.Pointer`](../src/core/unsafe/unsafe.cs), a class from go2cs's
+hand-written `unsafe` package. It holds the address as a `uintptr`, and can also hold the pointer box it
+was made from. Go's `uintptr` becomes golib's [`uintptr`](../src/core/golib/uintptr.cs) struct. The
+glyphs are explained in [Reading Converted Code](#reading-converted-code-names-and-glyphs).
 
-**Full detail:** [Reference → The go.golib support namespace](ConversionStrategies-Reference/golib-namespace.md#the-gogolib-support-namespace) —
-the collision reasoning and the transitive-closure alias-rename pre-pass (incl. foreign renamed-type alias
-resolution).
+**`Sizeof`, `Alignof` and `Offsetof` fold to Go's numbers.** The converter computes them with Go's
+layout rules, whatever layout the C# struct has. It keeps the Go expression as a comment:
+
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.go:98 -->
+```go
+	var x struct {
+		a int64
+		b bool
+		c string
+	}
+	const M, N = unsafe.Sizeof(x.c), unsafe.Sizeof(x)
+```
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.cs.target:92 -->
+```csharp
+    uintptr M = /* unsafe.Sizeof(x.c) */ 16;
+    uintptr N = /* unsafe.Sizeof(x) */ 32;
+```
+
+**A pointer converted to `uintptr` is a real, pinned address when its storage can be pinned.**
+`uintptr(unsafe.Pointer(p))` becomes a plain `(uintptr)` cast of the pointer's box. The CLR garbage
+collector moves objects and Go's does not, so the cast pins pinnable storage while the box lives. Adding
+an offset gives a real address, and converting it back to a pointer aliases that memory, as in Go:
+
+<!-- source: src/tests/Behavioral/UintptrUnsafePointerIdiom/main.go:31 -->
+```go
+func addrOf(p *point) uintptr {
+	return uintptr(unsafe.Pointer(p))
+}
+```
+<!-- source: src/tests/Behavioral/UintptrUnsafePointerIdiom/main.cs.target:15 -->
+```csharp
+internal static uintptr addrOf(ж<point> Ꮡp) {
+    return (uintptr)Ꮡp;
+}
+```
+
+**A pointer to a variable or element whose type holds managed references gets an order token, not an
+address.** The CLR cannot pin a value with a string, slice or pointer inside it. A pointer to a struct
+field always gets a real address, but it is held still only when the enclosing variable can be pinned.
+<!-- the three storage kinds: src/core/golib/ж.cs:62-83 (None = order token, Unpinnable, Pinnable); ж.StandardBox.cs:174 and ж.ElemRefBox.cs:252 (None for a reference-bearing T); ж.FieldRefBox.cs:153-161 (a field reference always names a real interior address). Shown by: src/tests/Behavioral/ReflectFieldAddrWrite (a reflect-projected token converted back to a pointer and written through); GolibTests PointerTokenConversionTests, ManagedPointerTokenMintTests. -->
+
+A token compares and sorts like an address, and converts back to the same box while that box lives.
+Converting a token plus an offset back to a pointer, or dereferencing a token as another type, raises a
+recoverable Go panic that names the problem.
+<!-- the panics: src/core/golib/ж.cs:751-930 (token arithmetic refused, arm 2a panics at dereference), RuntimeErrorPanic.cs:41; GolibTests TokenArithmeticRefusalTests, OrderTokenOffsetZeroRefusalTests -->
+
+**`unsafe.Pointer(p)` keeps its referent.** The conversion becomes `@unsafe.Pointer.FromPinnedBox` or
+`FromBox`, which stores the source box beside the number. Holding the box keeps the referent alive, as
+Go's collector does. For the pinned form, the round trip back to `uintptr` is exact:
+
+<!-- source: src/tests/Behavioral/UintptrUnsafePointerIdiom/main.go:57 -->
+```go
+	up := unsafe.Pointer(e0)
+	fmt.Println("round trip:", uintptr(up) == a0)
+```
+<!-- source: src/tests/Behavioral/UintptrUnsafePointerIdiom/main.cs.target:43 -->
+```csharp
+    @unsafe.Pointer up = @unsafe.Pointer.FromPinnedBox(e0);
+    fmt.Println(roundTripˢ, (uintptr)up == a0);
+```
+
+**A numeric value pun is a `bitcast`.** Reading a number's bits as another number of the same size, as
+`math.Float64bits` does, becomes golib's `bitcast<TSrc, TDst>`, which boxes nothing.
+
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.go:57 -->
+```go
+func Float64bits(f float64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&f))
+}
+```
+<!-- source: src/tests/Behavioral/UnsafeOperations/UnsafeOperations.cs.target:50 -->
+```csharp
+public static uint64 Float64bits(float64 f) {
+    return bitcast<float64, uint64>(f);
+}
+```
+
+**A pointer passed to a syscall as `uintptr(unsafe.Pointer(p))` stays alive for the whole call, as in
+Go.** For `syscall.Syscall(getrandomTrap, uintptr(unsafe.Pointer(unsafe.SliceData(p))), …)` in
+`internal/syscall/unix`, the pointer moves into a keep-alive temp whose name starts with `ᴋ`, and
+`GC.KeepAlive` runs on it after the call:
+<!-- Go side: Go 1.24.13 src/internal/syscall/unix/getrandom.go:36-39 (GOROOT; not in this repo): `syscall.Syscall(getrandomTrap, uintptr(unsafe.Pointer(unsafe.SliceData(p))), uintptr(len(p)), uintptr(flags))` -->
+<!-- source: src/core/internal/syscall/unix/linux/getrandom.cs:38 -->
+```csharp
+    var ᴋ0 = @unsafe.SliceData(p);
+        var (r1, _, errno) = syscall.Syscall(getrandomTrap, (uintptr)ᴋ0, (uintptr)len(p), (uintptr)flags);
+    System.GC.KeepAlive(ᴋ0);
+```
+
+**Full detail:** [Reference → Converting a Go pointer to `unsafe.Pointer`](ConversionStrategies-Reference/pointers.md#converting-a-go-pointer-to-unsafepointer) — every conversion form and when each factory is used, address arithmetic, pinning, order tokens, layout folding, value puns, the cases where `unsafe.Slice` or `unsafe.String` copies instead of aliasing, and the syscall keep-alive rule.
 
 ---
 
 ## Source Generators
 
-Several Go semantics can't be written directly in C#, so the converter emits compact attributed partial
-declarations and lets Roslyn source generators (`src/gen/go2cs-gen/`, referenced as an analyzer by every
-converted project) synthesize the rest at compile time — keeping the visible code close to Go. The
-principal generators:
+Some Go behavior cannot be written directly in C#. The converter emits a short attributed declaration, and
+Roslyn source generators ([`src/gen/go2cs-gen`](../src/gen/go2cs-gen/)) write the rest when the project
+compiles.
 
-- **`TypeGenerator`** (`[GoType]`) — struct members & equality; named numeric/slice/array/map/channel
-  wrappers & operators; struct-embedding promotion.
-- **`ImplementGenerator`** — finds concrete types satisfying each `[GoType] partial interface` and emits the
-  implementation glue + implicit conversions.
-- **`RecvGenerator`** (`[GoRecv]`) — emits the pointer/box (`ж<T>`) overload of each value-receiver method.
-- **`ImplicitConvGenerator`** — the implicit operators letting a named type and its underlying interconvert.
-- **`StrGenerator`** (`[GoStr]`) — for an sstring twin, the `@string` overload that forwards to the
-  `sstring` member, and a package-level function's shared value delegate (`Sprintfᶠ`).
-- **`PartialStubGenerator`** — a throwing stub for any bodyless partial (asm/cgo) with no real
-  implementation. (For cgo specifically the stubs are an interim state, not a dead end: the
-  ratified [cgo interop plan](PLAN-cgo-interop.md) maps the `import "C"` ladder that replaces
-  them with real P/Invoke-backed bindings.)
+**Generated code is not in the converted `.cs` files.** A constructor, overload or conversion that seems
+to be missing comes from a generator. Its output is saved as files you can read: a single package's
+`Generated` folder, or `.artifacts/gen` under a `-recurse` output root.
 
-Common attributes: `[GoType]`, `[GoRecv]`, `[GoStr]`, `[GoTag]`, `[GoPackage]`, and the test-only
-`[GoTestMatchingConsoleOutput]`.
+**Each generator keys on one marker the converter emits.** In the examples, `ж<T>` is golib's heap box,
+the object a Go pointer points to, and a `Ꮡ` prefix names an address ([Names and Glyphs](#reading-converted-code-names-and-glyphs)).
 
-An inline `[GoType]` declaration is deliberately **bare** so it reads like the Go original — but a C# nested
-type with no modifier is *private*, and a generator can't see the partial it is about to emit. So
-`package_info.cs` carries a **`TypeAccessibility`** section inside the package class that pins each type's
-real accessibility in source, one condensed line per type, ahead of generation:
+| Generator | Driven by | Produces |
+|---|---|---|
+| `TypeGenerator` | `[GoType]` on a type | the body of each type: struct constructors, field references, equality and `ToString`; wrappers for named numeric, slice, array, map and channel types; interface support code; members promoted by [struct embedding](#struct-type-embedding) |
+| `RecvGenerator` | `[GoRecv]` on a method | a `ж<T>` overload of each pointer-receiver method |
+| `ImplementGenerator` | `[assembly: GoImplement<T, I>]` | the code that lets `T` or `*T` be used as interface `I` |
+| `ImplicitConvGenerator` | `[assembly: GoImplicitConv<S, T>]` | an implicit conversion operator between two types C# cannot convert directly, such as two named numeric types or two structs with the same underlying type |
+| `StrGenerator` | `[GoStr]` on a method | the `@string` overload of an [`sstring` twin](#strings-string-and-sstring); for a package-level function, also the delegate used as its value, such as `Sprintfᶠ` |
+| `PartialStubGenerator` | a `partial` method with no body | a stub that throws, when no hand-written body exists (see [Functions Without a Go Body](#functions-without-a-go-body)) |
 
+**A `[GoType]` struct lists only its fields.** `TypeGenerator` adds the rest: constructors such as
+`new Buffer(nil)`, the `==` operator, and field references such as `Buffer.Ꮡoff`. The converted
+`&b.off` uses `Buffer.Ꮡoff` to take the address of a field of the heap box `Ꮡb` ([Pointers](#pointers)).
+
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.go:5 -->
+```go
+type Buffer struct {
+	buf      []byte
+	off      int
+	lastRead int8
+}
+…
+	b := Buffer{}
+	PrintValPtr(&b.off)
+```
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:7 -->
 ```csharp
-[GoType] partial interface Closer {          // io/io.cs — Go-shaped, no modifier
-    error Close();
+[GoType] partial struct Buffer {
+    internal slice<byte> buf;
+    internal nint off;
+    internal int8 lastRead;
+}
+…
+    ref var b = ref heap<Buffer>(out var Ꮡb);
+    b = new Buffer(nil);
+    PrintValPtr(Ꮡb.of(Buffer.Ꮡoff));
+```
+
+**A pointer-receiver method gains a box overload.** The converter usually emits it as an extension on
+`ref T` marked `[GoRecv]` ([Functions and Methods](#functions-and-methods)). `RecvGenerator` adds an
+overload on `ж<T>`, so a call on the box `&Buffer{buf: p}` binds it.
+
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.go:55 -->
+```go
+func (b *Buffer) Read(p []byte) (n int, err error) {
+	…
+	(&Buffer{buf: p}).Read(p)
+```
+<!-- source: src/tests/Behavioral/PointerToPointer/PointerToPointer.cs.target:45 -->
+```csharp
+[GoRecv] public static (nint n, error err) Read(this ref Buffer b, slice<byte> p) {
+    …
+    (Ꮡ(new Buffer(buf: p))).Read(p);
+```
+
+**The converter decides interface satisfaction; a generator builds it.** The converter records each
+distinct cast of a type to an interface as one attribute in `package_info.cs`, here `[assembly: GoImplement<Setting, Describer>(Pointer = true)]`.
+For a pointer, `ImplementGenerator` emits an adapter named `XжI`, here `SettingжDescriber`, that wraps the
+`ж<T>` box ([Interfaces](#interfaces)).
+
+<!-- source: src/tests/Behavioral/PointerInterfaceStructField/main.go:33 -->
+```go
+func assignDescriber(h *holder, s *Setting) {
+	h.d = s
 }
 ```
+<!-- source: src/tests/Behavioral/PointerInterfaceStructField/main.cs.target:25 -->
 ```csharp
-public static partial class io_package {     // io/package_info.cs
-    // <TypeAccessibility>
-    internal partial struct discard {}
-    public partial interface Closer {}
-    // </TypeAccessibility>
+internal static void assignDescriber(ref holder h, ж<Setting> Ꮡs) {
+    h.d = new SettingжDescriber(Ꮡs);
 }
 ```
 
-**Full detail:** [Reference → Source Generators](ConversionStrategies-Reference/source-generators.md#source-generators).
+**Full detail:** [Reference → Source Generators](ConversionStrategies-Reference/source-generators.md#source-generators) — how `package_info.cs` pins each type's accessibility, which attributes stay on a declaration and which move to `package_info.cs`, variadic receiver overloads, and the forwarding rules for `sstring` twins.
+
+---
+
+## Functions Without a Go Body
+
+A Go function declared without a body keeps its code in assembly, cgo or another package. It becomes a C#
+`partial` method with no body, or a real body when the converter knows where Go keeps the code.
+
+**A bodyless declaration stays a `partial` method.** Go implements `archMax` in assembly, which C# cannot
+compile. The declaration keeps its Go name and signature, so every caller converts normally:
+
+<!-- source: GOROOT/src/math/dim_asm.go:11 -->
+```go
+func archMax(x, y float64) float64
+```
+<!-- source: src/core/math/dim_asm.cs:11 -->
+```csharp
+internal static partial float64 archMax(float64 x, float64 y);
+```
+
+**A hand-owned companion supplies the body.** A [hand-owned](#manually-converted-declarations) file named
+`*_impl.cs` beside the converted files holds the implementing half. Here it calls Go's portable fallback:
+
+<!-- source: src/core/math/math_impl.cs:31 -->
+```csharp
+internal static partial float64 archMax(float64 x, float64 y) => max(x, y);
+```
+
+**A linkname pull becomes a forwarder.** `//go:linkname` binds a Go name to a body kept elsewhere. A known C#
+target gets a real body that calls its [package class](#package-conversion), here `go.time_package` (`@string` is Go's
+[`string`](#strings-string-and-sstring)). `[StackTraceHidden]` hides the forwarder from traces, as in Go the two names are one function:
+
+<!-- source: GOROOT/src/time/tzdata/tzdata.go:31 -->
+```go
+//go:linkname registerLoadFromEmbeddedTZData time.registerLoadFromEmbeddedTZData
+func registerLoadFromEmbeddedTZData(func(string) (string, error))
+```
+<!-- source: src/core/time/tzdata/tzdata.cs:30 -->
+```csharp
+//go:linkname registerLoadFromEmbeddedTZData time.registerLoadFromEmbeddedTZData
+[global::System.Diagnostics.StackTraceHidden] internal static void registerLoadFromEmbeddedTZData(Func<@string, (@string, error)> _) {
+    go.time_package.registerLoadFromEmbeddedTZData(_);
+}
+```
+
+**A linkname push forwards too, or panics with a reason.** In a push, the directive sits on the other package's
+body and names this declaration. A curated list records each pair; when that body needs runtime machinery go2cs
+does not model, the declaration panics naming the pair instead.
+
+**An assembly trampoline forwards the same way.** Some assembly only jumps to another Go function. The forwarder
+appears when the signatures are identical, or differ only in pointers to structs with the same field layout.
+
+**In the standard library, `purego` removes many bodyless declarations.** The library converts
+[as Go builds with `-tags purego`](#the-standard-library-reproduces-go--tags-purego), so Go's portable file
+replaces the assembly declaration and the C# method has a real body.
+
+**Anything left gets a throwing stub.** A [source generator](#source-generators) completes every other `partial`,
+cgo functions included. It throws `NotImplementedException` naming the function, so the gap surfaces at first call.
+
+**Full detail:** [Reference → `//go:linkname` and assembly forwarders](ConversionStrategies-Reference/manual-conversions.md#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub) — how pull and push forwarders are chosen and how they bridge types, the curated target lists, assembly-trampoline limits, cgo dynamic-import records, stub addresses, and the guard tests.
 
 ---
 
 ## Manually-Converted Declarations
 
-A few Go declarations can't be faithfully auto-converted: their semantics depend on constructs the CLR
-doesn't have — a managed pointer hidden inside an integer (runtime's `guintptr`/`puintptr`/`muintptr`, a
-`uintptr` holding a `*g` the Go GC must not see), a two-word interface layout walked through
-`unsafe.Pointer` (`reflect`), or a Go-runtime primitive with no managed equivalent (a scheduler
-continuation, a sleeping semaphore). The rule: **managed reality beats raw reinterpretation** — hold the
-`ж<T>` box or `any` directly instead of round-tripping through a `uintptr`/`unsafe.Pointer` the .NET GC
-can't see, and reimplement the observable *contract* rather than the unportable *mechanism*.
+A small set of Go declarations becomes C# written by hand, which the converter never writes over. The
+reader meets these *hand-owned* files and functions as ordinary C# beside converted code.
 
-Two mechanisms deliver it. Whole-file **`[module: GoManualConversion]`** makes the converter skip
-emission for that file and redirect it to a non-compiled `<name>.cs.auto` review sibling, so a reconvert
-can never touch the hand-owned `.cs`. A **type-level registry** instead skips only the listed
-types/methods and points at a hand-written `*_impl.cs` companion beside the rest of the auto-converted
-file.
+**A declaration is hand-owned when Go's mechanism has no .NET equivalent.** Such code hides a pointer
+inside an integer, walks an interface's two-word layout through `unsafe.Pointer`, calls a scheduler
+primitive, or is written in assembly. In C# an `any` is one object reference, and a
+[`ж<T>`](#reading-converted-code-names-and-glyphs) heap box is a reference the .NET garbage collector
+must see. So the hand-written C# implements the observable contract, not the mechanism.
 
-`runtime.Gosched` is the smallest worked example. Go's body is a scheduler continuation that needs
-`mcall`, a compiler intrinsic with no CLR equivalent, so `runtime/managed_impl.cs` implements the
-*contract* — "yield the current thread" — instead of the mechanism:
+**A whole file is hand-owned with `[module: go.GoManualConversion]`.** When such a file stands in for a
+converted Go file, the converter writes its own version beside it as an uncompiled `<name>.cs.auto`.
+`sync/atomic`'s `Value` lives in one such file. Go loads a `Value` by reinterpreting the interface's
+type and data words:
 
+<!-- source: GOROOT/src/sync/atomic/value.go:28 -->
 ```go
-// Go — runtime/proc.go: the body is a scheduler continuation run on the system stack
-func Gosched() { checkTimeouts(); mcall(gosched_m) }
+func (v *Value) Load() (val any) {
+	vp := (*efaceWords)(unsafe.Pointer(v))
+	typ := LoadPointer(&vp.typ)
+	…
 ```
+<!-- source: src/core/sync/atomic/value.cs:6 -->
 ```csharp
-// C# — runtime/managed_impl.cs: the CONTRACT, on the managed scheduler
-public static void Gosched() { Thread.Yield(); }
-```
-
-The same rule hand-owns `sync/atomic.Value` (stores the boxed `any` directly, `Volatile`/`Interlocked`
-for the atomics), the reflection bridge (`reflect`/`internal/reflectlite` carry a boxed managed value
-plus a synthetic descriptor stamped with the real `System.Type`), `sync.Pool`'s eface ring (a single
-`any?` slot with `null` as the empty sentinel), `sync.Cond`'s copy detector (compares root-allocation
-identity instead of a GC-unsound stored address),
-[`weak.Pointer`](ConversionStrategies-Reference/manual-conversions.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
-(a short `WeakReference` over the `ж<T>` box, with a `ConditionalWeakTable` standing in for the runtime's
-canonical per-address weak handle so two weak pointers to one object still compare equal), `time`'s runtime timers (one dedicated thread servicing
-a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
-surface (`GC`, `GOMAXPROCS`, `Gosched`, `LockOSThread`, `Goexit`) as its contracts rather than its
-scheduler-level mechanics. The GC **measurement** surface belongs to the same family and shows what
-"realize, don't stub" costs and buys: `runtime.ReadMemStats` and `runtime/debug.ReadGCStats` now read
-one snapshot from
-[one gen2 pause recorder](ConversionStrategies-Reference/manual-conversions.md#the-gc-measurement-surface--one-recorder-one-ring-one-snapshot),
-so the per-cycle pause history, `LastGC`, `NumGC` and `HeapReleased` are measured facts rather than
-zeros — while `Mallocs`/`Frees`/`HeapObjects` and `GCCPUFraction` stay zero, because the CLR's nearest
-quantity means something else and a plausible-looking invented number is worse than a stated gap. The
-same "realize, don't stub" instinct also ports an asm-backed architecture
-layer for real wherever .NET exposes the same instructions the `.s` file issues — `hash/crc32`'s SSE4.2
-`CRC32` and PCLMULQDQ folding.
-
-**Asynchronous sockets are the deepest application of that rule, and it takes two hand-owns facing each
-other.**
-
-**Reinterpreting one array as an array of a different element type is the smallest member of the same
-family, and it needs no OS at all.** `crypto/internal/fips140/subtle` views a `[]byte` as `[]uintptr` to
-XOR a word at a time; `crypto/internal/fips140/sha3` views its `[200]byte` sponge state as `[25]uint64`
-to run the Keccak permutation. Both are ordinary managed storage on both sides, and neither view exists
-in the managed model —
-a `slice<T>`/`array<T>` is a window on a real `T[]`, and there is no `U[]` view over a `V[]`. Each file
-is hand-owned and takes the same remedy: `MemoryMarshal.Cast`/`AsBytes` over the storage's own span,
-which is a genuine *aliasing* view, so writes through it land. Where such a reinterpret is left
-auto-converted the pointer is still a valid **address**, but dereferencing it reads the surrogate's
-backing *reference* out of the pointed-at data — a fabricated reference whose first use is an access
-violation. Those sites are the deliberate raw-metal fork: they compile, they are not expected to
-produce Go's values, and each is hand-owned only when a suite reaches it.
-
-**A Go pointer VARIABLE's address is the one thing the boundary cannot hand over, and that is a second
-reason a syscall wrapper gets hand-owned.** The family above is about *layout* — a struct whose fields
-sit at the wrong offsets. This one has no struct in it at all. A `**T` out-parameter (`&p` for a
-`var p *T`) is, in Go, eight bytes of stack the kernel overwrites with an address; converted, it is a
-`ж<ж<T>>` whose storage is a managed *object reference*, and golib's `ж<T>` → `uintptr` operator has
-two answers for it, both wrong: `0` while the held pointer is still null — which tells Windows "no
-output wanted", so the call succeeds and the caller reads back its own nil — and a live managed
-address once it is not, which would have the kernel write raw bytes over a slot the collector reads as
-a reference. Neither is fixable in the operator, because no single address is both kernel-writable as
-eight raw bytes and managed-readable as a `ж<T>`; reconciling the two needs a *sync point*, and the
-only code that knows when the raw word becomes a pointer again is the wrapper. So the remedy is a
-native cell local to the call and a publish afterwards through `ValueSlot` — never `Value`, whose nil
-guard would panic on the very write that fills the slot in. Same rule as the layout family for scope:
-[fixed when a suite reaches it](ConversionStrategies-Reference/pointers.md#pointers), and verified at *value*
-level, because the failure shape here is a quiet wrong answer rather than a crash.
-
-Go's network poller is only half an API — the other half is called by the *scheduler*, from
-`findrunnable` and sysmon — so wiring the converted runtime would initialize an IOCP and then block
-forever. Instead, `internal/poll`'s ten `//go:linkname runtime_poll*` contracts are reimplemented on the
-CLR's own completion machinery, and the overlapped WSA wrappers below them are displaced so each
-operation owns a NATIVE control block for as long as the kernel holds it: `&o.o` is an interior field
-inside a reference-bearing struct, so golib cannot pin it, and the OVERLAPPED is also the operation's
-kernel-side identity (`CancelIoEx` matches by address). The two halves live in packages that cannot
-reference each other, so the completion signal is pushed through a small platform-neutral rendezvous in
-golib keyed by the descriptor — the one identity both sides independently hold. Everything above the
-seam stays auto-converted, `execIO` and `FD` included:
-
-```go
-// Go — internal/poll/fd_poll_runtime.go: ten bodyless entry points into the runtime's poller
-func runtime_pollWait(ctx uintptr, mode int) int
-```
-```csharp
-// C# — internal/poll/windows/runtime_netpoll_impl.cs: the CONTRACT, on a Monitor and a Timer
-internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
-{
-    ManagedPollDesc? desc = descFor(ctx);
-
-    if (desc is null)
-        return pollErrClosing;
-
-    return pollBlock(desc, modeState(desc, mode), ignoreErrors: false);
+[module: go.GoManualConversion]
+…
+[GoType] partial struct Value {
+    internal any v;
+}
+…
+[GoRecv] public static any /*val*/ Load(this ref Value v) {
+    return Volatile.Read(ref v.v);
 }
 ```
 
-[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-managed-netpoller--the-ten-runtime_poll-contracts-on-nets-completion-machinery),
-including [the submit seam's operation records, the golib rendezvous and the accept
-handover](ConversionStrategies-Reference/manual-conversions.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
+**A single declaration is hand-owned through a registry.** The converter keeps a list of Go types and
+functions, by package and name, that it does not emit. It leaves a placeholder comment in their place,
+and a hand-written `*_impl.cs` file in the same package supplies them. `runtime.Gosched` is one: its Go
+body switches stacks with `mcall`, which .NET does not have.
 
-**The Linux flavor answers the same ten contracts on epoll — and got there in two steps.** Linux's
-`os` marks every opened file, pipe and socket pollable and asks the poller to arm it, so the file
-surface had to work before anything else could. Step one made
-`internal/poll/linux/runtime_netpoll_impl.cs` answer Go's own FALLBACK for every descriptor —
-`pollOpen` returns `(0, EPERM)`, exactly what `epoll_ctl` says about a regular file, and `os.newFile`
-drops back to blocking mode and carries on. Step two replaced that constant with the kernel: one
-`epoll_create1(EPOLL_CLOEXEC)`, one background thread in `epoll_wait(-1)`, and the Windows flavor's
-managed descriptor state machine copied verbatim, with `gopark`/`goready` becoming
-`Monitor.Wait`/`PulseAll` on a per-descriptor gate. Registration is Go's edge-triggered
-`EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET`, which is sound because the CONSUMER only ever waits after the
-kernel answered `EAGAIN`; `epoll_event.data` carries an opaque token rather than a pointer, so a
-reused descriptor number cannot resurrect a retired one; and the 12-byte packed kernel record is a
-native `Marshal` image through the keystone `syscall(2)` binding, never a `ж<T>` address. Files still
-take the blocking path — now because the kernel refuses them, which is precisely Go's behavior — while
-pipes, FIFOs, ttys and sockets are armed: deadlines are honored, `Close` unblocks a parked reader, and
-`net.Listen`/`Dial` work.
-[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-flavors-poller--the-fallback-first-then-the-readiness-poller-epoll-one-drain-thread-and-the-windows-descriptor-state-machine).
-
-**And the struct-passing class has Linux members too.** The converted `syscall.Stat_t` ends in a golib
-`array<int64>` where the kernel's `struct stat` ends in three inline words, so it is not blittable and
-the generated `Fstat`/`fstatat` handed the kernel its managed image — `os.Stat` on the Linux flavor
-answered `IsDir() == false` for a real directory with a nil error, and every Glob/Walk built on it walked
-nothing. The remedy is the same mirror-and-copy the Windows wrappers use
-(`syscall/linux/zsyscall_linux_amd64_impl.cs`, displaced from the generated file under a linux-only
-registry scope), and the same measurement found `rawSyscallNoError` — the bare-`SYSCALL` bottom of
-`Getpid`/`Getuid`/… — still an announcing stub, now one body in `syscall_linux_impl.cs`.
-[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-struct-stat-mirror-and-the-noerror-raw-bottom--the-first-linux-members-of-the-struct-passing-class).
-
-**The sockaddr family is mirrored on Linux too — as the socket poller's prerequisite.** The same
-port alias and the same by-address `RawSockaddr*` structs that L10 retired on Windows live in
-`syscall_linux.go`; `syscall/linux/sockaddr_linux_impl.cs` is L10 arm for arm (stack mirrors, one
-encode and one decode, the generated address-taking `bind`/`connect` reused), under a shared
-windows+linux registry scope. What it bought was honest and, at the time, small: a Linux socket was
-still un-armable, so `net.Listen`/`Dial` merely reached `FD.Init` and returned `operation not
-permitted` — the wall moved rather than fell, and the readiness poller above is what finished it. And `syscall.Mmap` on Linux returns a SNAPSHOT, because
-golib's `unsafe.Slice` over a native pointer copies rather than aliases — a slice-model item, rooted
-and routed.
-[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-sockaddr-family-on-linux--l10s-mirror-arm-for-arm-as-the-socket-pollers-prerequisite-and-mmaps-slice-is-a-snapshot).
-
-**On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
-assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
-binding — glibc's `syscall(2)` — and the entire generated wrapper surface (open, read, write, stat,
-getrlimit, the epoll helpers) lights up behind it:
-
+<!-- source: GOROOT/src/runtime/proc.go:362 -->
 ```go
-// Go — internal/runtime/syscall/syscall_linux.go: no body, no linkname, raw metal
-func Syscall6(num, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, errno uintptr)
+func Gosched() {
+	checkTimeouts()
+	mcall(gosched_m)
+}
 ```
+<!-- source: src/core/runtime/windows/proc.cs:351 -->
 ```csharp
-// C# — internal/runtime/syscall/linux/syscall_linux_impl.cs
-[LibraryImport("libc", EntryPoint = "syscall", SetLastError = true)]
-private static partial nint libc_syscall(nint number, nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+// go2cs generated this placeholder — func Gosched is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+```
+<!-- source: src/core/runtime/managed_impl.cs:264 -->
+```csharp
+public static void Gosched()
+{
+    …
+    golib.GoschedBackoff.Yield();
+}
 ```
 
-Every native binding in the corpus is `[LibraryImport]` rather than `[DllImport]`, on both operating systems, for one reason: `[DllImport]` answers a signature it cannot marshal by silently marshalling a COPY, so a kernel writing through the pointer writes into a temporary the caller never reads — a wrong answer at run time. The source generator makes that a compile error instead, which turns the per-struct **layout** risk of routing Go's kernel boundary through managed structs into a build-time question. It costs `/unsafe` unconditionally (SYSLIB1062), and since the `.csproj` is regenerated on every transpile, a hand-owned file states that requirement itself with `[module: go.GoRequiresUnsafe]`, which the emission unions into `<AllowUnsafeBlocks>`.
+Golib's `GoschedBackoff` yields the current .NET thread, as Go's `Gosched` yields the processor.
 
-The pointer half needs nothing extra: these wrappers pass addresses as `uintptr`, and golib's `ж<T>` →
-`uintptr` operator pins the managed storage and yields a real address rather than a token, so the kernel
-reads and writes through it. Go's second result `r2` is reproduced *exactly* rather than approximated —
-the x86-64 syscall convention clobbers only `RCX`/`R11`, so the `RDX` the assembly reports is the `a3`
-that went in. That, the SysV variadic question, and `errno` were each measured rather than assumed, and
-the one case libc cannot distinguish is disclosed in the file.
-[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate),
-including the [scheduler brackets that are a faithful no-op](ConversionStrategies-Reference/manual-conversions.md#the-scheduler-brackets-are-a-faithful-no-op-not-an-omission)
-and [why `runtime.argslice` must be populated in the same change that forwards it](ConversionStrategies-Reference/manual-conversions.md#runtimeargslice--forwarding-and-populating-are-one-change).
-`os/signal`'s six runtime primitives are the sharpest case of that same rule: forwarding them needed an OS
-edge (a real `SetConsoleCtrlHandler` feeding the *converted* `ctrlHandler`) and a genuinely blocking
-`notetsleepg` before the pushed bodies could run at all — after which Go's own Windows semantics fall out
-unaltered, including the ones that read like defects (`Ignore` does **not** suppress ^C on Windows, and
-`Reset` leaves the ignored bit set).
+**A hand-owned file can be specific to one operating system.** A package's OS-specific files, converted
+or hand-owned, live in its `windows/`, `linux/` and `darwin/` subfolders. A registry entry can likewise
+name the operating systems it covers, since Go can declare the same name once per OS.
 
-**Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference/manual-conversions.md#manually-converted-declarations) —
-every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,
-whitelisted `//go:linkname` forwarders in both directions (a
-[PULL](ConversionStrategies-Reference/manual-conversions.md#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub)
-binds another package's symbol; a
-[PUSH](ConversionStrategies-Reference/manual-conversions.md#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)
-takes another package's body, or announces the pair it cannot honor),
-[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference/manual-conversions.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics),
-[realizing the runtime timer contract](ConversionStrategies-Reference/manual-conversions.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer),
-[the runtime's process-control surface](ConversionStrategies-Reference/manual-conversions.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism), and
-[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference/manual-conversions.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin).
+**The main hand-owned surfaces implement Go's contract on .NET primitives:**
+- `sync.Pool` and `sync.Cond`'s copy check.
+- `runtime.SetFinalizer`, `runtime.AddCleanup` and `weak.Pointer`, on .NET object lifetime.
+- `runtime.GOMAXPROCS`, `Gosched`, `LockOSThread` and `Goexit`, on .NET threads; see [Goroutines](#goroutines).
+- `runtime.GC` and `runtime.ReadMemStats`, on the .NET garbage collector.
+- `time`'s timers.
+- `hash/crc32`, on .NET hardware intrinsics.
+- `reflect` and `internal/reflectlite`; see [Reflection](#reflection-reflect).
+
+**The operating-system boundary is hand-owned.** Go's network poller is half in `internal/poll` and half
+in the runtime scheduler. `internal/poll` declares the `runtime_poll*` functions with
+[no Go body](#functions-without-a-go-body). go2cs implements them on .NET threads, and the poller code
+that calls them stays converted.
+
+On Linux, Go's `syscall` wrappers end in assembly, chiefly `internal/runtime/syscall.Syscall6`. go2cs
+hand-owns `Syscall6` with one glibc `syscall(2)` binding, and every converted wrapper runs on it.
+
+**Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference/manual-conversions.md#manually-converted-declarations) — every hand-owned surface and why, `//go:linkname` forwarders in both directions, the poller and system call internals on each OS, native bindings, how hand-owned files and registry entries are scoped per platform, and the reflection bridge.
 
 ---
 
 ## The standard library reproduces Go `-tags purego`
 
-The converted standard library corpus reproduces **Go built with `-tags purego`**, not the default
-`amd64`/`arm64` build. Go implements hot crypto/hash functions in `.s` assembly the transpiler cannot
-convert (the Go file has only a bodyless declaration gated `… && !purego`), so a default build turns
-them into throwing stubs that *compile* but can't *run*; `purego` selects the portable pure-Go
-variants with real bodies. `-stdlib` and `-tests` apply `-tags purego` **by default** (an explicit
-`-tags` replaces it, `-tags=` clears it) and print the effective tags at the start of each run —
-a `-tests` run reconverts the package's production sources, so it must reproduce the same emission.
-Every other conversion is tag-neutral. `purego` is a *convention*, not a language rule, so the default
-set carries every portable-fallback tag the stdlib actually uses: `math/big` predates `purego` and
-spells its own `math_big_pure_go`, gating `arith_decl_pure.go` (real pure-Go forwarders) against
-`arith_decl.go`'s eight bodyless `arith_$GOARCH.s` declarations — without it every `big.Int`/`Float`/`Rat`
-arithmetic path compiled clean and threw on first use. Asm-backed declarations split three ways: **purego-gated**
-(the tag gives a real body — the common case, `crypto/sha256` et al.),
-**GOARCH-gated with no purego escape** (hand-owned, e.g.
-`internal/chacha8rand` and `hash/crc32` — whose `crc32_amd64.go` carries no build line at all, so
-purego selects it too), and **genuinely raw-metal** (`[module: GoManualConversion]` compiling stub).
-Hand-owning the second bucket need not mean stubbing: where .NET exposes the same instructions the
-`.s` file issues, the arch layer can be ported for real — `hash/crc32` runs on `Sse42.Crc32` and
-`Pclmulqdq` intrinsics. One accepted behavioral divergence from the default build: under purego,
-`crypto/elliptic` P256 `Inverse` panics — **exactly as real Go does under `-tags purego`** (an upstream
-gating inconsistency), so matching it is fidelity.
+Go writes its hottest crypto and hash routines in `.s` assembly, which a transpiler cannot convert.
+So the converted standard library reproduces Go built with `-tags purego`: portable pure-Go code only.
 
-**Full detail:** [Reference → The standard-library conversion applies `-tags purego`](ConversionStrategies-Reference/purego.md#the-standard-library-conversion-applies--tags-purego) —
-the exposure decision and rejected alternatives, the three-bucket taxonomy, and the verified
-`crypto/elliptic` divergence.
+**The tag selects the file with a real body.** The default amd64 build binds SHA-256's block function to
+assembly. Under `purego`, a sibling file with a pure-Go body is chosen instead:
+
+<!-- The default-build side: GOROOT/src/crypto/internal/fips140/sha256/sha256block_amd64.go:5
+     is `//go:build !purego` and declares `//go:noescape func blockAMD64(dig *Digest, p []byte)` with no
+     body; its `_amd64` filename suffix limits it to that architecture. The noasm file is at the same
+     path; neither file is vendored in this repo. -->
+<!-- source: GOROOT/src/crypto/internal/fips140/sha256/sha256block_noasm.go:5 -->
+```go
+//go:build (!386 && !amd64 && !arm64 && !loong64 && !ppc64 && !ppc64le && !riscv64 && !s390x) || purego
+…
+func block(dig *Digest, p []byte) {
+	blockGeneric(dig, p)
+}
+```
+
+Only that file is converted. The C# keeps its build line as a comment, and
+[`slice<byte>`](#slices-and-arrays) is Go's `[]byte`:
+
+<!-- source: src/core/crypto/internal/fips140/sha256/sha256block_noasm.cs:4 -->
+```csharp
+//go:build (!386 && !amd64 && !arm64 && !loong64 && !ppc64 && !ppc64le && !riscv64 && !s390x) || purego
+…
+internal static void block(ref Digest dig, slice<byte> p) {
+    blockGeneric(ref dig, p);
+}
+```
+
+**Two tags carry the same decision.** A `-stdlib` or `-tests` conversion applies `purego,math_big_pure_go`
+by default; an explicit `-tags` replaces it. `math/big` names its portable fallback `math_big_pure_go`
+rather than `purego`, so both are needed. Other conversions, such as `-recurse`, use exactly the tags you pass.
+
+<!-- The math_big_pure_go member: arith_decl.go (`!math_big_pure_go`) declares eight bodyless
+     functions whose bodies are arith_$GOARCH.s; arith_decl_pure.go (`math_big_pure_go`) forwards each
+     to the `_g` pure-Go implementation in arith.go. With purego alone, every big.Int/Float/Rat
+     arithmetic path compiled and threw on first use (surfaced as time.TestTruncateRound -> big.Int.Mul
+     -> mulAddVWW). Default set: ../src/go2cs/commandLineOptions.go (defaultStdLibBuildTags);
+     resolveBuildTags keys the default on the -stdlib and -tests flags, not on the package being
+     standard library, so a -tests run on any package gets it. `-tags=` clears the default. A -stdlib
+     run prints the tags it applies, e.g.
+     `Applying build tags: purego,math_big_pure_go (default; pass -tags to override)`
+     (../src/go2cs/stdLibConverter.go:60); -tests shares the default but does not print it. -->
+
+**An assembly-backed declaration ends in one of three ways:**
+
+- **A `purego` sibling exists.** The tag selects the real body, as for SHA-256. This is the common case.
+- **The code is gated on architecture alone.** Hand-written C# supplies the body, as a companion file or a
+  whole-file replacement; see [Manually-Converted Declarations](#manually-converted-declarations).
+- **Nothing supplies a body.** The declaration compiles as a stub that throws if called; see
+  [Functions Without a Go Body](#functions-without-a-go-body).
+
+**Behavior matches the `purego` build.** `crypto/elliptic`'s P-256 `Inverse` panics under `purego`, in
+real Go and in the converted code alike.
+
+<!-- Upstream gating: crypto/elliptic/nistec_p256.go is `amd64 || arm64` with no `!purego`, while
+     crypto/internal/fips140/nistec/p256_ordinv.go is `(amd64 || arm64) && !purego`; under purego
+     p256_ordinv_noasm.go returns errors.New("unimplemented") and Inverse panics with
+     `crypto/elliptic: nistec rejected normalized scalar`. Checked against the Go 1.24.13 tree; the
+     panic text is in ../src/core/crypto/elliptic/nistec_p256.cs:28. -->
+
+**Full detail:** [Reference → The standard-library conversion applies `-tags purego`](ConversionStrategies-Reference/purego.md#the-standard-library-conversion-applies--tags-purego) — why the tag is on by default and the alternatives weighed, how `-tests` shares it, the `math/big` fallback tag, the three outcomes with more packages named, and the `crypto/elliptic` gating in full.
+
+---
+
+## Comments
+
+A Go comment that reaches the C# is copied word for word: a `//` line stays a `//` line, and a `/* … */` block stays a block. Apart from the license header, Go's comments appear only with `-comments`, which is off by default and always on for converted tests. Notes the converter writes itself, such as the one above [hoisted string literals](#strings-string-and-sstring), always appear. `nint`, `slice<byte>` and `UntypedInt` are Go's `int`, `[]byte` and an untyped constant ([glyphs](#reading-converted-code-names-and-glyphs), [Slices and Arrays](#slices-and-arrays), [Constant Values](#constant-values)).
+
+**The license header always survives.** A comment group ahead of `package` that mentions a copyright, a license or an SPDX tag is copied to the top of the C# file. The converted file is a derivative work of the Go source, so its notice travels with it. Without `-comments`, every other Go comment is dropped:
+
+<!-- source: src/tests/Behavioral/FirstClassFunctions/FirstClassFunctions.go:1 -->
+```go
+// Copyright 2011 The Go Authors. All rights reserved.
+…
+	win            = 100 // The winning score in a game of Pig
+```
+<!-- source: src/tests/Behavioral/FirstClassFunctions/FirstClassFunctions.cs.target:1 -->
+```csharp
+// Copyright 2011 The Go Authors. All rights reserved.
+…
+internal static UntypedInt win => 100;
+```
+
+**With `-comments`, doc comments sit above their declarations.** They stay plain `//` lines rather than becoming XML documentation comments, so Go's doc links like `[RuneError]` read exactly as in Go. The `DecodeRune` example in the next rule shows a doc comment and a trailing comment together.
+
+**A statement's comment keeps its line.** A comment on its own line ahead of a statement stays on its own line, indented with its block. A statement's trailing comment follows its last C# line after one space, even at the end of a block. A trailing comment does not keep Go's column alignment, because the converted lines have different lengths:
+
+<!-- source: Go toolchain src/unicode/utf8/utf8.go:149 (Go 1.24.13; the Go source of src/core/unicode/utf8/utf8.cs; cited from the toolchain because src/core holds no .go files and the behavioral goldens are captured without comments) -->
+```go
+// DecodeRune unpacks the first UTF-8 encoding in p and returns the rune and
+// its width in bytes. If p is empty it returns ([RuneError], 0). Otherwise, if
+…
+func DecodeRune(p []byte) (r rune, size int) {
+	…
+		mask := rune(x) << 31 >> 31 // Create 0x0000 or 0xFFFF.
+```
+<!-- source: src/core/unicode/utf8/utf8.cs:156 -->
+```csharp
+// DecodeRune unpacks the first UTF-8 encoding in p and returns the rune and
+// its width in bytes. If p is empty it returns ([RuneError], 0). Otherwise, if
+…
+public static (rune r, nint size) DecodeRune(slice<byte> p) {
+    …
+        var mask = (((rune)x << (int)(31)) >> (int)(31)); // Create 0x0000 or 0xFFFF.
+```
+
+**Full detail:** [Reference → Comments](ConversionStrategies-Reference/comments.md#comments) — how attached and free-floating comments are told apart, which statement positions take a trailing comment, multi-line block comments, and the leading shapes that keep their own line.
+
+---
+
+## Packages That Do Not Type-Check
+
+A Go package that the type checker cannot fully resolve still converts, and the run goes on. This
+happens in application code, such as the packages a [`-recurse`](#package-conversion) run reaches.
+One missing symbol costs only its own code, not its file or its package.
+
+**The converter reports, then converts.** Here `addressTaken` calls a function that does not exist:
+
+<!-- source: src/go2cs/untypedPackageConversion_test.go:74 -->
+```go
+func addressTaken() {
+	x := 1
+	undefinedFunc(&x)
+	fmt.Println(x)
+}
+```
+
+The package still converts. The warning names the package, then lists the errors Go reports:
+
+<!-- source: src/go2cs/conversionDriver.go:224 -->
+```text
+WARNING: … did not fully type-check; converting best-effort — code depending on the following is emitted untyped: …
+```
+
+**Only the dependent code fails to build.** Go's type checker records no type for an expression built
+on an unresolved symbol. The converter still emits it, and an unresolved type shows Go's placeholder,
+so `var u UndefinedType` emits `invalid type u = default!`. Nothing declares what is missing, so the
+build fails at those lines.
+
+**Faults stay inside one file or package.** If the converter itself fails on a file, it skips that
+file with a warning. In a `-recurse` run, a package that cannot be loaded or converted is recorded as
+failed and the next package proceeds. The run ends by naming the packages that failed.
+
+**The standard-library conversion stops on a load failure instead.** `-stdlib` orders packages by
+their imports before converting any. A package that cannot be loaded leaves no correct order, so the
+conversion aborts and names every package that failed to load.
+
+**Full detail:** [Reference → Packages That Do Not Type-Check](ConversionStrategies-Reference/packages-that-do-not-type-check.md#packages-that-do-not-type-check) — why an unresolved expression has no type, how the converter tolerates it, how one package's fault stays inside that package, and the guard tests.
 
 ---
 
 ## Deterministic Output
 
-Converter output is **byte-reproducible**: the same Go source with the same converter build produces
-byte-identical C# every run — a guarantee the [goldens](Glossary.md#golden), the corpus build gate, and any
-release tag all rest on. It's enforced by converting files sequentially in sorted-filename order, a
-deterministic dependency-complete stdlib queue, and sorted emission of any set-backed output.
+Converting the same Go source with the same converter build, build tags and target platform produces
+byte-identical C# every run. Any change in the converted C# comes from a change in the Go, its
+dependencies, the converter, the build tags or the target platform.
 
-**Full detail:** [Reference → Deterministic Output](ConversionStrategies-Reference/deterministic-output.md#deterministic-output).
+So converted code can be diffed, committed and reviewed like any other source. go2cs's golden tests rely
+on this: each converted file is compared with its checked-in `.cs.target`, byte for byte apart from line
+endings.
 
----
+**Files convert one at a time, in sorted filename order.** This order fixes names numbered across the
+package. Go allows many `init` functions per package, and C# needs a distinct name for each, so each
+`init` after the first becomes `initΔN` ([Functions and Methods](#functions-and-methods)).
+Here `a_first.go` holds two, so `b_second.go` starts at `initΔ2`:
 
-*This summary tracks the [technical reference](ConversionStrategies-Reference/README.md) — when a conversion
-decision changes the headline mapping of a construct, update the matching section here (with a real
-example); record the full detail in the reference. See [`../CLAUDE.md`](../CLAUDE.md), "Record the
-conversion decision."*
+<!-- source: src/tests/Behavioral/MultiFileInitOrder/b_second.go:3 -->
+```go
+func init() {
+	order = append(order, "b_second#1")
+}
+```
+<!-- source: src/tests/Behavioral/MultiFileInitOrder/b_second.cs.target:5 -->
+```csharp
+[GoInit] internal static void initΔ2() {
+    order = append(order, "b_second#1"u8);
+}
+```
+
+`[GoInit]` marks a method that runs when the package loads; see [Package Conversion](#package-conversion).
+
+**Standard-library packages convert in dependency order.** An importer reads each dependency's
+`package_info.cs`, so every dependency converts first ([Package Conversion](#package-conversion)). The
+queue is built from package paths in sorted order, so it is the same every run.
+
+**Names the converter collects in a map are sorted before they are written.** The converter is a Go
+program, and Go's map iteration order changes from run to run. In this pointer swap from `math/big`, the
+pointer parameters `Ꮡx` and `Ꮡy` each have a `ref` alias, `x` and `y` ([Pointers](#pointers)). After
+the swap, each alias is refreshed in sorted name order:
+
+<!-- source: src/core/math/big/int.cs:1323 -->
+```csharp
+    if (x.neg) {
+        (Ꮡx, Ꮡy) = (Ꮡy, Ꮡx); x = ref Ꮡx.DerefOrNull(); y = ref Ꮡy.DerefOrNull(); // & is symmetric
+    }
+```
+
+**Full detail:** [Reference → Deterministic Output](ConversionStrategies-Reference/deterministic-output.md#deterministic-output) — which shared converter state each rule protects, and the unstable or broken output it prevents.
