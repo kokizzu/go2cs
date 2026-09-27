@@ -617,9 +617,20 @@ public static class GoStructSynthesis
         TypeBuilder container = s_module!.DefineType(name,
             TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.Class);
 
+        // The name above round-trips only for a path with no '.' inside a segment: `example.com/x`
+        // mints namespace `go.example.com`, which reads back as `example/com/x`. So every container is
+        // stamped with its VERBATIM path, which GoPackageClassPath reads first (GoPackageAttribute.
+        // ImportPath) -- runtime-minted, so stamping all of them costs no corpus footprint. Named, not
+        // fixed: `example.com/x` and `example/com/x` still mint the same C# type name.
+        container.SetCustomAttribute(new CustomAttributeBuilder(
+            s_goPackageCtor, [pkg], [s_goPackageImportPath], [pkgPath]));
+
         s_containers[pkgPath] = container;
         return container;
     }
+
+    private static readonly ConstructorInfo s_goPackageCtor = typeof(GoPackageAttribute).GetConstructor([typeof(string)])!;
+    private static readonly PropertyInfo s_goPackageImportPath = typeof(GoPackageAttribute).GetProperty(nameof(GoPackageAttribute.ImportPath))!;
 
     private static long[] toLongDims(nint[] dims)
     {

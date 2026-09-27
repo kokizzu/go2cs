@@ -1555,7 +1555,7 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, goPackag
 	b.WriteString("\r\n")
 	b.WriteString(fmt.Sprintf("namespace %s;\r\n", projectNamespace))
 	b.WriteString("\r\n")
-	b.WriteString(fmt.Sprintf("[GoPackage(\"%s\")]\r\n", goPackageName))
+	b.WriteString(goPackageAttributeLine(projectNamespace, goPackageName, goPackageImportPathFor(testClassName, goPackageName)) + "\r\n")
 	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n", testClassName))
 	b.WriteString(productionInitForcingHook(projectNamespace, productionClassName))
 	b.WriteString("}\r\n")
@@ -3093,7 +3093,10 @@ func appendExternalTestPackageClass(testInfoPath, packageNamespace, productionPa
 		contents = strings.Replace(contents, productionUsing, productionUsing+"\r\n"+testUsing, 1)
 	}
 
-	block := fmt.Sprintf("\r\n[GoPackage(\"%s\")]\r\npublic static partial class %s\r\n{\r\n}\r\n", external.Name, className)
+	// The stamp is rendered by the same rule convergeGoPackageStamps applies, so a rerun that finds
+	// this block already converged still matches it and appends nothing. The external test package's
+	// Go path is its own (`<path>_test`).
+	block := fmt.Sprintf("\r\n%s\r\npublic static partial class %s\r\n{\r\n}\r\n", goPackageAttributeLine(packageNamespace, external.Name, external.PkgPath), className)
 
 	if !strings.Contains(contents, block) {
 		contents += block
@@ -3383,7 +3386,7 @@ func internalTestPackageInfoSeed(projectNamespace, productionClassName, bridgeCl
 	b.WriteString("\r\n")
 	b.WriteString(fmt.Sprintf("namespace %s;\r\n", projectNamespace))
 	b.WriteString("\r\n")
-	b.WriteString(fmt.Sprintf("[GoPackage(\"%s\")]\r\n", goPackageName))
+	b.WriteString(goPackageAttributeLine(projectNamespace, goPackageName, goPackageImportPathFor(bridgeClassName, goPackageName)) + "\r\n")
 	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n}\r\n", bridgeClassName))
 
 	return b.String()

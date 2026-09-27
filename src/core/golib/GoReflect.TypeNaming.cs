@@ -41,12 +41,14 @@ namespace go;
 //   would report `binary_internal_test.Person`, and encoding/binary's own tests assert the type
 //   name inside an error string and name their subtests from it.
 //
-// THE TWO PLACES THE MAPPING IS NOT AN EXACT INVERSE
-//   Both are naming-only losses, both are recorded rather than fixed, and both come from a package
-//   whose import path's last segment is not its package name: a major-version directory
-//   (`math/rand/v2` emits namespace `go.math.rand` + class `rand_package`, so `PkgPath` recovers
-//   `"math/rand"`), and a module dependency whose declared package name differs from its directory.
-//   Everything else round-trips exactly.
+// WHERE THE NAMESPACE CANNOT CARRY THE PATH, THE STAMP DOES
+//   The namespace-plus-name derivation is not an exact inverse for three shapes: a '.' inside a
+//   segment (`example.com/x`, `vendor/golang.org/x/...` — the flattening reads it back as '/'), a
+//   major-version directory (`math/rand/v2` emits namespace `go.math.rand` + class `rand_package`,
+//   which decodes as `math/rand/rand`), and a package name that differs from its directory. The
+//   converter stamps exactly those classes with their VERBATIM path (GoPackageAttribute.ImportPath),
+//   and GoPackageClassPath reads it first, so every one of them round-trips too. (These were naming
+//   losses recorded rather than fixed until the stamp existed.)
 //
 // ADAPTERS RENDER AS WHAT THEY STAND FOR, NEVER AS THEMSELVES
 //   A generated interface-implementation adapter is a class the converter minted; Go has no such
@@ -729,11 +731,10 @@ public static partial class GoReflect
     /// <remarks>
     /// Derived from the managed nesting, which is where the converter puts the package identity: the
     /// declaring class names the package and the enclosing namespace names its parent directories
-    /// (<c>go</c> is the emission root). The mapping is not a strict inverse for the two cases where
-    /// the class name is not the path's last segment — a major-version directory
-    /// (<c>math/rand/v2</c> emits namespace <c>go.math.rand</c> + class <c>rand_package</c>, so this
-    /// recovers <c>"math/rand"</c>) and a module dependency whose package name differs from its path
-    /// segment. Both are naming-only losses; the Go-visible path is exact for every other package.
+    /// (<c>go</c> is the emission root). Where that derivation cannot reproduce the path — a '.'
+    /// inside a segment, a major-version directory, a package name that differs from its directory —
+    /// the converter stamps the class with the verbatim path (<see cref="GoPackageAttribute.ImportPath"/>),
+    /// which <see cref="GoPackageClassPath"/> reads first.
     /// </remarks>
     public static string GoPackagePath(Type? t)
     {
@@ -752,12 +753,41 @@ public static partial class GoReflect
         if (goPackageNameOf(packageClass) is not { Length: > 0 } pkg)
             return "";
 
+        // The stamped VERBATIM path outranks the derivation below, which cannot see a '.' inside a
+        // segment, a major-version directory, or a name that differs from its directory. The converter
+        // stamps it exactly where this derivation would not reproduce the path.
+        if (GoPackageImportPathOf(packageClass) is { } verbatim)
+            return verbatim;
+
         string ns = packageClass!.Namespace ?? "";
 
         if (ns.Length > EmissionRootNamespace.Length + 1 && ns.StartsWith(EmissionRootNamespace + ".", StringComparison.Ordinal))
             return ns[(EmissionRootNamespace.Length + 1)..].Replace('.', '/') + "/" + pkg;
 
         return pkg;
+    }
+
+    private static readonly ConcurrentDictionary<Type, string?> s_goPackageImportPaths = new();
+
+    /// <summary>
+    /// The verbatim Go import path stamped on a package class (<see cref="GoPackageAttribute.ImportPath"/>),
+    /// or null when the class carries none — in which case the namespace-plus-name derivation is exact.
+    /// </summary>
+    /// <remarks>
+    /// The ONE reader of the stamp. Every package-path decoder consults it first — this file's
+    /// <see cref="GoPackageClassPath"/>, <see cref="GoSyntheticPC"/>'s function names and the runtime's
+    /// frame names — so reflect and runtime can never disagree about a package's path. Memoized per
+    /// class for the attribute-read cost recorded on <see cref="goTypeMarkerOf"/>.
+    /// </remarks>
+    internal static string? GoPackageImportPathOf(Type? packageClass)
+    {
+        if (packageClass is null)
+            return null;
+
+        return s_goPackageImportPaths.GetOrAdd(packageClass, static type =>
+            type.GetCustomAttributes(typeof(GoPackageAttribute), false) is [GoPackageAttribute { ImportPath: { Length: > 0 } importPath }]
+                ? importPath
+                : null);
     }
 
     // The namespace every converted package is emitted under; its dotted tail mirrors the import

@@ -192,6 +192,14 @@ public static class GoSyntheticPC
         // is `internal/abi`; an EXTERNAL one is its own package, so `abi_test_package` keeps the
         // `_test` and is `internal/abi_test`. Getting this wrong would not fail loudly — it would
         // quietly name a frame something Go never prints.
+        //
+        // A stamped VERBATIM import path is final and is read first: the namespace cannot carry a '.'
+        // inside a segment, a major-version directory, or a name that differs from its directory
+        // (GoPackageAttribute.ImportPath). The converter stamps each test variant with the path Go
+        // gives it, so neither suffix rule below applies to a stamped class.
+        if (GoReflect.GoPackageImportPathOf(owner) is { } verbatim)
+            return $"{verbatim}.{name}";
+
         string package = owner.Name;
 
         if (package.EndsWith(PackageSuffix, StringComparison.Ordinal))
