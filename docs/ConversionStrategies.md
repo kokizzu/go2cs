@@ -2,7 +2,7 @@
 
 > **A high-level, example-driven tour of how `go2cs` maps each Go construct to C#.** This is the
 > readable overview -- every section ends with a **Reference →** link into the exhaustive
-> [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md), where the same topic
+> [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md), where the same topic
 > is documented in full: every emitted form, edge case, phase-level fix, and the [behavioral test](Glossary.md#guard)
 > that guards it. Read the summary for the *shape*; open the reference for the *why*.
 
@@ -123,7 +123,7 @@ package under test — the production files' included — before the first test,
 *references* the production assembly rather than recompiling it, so that `init` would otherwise wait
 for the first touch of a production symbol. `package_test_info.cs` therefore forces the production
 module directly; see
-[the reference](ConversionStrategies-Reference.md#a--tests-production-reference-project-forces-the-package-under-tests-own-init).
+[the reference](ConversionStrategies-Reference/package-conversion.md#a--tests-production-reference-project-forces-the-package-under-tests-own-init).
 
 A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
 `.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
@@ -147,12 +147,12 @@ shared by every platform means flat, a subset means one copy per folder. So
 `lock_futex.go`), while `os/proc_impl.cs` stays flat even though `proc.cs` is per-GOOS, because every
 platform has one.
 
-**Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
+**Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference/package-conversion.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
 packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
-[imported-package initialization order](ConversionStrategies-Reference.md#an-import-forces-the-imported-packages-init-to-run),
+[imported-package initialization order](ConversionStrategies-Reference/package-conversion.md#an-import-forces-the-imported-packages-init-to-run),
 build-tag/`GOOS`/`GOARCH` file selection,
-[per-`GOOS` source folders](ConversionStrategies-Reference.md#per-goos-sources-layout-l3-and-gotargetos),
+[per-`GOOS` source folders](ConversionStrategies-Reference/package-conversion.md#per-goos-sources-layout-l3-and-gotargetos),
 and the auto-generated `.slnx` solutions (the stdlib solution, and
 the `-recurse` per-project solutions grouped into `src`/`pkg`/`core` folders).
 
@@ -181,10 +181,10 @@ A **constant** can be a dependency too, but only the two forms that stay initial
 than [get-only properties](#constant-values) — a string const and a `GoBigConst` const. Go lists no
 initialization order for constants at all, so that edge is one the conversion has to add itself.
 
-**Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference.md#package-level-variable-initialization-order) —
+**Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference/variable-initialization-order.md#package-level-variable-initialization-order) —
 the three hazard shapes, transitive dependency analysis, moved-dependency closure, addressed globals,
-[tuple-deconstructing specs relocated as one unit](ConversionStrategies-Reference.md#a-tuple-deconstructing-package-var-relocates-as-one-unit),
-the [constant-dependency edge](ConversionStrategies-Reference.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
+[tuple-deconstructing specs relocated as one unit](ConversionStrategies-Reference/variable-initialization-order.md#a-tuple-deconstructing-package-var-relocates-as-one-unit),
+the [constant-dependency edge](ConversionStrategies-Reference/variable-initialization-order.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
 and the `PackageVarInitOrder` / `InitOrderTupleSpecs` behavioral guards.
 
 ---
@@ -198,7 +198,7 @@ box, and the one that holds when converted packages are consumed as compiled lib
 library is published on NuGet as `go.<pkg>` / `go.lib` / `go.gen`, which fits how C# developers usually
 consume dependencies, and a `-recurse=nuget` conversion references those packages directly.
 
-**Full detail:** [Reference → Compiled Library versus Source Code](ConversionStrategies-Reference.md#compiled-library-versus-source-code).
+**Full detail:** [Reference → Compiled Library versus Source Code](ConversionStrategies-Reference/compiled-library-vs-source.md#compiled-library-versus-source-code).
 
 ---
 
@@ -227,7 +227,7 @@ while C# runs static field *initializers* in class-textual order, so as a field 
 read as its type's DEFAULT by any package-level variable declared ahead of it — silently. That is how
 `compress/flate`'s Huffman decode table was allocated at length 0 instead of 512. (Two allocating
 forms — `@string` and `GoBigConst` — stay fields on purpose; see the
-[reference](ConversionStrategies-Reference.md#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field).)
+[reference](ConversionStrategies-Reference/constants.md#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field).)
 
 Float constant values emit **exactly**: the Go source literal verbatim when it is valid C#, else the
 shortest round-trip form — never a shortened decimal. And a **function-local** untyped constant whose
@@ -271,7 +271,7 @@ same property form with an `unchecked` cast. Note `uintptr` is a **distinct goli
 `System.UIntPtr` — Go treats `uint` and `uintptr` as different types, and the struct preserves that
 identity.
 
-**Full detail:** [Reference → Constant Values](ConversionStrategies-Reference.md#constant-values) — the
+**Full detail:** [Reference → Constant Values](ConversionStrategies-Reference/constants.md#constant-values) — the
 exact-float, complex-halves, and local-const tightening rules, the wrapper's value-conversion and
 value-comparison contracts, the `unchecked` native-int cast rules, wide-unsigned named consts, and the
 full `uintptr` conversion matrix.
@@ -297,7 +297,7 @@ uint8 a = 200, b = 100;
 take((uint8)(a + b));   // wraps to 44, not 300
 ```
 
-**Full detail:** [Reference → Native and Narrow Integer Types](ConversionStrategies-Reference.md#native-and-narrow-integer-types) —
+**Full detail:** [Reference → Native and Narrow Integer Types](ConversionStrategies-Reference/native-and-narrow-integers.md#native-and-narrow-integer-types) —
 narrow-arithmetic casts across argument/assignment/return contexts, wide-const overflow folding, signed
 minima sign-folding, and the `Index`/`Range` `nint`→`int` caveat.
 
@@ -337,7 +337,7 @@ so `Word >> s` stays a `Word`. Converting *between* a named type and a non-under
 the underlying (`traceArg(procs)` → `(traceArg)(uint64)procs`), mirroring Go's numeric-conversion rules.
 Unsigned unary minus lowers to `(T)0 - x` (C# forbids unary negation, i.e., `-` prefix, on unsigned).
 
-**Full detail:** [Reference → Named Numeric Types and Constant Contexts](ConversionStrategies-Reference.md#named-numeric-types-and-constant-contexts) —
+**Full detail:** [Reference → Named Numeric Types and Constant Contexts](ConversionStrategies-Reference/named-numeric-types.md#named-numeric-types-and-constant-contexts) —
 this is one of the deepest topics: `++/--` operators, to/from conversions, cross-assembly conversion
 operators, named slice/array/map wrappers, `append` element casting, shift-width and bit-mask casts, and
 the `&^=` bit-clear lowering.
@@ -405,8 +405,8 @@ for a zero-filled `make([]*Int, 1)` element.
 
 Detail (pointer-identity rules, adapter seeding, the structural-vs-dereference nil distinction, and
 which slots the boundary covers):
-[Canonical typed-nil pointer boxing](ConversionStrategies-Reference.md#canonical-typed-nil-pointer-boxing)
-and [the reflection read path](ConversionStrategies-Reference.md#reflectvalueinterface-is-a-boundary-into-interface-space-so-it-packs-the-typed-nil-too).
+[Canonical typed-nil pointer boxing](ConversionStrategies-Reference/nil-and-zero-values.md#canonical-typed-nil-pointer-boxing)
+and [the reflection read path](ConversionStrategies-Reference/nil-and-zero-values.md#reflectvalueinterface-is-a-boundary-into-interface-space-so-it-packs-the-typed-nil-too).
 
 Zero-value reference-backed values are null-safe: a `default!` `@string` reads as `""` rather than
 throwing.
@@ -443,9 +443,9 @@ parameter too, where the pack reaches the callee through a C# `params Span<T>` r
 slice header: a zero-argument call materializes nil, a spread passes exactly the slice it was given,
 and the two are told apart by the span's data reference — null for exactly the headers Go calls nil.
 
-**Full detail:** [Reference → Nil and Zero Values](ConversionStrategies-Reference.md#nil-and-zero-values) —
+**Full detail:** [Reference → Nil and Zero Values](ConversionStrategies-Reference/nil-and-zero-values.md#nil-and-zero-values) —
 null-safe zero values and pointer-to-interface assignment through selector fields; and
-[Reference → Nil-vs-empty slice identity](ConversionStrategies-Reference.md#nil-vs-empty-slice-identity-s--nil-is-representation-nilness-not-emptiness)
+[Reference → Nil-vs-empty slice identity](ConversionStrategies-Reference/slices-and-arrays.md#nil-vs-empty-slice-identity-s--nil-is-representation-nilness-not-emptiness)
 — the full construction-identity enumeration.
 
 ---
@@ -486,7 +486,7 @@ would store the pointed-to value, so a later `x.(*T)` would find a bare `T` and 
 fmt's `sync.Pool` round-trip (`ppFree.Put(p)` then `Get().(*pp)`), which crashed every multi-call fmt
 program before the fix.
 
-**Full detail:** [Reference → Empty Interface (`any`)](ConversionStrategies-Reference.md#empty-interface-any) — the
+**Full detail:** [Reference → Empty Interface (`any`)](ConversionStrategies-Reference/empty-interface.md#empty-interface-any) — the
 `@string` and default-type boxing across argument, return, assignment, composite-literal, map-key, and
 channel-send positions, and the box for a pointer value passed to an `any` argument.
 
@@ -528,7 +528,7 @@ var ᴛ1 = o.unmarshalOIDText(oid);
 return (o, ᴛ1);
 ```
 
-**Full detail:** [Reference → Multi-Assignment and Evaluation Order](ConversionStrategies-Reference.md#multi-assignment-and-evaluation-order) —
+**Full detail:** [Reference → Multi-Assignment and Evaluation Order](ConversionStrategies-Reference/multi-assignment.md#multi-assignment-and-evaluation-order) —
 per-element `var` mechanics, escaping/heap-boxed tuple elements, interface-converting deconstruction,
 address-taken value locals (the `Ꮡ(value)` copy-vs-box distinction), and the return-operand spill's scope.
 
@@ -576,9 +576,9 @@ not `time` happens to be converted in the same run — which is what makes a sta
 `-recurse`) conversion of such a program compile. It is likewise the same however the source *named* the
 type: a renamed type reached through a **dot import** is a bare ident with no package qualifier to rewrite,
 and it still resolves through the same imported alias (`Info{…}` and `types.Info{…}` both emit `typesꓸInfo`)
-— see [Reference → A DOT-IMPORTED renamed type](ConversionStrategies-Reference.md#a-dot-imported-renamed-type-is-spelled-through-the-same-alias-as-the-qualified-reference).
+— see [Reference → A DOT-IMPORTED renamed type](ConversionStrategies-Reference/golib-namespace.md#a-dot-imported-renamed-type-is-spelled-through-the-same-alias-as-the-qualified-reference).
 
-**Full detail:** [Reference → Short Variable Redeclaration](ConversionStrategies-Reference.md#short-variable-redeclaration-shadowing) —
+**Full detail:** [Reference → Short Variable Redeclaration](ConversionStrategies-Reference/shadowing.md#short-variable-redeclaration-shadowing) —
 a large family: forward-collision detection at every block level, package-function shadowing, builtin-method
 shadowing, box-name rules for renamed receivers/pointers, and nested-closure capture state.
 
@@ -614,7 +614,7 @@ public static (nint, error) Atoi(@string s) {     // strconv/atoi.cs
 The single-value assertion `i.(T)` → `i._<T>()` panics on failure; the comma-ok `i._<T>(ᐧ)` returns safely.
 An assertion to a *pointer* type renders the box type: `i.(*box)` → `i._<ж<box>>()`.
 
-**Full detail:** [Reference → Multi-Result Values and Comma-Ok Forms](ConversionStrategies-Reference.md#multi-result-values-and-comma-ok-forms) —
+**Full detail:** [Reference → Multi-Result Values and Comma-Ok Forms](ConversionStrategies-Reference/multi-result-and-comma-ok.md#multi-result-values-and-comma-ok-forms) —
 package-level `var a, b = f()` component reads, variadic pointer-arg boxing, named-func-result signatures,
 and variadic-closure `params` rebinding.
 
@@ -647,7 +647,7 @@ seed := [8]byte{1, 2}   // 1, 2, then six zeros
 var seed = new byte[]{1, 2}.array(8);
 ```
 
-See [the reference](ConversionStrategies-Reference.md#a-fixed-array-composite-literal-carries-its-declared-length-arrayn)
+See [the reference](ConversionStrategies-Reference/slices-and-arrays.md#a-fixed-array-composite-literal-carries-its-declared-length-arrayn)
 for the keyed/`SparseArray` form and the nested-array gap.
 
 `array<T>` carries its element type but not its LENGTH — C# has no const generic to hold the `N` of
@@ -664,7 +664,7 @@ f1 := func(in [32]byte, sc Scalar) bool { … }
 var f1 = ([GoArrayDims(32)] array<byte> @in, Scalar sc) => { … };
 ```
 
-See [the reference](ConversionStrategies-Reference.md) (*A func PARAMETER is the one position an
+See [the reference](ConversionStrategies-Reference/README.md) (*A func PARAMETER is the one position an
 array's LENGTH cannot be recovered from*) for the delegate-instance read behind it.
 
 A struct field takes the same attribute wherever its initializer cannot reach — that route recovers
@@ -693,7 +693,7 @@ type T1 struct {                              // encoding/gob's TestEndToEnd
 covers any pointer depth (`***[3]int` carries the same `[GoArrayDims(3)]`, the cargo passing down
 unshifted at every hop). A field that IS an array keeps its initializer, and a DEFINED array or map
 type is not stamped — its managed form is a generated wrapper with no slot to carry cargo. See the
-[field dims cargo](ConversionStrategies-Reference.md#a-struct-fields-type-only-array-dims--goarraydims--gomapkeydims-2026-08-20)
+[field dims cargo](ConversionStrategies-Reference/manual-conversions.md#a-struct-fields-type-only-array-dims--goarraydims--gomapkeydims-2026-08-20)
 section of the reference.
 
 `append`, `len`, `make`, and sub-slicing map to golib builtins/methods. A variadic `...T` parameter arrives
@@ -707,7 +707,7 @@ argument that Go reads as one element but C# could bind as the whole pack is cas
 a bare `nil`, and a `[]E`/`[N]E` passed without `...` (`f(a)` with `a []any` means a pack of ONE, since
 spreading needs `a...`); both otherwise bind C#'s preferred *normal* form and silently lose an argument
 or a level of nesting. See
-[untyped constants boxed as `any`](ConversionStrategies-Reference.md#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
+[untyped constants boxed as `any`](ConversionStrategies-Reference/empty-interface.md#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
 in the reference. From the real stdlib:
 
 ```go
@@ -801,11 +801,11 @@ A write through either has to reach the caller's buffer; against a copy it is di
 which is a wrong answer rather than a slow one. The value forms — `[4]byte(s)`, `*p` — still copy,
 exactly as Go's do.
 
-**Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference.md#slices-and-arrays) —
+**Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference/slices-and-arrays.md#slices-and-arrays) —
 named slice/array wrappers, pointer-to-array slicing, named-slice pointer reinterpretation, structural
 composite rendering, array value-copy cloning (deep for nested arrays), the
-[struct-carrying-arrays clone](ConversionStrategies-Reference.md#a-struct-carrying-array-fields-copies-through-its-generated-δclone),
-[element-pointer array aliasing](ConversionStrategies-Reference.md#an-element-pointer-reinterpreted-as-an-array-pointer-aliases-the-elements-storage)
+[struct-carrying-arrays clone](ConversionStrategies-Reference/slices-and-arrays.md#a-struct-carrying-array-fields-copies-through-its-generated-δclone),
+[element-pointer array aliasing](ConversionStrategies-Reference/pointers.md#an-element-pointer-reinterpreted-as-an-array-pointer-aliases-the-elements-storage)
 and slice-aliasing/write-through semantics.
 
 ---
@@ -815,7 +815,7 @@ and slice-aliasing/write-through semantics.
 Go's `string` becomes golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs):
 an immutable byte string. `len`, indexing, `range`, comparison and concatenation work on bytes, as in Go,
 not on UTF-16 characters. Slicing is cheap: `s[i:j]` is a window over the same bytes, not a copy
-([detail](ConversionStrategies-Reference.md#string-is-a-byte-string-and-slicing-it-is-a-window)).
+([detail](ConversionStrategies-Reference/strings.md#string-is-a-byte-string-and-slicing-it-is-a-window)).
 
 **Literals** render as C# UTF-8 literals, `"…"u8`, and become an `@string` only where a string value is
 needed:
@@ -914,7 +914,7 @@ bug. `sstring` appears in two places:
   package-level function it also adds one shared delegate, `Sprintfᶠ`, which the converter names wherever
   Go uses the function as a value.
 
-**Full detail:** [Reference → Strings (`@string` and `sstring`)](ConversionStrategies-Reference.md#strings-string-and-sstring) —
+**Full detail:** [Reference → Strings (`@string` and `sstring`)](ConversionStrategies-Reference/strings.md#strings-string-and-sstring) —
 windows and conversions, literal rendering and byte-array literals, the exact hoisting rules, named-string
 wrappers, `sstring` eligibility, and the twin rule, records and guard tests.
 
@@ -956,7 +956,7 @@ long: it is what hung `net/http`'s HTTP/2 server in `promoteUndeclaredTrailers`.
 one shape the arrival lookup cannot settle — it is equal to nothing, itself included, so the lookup
 always misses and the entry would vanish from the range — so a miss is disambiguated with the store's
 own comparer; `encoding/json`'s `TestMarshalTextFloatMap` is what reads that out. See the
-[range-over-map](ConversionStrategies-Reference.md#a-range-body-may-mutate-the-map-it-is-ranging-over--the-enumerator-walks-a-key-snapshot)
+[range-over-map](ConversionStrategies-Reference/maps-and-channels.md#a-range-body-may-mutate-the-map-it-is-ranging-over--the-enumerator-walks-a-key-snapshot)
 section of the reference.
 
 An **interface key compares by Go equality, not by wrapper identity**. Go compares interface values by
@@ -968,7 +968,7 @@ the same `builtin.AreEqual` that emitted `==` uses and hashes the unwrapped root
 value could not find its own entry, while `==` on that very pair still said `true`. That split is what
 stopped `go/types` from type-checking anything — `initorder.dependencyGraph` is exactly this shape — and
 it is scoped to interface/`any` keys, so concrete keys keep `EqualityComparer<K>.Default`'s fast path.
-See the [interface map key](ConversionStrategies-Reference.md#an-interface-map-key-compares-by-go-equality-never-by-adapter-identity)
+See the [interface map key](ConversionStrategies-Reference/maps-and-channels.md#an-interface-map-key-compares-by-go-equality-never-by-adapter-identity)
 section of the reference.
 
 A **`m[string(b)]` READ does not copy the key**, matching the Go compiler's own special case
@@ -987,7 +987,7 @@ if v := commonHeader[string(a)]; v != "" { return v, true }   // net/textproto r
 golib's `channel<T>` is a faithful port of Go's runtime channel (hchan + selectgo): an unbuffered
 send really waits for a receiver, `cap`/`len` report Go's values, a blocking `select` commits
 exactly ONE case chosen uniformly at random among the ready ones, and close/panic semantics match
-Go — see the [channel runtime](ConversionStrategies-Reference.md#real-channel-runtime--the-hchanselectgo-port-rendezvous-caplen-single-fire-uniform-random)
+Go — see the [channel runtime](ConversionStrategies-Reference/maps-and-channels.md#real-channel-runtime--the-hchanselectgo-port-rendezvous-caplen-single-fire-uniform-random)
 section of the reference. One channel has an owner that can take a value BACK: Go 1.23's synchronous
 timer channel, where `Stop`/`Reset` guarantee that no tick from before the call can be received after
 it — so `time.Timer.C` reports `len` and `cap` of 0 even while it holds a tick, and the pre-1.23
@@ -1016,7 +1016,7 @@ which is what lets `text/template`'s `walkRange` refuse a range over a send-only
 guard is why `reflect.Value.Recv`/`Send` are bridged in the same change: a working receive behind a
 direction that always read bidirectional turns that refusal into an unbounded hang. A NARROWING
 conversion (`var s chan<- int = ch`) and a DEFINED channel type are deliberately not stamped. See the
-[chan direction cargo](ConversionStrategies-Reference.md#the-chan-direction-is-carried-by-the-value--descriptor-cargo-exactly-like-an-arrays-length-2026-08-20)
+[chan direction cargo](ConversionStrategies-Reference/manual-conversions.md#the-chan-direction-is-carried-by-the-value--descriptor-cargo-exactly-like-an-arrays-length-2026-08-20)
 section of the reference.
 
 A goroutine over a `select` — the concurrency core — lowers to `goǃ(...)` and a `switch` over `select(...)`,
@@ -1070,7 +1070,7 @@ default: {
 }}
 ```
 
-**Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference.md#maps-and-channels) —
+**Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference/maps-and-channels.md#maps-and-channels) —
 the nil map key's dedicated slot, the `m[string(b)]` no-copy read key (`tmpstring`), named map/channel
 types, constrained map access through type parameters, the real channel runtime
 (hchan + selectgo: rendezvous, cap/len, single-fire, uniform-random), and full `select` lowering
@@ -1110,7 +1110,7 @@ public static bool Less<T>(T x, T y)
 }
 ```
 
-**Full detail:** [Reference → Generic Constraints](ConversionStrategies-Reference.md#generic-constraints) —
+**Full detail:** [Reference → Generic Constraints](ConversionStrategies-Reference/generic-constraints.md#generic-constraints) —
 array-core `~[N]E` lifting, single-term pointer constraints (`[P *T]` → `ж<T>`), method-set interface
 constraints and self-referential proxies, `comparable`, per-field generic-struct equality, unions
 (`string | []byte`), and explicit type-argument handling.
@@ -1154,7 +1154,7 @@ func Get(a Alias[int]) int { return a.V }
 public static nint Get(Box<nint> a) { ... }
 ```
 
-**Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference.md#type-aliasing) — self-boxing
+**Full detail:** [Reference → Type Aliasing](ConversionStrategies-Reference/type-aliasing.md#type-aliasing) — self-boxing
 pointer conversions, the rooted-nesting RHS and its four qualifiers, keyword-safe RHS rendering,
 `types.Unalias` at type-switched decision points, and same-package alias-target namespace qualification.
 
@@ -1199,7 +1199,7 @@ assignment position it also means *no* receiver snapshot is taken — there is n
 A direct call `c.dec()` is *not* a method value — it binds C#'s `this ref` extension receiver against the
 variable and needs no box.
 
-**Full detail:** [Reference → Delegates to Value Receiver Instances](ConversionStrategies-Reference.md#delegates-to-value-receiver-instances) —
+**Full detail:** [Reference → Delegates to Value Receiver Instances](ConversionStrategies-Reference/value-receiver-delegates.md#delegates-to-value-receiver-instances) —
 method expressions (local & foreign), bound/interface/pointer/value-receiver method values, the go-statement
 sibling, named and generic func-type conversions.
 
@@ -1247,7 +1247,7 @@ literal (a conditional one lowers behind its flag, since the LIFO argument needs
 flow), and something that provably executed before it already dereferences the same path — and it is
 all-or-nothing per function, so a function that mixes shapes keeps registration throughout. 225 of
 the 332 such sites in Go 1.23.12's standard library qualify; see
-[the reference](ConversionStrategies-Reference.md#a-deferred-receiver-field-call-with-no-arguments-is-lowered-into-the-frames-finally).
+[the reference](ConversionStrategies-Reference/defer-panic-recover.md#a-deferred-receiver-field-call-with-no-arguments-is-lowered-into-the-frames-finally).
 
 A function with **named results** that deferred code mutates declares them ahead of the `try` and
 returns them after the `finally`, because Go runs the deferred calls after the results are assigned
@@ -1291,13 +1291,13 @@ counting behave as in Go (go2cs's own adapter shells and generated forwarders ar
 as Go's interface dispatch adds no frame). The one honest difference is `file`/`line`: they name the
 **converted `.cs`** position, because that is the source the running program actually has.
 
-**Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference.md#defer--panic--recover) —
+**Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference/defer-panic-recover.md#defer--panic--recover) —
 the frame's emitted forms and why the body is not a lambda, the named-result `goto` exit, the
 registration ladder, unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees,
 value-returning goroutine wrapping, func-literal argument capture hoisting, the golib family-delegate
 cast a VARIADIC deferred literal needs (a `params` lambda converts to no `Action<…>`), and box-bound
 deferred pointer-receiver methods; plus
-[Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
+[Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference/manual-conversions.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
 
 ---
 
@@ -1334,7 +1334,7 @@ source order, a `default:` that Go places *before* some of its cases is guarded 
 precomputed over **every** case label — never on the running match flag, which has not yet seen the
 arms below it.
 
-**Full detail:** [Reference → Expression Switch Statements](ConversionStrategies-Reference.md#expression-switch-statements) —
+**Full detail:** [Reference → Expression Switch Statements](ConversionStrategies-Reference/expression-switch.md#expression-switch-statements) —
 constant-vs-runtime label detection, `static readonly` tags, `fallthrough` + guarded-default returns,
 non-trailing `default` clauses, and index/named-type case labels.
 
@@ -1377,7 +1377,7 @@ internal static void @do(any i) {
 Cases that match an *anonymous interface* (`case interface{ Unwrap() error }:`) synthesize a named
 `[GoType("dyn")]` interface and test it with `case {} Δx when Δx._<is_typeᴛ1>(out var x):`.
 
-**Full detail:** [Reference → Type Switch Statements](ConversionStrategies-Reference.md#type-switch-statements) —
+**Full detail:** [Reference → Type Switch Statements](ConversionStrategies-Reference/type-switch.md#type-switch-statements) —
 the tag-evaluates-once guarantee, default-arm binding, astral rune literals, and generic/embedded arms.
 
 ---
@@ -1404,7 +1404,7 @@ Outer:
     break_Outer:;
 ```
 
-**Full detail:** [Reference → Labeled Control Flow and Loop Variables](ConversionStrategies-Reference.md#labeled-control-flow-and-loop-variables) —
+**Full detail:** [Reference → Labeled Control Flow and Loop Variables](ConversionStrategies-Reference/labels-and-loop-variables.md#labeled-control-flow-and-loop-variables) —
 break vs continue label placement, labels on empty statements, and per-iteration loop-variable semantics
 (Go 1.22).
 
@@ -1434,7 +1434,7 @@ struct → `settingsᴛ1`) from **any depth** of the declared type — `[]*struc
 lift exactly as a bare `struct{…}` does. The empty `struct{}` maps to the shared golib `EmptyStruct`,
 and an empty `interface{}` field to `any` — neither is lifted.
 
-**Full detail:** [Reference → Struct Types](ConversionStrategies-Reference.md#struct-types) — field-name
+**Full detail:** [Reference → Struct Types](ConversionStrategies-Reference/struct-types.md#struct-types) — field-name
 collisions in generated equality, combined field lines, local/anonymous-type lifting (and the recursive
 descent that reaches an anonymous type through pointer/slice/map/channel composition), and recorded
 implicit conversions between structurally-identical anon structs.
@@ -1487,7 +1487,7 @@ one address whichever spelling reaches it:
 internal static ж<FD> Ꮡpfd(ref File instance) => instance.@file.of(global::go.os_package.file.Ꮡpfd);
 ```
 
-**Full detail:** [Reference → Struct Type Embedding](ConversionStrategies-Reference.md#struct-type-embedding) —
+**Full detail:** [Reference → Struct Type Embedding](ConversionStrategies-Reference/struct-embedding.md#struct-type-embedding) —
 transitive/pointer promotion, the inline-field copy rule, zero-value construction, cross-package (metadata)
 embeds, pointer-embed field identity, interface-adapter projection through embeds, and box-receiver primaries.
 
@@ -1538,7 +1538,7 @@ state.walk(value, new parse.ListNodeжNode(t.Root));   // text/template/exec.cs
 
 Both halves of that decision — the one key spelling every record and cast site share, and the
 partial-struct trust rule the VALUE form additionally needs — are in
-[Reference → A foreign implement record is keyed in ONE spelling](ConversionStrategies-Reference.md#a-foreign-implement-record-is-keyed-in-one-spelling-and-a-value-one-is-trusted-only-for-a-partial-struct).
+[Reference → A foreign implement record is keyed in ONE spelling](ConversionStrategies-Reference/package-conversion.md#a-foreign-implement-record-is-keyed-in-one-spelling-and-a-value-one-is-trusted-only-for-a-partial-struct).
 
 Beyond one bounded exception, a record is only written for a conversion the source **declares** — an
 assignment, a call argument, a `var _ I = T{}` witness. It is not inferred in general, because a
@@ -1553,7 +1553,7 @@ identity for the value (89 constructions across the stdlib). The **pointer** met
 same reasoning, with one extra gate: a `(Pointer = true)` record is consumed by NAMING the generated
 adapter class, and that class is `public` only when both the type and the interface are exported, so an
 unexported participant is excluded. Named FUNC types and generics are excluded from both forms — see
-[Reference → A package records the pairs it SATISFIES](ConversionStrategies-Reference.md#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses). Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
+[Reference → A package records the pairs it SATISFIES](ConversionStrategies-Reference/package-conversion.md#a-package-records-the-pairs-it-satisfies-not-only-the-ones-it-witnesses). Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
 shells** beside every non-generic, non-constraint, non-empty interface — named or anonymous alike — found
 through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and
 a reflective `object`-held shell for a value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's
@@ -1568,7 +1568,7 @@ converter-side structural guessing at named-interface pairs:
 public partial interface Speaker { }
 ```
 
-**Full detail:** [Reference → Interfaces](ConversionStrategies-Reference.md#interfaces) — a large topic:
+**Full detail:** [Reference → Interfaces](ConversionStrategies-Reference/interfaces.md#interfaces) — a large topic:
 the runtime shells and their AOT tiering, cross-package pointer/value adapters, unexported-sealing markers,
 keyword-named method escaping, publicized unexported types, structural (C# inheritance) satisfaction, and
 adapter accessibility.
@@ -1636,7 +1636,7 @@ p224Sub(ref nonnil(ref e).x, ref nonnil(ref t1).x, ref nonnil(ref t2).x);
 Detail (the classification whitelist, the seven call-site emission rows and their boxed fallbacks, the
 hoisted-temp rule for wrapper reinterprets, the locals reversion, the nil doctrine and the defer/go
 carve-out): [A pointer parameter whose every use is a dereference is a `ref`
-parameter](ConversionStrategies-Reference.md#a-pointer-parameter-whose-every-use-is-a-dereference-is-a-ref-parameter--the-ж-box-ref-lowering).
+parameter](ConversionStrategies-Reference/pointers.md#a-pointer-parameter-whose-every-use-is-a-dereference-is-a-ref-parameter--the-ж-box-ref-lowering).
 
 An **ENTRY alias** — the `ref` a pointer RECEIVER or pointer PARAMETER binds on the way in — must not use
 `Value`. Go permits calling a method through a nil `*T`, and equally permits *passing* one: the body RUNS,
@@ -1666,8 +1666,8 @@ re-alias after a pointer is re-pointed, since a repoint is not a dereference eit
 Go's own `runtime error: invalid memory address or nil pointer dereference`, and is recoverable. Detail
 (both emission sites — the converter preamble and go2cs-gen's `ref`-receiver bridge — and the three
 retired body analyses that used to admit nil parameters one shape at a time):
-[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish)
-and [A pointer PARAMETER is nil-deferring for exactly the reason a receiver is](ConversionStrategies-Reference.md#a-pointer-parameter-is-nil-deferring-for-exactly-the-reason-a-receiver-is).
+[A pointer RECEIVER's deref alias is nil-DEFERRING](ConversionStrategies-Reference/pointers.md#a-pointer-receivers-deref-alias-is-nil-deferring--the-panic-moves-to-the-body-it-does-not-vanish)
+and [A pointer PARAMETER is nil-deferring for exactly the reason a receiver is](ConversionStrategies-Reference/pointers.md#a-pointer-parameter-is-nil-deferring-for-exactly-the-reason-a-receiver-is).
 
 Pointer **equality is by address**, so `ж<T>.Equals` compares each referent shape by its real storage, not
 by the box: a struct-field ref by (source object, field identity), and an element ref by (backing array,
@@ -1708,7 +1708,7 @@ handed to a syscall was a *former* address — a collection during a blocking `R
 byte-count box out from under the kernel, the count stayed zero, and `internal/poll` reported that as
 a premature `io.EOF`.
 
-**Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
+**Full detail:** [Reference → Pointers](ConversionStrategies-Reference/pointers.md#pointers) — per-iteration
 range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
 identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`
 conversions, and reinterpret casts.
@@ -1738,7 +1738,7 @@ A pointer *local* dereferences through its box on access — a read as `(~x).fie
 `x.Value.field = …` (the assignable form). Promoted fields, nested LHS chains, `++`/`--`, and indexed
 targets all thread the same assignment context so the write path stays assignable.
 
-**Full detail:** [Reference → Implicit Pointer Dereferencing](ConversionStrategies-Reference.md#implicit-pointer-dereferencing) —
+**Full detail:** [Reference → Implicit Pointer Dereferencing](ConversionStrategies-Reference/implicit-dereferencing.md#implicit-pointer-dereferencing) —
 selector-base deref detection, nested LHS `.Value` chains, index-expression assignment targets, and
 `*p.field` field-deref through parameters/receivers.
 
@@ -1752,7 +1752,7 @@ visible from every referenced assembly would win simple-name lookup over an impo
 shadow `using runtime = runtime_package;`, CS0576). The general form of that collision — a real
 parent/child package pair — is handled by **Δ-renaming the import alias** (`using Δruntime = …`).
 
-**Full detail:** [Reference → The go.golib support namespace](ConversionStrategies-Reference.md#the-gogolib-support-namespace) —
+**Full detail:** [Reference → The go.golib support namespace](ConversionStrategies-Reference/golib-namespace.md#the-gogolib-support-namespace) —
 the collision reasoning and the transitive-closure alias-rename pre-pass (incl. foreign renamed-type alias
 resolution).
 
@@ -1800,7 +1800,7 @@ public static partial class io_package {     // io/package_info.cs
 }
 ```
 
-**Full detail:** [Reference → Source Generators](ConversionStrategies-Reference.md#source-generators).
+**Full detail:** [Reference → Source Generators](ConversionStrategies-Reference/source-generators.md#source-generators).
 
 ---
 
@@ -1838,7 +1838,7 @@ for the atomics), the reflection bridge (`reflect`/`internal/reflectlite` carry 
 plus a synthetic descriptor stamped with the real `System.Type`), `sync.Pool`'s eface ring (a single
 `any?` slot with `null` as the empty sentinel), `sync.Cond`'s copy detector (compares root-allocation
 identity instead of a GC-unsound stored address),
-[`weak.Pointer`](ConversionStrategies-Reference.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
+[`weak.Pointer`](ConversionStrategies-Reference/manual-conversions.md#internalweakpointer--the-clr-already-has-weak-references-so-the-runtime-handle-becomes-one)
 (a short `WeakReference` over the `ж<T>` box, with a `ConditionalWeakTable` standing in for the runtime's
 canonical per-address weak handle so two weak pointers to one object still compare equal), `time`'s runtime timers (one dedicated thread servicing
 a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
@@ -1846,7 +1846,7 @@ surface (`GC`, `GOMAXPROCS`, `Gosched`, `LockOSThread`, `Goexit`) as its contrac
 scheduler-level mechanics. The GC **measurement** surface belongs to the same family and shows what
 "realize, don't stub" costs and buys: `runtime.ReadMemStats` and `runtime/debug.ReadGCStats` now read
 one snapshot from
-[one gen2 pause recorder](ConversionStrategies-Reference.md#the-gc-measurement-surface--one-recorder-one-ring-one-snapshot),
+[one gen2 pause recorder](ConversionStrategies-Reference/manual-conversions.md#the-gc-measurement-surface--one-recorder-one-ring-one-snapshot),
 so the per-cycle pause history, `LastGC`, `NumGC` and `HeapReleased` are measured facts rather than
 zeros — while `Mallocs`/`Frees`/`HeapObjects` and `GCCPUFraction` stay zero, because the CLR's nearest
 quantity means something else and a plausible-looking invented number is worse than a stated gap. The
@@ -1883,7 +1883,7 @@ eight raw bytes and managed-readable as a `ж<T>`; reconciling the two needs a *
 only code that knows when the raw word becomes a pointer again is the wrapper. So the remedy is a
 native cell local to the call and a publish afterwards through `ValueSlot` — never `Value`, whose nil
 guard would panic on the very write that fills the slot in. Same rule as the layout family for scope:
-[fixed when a suite reaches it](ConversionStrategies-Reference.md#pointers), and verified at *value*
+[fixed when a suite reaches it](ConversionStrategies-Reference/pointers.md#pointers), and verified at *value*
 level, because the failure shape here is a quiet wrong answer rather than a crash.
 
 Go's network poller is only half an API — the other half is called by the *scheduler*, from
@@ -1914,9 +1914,9 @@ internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
 }
 ```
 
-[Full detail](ConversionStrategies-Reference.md#the-managed-netpoller--the-ten-runtime_poll-contracts-on-nets-completion-machinery),
+[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-managed-netpoller--the-ten-runtime_poll-contracts-on-nets-completion-machinery),
 including [the submit seam's operation records, the golib rendezvous and the accept
-handover](ConversionStrategies-Reference.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
+handover](ConversionStrategies-Reference/manual-conversions.md#the-overlapped-submit-seam--a-per-operation-record-owning-native-lifetime-and-a-golib-rendezvous).
 
 **The Linux flavor answers the same ten contracts on epoll — and got there in two steps.** Linux's
 `os` marks every opened file, pipe and socket pollable and asks the poller to arm it, so the file
@@ -1934,7 +1934,7 @@ native `Marshal` image through the keystone `syscall(2)` binding, never a `ж<T>
 take the blocking path — now because the kernel refuses them, which is precisely Go's behavior — while
 pipes, FIFOs, ttys and sockets are armed: deadlines are honored, `Close` unblocks a parked reader, and
 `net.Listen`/`Dial` work.
-[Full detail](ConversionStrategies-Reference.md#the-linux-flavors-poller--the-fallback-first-then-the-readiness-poller-epoll-one-drain-thread-and-the-windows-descriptor-state-machine).
+[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-flavors-poller--the-fallback-first-then-the-readiness-poller-epoll-one-drain-thread-and-the-windows-descriptor-state-machine).
 
 **And the struct-passing class has Linux members too.** The converted `syscall.Stat_t` ends in a golib
 `array<int64>` where the kernel's `struct stat` ends in three inline words, so it is not blittable and
@@ -1944,7 +1944,7 @@ nothing. The remedy is the same mirror-and-copy the Windows wrappers use
 (`syscall/linux/zsyscall_linux_amd64_impl.cs`, displaced from the generated file under a linux-only
 registry scope), and the same measurement found `rawSyscallNoError` — the bare-`SYSCALL` bottom of
 `Getpid`/`Getuid`/… — still an announcing stub, now one body in `syscall_linux_impl.cs`.
-[Full detail](ConversionStrategies-Reference.md#the-linux-struct-stat-mirror-and-the-noerror-raw-bottom--the-first-linux-members-of-the-struct-passing-class).
+[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-struct-stat-mirror-and-the-noerror-raw-bottom--the-first-linux-members-of-the-struct-passing-class).
 
 **The sockaddr family is mirrored on Linux too — as the socket poller's prerequisite.** The same
 port alias and the same by-address `RawSockaddr*` structs that L10 retired on Windows live in
@@ -1955,7 +1955,7 @@ still un-armable, so `net.Listen`/`Dial` merely reached `FD.Init` and returned `
 permitted` — the wall moved rather than fell, and the readiness poller above is what finished it. And `syscall.Mmap` on Linux returns a SNAPSHOT, because
 golib's `unsafe.Slice` over a native pointer copies rather than aliases — a slice-model item, rooted
 and routed.
-[Full detail](ConversionStrategies-Reference.md#the-sockaddr-family-on-linux--l10s-mirror-arm-for-arm-as-the-socket-pollers-prerequisite-and-mmaps-slice-is-a-snapshot).
+[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-sockaddr-family-on-linux--l10s-mirror-arm-for-arm-as-the-socket-pollers-prerequisite-and-mmaps-slice-is-a-snapshot).
 
 **On Linux the whole kernel boundary is one hand-own.** Go funnels every syscall through a single
 assembly function, `internal/runtime/syscall.Syscall6`, so the managed corpus needs exactly one native
@@ -1980,26 +1980,26 @@ reads and writes through it. Go's second result `r2` is reproduced *exactly* rat
 the x86-64 syscall convention clobbers only `RCX`/`R11`, so the `RDX` the assembly reports is the `a3`
 that went in. That, the SysV variadic question, and `errno` were each measured rather than assumed, and
 the one case libc cannot distinguish is disclosed in the file.
-[Full detail](ConversionStrategies-Reference.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate),
-including the [scheduler brackets that are a faithful no-op](ConversionStrategies-Reference.md#the-scheduler-brackets-are-a-faithful-no-op-not-an-omission)
-and [why `runtime.argslice` must be populated in the same change that forwards it](ConversionStrategies-Reference.md#runtimeargslice--forwarding-and-populating-are-one-change).
+[Full detail](ConversionStrategies-Reference/manual-conversions.md#the-linux-syscall-bottom--one-libc-pinvoke-and-why-r2-is-exact-rather-than-approximate),
+including the [scheduler brackets that are a faithful no-op](ConversionStrategies-Reference/manual-conversions.md#the-scheduler-brackets-are-a-faithful-no-op-not-an-omission)
+and [why `runtime.argslice` must be populated in the same change that forwards it](ConversionStrategies-Reference/manual-conversions.md#runtimeargslice--forwarding-and-populating-are-one-change).
 `os/signal`'s six runtime primitives are the sharpest case of that same rule: forwarding them needed an OS
 edge (a real `SetConsoleCtrlHandler` feeding the *converted* `ctrlHandler`) and a genuinely blocking
 `notetsleepg` before the pushed bodies could run at all — after which Go's own Windows semantics fall out
 unaltered, including the ones that read like defects (`Ignore` does **not** suppress ^C on Windows, and
 `Reset` leaves the ignored bit set).
 
-**Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
+**Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference/manual-conversions.md#manually-converted-declarations) —
 every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,
 whitelisted `//go:linkname` forwarders in both directions (a
-[PULL](ConversionStrategies-Reference.md#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub)
+[PULL](ConversionStrategies-Reference/manual-conversions.md#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub)
 binds another package's symbol; a
-[PUSH](ConversionStrategies-Reference.md#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)
+[PUSH](ConversionStrategies-Reference/manual-conversions.md#a-cross-package-golinkname-push-resolves-per-recorded-disposition--forwarder-or-announced-panic)
 takes another package's body, or announces the pair it cannot honor),
-[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics),
-[realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer),
-[the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism), and
-[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin).
+[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference/manual-conversions.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics),
+[realizing the runtime timer contract](ConversionStrategies-Reference/manual-conversions.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer),
+[the runtime's process-control surface](ConversionStrategies-Reference/manual-conversions.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism), and
+[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference/manual-conversions.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin).
 
 ---
 
@@ -2027,7 +2027,7 @@ Hand-owning the second bucket need not mean stubbing: where .NET exposes the sam
 `crypto/elliptic` P256 `Inverse` panics — **exactly as real Go does under `-tags purego`** (an upstream
 gating inconsistency), so matching it is fidelity.
 
-**Full detail:** [Reference → The standard-library conversion applies `-tags purego`](ConversionStrategies-Reference.md#the-standard-library-conversion-applies--tags-purego) —
+**Full detail:** [Reference → The standard-library conversion applies `-tags purego`](ConversionStrategies-Reference/purego.md#the-standard-library-conversion-applies--tags-purego) —
 the exposure decision and rejected alternatives, the three-bucket taxonomy, and the verified
 `crypto/elliptic` divergence.
 
@@ -2040,11 +2040,11 @@ byte-identical C# every run — a guarantee the [goldens](Glossary.md#golden), t
 release tag all rest on. It's enforced by converting files sequentially in sorted-filename order, a
 deterministic dependency-complete stdlib queue, and sorted emission of any set-backed output.
 
-**Full detail:** [Reference → Deterministic Output](ConversionStrategies-Reference.md#deterministic-output).
+**Full detail:** [Reference → Deterministic Output](ConversionStrategies-Reference/deterministic-output.md#deterministic-output).
 
 ---
 
-*This summary tracks the [technical reference](ConversionStrategies-Reference.md) — when a conversion
+*This summary tracks the [technical reference](ConversionStrategies-Reference/README.md) — when a conversion
 decision changes the headline mapping of a construct, update the matching section here (with a real
 example); record the full detail in the reference. See [`../CLAUDE.md`](../CLAUDE.md), "Record the
 conversion decision."*

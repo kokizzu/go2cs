@@ -656,7 +656,7 @@ section as the standing answer to "why not just make the host single-file today.
 ### Phase 4 follow-up (deferred) — expand the `sstring` stack-string MVP
 
 The escape-analysis-driven stack-string emission landed as a deliberately conservative **MVP** (2026-07-12,
-branch `golib-string-performance`; see [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md#a-non-escaping-stringbyte-local-emits-the-stack-string-sstring)
+branch `golib-string-performance`; see [the strings reference](ConversionStrategies-Reference/strings.md#a-non-escaping-stringbyte-local-emits-the-stack-string-sstring)
 and the [Glossary MVP entry](Glossary.md#mvp)). It emits a zero-copy [`sstring`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/sstring.cs)
 view for a `s := string([]byte)` local only when the local is non-escaping, its source is a plain unnamed
 `[]byte` never written after the conversion, and its every use is a safe read (`len`/`cap`, byte index, or

@@ -105,5 +105,5 @@ Compile-time emission so converted C# stays visually close to Go. Referenced as 
 | per-call `defer` list | `GoFrame` (`ref struct`, LIFO drain) — `GoFrame.cs` |
 
 See [`ConversionStrategies.md`](ConversionStrategies.md) for a high-level, example-driven tour of the
-per-construct mapping, and [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) for the
+per-construct mapping, and [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md) for the
 exhaustive rationale and edge cases behind each one.
