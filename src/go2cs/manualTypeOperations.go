@@ -479,6 +479,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// throwing GetCallerSP/GetCallerPC intrinsics while holding both. See managed_impl.cs.
 		"stopTheWorld":               goosAny,
 		"goroutineProfileWithLabels": goosAny,
+		// Two HOST-FATAL throws turned into refusals by name (managed_impl.cs). shrinkstack
+		// throws "missing stack in shrinkstack" because a goroutine here is a CLR thread with no
+		// Go stack (stack.lo is 0); newUserArena reaches fixalloc before FixAlloc_Init and throws
+		// "runtime: internal error" because there is no Go heap to carve arena chunks from. Each
+		// throw exited the process and lost every later test in the runtime row.
+		"shrinkstack":  goosAny,
+		"newUserArena": goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and

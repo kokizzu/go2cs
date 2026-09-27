@@ -411,6 +411,23 @@ partial class runtime_package
     internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) =>
         throw new PanicException("runtime: goroutineProfileWithLabels: the concurrent collector records each goroutine's stack through sys.GetCallerSP/GetCallerPC and stops the world to do it; neither exists in the managed model (runtime/pprof's goroutine profile has its own managed body)");
 
+    // shrinkstack (stack.go) REFUSES BY NAME. Go's body copies a goroutine's stack into a smaller
+    // one. A goroutine here is a CLR thread with no Go stack (g.stack.lo is 0), so the converted
+    // body's first check threw "missing stack in shrinkstack", and a throw exits the process: the
+    // runtime row lost every test after TestSystemstackFramePointerAdjust. Its other callers
+    // (newstack, scanstack) are Go-scheduler and GC-mark paths the managed host does not run, and
+    // would have thrown at the same check.
+    internal static void shrinkstack(ж<g> Ꮡgp) =>
+        throw new PanicException("runtime: shrinkstack: goroutines are CLR threads with no Go stack to shrink");
+
+    // newUserArena (arena.go) REFUSES BY NAME. Go's body carves arena chunks from the Go heap
+    // (mheap.allocUserArenaChunk -> sysAlloc -> fixalloc). There is no Go heap here (mallocinit
+    // never runs), so the converted body reached fixalloc before FixAlloc_Init and threw "runtime:
+    // internal error", which exited the process: the runtime row lost every test after the first
+    // TestUserArena* test. Its production caller is arena.NewArena (GOEXPERIMENT=arenas).
+    internal static ж<userArena> newUserArena() =>
+        throw new PanicException("runtime: newUserArena: the managed host has no Go heap to allocate user arena chunks from");
+
     // NumCgoCall returns the number of cgo calls made by the current process. Go's body walks the
     // scheduler's `allm` thread list summing per-m counters — a list the managed model never
     // populates (the walk nil-derefs where Go always has at least m0). The managed model makes no
@@ -2226,5 +2243,46 @@ partial class runtime_package
 
         // The event is not disposed: on a leak the parked goroutine still holds it.
         return (stopFailure, acquired.Wait(timeoutMs));
+    }
+
+    /// <summary>
+    /// GolibTests' probe for shrinkstack's refusal (RuntimeHostFatalRefusalTests): shrinks the
+    /// calling goroutine's stack, as runtime's ShrinkStackAndVerifyFramePointers export does, and
+    /// returns what it raised, or null if it returned.
+    /// </summary>
+    public static string? GoShrinkstackRefusalProbe(int timeoutMs) =>
+        RunRefusalProbe(timeoutMs, "shrinkstack", () => shrinkstack(getg()));
+
+    /// <summary>
+    /// GolibTests' probe for newUserArena's refusal (RuntimeHostFatalRefusalTests): creates a user
+    /// arena, as runtime's NewUserArena export does, and returns what it raised, or null if it
+    /// returned.
+    /// </summary>
+    public static string? GoNewUserArenaRefusalProbe(int timeoutMs) =>
+        RunRefusalProbe(timeoutMs, "newUserArena", () => newUserArena());
+
+    private static string? RunRefusalProbe(int timeoutMs, string name, Action call)
+    {
+        string? failure = $"{name} never returned";
+
+        using ManualResetEventSlim returned = new(false);
+
+        Goroutine.Start(() =>
+        {
+            try
+            {
+                call();
+                failure = null;
+            }
+            catch (Exception ex)
+            {
+                failure = $"{ex.GetType().Name}: {ex.Message}";
+            }
+
+            returned.Set();
+        });
+
+        returned.Wait(timeoutMs);
+        return failure;
     }
 }

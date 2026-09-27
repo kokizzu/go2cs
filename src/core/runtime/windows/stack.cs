@@ -1155,74 +1155,7 @@ internal static bool isShrinkStackSafe(ж<g> Ꮡgp) {
     return true;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string missingStackInˢ = "missing stack in shrinkstack"u8;
-internal static readonly @string badStatusInShrinkstackˢ = "bad status in shrinkstack"u8;
-internal static readonly @string shrinkstackAtBadTimeˢ = "shrinkstack at bad time"u8;
-internal static readonly @string shrinkingStackInLibcallˢ = "shrinking stack in libcall"u8;
-
-// Maybe shrink the stack being used by gp.
-//
-// gp must be stopped and we must own its stack. It may be in
-// _Grunning, but only if this is our own user G.
-internal static void shrinkstack(ж<g> Ꮡgp) {
-    ref var gp = ref Ꮡgp.DerefOrNull();
-
-    if (gp.stack.lo == 0) {
-        @throw(missingStackInˢ);
-    }
-    {
-        var s = readgstatus(Ꮡgp); if ((uint32)(s & (uint32)_Gscan) == 0) {
-            // We don't own the stack via _Gscan. We could still
-            // own it if this is our own user G and we're on the
-            // system stack.
-            if (!(Ꮡgp == (~(~getg()).m).curg && getg() != (~(~getg()).m).curg && s == _Grunning)) {
-                // We don't own the stack.
-                @throw(badStatusInShrinkstackˢ);
-            }
-        }
-    }
-    if (!isShrinkStackSafe(Ꮡgp)) {
-        @throw(shrinkstackAtBadTimeˢ);
-    }
-    // Check for self-shrinks while in a libcall. These may have
-    // pointers into the stack disguised as uintptrs, but these
-    // code paths should all be nosplit.
-    if (Ꮡgp == (~(~getg()).m).curg && (~gp.m).libcallsp != 0) {
-        @throw(shrinkingStackInLibcallˢ);
-    }
-    if (debug.gcshrinkstackoff > 0) {
-        return;
-    }
-    var f = findfunc(gp.startpc);
-    if (f.valid() && f.funcID == abi.FuncID_gcBgMarkWorker) {
-        // We're not allowed to shrink the gcBgMarkWorker
-        // stack (see gcBgMarkWorker for explanation).
-        return;
-    }
-    var oldsize = gp.stack.hi - gp.stack.lo;
-    var newsize = oldsize / 2;
-    // Don't shrink the allocation below the minimum-sized stack
-    // allocation.
-    if (newsize < fixedStack) {
-        return;
-    }
-    // Compute how much of the stack is currently in use and only
-    // shrink the stack if gp is using less than a quarter of its
-    // current stack. The currently used stack includes everything
-    // down to the SP plus the stack guard space that ensures
-    // there's room for nosplit functions.
-    var avail = gp.stack.hi - gp.stack.lo;
-    {
-        var used = gp.stack.hi - gp.sched.sp + (uintptr)stackNosplit; if (used >= avail / 4) {
-            return;
-        }
-    }
-    if (stackDebug > 0) {
-        print((@string)"shrinking stack "u8, oldsize, (@string)"->"u8, newsize, (@string)"\n"u8);
-    }
-    copystack(Ꮡgp, newsize);
-}
+// go2cs generated this placeholder — func shrinkstack is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // freeStackSpans frees unused stack spans at the end of GC.
 internal static void freeStackSpans() {
