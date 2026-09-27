@@ -93,6 +93,16 @@ partial class runtime_package
     // two order tokens over managed array elements compare element by element (the Go meaning of
     // comparing size bytes of such arrays); anything else refuses by name. traceMap.put reaches it
     // with the node's managed data slice and the caller's string bytes.
+    //
+    // THE ORDER, as memmove and memclr take it: elements BEFORE addresses. A number that is not a token
+    // is not always a stable address: golib's FromBox mints a TRANSIENT one (the element's address under
+    // a `fixed` that has already ended) and retains the element box beside it, which is what a slice
+    // header's array word carries. After a compacting collection the number names where the backing
+    // used to be, while the retained box is always current, so a pair of pointers that name managed
+    // elements is compared through them, pinned or not. The identity shortcut waits until the element
+    // route declines, for the same reason: two transient numbers taken either side of a move can
+    // coincide while naming different elements. Native memory and bare numbers name no managed element
+    // and keep the address arm.
     internal static partial bool memequal(unsafe_package.Pointer a, unsafe_package.Pointer b, uintptr size)
     {
         if (size.Value == 0)
@@ -103,18 +113,6 @@ partial class runtime_package
 
         if (left == 0 || right == 0)
             throw RuntimeErrorPanic.NilPointerDereference();
-
-        if (left == right)
-            return true;
-
-        if (!ManagedPointerTokens.IsTaggedToken(left) && !ManagedPointerTokens.IsTaggedToken(right))
-        {
-            unsafe
-            {
-                int n = checked((int)size.Value);
-                return new ReadOnlySpan<byte>((void*)left, n).SequenceEqual(new ReadOnlySpan<byte>((void*)right, n));
-            }
-        }
 
         if (TryElementRange(a!, size, out IArray? leftArray, out int leftIndex, out int count) &&
             TryElementRange(b!, size, out IArray? rightArray, out int rightIndex, out int rightCount) &&
@@ -127,6 +125,18 @@ partial class runtime_package
             }
 
             return true;
+        }
+
+        if (left == right)
+            return true;
+
+        if (!ManagedPointerTokens.IsTaggedToken(left) && !ManagedPointerTokens.IsTaggedToken(right))
+        {
+            unsafe
+            {
+                int n = checked((int)size.Value);
+                return new ReadOnlySpan<byte>((void*)left, n).SequenceEqual(new ReadOnlySpan<byte>((void*)right, n));
+            }
         }
 
         throw RefuseTokenBytes(ManagedPointerTokens.IsTaggedToken(left) ? left : right);
