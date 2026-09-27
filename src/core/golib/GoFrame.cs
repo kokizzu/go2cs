@@ -153,6 +153,15 @@ public ref struct GoFrame
 
             GoFuncRoot.HandledPanicValue = handling ?? outer;
 
+            // What a recover() in THIS sequence's deferred calls may stop: the panic being handled,
+            // or nothing for a normal-return sequence — NOT the outer sequence's panic, even when this
+            // frame is itself a deferred call that panic is running (Go's direct-call rule; runtime's
+            // TestRecoverMatching). Written only when it changes, and restored on exit below.
+            PanicException? outerRecoverable = GoFuncRoot.RecoverablePanicValue;
+
+            if (!ReferenceEquals(outerRecoverable, handling))
+                GoFuncRoot.RecoverablePanicValue = handling;
+
             try
             {
                 while (m_count > 0)
@@ -214,6 +223,7 @@ public ref struct GoFrame
 
                         GoFuncRoot.CapturedPanicValue = raised;
                         GoFuncRoot.HandledPanicValue = raised;
+                        GoFuncRoot.RecoverablePanicValue = raised;
                         handling = raised;
 
                         // A panic raised by THIS frame's own deferred call is this frame's to
@@ -226,11 +236,19 @@ public ref struct GoFrame
             finally
             {
                 GoFuncRoot.HandledPanicValue = outer;
+
+                if (!ReferenceEquals(GoFuncRoot.RecoverablePanicValue, outerRecoverable))
+                    GoFuncRoot.RecoverablePanicValue = outerRecoverable;
             }
         }
 
-        if (owned is not null && GoFuncRoot.CapturedPanicValue is not null)
-            throw GoFuncRoot.CapturedPanicValue;
+        // The owned panic continues exactly when nothing recovered IT. This used to read the thread's
+        // captured-panic slot instead, which a NESTED panic overwrites and its recover() clears — so a
+        // panic recovered inside one of this frame's deferred calls silently swallowed the panic this
+        // frame was running (runtime's TestIssue43921), or left an outer recover() reading nil
+        // (TestIssue43920). `owned` and the sequence's `handling` are always the same panic here.
+        if (owned is { Recovered: false })
+            throw owned;
 
         // The foreign-unwind correction's second half: no real panic superseded the sequence, so
         // the ORIGINAL foreign exception continues unwinding with its stack intact — instead of
@@ -337,6 +355,7 @@ public ref struct GoFrame
     public static void Capture(PanicException panic)
     {
         GoFuncRoot.InFlightForeignException = null; // a REAL panic supersedes any preserved foreign unwind
+        panic.Recovered = false; // a panic arriving at a catch is in flight: unrecovered by definition
         GoFuncRoot.CapturedPanicValue = panic;
         GoFuncRoot.ArmPanicClaim(panic);
     }
