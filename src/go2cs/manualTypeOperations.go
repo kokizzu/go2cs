@@ -486,6 +486,9 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// throw exited the process and lost every later test in the runtime row.
 		"shrinkstack":  goosAny,
 		"newUserArena": goosAny,
+		// traceMap's node lives in Go-layout memory: newTraceMapNode reinterprets traceRegionAlloc
+		// bytes as a reference-bearing traceMapNode. It is allocated managed instead (tracemap_impl.cs).
+		"traceMap.newTraceMapNode": goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
