@@ -813,6 +813,14 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         bool aliasesAnOrderToken = resolved is INilPointer tokenBox &&
                                    tokenBox.IsOrderTokenAt((nuint)value.Value);
 
+        // THE INTERIOR-ALIAS STEP (seat (c), M4; GoReflect.InteriorAlias.cs), at offset 0. Taken ONLY
+        // where the flag above is set -- a box that today would refuse its first dereference -- so no
+        // conversion that works today reaches it. It answers a real alias only where the base's Go
+        // layout puts a T-typed node exactly at this offset (`*(*V)(unsafe.Pointer(&s))` over a
+        // struct whose first field IS a V); any other shape keeps the flagged carrier unchanged.
+        if (aliasesAnOrderToken && resolveInterior(resolved!, 0, fromArm3: false) is { } prefix)
+            return prefix;
+
         // THE REFUSAL. A number inside a LIVE token's own 4 GiB block, that is not that token, is
         // a token somebody did arithmetic on — `unsafe.Add(unsafe.Pointer(&v), offset)` over storage
         // that has no address. Answering a native box over it is not "best effort": the write that
@@ -826,6 +834,15 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         {
             if (Q44RegistryCensus.Enabled)
                 Q44RegistryCensus.Arm3();
+
+            // The same interior-alias step, at the offset the arithmetic added. Before it this line
+            // refused unconditionally; it still refuses, by the same name, for every offset that does
+            // not land exactly on a T-typed node of the base's Go layout.
+            if (ManagedPointerTokens.ResolveArithmeticBase((nuint)value.Value, out nuint offset) is { } arithmeticBase &&
+                resolveInterior(arithmeticBase, offset, fromArm3: true) is { } interior)
+            {
+                return interior;
+            }
 
             throw RuntimeErrorPanic.UnsafePointerArithmeticWithoutAddress();
         }
@@ -928,6 +945,18 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // resolved box in hand; making the accessor re-derive it would put a token lookup on every
         // native read in the corpus.
         return new NativeBox<T>((nuint)value.Value, aliasesAnOrderToken: aliasesAnOrderToken);
+    }
+
+    // The interior-alias step's one call shape, shared by both refusal arms: walk, record the path
+    // shape when the census is on, and answer the alias box or null (today's refusal stands).
+    private static ж<T>? resolveInterior(object baseBox, nuint offset, bool fromArm3)
+    {
+        object? alias = GoReflect.ResolveInteriorAlias(baseBox, offset, typeof(T), out string shape);
+
+        if (Q44RegistryCensus.Enabled)
+            Q44RegistryCensus.Interior(baseBox, typeof(T), fromArm3, shape, alias is not null);
+
+        return alias as ж<T>;
     }
 
     public static unsafe implicit operator uintptr(ж<T> value)

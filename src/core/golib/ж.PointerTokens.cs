@@ -262,6 +262,20 @@ public static class ManagedPointerTokens
                weak.TryGetTarget(out _);
     }
 
+    /// <summary>
+    /// The live box whose token a token-ARITHMETIC number was derived from, and the byte offset the
+    /// arithmetic added — the base the interior-alias step (seat (c), M4) walks. Called ONLY where
+    /// <see cref="IsTokenArithmetic"/> has already answered true, i.e. on a path that refused
+    /// unconditionally before the step existed, so no conversion that works today reaches it.
+    /// </summary>
+    internal static object? ResolveArithmeticBase(nuint number, out nuint offset)
+    {
+        nuint allocationBase = number & ~(nuint)0xFFFFFFFFu;
+        offset = number - allocationBase;
+
+        return Resolve(allocationBase);
+    }
+
     public static void Register(nuint token, object box)
     {
         if (token == 0 || box is null)
