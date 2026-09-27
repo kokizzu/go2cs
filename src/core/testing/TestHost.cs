@@ -141,6 +141,11 @@ public static class TestHost
         // difference between parsing this run's arguments and parsing the test RUNNER's.
         TestFlagBridge.HostCommandLine = args;
 
+        // In-process only: this run gets a fresh flag parse of the process's one CommandLine, every
+        // definition kept, and ExitOnError emulated without exiting (TestFlagBridge.BeginInProcessRun).
+        // A real converted test binary is not in-process and is untouched. Disposed at Run's end.
+        using IDisposable? inProcessFlagRun = TestFlagBridge.IsDrivenInProcess(args) ? TestFlagBridge.BeginInProcessRun() : null;
+
         TestOptions options;
 
         try
