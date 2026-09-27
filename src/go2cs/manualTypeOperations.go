@@ -359,6 +359,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// death, TestSchedLocalQueueEmpty). Go only asks whether that number is 0, so runtime2_impl.cs
 		// answers "runnext is nil" over Volatile.Read of the reference, beside the family's other members.
 		"runqempty": goosAny,
+		// runtime's own semaphore (sema.go). The converted semacquire1 parks through acquireSudog, which
+		// reads the caller's P for its sudog cache; the managed model has no Ps, so the first semacquire
+		// that had to WAIT dereferenced a nil P on a goroutine and the runtime row's host died in
+		// TestSemaHandoff. runtime/sema_impl.cs puts both halves on golib's RuntimeSemaphore, the
+		// primitive sync's and internal/sync's semaphore pulls already use. SemNwait is export_test.go's
+		// read of the semaRoot treap's waiter count, which nothing maintains once the treap is gone;
+		// runtime/export_impl_test.cs answers it from RuntimeSemaphore.Waiters.
+		"semacquire1": goosAny,
+		"semrelease1": goosAny,
+		"SemNwait":    goosAny,
 		// The mutex/note key-slot protocol. Go has TWO flavors of it and selects one per GOOS:
 		// lock_sema.go (windows, darwin, plan9, aix …) smuggles an *m address through the uintptr
 		// slot and parks waiters on OS semaphores; lock_futex.go (linux, freebsd, dragonfly) uses a
@@ -462,6 +472,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// being skipped. ReadTrace and the rest of the tracer genuinely do stay auto: they are
 		// reached only from the goroutine trace.Start spawns AFTER it succeeds, which it never does.
 		"StopTrace": goosWindowsLinux,
+		// stopTheWorld refuses by name BEFORE it takes worldsema: the converted stopTheWorldWithSema
+		// died on the nil P while worldsema was held, which leaked the permit to every later caller
+		// once runtime's semaphore could park (sema_impl.cs). goroutineProfileWithLabels refuses by
+		// name before taking goroutineProfile.sema or the world, since its collector reads the
+		// throwing GetCallerSP/GetCallerPC intrinsics while holding both. See managed_impl.cs.
+		"stopTheWorld":               goosAny,
+		"goroutineProfileWithLabels": goosAny,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
@@ -723,6 +740,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// right outcome for a test whose premise (a poller wait that a break interrupts) the managed
 		// model does not have. A no-op there would buy a green that means nothing.
 		"netpollGenericInit": goosAny,
+		// EXCEPT on linux, where write1 has a libc body (runtime/linux/stubs2_impl.cs): the auto
+		// netpollBreak's write to the never-created eventfd answers -EBADF and takes Go's throw, a
+		// fatal that ends the test host. The linux hand-own refuses by name before the write, which
+		// keeps the one loud row. See runtime/linux/netpoll_epoll_impl.cs.
+		"netpollBreak": goosLinux,
 		// runtime.throw and runtime.fatal -- the FATAL path (runtime/panic_impl.cs;
 		// docs/phase4/DESIGN-fatal-path.md). Both converted bodies print Go's `fatal error: <text>`
 		// line through golib's print and then call fatalthrow, whose FIRST statement is
