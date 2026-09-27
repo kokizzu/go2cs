@@ -19,7 +19,7 @@ partial class AliasImportLib_package {
 }
 
 public static nint ApplyVar(Var f, params ꓸꓸꓸnint xsʗp) {
-    var xs = xsʗp.slice();
+    var xs = xsʗp.sslice();
 
     return f(xs.ꓸꓸꓸ);
 }
