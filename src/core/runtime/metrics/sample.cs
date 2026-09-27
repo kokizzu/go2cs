@@ -9,7 +9,7 @@
 // []metricSample over that address — an address-reinterpret the managed pointer model cannot
 // alias, so the reconstructed slice read garbage names. The managed form carries the same data
 // as plain managed values through runtime.readMetricsManaged (managed_impl.cs): names in,
-// computed (kind, scalar, pointer) out, index-aligned, with readMetricsLocked's batch semantics
+// computed (kind, scalar, histogram counts and buckets) out, index-aligned, with readMetricsLocked's batch semantics
 // — one lock hold, one defensive agg clear, per-sample ensure+compute in order — preserved on
 // the runtime side. Sample itself and everything Read populates it from (initMetrics' table,
 // the compute closures) stay auto-converted.
@@ -73,18 +73,31 @@ public static void Read(slice<Sample> m) {
     var names = new slice<@string>(len(m));
     var kinds = new slice<nint>(len(m));
     var scalars = new slice<uint64>(len(m));
-    var pointers = new slice<@unsafe.Pointer>(len(m));
+    var histCounts = new slice<slice<uint64>>(len(m));
+    var histBuckets = new slice<slice<float64>>(len(m));
 
     for (nint i = 0; i < len(m); i++) {
         names[i] = m[i].Name;
     }
 
-    global::go.runtime_package.readMetricsManaged(names, kinds, scalars, pointers);
+    global::go.runtime_package.readMetricsManaged(names, kinds, scalars, histCounts, histBuckets);
 
     for (nint i = 0; i < len(m); i++) {
         m[i].Value.kind = (ValueKind)kinds[i];
         m[i].Value.scalar = scalars[i];
-        m[i].Value.pointer = pointers[i];
+        m[i].Value.pointer = nil;
+
+        // A histogram crosses as its two slices (the runtime's own histogram type is not this
+        // package's, and casting one to the other is a reinterpret the managed model refuses), so
+        // the Float64Histogram that Value.Float64Histogram() returns is built here, over them.
+        // DIVERGENCE, stated: Go reuses a Value's existing histogram storage "when possible"; this
+        // builds a fresh one per sample, as the crossing already computed a fresh runtime value.
+        if (m[i].Value.kind == KindFloat64Histogram) {
+            var hist = @new<ΔFloat64Histogram>();
+            hist.Value.Counts = histCounts[i];
+            hist.Value.Buckets = histBuckets[i];
+            m[i].Value.pointer = @unsafe.Pointer.FromPinnedBox(hist);
+        }
     }
 }
 
