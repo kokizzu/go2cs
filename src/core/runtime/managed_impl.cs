@@ -259,6 +259,21 @@ partial class runtime_package
         return previous;
     }
 
+    /// <summary>
+    /// GolibTests' probe for the /cpu/classes accounting (RuntimeCPUStatsTests): reads work.cpuStats,
+    /// the snapshot runtime/metrics and the ReadCPUStats export report, plus the Go global gomaxprocs.
+    /// Order: GCAssist, GCDedicated, GCIdle, GCPause, GCTotal, ScavengeAssist, ScavengeBg,
+    /// ScavengeTotal, Idle, User, Total (all cpu-ns), then gomaxprocs.
+    /// </summary>
+    public static long[] GoCPUStatsProbe()
+    {
+        cpuStats s = work.cpuStats;
+
+        return [s.GCAssistTime, s.GCDedicatedTime, s.GCIdleTime, s.GCPauseTime, s.GCTotalTime,
+            s.ScavengeAssistTime, s.ScavengeBgTime, s.ScavengeTotalTime, s.IdleTime, s.UserTime,
+            s.TotalTime, gomaxprocs];
+    }
+
     // Gosched yields the processor, allowing other goroutines to run. It does not suspend the
     // current goroutine, so execution resumes automatically.
     public static void Gosched()
