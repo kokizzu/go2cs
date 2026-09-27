@@ -942,6 +942,8 @@ partial class runtime_package
 
     private static void appendGoFrames(StringBuilder trace, IEnumerable<StackFrame> frames)
     {
+        bool calledGo = false;
+
         foreach (StackFrame frame in frames)
         {
             System.Reflection.MethodBase? method = frame.GetMethod();
@@ -950,6 +952,20 @@ partial class runtime_package
             // Callers by the same predicate), and StackTrace.GetFrames() still returns it.
             if (method is null || method.IsDefined(typeof(System.Diagnostics.StackTraceHiddenAttribute), inherit: false))
                 continue;
+
+            // A method-expression WRAPPER (GoWrapperAttribute) prints only where Go's traceback keeps
+            // one: when it is the first Go frame of the block, i.e. the wrapper itself faulted (a nil
+            // receiver: Go's sigpanic or panicwrap). A wrapper that called a Go function is elided, as
+            // Go's elideWrapperCalling rules and as the Callers walk does.
+            if (method.IsDefined(typeof(GoWrapperAttribute), inherit: false))
+            {
+                if (calledGo)
+                    continue;
+            }
+            else if (isGoSourceFrame(method))
+            {
+                calledGo = true;
+            }
 
             trace.Append(goFrameName(method, frame)).Append("()\n");
 
