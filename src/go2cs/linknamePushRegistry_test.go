@@ -168,12 +168,34 @@ func TestLinknamePushRegistryMatchesGoSource(t *testing.T) {
 // pushing definition is what makes the forwarder compile across the assembly boundary at all. Remove
 // the row, break the reverse index, or narrow that access rule, and this goes red first.
 func TestLinknamePushRoutesNetNewUnixFile(t *testing.T) {
-	const (
-		consumerKey = "net.newUnixFile"
-		pusherPkg   = "os"
-		pusherFunc  = "net_newUnixFile"
-	)
+	assertBarePushRouted(t, "net", "newUnixFile", "os", "net_newUnixFile",
+		"(*net.TCPListener).File() dies in it",
+		"os carries the real body (newFile with kindSock) and it runs")
+}
 
+// TestLinknamePushRoutesOsSigpipe pins the second such pair: runtime's `os_sigpipe`, pushed into os's
+// bodyless `sigpipe`. os.epipecheck calls it on every EPIPE a write to stdout or stderr returns, so a
+// missing row is a production defect in every converted unix program, not a test artifact: the stub
+// throws NotImplementedException out of the write (measured 2026-09-26 on os's TestStdPipe, whose five
+// checks all read exit status 1). Like the pair above it is invisible on Windows, where Go declares
+// neither half.
+func TestLinknamePushRoutesOsSigpipe(t *testing.T) {
+	assertBarePushRouted(t, "os", "sigpipe", "runtime", "os_sigpipe",
+		"every EPIPE on fd 1 or 2 throws NotImplementedException out of the write",
+		"runtime carries the real body (systemstack(sigpipe): sigsend, signal_ignored, dieFromSignal) and it runs")
+}
+
+// assertBarePushRouted is the shared body of the pinned-pair guards above. Both halves of the pair are
+// re-derived from GOROOT, so Go's source is the input and the converter's routing is the thing under
+// test; and the last assertion exercises packageFuncAccess itself rather than the reverse index it
+// reads, because publicizing the pushing definition is what makes the forwarder compile across the
+// assembly boundary at all. Remove the row, break the reverse index, or narrow that access rule, and
+// the pinned pair goes red first. `consequence` says what the absence costs; `body` says why the row
+// is honorable.
+func assertBarePushRouted(t *testing.T, consumerPkg, consumerFunc, pusherPkg, pusherFunc, consequence, body string) {
+	t.Helper()
+
+	consumerKey := consumerPkg + "." + consumerFunc
 	goRoot := build.Default.GOROOT
 
 	if goRoot == "" {
@@ -184,34 +206,33 @@ func TestLinknamePushRoutesNetNewUnixFile(t *testing.T) {
 		t.Skip("GOROOT not resolvable; nothing to verify the pair against")
 	}
 
-	// Half one, from Go's source: net declares the symbol bodyless, in the BARE shape (no directive
-	// of its own). Both properties are what the matcher requires before it will forward.
-	decl := findGoFuncDecl(t, goRoot, "net", "newUnixFile")
+	// Half one, from Go's source: the consumer declares the symbol bodyless, in the BARE shape (no
+	// directive of its own). Both properties are what the matcher requires before it will forward.
+	decl := findGoFuncDecl(t, goRoot, consumerPkg, consumerFunc)
 
 	if decl == nil {
-		t.Fatalf("net.newUnixFile is not declared in %s/src/net — the pair this guard pins no longer exists in Go's source", goRoot)
+		t.Fatalf("%s is not declared in %s/src/%s — the pair this guard pins no longer exists in Go's source", consumerKey, goRoot, consumerPkg)
 	}
 
 	if decl.Body != nil {
-		t.Fatal("net.newUnixFile HAS a body in Go's source, so it is no longer a linkname push consumer")
+		t.Fatalf("%s HAS a body in Go's source, so it is no longer a linkname push consumer", consumerKey)
 	}
 
 	if declHasLinknameDirective(decl) {
-		t.Error("net.newUnixFile now carries a //go:linkname directive of its own — the registry row records the BARE shape and the matcher fails closed, so the row would silently forward nothing")
+		t.Errorf("%s now carries a //go:linkname directive of its own — the registry row records the BARE shape and the matcher fails closed, so the row would silently forward nothing", consumerKey)
 	}
 
-	// Half two, from Go's source: os performs the push.
+	// Half two, from Go's source: the pusher performs the push.
 	if !pkgHasLinknamePush(t, goRoot, pusherPkg, pusherFunc, consumerKey) {
 		t.Errorf("%s does not carry `//go:linkname %s %s` — the push this pair depends on does not exist in Go's source", pusherPkg, pusherFunc, consumerKey)
 	}
 
 	// The converter's side: the pair is routed, and routed HONORABLY. An unhonorable disposition
-	// would announce the wall instead of forwarding, which for this pair would be wrong — os carries
-	// the real body and it runs.
+	// would announce the wall instead of forwarding, which for these pairs would be wrong.
 	push, routed := linknamePushTargets[consumerKey]
 
 	if !routed {
-		t.Fatalf("linknamePushTargets has no row for %q: net's bodyless declaration falls back to a throwing PartialStubGenerator stub, and (*net.TCPListener).File() dies in it", consumerKey)
+		t.Fatalf("linknamePushTargets has no row for %q: the bodyless declaration falls back to a throwing PartialStubGenerator stub, and %s", consumerKey, consequence)
 	}
 
 	if push.source != pusherPkg+"."+pusherFunc {
@@ -219,22 +240,22 @@ func TestLinknamePushRoutesNetNewUnixFile(t *testing.T) {
 	}
 
 	if !push.bareDecl {
-		t.Errorf("row %q records bareDecl=false, but net's declaration carries no directive — the matcher would reject it", consumerKey)
+		t.Errorf("row %q records bareDecl=false, but the consumer's declaration carries no directive — the matcher would reject it", consumerKey)
 	}
 
 	if push.reason != "" {
-		t.Errorf("row %q is recorded UNHONORABLE (%q), so it emits a panicking stub — but os carries the real body (newFile with kindSock) and it runs", consumerKey, push.reason)
+		t.Errorf("row %q is recorded UNHONORABLE (%q), so it emits a panicking stub — but %s", consumerKey, push.reason, body)
 	}
 
-	// The access rule, exercised rather than assumed: os's pushing definition is unexported in Go, so
-	// only this arm makes it reachable from net's forwarder in another assembly.
+	// The access rule, exercised rather than assumed: the pushing definition is unexported in Go, so
+	// only this arm makes it reachable from the forwarder in another assembly.
 	savedPath := currentPackagePath
 	currentPackagePath = pusherPkg
 
 	defer func() { currentPackagePath = savedPath }()
 
 	if access := packageFuncAccess(pusherFunc, true); access != "public" {
-		t.Errorf("packageFuncAccess(%q) = %q, want \"public\": net's forwarder calls it across an assembly boundary and an unexported Go name is otherwise emitted internal", pusherFunc, access)
+		t.Errorf("packageFuncAccess(%q) = %q, want \"public\": the forwarder calls it across an assembly boundary and an unexported Go name is otherwise emitted internal", pusherFunc, access)
 	}
 }
 

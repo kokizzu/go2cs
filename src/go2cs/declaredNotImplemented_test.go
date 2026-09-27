@@ -382,7 +382,6 @@ var declaredPushStubs = map[string]string{
 	"internal/syscall/windows.QueryPerformanceFrequency": dispositionLatent,
 	"os.ignoreSIGSYS":                   dispositionLatent,
 	"os.restoreSIGSYS":                  dispositionLatent,
-	"os.sigpipe":                        dispositionLatent,
 	"reflect.chancap":                   dispositionLatent,
 	"reflect.chanclose":                 dispositionLatent,
 	"reflect.chanlen":                   dispositionLatent,

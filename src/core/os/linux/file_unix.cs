@@ -239,7 +239,9 @@ internal static ж<File> newFile(nint fd, @string name, newFileKind kind, bool n
     return f;
 }
 
-internal static partial void sigpipe();
+internal static void sigpipe() {
+    runtime.os_sigpipe();
+}
 
 // implemented in package runtime
 

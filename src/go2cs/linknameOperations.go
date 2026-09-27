@@ -482,6 +482,23 @@ var linknamePushTargets = map[string]linknamePush{
 	// exec_windows.go) and goargs_impl.cs keeps goargs()'s own `if GOOS == "windows" { return }`
 	// guard, so argslice stays unset exactly as in Go.
 	"os.runtime_args": {source: "runtime.os_runtime_args", bareDecl: true},
+	// os's EPIPE-on-stdout/stderr hook, pushed by runtime/signal_unix.go (`//go:linkname os_sigpipe
+	// os.sigpipe`), in the same BARE consumer shape: os/file_unix.go declares `func sigpipe() //
+	// implemented in package runtime`. os.epipecheck calls it on every EPIPE a write to fd 1 or 2
+	// returns, so without this row the declaration took a throwing PartialStubGenerator stub and ANY
+	// converted unix program writing to a closed stdout or stderr died of NotImplementedException
+	// (measured 2026-09-26 on os's TestStdPipe, all five of its checks).
+	//
+	// The pushed body is ordinary converted Go — `systemstack(sigpipe)` into runtime.sigpipe, which
+	// delivers to a Notify'd channel (sigsend) or honors signal_ignored and otherwise dies by
+	// dieFromSignal — so the forwarder reaches Go's own decision. Measured with the forwarder in
+	// place: the Notify(SIGPIPE) half of TestStdPipe is right. Whether the host can give back the
+	// DEFAULT death by SIGPIPE under the CLR (which ignores SIGPIPE itself) is sized separately; that
+	// is runtime policy below this seam, not a reason to keep the seam throwing.
+	//
+	// Windows has neither half (file_unix.go and signal_unix.go are unix-only), so nothing is emitted
+	// there.
+	"os.sigpipe": {source: "runtime.os_sigpipe", bareDecl: true},
 	// syscall's reader-starvation probe for the ForkLock upgrade dance, pushed by sync/rwmutex.go
 	// (`//go:linkname syscall_hasWaitingReaders syscall.hasWaitingReaders`). The consumer is the
 	// BARE shape — forkpipe2.go declares `func hasWaitingReaders(rw *sync.RWMutex) bool` with no
