@@ -124,6 +124,76 @@ public class EventPipeSamplerTests
         Assert.AreEqual("cpusamplerprobe.cpuHog1", GoSyntheticPC.NameOf(hogPC));
     }
 
+    // The MAGNITUDE piece (runtime/pprof's TestCPUProfileMultithreadMagnitude/parallel): a profile's
+    // samples x period must add up to the CPU time the threads actually used, within Go's 10%. More
+    // hog threads than cores is the shape that separates the two: each hog is runnable for the whole
+    // window but on a CPU for only part of it. The arm is also the INSTRUMENT: it prints each hog's
+    // samples x period beside its own measured on-CPU time (linux: /proc/thread-self/schedstat, whose
+    // first field is nanoseconds on a CPU), so the cause is read, not inferred.
+    [TestMethod]
+    public void AThreadsSamplesAddUpToTheCpuTimeItUsed()
+    {
+        if (!OperatingSystem.IsLinux())
+            Assert.Inconclusive("the per-thread on-CPU reading here is linux's /proc/thread-self/schedstat");
+
+        const int hz = 100;
+        const int hogMilliseconds = 1500;
+        int threads = Environment.ProcessorCount + 1;
+
+        var sampler = new EventPipeSampler(EventPipeSampler.OpenInProcessSession);
+        var onCpu = new Dictionary<int, long>();
+
+        sampler.Start(hz);
+        Assert.IsTrue(sampler.LastSessionOpened, "a SampleProfiler session must open on this process");
+
+        var hogs = new Thread[threads];
+
+        for (int i = 0; i < threads; i++)
+        {
+            hogs[i] = new Thread(() =>
+            {
+                long before = OnCpuNanoseconds();
+                cpusamplerprobe_package.cpuHogger(hogMilliseconds);
+                long used = OnCpuNanoseconds() - before;
+
+                lock (onCpu)
+                    onCpu[OsThreadId()] = used;
+            });
+            hogs[i].Start();
+        }
+
+        foreach (Thread hog in hogs)
+            hog.Join();
+
+        sampler.Stop(CountingWriter);
+
+        const long periodNs = 1_000_000_000L / hz;
+        long sampledTotal = 0;
+        long usedTotal = 0;
+
+        foreach ((int tid, long used) in onCpu)
+        {
+            long sampled = sampler.LastWrittenByThread.GetValueOrDefault(tid) * periodNs;
+            sampledTotal += sampled;
+            usedTotal += used;
+            Console.WriteLine($"hog thread: sampled {sampled / 1_000_000} ms, on CPU {used / 1_000_000} ms, ratio {(double)sampled / used:F2}");
+        }
+
+        double diff = (double)Math.Abs(sampledTotal - usedTotal) / Math.Max(sampledTotal, usedTotal);
+        Console.WriteLine($"{threads} hogs on {Environment.ProcessorCount} cores: sampled {sampledTotal / 1_000_000} ms, on CPU {usedTotal / 1_000_000} ms, diff {diff:P1}");
+
+        Assert.AreEqual(threads, onCpu.Count, "every hog reports its on-CPU time");
+        Assert.IsTrue(diff <= 0.10, $"samples x period must be within 10% of the CPU time used (Go's limit); sampled {sampledTotal / 1_000_000} ms against {usedTotal / 1_000_000} ms on CPU");
+    }
+
+    // /proc/thread-self/schedstat: "<ns on a CPU> <ns runnable waiting> <timeslices>".
+    private static long OnCpuNanoseconds() =>
+        long.Parse(System.IO.File.ReadAllText("/proc/thread-self/schedstat").Split(' ')[0], System.Globalization.CultureInfo.InvariantCulture);
+
+    // /proc/thread-self/stat's first field is the OS thread id, the id EventPipe reports.
+    private static int OsThreadId() =>
+        int.Parse(System.IO.File.ReadAllText("/proc/thread-self/stat").Split(' ')[0], System.Globalization.CultureInfo.InvariantCulture);
+
     [TestMethod]
     public void ASampleCarriesTheLabelsItsThreadHadWhenSampled()
     {
