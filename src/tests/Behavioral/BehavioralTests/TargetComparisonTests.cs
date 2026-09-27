@@ -1210,6 +1210,12 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNarrowArithmeticArg() => CheckTarget("NarrowArithmeticArg");
 
     [TestMethod]
+    public void CheckNarrowArithmeticCompileSinks() => CheckTarget("NarrowArithmeticCompileSinks");
+
+    [TestMethod]
+    public void CheckNarrowArithmeticSinks() => CheckTarget("NarrowArithmeticSinks");
+
+    [TestMethod]
     public void CheckNarrowByteArithFirstOperandCast() => CheckTarget("NarrowByteArithFirstOperandCast");
 
     [TestMethod]

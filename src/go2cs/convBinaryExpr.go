@@ -1187,7 +1187,9 @@ func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatc
 		return "(" + castType + ")(" + core + ")"
 	}
 
-	return core
+	// A NON-constant narrow-integer result whose consumer is not wrap-invariant narrows itself back
+	// to Go's width (see markNarrowArithmeticContexts)
+	return v.narrowArithmeticSelfCast(binaryExpr, core)
 }
 
 // widenedConstExprCastType returns the C# type a TYPED-integer constant operator expression must be

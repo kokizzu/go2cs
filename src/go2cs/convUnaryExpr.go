@@ -430,7 +430,9 @@ func (v *Visitor) convUnaryExpr(unaryExpr *ast.UnaryExpr, context UnaryExprConte
 		return "(" + castType + ")(" + core + ")"
 	}
 
-	return core
+	// A NON-constant narrow-integer result whose consumer is not wrap-invariant narrows itself back
+	// to Go's width (see markNarrowArithmeticContexts)
+	return v.narrowArithmeticSelfCast(unaryExpr, core)
 }
 
 func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprContext) string {

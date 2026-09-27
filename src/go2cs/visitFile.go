@@ -44,6 +44,10 @@ func (v *Visitor) visitFile(file *ast.File) {
 	// markUntypedConstContexts) before any expression conversion renders a literal
 	v.markUntypedConstContexts(file)
 
+	// Decide, per narrow-integer arithmetic expression, whether its consumer needs Go's width (see
+	// markNarrowArithmeticContexts)
+	v.markNarrowArithmeticContexts(file)
+
 	if v.options.includeComments {
 		// Create standalone comments map
 		for _, commentGroup := range file.Comments {

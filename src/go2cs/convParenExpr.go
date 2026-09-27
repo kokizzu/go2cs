@@ -40,5 +40,10 @@ func (v *Visitor) convParenExpr(parenExpr *ast.ParenExpr, context LambdaContext,
 		return fmt.Sprintf("(%s)(uintptr)", expr)
 	}
 
+	// A narrow-integer arithmetic expression that narrowed itself is already one cast expression
+	if v.narrowArithmeticParenSelfCast(parenExpr, expr) {
+		return expr
+	}
+
 	return fmt.Sprintf("(%s)", expr)
 }

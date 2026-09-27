@@ -246,9 +246,10 @@ func (v *Visitor) narrowArithmeticCastType(lhs, rhs ast.Expr, alreadyCast string
 
 // narrowArithmeticCastTypeFor is the type-keyed form of narrowArithmeticCastType — used where the
 // narrow target is a declared variable's type (a `var x uint8 = a + b` value-spec initializer)
-// rather than an LHS expression.
+// rather than an LHS expression. A PARENTHESIZED operand is the same arithmetic: `(a + a) < 0` and
+// `c = (a + a)` need the cast exactly as their bare forms do.
 func (v *Visitor) narrowArithmeticCastTypeFor(targetType types.Type, rhs ast.Expr, alreadyCast string) string {
-	switch rhs.(type) {
+	switch ast.Unparen(rhs).(type) {
 	case *ast.BinaryExpr, *ast.UnaryExpr:
 	default:
 		return ""
@@ -275,11 +276,26 @@ func (v *Visitor) narrowArithmeticCastTypeFor(targetType types.Type, rhs ast.Exp
 	// just the FIRST OPERAND's own conversion — `(byte)(e / 100) + (rune)'0'`, where the `(byte)(` casts
 	// only `e / 100`, so the binary result is still `int` and the narrowing cast is still required
 	// (CS0266). Verify the cast-paren's matching close is at the very end before treating it as covered.
+	// A parenthesized operand renders its own parens around that cast: `((uint8)(a | b))`.
+	if _, isParen := rhs.(*ast.ParenExpr); isParen {
+		alreadyCast = stripOuterParens(alreadyCast)
+	}
+
 	if len(alreadyCast) > 0 && wholeExprIsCastOfType(alreadyCast, castType) {
 		return ""
 	}
 
 	return castType
+}
+
+// stripOuterParens removes every parenthesized group that spans the whole of expr: `((uint8)(~u))`
+// is the cast `(uint8)(~u)`.
+func stripOuterParens(expr string) string {
+	for isFullyParenthesized(expr) {
+		expr = expr[1 : len(expr)-1]
+	}
+
+	return expr
 }
 
 // narrowComparisonOperand wraps a comparison operand that is a NON-CONSTANT narrow-integer
