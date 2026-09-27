@@ -61,6 +61,9 @@
          exercised by syscall's linux-only TestPrlimitFileLimit. -->
     <Compile Remove="LinuxDescriptorLimitTests.cs" />
 
+    <!-- pidfd_open/waitid(P_PIDFD)/pidfd_send_signal: linux-only kernel surface. -->
+    <Compile Remove="LinuxPidfdTests.cs" />
+
     <!-- GetRandom (and its runtime.vgetrandom pull) is declared by getrandom.go, whose build tags
          select only the linux flavour of internal/syscall/unix. -->
     <Compile Remove="LinuxGetRandomTests.cs" />
