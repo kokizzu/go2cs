@@ -20,7 +20,7 @@ internal static bool isHost(byte c) {
 	1<<']' |
 	1<<':' */
             maskᶜ;
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460746666278911UL)))) != 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) | (uint64)((((uint64)1).Lsh((uint64)((byte)(c - 64)))) & (576460746666278911UL)))) != 0;
 }
 
 // Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
@@ -32,7 +32,7 @@ internal static bool validHeaderValueByte(byte c) {
 	1<<0x20 |
 	1<<0x09 */
             maskᶜ1;
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(9223372036854775807UL)))) == 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((byte)(c - 64)))) & ~(9223372036854775807UL)))) == 0;
 }
 
 // Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
@@ -41,7 +41,7 @@ private static readonly GoBigConst maskᶜ2 = GoBigConst.Parse("1180591620717411
 internal static uint64 smallHigh(byte c) {
     GoBigConst mask = /* 1<<70 | 1<<3 */
             maskᶜ2;
-    return (uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (8UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (64UL)));
+    return (uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (8UL)) | (uint64)((((uint64)1).Lsh((uint64)((byte)(c - 64)))) & (64UL)));
 }
 
 // Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
@@ -50,7 +50,7 @@ private static readonly GoBigConst maskᶜ3 = GoBigConst.Parse("8507059173023461
 internal static uintptr nativeWidth(byte c) {
     GoBigConst mask = /* 1<<126 | 1<<65 | 1<<7 */
             maskᶜ3;
-    return (uintptr)((uintptr)((((uintptr)1).Lsh((uint64)(c))) & (uintptr)((nuint)(128UL))) | (uintptr)((((uintptr)1).Lsh((uint64)((c - 64)))) & (uintptr)(unchecked((nuint)(4611686018427387906UL)))));
+    return (uintptr)((uintptr)((((uintptr)1).Lsh((uint64)(c))) & (uintptr)((nuint)(128UL))) | (uintptr)((((uintptr)1).Lsh((uint64)((byte)(c - 64)))) & (uintptr)(unchecked((nuint)(4611686018427387906UL)))));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

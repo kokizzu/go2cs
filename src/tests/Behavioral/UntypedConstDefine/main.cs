@@ -61,13 +61,13 @@ internal static void tightenGuards() {
         const byte cb = 200;
         nuint sh1 = 1;
         byte b = 1;
-        fmt.Println(b + ((byte)cb).Lsh(sh1));
+        fmt.Println((byte)(b + ((byte)cb).Lsh(sh1)));
         const int16 c16 = 30000;
         int16 i16 = 1;
-        fmt.Println(i16 + ((int16)c16).Lsh(sh1));
+        fmt.Println((int16)(i16 + ((int16)c16).Lsh(sh1)));
         const uint16 cu16 = 60000;
         uint16 w16 = 1;
-        fmt.Println(w16 + ((uint16)cu16).Lsh(sh1));
+        fmt.Println((uint16)(w16 + ((uint16)cu16).Lsh(sh1)));
         const nint infinity = 1000000;
         nint lineCount = 3;
         if (lineCount < infinity) {
