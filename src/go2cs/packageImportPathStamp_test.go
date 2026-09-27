@@ -1,6 +1,15 @@
+// packageImportPathStamp_test.go - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+// Use of this source code is governed by the GNU Affero General Public License
+// version 3 only, which can be found in the LICENSE file.
+// Additional permission for emitted output: see LICENSE-EXCEPTION (AGPL section 7).
+
 package main
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -102,5 +111,89 @@ func TestConvergeGoPackageStampsNamesPackageMainByGosRule(t *testing.T) {
 
 	if got := convergeGoPackageStamps(lines, "go")[0]; got != `[GoPackage("main")]` {
 		t.Errorf("package main's reflect path is \"main\", so it needs no stamp; got %s", got)
+	}
+}
+
+// withGorootVendored sets the per-package GOROOT-vendored flag, restoring it afterwards.
+func withGorootVendored(t *testing.T, vendored bool) {
+	t.Helper()
+	saved := currentPackageGorootVendored
+	currentPackageGorootVendored = vendored
+	t.Cleanup(func() { currentPackageGorootVendored = saved })
+}
+
+func TestConvergeGoPackageStampsGivesAGorootVendoredPackageGosVendorPath(t *testing.T) {
+	// The loader reports $GOROOT/src/vendor/golang.org/x/net/idna as golang.org/x/net/idna. Go's
+	// reflect path for it is vendor/golang.org/x/net/idna; the stamp must carry that path, and a
+	// stamp written from the loader's path must converge to it.
+	withPackage(t, "idna", "golang.org/x/net/idna")
+	withGorootVendored(t, true)
+
+	want := `[GoPackage("idna", ImportPath = "vendor/golang.org/x/net/idna")]`
+
+	for _, stale := range []string{
+		`[GoPackage("idna")]`,
+		`[GoPackage("idna", ImportPath = "golang.org/x/net/idna")]`, // the loader's path, stamped before this rule
+	} {
+		lines := []string{stale, "public static partial class idna_package"}
+
+		if got := convergeGoPackageStamps(lines, "go.vendor.golang.org.x.net")[0]; got != want {
+			t.Errorf("converged %s to %s, want %s", stale, got, want)
+		}
+	}
+}
+
+func TestConvergeGoPackageStampsKeepsANonGorootModulesOwnPath(t *testing.T) {
+	// The control: the same path from a module OUTSIDE GOROOT (converting x/net itself) is not
+	// vendored, and keeps the path the loader reports.
+	withPackage(t, "idna", "golang.org/x/net/idna")
+	withGorootVendored(t, false)
+
+	lines := []string{`[GoPackage("idna")]`, "public static partial class idna_package"}
+	want := `[GoPackage("idna", ImportPath = "golang.org/x/net/idna")]`
+
+	if got := convergeGoPackageStamps(lines, "go.golang.org.x.net")[0]; got != want {
+		t.Errorf("a non-vendored golang.org/x package: got %s, want %s", got, want)
+	}
+}
+
+func TestGoReflectPackagePathPrefixesOnlyAnUnprefixedVendoredPath(t *testing.T) {
+	withGorootVendored(t, true)
+
+	for loader, want := range map[string]string{
+		"golang.org/x/net/idna":        "vendor/golang.org/x/net/idna",
+		"vendor/golang.org/x/net/idna": "vendor/golang.org/x/net/idna", // already Go's form
+		"":                             "",
+	} {
+		if got := goReflectPackagePath(loader); got != want {
+			t.Errorf("goReflectPackagePath(%q) = %q, want %q", loader, got, want)
+		}
+	}
+}
+
+func TestIsGorootVendoredDirIsKeyedOnTheDirectory(t *testing.T) {
+	goRoot := t.TempDir()
+	outside := t.TempDir()
+
+	cases := []struct {
+		dir  string
+		want bool
+	}{
+		{filepath.Join(goRoot, "src", "vendor", "golang.org", "x", "net", "idna"), true},
+		{filepath.Join(goRoot, "src", "vendor", "golang.org", "x", "sys", "cpu"), true},
+		{filepath.Join(goRoot, "src", "net", "http"), false},
+		{filepath.Join(goRoot, "src", "cmd", "vendor", "golang.org", "x", "mod", "module"), false},
+		{filepath.Join(outside, "golang.org", "x", "net", "idna"), false},
+		{"", false},
+	}
+
+	for _, c := range cases {
+		if got := isGorootVendoredDir(c.dir, goRoot); got != c.want {
+			t.Errorf("isGorootVendoredDir(%q) = %v, want %v", c.dir, got, c.want)
+		}
+	}
+
+	if isGorootVendoredDir(filepath.Join(goRoot, "src", "vendor", "golang.org"), "") {
+		t.Errorf("an unknown GOROOT must never classify a directory as vendored")
 	}
 }

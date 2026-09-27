@@ -2723,6 +2723,7 @@ type productionSeed struct {
 func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, seed productionSeed, options Options) ([]string, HashSet[string], error) {
 	resetPackageState(pkg)
 	packageNamespace = projectNamespace
+	currentPackageGorootVendored = isGorootVendoredDir(pkg.Dir, options.goRoot)
 
 	// The lifted type names the production conversion already claimed (see
 	// productionLiftedTypeNames). Non-nil for the INTERNAL variant only — its test files emit into
@@ -3096,7 +3097,7 @@ func appendExternalTestPackageClass(testInfoPath, packageNamespace, productionPa
 	// The stamp is rendered by the same rule convergeGoPackageStamps applies, so a rerun that finds
 	// this block already converged still matches it and appends nothing. The external test package's
 	// Go path is its own (`<path>_test`).
-	block := fmt.Sprintf("\r\n%s\r\npublic static partial class %s\r\n{\r\n}\r\n", goPackageAttributeLine(packageNamespace, external.Name, external.PkgPath), className)
+	block := fmt.Sprintf("\r\n%s\r\npublic static partial class %s\r\n{\r\n}\r\n", goPackageAttributeLine(packageNamespace, external.Name, goReflectPackagePath(external.PkgPath)), className)
 
 	if !strings.Contains(contents, block) {
 		contents += block

@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -1035,7 +1036,7 @@ func goPackageImportPathStamp(namespace, name, importPath string) string {
 // external variant it already ends in "_test"; the production path is recovered from it.
 func goPackageImportPathFor(className, name string) string {
 	productionName := strings.TrimSuffix(packageName, "_test")
-	productionPath := currentPackagePath
+	productionPath := goReflectPackagePath(currentPackagePath)
 
 	if productionName != packageName {
 		productionPath = strings.TrimSuffix(productionPath, "_test")
@@ -1057,6 +1058,35 @@ func goPackageImportPathFor(className, name string) string {
 	}
 
 	return ""
+}
+
+// currentPackageGorootVendored reports that the package being converted lives under
+// GOROOT/src/vendor. resetPackageState clears it; the two drivers set it beside that call, since
+// they hold the GOROOT the conversion was given.
+var currentPackageGorootVendored bool
+
+// isGorootVendoredDir reports whether dir is a package directory under GOROOT/src/vendor. The test
+// is on the DIRECTORY, never on the import path: a module outside GOROOT may itself be
+// golang.org/x/net, and its packages are not vendored.
+func isGorootVendoredDir(dir, goRoot string) bool {
+	if dir == "" || goRoot == "" {
+		return false
+	}
+
+	return isPathUnder(dir, filepath.Join(goRoot, "src", "vendor"))
+}
+
+// goReflectPackagePath returns the path Go's reflect and runtime report for the package being
+// converted, given the loader's path for it. The two differ only for a GOROOT-vendored package.
+// go/packages loads $GOROOT/src/vendor/golang.org/x/net/idna as `golang.org/x/net/idna`, because
+// that is how std resolves it. The compiled package's own path is `vendor/golang.org/x/net/idna`:
+// reflect's PkgPath, runtime.FuncForPC's names, and `go list std` all report that form.
+func goReflectPackagePath(loaderPath string) string {
+	if currentPackageGorootVendored && loaderPath != "" && !strings.HasPrefix(loaderPath, "vendor/") {
+		return "vendor/" + loaderPath
+	}
+
+	return loaderPath
 }
 
 // convergeGoPackageStamps rewrites each [GoPackage] stamp in a package info file to the current rule
