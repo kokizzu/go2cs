@@ -53,6 +53,12 @@ public static class RuntimeSemaphore
         internal readonly ManualResetEventSlim Signal = new(false);
         internal bool HandedOff;
 
+        // Set by the WAITER as the last act of Acquire after a handoff, and waited on by the releaser:
+        // Go's goyield (see Release). Created only on a handoff, under the bucket lock, so the ordinary
+        // park pays nothing for it. Spin count 0: a releaser that spun would see the signal and race
+        // the waiter's very next instructions, which is the ordering the yield exists to give away.
+        internal ManualResetEventSlim? Resumed;
+
         // The goroutine parked on this waiter (Go's sudog.g): the acquirer constructs it on its own
         // thread, just before parking. Release readies it before signalling.
         internal readonly Goroutine? Parker = Goroutine.Current;
@@ -70,6 +76,11 @@ public static class RuntimeSemaphore
     }
 
     private static readonly ConcurrentDictionary<ж<uint32>, SemaBucket> semaTable = new();
+
+    // How many times a releaser yielded to a waiter it handed a permit to (Go's goyield after
+    // `s.ticket == 1`), and how many of those waits hit the bound. Read by RuntimeSemaphoreHandoffTests.
+    internal static long s_handoffYields;
+    internal static long s_handoffYieldTimeouts;
 
     private static SemaBucket bucketFor(ж<uint32> s) => semaTable.GetOrAdd(s, static _ => new SemaBucket());
 
@@ -122,7 +133,13 @@ public static class RuntimeSemaphore
             }
 
             if (w.HandedOff)
-                return; // ownership was handed to us directly (starvation mode)
+            {
+                // Ownership was handed to us directly (starvation mode). Tell the releaser we are
+                // running -- after the park scope has returned us to _Grunning -- so it can stop
+                // yielding to us (Release, Go's goyield).
+                w.Resumed?.Set();
+                return;
+            }
 
             // Normal wake: we were merely readied — re-compete for the count.
         }
@@ -163,6 +180,7 @@ public static class RuntimeSemaphore
                 {
                     s.Value--;        // hand the just-added permit directly to w
                     w.HandedOff = true;
+                    w.Resumed = new ManualResetEventSlim(false, spinCount: 0);
                 }
             }
         }
@@ -173,5 +191,30 @@ public static class RuntimeSemaphore
         // Go's readyWithTime -> goready, on the releaser's side, before the signal.
         Goroutine.Ready(w.Parker);
         w.Signal.Set();
+
+        // GO'S DIRECT HANDOFF YIELD (sema.go semrelease1: `if s.ticket == 1 && getg().m.locks == 0 {
+        // goyield() }`). Having handed the permit over, Go queues the RELEASER behind the readied waiter on
+        // the same P, so the waiter -- which "inherits our time slice" -- runs first; runtime's
+        // TestSemaHandoff asserts that ordering. Here every goroutine is its own thread, so returning at
+        // once let the releaser win in nanoseconds while the waiter was still waking (1-8 per 10,000 on
+        // P1's linux readings, 0 of 1,000 in RuntimeSemaphoreHandoffTests). The releaser instead waits
+        // until the waiter has resumed.
+        //
+        // BOUNDED, by Go's forcePreemptNS (10 ms): the time slice after which Go's own sysmon would
+        // preempt the waiter and let the releaser run. Go's `m.locks == 0` has no managed subject -- a
+        // releaser holding something the waiter's resume path needed would otherwise wait forever -- and
+        // the bound is what stands in for it: such a releaser loses 10 ms, never deadlocks. (A timed
+        // kernel wait rounds up to the timer resolution; the measured worst case is recorded with this
+        // seat.) Only a handoff that actually handed a permit yields, as only `ticket == 1` does in Go.
+        if (w.Resumed is { } resumed)
+        {
+            Interlocked.Increment(ref s_handoffYields);
+
+            if (!resumed.Wait(HandoffYieldBoundMs))
+                Interlocked.Increment(ref s_handoffYieldTimeouts);
+        }
     }
+
+    // Go's forcePreemptNS (proc.go: `forcePreemptNS = 10 * 1000 * 1000 // 10ms`).
+    private const int HandoffYieldBoundMs = 10;
 }
