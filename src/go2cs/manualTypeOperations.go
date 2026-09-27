@@ -433,6 +433,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"sigenable":  goosLinuxDarwin,
 		"sigdisable": goosLinuxDarwin,
 		"sigignore":  goosLinuxDarwin,
+		// dieFromSignal (signal_unix.go), linux only: the same bridge file supplies Go's death by a
+		// signal the managed way. The converted body raises through `raise` and resets the handler
+		// through setsig → rt_sigaction, and both are throwing stubs on the CLR, so runtime.sigpipe's
+		// die branch (EPIPE on stdout or stderr with SIGPIPE neither caught nor ignored) threw
+		// NotImplementedException out of the write instead of ending the program by SIGPIPE, and
+		// crash()'s SIGABRT did the same. rt_sigaction stays unbodied on purpose: it is the install
+		// layer the bridge elides. Darwin keeps the converted body until its own arc.
+		"dieFromSignal": goosLinux,
 		// runtime.StartTrace (trace.go, build-tag-free — selected on every platform): the execution
 		// tracer is a serialization of the scheduler the managed host does not have — the converted
 		// body's first step is semacquire → getg, an unimplemented g-model intrinsic, so every
