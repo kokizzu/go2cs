@@ -2085,6 +2085,22 @@ fmt.Println(a+b == 44)   // 300 wraps to 44 (uint8) -> true
 fmt.Println((uint8)(a + b) == 44);
 ```
 
+**A narrow result keeps Go's width wherever it goes.** When the result is passed as `any`, used as a map key or
+an index, or converted to a wider type, the cast sits on the arithmetic itself. An `any` value keeps Go's type
+too, so `%T` reports `int8`, not `int32`. Here `a` is an `int8` holding 100, so Go's `a + a` is -56:
+
+<!-- source: src/tests/Behavioral/NarrowArithmeticSinks/main.go:50 -->
+```go
+var x any = a + a
+```
+<!-- source: src/tests/Behavioral/NarrowArithmeticSinks/main.cs.target:95 -->
+```csharp
+any x = (int8)(a + a);
+```
+
+No cast is added where only the low bits matter, such as more arithmetic of the same type or a conversion to
+a type no wider.
+
 **Wider types need no narrowing cast.** `int32` and wider types are not promoted, and C# arithmetic is
 unchecked by default. So `+`, `-` and `*` on them wrap on overflow exactly as in Go, with no cast.
 

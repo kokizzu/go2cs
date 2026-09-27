@@ -47,6 +47,81 @@ The cause is a deliberate go/types behavior that stays invisible until you look 
 
 > One sticking point: not all C# indexing constructs accept a `nint`. Explicit indexers support `nint`, but [implicit index support](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-8.0/ranges#implicit-index-support) (the `Index`/`Range` syntax) currently only works with `int`, so range-operation indices are cast to `int` where needed. (The earlier strategy of compiling to `long`/`ulong`, or of custom `@int`/`@uint` structs selected by a `TARGET32BIT` directive, has been superseded by `nint`/`nuint`.)
 
+## Narrow arithmetic narrows itself where its consumer is not wrap-invariant
+
+A non-constant `int8`, `uint8`, `int16` or `uint16` arithmetic result carries its own cast back to its type
+wherever the value that reaches its consumer would differ from Go's. The casts above cover a typed narrow
+destination; this rule covers every other consumer: an `any` or interface argument, a generic argument, a
+widening or float conversion, an index or slice bound, a shift count, a `/`, `%` or `>>` operand, a switch tag
+or case value, a map key, a channel send, a map-literal value, a keyed array element and a parenthesized
+operand. In these examples `a` is an `int8` holding 100 and `u` is a `uint8` holding 200, so Go's `a + a` is
+-56 and `u + u` is 144.
+
+<!-- source: src/tests/Behavioral/NarrowArithmeticSinks/main.go:50 -->
+```go
+var x any = a + a
+```
+<!-- source: src/tests/Behavioral/NarrowArithmeticSinks/main.cs.target:95 -->
+```csharp
+any x = (int8)(a + a);
+```
+
+<!-- source: src/tests/Behavioral/NarrowArithmeticCompileSinks/main.go:16 -->
+```go
+mk := map[uint8]string{144: "wrapped"}
+fmt.Println("map key:", mk[u+u])
+```
+<!-- source: src/tests/Behavioral/NarrowArithmeticCompileSinks/main.cs.target:19 -->
+```csharp
+var mk = new map<uint8, @string>{[144] = "wrapped"u8};
+fmt.Println(mapKeyˢ, mk[(uint8)(u + u)]);
+```
+
+`mapKeyˢ` is the hoisted `"map key:"` literal (`private static readonly object mapKeyˢ = (@string)"map key:"u8;`).
+
+**Why.** C# evaluates `a + a` as the `int` 200 where Go wraps to -56. Deferring the wrap is exact only while
+the consumer reads the low bits and something above it narrows the final result. Anywhere else the
+unwrapped value is observable: an interface boxes `200` as an `int32`, so `%T` and a type switch see the
+wrong type; `int(u+u)` reads 400; `s[u+u]` panics; a switch takes the wrong case; and a map key, range bound,
+channel send, map-literal value or keyed array element does not compile.
+
+**One decision, before emission.** A per-file pre-pass (`markNarrowArithmeticContexts`, beside
+`markUntypedConstContexts`) classifies each narrow arithmetic expression by its consumer, seen through
+parentheses, and `convBinaryExpr` / `convUnaryExpr` emit the cast on the expression itself:
+
+- **Wrap-invariant** consumers add nothing: a same-width `+ - * & | ^ &^`, the left operand of `<<`, a unary
+  `- ^ +`, or a conversion to an integer no wider than the operand. Each reads only the low bits, and the
+  result above it is narrowed in turn.
+- **Value** consumers read the whole value but not its C# type: a widening or float conversion, an index, a
+  slice bound, a shift count (including the right side of `<<=` / `>>=`), a `/`, `%` or `>>` operand, a switch
+  tag or case value. Only a result that can leave the narrow range in C# takes the cast: `+`, `-`, `*`, a
+  unary `-`, and a signed `/` (`int8(-128) / -1` is 128 in C#).
+- **Typed** consumers take the value at its Go type: every other consumer, including a comparison, an
+  interface or generic argument, and every typed destination. Here every narrow result takes the cast,
+  because a result that is only int-TYPED (`>>`, `%`, an unsigned `/`, a signed unary `^`, a unary `+`) still
+  boxes, infers and binds as `int32`.
+
+At a typed destination of the identical Go type the cast takes the destination's own spelling (`byte` for a
+`[]byte` element fed `uint8` arithmetic), so the destination casts described above see a whole-expression cast
+of their own type and add nothing: their emission does not change. A parenthesized operand drops its
+redundant parentheses once its content is a cast: `(a+a)/2` becomes `(int8)((int8)(a + a) / 2)` when the
+quotient itself reaches a typed consumer.
+
+**Not covered here.** A named narrow type (`type T uint8`) is excluded: its `[GoType]` wrapper operators already
+cast back. So are the operators whose emission already narrows its whole result, `& | ^ &^`, `<<` and an
+unsigned unary `^`, and a constant expression, which cannot overflow its type in Go (and whose cast would be
+CS0221). A named interface declared inline, `type I interface{}`, rejects every basic value, narrow or not,
+because it emits as a C# interface; `type I any` emits as `object` and is covered.
+
+Guarded by: `NarrowArithmeticSinks` (the runtime consumers, one recovered arm per class, each red before the
+rule), `NarrowArithmeticCompileSinks` (the consumers that did not compile before the rule),
+`NarrowArithmeticArg` (the typed destinations, unchanged).
+<!-- Ruled 2026-09-27 (ledger 15:18, mailbox 8d62b909a1) from C2's sizing (inbox COORD 20260927T201231Z-C2:
+     345 at-risk GOROOT sites across windows+linux+darwin, prod + tests). Before the rule an interface sink
+     printed `200 int32` for Go's `-56 int8`; NarrowArithmeticSinks' 25 arms were all red at master
+     1aebd6a885 and NarrowArithmeticCompileSinks failed CS1503 x3 / CS0266 x3. The inline empty-interface
+     rejection is independent of arithmetic (a plain int8 value fails CS0029 the same way at master). -->
+
 ---
 
 [← Constant Values](constants.md) · [Index](README.md) · [Named Numeric Types and Constant Contexts →](named-numeric-types.md)
