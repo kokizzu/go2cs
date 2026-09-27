@@ -456,6 +456,11 @@ partial class runtime_package
 
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
+        // The heap profile's cycle for this collection, in Go's order: mark termination's
+        // mProf_NextCycle and mProf_Flush, the sweep's frees, then the mProf_PostSweep that Go's GC()
+        // calls once sweeping is done (mprof_impl.cs, class M piece M2).
+        memProfileCycle(requested: true);
+
         // §3.4's mitigation. The pause recorder's sentinel is woken by the FINALIZER thread, so a
         // ReadMemStats landing in the gap between a collection completing and its finalizer running
         // would see NumGC one short. Go's GC() is documented to complete a full cycle and its tests
