@@ -1803,14 +1803,25 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
 // coerced underlying (GoReflect.TryConvertTo — the single convertibility relation). The store
 // writes through the aliased box's slot ref; a structurally nil box panics Go-style (Q1a).
 
-private static void setKinded(ΔValue v, object wide, @string op) {
-    v.flag.mustBeAssignable(op);
+//
+// WHY op IS A SPAN (mustBeKind's reason, above): every setter passes a "…"u8 literal, and as a @string
+// each SUCCESSFUL call copied it into a counted @string and converted that to a System.String for
+// mustBeAssignable -- 2 counted objects per call where Go's setter allocates nothing. That was 1,000 of
+// reflect TestMapAlloc block 2's 1,002 per run (500 SetInt calls). The name is materialized only on
+// the panic paths below.
+private static void setKinded(ΔValue v, object wide, ReadOnlySpan<byte> op) {
+    if ((flag)(v.flag & flagRO) != 0 || (flag)(v.flag & flagAddr) == 0) {
+        @string name = op;
+        v.flag.mustBeAssignableSlow(name);
+    }
     System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
     if (slotType is null || v.addrBox is null) {
-        throw panic("reflect: " + op + " using unaddressable value");
+        @string name = op;
+        throw panic("reflect: " + name + " using unaddressable value");
     }
     if (!GoReflect.TryConvertTo(wide, slotType, out object? converted)) {
-        throw panic("reflect: call of reflect.Value." + op + " on " + v.kind().String() + " Value");
+        @string name = op;
+        throw panic("reflect: call of reflect.Value." + name + " on " + v.kind().String() + " Value");
     }
     GoReflect.WritePointerSlot(v.addrBox, converted);
 }
@@ -1826,6 +1837,7 @@ public static void SetInt(this ΔValue v, int64 x) {
 }
 
 public static void SetUint(this ΔValue v, uint64 x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetUint"u8, ΔUint, Uint8, Uint16, Uint32, Uint64, Uintptr);
     setKinded(v, x, "SetUint"u8);
 }
 
