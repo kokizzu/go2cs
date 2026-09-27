@@ -261,6 +261,10 @@ private static void memProfileAlloc(object allocation, nuint size, bool noscan) 
 // ---- the guard's view (RuntimeBlockEventTests): GolibTests is outside runtime's InternalsVisibleTo
 //      grant, so this Go-prefixed public helper exposes the one operation ----
 
+/// <summary>Whether a program whose static assembly closure is <paramref name="trustedPlatformAssemblies"/>
+/// (a path list, as the host's TRUSTED_PLATFORM_ASSEMBLIES) starts with the memory profile on.</summary>
+public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, System.Reflection.Assembly? entry) => true;
+
 /// <summary>Records <paramref name="count"/> block events of <paramref name="cycles"/> each through
 /// <c>runtime.blockevent(cycles, 1)</c> -- the call runtime/pprof's TestBlockProfileBias makes.</summary>
 [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
