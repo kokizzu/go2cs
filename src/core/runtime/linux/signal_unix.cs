@@ -24,7 +24,7 @@ partial class runtime_package {
 }
 
 //go:linkname os_sigpipe os.sigpipe
-internal static void os_sigpipe() {
+public static void os_sigpipe() {
     systemstack(sigpipe);
 }
 
