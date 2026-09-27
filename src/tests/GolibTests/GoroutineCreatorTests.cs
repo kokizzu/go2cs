@@ -40,8 +40,9 @@ public class GoroutineCreatorTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StartParkedGoroutine(channel<int> park) => goǃ(() => park.Receive());
 
-    private static string? ForeignBlock(string dump, string status) =>
-        dump.Split("\n\n").Skip(1).FirstOrDefault(b => b.StartsWith("goroutine ", StringComparison.Ordinal) && b.Contains($"[{status}]", StringComparison.Ordinal));
+    private static string? ForeignBlock(string dump, string status, string createdBy) =>
+        dump.Split("\n\n").Skip(1).FirstOrDefault(b => b.StartsWith("goroutine ", StringComparison.Ordinal) && b.Contains($"[{status}]", StringComparison.Ordinal) &&
+                                                         b.Split('\n').Contains(createdBy));
 
     // THE GUARD. The parked goroutine's block carries `created by GolibTests.GoroutineCreatorTests.
     // StartParkedGoroutine in goroutine <this thread's id>` -- the launcher rungs (`goǃ`) and
@@ -76,12 +77,17 @@ public class GoroutineCreatorTests
 
             Assert.AreEqual(2, Goroutine.Snapshot().Count(g => g.ParentId == myId && g.State == GoroutineState.Parked), "the planted goroutines never parked");
 
-            AssertParkedGoroutineNamesItsCreator(park, myId);
+            try
+            {
+                AssertParkedGoroutineNamesItsCreator(park, myId);
+            }
+            finally
+            {
+                park.Close();
+                send.Receive(); // releases the sender; closing would panic it
+                receive.Close();
+            }
         }
-
-        park.Close();
-        send.Receive(); // releases the sender; closing would panic it
-        receive.Close();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -91,25 +97,34 @@ public class GoroutineCreatorTests
         goǃ(() => receive.Receive());
     }
 
+    // Waits for THIS call's goroutine -- created here, by StartParkedGoroutine, on goroutine myId -- to
+    // park, then reads the block whose created-by line is that one. Neither step may settle for another
+    // parked goroutine: a full run leaves goroutines from earlier tests parked.
     private static void AssertParkedGoroutineNamesItsCreator(channel<int> park, long myId)
     {
+        string createdBy = $"created by GolibTests.GoroutineCreatorTests.{nameof(StartParkedGoroutine)} in goroutine {myId}";
+
         StartParkedGoroutine(park);
 
-        for (int i = 0; i < 400 && !Goroutine.Snapshot().Any(g => g.State == GoroutineState.Parked); i++)
+        bool Mine(Goroutine g) => g.ParentId == myId && g.Creator?.Name == nameof(StartParkedGoroutine);
+
+        for (int i = 0; i < 400 && !Goroutine.Snapshot().Any(g => Mine(g) && g.State == GoroutineState.Parked); i++)
             System.Threading.Thread.Sleep(5);
 
+        Assert.IsTrue(Goroutine.Snapshot().Any(g => Mine(g) && g.State == GoroutineState.Parked), "the goroutine this test started never parked");
+
         string dump = CaptureStack(all: true);
-        string? block = ForeignBlock(dump, "chan receive");
+        string? block = ForeignBlock(dump, "chan receive", createdBy);
 
         Console.WriteLine(dump);
 
-        Assert.IsNotNull(block, $"no foreign block with a `chan receive` header was rendered:\n{dump}");
+        Assert.IsNotNull(block, $"no foreign block with a `chan receive` header and `{createdBy}` was rendered:\n{dump}");
 
         string[] lines = block!.Split('\n');
 
         Assert.IsTrue(lines.Length >= 3, $"expected header, placeholder and created-by lines:\n{block}");
         Assert.IsTrue(lines[1].StartsWith("[stack unavailable", StringComparison.Ordinal), $"the placeholder must stay first beneath the header:\n{block}");
-        Assert.AreEqual($"created by GolibTests.GoroutineCreatorTests.{nameof(StartParkedGoroutine)} in goroutine {myId}", lines[2],
+        Assert.AreEqual(createdBy, lines[2],
             "the created-by line must name the function that executed the `go` statement and the goroutine it ran on");
         Assert.IsFalse(block.Contains("goǃ", StringComparison.Ordinal) || block.Contains("Goroutine.Start", StringComparison.Ordinal),
             "a launcher frame was named as the creator -- the identity walk stopped too early:\n" + block);
