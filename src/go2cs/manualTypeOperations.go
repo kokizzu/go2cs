@@ -119,6 +119,38 @@ func (scope goosScope) includes(goos string) bool {
 	return false
 }
 
+// Package-level VARS whose storage a hand-owned *_impl.cs supplies, keyed like manualConversionFuncs. A
+// registered var emits only varPlaceholderFormat where its declaration would be; the impl declares a
+// member of the same name, which converted code reads and writes exactly as it did the field. The
+// motivating case is storage that must live BELOW the declaring package: Go reads runtime.MemProfileRate
+// on every allocation, and allocation here is a golib constructor that cannot reach runtime, so the
+// storage is golib's GoMemProfile.Rate and runtime declares `public static ref nint MemProfileRate`
+// over it (class M, piece M1, COORD ruling 2026-09-27). A ref property has no address of its own, so a
+// registered var must never be address-taken; TestManualConversionVarsAreDisplacedAndDeclared checks it.
+var manualConversionVars = map[string]map[string]goosScope{
+	"runtime": {
+		"MemProfileRate": goosAny,
+	},
+}
+
+// isManualVar reports whether the package-level var is displaced by manualConversionVars for this
+// conversion's target.
+func (v *Visitor) isManualVar(goName string) bool {
+	return isManualVarInPackage(v.pkg.Path(), goosOfTarget(v.options.targetPlatform), goName)
+}
+
+func isManualVarInPackage(pkgPath string, goos string, goName string) bool {
+	varScopes, ok := manualConversionVars[resolveGorootVendoredPath(pkgPath)]
+
+	if !ok {
+		return false
+	}
+
+	scope, listed := varScopes[goName]
+
+	return listed && scope.includes(goos)
+}
+
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
