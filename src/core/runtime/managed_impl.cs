@@ -2013,4 +2013,40 @@ partial class runtime_package
         returned.Wait(timeoutMs);
         return failure;
     }
+
+    /// <summary>
+    /// GolibTests' probe for traceMap (RuntimeTraceMapTests): puts each string twice into a fresh
+    /// traceMap, as runtime's TraceMap export does, resets it, and repeats. Returns one line per put
+    /// ("s=id,inserted"), or what the puts raised.
+    /// </summary>
+    public static string GoTraceMapProbe(string[] values, int rounds)
+    {
+        StringBuilder reading = new();
+
+        try
+        {
+            ж<traceMap> tab = @new<traceMap>();
+
+            for (int round = 0; round < rounds; round++)
+            {
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    foreach (string value in values)
+                    {
+                        @string s = value;
+                        (uint64 id, bool inserted) = tab.put(@unsafe.Pointer.FromPinnedBox(@unsafe.StringData(s)), (uintptr)len(s));
+                        reading.Append($"{value}={id},{inserted};");
+                    }
+                }
+
+                tab.reset();
+            }
+        }
+        catch (Exception ex)
+        {
+            reading.Append($"{ex.GetType().Name}: {ex.Message}");
+        }
+
+        return reading.ToString();
+    }
 }
