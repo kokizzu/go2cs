@@ -144,7 +144,7 @@ go2cs converts the full Go language surface except a generic type alias whose ta
 - Build-tag and `GOOS` / `GOARCH` platform file selection, and deterministic, byte-stable output
 
 See [`ConversionStrategies.md`](ConversionStrategies.md) for an example-driven tour of how each construct
-maps to C# (with [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) for the full detail).
+maps to C# (with [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md) for the full detail).
 
 ![GopherDotNetBotFrisbee](images/GopherDotNetBotFrisbee.png)
 

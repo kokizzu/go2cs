@@ -297,7 +297,7 @@ from it. The six mechanics below are what three independent derivations of that 
   explicit types over `var`, language keywords over BCL types, `\uXXXX` for non-ASCII).
 - Conversion strategy: [`docs/ConversionStrategies.md`](docs/ConversionStrategies.md) — a high-level, example-driven
   **summary** of how each Go construct maps to C#; each section links into the exhaustive
-  [`docs/ConversionStrategies-Reference.md`](docs/ConversionStrategies-Reference.md) for the full detail.
+  [`docs/ConversionStrategies-Reference/`](docs/ConversionStrategies-Reference/README.md) for the full detail.
 - Process/gate terminology as used in commit messages and reviews (CNR, A/B footprint, census, chip, guard, golden,
   overlay, banked…): [`docs/Glossary.md`](docs/Glossary.md).
 - Generated C# intentionally targets Go-like *behavior first* (no implicit async), and Go-like *appearance* second

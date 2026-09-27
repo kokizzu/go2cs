@@ -306,7 +306,7 @@ description: Bank a validated package row, mint or judge a disclosure, or read t
   hand-own** — above the file-scoped namespace it duplicates a csproj global at the SAME scope (**CS1537**). <!--
   Placed before the file-scoped namespace. main.go's containsManualConversionMarker drops marked files from the
   convert set; without the marker a -stdlib reconvert regenerates the Go version over the rewrite. The go.
-  qualifier was measured 2026-09-03. Further hand-own detail: docs/ConversionStrategies-Reference.md; two-tree
+  qualifier was measured 2026-09-03. Further hand-own detail: docs/ConversionStrategies-Reference/manual-conversions.md; two-tree
   history archived at src/archived/Baseline-vs-FullConversion.md.
   CS1537 clause 2026-09-08: syscall.csproj already carries one such global alias and NONE of its eight sibling
   _impl.cs companions declare it at file level -- the absence is the convention, and re-declaring is the error. Run

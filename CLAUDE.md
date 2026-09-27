@@ -197,7 +197,7 @@ conditions the guard exists for.
 **Records**: [`docs/phase4/BOARD-next-validation-candidates.md`](docs/phase4/BOARD-next-validation-candidates.md)
 (findings ledger) · [`docs/ValidatedTestPackages.md`](docs/ValidatedTestPackages.md) (roster of record) ·
 [`docs/ConversionStrategies.md`](docs/ConversionStrategies.md) → its
-[reference](docs/ConversionStrategies-Reference.md) (how each Go construct maps) ·
+[reference](docs/ConversionStrategies-Reference/README.md) (how each Go construct maps) ·
 [`docs/Glossary.md`](docs/Glossary.md) (CNR, census, chip, guard, golden, banked…) ·
 [`docs/Roadmap.md`](docs/Roadmap.md) (phases and git anchors) ·
 [`docs/coding-style.md`](docs/coding-style.md).

@@ -6,7 +6,7 @@
 > review verdicts lean on this shorthand heavily. For *conversion* terminology (how Go constructs
 > map to C#: `ж<T>`, heap boxes, adapters, direct-ж, shadow renames) see
 > [`ConversionStrategies.md`](ConversionStrategies.md) (summary) and
-> [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md) (full detail); this file covers
+> [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md) (full detail); this file covers
 > the **process** vocabulary — plus a short [**.NET and tooling terms**](#net-and-tooling-terms) section at
 > the end for the general .NET/toolchain acronyms the conversion docs assume (BCL, Roslyn, CRTP, …).
 > Companion docs: [`CLAUDE.md`](../CLAUDE.md) (authoritative workflow),
@@ -295,7 +295,7 @@ where a leading glyph would instead bucket every adapter in the package together
 part of the name** (`ж` vs `ᴠ`), so only same-form pairs can collide — which the CS0102 prune
 relies on. One naming trap: the constant is `PointerPrefix` because it *prefixes* the type in
 `ж<T>`; in a composed adapter name the same glyph sits **between** the two names.
-See [Interfaces](ConversionStrategies-Reference.md#interfaces).
+See [Interfaces](ConversionStrategies-Reference/interfaces.md#interfaces).
 
 **OWED.**
 Annotation in memory logs for a known debt: an *OWED merge* (a finished chip branch not yet
@@ -376,7 +376,7 @@ slice of a campaign under the worker contract ([`GoCorpusMigration.md`](GoCorpus
 
 General .NET / C# / toolchain terms the conversion docs assume. (For the *emitted-code* glyphs
 `ж`/`Ꮡ`/`Δ` see **Marker glyphs** above and the conversion docs:
-[summary](ConversionStrategies.md) · [reference](ConversionStrategies-Reference.md).)
+[summary](ConversionStrategies.md) · [reference](ConversionStrategies-Reference/README.md).)
 
 <a id="bcl"></a>**BCL — Base Class Library.**
 The core class library that ships with .NET: the fundamental `System.*` types — `System.Object`,

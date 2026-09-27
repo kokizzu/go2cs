@@ -565,7 +565,7 @@ $pathClasses = @(
     @{ Match = '^docs/CIMatrix\.md$';                     Class = 'MUST-NOT-CHANGE'; Note = 'describes the derive-never-write rule; names no release of its own' }
     @{ Match = '^docs/Performance\.md$';                  Class = 'MUST-NOT-CHANGE'; Note = 'measurement environment stamp: the toolchain a number was measured on' }
     @{ Match = '^docs/StdLibCompileMilestone\.md$';       Class = 'MUST-NOT-CHANGE'; Note = 'milestone record' }
-    @{ Match = '^docs/ConversionStrategies-Reference\.md$'; Class = 'MUST-NOT-CHANGE'; Note = 'census records ("across the whole Go X stdlib, N sites") and illustrative doc-link examples' }
+    @{ Match = '^docs/ConversionStrategies-Reference(\.md|/.+\.md)$'; Class = 'MUST-NOT-CHANGE'; Note = 'the reference pages and the old single-page stub: census records ("across the whole Go X stdlib, N sites") and illustrative doc-link examples' }
     @{ Match = '^docs/GoCorpusMigration\.md$';            Class = 'MUST-NOT-CHANGE'; Note = 'this runbook is version-agnostic by design' }
     @{ Match = '^docs/doctrine/JOURNAL-';                 Class = 'MUST-NOT-CHANGE'; Note = "the frozen pre-diet CLAUDE.md; TestContextBudget's repoguard asserts its BLOB IDENTITY, so any edit at all fails the converter suite" }
     @{ Match = '^docs/Glossary\.md$';                     Class = 'MUST-NOT-CHANGE'; Note = 'the hop-lettering key NAMES its campaign (Hop A = Go X); substituting would destroy the definition' }

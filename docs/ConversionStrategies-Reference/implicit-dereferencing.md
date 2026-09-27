@@ -1,0 +1,58 @@
+# Implicit Pointer Dereferencing
+
+[Reference index](README.md) · [Summary of this topic](../ConversionStrategies.md#implicit-pointer-dereferencing)
+**Deciding whether a selector base is *already* dereferenced.** A field selector on a pointer-valued base auto-derefs in Go, so the converter must insert the deref (`(~x).field` / `x.Value.field`) — *unless* the base is itself an explicit dereference (`(*p).field`) or a pointer conversion whose dedicated branch appends its own `.Value`. That "is the base already deref'd" test was a whole-subtree scan for **any** `StarExpr`, which mistook a conversion star buried in a call **argument** for a dereferenced base — `stringStructOf((*string)(unsafe.Pointer(p))).n` (runtime `arena.go`): the `(*string)` star belongs to the argument's conversion, the *call result* (`ж<stringStruct>`) is not deref'd, and skipping the auto-deref left `.n` on the box (CS1061). The test now inspects only the base's own outermost shape (unwrapping parens; a pointer-conversion base still routes to the conversion branch), and the conversion-branch dispatch also unwraps **enclosing parens**, so an extra-paren conversion base — `((*specialWeakHandle)(unsafe.Pointer(…))).handle` (runtime `mheap.go`) — reaches it (the same extra-paren blind spot the reinterpret routing had). Reads through a conversion base are faithful; a **write** through one hits the copy box, the documented reinterpret-seam limitation shared by the whole `(ж<T>)(uintptr)` family (the runtime sites are reads). The corpus was byte-identical across all behavioral projects after the change — only previously-non-compiling shapes gained emissions. (Guarded by the `PointerSelectorDeref` behavioral test — both shapes, read values vs Go; cleared 3 runtime CS1061, 74 → 71.)
+
+In Go, pointer types automatically dereference; these `age` assignments are equivalent:
+```go
+var s struct{ age int }
+var ps = &s
+(*ps).age = 20
+ps.age = 20
+```
+This also applies to receiver methods — a value-receiver method works on the type *and* on a pointer to it. In practice, the converter handles implicit dereferencing of a pointer parameter by binding a `ref` local to the box's value. For example:
+```go
+func PrintValPtr(ptr *int) {
+    fmt.Printf("Value available at *ptr = %d\n", *ptr)
+    *ptr++
+}
+```
+becomes:
+```csharp
+public static void PrintValPtr(ж<nint> Ꮡptr) {
+    ref var ptr = ref Ꮡptr.Value;
+
+    fmt.Printf("Value available at *ptr = %d\n"u8, ptr);
+    ptr++;
+}
+```
+
+A pointer **local** that holds a `ж<T>` box (e.g. `x := list.head`, where `head` is a `*node`) dereferences on field access through the box — a read becomes `(~x).field` and a write `x.Value.field = …`. This applies to **promoted** fields too: when `T` embeds another struct, a selector naming an embedded field (`x.next` where `next` is promoted from an embedded header) must still dereference. The converter decides this by checking field membership recursively through embeds, so a promoted-field access on a pointer local is not left as a bare `x.next` on the box (which has no such member, CS1061). This mirrors the Go runtime's `scanstack`, which walks `x := state.head; … x.nobj` where `nobj` is promoted into `stackObjectBuf` from an embedded header.
+
+When the field access is the **LHS of an assignment** and the chain is *nested* — `o.stack.hi = …` where `o` is a pointer local and `stack` is a value-struct field — every dereference in the base must use the assignable `.Value` form, not `~`: `(~o).stack` yields a value (an rvalue), so assigning to a field through it is not a variable/property (CS0131). The converter propagates the assignment context down the selector chain, emitting `o.Value.stack.hi = …`. This mirrors runtime/cgocall.go's `g0.stack.hi = sp + 1024` where `g0` is a `*g` local.
+
+The same applies to **`++`/`--`** on a field reached through a pointer local — increment/decrement reads *and* writes its operand, so `(~mp).ncgocall++` (a field of an rvalue) is CS1059. The converter emits the assignable `mp.Value.ncgocall++`.
+
+**An INDEX-expression assignment target takes the same `.Value` write path.** When the assignment LHS
+is an index over a field reached through a pointer local — net/http client.go's redirect loop
+`req.Header[k] = vv`, `Header` a named-map wrapper field — the read form `(~req).Header[k] = vv`
+indexer-sets a wrapper-STRUCT field of an rvalue copy (CS0131; httptest's recorder hit the same shape).
+The assignment threads a dedicated `IndexExprContext.isAssignmentTarget` flag (distinct from the
+general assignment context, which also rides along RHS conversions where an index READ must keep the
+deref form), and `convIndexExpr` converts its BASE in assignment context: `req.Value.Header[k] = vv;`.
+Compound assignment (`m[k] += 2`), `++`/`--` on an index operand (`m[k]++` via `visitIncDecStmt`), and
+tuple-deconstruction elements (`(config.Value.Certificates[0], err) = …`, net/http server.cs) take the
+same path. The write form is emitted for EVERY boxed index-assignment base (75 stdlib files) — for
+reference-backed fields (plain maps, slices, golib arrays) both forms compile and write through the
+same backing store, so this is churn-free semantically; the named-wrapper fields are the shapes that
+did not compile. (Guarded by `BoxedMapFieldWrite` — named-map-wrapper writes, plain-map writes,
+compound/inc-dec writes, and an array-field element write, all through a pointer local, values
+output-compared vs Go.)
+
+**Dereferencing a pointer FIELD reached through a parameter — `*p.field`.** A `*p` where `p` is a pointer parameter is emitted as the value alias `p` itself (the `ref var p = ref Ꮡp.Value` local already denotes the pointed-to value), so the converter has a parameter-deref shortcut. That shortcut must fire only when the operand *is* the parameter (`*p`, or `**p`): for `*p.field` — a deref of a pointer *field* reached through `p` (`*gp.ancestors`, where `ancestors` is a `*[]ancestorInfo`) — the operand `p.field` is a distinct lvalue that still needs its own dereference. The shortcut keyed off the *root* identifier (`getIdentifier` digs through the selector to `p`), so it wrongly dropped the field deref, emitting `gp.ancestors` (the `ж<…>` pointer) instead of `gp.ancestors.Value`. That silently fed a pointer where the pointed-to value was expected — `for _, a := range *gp.ancestors` ranged the box (CS8130, since a `ж<slice<…>>` is not enumerable as tuples), and `x := *p.cnt` typed a pointer as a value (CS0029). The shortcut now excludes a **selector** operand, so `*p.field` falls through to the selector-deref path and renders `p.field.Value`. (Guarded by the `DerefPointerToField` behavioral test — a `for _, x := range *h.xs` over a deref'd pointer-to-slice field and a `*h.cnt` value read, both through a pointer parameter; runtime hit this on `traceback.go`'s `range *gp.ancestors`.) An **index** operand rooted at a parameter (`*temps[depth]`, math/big's slice-of-pointers element deref) is excluded the same way.
+
+The **receiver** flavor of the same shortcut (`*u` inside `func (u *unifier)` → the deref-aliased `u`) had the identical overreach: it keyed off the root identifier, so `*u.handles[x]` — a deref of a **pointer-valued map element** reached through the receiver (go/types unify.go's `return *u.handles[x]` and `*u.handles[x] = t`, `handles` a `map[*TypeParam]*Type`) — dropped the element deref entirely, returning/assigning the raw `ж<ΔType>` (CS0266 in both directions). The receiver shortcut is now gated on the operand *being* the receiver ident (object identity, like every other receiver-specific render), and the non-direct operand falls through to the tail deref: `u.handles[Ꮡx].ValueSlot` (`ValueSlot` because the element's pointee is an interface — reference-like reads and writes both persist through the real slot). (Guarded by the `RecvMapElementDeref` behavioral test — element deref read and write through the receiver, the write observed through the shared pointer, alongside the genuine `return *r` receiver copy, output-compared vs Go.)
+
+---
+
+[← Pointers](pointers.md) · [Index](README.md) · [Labeled Control Flow and Loop Variables →](labels-and-loop-variables.md)
