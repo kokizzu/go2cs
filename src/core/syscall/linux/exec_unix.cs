@@ -686,6 +686,11 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         }
 
         if (sys.PidFD != nil) {
+            // Race-free because the child is UNREAPED: its pid cannot be reused before this
+            // process's own wait, the only reaper. The one exception is a process that set SIGCHLD
+            // to SIG_IGN (or SA_NOCLDWAIT), where the kernel auto-reaps children and a fast child's
+            // pid could be recycled before this call -- the window pidfd_spawn/CLONE_PIDFD would
+            // close. Neither Go's runtime nor the CLR ignores SIGCHLD (the CLR reaps through it).
             long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
             sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
         }
