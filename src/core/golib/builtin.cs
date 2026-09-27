@@ -259,8 +259,22 @@ public static partial class builtin
         // sync's testOncePanicX reported the self-contradictory `want panic x, got x`. Normalizing
         // at this single boxing boundary covers every caller — literal, computed, and hand-owned —
         // where a cast at the emission site could only cover the literal.
+        // Go 1.21's panic(nil): recover() observes a *runtime.PanicNilError unless GODEBUG=panicnil=1,
+        // which keeps the nil and counts a non-default event. That rule is runtime.gopanic's, and golib
+        // sits below the runtime and cannot name PanicNilError, so the runtime registers it here
+        // (panicvalues_impl.cs -- the same inversion as RuntimeErrorPanic.IntegerDivideByZeroValue).
+        // With no runtime loaded the nil stays nil, the pre-1.21 behavior.
+        if (state is null && NilPanicValue is { } nilPanicValue)
+            state = nilPanicValue();
+
         return new PanicException(state is string s ? (@string)s : state);
     }
+
+    /// <summary>
+    /// The value <c>panic(nil)</c> carries -- registered by the runtime package, which owns Go's rule
+    /// (a <c>*PanicNilError</c>, or nil under GODEBUG=panicnil=1). Null until the runtime is loaded.
+    /// </summary>
+    public static Func<object?>? NilPanicValue { get; set; }
 
     /// <summary>
     /// Returns the value of the panic being handled by this frame's deferred sequence, if any,
