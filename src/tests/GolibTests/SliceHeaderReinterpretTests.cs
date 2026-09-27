@@ -100,6 +100,52 @@ public class SliceHeaderReinterpretTests
     }
 
     [TestMethod]
+    public void AZeroCapacitySliceHasANonNilArrayWordAndNoPastTheEndPointer()
+    {
+        // runtime's TestMemclr: MemclrBytes(mem[size:size]) reads the header of a slice whose low
+        // index IS the backing's length. Go never builds a pointer past the end (a cap-0 slice keeps
+        // an in-bounds base); the header read threw IndexOutOfRangeException minting element 0.
+        byte[] backing = Backing(8);
+        slice<byte> atEnd = new slice<byte>(backing)[8..8];
+        ref slice<byte> a = ref heap(atEnd, out ж<slice<byte>> Ꮡa);
+        ж<SliceHeaderShape> atEndHeader = Ꮡa.Reinterpret<slice<byte>, SliceHeaderShape>();
+
+        Assert.IsFalse(atEndHeader.Value.array.IsNull, "a non-nil slice's array word is non-nil, cap 0 or not");
+        Assert.AreEqual(0, (int)atEndHeader.Value.len);
+        Assert.AreEqual(0, (int)atEndHeader.Value.cap);
+
+        // make([]byte, 0): an empty backing, cap 0.
+        slice<byte> made = new slice<byte>(0);
+        ref slice<byte> m = ref heap(made, out ж<slice<byte>> Ꮡm);
+        ж<SliceHeaderShape> madeHeader = Ꮡm.Reinterpret<slice<byte>, SliceHeaderShape>();
+
+        Assert.IsFalse(madeHeader.Value.array.IsNull, "make([]byte, 0) is non-nil, so its array word is too");
+        Assert.AreEqual(0, (int)madeHeader.Value.cap);
+    }
+
+    [TestMethod]
+    public void AHeaderReadAfterACapZeroViewFollowsTheSameLowOnceItHasCapacity()
+    {
+        // s = backing[8:8:8] (cap 0 at an in-bounds low: the zerobase), then s = backing[8:16]
+        // through the SAME header box: same backing, same low, cap 8. The pointer cache keyed only
+        // on (backing, low) kept the zerobase, so the clear landed on it and missed the slice.
+        byte[] backing = Backing(16);
+        ref slice<byte> s = ref heap(new slice<byte>(backing, 8, 8, 8), out ж<slice<byte>> Ꮡs);
+        ж<SliceHeaderShape> header = Ꮡs.Reinterpret<slice<byte>, SliceHeaderShape>();
+
+        Assert.AreEqual(0, (int)header.Value.cap);
+
+        s = new slice<byte>(backing, 8, 16, 16);
+        @unsafe.Pointer array = header.Value.array;
+        Assert.AreEqual(8, (int)header.Value.cap);
+
+        runtime_package.GoMemclrNoHeapPointers(array, new uintptr(8));
+
+        for (int i = 8; i < 16; i++)
+            Assert.AreEqual((byte)0, backing[i], $"backing[{i}]");
+    }
+
+    [TestMethod]
     public void AReassignedSliceIsFollowedThroughTheHeader()
     {
         byte[] backing = Backing(40);
