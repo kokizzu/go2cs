@@ -16,7 +16,7 @@ name: Docs site
 # triggers: a lane pushes many times a day, and the check that matters is the tree that lands.
 on:
   push:
-    branches: [master, claude/coord-docs-site]  # BOOTSTRAP ONLY: the branch trigger is removed before landing
+    branches: [master]
     paths:
       - 'docs/**'
       - '.github/workflows/docs-site.yml'
