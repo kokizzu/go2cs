@@ -801,6 +801,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// pointer, chan or array died (database/sql's TestConversions and TestUserDefinedBytes are the
 	// measured pair). type_impl.cs synthesizes both from the carried System.Type over the SAME
 	// golib element/key resolution reflect's own rtype.Elem/rtype.Key use one layer up.
+	"runtime/pprof": {
+		// The profile builder's mapping readers (proto_<goos>_impl.cs), hand-owned so a profile carries a
+		// mapping for this runtime's Go TEXT: every PC it hands to Go code is a synthetic token in
+		// runtime.GoSyntheticTextRange, outside every module the OS reports, so each location built from
+		// one had no mapping. Windows' and darwin's TestConvertCPUProfile and TestConvertMemProfile read
+		// exactly that (their test PCs are function PCs; linux's are /proc/self/maps starts). On windows
+		// and darwin the range is the main module's mapping, listed first (ID 1); on linux it is
+		// appended after /proc/self/maps so those IDs do not move. Every other line is Go's.
+		"profileBuilder.readMapping": goosAny,
+		"readMainModuleMapping":      goosWindowsDarwin,
+	},
 	"internal/abi": {
 		"TypeOf":          goosAny,
 		"Type.StructType": goosAny,
