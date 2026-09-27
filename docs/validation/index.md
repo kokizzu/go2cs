@@ -181,6 +181,7 @@ it beside the proofs on every release.
 | `internal/saferio` | [`internal.saferio.md`](current/internal.saferio.md) | [`src/core/internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/saferio) |
 | `internal/singleflight` | [`internal.singleflight.md`](current/internal.singleflight.md) | [`src/core/internal/singleflight`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/singleflight) |
 | `internal/sync` | [`internal.sync.md`](current/internal.sync.md) | [`src/core/internal/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sync) |
+| `internal/synctest` | [`internal.synctest.md`](current/internal.synctest.md) | [`src/core/internal/synctest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/synctest) |
 | `internal/syscall/windows` | [`internal.syscall.windows.md`](current/internal.syscall.windows.md) | [`src/core/internal/syscall/windows`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows) |
 | `internal/syscall/windows/registry` | [`internal.syscall.windows.registry.md`](current/internal.syscall.windows.registry.md) | [`src/core/internal/syscall/windows/registry`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows/registry) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
