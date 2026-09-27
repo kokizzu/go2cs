@@ -1559,8 +1559,17 @@ public static partial class builtin
     /// </remarks>
     public static T min<T>(T x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool>
     {
-        if (OrderedFacts<T>.IsFloating && OrderedFacts<T>.IsNaN(in x))
-            return x;
+        if (OrderedFacts<T>.IsFloating)
+        {
+            if (OrderedFacts<T>.IsNaN(in x))
+                return x;
+
+            // SIGNED ZERO, Go's other floating rule: -0 and +0 compare equal, so the bare ternary
+            // answered whichever sat on the RIGHT (runtime's TestMinFloat: "min(-0, 0) = 0, want -0").
+            // An equal pair takes the negative one; for any other equal pair both sides are one value.
+            if (x == y)
+                return OrderedFacts<T>.IsNegative(in x) ? x : y;
+        }
 
         return x < y ? x : y;
     }
@@ -1594,7 +1603,10 @@ public static partial class builtin
                 if (OrderedFacts<T>.IsNaN(in value))
                     return value;
 
-                if (value.CompareTo(result) < 0)
+                // -0 and +0 CompareTo equal: the tie goes to the negative zero (see the two-argument form).
+                int order = value.CompareTo(result);
+
+                if (order < 0 || order == 0 && OrderedFacts<T>.IsNegative(in value))
                     result = value;
             }
 
@@ -1619,8 +1631,15 @@ public static partial class builtin
     /// <returns>The maximum of <paramref name="x"/> and <paramref name="y"/>, NaN if either is NaN.</returns>
     public static T max<T>(T x, T y) where T : System.Numerics.IComparisonOperators<T, T, bool>
     {
-        if (OrderedFacts<T>.IsFloating && OrderedFacts<T>.IsNaN(in x))
-            return x;
+        if (OrderedFacts<T>.IsFloating)
+        {
+            if (OrderedFacts<T>.IsNaN(in x))
+                return x;
+
+            // SIGNED ZERO -- see min: an equal pair takes the NON-negative one (Go: max(-0.0, 0.0) = 0.0).
+            if (x == y)
+                return OrderedFacts<T>.IsNegative(in x) ? y : x;
+        }
 
         return x > y ? x : y;
     }
@@ -1646,7 +1665,10 @@ public static partial class builtin
                 if (OrderedFacts<T>.IsNaN(in value))
                     return value;
 
-                if (value.CompareTo(result) > 0)
+                // -0 and +0 CompareTo equal: the tie goes to the NON-negative zero (see the two-argument form).
+                int order = value.CompareTo(result);
+
+                if (order > 0 || order == 0 && OrderedFacts<T>.IsNegative(in result))
                     result = value;
             }
 
@@ -1712,6 +1734,19 @@ public static partial class builtin
             {
                 8 => double.IsNaN(Unsafe.As<T, double>(ref Unsafe.AsRef(in value))),
                 4 => float.IsNaN(Unsafe.As<T, float>(ref Unsafe.AsRef(in value))),
+                _ => false
+            };
+        }
+
+        // The sign bit, which is the only thing separating -0 from +0: they compare EQUAL, so min/max
+        // break that tie by it (Go's spec: max(-0.0, 0.0) = 0.0, min(-0.0, 0.0) = -0.0).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNegative(in T value)
+        {
+            return s_floatWidth switch
+            {
+                8 => double.IsNegative(Unsafe.As<T, double>(ref Unsafe.AsRef(in value))),
+                4 => float.IsNegative(Unsafe.As<T, float>(ref Unsafe.AsRef(in value))),
                 _ => false
             };
         }
