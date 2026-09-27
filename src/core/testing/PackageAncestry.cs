@@ -938,6 +938,10 @@ internal static class PackageAncestry
         if (!Directory.Exists(runRoot))
             return;
 
+        // A test can leave a tree deeper than PATH_MAX (os's TestGetwdDeep does), and every step below
+        // names full paths: re-parent the deep directories within the sandbox first (LongPathTree).
+        LongPathTree.Flatten(runRoot);
+
         // Unlinking comes FIRST and is exhaustive, because the two halves fail independently and
         // only one of them is dangerous. Removing the files can legitimately fail — a test that
         // shelled out to the Go toolchain leaves handles that outlive the child briefly, and
