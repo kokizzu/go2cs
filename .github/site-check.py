@@ -8,7 +8,7 @@ report:
                       in the repository but not on the site
       inside-site   : a real site path that is missing
   - broken fragments (the target page has no element with that id)
-  - pages whose <title> is shared with another page (the site default when no page title is found)
+  - pages whose <title> is the site default (the home page's title), meaning no page title was found
 
 The docs-site workflow gates a deploy on this check with a BASELINE: the findings the site already
 had when the check landed (the 2026-09-27 Pages audit). A finding not in the baseline fails the run;
@@ -75,8 +75,7 @@ def findings(res):
     for kind, items in res["broken"].items():
         keys += [f"broken {kind} :: {b['page']} :: {b['href']}" for b in items]
     keys += [f"fragment :: {x['page']} :: {x['href']}" for x in res["fragments"]]
-    for t, pages in res["titles"].items():
-        keys += [f"shared title :: {p} :: {t}" for p in pages]
+    keys += [f"default title :: {p}" for p in res["default_titles"]]
     return keys
 
 
@@ -165,8 +164,10 @@ def main():
                 fr = unquote(sp.fragment)
                 if tp is not None and fr not in tp.ids and fr != "top":
                     frag.append({"page": rel, "line": line, "href": raw, "target": target_rel, "fragment": fr})
+    home = " ".join(pages["index.html"].title.split()) if "index.html" in pages else None
     res = {"counts": counts, "broken": broken, "fragments": frag,
-           "titles": {t: v for t, v in default_titles.items() if len(v) > 1}}
+           "titles": {t: v for t, v in default_titles.items() if len(v) > 1},
+           "default_titles": sorted(p for p in default_titles.get(home, []) if p != "index.html")}
     with open(out, "w", encoding="utf-8") as f:
         json.dump(res, f, ensure_ascii=False, indent=1)
     print(json.dumps(counts))
@@ -180,8 +181,7 @@ def main():
         for p, n in sorted(by_prefix.items(), key=lambda x: -x[1])[:12]:
             print(f"    {n:6d}  {p}")
     print(f"broken fragments: {len(frag)} on {len({x['page'] for x in frag})} pages")
-    for t, v in sorted(res["titles"].items(), key=lambda x: -len(x[1]))[:6]:
-        print(f"title shared by {len(v)} pages: {t!r} e.g. {v[:4]}")
+    print(f"pages with the site default title {home!r}: {len(res['default_titles'])} {res['default_titles'][:6]}")
     keys = findings(res)
     if "--write-baseline" in opts:
         with open(opts["--write-baseline"], "w", encoding="utf-8", newline="\n") as f:
