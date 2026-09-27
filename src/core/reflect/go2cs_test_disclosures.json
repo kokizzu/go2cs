@@ -372,6 +372,12 @@
       "class": "runtime-capability",
       "signature": "Wrong method table for outer: (M=",
       "reason": "runtime-capability: the assert compares a POINTER NUMERICALLY. go2cs pointers are stable identity TOKENS, not addresses -- the same deliberate model the guintptr manual conversion rests on -- so a managed host can report a consistent, comparable identity for a value but never the address Go prints. Go itself documents these as implementation details; the divergence is the architecture showing through, not a defect in the operation under test."
+    },
+    {
+      "name": "TestTypeFieldReadOnly",
+      "class": "runtime-capability",
+      "signature": "did not panic",
+      "reason": "runtime-capability: the test asserts that gc places StructField.Index's backing array in READ-ONLY memory, so that the plain write f.Index[0] = 1 takes a hardware protection fault which debug.SetPanicOnFault(true) turns into a panic -- an allocation saving the test's own comment calls \"otherwise not important\". The managed runtime has no write-protected managed memory, and golib's slice indexer is ONE ref-returning accessor (slice.cs, `public ref T this[int]`) serving reads and writes alike, so a guard could not tell this write from a read without taxing every slice read in the corpus (a measured hot path). Backing Index with a native read-only page instead would turn the write into an AccessViolation that .NET cannot catch, killing the host rather than reporting a divergence. So the write succeeds and shouldPanic reports \"did not panic\". Go itself skips this test where a write does not fault (GOOS=js and wasip1: \"test does not fault\"), which is the same capability gap. The operation under test -- reflect.Type.Field -- is correct; only the memory protection behind it is absent."
     }
   ]
 }
