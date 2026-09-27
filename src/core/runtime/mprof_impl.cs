@@ -32,11 +32,11 @@
 // answer): the hand-owned callers (managed_impl.cs) projects the CLR stack onto Go-logical frames with
 // synthetic PCs, measured capturing the recording frame by name at 8fc439415f.
 //
-// debug.profstackdepth. Go sets it (default 128) in parsedebugvars on the schedinit path, which this host
-// never runs, so it read 0: the recorders returned before recording and every reader sized its stack
-// buffer from it (makeProfStack) and expanded nothing. The module initializer below gives it Go's default,
-// the one debug variable the profile paths read. GODEBUG=profstackdepth=N is not parsed on this host, as
-// no GODEBUG setting is.
+// debug.profstackdepth. Go sets it (default 128, or GODEBUG=profstackdepth=N) in parsedebugvars, which
+// goenvs_impl.cs's module initializer now runs at startup as schedinit does. Until it did, the value read
+// 0 -- the recorders returned before recording and every reader sized its stack buffer from it
+// (makeProfStack) and expanded nothing -- and a module initializer here applied the 128 default by hand.
+// That patch is retired: running after parsedebugvars it would override a GODEBUG=profstackdepth=0.
 //
 // Hand-owned (no mprof_impl.go exists, so a reconvert never regenerates this file).
 [module: go.GoManualConversion]
@@ -50,14 +50,6 @@ using @unsafe = unsafe_package;
 using @internal.runtime;
 
 partial class runtime_package {
-
-// Go's dbgvars default for profstackdepth (runtime1.go), applied because parsedebugvars never runs here.
-[ModuleInitializer]
-internal static void initProfStackDepth() {
-    if (debug.profstackdepth == 0) {
-        debug.profstackdepth = 128;
-    }
-}
 
 // The trailing parts of Go's one-block bucket, held beside the header instead of after it.
 private sealed class bucketParts {

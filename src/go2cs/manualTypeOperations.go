@@ -239,6 +239,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// pointer-slot view is recorded for a second reaching site, not built here.
 		"persistentalloc1":  goosAny,
 		"inPersistentAlloc": goosAny,
+		// enableWER (COORD ruling 2026-09-27, the parsedebugvars-at-start cut): Go's body reads and
+		// clears the process error mode through stdcall0/stdcall1 -> asmstdcall, a generated stub that
+		// throws NotImplementedException. It was unreachable while parsedebugvars never ran; running
+		// parsedebugvars at module init makes setTraceback("wer") reach it for any process started with
+		// GOTRACEBACK=wer (runtime's TestWERDialogue re-execs itself so), and a raw exception there takes
+		// down the runtime assembly. Displaced onto windows/signal_windows_impl.cs, which makes Go's two
+		// calls through kernel32 directly. Windows only: the unix flavors' enableWER is Go's own empty
+		// stub (nonwindows_stub.go) and converts as it is.
+		"enableWER": goosWindows,
 		// The entersyscall FAMILY (COORD ruling 2026-09-22): entersyscall, reentersyscall,
 		// entersyscallblock and exitsyscall hand a P to the scheduler across a system call and record
 		// the caller's PC/SP/FP for tracebacks. The managed host has no P or M to hand off, and
