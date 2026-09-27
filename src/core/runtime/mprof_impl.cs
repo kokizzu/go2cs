@@ -38,6 +38,11 @@
 // the one debug variable the profile paths read. GODEBUG=profstackdepth=N is not parsed on this host, as
 // no GODEBUG setting is.
 //
+// THE MEMORY PROFILE'S ALLOCATION RECORDS (class M, piece M1, COORD ruling 2026-09-27). runtime.MemProfileRate
+// is displaced by manualConversionVars["runtime"] and declared below as a ref property over golib's
+// GoMemProfile.Rate, and memProfileAlloc records what golib's allocation doors sample (see the section
+// below and golib/GoMemProfile.cs).
+//
 // Hand-owned (no mprof_impl.go exists, so a reconvert never regenerates this file).
 [module: go.GoManualConversion]
 
@@ -209,6 +214,48 @@ internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketT
     nint nstk = callers(skip, stk);
 
     saveBlockEventStack(cycles, rate, stk[..(int)nstk], which);
+}
+
+// ---- the memory profile's allocation records (class M, piece M1; COORD ruling 2026-09-27) ----
+//
+// runtime.MemProfileRate's storage is golib's GoMemProfile.Rate, because Go reads the rate on every
+// allocation and allocation happens in golib's constructors here, not in mallocgc. The converted
+// declaration is displaced by manualConversionVars["runtime"] and this ref property takes its place, so
+// Go code that writes `runtime.MemProfileRate = 1` writes the value golib reads.
+public static ref nint MemProfileRate => ref GoMemProfile.Rate;
+
+// golib samples by Go's rule (GoMemProfile.Charge) and hands each sampled allocation here. A method group,
+// not a lambda: a lambda would be a Go-source frame of its own between the allocating function and this one.
+[ModuleInitializer]
+internal static void initMemProfileRecorder() {
+    GoMemProfile.Recorder = memProfileAlloc;
+}
+
+// mProf_Malloc for an allocation made through a golib constructor. Go's own mProf_Malloc stays converted
+// and unreached: profilealloc is called only from mallocgc, which this host does not run. The body is
+// Go's, with three differences. The stack buffer is allocated per sample rather than kept on the M. The
+// skip is 1, because the only Go-source frame between the allocating function and callers() is this one
+// (golib's frames are not Go frames, and Go's own skip of 5 counts mProf_Malloc, profilealloc, mallocgc
+// and its entry points). And setprofilebucket, which ties the object to its bucket for the free side,
+// is M2's. An allocation no Go frame made is not recorded.
+[MethodImpl(MethodImplOptions.NoInlining)]
+private static void memProfileAlloc(object allocation, nuint size, bool noscan) {
+    uintptr fullSize = roundupsize((uintptr)size, noscan);
+    var stk = new slice<uintptr>((int)debug.profstackdepth);
+    nint nstk = callers(1, stk);
+    if (nstk == 0) {
+        // No Go-source frame made this allocation: host code (a test host, golib's own bookkeeping) did,
+        // and Go's profile has no such record.
+        return;
+    }
+    var index = (ᏑmProfCycle.read() + 2) % (uint32)len(new memRecord(nil).future);
+    var b = stkbucket(memProfile, fullSize, stk[..(int)(nstk)], true);
+    var mr = b.mp();
+    var mpc = mr.at(memRecord.Ꮡfuture, (nint)(index));
+    @lock(ᏑprofMemFutureLock.at<mutex>((nint)(index)));
+    mpc.Value.allocs++;
+    mpc.Value.alloc_bytes += fullSize;
+    unlock(ᏑprofMemFutureLock.at<mutex>((nint)(index)));
 }
 
 // ---- the guard's view (RuntimeBlockEventTests): GolibTests is outside runtime's InternalsVisibleTo
