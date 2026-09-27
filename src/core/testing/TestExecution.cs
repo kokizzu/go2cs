@@ -719,6 +719,10 @@ public sealed class TestExecution
         TimeSpan nextSleep = TimeSpan.FromMilliseconds(1);
         DateTime start = default;
 
+        // A test can leave a tree deeper than PATH_MAX (os's TestGetwdDeep does), which RemoveAll's
+        // full-path walk cannot name on Unix: re-parent the deep directories within it first.
+        LongPathTree.Flatten(path);
+
         while (true)
         {
             try
