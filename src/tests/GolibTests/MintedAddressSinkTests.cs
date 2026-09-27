@@ -129,4 +129,36 @@ public class MintedAddressSinkTests
         foreach ((nint _, byte _) in empty)
             Assert.Fail("an empty window has no elements");
     }
+
+    // P2's review arms (ledger 7eb8b61ab2): the two word WRITES, the bulk span, and the one path that
+    // must NOT be refused.
+
+    [TestMethod]
+    public void TheWordWritesOverAMintedNumberAreRefusedToo()
+    {
+        ж<nuint> word = (ж<nuint>)(uintptr)(nuint)CallerTokenByteBefore;
+
+        StringAssert.Contains(Assert.ThrowsException<PanicException>(() => word.ExchangePointerWord(1)).Message, "nil pointer dereference");
+        StringAssert.Contains(Assert.ThrowsException<PanicException>(() => word.CompareExchangePointerWord(0, 1)).Message, "nil pointer dereference");
+    }
+
+    [TestMethod]
+    public void ANonEmptySpanOverAMintedBaseIsRefused()
+    {
+        go.slice<byte> window = go.slice<byte>.OverNativeMemory((nuint)CallerTokenByteBefore, 4);
+
+        StringAssert.Contains(Assert.ThrowsException<PanicException>(() => { _ = window.ToSpan(); }).Message, "nil pointer dereference");
+        Assert.AreEqual(0, go.slice<byte>.OverNativeMemory((nuint)CallerTokenByteBefore, 0).ToSpan().Length, "an empty window's span is not refused");
+    }
+
+    [TestMethod]
+    public void FormingAnElementAddressOverAMintedBaseIsNotRefused()
+    {
+        // The CONTROL: `&s[i]` forms a pointer and reads nothing, and Go does not fault on it. It must
+        // answer the base plus the offset, exactly, and refuse nothing.
+        go.slice<ulong> window = go.slice<ulong>.OverNativeMemory((nuint)CallerTokenByteBefore, 4);
+
+        Assert.AreEqual((nuint)CallerTokenByteBefore, window.NativeElementAddress(0));
+        Assert.AreEqual((nuint)CallerTokenByteBefore + 3 * sizeof(ulong), window.NativeElementAddress(3));
+    }
 }
