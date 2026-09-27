@@ -71,6 +71,10 @@ public static class GoMemProfile
     [ThreadStatic]
     private static bool t_recording;
 
+    // A pooled thread starts its next goroutine outside any recording. t_nextSample and t_seeded are kept on
+    // purpose: Go's countdown lives on the M (mcache.nextSample), a thread, not on the goroutine.
+    private static readonly bool s_recordingReset = go.golib.GoroutineThreadState.Register(static () => t_recording = false);
+
     /// <summary>Charges one Go allocation of <paramref name="count"/> values of <typeparamref name="T"/>.</summary>
     /// <param name="allocation">The object that holds the allocation (the box, or the backing array).</param>
     /// <param name="count">How many values of <typeparamref name="T"/> it holds (1 for a box).</param>
