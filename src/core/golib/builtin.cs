@@ -2498,10 +2498,17 @@ public static partial class builtin
     }
 
     // Formats a single print/println argument the way gc's runtime printer does where the BCL
-    // rendering diverges: a bool prints lowercase true/false (bool.ToString() yields True/False).
-    private static string? printArg(object arg)
+    // rendering diverges: a bool prints lowercase true/false (bool.ToString() yields True/False), and
+    // a nil interface prints its two zero words, "(0x0,0x0)", where arg.ToString() threw a
+    // NullReferenceException that surfaced as a Go nil dereference out of the println itself.
+    private static string? printArg(object? arg)
     {
-        return arg is bool value ? value ? "true" : "false" : arg.ToString();
+        return arg switch
+        {
+            null => "(0x0,0x0)",
+            bool value => value ? "true" : "false",
+            _ => arg.ToString()
+        };
     }
 
     /// <summary>
