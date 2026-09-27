@@ -29,8 +29,14 @@ namespace go;
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-public sealed class GoWrapperAttribute(string goName) : Attribute
+public sealed class GoWrapperAttribute(string goName, string? packagePath = null) : Attribute
 {
     /// <summary>The wrapper's Go name within its package: <c>I.M</c> or <c>(*T).M</c>.</summary>
     public string GoName { get; } = goName;
+
+    /// <summary>
+    /// The import path of the package that declares the receiver type, where Go places the wrapper, or
+    /// <c>null</c> when it is the package the lambda is emitted in.
+    /// </summary>
+    public string? PackagePath { get; } = packagePath;
 }
