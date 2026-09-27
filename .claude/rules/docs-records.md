@@ -310,3 +310,44 @@ from it. The six mechanics below are what three independent derivations of that 
   STOPS THE EXECUTOR.** <!-- ⚠ 2026-09-13, C2 `d61cbdee0` / COORD `5b5e91b74`: `+547/-23` against the
      merge-base with master and `+283/-1` against the H5-set tip are the SAME branch. Same class, i9
      `416159032`: a CASE-SENSITIVE grep for a renamed identifier reads "declared nowhere". -->
+- **`docs/` is the published site, built by Jekyll, and Jekyll runs every Markdown file through Liquid first,
+  code blocks included.** A page whose text holds `{{` or `{%` carries the raw guard: `<!-- {% raw %} … -->`
+  on the line AFTER the H1 and `<!-- {% endraw %} -->` as the last line. Guarded by
+  `TestDocsSurviveJekyllLiquid` (`src/go2cs/internal/repoguard`). <!-- 2026-09-27: the summary merge
+     1dae85e093 failed pages-build-deployment on ConversionStrategies.md:8760 (`{{Dr. Michał 18}`), and
+     nothing deployed until the fix. The build before it passed while publishing 17 `{{.GoFiles}}`-style
+     templates as EMPTY text in 7 files, runbook included. The 19 guards that existed sat on line 1,
+     which cost each published page its title (jekyll-titles-from-headings reads only a heading at the
+     start of the file). -->
+
+## Writing the conversion-strategy documents
+<!-- Owner-approved 2026-09-27 with the summary's rewrite (the Strings section as the model, then the owner's
+     first-read review). Derived by the docs audit and the two rewrite passes; record in the ledger from
+     c03153c4af on. -->
+Two documents, two audiences. The **summary** (`docs/ConversionStrategies.md`) is for a Go or C# developer
+reading converted code, or evaluating go2cs: how each construct maps and why, at the depth needed to read the
+output. The **reference** (`docs/ConversionStrategies-Reference/`, one page per topic) is for maintainers:
+every rule, emitted form, edge case and guard test.
+- **Each summary section stands on its own**: a reader may land on any section first. Repeat a short
+  explanation, or use a longer example, when clarity needs it; clarity is king, and the language stays simple
+  and concise. The test: without getting carried away with detail, would a C# or Go developer reading this
+  section first understand what it conveys?
+- **Present tense, what IS.** No history, dates, campaign or fleet words, machine names, or counts. Provenance
+  goes in an HTML comment beside the rule it justifies, never deleted.
+- **Examples are real and complete.** Every C# block is copied from a behavioral `.cs.target` golden or a file
+  under `src/core`, with `<!-- source: <path>:<lines> -->` on the line before it; omitted lines are marked `…`
+  on their own line. Prefer a complete small example to a fragment; split a complex construct into several
+  simple examples. Go first, then the C# it becomes.
+- **Every name an example uses is visible or explained**, above all a hoisted literal or constant (a name
+  ending in `ˢ`, `ᶜ` or `ᶠ`): show its declaration line. Define each glyph and golib type where a section first
+  uses it, and link the section that explains it; link generously.
+- **Summary shape**: one or two opening sentences (Go X becomes C# Y); one bold-led paragraph per key rule with
+  its Go/C# pair; no converter function names, CS error codes or guard-test names in the body; exactly one
+  closing `**Full detail:**` line into the reference page and anchor.
+- **Reference shape**: each rule is a heading that states it, a short statement, Go, the C# emitted today,
+  why, limits, and `Guarded by:` naming every guard test. One home per rule; link rather than restate. A page
+  over about 150 KB becomes an index page plus a same-named folder of sub-pages; a moved heading leaves
+  `<a id="old-slug"></a>` behind, and the old single-page stub `docs/ConversionStrategies-Reference.md` keeps
+  its anchor map.
+- **Adding a conversion rule**: add it to the reference page that owns the topic. Change the summary only when
+  a reader of converted code would otherwise misread the output.
