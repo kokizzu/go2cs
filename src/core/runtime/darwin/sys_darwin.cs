@@ -307,7 +307,7 @@ internal static int32 pthread_create(ж<pthreadattr> Ꮡattr, uintptr start, @un
 
     var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pthread_create_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     KeepAlive(Ꮡattr.OrTypedNil());
-    KeepAlive(arg); // Just for consistency. Arg of course needs to be kept alive for the start function.
+    KeepAlive(@unsafe.Pointer.OrTypedNil(arg)); // Just for consistency. Arg of course needs to be kept alive for the start function.
     return ret;
 }
 
@@ -431,7 +431,7 @@ internal static void munmap(@unsafe.Pointer addr, uintptr n) {
     ref var args = ref heap(new munmap_args((uintptr)addr, n), out var Ꮡargs);
 
     libcCall((@unsafe.Pointer)abi.FuncPCABI0(munmap_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
-    KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
+    KeepAlive(@unsafe.Pointer.OrTypedNil(addr)); // Just for consistency. Hopefully addr is not a Go address.
 }
 
 internal static partial void munmap_trampoline();
@@ -448,7 +448,7 @@ internal static void madvise(@unsafe.Pointer addr, uintptr n, int32 flags) {
     ref var args = ref heap(new madvise_args((uintptr)addr, n, flags), out var Ꮡargs);
 
     libcCall((@unsafe.Pointer)abi.FuncPCABI0(madvise_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
-    KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
+    KeepAlive(@unsafe.Pointer.OrTypedNil(addr)); // Just for consistency. Hopefully addr is not a Go address.
 }
 
 internal static partial void madvise_trampoline();
@@ -464,7 +464,7 @@ internal static void mlock(@unsafe.Pointer addr, uintptr n) {
     ref var args = ref heap(new mlock_args((uintptr)addr, n), out var Ꮡargs);
 
     libcCall((@unsafe.Pointer)abi.FuncPCABI0(mlock_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
-    KeepAlive(addr); // Just for consistency. Hopefully addr is not a Go address.
+    KeepAlive(@unsafe.Pointer.OrTypedNil(addr)); // Just for consistency. Hopefully addr is not a Go address.
 }
 
 internal static partial void mlock_trampoline();
@@ -870,7 +870,7 @@ internal static void arc4random_buf(@unsafe.Pointer Δp, int32 n) {
 
     // arc4random_buf() never fails, per its man page, so it's safe to ignore the return value.
     libcCall((@unsafe.Pointer)abi.FuncPCABI0(arc4random_buf_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
-    KeepAlive(Δp);
+    KeepAlive(@unsafe.Pointer.OrTypedNil(Δp));
 }
 
 internal static partial void arc4random_buf_trampoline();

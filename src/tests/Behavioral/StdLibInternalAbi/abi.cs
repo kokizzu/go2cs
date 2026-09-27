@@ -28,7 +28,7 @@ partial class main_package {
     println();
     print((@string)"Ptrs:"u8);
     foreach (var (_, x) in r.Ptrs.ΔRangeSnapshot()) {
-        print((@string)" "u8, x);
+        print((@string)" "u8, @unsafe.Pointer.OrTypedNil(x));
     }
     println();
 }

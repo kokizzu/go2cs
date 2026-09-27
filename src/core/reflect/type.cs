@@ -1801,7 +1801,7 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
     x.Value.Str = resolveReflectName(newName(s, ""u8, false, false));
     // cache result for future callers
     var xʗ1 = x;
-    framePool = Ꮡ(new Δsync.Pool(New: () => (uintptr)unsafe_New(xʗ1)
+    framePool = Ꮡ(new Δsync.Pool(New: () => @unsafe.Pointer.OrTypedNil((uintptr)unsafe_New(xʗ1))
     ));
     var (lti, _) = ᏑlayoutCache.LoadOrStore(k, new layoutType(
         t: x,

@@ -238,7 +238,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
 
     @unsafe.Pointer stk = (@unsafe.Pointer)(~mp.g0).stack.hi;
     if (false) {
-        print((@string)"newosproc stk="u8, stk, (@string)" m="u8, Ꮡmp.OrTypedNil(), (@string)" g="u8, mp.g0.OrTypedNil(), (@string)" id="u8, mp.id, (@string)" ostk="u8, Ꮡ(mp), (@string)"\n"u8);
+        print((@string)"newosproc stk="u8, @unsafe.Pointer.OrTypedNil(stk), (@string)" m="u8, Ꮡmp.OrTypedNil(), (@string)" g="u8, mp.g0.OrTypedNil(), (@string)" id="u8, mp.id, (@string)" ostk="u8, Ꮡ(mp), (@string)"\n"u8);
     }
     // Initialize an attribute object.
     ref var attr = ref heap(new pthreadattr(), out var Ꮡattr);

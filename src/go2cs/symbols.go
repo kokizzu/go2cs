@@ -130,6 +130,16 @@ const TypedNilBoxAccessor = "OrTypedNil()"
 // QUALIFIED - is provably non-null. Includes `()` as it is a method call.
 const TypedNilFuncAccessor = "OrTypedNilFunc()"
 
+// TypedNilUnsafePointerAccessor is the STATIC method on the hand-owned unsafe package's Pointer class
+// that an unsafe.Pointer takes on its way into an EMPTY interface - the third arm of the typed-nil
+// boundary, beside TypedNilBoxAccessor and TypedNilFuncAccessor. `unsafe.Pointer` is a CLASS
+// (Pointer : StandardBox<uintptr>), so a nil one renders a C# null that boxes as nothing; this
+// substitutes the class's canonical nil instance and is the identity for every real Pointer. It is
+// a static call rather than an extension because the pointer arm's `OrTypedNil()` binds ж<uintptr>
+// and would answer ж<uintptr>'s nil box, a different dynamic type. No `()`: the caller supplies the
+// argument list.
+const TypedNilUnsafePointerAccessor = "OrTypedNil"
+
 // The -tests package-init hook: the erasable classic-partial method a production
 // package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the
 // internal test variant's relocated-initializer file (go2cs initOrderOperations.go /

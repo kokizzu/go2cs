@@ -40,10 +40,10 @@ internal static void Main() {
     fmt.Println(a3RoundTripsToTheSameˢ, ~(ж<nint>)(uintptr)(q));
     var table = new main_table[]{
         new(@unsafe.Pointer.FromPinnedBox(@new<nint>()), false),
-        new((@unsafe.Pointer)default!, true)
+        new(@unsafe.Pointer.OrTypedNil((@unsafe.Pointer)default!), true)
     }.slice();
     foreach (var (i, row) in table) {
-        fmt.Println(a4Rowˢ, i, isNilˢ, AreEqual(row.v, ((any)(@unsafe.Pointer)default!)), wantˢ, row.want);
+        fmt.Println(a4Rowˢ, i, isNilˢ, AreEqual(row.v, ((any)@unsafe.Pointer.OrTypedNil((@unsafe.Pointer)default!))), wantˢ, row.want);
     }
     @unsafe.Pointer r = @unsafe.Pointer.FromPinnedBox(@new<nint>());
     fmt.Println(b1BareFreshAllocationNonˢ, r != nil);

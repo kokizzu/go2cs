@@ -64,7 +64,7 @@ public static CFRef BytesToCFData(slice<byte> b) {
     var ᴋ0 = p;
         var ret = syscall(abi.FuncPCABI0(x509_CFDataCreate_trampoline), kCFAllocatorDefault, (uintptr)ᴋ0, (uintptr)len(b), 0, 0, 0D);
     System.GC.KeepAlive(ᴋ0);
-    runtime.KeepAlive(p);
+    runtime.KeepAlive(@unsafe.Pointer.OrTypedNil(p));
     return ((CFRef)ret);
 }
 
@@ -79,7 +79,7 @@ public static CFString StringToCFString(@string s) {
         var ret = syscall(abi.FuncPCABI0(x509_CFStringCreateWithBytes_trampoline), kCFAllocatorDefault, (uintptr)ᴋ1, (uintptr)len(s), (uintptr)kCFStringEncodingUTF8, 0, 0D);
     System.GC.KeepAlive(ᴋ1);
     /* isExternalRepresentation */
-    runtime.KeepAlive(p);
+    runtime.KeepAlive(@unsafe.Pointer.OrTypedNil(p));
     return ((CFString)ret);
 }
 

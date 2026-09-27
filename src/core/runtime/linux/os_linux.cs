@@ -195,7 +195,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
 	 * note: strace gets confused if we use CLONE_PTRACE here.
 	 */
     if (false) {
-        print((@string)"newosproc stk="u8, stk, (@string)" m="u8, Ꮡmp.OrTypedNil(), (@string)" g="u8, mp.g0.OrTypedNil(), (@string)" clone="u8, abi.FuncPCABI0(clone), (@string)" id="u8, mp.id, (@string)" ostk="u8, Ꮡ(mp), (@string)"\n"u8);
+        print((@string)"newosproc stk="u8, @unsafe.Pointer.OrTypedNil(stk), (@string)" m="u8, Ꮡmp.OrTypedNil(), (@string)" g="u8, mp.g0.OrTypedNil(), (@string)" clone="u8, abi.FuncPCABI0(clone), (@string)" id="u8, mp.id, (@string)" ostk="u8, Ꮡ(mp), (@string)"\n"u8);
     }
     // Disable signals during clone, so that the new thread starts
     // with signals disabled. It will enable them in minit.

@@ -400,7 +400,7 @@ internal static Δstack @stackalloc(uint32 n) {
         asanunpoison(v, (uintptr)n);
     }
     if (stackDebug >= 1) {
-        print((@string)"  allocated "u8, v, (@string)"\n"u8);
+        print((@string)"  allocated "u8, @unsafe.Pointer.OrTypedNil(v), (@string)"\n"u8);
     }
     return new Δstack((uintptr)v, (uintptr)v + (uintptr)n);
 }
@@ -427,7 +427,7 @@ internal static void stackfree(Δstack stk) {
         @throw(badStackSizeˢ);
     }
     if (stackDebug >= 1) {
-        println((@string)"stackfree"u8, v, n);
+        println((@string)"stackfree"u8, @unsafe.Pointer.OrTypedNil(v), n);
         memclrNoHeapPointers(v, n); // for testing, clobber stack data
     }
     if (debug.efence != 0 || stackFromSystem != 0) {
@@ -475,7 +475,7 @@ internal static void stackfree(Δstack stk) {
     } else {
         var s = spanOfUnchecked((uintptr)v);
         if (s.of(mspan.Ꮡstate).get() != mSpanManual) {
-            println(((Δhex)(uint64)s.@base()), v);
+            println(((Δhex)(uint64)s.@base()), @unsafe.Pointer.OrTypedNil(v));
             @throw(badSpanStateˢ);
         }
         if (gcphase == _GCoff){
@@ -598,7 +598,7 @@ internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, 
     for (var i = (uintptr)0; i < num; i += 8) {
         if (stackDebug >= 4) {
             for (var j = (uintptr)0; j < 8; j++) {
-                print((@string)"        "u8, (uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize), (@string)":"u8, ptrnames[bv.ptrbit(i + j)], (@string)":"u8, ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize)))), (@string)" # "u8, i, (@string)" "u8, addb(bv.bytedata, i / 8).Value, (@string)"\n"u8);
+                print((@string)"        "u8, @unsafe.Pointer.OrTypedNil((uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize)), (@string)":"u8, ptrnames[bv.ptrbit(i + j)], (@string)":"u8, ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize)))), (@string)" # "u8, i, (@string)" "u8, addb(bv.bytedata, i / 8).Value, (@string)"\n"u8);
             }
         }
         var b = (addb(bv.bytedata, i / 8)).Value;
@@ -980,7 +980,7 @@ internal static void newstack() {
         print((@string)"runtime: newstack at "u8, pcname, (@string)"+"u8, ((Δhex)(uint64)pcoff),
             (@string)" sp="u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" stack=["u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)", "u8, ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n"u8,
             (@string)"\tmorebuf={pc:"u8, ((Δhex)(uint64)morebufΔ2.pc), (@string)" sp:"u8, ((Δhex)(uint64)morebufΔ2.sp), (@string)" lr:"u8, ((Δhex)(uint64)morebufΔ2.lr), (@string)"}\n"u8,
-            (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, (~gp).sched.ctxt, (@string)"}\n"u8);
+            (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, @unsafe.Pointer.OrTypedNil((~gp).sched.ctxt), (@string)"}\n"u8);
         thisg.Value.m.Value.traceback = 2; // Include runtime frames
         traceback(morebufΔ2.pc, morebufΔ2.sp, morebufΔ2.lr, gp);
         @throw(runtimeStackSplitAtBadˢ);
@@ -1026,7 +1026,7 @@ internal static void newstack() {
     if (stackDebug >= 1 || sp < (~gp).stack.lo) {
         print((@string)"runtime: newstack sp="u8, ((Δhex)(uint64)sp), (@string)" stack=["u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)", "u8, ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n"u8,
             (@string)"\tmorebuf={pc:"u8, ((Δhex)(uint64)morebuf.pc), (@string)" sp:"u8, ((Δhex)(uint64)morebuf.sp), (@string)" lr:"u8, ((Δhex)(uint64)morebuf.lr), (@string)"}\n"u8,
-            (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, (~gp).sched.ctxt, (@string)"}\n"u8);
+            (@string)"\tsched={pc:"u8, ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:"u8, ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:"u8, ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:"u8, @unsafe.Pointer.OrTypedNil((~gp).sched.ctxt), (@string)"}\n"u8);
     }
     if (sp < (~gp).stack.lo) {
         print((@string)"runtime: gp="u8, gp.OrTypedNil(), (@string)", goid="u8, (~gp).goid, (@string)", gp->status="u8, ((Δhex)(uint64)readgstatus(gp)), (@string)"\n "u8);

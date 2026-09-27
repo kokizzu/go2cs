@@ -37,7 +37,7 @@ internal static UntypedInt _C_SOCK_DGRAM => /* syscall.SOCK_DGRAM */ 2;
 internal static UntypedInt _C_SOCK_STREAM => /* syscall.SOCK_STREAM */ 1;
 
 internal static void _C_free(@unsafe.Pointer p) {
-    runtime.KeepAlive(p);
+    runtime.KeepAlive(@unsafe.Pointer.OrTypedNil(p));
 }
 
 internal static @unsafe.Pointer _C_malloc(uintptr n) {

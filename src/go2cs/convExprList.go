@@ -283,6 +283,15 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			resultExpr = v.applyTypedNilFuncBox(v.getType(expr, false), v.funcExprNeverRendersNull(expr), resultExpr)
 		}
 
+		// The unsafe.Pointer sibling, at the same slots: a nil unsafe.Pointer is a null CLASS
+		// reference, so it crosses through the Pointer class's canonical typed nil. Found by CNR's
+		// ParenTypeConversionCall: `[]struct{ v any }{{(unsafe.Pointer)(nil)}}` kept a bare null here
+		// while the `any(unsafe.Pointer(nil))` it is compared against took the other boundary, and
+		// the row's `==` flipped to Go's opposite. reflect's TestIsZero table is the same shape.
+		if callContext != nil && callContext.anyBoxedUnsafePointerArgs[i] && !spreadArg && !totalReplacement {
+			resultExpr = v.applyTypedNilUnsafePointerBox(v.getType(expr, false), v.unsafePointerExprNeverRendersNull(expr), resultExpr)
+		}
+
 		if !totalReplacement && replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 {
 			resultExpr = strings.ReplaceAll(replacementArgs[i], DynamicCastArgMarker, resultExpr)
 		}
