@@ -27,6 +27,24 @@ internal static class wrapperprobe_package
         return pcs[..(int)Callers(0, pcs)];
     }
 
+    internal interface IStack
+    {
+        @string S();
+    }
+
+    internal sealed class stackImpl : IStack
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public @string S()
+        {
+            slice<byte> buf = new(8192);
+            return (@string)buf[..(int)Stack(buf, false)];
+        }
+    }
+
+    // IStack.S, the wrapper that calls an ordinary function: elided from runtime.Stack's text too.
+    internal static readonly Func<IStack, @string> stackWrapper = ((Func<IStack, @string>)([GoWrapper("IStack.S")] (p0) => p0.S()));
+
     // An ordinary function value, for the reflect-token arm.
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void plain() { }
