@@ -21,20 +21,32 @@ public class MemProfileReachabilityTests
         return string.Join(Path.PathSeparator, System.Array.ConvertAll(names, name => Path.Combine(dir, name)));
     }
 
+    private static System.Type? Absent() => null;
+
+    private static System.Type? Present() => typeof(object);
+
+    private static System.Type? Unreadable() => throw new System.PlatformNotSupportedException();
+
     [TestMethod]
     public void MemoryProfilingIsOnOnlyWhenPprofIsInTheStaticClosure()
     {
         // A converted program that never imports runtime/pprof: Go's linker would drop memProfileInternal.
-        Assert.IsFalse(runtime_package.GoMemProfileReachable(Closure("golib.dll", "runtime.dll", "fmt.dll", "main.dll"), null),
+        Assert.IsFalse(runtime_package.GoMemProfileReachable(Closure("golib.dll", "runtime.dll", "fmt.dll", "main.dll"), Absent),
             "a closure without runtime.pprof must start with MemProfileRate 0");
 
         // One that imports it, directly or through net/http/pprof.
-        Assert.IsTrue(runtime_package.GoMemProfileReachable(Closure("golib.dll", "runtime.dll", "runtime.pprof.dll", "main.dll"), null),
+        Assert.IsTrue(runtime_package.GoMemProfileReachable(Closure("golib.dll", "runtime.dll", "runtime.pprof.dll", "main.dll"), Absent),
             "a closure with runtime.pprof keeps Go's default MemProfileRate");
 
         // A name that only contains it is not it.
-        Assert.IsFalse(runtime_package.GoMemProfileReachable(Closure("runtime.dll", "runtime.pprof.extra.dll"), null),
+        Assert.IsFalse(runtime_package.GoMemProfileReachable(Closure("runtime.dll", "runtime.pprof.extra.dll"), Absent),
             "only the runtime.pprof assembly itself enables the profile");
+
+        // No list (native AOT, single file): runtime.pprof's package type, looked up by its constant name, decides,
+        // and a lookup that cannot answer keeps Go's default.
+        Assert.IsFalse(runtime_package.GoMemProfileReachable(null, Absent), "no list and no runtime.pprof type: off");
+        Assert.IsTrue(runtime_package.GoMemProfileReachable(null, Present), "no list and the runtime.pprof type resolves: on");
+        Assert.IsTrue(runtime_package.GoMemProfileReachable(null, Unreadable), "no answer: Go's default stands");
 
         // The live decision for this host (GolibTests.csproj references runtime.pprof, so it is on) is read by
         // MemProfileRecordTests, whose first assertion is Go's default rate.

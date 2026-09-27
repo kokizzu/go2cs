@@ -50,9 +50,7 @@
 namespace go;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using atomic = @internal.runtime.atomic_package;
@@ -239,9 +237,9 @@ public static ref nint MemProfileRate => ref GoMemProfile.Rate;
 // program's STATIC assembly closure: the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the app's deps.json
 // list and is fixed before the first assembly loads, never the assemblies loaded so far, which load lazily
 // and would read "no pprof" at this point in every program. Where the host has no such list (a native AOT
-// or single-file publish), the entry assembly's GetReferencedAssemblies closure is walked instead; the
-// entry-assembly walk is not the primary because under a test host the entry assembly is the host, not
-// the tests. Where neither answers, Go's default rate stands.
+// or single-file publish), runtime.pprof's package type is looked up by its constant name, which native
+// AOT's compiler resolves against the assemblies it compiled (see memProfileReachable). Where neither
+// answers, Go's default rate stands.
 //
 // DEVIATIONS. A program that calls runtime.MemProfile directly without runtime.pprof in its closure reads
 // an empty profile unless it sets MemProfileRate itself, as a Go program whose linker dropped
@@ -251,14 +249,20 @@ public static ref nint MemProfileRate => ref GoMemProfile.Rate;
 [ModuleInitializer]
 internal static void initMemProfileRecorder() {
     GoMemProfile.Recorder = memProfileAlloc;
-    if (!memProfileReachable(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, Assembly.GetEntryAssembly())) {
+    if (!memProfileReachable(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, findPprofPackage)) {
         GoMemProfile.Rate = 0;
     }
 }
 
 private const string pprofAssemblyName = "runtime.pprof";
 
-private static bool memProfileReachable(string? trustedPlatformAssemblies, Assembly? entry) {
+// The fallback's question is asked by type name, not by walking references: under native AOT the
+// compiler resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
+// static closure there, and GetReferencedAssemblies throws PlatformNotSupportedException. The name is a
+// constant AT THE CALL: the compiler does not follow it through a parameter.
+private static Type? findPprofPackage() => Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false);
+
+private static bool memProfileReachable(string? trustedPlatformAssemblies, Func<Type?> findPprof) {
     if (trustedPlatformAssemblies is not null) {
         foreach (string path in trustedPlatformAssemblies.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) {
             if (string.Equals(Path.GetFileNameWithoutExtension(path), pprofAssemblyName, StringComparison.OrdinalIgnoreCase)) {
@@ -267,30 +271,8 @@ private static bool memProfileReachable(string? trustedPlatformAssemblies, Assem
         }
         return false;
     }
-    if (entry is null) {
-        return true;
-    }
     try {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var pending = new Queue<Assembly>();
-        pending.Enqueue(entry);
-        while (pending.TryDequeue(out var assembly)) {
-            foreach (AssemblyName reference in assembly.GetReferencedAssemblies()) {
-                if (reference.Name is not { } name || !seen.Add(name)) {
-                    continue;
-                }
-                if (string.Equals(name, pprofAssemblyName, StringComparison.OrdinalIgnoreCase)) {
-                    return true;
-                }
-                // The framework's own assemblies never reference runtime.pprof.
-                if (name.StartsWith("System", StringComparison.Ordinal) || name.StartsWith("Microsoft", StringComparison.Ordinal) ||
-                    name is "mscorlib" or "netstandard") {
-                    continue;
-                }
-                pending.Enqueue(Assembly.Load(reference));
-            }
-        }
-        return false;
+        return findPprof() is not null;
     }
     catch (Exception) {
         // The closure could not be read: keep Go's default rather than silently switch the profile off.
@@ -329,9 +311,10 @@ private static void memProfileAlloc(object allocation, nuint size, bool noscan) 
 //      grant, so this Go-prefixed public helper exposes the one operation ----
 
 /// <summary>Whether a program whose static assembly closure is <paramref name="trustedPlatformAssemblies"/>
-/// (a path list, as the host's TRUSTED_PLATFORM_ASSEMBLIES) starts with the memory profile on.</summary>
-public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, Assembly? entry) =>
-    memProfileReachable(trustedPlatformAssemblies, entry);
+/// (a path list, as the host's TRUSTED_PLATFORM_ASSEMBLIES; null where the host has none) starts with the
+/// memory profile on, asking <paramref name="findPprof"/> when there is no list.</summary>
+public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, Func<Type?> findPprof) =>
+    memProfileReachable(trustedPlatformAssemblies, findPprof);
 
 /// <summary>Records <paramref name="count"/> block events of <paramref name="cycles"/> each through
 /// <c>runtime.blockevent(cycles, 1)</c> -- the call runtime/pprof's TestBlockProfileBias makes.</summary>
