@@ -229,4 +229,7 @@ partial class runtime_package
     public static void GoMemmove(unsafe_package.Pointer to, unsafe_package.Pointer from, uintptr n) => memmove(to, from, n);
 
     public static void GoMemclrNoHeapPointers(unsafe_package.Pointer ptr, uintptr n) => memclrNoHeapPointers(ptr, n);
+
+    // export_test.go exports no memequal; this seam is GolibTests' alone (RuntimeMemequalTests).
+    public static bool GoMemequal(unsafe_package.Pointer a, unsafe_package.Pointer b, uintptr size) => memequal(a, b, size);
 }
