@@ -41,13 +41,18 @@
 // THE MEMORY PROFILE'S ALLOCATION RECORDS (class M, piece M1, COORD ruling 2026-09-27). runtime.MemProfileRate
 // is displaced by manualConversionVars["runtime"] and declared below as a ref property over golib's
 // GoMemProfile.Rate, and memProfileAlloc records what golib's allocation doors sample (see the section
-// below and golib/GoMemProfile.cs).
+// below and golib/GoMemProfile.cs). The rate starts at 0 unless runtime.pprof is in the program's static
+// assembly closure, Go's disableMemoryProfiling (COORD ruling 2026-09-27, option (a)).
 //
 // Hand-owned (no mprof_impl.go exists, so a reconvert never regenerates this file).
 [module: go.GoManualConversion]
 
 namespace go;
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using atomic = @internal.runtime.atomic_package;
@@ -226,9 +231,71 @@ public static ref nint MemProfileRate => ref GoMemProfile.Rate;
 
 // golib samples by Go's rule (GoMemProfile.Charge) and hands each sampled allocation here. A method group,
 // not a lambda: a lambda would be a Go-source frame of its own between the allocating function and this one.
+//
+// Go's disableMemoryProfiling, decided the same way Go decides it: from what the program CAN reach, once,
+// before any Go code runs. Go's linker sets it when runtime.memProfileInternal is unreachable, which in
+// practice means the program does not import runtime/pprof (or testing, which imports it), and the runtime
+// then starts with MemProfileRate 0 (proc.go). Here the question is whether runtime.pprof is in the
+// program's STATIC assembly closure: the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the app's deps.json
+// list and is fixed before the first assembly loads, never the assemblies loaded so far, which load lazily
+// and would read "no pprof" at this point in every program. Where the host has no such list (a native AOT
+// or single-file publish), the entry assembly's GetReferencedAssemblies closure is walked instead; the
+// entry-assembly walk is not the primary because under a test host the entry assembly is the host, not
+// the tests. Where neither answers, Go's default rate stands.
+//
+// DEVIATIONS. A program that calls runtime.MemProfile directly without runtime.pprof in its closure reads
+// an empty profile unless it sets MemProfileRate itself, as a Go program whose linker dropped
+// memProfileInternal could not (Go keeps the profile on whenever MemProfile is reachable). And go2cs's
+// hand-owned testing does not reference runtime.pprof, as Go's does, so a converted test package that does
+// not import runtime/pprof itself starts with the rate at 0 where Go's test binary starts at 512 KiB.
 [ModuleInitializer]
 internal static void initMemProfileRecorder() {
     GoMemProfile.Recorder = memProfileAlloc;
+    if (!memProfileReachable(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, Assembly.GetEntryAssembly())) {
+        GoMemProfile.Rate = 0;
+    }
+}
+
+private const string pprofAssemblyName = "runtime.pprof";
+
+private static bool memProfileReachable(string? trustedPlatformAssemblies, Assembly? entry) {
+    if (trustedPlatformAssemblies is not null) {
+        foreach (string path in trustedPlatformAssemblies.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) {
+            if (string.Equals(Path.GetFileNameWithoutExtension(path), pprofAssemblyName, StringComparison.OrdinalIgnoreCase)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    if (entry is null) {
+        return true;
+    }
+    try {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pending = new Queue<Assembly>();
+        pending.Enqueue(entry);
+        while (pending.TryDequeue(out var assembly)) {
+            foreach (AssemblyName reference in assembly.GetReferencedAssemblies()) {
+                if (reference.Name is not { } name || !seen.Add(name)) {
+                    continue;
+                }
+                if (string.Equals(name, pprofAssemblyName, StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+                // The framework's own assemblies never reference runtime.pprof.
+                if (name.StartsWith("System", StringComparison.Ordinal) || name.StartsWith("Microsoft", StringComparison.Ordinal) ||
+                    name is "mscorlib" or "netstandard") {
+                    continue;
+                }
+                pending.Enqueue(Assembly.Load(reference));
+            }
+        }
+        return false;
+    }
+    catch (Exception) {
+        // The closure could not be read: keep Go's default rather than silently switch the profile off.
+        return true;
+    }
 }
 
 // mProf_Malloc for an allocation made through a golib constructor. Go's own mProf_Malloc stays converted
@@ -263,7 +330,8 @@ private static void memProfileAlloc(object allocation, nuint size, bool noscan) 
 
 /// <summary>Whether a program whose static assembly closure is <paramref name="trustedPlatformAssemblies"/>
 /// (a path list, as the host's TRUSTED_PLATFORM_ASSEMBLIES) starts with the memory profile on.</summary>
-public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, System.Reflection.Assembly? entry) => true;
+public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, Assembly? entry) =>
+    memProfileReachable(trustedPlatformAssemblies, entry);
 
 /// <summary>Records <paramref name="count"/> block events of <paramref name="cycles"/> each through
 /// <c>runtime.blockevent(cycles, 1)</c> -- the call runtime/pprof's TestBlockProfileBias makes.</summary>
