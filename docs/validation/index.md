@@ -237,8 +237,8 @@ it beside the proofs on every release.
 | `reflect` | [`reflect.md`](current/reflect.md) | [`src/core/reflect`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/reflect) |
 | `regexp` | [`regexp.md`](current/regexp.md) | [`src/core/regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) |
 | `regexp/syntax` | [`regexp.syntax.md`](current/regexp.syntax.md) | [`src/core/regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) |
-| `runtime/debug` | [`runtime.debug.md`](current/runtime.debug.md) | [`src/core/runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug) |
 | `runtime/metrics` | [`runtime.metrics.md`](current/runtime.metrics.md) | [`src/core/runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) |
+| `runtime/trace` | [`runtime.trace.md`](current/runtime.trace.md) | [`src/core/runtime/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/trace) |
 | `slices` | [`slices.md`](current/slices.md) | [`src/core/slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices) |
 | `sort` | [`sort.md`](current/sort.md) | [`src/core/sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) |
 | `strconv` | [`strconv.md`](current/strconv.md) | [`src/core/strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) |
