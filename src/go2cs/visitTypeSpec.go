@@ -44,18 +44,10 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	// alias below — never a `[GoType] partial struct` wrapper. A struct wrapper over `any` (= object)
 	// admits no implicit conversion FROM a concrete value (C# bars user-defined conversions from
 	// object), so every `StartElement → Token` assignment was CS0029 (encoding/xml's `type Token
-	// any`, ×16). Restricted to a NAMED-type RHS (Ident/Selector); an inline interface DEFINITION
-	// (`type X interface{…}`) is an *ast.InterfaceType and still emits a C# interface via the switch.
-	definedOverInterface := false
-
-	if !typeSpec.Assign.IsValid() {
-		switch typeSpec.Type.(type) {
-		case *ast.Ident, *ast.SelectorExpr:
-			if _, isIface := identType.Underlying().(*types.Interface); isIface {
-				definedOverInterface = true
-			}
-		}
-	}
+	// any`, ×16). An inline EMPTY interface (`type I interface{}`) takes the same route, since it is
+	// the same type set as `any`; any other inline interface DEFINITION (`type X interface{…}`)
+	// still emits a C# interface via the switch (see interfaceAliasRHS).
+	definedOverInterface := !typeSpec.Assign.IsValid() && interfaceAliasRHS(typeSpec.Type, identType.Underlying())
 
 	// Handle type alias (or a defined type over an interface — see above)
 	if typeSpec.Assign.IsValid() || definedOverInterface {
@@ -523,6 +515,31 @@ func samePackageTypeQualifier() string {
 // existing temp (U+1D1B) and value-adapter (U+1D20) markers.
 const DescriptorCarrierSuffix = "\u1D05"
 
+// interfaceAliasRHS reports whether a DEFINED type's declaration RHS makes it a `global using` alias
+// rather than a nested C# type: its underlying type is an interface, and the RHS is either a NAMED
+// type (`type Token any`, `type Reader io.Reader`) or an inline EMPTY interface (`type I interface{}`).
+// The empty interface is `any`'s type set, so every Go value belongs to it; as a nested C# interface
+// no primitive or converted struct implements it, and every assignment was CS0029. Any other inline
+// interface definition is a real nested C# interface. visitTypeSpec, descriptorCarrierFor and
+// usingAliasTargetType (foreignTypeAliases.go) all ask this one question, so a declaration, its
+// descriptor carrier and an importer's alias always agree.
+func interfaceAliasRHS(rhs ast.Expr, underlying types.Type) bool {
+	iface, isInterface := underlying.(*types.Interface)
+
+	if !isInterface {
+		return false
+	}
+
+	switch rhs.(type) {
+	case *ast.Ident, *ast.SelectorExpr:
+		return true
+	case *ast.InterfaceType:
+		return iface.Empty()
+	}
+
+	return false
+}
+
 // descriptorCarrierFor returns the fully-qualified C# name of the descriptor carrier for t, or ""
 // when t needs none. This is the SAME predicate usingAliasTargetType applies (foreignTypeAliases.go)
 // and it is deliberately the same three questions in the same order:
@@ -532,10 +549,11 @@ const DescriptorCarrierSuffix = "\u1D05"
 //     corpus are aliases (os.FileInfo, os.DirEntry, net/http.http2timer).
 //  2. a type whose underlying is not an interface gets none - it is emitted as a real named type
 //     and already carries its name.
-//  3. a DEFINED type over an interface gets one ONLY when the declaration's RHS is a NAMED type.
-//     An inline definition (`type X interface{...}`) is a real nested C# interface and needs
-//     nothing; that distinction lives only in the RHS syntax, which is why the declaring package's
-//     handle is consulted. A package loaded without syntax yields "" rather than a guess.
+//  3. a DEFINED type over an interface gets one ONLY when interfaceAliasRHS accepts the declaration's
+//     RHS: a NAMED interface type, or an inline EMPTY interface. Any other inline definition
+//     (`type X interface{...}`) is a real nested C# interface and needs nothing; that distinction
+//     lives only in the RHS syntax, which is why the declaring package's handle is consulted. A
+//     package loaded without syntax yields "" rather than a guess.
 func (v *Visitor) descriptorCarrierFor(t types.Type) string {
 	if t == nil {
 		return ""
@@ -563,9 +581,7 @@ func (v *Visitor) descriptorCarrierFor(t types.Type) string {
 		return ""
 	}
 
-	switch definedTypeSpecRHS(handle, obj.Name()).(type) {
-	case *ast.Ident, *ast.SelectorExpr:
-	default:
+	if !interfaceAliasRHS(definedTypeSpecRHS(handle, obj.Name()), obj.Type().Underlying()) {
 		return ""
 	}
 

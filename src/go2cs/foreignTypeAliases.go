@@ -168,11 +168,11 @@ func usingAliasTargetType(pkg *packages.Package, obj *types.TypeName) (types.Typ
 		return nil, false
 	}
 
+	// The RHS question is interfaceAliasRHS's (visitTypeSpec.go): a NAMED interface type, or an
+	// inline EMPTY interface (`type I interface{}`), which is `any`'s type set.
 	rhs := definedTypeSpecRHS(pkg, obj.Name())
 
-	switch rhs.(type) {
-	case *ast.Ident, *ast.SelectorExpr:
-	default:
+	if !interfaceAliasRHS(rhs, obj.Type().Underlying()) {
 		return nil, false
 	}
 
