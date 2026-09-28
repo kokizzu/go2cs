@@ -30,7 +30,7 @@ internal static void Main() {
     var p = @new<Tally>();
     p.Value.vals[3] = 7;
     fmt.Println(newˢ, len((~p).vals), (~p).vals);
-    var l = new Tally(new Counts(n: 1));
+    var l = new Tally(new counts(n: 1));
     l.vals[2] = 9;
     fmt.Println(literalˢ, len(l.vals), l.vals, l.n);
     var c = t.ΔClone();

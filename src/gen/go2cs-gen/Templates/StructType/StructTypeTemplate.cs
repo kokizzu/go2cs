@@ -1606,8 +1606,9 @@ internal class StructTypeTemplate : TemplateBase
 
     // The type NAME a `[GoType("<name>")]` declaration is defined over, or null when the declaration is
     // a plain struct (`[GoType]`, `[GoType("dyn")]`) or is defined over a non-struct shape (slice, map,
-    // channel, array, numeric), whose default is already its zero value.
-    private static string? InheritedStructDefinition(StructDeclarationSyntax structDecl)
+    // channel, array, numeric), whose default is already its zero value. TypeGenerator follows the same
+    // definitions to forward a multi-level defined type's fields.
+    internal static string? InheritedStructDefinition(StructDeclarationSyntax structDecl)
     {
         foreach (AttributeSyntax attribute in structDecl.AttributeLists.SelectMany(list => list.Attributes))
         {
