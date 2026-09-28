@@ -1037,9 +1037,9 @@ internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;
 internal static ж<int32> Ꮡgomaxprocs = new StandardBox<int32>((int32)Environment.ProcessorCount);
 internal static ref int32 gomaxprocs => ref Ꮡgomaxprocs.Value;
 internal static int32 ncpu = (int32)Environment.ProcessorCount;
-internal static ж<forcegcstate> Ꮡforcegc = new StandardBox<forcegcstate>(default(forcegcstate));
+internal static ж<forcegcstate> Ꮡforcegc = new StandardBox<forcegcstate>(new forcegcstate());
 internal static ref forcegcstate forcegc => ref Ꮡforcegc.Value;
-internal static ж<schedt> Ꮡsched = new StandardBox<schedt>(default(schedt));
+internal static ж<schedt> Ꮡsched = new StandardBox<schedt>(new schedt());
 internal static ref schedt sched => ref Ꮡsched.Value;
 internal static int32 newprocs;
 

@@ -260,6 +260,10 @@ partial class runtime_package
         if (n < 1 || n == previous)
             return previous;
 
+        // Go changes the P count inside stopTheWorldGC(stwGOMAXPROCS); the pause is recorded the
+        // same way (the stop-the-world contract, stopTheWorld below).
+        worldStop stw = stopTheWorldGC(stwGOMAXPROCS);
+
         lock (s_cpuStatsLock)
         {
             Volatile.Write(ref s_gomaxprocs, n);
@@ -274,6 +278,8 @@ partial class runtime_package
             sched.procresizetime = now;
             gomaxprocs = (int32)n;
         }
+
+        startTheWorldGC(stw);
 
         return previous;
     }
@@ -455,7 +461,12 @@ partial class runtime_package
         // tests among them) rely on finalizers having RUN by the time it returns. The second
         // collect reclaims what the finalizers released, matching the state a completed Go cycle
         // leaves behind.
+        //
+        // The blocking collection is the cycle's stopped-world phase, so it takes the pair Go's
+        // mark termination takes (stwGCMarkTerm, a GC pause in /sched/pauses).
+        worldStop stw = stopTheWorldGC(stwGCMarkTerm);
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        startTheWorldGC(stw);
         System.GC.WaitForPendingFinalizers();
 
         // The CLR wait above only drains the CLR's OWN finalizer queue, and a GoFinalizerSentinel's
@@ -500,47 +511,271 @@ partial class runtime_package
     // the runtime/metrics_test push). Go's bodies acquire metricsSema — a runtime sleeping
     // semaphore whose acquire path is getg() → sudog → gopark, none of which exists under the
     // CLR — with handoff enabled because metrics operations are long. The contract is mutual
-    // exclusion with waiter handoff, and SemaphoreSlim is the CLR's spelling of exactly that:
-    // FIFO-ish waiter wakeup, no thread affinity (a goroutine IS a managed thread here, but the
-    // lock/unlock pair need not run on one thread for the semaphore to be correct, matching Go).
+    // exclusion with waiter handoff, and SemaphoreSlim is the CLR's spelling of exactly that.
     // Everything the lock protects stays auto-converted.
+    //
+    // The HOLDER is recorded, as worldsema's is below, so a panic inside the region releases the
+    // lock (releaseStoppedWorldOnPanic): the 2026-09-26 park came from this lock, when
+    // readMetricsLocked threw while holding it and the next reader waited for ever. Lock and unlock
+    // therefore run on one goroutine, which every Go caller does (each is a single function body).
     private static readonly SemaphoreSlim s_metricsSema = new(1, 1);
+    private static int s_metricsSemaHolder;
 
-    internal static void metricsLock() => s_metricsSema.Wait();
+    internal static void metricsLock()
+    {
+        s_metricsSema.Wait();
+        Volatile.Write(ref s_metricsSemaHolder, Environment.CurrentManagedThreadId);
+    }
 
-    internal static void metricsUnlock() => s_metricsSema.Release();
+    // Releases only what the calling goroutine still holds: after a panic released it, a later
+    // unlock on the unwinding path is a no-op rather than a second release.
+    internal static void metricsUnlock()
+    {
+        if (Interlocked.CompareExchange(ref s_metricsSemaHolder, 0, Environment.CurrentManagedThreadId) == Environment.CurrentManagedThreadId)
+            s_metricsSema.Release();
+    }
 
-    // stopTheWorld (proc.go) REFUSES BY NAME, and it refuses BEFORE it takes worldsema. Go's body
-    // takes worldsema and then stops every P (stopTheWorldWithSema: preemptall, retake Ps in
-    // syscalls, wait for sched.stopwait). There are no Ps here (m.p is nil by construction,
-    // stubs_impl.cs), so the converted stopTheWorldWithSema died on that nil P while worldsema was
-    // held. That leaked the permit to every later caller: a hang once runtime's semaphore could park
-    // (sema_impl.cs; TestDebugLogInterleaving held the linux row to its deadline).
+    // ---- STOP THE WORLD: the contract model (owner ruling, ledger 2026-09-28 00:40) --------------
     //
-    // WHY A REFUSAL AND NOT A WORLDSEMA-ONLY STOP. A stop that only takes worldsema (branch
-    // claude/p1-stw-contract) lets each caller into its own stopped-world region, and every region
-    // the runtime row reaches fails there while holding the lock: the debuglog ring is Go-layout
-    // memory, flushallmcaches needs Ps, readMetricsLocked holds metricsSema, and AllThreadsSyscall's
-    // body has no managed form. Master failed every caller fast at this function's first line; this
-    // keeps that and drops the leak (COORD ruling, ledger 3fc0f21d91). Making the regions work is a
-    // later seat, gated on a census of each caller's region.
+    // stopTheWorld (proc.go) takes worldsema and records a /sched/pauses stopping sample;
+    // startTheWorld records the total sample and releases worldsema with handoff. That is Go's
+    // contract minus the stop itself: other goroutines are NOT suspended, since the CLR cannot do it
+    // safely (a real goroutine barrier was ruled too invasive). A caller that reads state it expects
+    // the world to hold still reads it live, and each region the runtime reaches is managed:
+    // flushallmcaches is a no-op without Ps, the debug log is managed memory (debuglog_impl.cs),
+    // readMetricsLocked crosses through runtime/metrics (below), and the regions with no managed
+    // form refuse BEFORE the world is stopped (goroutineProfileWithLabels' fill path,
+    // doAllThreadsSyscall on linux, StartTrace everywhere).
     //
-    // Every converted caller calls stopTheWorld holding nothing (heapdump.cs, mprof.cs, os_linux.cs's
-    // AllThreadsSyscall, and the test exports), so the refusal leaks nothing. stopTheWorldGC, which
-    // takes gcsema first, has no caller in the converted runtime. startTheWorld is reached only
-    // after stopTheWorld returns, so it stays converted and unreachable.
-    internal static worldStop stopTheWorld(stwReason reason) =>
-        throw new PanicException($"runtime: stopTheWorld: the managed host cannot stop the world (reason: {reason.String()}); goroutines are CLR threads with no Ps to stop");
+    // Go's stopTheWorldWithSema stops every P and its startTheWorldWithSema restarts them; both
+    // record the pause into sched's four timeHistograms. There are no Ps here (m.p is nil by
+    // construction), so the stop is the acquisition itself: startedStopping and finishedStopping
+    // bracket it, stoppingCPUTime is 0. m.preemptoff and the STW trace events are not kept.
+    //
+    // THE LEAK. A region that throws while holding worldsema left it held for every later caller
+    // (2026-09-26: the runtime row's host parked in TestDebugLogInterleaving). Go fatals there
+    // ("panic during preemptoff"). The managed host's safety net is releaseStoppedWorldOnPanic,
+    // registered as golib's RuntimeErrorPanic.PanicObserved: when a Go frame's panic filter sees an
+    // exception on the goroutine that holds worldsema (or metricsSema), the permit is released.
+    // startTheWorld releases only by CAS on the recorded holder, so there is never a double release.
+    // stopTheWorldGC/startTheWorldGC stay converted: gcsema around this pair.
+    private static int s_worldsemaHolder;
 
-    // goroutineProfileWithLabels (mprof.go), behind runtime.GoroutineProfile, takes
-    // goroutineProfile.sema and then the world, and its concurrent collector reads
-    // sys.GetCallerSP/GetCallerPC, intrinsics that stay throwing by ruling. Every call therefore
-    // died holding goroutineProfile.sema AND worldsema. This refuses by name BEFORE either is
-    // taken, so the refusal leaks nothing. runtime/pprof's goroutine profile does not come
-    // through here: it has its own managed body over golib's goroutine registry
-    // (runtime/pprof/pprof_impl.cs). Sharing that body with this function is a separate seat.
-    internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) =>
-        throw new PanicException("runtime: goroutineProfileWithLabels: the concurrent collector records each goroutine's stack through sys.GetCallerSP/GetCallerPC and stops the world to do it; neither exists in the managed model (runtime/pprof's goroutine profile has its own managed body)");
+    [ModuleInitializer]
+    internal static void ᴛRegisterStoppedWorldRelease()
+    {
+        RuntimeErrorPanic.PanicObserved = releaseStoppedWorldOnPanic;
+    }
+
+    private static void releaseStoppedWorldOnPanic()
+    {
+        int me = Environment.CurrentManagedThreadId;
+
+        // Reverse acquisition order: a region that holds both took worldsema first (ReadMetricsSlow).
+        if (Volatile.Read(ref s_metricsSemaHolder) == me && Interlocked.CompareExchange(ref s_metricsSemaHolder, 0, me) == me)
+            s_metricsSema.Release();
+
+        if (Volatile.Read(ref s_worldsemaHolder) == me && Interlocked.CompareExchange(ref s_worldsemaHolder, 0, me) == me)
+            semrelease1(Ꮡworldsema, true, 0);
+    }
+
+    internal static worldStop stopTheWorld(stwReason reason)
+    {
+        semacquire(Ꮡworldsema);
+        Volatile.Write(ref s_worldsemaHolder, Environment.CurrentManagedThreadId);
+
+        int64 start = nanotime();
+        int64 finished = nanotime();
+
+        if (reason.isGC())
+            StwPauses.StoppingGC.record(finished - start);
+        else
+            StwPauses.StoppingOther.record(finished - start);
+
+        return new worldStop(reason: reason, startedStopping: start, finishedStopping: finished, stoppingCPUTime: 0);
+    }
+
+    internal static void startTheWorld(worldStop w)
+    {
+        int64 total = nanotime() - w.startedStopping;
+
+        if (w.reason.isGC())
+            StwPauses.TotalGC.record(total);
+        else
+            StwPauses.TotalOther.record(total);
+
+        int me = Environment.CurrentManagedThreadId;
+
+        if (Interlocked.CompareExchange(ref s_worldsemaHolder, 0, me) == me)
+            semrelease1(Ꮡworldsema, true, 0);
+    }
+
+    // sched's four stop-the-world timeHistograms, each with its cells' words boxed ONCE. The
+    // converted timeHistogram.record (histogram.cs) takes a fresh element box per sample
+    // (`Ꮡ(h.counts, i).Add(1)`), and atomic's Uint64.Add a fresh box of the word under it, while
+    // ReadMemStats, which now stops the world, is held to zero allocations per call (GolibTests'
+    // ReadMemStatsPerCallAllocation). So each cell's word address is taken once (WordAddress) and
+    // the sample added through Xadd64. The bucket arithmetic is record's, verbatim. The class
+    // initializer runs once, on the first stop.
+    private static class StwPauses
+    {
+        internal static readonly PauseHistogram StoppingGC = new(Ꮡsched.of(schedt.ᏑstwStoppingTimeGC));
+        internal static readonly PauseHistogram StoppingOther = new(Ꮡsched.of(schedt.ᏑstwStoppingTimeOther));
+        internal static readonly PauseHistogram TotalGC = new(Ꮡsched.of(schedt.ᏑstwTotalTimeGC));
+        internal static readonly PauseHistogram TotalOther = new(Ꮡsched.of(schedt.ᏑstwTotalTimeOther));
+    }
+
+    private sealed class PauseHistogram
+    {
+        private readonly ж<uint64> m_underflow;
+        private readonly ж<uint64> m_overflow;
+        private readonly ж<uint64>[] m_counts;
+
+        internal PauseHistogram(ж<timeHistogram> h)
+        {
+            m_underflow = h.of(timeHistogram.Ꮡunderflow).WordAddress();
+            m_overflow = h.of(timeHistogram.Ꮡoverflow).WordAddress();
+            m_counts = new ж<uint64>[(int)len(h.Value.counts)];
+
+            for (int i = 0; i < m_counts.Length; i++)
+                m_counts[i] = Ꮡ(h.Value.counts, i).WordAddress();
+        }
+
+        internal void record(int64 duration)
+        {
+            if (duration < 0)
+            {
+                atomic_package.Xadd64(m_underflow, 1);
+                return;
+            }
+
+            nuint bucketBit;
+            nuint bucket;
+            nint l = sys_package.Len64((uint64)duration);
+
+            if (l < timeHistMinBucketBits)
+            {
+                bucketBit = timeHistMinBucketBits;
+                bucket = 0;
+            }
+            else
+            {
+                bucketBit = (nuint)l;
+                bucket = bucketBit - (nuint)timeHistMinBucketBits + 1;
+            }
+
+            if (bucket >= timeHistNumBuckets)
+            {
+                atomic_package.Xadd64(m_overflow, 1);
+                return;
+            }
+
+            nuint subBucket = (nuint)(duration >> (int)(bucketBit - 1 - (nuint)timeHistSubBucketBits)) % (nuint)timeHistNumSubBuckets;
+            atomic_package.Xadd64(m_counts[(int)(bucket * (nuint)timeHistNumSubBuckets + subBucket)], 1);
+        }
+    }
+
+    // flushallmcaches (mstats.go) flushes every P's mcache. There are no Ps, so there is nothing
+    // to flush: ReadMemStatsSlow, ReadMetricsSlow and readmemstats_m reach it inside their stopped
+    // world, and the converted body indexed allp out of range there while holding worldsema.
+    internal static void flushallmcaches()
+    {
+    }
+
+    // goroutineProfileWithLabels (mprof.go), behind runtime.GoroutineProfile (ruling Q3). Go's
+    // concurrent collector takes goroutineProfile.sema and the world, counts, and returns (n, false)
+    // at once when the caller's slice is too short; otherwise it records every goroutine's stack
+    // through sys.GetCallerSP/GetCallerPC, intrinsics that stay throwing by ruling. So the COUNT
+    // path is kept, pair and all, over golib's goroutine registry (gcount), and the FILL path
+    // refuses by name BEFORE any semaphore, a stated limit: runtime/pprof's goroutine profile does
+    // not come through here, it has its own managed body (runtime/pprof/pprof_impl.cs).
+    internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels)
+    {
+        if (gcount() <= len(Δp))
+            throw refuseGoroutineProfileFill();
+
+        semacquire(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
+        worldStop stw = stopTheWorld(stwGoroutineProfile);
+        nint n = gcount();
+        startTheWorld(stw);
+        semrelease(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
+
+        // A goroutine exited between the unlocked count and this one: the slice now fits, and the
+        // fill path is still the one this host cannot take.
+        if (n <= len(Δp))
+            throw refuseGoroutineProfileFill();
+
+        return (n, false);
+    }
+
+    private static PanicException refuseGoroutineProfileFill() =>
+        new("runtime: goroutineProfileWithLabels: filling the profile records each goroutine's stack through sys.GetCallerSP/GetCallerPC, which do not exist in the managed model; only the count is kept (runtime/pprof's goroutine profile has its own managed body)");
+
+    // runtime/debug.WriteHeapDump (heapdump.go), ruling Q4 (a): the pair, and a well-formed MINIMAL
+    // dump: the header, the params record and the EOF tag, no objects. Go's dump walks its own heap
+    // arenas, spans and goroutine stacks; the managed model has none of them (the CLR owns the
+    // heap), so the dump is truthful and empty rather than invented. The params record says what
+    // this host can say: pointer byte order and size, no Go arena (0, 0), GOARCH, the Go release the
+    // corpus was converted from, ncpu. TestSchedPauseMetrics asserts the pause accounting, not the
+    // contents. runtime/debug's own WriteHeapDump forwards here (WriteHeapDumpManaged).
+    internal static void runtime_debug_WriteHeapDump(uintptr fd)
+    {
+        worldStop stw = stopTheWorld(stwWriteHeapDump);
+        writeMinimalHeapDump(fd);
+        startTheWorld(stw);
+    }
+
+    // The public crossing runtime/debug's hand-owned WriteHeapDump calls (the readMetricsManaged
+    // pattern: the //go:linkname push has no cross-assembly form).
+    public static void WriteHeapDumpManaged(uintptr fd) => runtime_debug_WriteHeapDump(fd);
+
+    private static void writeMinimalHeapDump(uintptr fd)
+    {
+        List<byte> dump = new(64);
+
+        dump.AddRange("go1.7 heap dump\n"u8);
+        uvarint((uint64)tagParams);
+        uvarint(BitConverter.IsLittleEndian ? 0UL : 1UL);
+        uvarint((uint64)global::go.@internal.goarch_package.PtrSize);
+        uvarint(0);
+        uvarint(0);
+        str(global::go.@internal.goarch_package.GOARCH);
+        str(buildVersion);
+        uvarint((uint64)ncpu);
+        uvarint((uint64)tagEOF);
+
+        slice<byte> bytes = new(dump.ToArray());
+        nint written = 0;
+
+        // dwrite's contract: a write error is not reported, so a short or failed write ends the dump.
+        while (written < len(bytes))
+        {
+            int32 n = write(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(bytes, written)), (int32)(len(bytes) - written));
+
+            if (n <= 0)
+                break;
+
+            written += n;
+        }
+
+        // dumpint: Go's uvarint encoding.
+        void uvarint(uint64 v)
+        {
+            for (; v >= 0x80; v >>= 7)
+                dump.Add((byte)(v | 0x80));
+
+            dump.Add((byte)v);
+        }
+
+        // dumpstr: the length, then the bytes.
+        void str(@string s)
+        {
+            uvarint((uint64)len(s));
+
+            for (nint i = 0; i < len(s); i++)
+                dump.Add(s[i]);
+        }
+    }
 
     // shrinkstack (stack.go) REFUSES BY NAME. Go's body copies a goroutine's stack into a smaller
     // one. A goroutine here is a CLR thread with no Go stack (g.stack.lo is 0), so the converted
@@ -681,6 +916,15 @@ partial class runtime_package
         // Account any GC cycle completed since the last reading (catchUpCPUStats above).
         catchUpCPUStats();
 
+        readMetricsBatchLocked(names, kinds, scalars, histCounts, histBuckets);
+
+        metricsUnlock();
+    }
+
+    // readMetricsLocked's batch, over plain managed values: one defensive agg clear, then
+    // per-sample ensure+compute in order. metricsLock must be held and initMetrics called.
+    private static void readMetricsBatchLocked(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<slice<uint64>> histCounts, slice<slice<float64>> histBuckets)
+    {
         // Clear agg defensively.
         agg = new statAggregate(nil);
 
@@ -713,8 +957,27 @@ partial class runtime_package
                 histBuckets[i] = hist.Value.buckets;
             }
         }
+    }
 
-        metricsUnlock();
+    // readMetricsLocked (metrics.go), the REVERSED crossing (ruling 2026-09-28 02:10, Q2). Its one
+    // caller here is ReadMetricsSlow (export_test.go, TestReadMetrics), which hands it the RAW
+    // ADDRESS of the caller's []runtime/metrics.Sample backing store, a type this package cannot
+    // name (runtime/metrics references runtime, not the reverse); Go reinterprets that address as a
+    // []metricSample, which the managed pointer model refuses (arm 2a), and that refusal threw while
+    // metricsSema was held. runtime/metrics registers MetricSamplesCrossing at its module
+    // initialization: given the address and the length, it reads the samples' names, runs this
+    // package's batch, and writes the values back into the caller's samples, exactly as its Read
+    // does over readMetricsManaged. A caller that holds such an address has loaded runtime/metrics.
+    public delegate void ReadMetricsBatch(slice<@string> names, slice<nint> kinds, slice<uint64> scalars, slice<slice<uint64>> histCounts, slice<slice<float64>> histBuckets);
+
+    public static Action<@unsafe.Pointer, nint, ReadMetricsBatch>? MetricSamplesCrossing { get; set; }
+
+    internal static void readMetricsLocked(@unsafe.Pointer samplesp, nint n, nint c)
+    {
+        Action<@unsafe.Pointer, nint, ReadMetricsBatch> crossing = MetricSamplesCrossing ??
+            throw new PanicException("runtime: readMetricsLocked: the samples' address names runtime/metrics.Sample values, and runtime/metrics has not registered its crossing");
+
+        crossing(samplesp, n, readMetricsBatchLocked);
     }
 
     // Goexit terminates the goroutine that calls it. No other goroutine is affected. Goexit runs
@@ -786,7 +1049,12 @@ partial class runtime_package
         // GOTRACEBACK decides the system-goroutine axis here; the FATAL path decides it from Go's
         // throwType as well (fatalTraceback), which is why renderStack takes the answer rather than
         // reading the variable itself.
+        // Go stops the world to walk every goroutine (stwAllGoroutinesStack), and only then.
+        worldStop stw = all ? stopTheWorld(stwAllGoroutinesStack) : default;
         string rendered = renderStack(callerFrames(s_stackMethodHandle), all, s_tracebackShowsSystem);
+
+        if (all)
+            startTheWorld(stw);
         byte[] encoded = Encoding.UTF8.GetBytes(rendered);
         nint count = Math.Min((nint)encoded.Length, len(buf));
 
@@ -1687,6 +1955,9 @@ partial class runtime_package
     // ReadMemStats populates m with memory allocator statistics.
     public static void ReadMemStats(ж<MemStats> Ꮡm)
     {
+        // Go reads the stats inside stopTheWorld(stwReadMemStats). The pair records its pause
+        // without allocating (StwPauses), so this read path stays allocation-free.
+        worldStop stw = stopTheWorld(stwReadMemStats);
         ref var m = ref Ꮡm.Value;
 
         // ⚠ THIS READ PATH MUST NOT ALLOCATE, and that is a landing precondition rather than a
@@ -1744,6 +2015,7 @@ partial class runtime_package
         // managed measurement means the SAME THING the Go field means; where the CLR measures
         // something adjacent-but-different, the field stays zero and the header names the adjacent
         // quantity and why it was refused (§4.3).
+        startTheWorld(stw);
     }
 
     // LockOSThread wires the calling goroutine to its current operating system thread.
@@ -2488,19 +2760,19 @@ partial class runtime_package
         throw panic((@string)"probe");
     }
 
-    // ---- the guard's view (GolibTests RuntimeStopTheWorldTests) ----
+    // ---- the guard's view (GolibTests RuntimeStopTheWorldContractTests) ----
 
     /// <summary>
-    /// A stop-the-world call on a goroutine, then a plain acquisition of worldsema on another. Returns
-    /// the call's failure as type and message, if it failed, and whether the second goroutine got
-    /// worldsema within the timeout. A call that fails while holding worldsema leaves the second
-    /// goroutine parked for ever; one that refuses before taking it leaves worldsema free.
+    /// Two stop/start-the-world pairs in sequence, each on its own goroutine, the shape of
+    /// TestDebugLog followed by TestDebugLogInterleaving. Returns the first pair's failure by name,
+    /// if it had one, and whether the second pair got through worldsema within the timeout: a
+    /// first pair that dies while holding worldsema leaves the second parked for ever.
     /// </summary>
-    public static (string? stopFailure, bool worldsemaFree) GoStopTheWorldRefusalProbe(int timeoutMs)
+    public static (string? firstFailure, bool secondCompleted) GoStopTheWorldTwiceProbe(int timeoutMs)
     {
-        string? stopFailure = null;
+        string? firstFailure = null;
 
-        using (ManualResetEventSlim stopped = new(false))
+        using (ManualResetEventSlim first = new(false))
         {
             Goroutine.Start(() =>
             {
@@ -2511,28 +2783,305 @@ partial class runtime_package
                 }
                 catch (Exception ex)
                 {
-                    stopFailure = $"{ex.GetType().Name}: {ex.Message}";
+                    firstFailure = $"{ex.GetType().Name}: {ex.Message}";
                 }
 
-                stopped.Set();
+                first.Set();
             });
 
-            if (!stopped.Wait(timeoutMs))
-                return ("stopTheWorld never returned", false);
+            if (!first.Wait(timeoutMs))
+                return ("the first stop-the-world never returned", false);
         }
 
-        ManualResetEventSlim acquired = new(false);
+        ManualResetEventSlim second = new(false);
 
         Goroutine.Start(() =>
         {
-            semacquire(Ꮡworldsema);
-            acquired.Set();
-            semrelease(Ꮡworldsema);
+            try
+            {
+                worldStop stw = stopTheWorld(stwUnknown);
+                startTheWorld(stw);
+            }
+            catch (Exception)
+            {
+                // A failure of the second pair still returned, which is not what this watches.
+            }
+
+            second.Set();
         });
 
         // The event is not disposed: on a leak the parked goroutine still holds it.
-        return (stopFailure, acquired.Wait(timeoutMs));
+        return (firstFailure, second.Wait(timeoutMs));
     }
+
+    /// <summary>
+    /// One stop/start-the-world pair on the calling thread, with a GC reason (stwGCMarkTerm) or an
+    /// other one (stwUnknown). What it raises propagates.
+    /// </summary>
+    public static void GoStopTheWorldPair(bool gcReason)
+    {
+        worldStop stw = stopTheWorld(gcReason ? stwGCMarkTerm : stwUnknown);
+        startTheWorld(stw);
+    }
+
+    /// <summary>
+    /// The four /sched/pauses sample counts, read the way runtime/metrics reads them: each
+    /// histogram written into a metric value, every bucket summed (underflow and overflow included),
+    /// which is exactly what TestSchedPauseMetrics' sampleCount adds up.
+    /// </summary>
+    public static (uint64 stoppingGC, uint64 stoppingOther, uint64 totalGC, uint64 totalOther) GoStwPauseSampleCounts()
+    {
+        // metrics.Read's own order: the metrics lock, then initMetrics (which sets timeHistBuckets,
+        // the bucket boundaries every time histogram writes against), then the reads.
+        metricsLock();
+
+        try
+        {
+            initMetrics();
+
+            return (count(Ꮡsched.of(schedt.ᏑstwStoppingTimeGC)), count(Ꮡsched.of(schedt.ᏑstwStoppingTimeOther)),
+                    count(Ꮡsched.of(schedt.ᏑstwTotalTimeGC)), count(Ꮡsched.of(schedt.ᏑstwTotalTimeOther)));
+        }
+        finally
+        {
+            metricsUnlock();
+        }
+
+        static uint64 count(ж<timeHistogram> h)
+        {
+            ж<metricValue> value = Ꮡ(new metricValue(nil));
+            h.write(value);
+            ж<metricFloat64Histogram> hist = (ж<metricFloat64Histogram>)(uintptr)value.Value.pointer;
+            uint64 n = 0;
+
+            slice<uint64> counts = hist.Value.counts;
+
+            for (nint i = 0; i < len(counts); i++)
+                n += counts[i];
+
+            return n;
+        }
+    }
+
+    /// <summary>
+    /// flushallmcaches, as ReadMemStatsSlow, ReadMetricsSlow and readmemstats_m reach it inside their
+    /// stopped world. Returns what it raised by type and message, or null if it returned.
+    /// </summary>
+    public static string? GoFlushAllMcachesProbe()
+    {
+        try
+        {
+            flushallmcaches();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return $"{ex.GetType().Name}: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// THE LEAK ARM. A goroutine stops the world and then panics INSIDE the stopped-world region,
+    /// under a frame that recovers, the way a test body recovers what its callee raised. Then a
+    /// second goroutine stops and starts the world. Returns whether the region was entered, what the
+    /// first goroutine recovered, and whether the second pair got through worldsema within the
+    /// timeout. Go would throw "panic during preemptoff" here; the managed contract releases
+    /// worldsema as the panic leaves the region, so the next stop does not park on it.
+    /// </summary>
+    public static (bool regionEntered, string? recovered, bool secondCompleted) GoStopTheWorldRegionPanicProbe(int timeoutMs)
+    {
+        bool regionEntered = false;
+        string? recovered = null;
+
+        using (ManualResetEventSlim first = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    GoFrame frame = default;
+
+                    try
+                    {
+                        frame.Push(() => recovered = recover()?.ToString());
+                        stopTheWorld(stwUnknown);
+                        regionEntered = true;
+                        throw panic((@string)"a panic inside a stop-the-world region");
+                    }
+                    catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException? p))
+                    {
+                        GoFrame.Capture(p);
+                    }
+                    finally
+                    {
+                        frame.Run();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    recovered ??= $"escaped: {ex.GetType().Name}: {ex.Message}";
+                }
+
+                first.Set();
+            });
+
+            if (!first.Wait(timeoutMs))
+                return (regionEntered, "the first goroutine never finished", false);
+        }
+
+        ManualResetEventSlim second = new(false);
+
+        Goroutine.Start(() =>
+        {
+            try
+            {
+                worldStop stw = stopTheWorld(stwUnknown);
+                startTheWorld(stw);
+            }
+            catch (Exception)
+            {
+                // A failure of the second pair still returned, which is not what this watches.
+            }
+
+            second.Set();
+        });
+
+        bool secondCompleted = second.Wait(timeoutMs);
+
+        // On a leak, release the permit the panic left held so the parked goroutine finishes and a
+        // red arm does not park every later stop in the test host. The reading is taken first.
+        if (!secondCompleted)
+            semrelease(Ꮡworldsema);
+
+        return (regionEntered, recovered, secondCompleted);
+    }
+
+    /// <summary>
+    /// THE metricsSema LEAK ARM, the same shape: a goroutine takes metricsLock and then panics
+    /// INSIDE the region under a recovering frame; a second goroutine then takes and releases
+    /// metricsLock. The 2026-09-26 park came from this lock (readMetricsLocked threw while holding
+    /// it). Returns whether the region was entered, what was recovered, and whether the second
+    /// goroutine got the lock within the timeout.
+    /// </summary>
+    public static (bool regionEntered, string? recovered, bool secondCompleted) GoMetricsRegionPanicProbe(int timeoutMs)
+    {
+        bool regionEntered = false;
+        string? recovered = null;
+
+        using (ManualResetEventSlim first = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    GoFrame frame = default;
+
+                    try
+                    {
+                        frame.Push(() => recovered = recover()?.ToString());
+                        metricsLock();
+                        regionEntered = true;
+                        throw panic((@string)"a panic inside a metricsSema region");
+                    }
+                    catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException? p))
+                    {
+                        GoFrame.Capture(p);
+                    }
+                    finally
+                    {
+                        frame.Run();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    recovered ??= $"escaped: {ex.GetType().Name}: {ex.Message}";
+                }
+
+                first.Set();
+            });
+
+            if (!first.Wait(timeoutMs))
+                return (regionEntered, "the first goroutine never finished", false);
+        }
+
+        ManualResetEventSlim second = new(false);
+
+        Goroutine.Start(() =>
+        {
+            metricsLock();
+            metricsUnlock();
+            second.Set();
+        });
+
+        bool secondCompleted = second.Wait(timeoutMs);
+
+        // On a leak, release the permit the panic left held (see the worldsema arm above).
+        if (!secondCompleted)
+            metricsUnlock();
+
+        return (regionEntered, recovered, secondCompleted);
+    }
+
+    /// <summary>
+    /// readMetricsLocked as ReadMetricsSlow (export_test) reaches it: the metrics lock and
+    /// initMetrics, then the RAW ADDRESS of the caller's []runtime/metrics.Sample backing store.
+    /// What it raises propagates; the lock is released either way, so a red arm leaks nothing.
+    /// </summary>
+    public static void GoReadMetricsLockedProbe(@unsafe.Pointer samplesp, nint len, nint cap)
+    {
+        metricsLock();
+
+        try
+        {
+            initMetrics();
+            readMetricsLocked(samplesp, len, cap);
+        }
+        finally
+        {
+            metricsUnlock();
+        }
+    }
+
+    /// <summary>
+    /// The shape of runtime's TestDebugLog without its ResetDebugLog: one record written through a
+    /// debug logger, then the dump DumpDebugLog takes (printDebugLogImpl into the goroutine's
+    /// writebuf). Returns the dump. What it raises propagates.
+    /// </summary>
+    public static string GoDebugLogRoundTripProbe(string text)
+    {
+        dlogImpl().s(text).end();
+
+        ж<g> gp = getg();
+        gp.Value.writebuf = new slice<byte>(0, 1 << 20);
+
+        try
+        {
+            printDebugLogImpl();
+            return ((@string)gp.Value.writebuf).ToString();
+        }
+        finally
+        {
+            gp.Value.writebuf = default!;
+        }
+    }
+
+    // ---- the guard's view (GolibTests RuntimeSchedZeroValueTests) ----
+
+    /// <summary>
+    /// The lengths of the count arrays of the five time histograms Go's schedt embeds by value
+    /// (timeToRun and the four stop-the-world ones). Go's zero value holds each as a zeroed
+    /// [timeHistNumBuckets*timeHistNumSubBuckets]atomic.Uint64; a zero length here means sched was
+    /// built as default(schedt), which skips the field initializers that allocate those arrays, and a
+    /// record into any of them indexes out of range.
+    /// </summary>
+    public static (nint timeToRun, nint stwStoppingGC, nint stwStoppingOther, nint stwTotalGC, nint stwTotalOther) GoSchedHistogramLengths() =>
+        (len(sched.timeToRun.counts), len(sched.stwStoppingTimeGC.counts), len(sched.stwStoppingTimeOther.counts),
+         len(sched.stwTotalTimeGC.counts), len(sched.stwTotalTimeOther.counts));
+
+    /// <summary>
+    /// Go's timeHistNumBuckets * timeHistNumSubBuckets: the length every one of those arrays has in Go.
+    /// </summary>
+    public static nint GoTimeHistogramLength => timeHistNumBuckets * timeHistNumSubBuckets;
 
     /// <summary>
     /// GolibTests' probe for shrinkstack's refusal (RuntimeHostFatalRefusalTests): shrinks the
