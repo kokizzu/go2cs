@@ -76,3 +76,38 @@ managed shape (`WaitGroupState? st`), so the `.auto` change is review-only and m
 Hunk rule: `git merge-file -p <committed> <base emission> <cut emission>` per file (shared files from the windows
 target, each fuzz `package_info.cs` from its own target); applied delta equals emission delta file for file;
 residual drift committed-vs-base = 0 and applied-vs-cut = 0 on every file and every target.
+
+## GATES SCORED 2026-09-28 (appended)
+
+**CNR — MET.** Exactly `ReflectStructTagCopy` CHANGED (`main.cs`, `package_info.cs`): its `layout` struct gains
+`[StructLayout(LayoutKind.Explicit, Size = 24)]`, `pad` readonly at 0 beside `small`, `big` at 8, `tail` at 16, the
+using line and the map re-encode. Every other behavioral package byte-identical. The golden (`main.cs.target`, which
+was byte-identical to `main.cs`) is regenerated in this seat; its run output is checked unchanged below.
+
+**Family re-probe, windows (the pair + W1 `aaa7c84222`, merged locally; the 20 parents, TestPageAccounting
+excluded) — MET, and past the prediction.** No AccessViolation, no "too many pages allocated in chunk?".
+**257 of 258 rows pass** (Go 258 of 258); **all 68** of the windows rows G's census and the A16 probe tracked now
+PASS. The one failure is `TestPageCacheLeak`, a stopTheWorld refusal (`PageCachePagesLeaked` calls STW: C1's seat,
+not this family). The prediction left the next gate open; the family reached the STW wall.
+
+**Family re-probe, linux (WSL, the pair from a bundle, no shim) — MET.** No AccessViolation. **259 of 260 rows
+pass** (Go 260 of 260); the one failure is the same `TestPageCacheLeak` stopTheWorld refusal.
+
+**The golden.** `run-behavioral.ps1 --update-targets --filter ReflectStructTagCopy` regenerated `main.cs`,
+`package_info.cs` and `main.cs.target` IDENTICALLY to the CNR emission applied by hand; the full four phases then
+PASS (Transpile, Compile, Target, Output: C# stdout equals Go's), so the run output is unchanged, as predicted.
+
+**GolibTests pinned:** Release 1112/1130, Debug 1104/1130, only the 3 host symlink rows. **GenTests:** 68/68.
+**Converter `go test ./...`:** ok.
+
+**Atomic A/B — COORD ruling (b), 2026-09-28: "no loss detectable at a ~5% (about 3 ns) floor".** Stated here as
+ruled, with the three takes as evidence (`pair-evidence/perf-atomic{,2,3}` on R-LAPTOP). The instrument times the
+two shapes runtime code uses (every internal/runtime/atomic method is a POINTER receiver): a standalone `ж<T>` box and
+a field pointer through `of()`, each iteration `Add + Load + CompareAndSwap + Store`, 11 rounds per shape. Sizes read
+by the harness itself: `Uint64` 16 -> 8, `Int32` 8 -> 4. At 40-60 ns per iteration this host's noise is ~5% (2-3 ns),
+drifting within a take, so the 0.5 ns base-arm tolerance (sized for PerfDefer's 16 ns metric) was never met: take 1
+base spans 1.5-2.7 ns; take 2 two field shapes agreed but a PAIR arm was visibly polluted; take 3 (three interleaved
+arms each) spans 1.9-3.6 ns (one polluted base arm at 87 ns). In every take and every shape the PAIR arms sit INSIDE
+or BELOW the base arms' range (Box U64 58.3-60.4 vs 59.1-61.0; Field U64 41.6-43.6 vs 44.4-46.8; Box I32 57.8-59.9 vs
+57.8-61.4; Field I32 41.2-47.3 vs 42.2-44.2). The rule is AMENDED (a tolerance per instrument, stated before the first
+take, scaled to its measured noise); a quieter atomics instrument is a follow-up, not a gate.
