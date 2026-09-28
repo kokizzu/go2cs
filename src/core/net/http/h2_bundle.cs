@@ -52,6 +52,7 @@ using time = time_package;
 using httpguts = vendor.golang.org.x.net.http.httpguts_package;
 using hpack = vendor.golang.org.x.net.http2.hpack_package;
 using idna = vendor.golang.org.x.net.idna_package;
+using System.Runtime.CompilerServices;
 using compress;
 using crypto;
 using encoding;
@@ -3174,7 +3175,7 @@ internal static void checkNotOn(this http2goroutineLock g) {
 
 internal static slice<byte> http2goroutineSpace = slice<byte>("goroutine "u8);
 
-internal static uint64 http2curGoroutineID() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uint64 http2curGoroutineID() {
     GoFrame ᒐ = default;
     try {
         var bp = Ꮡhttp2littleBuf.Get()._<ж<slice<byte>>>();
@@ -6809,7 +6810,7 @@ internal static void runHandler(this ж<http2serverConn> Ꮡsc, ж<http2response
         sc.srv.markNewGoroutine();
         defer(Ꮡsc.sendServeMsg, http2handlerDoneMsg.OrTypedNil(), ref ᒐ);
         var didPanic = true;
-        defer(() => {
+        defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
             (~(~Ꮡrw.Value.rws).stream).cancelCtx();
             if (Ꮡreq.Value.MultipartForm != nil) {
                 Ꮡreq.Value.MultipartForm.RemoveAll();

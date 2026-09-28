@@ -815,7 +815,7 @@ internal static error writeGoroutine(io.Writer w, nint debug) {
     return writeRuntimeProfile(w, debug, goroutineˢ, pprof_goroutineProfileWithLabels);
 }
 
-internal static error writeGoroutineStacks(io.Writer w) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static error writeGoroutineStacks(io.Writer w) {
     // We don't know how big the buffer needs to be to collect
     // all the goroutines. Start with 1 MB and try a few times, doubling each time.
     // Give up and use a truncated trace if 64 MB is not enough.

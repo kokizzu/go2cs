@@ -290,6 +290,7 @@ namespace go;
 using goarch = @internal.goarch_package;
 using goos = @internal.goos_package;
 using @internal;
+using System.Runtime.CompilerServices;
 
 partial class runtime_package {
 
@@ -300,7 +301,7 @@ partial class runtime_package {
 // the program counter, the file name (using forward slashes as path separator, even
 // on Windows), and the line number within the file of the corresponding call.
 // The boolean ok is false if it was not possible to recover the information.
-public static (uintptr pc, @string @file, nint line, bool ok) Caller(nint skip) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static (uintptr pc, @string @file, nint line, bool ok) Caller(nint skip) {
     uintptr pc = default!;
     @string @file = default!;
     nint line = default!;

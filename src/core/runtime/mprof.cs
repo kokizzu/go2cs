@@ -13,6 +13,7 @@ using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.CompilerServices;
 
 partial class runtime_package {
 
@@ -306,7 +307,7 @@ internal static void mProf_PostSweep() {
 }
 
 // Called by malloc to record a profiled block.
-internal static void mProf_Malloc(ref m mp, @unsafe.Pointer Δp, uintptr size) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void mProf_Malloc(ref m mp, @unsafe.Pointer Δp, uintptr size) {
     if (mp.profStack == default!) {
         // mp.profStack is nil if we happen to sample an allocation during the
         // initialization of mp. This case is rare, so we just ignore such
@@ -372,7 +373,7 @@ public static void SetBlockProfileRate(nint rate) {
     atomic.Store64(Ꮡblockprofilerate, (uint64)r);
 }
 
-public static void blockevent(int64 cycles, nint skip) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void blockevent(int64 cycles, nint skip) {
     if (cycles <= 0) {
         cycles = 1;
     }
@@ -722,7 +723,7 @@ public static nint SetMutexProfileFraction(nint rate) {
 }
 
 //go:linkname mutexevent sync.event
-internal static void mutexevent(int64 cycles, nint skip) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void mutexevent(int64 cycles, nint skip) {
     if (cycles < 0) {
         cycles = 0;
     }
@@ -971,7 +972,7 @@ public static (nint n, bool ok) BlockProfile(slice<BlockProfileRecord> Δp) {
     return (n, ok);
 }
 
-internal static void expandFrames(slice<BlockProfileRecord> Δp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void expandFrames(slice<BlockProfileRecord> Δp) {
     var expandedStack = makeProfStack();
     foreach (var (i, _) in Δp) {
         var cf = CallersFrames(Δp[i].StackRecord.Stack());

@@ -5,6 +5,7 @@ using runtime = runtime_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -23,7 +24,7 @@ internal static bool present(@string dump, @string state) {
     return strings.Contains(dump, "["u8 + state + "]:"u8);
 }
 
-internal static @string dump(slice<byte> buf) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string dump(slice<byte> buf) {
     return ((@string)(buf[..(int)(runtime.Stack(buf, true))]));
 }
 

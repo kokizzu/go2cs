@@ -2013,7 +2013,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
         }
         ctx = context_package.WithValue(ctx, LocalAddrContextKey.OrTypedNil(), c.rwc.LocalAddr());
         ref var inFlightResponse = ref heap<ж<response>>(out var ᏑinFlightResponse);
-        defer(() => {
+        defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
             {
                 var err = recover(); if (err != default! && !AreEqual(err, ErrAbortHandler)) {
                     const nint size = /* 64 << 10 */ 65536;

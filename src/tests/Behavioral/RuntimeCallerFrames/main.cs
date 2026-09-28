@@ -197,7 +197,7 @@ internal static bool hasByte(@string s, byte b) {
     return len(@file) > 1 && @file[1] == (rune)':';
 }
 
-internal static bool stackHasBackslash() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static bool stackHasBackslash() {
     var buf = new slice<byte>(8192);
     nint n = runtime.Stack(buf, false);
     return hasByte(((@string)(buf[..(int)(n)])), (rune)'\\');
@@ -219,7 +219,7 @@ internal static bool hasSub(@string s, @string sub) {
     return false;
 }
 
-internal static @string stackText() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string stackText() {
     var buf = new slice<byte>(8192);
     nint n = runtime.Stack(buf, false);
     return ((@string)(buf[..(int)(n)]));
@@ -231,19 +231,19 @@ internal static @string stackText() {
     internal X v;
 }
 
-[GoRecv] internal static @string ptrFrame(this ref recvT t) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static @string ptrFrame(this ref recvT t) {
     return stackText();
 }
 
-internal static @string valueFrame(this recvT t) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string valueFrame(this recvT t) {
     return t.ptrFrame();
 }
 
-internal static @string genFrame<X>(this genRecv<X> g) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string genFrame<X>(this genRecv<X> g) {
     return stackText();
 }
 
-internal static @string plainFrame() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string plainFrame() {
     return stackText();
 }
 

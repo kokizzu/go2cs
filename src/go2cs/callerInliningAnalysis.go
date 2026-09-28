@@ -10,7 +10,9 @@ package main
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
+	"strings"
 )
 
 // computeNoInliningClosure identifies every package-scope function declaration that must be
@@ -43,11 +45,21 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 	// writerFunc.Write precedes TestMultiWriterSingleChainFlatten in multi_test.go's own
 	// declaration order, so gating inline mid-walk would miss it).
 	var opaqueForwarders []types.Object
+	// thinAllocators collects the single-allocation declarations (see isThinAllocator), each with
+	// whether it was declared in a _test.go file, because its disposition depends on whether the
+	// package READS THE HEAP PROFILE (readsHeapProfile) -- decided after the walk, like the opaque
+	// forwarders above.
+	type thinAllocator struct {
+		obj    types.Object
+		inTest bool
+	}
+	var thinAllocators []thinAllocator
 
 	for _, entry := range files {
 		if entry.file == nil {
 			continue
 		}
+		inTest := strings.HasSuffix(entry.filePath, "_test.go")
 		for _, decl := range entry.file.Decls {
 			fn, ok := decl.(*ast.FuncDecl)
 			if !ok || fn.Name == nil || fn.Body == nil {
@@ -58,7 +70,7 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 				continue
 			}
 
-			if callsSkipCountedRuntimeCaller(info, fn.Body) {
+			if callsSkipCountedRuntimeCaller(info, fn.Body) || callsSkipCountedWalker(info, fn.Body) {
 				seed[obj] = true
 				continue
 			}
@@ -70,6 +82,26 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 
 			if callsOpaqueFuncValue(info, fn.Body) {
 				opaqueForwarders = append(opaqueForwarders, obj)
+				continue
+			}
+
+			if isThinAllocator(info, fn.Body) {
+				thinAllocators = append(thinAllocators, thinAllocator{obj: obj, inTest: inTest})
+			}
+		}
+	}
+
+	// A thin allocator is marked ONLY in a package that reads the heap profile, and the reader must
+	// be where the allocator is emitted: a PRODUCTION allocator needs a PRODUCTION reader. A -tests
+	// conversion walks production and test files together, so gating a production allocator on a
+	// test file's reader would emit it differently from the -stdlib conversion of the same file --
+	// a standing closure shape every sweep would then have to restore.
+	if len(thinAllocators) > 0 {
+		productionReads := readsHeapProfile(files, info, false)
+		anyReads := productionReads || readsHeapProfile(files, info, true)
+		for _, a := range thinAllocators {
+			if productionReads || (a.inTest && anyReads) {
+				seed[a.obj] = true
 			}
 		}
 	}
@@ -101,6 +133,178 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 	}
 
 	return seed
+}
+
+// skipCountedWalkers are the stack walkers whose recorded frames include their CALLER's, keyed by package
+// path and name: the runtime's own skip-counting walkers -- `callers` and `gcallers` (hand-owned over the
+// managed walk, captureCallers) and `saveblockevent` (hand-owned, forwarding its skip to callers) -- and
+// the frame-LISTING walkers a Go program calls, `runtime.Stack`, `runtime/debug.Stack` and
+// `runtime/debug.PrintStack`, whose printed traceback starts at their caller's frame. runtime/debug's
+// TestStack is the measured frame-listing case: its one-line `(*T).ptrmethod` / `T.method` forwarders into
+// debug.Stack vanished from the traceback, and hand-marking both [MethodImpl(NoInlining)] brought both
+// frames back (G, 2026-09-28, linux). A test extends the set copy-on-write to stand a fixture package in.
+var skipCountedWalkers = map[string]bool{
+	"runtime.callers":          true,
+	"runtime.gcallers":         true,
+	"runtime.saveblockevent":   true,
+	"runtime.Stack":            true,
+	"runtime/debug.Stack":      true,
+	"runtime/debug.PrintStack": true,
+}
+
+// callsSkipCountedWalker reports whether body calls one of skipCountedWalkers directly. Such a function
+// is the HOP nearest the walk: its own frame is one of the Go frames the skip it passes counts, so a JIT
+// that inlines it removes a counted frame and every stack the walk records starts one real frame too
+// high -- the rule captureCallers states for runtime's own entry points (managed_impl.cs: "an inlined hop
+// would silently shift every answer by one"). The converted runtime.blockevent is the measured case:
+// runtime/pprof's TestBlockProfileBias read [TestBlockProfileBias, tRunner] where Go reads
+// [blockFrequentShort, TestBlockProfileBias, tRunner], and hand-marking blockevent [MethodImpl(NoInlining)]
+// alone restored the frame and passed the test (G, 2026-09-28, linux). runtime.mutexevent is the same
+// shape, one hop over the same walker.
+func callsSkipCountedWalker(info *types.Info, body *ast.BlockStmt) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		if _, isLit := n.(*ast.FuncLit); isLit {
+			return false // a literal's calls belong to the literal's own frame
+		}
+
+		call, ok := n.(*ast.CallExpr)
+
+		if !ok {
+			return true
+		}
+
+		var ident *ast.Ident
+
+		switch fun := ast.Unparen(call.Fun).(type) {
+		case *ast.Ident:
+			ident = fun
+		case *ast.SelectorExpr:
+			ident = fun.Sel
+		}
+
+		if ident == nil {
+			return true
+		}
+
+		if callee, ok := info.Uses[ident].(*types.Func); ok && callee.Pkg() != nil && skipCountedWalkers[callee.Pkg().Path()+"."+callee.Name()] {
+			found = true
+		}
+
+		return !found
+	})
+
+	return found
+}
+
+// isThinAllocator reports whether body is a single statement whose whole work is ONE heap allocation
+// Go's memory profile samples in that function's frame: `return make(...)` / `return new(T)` /
+// `return &T{...}` / a slice or map composite literal, or the same as the sole right-hand side of an
+// assignment or as a bare expression statement. runtime/pprof's genericAllocFunc is the measured case
+// (`return make([]T, n)`): a Release-tier JIT inlines a body this small into its caller, the
+// allocation's sampled stack then starts at the CALLER, and TestGenericsHashKeyInPprofBuilder's
+// `...;runtime/pprof.genericAllocFunc[...]` frame is simply absent. Hand-marking genericAllocFunc
+// [MethodImpl(NoInlining)] restored the frame (G, 2026-09-28, the linux cut of class F).
+//
+// Same scope rule as thinForwarderTarget: a larger allocating function is not an inlining candidate in
+// the first place, so marking it would cost without protecting anything.
+func isThinAllocator(info *types.Info, body *ast.BlockStmt) bool {
+	if body == nil || len(body.List) != 1 {
+		return false
+	}
+
+	var expr ast.Expr
+
+	switch stmt := body.List[0].(type) {
+	case *ast.ReturnStmt:
+		if len(stmt.Results) != 1 {
+			return false
+		}
+		expr = stmt.Results[0]
+	case *ast.AssignStmt:
+		if len(stmt.Rhs) != 1 {
+			return false
+		}
+		expr = stmt.Rhs[0]
+	case *ast.ExprStmt:
+		expr = stmt.X
+	default:
+		return false
+	}
+
+	switch e := ast.Unparen(expr).(type) {
+	case *ast.CallExpr:
+		if ident, ok := ast.Unparen(e.Fun).(*ast.Ident); ok {
+			if builtin, ok := info.Uses[ident].(*types.Builtin); ok {
+				return builtin.Name() == "make" || builtin.Name() == "new"
+			}
+		}
+	case *ast.UnaryExpr:
+		if e.Op == token.AND {
+			_, isLiteral := ast.Unparen(e.X).(*ast.CompositeLit)
+			return isLiteral
+		}
+	case *ast.CompositeLit:
+		if t := info.TypeOf(e); t != nil {
+			switch t.Underlying().(type) {
+			case *types.Slice, *types.Map:
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// heapProfileReaders are the functions through which Go code reads the memory profile, by the
+// package path and name go/types reports for the used object.
+var heapProfileReaders = map[string]bool{
+	"runtime.MemProfile":              true,
+	"runtime/pprof.WriteHeapProfile": true,
+	"runtime/pprof.Lookup":            true,
+}
+
+// readsHeapProfile reports whether any file in the chosen set -- the production files, or with
+// tests set, the _test.go files -- USES one of heapProfileReaders, qualified (`pprof.Lookup`) or not
+// (an internal test file of runtime/pprof itself calls `WriteHeapProfile` bare). A use, never a
+// definition: the package that DECLARES WriteHeapProfile does not thereby read the profile.
+func readsHeapProfile(files []FileEntry, info *types.Info, tests bool) bool {
+	for _, entry := range files {
+		if entry.file == nil || strings.HasSuffix(entry.filePath, "_test.go") != tests {
+			continue
+		}
+
+		found := false
+
+		ast.Inspect(entry.file, func(n ast.Node) bool {
+			if found {
+				return false
+			}
+
+			ident, ok := n.(*ast.Ident)
+
+			if !ok {
+				return true
+			}
+
+			if fn, ok := info.Uses[ident].(*types.Func); ok && fn.Pkg() != nil && heapProfileReaders[fn.Pkg().Path()+"."+fn.Name()] {
+				found = true
+			}
+
+			return !found
+		})
+
+		if found {
+			return true
+		}
+	}
+
+	return false
 }
 
 // callsOpaqueFuncValue reports whether body is a single-statement forwarder (return-of-call, or a
