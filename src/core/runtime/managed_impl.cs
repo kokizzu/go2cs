@@ -778,6 +778,15 @@ partial class runtime_package
         }
     }
 
+    // ---- THE GC PACER'S KNOBS: GOGC and GOMEMLIMIT -------------------------------------------
+    //
+    // gcinit's pacer half (mgc.go): Go initializes gcController from the environment in schedinit,
+    // after goenvs, and every reader of GOGC and GOMEMLIMIT -- runtime/debug's SetGCPercent and
+    // SetMemoryLimit, the /gc/gogc:percent and /gc/gomemlimit:bytes metrics, the pacer's heap goal
+    // -- reads gcController.gcPercent and memoryLimit from then on. The managed host never runs
+    // schedinit, so both stayed 0.
+    internal static void gcinitController() => ᏑgcController.init(readGOGC(), readGOMEMLIMIT());
+
     // shrinkstack (stack.go) REFUSES BY NAME. Go's body copies a goroutine's stack into a smaller
     // one. A goroutine here is a CLR thread with no Go stack (g.stack.lo is 0), so the converted
     // body's first check threw "missing stack in shrinkstack", and a throw exits the process: the
@@ -3063,6 +3072,45 @@ partial class runtime_package
         finally
         {
             gp.Value.writebuf = default!;
+        }
+    }
+
+    // ---- the guard's view (GolibTests RuntimeGCPacerKnobTests) ----
+
+    /// <summary>
+    /// The GC pacer's two knobs as the runtime holds them (gcController.gcPercent and memoryLimit, what
+    /// /gc/gogc:percent and /gc/gomemlimit:bytes read), beside what readGOGC and readGOMEMLIMIT compute
+    /// from the runtime's environment snapshot now.
+    /// </summary>
+    public static (int32 gcPercent, int64 memoryLimit, int32 fromGOGC, int64 fromGOMEMLIMIT) GoGCPacerKnobsProbe() =>
+        (ᏑgcController.of(gcControllerState.ᏑgcPercent).Load(), ᏑgcController.of(gcControllerState.ᏑmemoryLimit).Load(),
+         readGOGC(), readGOMEMLIMIT());
+
+    /// <summary>
+    /// Runs the pacer's startup step (gcinitController) over a SUBSTITUTED environment snapshot, then
+    /// <paramref name="body"/>. The runtime's environment snapshot and the whole gcController are
+    /// restored afterwards, whatever the body does.
+    /// </summary>
+    public static void GoGCPacerFromEnvironmentProbe(string[] environment, Action body)
+    {
+        slice<@string> savedEnvs = envs;
+        gcControllerState savedController = gcController;
+
+        try
+        {
+            slice<@string> snapshot = new slice<@string>(environment.Length);
+
+            for (int i = 0; i < environment.Length; i++)
+                snapshot[i] = environment[i];
+
+            envs = snapshot;
+            gcinitController();
+            body();
+        }
+        finally
+        {
+            envs = savedEnvs;
+            gcController = savedController;
         }
     }
 
