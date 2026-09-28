@@ -65,6 +65,7 @@
 // separate too, which is why doinit leaves the sse3/avx/avx512 knobs switchable at level 1.
 // ---------------------------------------------------------------------------------------------
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using go;
@@ -94,6 +95,11 @@ partial class cpu_package
     [ModuleInitializer]
     internal static void initX86FeatureDetection()
     {
+        // Go's cpuinit sets DebugOptions to true for the same GOOS list getGodebugEarly answers
+        // GODEBUG for, right before cpu.Initialize, so internal/cpu's own GODEBUG tests
+        // (TestDisableAllCapabilities, TestDisableSSE3) run exactly where the options are applied.
+        DebugOptions = GoCpuAppliesGodebug;
+
         if (!X86Base.IsSupported)
             return;
 
@@ -112,5 +118,97 @@ partial class cpu_package
         X86.HasSSE41 = Sse41.IsSupported;
         X86.HasSSE42 = Sse42.IsSupported;
         X86.HasSSSE3 = Ssse3.IsSupported;
+
+        // Go's Initialize(env) runs doinit, which fills the option table on every OS, and then
+        // processOptions(env). The env is runtime.getGodebugEarly's answer, which is GODEBUG only on
+        // the Unix-like systems (aix, darwin, ios, dragonfly, freebsd, netbsd, openbsd, illumos,
+        // solaris, linux) and "" everywhere else, Windows included. So off Windows, GODEBUG's cpu.*
+        // options (cpu.aes=off, cpu.all=off, ...) turn features off before any consumer reads them:
+        // the runtime's alginit picks its hash from these flags, and TestMemHashGlobalSeed/noaes and
+        // TestIssue66841 re-exec with GODEBUG=cpu.aes=off to reach the fallback there. On Windows Go
+        // ignores cpu.* entirely, and so does this.
+        registerX86Options();
+
+        if (GoCpuAppliesGodebug)
+            processOptions(Environment.GetEnvironmentVariable("GODEBUG") ?? "");
+    }
+
+    /// <summary>
+    /// Whether this process applies GODEBUG's cpu.* options at start-up: runtime.getGodebugEarly
+    /// answers GODEBUG only on the Unix-like systems, so everywhere but Windows among the corpus's
+    /// targets.
+    /// </summary>
+    public static bool GoCpuAppliesGodebug => !OperatingSystem.IsWindows();
+
+    /// <summary>
+    /// GolibTests' probe (InternalCpuGodebugTests): applies <paramref name="godebug"/> through
+    /// processOptions over doinit's option table exactly as start-up does off Windows, returns each
+    /// option's name and resulting flag, then restores the flags and the table.
+    /// </summary>
+    public static (string name, bool enabled)[] GoCpuOptionsProbe(string godebug)
+    {
+        X86ᴛ1 saved = X86;
+
+        try
+        {
+            registerX86Options();
+            processOptions(godebug);
+
+            (string, bool)[] result = new (string, bool)[len(options)];
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = (options[i].Name.ToString(), options[i].Feature.Value);
+
+            return result;
+        }
+        finally
+        {
+            X86 = saved;
+            registerX86Options();
+        }
+    }
+
+    // cpu_x86.go doinit's option table, gated on getGOAMD64level exactly as doinit gates it.
+    private static void registerX86Options()
+    {
+        options = new option[]{
+            new(Name: "adx"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasADX)),
+            new(Name: "aes"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAES)),
+            new(Name: "erms"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasERMS)),
+            new(Name: "fsrm"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasFSRM)),
+            new(Name: "pclmulqdq"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasPCLMULQDQ)),
+            new(Name: "rdtscp"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasRDTSCP)),
+            new(Name: "sha"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSHA))
+        }.slice();
+
+        var level = getGOAMD64level();
+
+        if (level < 2)
+        {
+            options = append(options,
+                new option(Name: "popcnt"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasPOPCNT)),
+                new option(Name: "sse3"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSSE3)),
+                new option(Name: "sse41"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSSE41)),
+                new option(Name: "sse42"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSSE42)),
+                new option(Name: "ssse3"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSSSE3)));
+        }
+
+        if (level < 3)
+        {
+            options = append(options,
+                new option(Name: "avx"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAVX)),
+                new option(Name: "avx2"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAVX2)),
+                new option(Name: "bmi1"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasBMI1)),
+                new option(Name: "bmi2"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasBMI2)),
+                new option(Name: "fma"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasFMA)));
+        }
+
+        if (level < 4)
+        {
+            options = append(options,
+                new option(Name: "avx512f"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAVX512F)),
+                new option(Name: "avx512bw"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAVX512BW)),
+                new option(Name: "avx512vl"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAVX512VL)));
+        }
     }
 }
