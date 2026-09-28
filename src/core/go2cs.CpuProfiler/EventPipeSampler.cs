@@ -137,6 +137,16 @@ public sealed class EventPipeSampler : IGoCpuSampler
     /// <summary>Samples the last <see cref="Stop"/> wrote, per OS thread id (EventPipe's ThreadID).</summary>
     public IReadOnlyDictionary<int, int> LastWrittenByThread => m_writtenByThread;
 
+    /// <summary>Of <see cref="LastSamplesWritten"/>, the samples charged to [runtime._ExternalCode] for the CPU
+    /// time of threads that never ran Go code.</summary>
+    public int LastExternalCodeSamples { get; private set; }
+
+    /// <summary>The CPU time each OS thread used while the last session ran, as polled; the threads with no
+    /// written samples here are the ones whose CPU no sample stands for.</summary>
+    public IReadOnlyDictionary<int, TimeSpan> LastCpuByThread => m_cpuByThread;
+
+    private readonly Dictionary<int, TimeSpan> m_cpuByThread = [];
+
     private readonly Dictionary<int, int> m_writtenByThread = [];
 
     public void Start(int hz)
@@ -145,7 +155,9 @@ public sealed class EventPipeSampler : IGoCpuSampler
         LastTraceBytes = 0;
         LastManagedSamples = 0;
         LastSamplesWritten = 0;
+        LastExternalCodeSamples = 0;
         m_writtenByThread.Clear();
+        m_cpuByThread.Clear();
         m_hz = hz;
         golib.ProfileLabelEvents.Reset();
 
@@ -196,6 +208,12 @@ public sealed class EventPipeSampler : IGoCpuSampler
 
         m_cpuPoll = null;
         PollThreadCpu(baseline: false);
+
+        lock (m_cpuLock)
+        {
+            foreach (int thread in m_cpuLatest.Keys)
+                m_cpuByThread[thread] = CpuTimeOf(thread)!.Value;
+        }
 
         bool drained = false;
 
@@ -299,6 +317,30 @@ public sealed class EventPipeSampler : IGoCpuSampler
                 KeepByCpuTime(candidates, (int)Math.Round(used.TotalSeconds * hz), kept);
             else
                 KeepOnGrid(candidates, periodMSec, kept);
+        }
+
+        // THE NON-GO THREADS. A thread that used CPU while the session ran but left no sample of a Go stack
+        // never ran Go code: the CLR's JIT, EventPipe, GC and idle pool threads. Go's sigprof charges a
+        // sample on a thread that is not a Go thread to the one-frame stack [runtime._ExternalCode]
+        // (sigprofNonGoPC), so such a thread's CPU time is charged the same way here -- round(its CPU time
+        // x hz) samples, spread evenly over the session -- which is what makes a whole profile add up to the
+        // process's CPU time (runtime/pprof's TestCPUProfileMultithreadMagnitude/serial compares the two).
+        // STATED LIMITS: the CLR's GC threads land in _ExternalCode, where Go charges its own GC work to GC
+        // frames; and a Go thread's CPU spent in native code (a sample of type External) stays unsampled.
+        uintptr[] externalCode = [runtime_package.GoExternalCodePC()];
+        double sessionMSec = log.SessionDuration.TotalMilliseconds;
+
+        foreach ((int thread, TimeSpan used) in m_cpuByThread)
+        {
+            if (byThread.ContainsKey(thread))
+                continue;
+
+            int count = (int)Math.Round(used.TotalSeconds * hz);
+
+            for (int k = 0; k < count; k++)
+                kept.Add(new Candidate(thread, (k + 0.5) * sessionMSec / count, externalCode, nil));
+
+            LastExternalCodeSamples += count;
         }
 
         kept.Sort(static (left, right) => left.AtMSec.CompareTo(right.AtMSec));

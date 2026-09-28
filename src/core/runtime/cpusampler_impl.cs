@@ -74,6 +74,13 @@ public static uintptr GoCpuSamplePC(System.Reflection.MethodBase method)
     return isGoSourceFrame(method) ? GoSyntheticPC.Of(method) : 0;
 }
 
+/// <summary>The one-frame stack Go's sigprof charges a sample taken on a thread that is not a Go thread
+/// (sigprofNonGoPC): <c>abi.FuncPCABIInternal(_ExternalCode) + sys.PCQuantum</c>. The sampler charges the
+/// CPU time of threads that never run Go code -- the CLR's JIT, EventPipe, GC and idle pool threads -- to
+/// it, which is what makes a profile add up to the process's CPU time.</summary>
+public static uintptr GoExternalCodePC() =>
+    @internal.abi_package.FuncPCABIInternal(_ExternalCode) + (uintptr)@internal.runtime.sys_package.PCQuantum;
+
 // Called by each target's setProcessCPUProfiler, with prof.signalLock held.
 private static void cpuSamplerSetRate(int32 hz) {
     IGoCpuSampler? sampler = Volatile.Read(ref s_cpuSampler);
