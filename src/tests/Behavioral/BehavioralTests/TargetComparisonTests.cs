@@ -424,6 +424,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDefinedStructArrayFields() => CheckTarget("DefinedStructArrayFields");
 
     [TestMethod]
+    public void CheckDefinedStructConversionCopy() => CheckTarget("DefinedStructConversionCopy");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]
