@@ -350,7 +350,7 @@ internal static bool isNegative(ref Node n) {
 
 [GoRecv] internal static void add(this ref locationMap l, uint64 id, Nodes n) {
     if (id < (uint64)len(l.s)){
-        l.s[(nint)(id)] = n;
+        l.s[id] = n;
     } else {
         l.m[id] = n;
     }
@@ -358,7 +358,7 @@ internal static bool isNegative(ref Node n) {
 
 internal static Nodes get(this locationMap l, uint64 id) {
     if (id < (uint64)len(l.s)){
-        return l.s[(nint)(id)];
+        return l.s[id];
     } else {
         return l.m[id];
     }

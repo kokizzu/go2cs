@@ -342,7 +342,7 @@ internal static (dnsmessage.Parser, @string, error) tryOneName(this ж<Resolver>
     );
     for (nint i = 0; i < cfg.attempts; i++) {
         for (var j = (uint32)0; j < sLen; j++) {
-            @string server = cfg.servers[(nint)((serverOffset + j) % sLen)];
+            @string server = cfg.servers[(serverOffset + j) % sLen];
             ref var p = ref heap<dnsmessage.Parser>(out var Ꮡp);
             (p, var h, var errΔ1) = Ꮡr.exchange(ctx, server, q, cfg.timeout, cfg.useTCP, cfg.trustAD);
             if (errΔ1 != default!) {

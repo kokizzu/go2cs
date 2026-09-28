@@ -68,10 +68,10 @@ internal static void encryptBlockGeneric(ref blockExpanded c, slice<byte> dst, s
         (s0, s1, s2, s3) = (t0, t1, t2, t3);
     }
     // Last round uses s-box directly and XORs to produce output.
-    s0 = (uint32)((uint32)((uint32)(((uint32)sbox0[(nint)((t0 >> (int)(24)))] << (int)(24)) | ((uint32)sbox0[(nint)((uint32)((t1 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox0[(nint)((uint32)((t2 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox0[(nint)((uint32)(t3 & 0xff))]);
-    s1 = (uint32)((uint32)((uint32)(((uint32)sbox0[(nint)((t1 >> (int)(24)))] << (int)(24)) | ((uint32)sbox0[(nint)((uint32)((t2 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox0[(nint)((uint32)((t3 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox0[(nint)((uint32)(t0 & 0xff))]);
-    s2 = (uint32)((uint32)((uint32)(((uint32)sbox0[(nint)((t2 >> (int)(24)))] << (int)(24)) | ((uint32)sbox0[(nint)((uint32)((t3 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox0[(nint)((uint32)((t0 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox0[(nint)((uint32)(t1 & 0xff))]);
-    s3 = (uint32)((uint32)((uint32)(((uint32)sbox0[(nint)((t3 >> (int)(24)))] << (int)(24)) | ((uint32)sbox0[(nint)((uint32)((t0 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox0[(nint)((uint32)((t1 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox0[(nint)((uint32)(t2 & 0xff))]);
+    s0 = (uint32)((uint32)((uint32)(((uint32)sbox0[(t0 >> (int)(24))] << (int)(24)) | ((uint32)sbox0[(uint32)((t1 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox0[(uint32)((t2 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox0[(uint32)(t3 & 0xff)]);
+    s1 = (uint32)((uint32)((uint32)(((uint32)sbox0[(t1 >> (int)(24))] << (int)(24)) | ((uint32)sbox0[(uint32)((t2 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox0[(uint32)((t3 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox0[(uint32)(t0 & 0xff)]);
+    s2 = (uint32)((uint32)((uint32)(((uint32)sbox0[(t2 >> (int)(24))] << (int)(24)) | ((uint32)sbox0[(uint32)((t3 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox0[(uint32)((t0 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox0[(uint32)(t1 & 0xff)]);
+    s3 = (uint32)((uint32)((uint32)(((uint32)sbox0[(t3 >> (int)(24))] << (int)(24)) | ((uint32)sbox0[(uint32)((t0 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox0[(uint32)((t1 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox0[(uint32)(t2 & 0xff)]);
     s0 ^= (uint32)(xk[k + 0]);
     s1 ^= (uint32)(xk[k + 1]);
     s2 ^= (uint32)(xk[k + 2]);
@@ -112,10 +112,10 @@ internal static void decryptBlockGeneric(ref blockExpanded c, slice<byte> dst, s
         (s0, s1, s2, s3) = (t0, t1, t2, t3);
     }
     // Last round uses s-box directly and XORs to produce output.
-    s0 = (uint32)((uint32)((uint32)(((uint32)sbox1[(nint)((t0 >> (int)(24)))] << (int)(24)) | ((uint32)sbox1[(nint)((uint32)((t3 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox1[(nint)((uint32)((t2 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox1[(nint)((uint32)(t1 & 0xff))]);
-    s1 = (uint32)((uint32)((uint32)(((uint32)sbox1[(nint)((t1 >> (int)(24)))] << (int)(24)) | ((uint32)sbox1[(nint)((uint32)((t0 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox1[(nint)((uint32)((t3 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox1[(nint)((uint32)(t2 & 0xff))]);
-    s2 = (uint32)((uint32)((uint32)(((uint32)sbox1[(nint)((t2 >> (int)(24)))] << (int)(24)) | ((uint32)sbox1[(nint)((uint32)((t1 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox1[(nint)((uint32)((t0 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox1[(nint)((uint32)(t3 & 0xff))]);
-    s3 = (uint32)((uint32)((uint32)(((uint32)sbox1[(nint)((t3 >> (int)(24)))] << (int)(24)) | ((uint32)sbox1[(nint)((uint32)((t2 >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox1[(nint)((uint32)((t1 >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox1[(nint)((uint32)(t0 & 0xff))]);
+    s0 = (uint32)((uint32)((uint32)(((uint32)sbox1[(t0 >> (int)(24))] << (int)(24)) | ((uint32)sbox1[(uint32)((t3 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox1[(uint32)((t2 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox1[(uint32)(t1 & 0xff)]);
+    s1 = (uint32)((uint32)((uint32)(((uint32)sbox1[(t1 >> (int)(24))] << (int)(24)) | ((uint32)sbox1[(uint32)((t0 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox1[(uint32)((t3 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox1[(uint32)(t2 & 0xff)]);
+    s2 = (uint32)((uint32)((uint32)(((uint32)sbox1[(t2 >> (int)(24))] << (int)(24)) | ((uint32)sbox1[(uint32)((t1 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox1[(uint32)((t0 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox1[(uint32)(t3 & 0xff)]);
+    s3 = (uint32)((uint32)((uint32)(((uint32)sbox1[(t3 >> (int)(24))] << (int)(24)) | ((uint32)sbox1[(uint32)((t2 >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox1[(uint32)((t1 >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox1[(uint32)(t0 & 0xff)]);
     s0 ^= (uint32)(xk[k + 0]);
     s1 ^= (uint32)(xk[k + 1]);
     s2 ^= (uint32)(xk[k + 2]);
@@ -129,7 +129,7 @@ internal static void decryptBlockGeneric(ref blockExpanded c, slice<byte> dst, s
 
 // Apply sbox0 to each byte in w.
 internal static uint32 subw(uint32 w) {
-    return (uint32)((uint32)((uint32)(((uint32)sbox0[(nint)((w >> (int)(24)))] << (int)(24)) | ((uint32)sbox0[(nint)((uint32)((w >> (int)(16)) & 0xff))] << (int)(16))) | ((uint32)sbox0[(nint)((uint32)((w >> (int)(8)) & 0xff))] << (int)(8))) | (uint32)sbox0[(nint)((uint32)(w & 0xff))]);
+    return (uint32)((uint32)((uint32)(((uint32)sbox0[(w >> (int)(24))] << (int)(24)) | ((uint32)sbox0[(uint32)((w >> (int)(16)) & 0xff)] << (int)(16))) | ((uint32)sbox0[(uint32)((w >> (int)(8)) & 0xff)] << (int)(8))) | (uint32)sbox0[(uint32)(w & 0xff)]);
 }
 
 // Rotate
@@ -168,7 +168,7 @@ internal static void expandKeyGeneric(ж<blockExpanded> Ꮡc, slice<byte> key) {
         for (nint j = 0; j < 4; j++) {
             var x = c.enc[ei + j];
             if (iΔ1 > 0 && iΔ1 + 4 < n) {
-                x = (uint32)((uint32)((uint32)(td0[sbox0[(nint)((x >> (int)(24)))]] ^ td1[sbox0[(nint)((uint32)((x >> (int)(16)) & 0xff))]]) ^ td2[sbox0[(nint)((uint32)((x >> (int)(8)) & 0xff))]]) ^ td3[sbox0[(nint)((uint32)(x & 0xff))]]);
+                x = (uint32)((uint32)((uint32)(td0[sbox0[(x >> (int)(24))]] ^ td1[sbox0[(uint32)((x >> (int)(16)) & 0xff)]]) ^ td2[sbox0[(uint32)((x >> (int)(8)) & 0xff)]]) ^ td3[sbox0[(uint32)(x & 0xff)]]);
             }
             c.dec[iΔ1 + j] = x;
         }

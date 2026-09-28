@@ -425,7 +425,7 @@ internal static (slice<Addr>, error) parseAddrs(nuint attrs, Func<nint, slice<by
                 if (err != default!) {
                     return (default!, err);
                 }
-                @as[(nint)(i)] = a;
+                @as[i] = a;
                 nint l = roundup((nint)b[0]);
                 if (len(b) < l) {
                     return (default!, errMessageTooShort);
@@ -441,7 +441,7 @@ internal static (slice<Addr>, error) parseAddrs(nuint attrs, Func<nint, slice<by
                     if (err != default!) {
                         return (default!, err);
                     }
-                    @as[(nint)(i)] = a;
+                    @as[i] = a;
                 }
                 nint l = roundup((nint)b[0]);
                 if (len(b) < l) {
@@ -454,7 +454,7 @@ internal static (slice<Addr>, error) parseAddrs(nuint attrs, Func<nint, slice<by
                 if (err != default!) {
                     return (default!, err);
                 }
-                @as[(nint)(i)] = a;
+                @as[i] = a;
                 nint ll = roundup(l);
                 if (len(b) < ll){
                     b = b[(int)(l)..];
@@ -468,7 +468,7 @@ internal static (slice<Addr>, error) parseAddrs(nuint attrs, Func<nint, slice<by
             if (err != default!) {
                 return (default!, err);
             }
-            @as[(nint)(i)] = a;
+            @as[i] = a;
             nint l = roundup((nint)b[0]);
             if (len(b) < l) {
                 return (default!, errMessageTooShort);

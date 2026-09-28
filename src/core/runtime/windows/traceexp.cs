@@ -8,7 +8,7 @@ partial class runtime_package {
 // expWriter returns a traceWriter that writes into the current M's stream for
 // the given experiment.
 internal static traceWriter expWriter(this traceLocker tl, traceExperiment exp) {
-    return new traceWriter(traceLocker: tl, traceBuf: (~tl.mp).trace.buf[(nint)(tl.gen % 2)][exp], exp: exp);
+    return new traceWriter(traceLocker: tl, traceBuf: (~tl.mp).trace.buf[tl.gen % 2][exp], exp: exp);
 }
 
 // unsafeTraceExpWriter produces a traceWriter for experimental trace batches

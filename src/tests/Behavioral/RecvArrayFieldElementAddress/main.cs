@@ -15,7 +15,7 @@ internal static UntypedInt mask => 7;
 [GoRecv] internal static uint32 storeHead(this ref hasher h, uint32 hash, uint32 index) {
     var hh = Ꮡ(h.head, (int)((uint32)(hash & (uint32)mask)));
     var previous = hh.Value;
-    h.prev[(nint)((uint32)(index & 15))] = previous;
+    h.prev[(uint32)(index & 15)] = previous;
     hh.Value = index + 1;
     return previous;
 }

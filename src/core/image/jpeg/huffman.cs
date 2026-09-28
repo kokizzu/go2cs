@@ -146,14 +146,14 @@ internal static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has
         uint32 code = default!;
         for (var i = (uint32)0; i < lutSize; i++) {
             code <<= (int)(1);
-            for (var j = (int32)0; j < nCodes[(nint)(i)]; j++) {
+            for (var j = (int32)0; j < nCodes[i]; j++) {
                 // The codeLength is 1+i, so shift code by 8-(1+i) to
                 // calculate the high bits for every 8-bit sequence
                 // whose codeLength's high bits matches code.
                 // The high 8 bits of lutValue are the encoded value.
                 // The low 8 bits are 1 plus the codeLength.
                 var @base = (uint8)(code.Lsh((uint64)((7 - i))));
-                var lutValue = (uint16)((uint16)((uint16)(~h).vals[(nint)(x)] << (int)(8)) | (uint16)(2 + i));
+                var lutValue = (uint16)((uint16)((uint16)(~h).vals[x] << (int)(8)) | (uint16)(2 + i));
                 for (var k = (uint8)0; k < (uint8)(((uint8)1).Lsh((uint64)((7 - i)))); k++) {
                     h.Value.lut[(uint8)(@base | k)] = lutValue;
                 }
@@ -211,7 +211,7 @@ internal static readonly @string badHuffmanCodeˢ = "bad Huffman code"u8;
         }
     }
     {
-        var v = h.lut[(nint)((uint32)((d.bits.a.Rsh((uint64)((uint32)(d.bits.n - (int32)lutSize)))) & 0xff))]; if (v != 0) {
+        var v = h.lut[(uint32)((d.bits.a.Rsh((uint64)((uint32)(d.bits.n - (int32)lutSize)))) & 0xff)]; if (v != 0) {
             var n = (uint16)(((uint16)(v & 0xff)) - 1);
             d.bits.n -= (int32)n;
             d.bits.m.RshAssign((uint64)(n));

@@ -173,7 +173,7 @@ internal static UntypedInt huffmanValueShift => 4;
                 throw panic("impossible: overwriting existing chunk");
             }
             h.chunks[reverse] = (uint32)((nuint)((off << (int)(huffmanValueShift)) | (nuint)(huffmanChunkBits + 1)));
-            h.links[(nint)(off)] = new slice<uint32>(numLinks);
+            h.links[off] = new slice<uint32>(numLinks);
         }
     }
     foreach (var (i, n) in lengths) {
@@ -205,7 +205,7 @@ internal static UntypedInt huffmanValueShift => 4;
                 throw panic("impossible: not an indirect chunk");
             }
             var value = (h.chunks[j] >> (int)(huffmanValueShift));
-            var linktab = h.links[(nint)(value)];
+            var linktab = h.links[value];
             reverse >>= (int)(huffmanChunkBits);
             for (nint off = reverse; off < len(linktab); off += ((nint)1).Lsh((nuint)(n - (nint)huffmanChunkBits))) {
                 if (sanity && linktab[off] != 0) {
@@ -759,10 +759,10 @@ internal static error noEOF(error e) {
             b |= (uint32)(((uint32)c << (int)(((nuint)(nb & 31)))));
             nb += 8;
         }
-        var chunk = h.chunks[(nint)((uint32)(b & (uint32)((huffmanNumChunks - 1))))];
+        var chunk = h.chunks[(uint32)(b & (uint32)((huffmanNumChunks - 1)))];
         n = (nuint)((uint32)(chunk & (uint32)huffmanCountMask));
         if (n > huffmanChunkBits) {
-            chunk = h.links[(nint)((chunk >> (int)(huffmanValueShift)))][(nint)((uint32)(((b >> (int)(huffmanChunkBits))) & h.linkMask))];
+            chunk = h.links[(chunk >> (int)(huffmanValueShift))][(uint32)(((b >> (int)(huffmanChunkBits))) & h.linkMask)];
             n = (nuint)((uint32)(chunk & (uint32)huffmanCountMask));
         }
         if (n <= nb) {

@@ -2086,6 +2086,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]
+    public void CheckUnsignedIndexPastIntRange() => CheckTarget("UnsignedIndexPastIntRange");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]

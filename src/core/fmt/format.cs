@@ -164,12 +164,12 @@ internal static readonly @string falseˢ = "false"u8;
     // Format the Unicode code point u as a hexadecimal number.
     while (u >= 16) {
         i--;
-        buf[i] = udigits[(int)((uint64)(u & 0xF))];
+        buf[i] = udigits[(uint64)(u & 0xF)];
         prec--;
         u >>= (int)(4);
     }
     i--;
-    buf[i] = udigits[(int)(u)];
+    buf[i] = udigits[u];
     prec--;
     // Add zeros in front of the number until requested precision is reached.
     while (prec > 0) {
@@ -246,7 +246,7 @@ internal static readonly @string falseˢ = "false"u8;
     case 16: {
         while (u >= 16) {
             i--;
-            buf[i] = digits[(int)((uint64)(u & 0xF))];
+            buf[i] = digits[(uint64)(u & 0xF)];
             u >>= (int)(4);
         }
         break;
@@ -273,7 +273,7 @@ internal static readonly @string falseˢ = "false"u8;
     }}
 
     i--;
-    buf[i] = digits[(int)(u)];
+    buf[i] = digits[u];
     while (i > 0 && prec > len(buf) - i) {
         i--;
         buf[i] = (rune)'0';

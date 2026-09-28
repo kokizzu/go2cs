@@ -570,14 +570,14 @@ internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg,
     if (prec < 0 && mant != 0){
         dst = append(dst, (byte)((rune)'.'));
         while (mant != 0) {
-            dst = append(dst, hex[(int)((uint64)(((mant >> (int)(60))) & 15))]);
+            dst = append(dst, hex[(uint64)(((mant >> (int)(60))) & 15)]);
             mant <<= (int)(4);
         }
     } else 
     if (prec > 0) {
         dst = append(dst, (byte)((rune)'.'));
         for (nint i = 0; i < prec; i++) {
-            dst = append(dst, hex[(int)((uint64)(((mant >> (int)(60))) & 15))]);
+            dst = append(dst, hex[(uint64)(((mant >> (int)(60))) & 15)]);
             mant <<= (int)(4);
         }
     }

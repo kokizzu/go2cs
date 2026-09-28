@@ -79,7 +79,7 @@ internal static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt:
     if (r.i >= (int64)len(r.s)) {
         return (0, io.EOF);
     }
-    var b = r.s[(int)(r.i)];
+    var b = r.s[(nint)(r.i)];
     r.i++;
     return (b, default!);
 }
@@ -109,7 +109,7 @@ internal static readonly @string stringsReaderUnreadByteˢ = "strings.Reader.Unr
     }
     r.prevRune = (nint)r.i;
     {
-        var c = r.s[(int)(r.i)]; if (c < utf8.RuneSelf) {
+        var c = r.s[(nint)(r.i)]; if (c < utf8.RuneSelf) {
             r.i++;
             return ((rune)c, 1, default!);
         }

@@ -2089,6 +2089,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]
+    public void CheckUnsignedIndexPastIntRange() => CheckTarget("UnsignedIndexPastIntRange");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]

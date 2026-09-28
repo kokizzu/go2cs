@@ -203,7 +203,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 [GoRecv] internal static frag cap(this ref compiler c, uint32 arg) {
     var f = c.inst(InstCapture);
     f.@out = makePatchList((f.i << (int)(1)));
-    (~c.p).Inst[(nint)(f.i)].Arg = arg;
+    (~c.p).Inst[f.i].Arg = arg;
     if ((~c.p).NumCap < (nint)arg + 1) {
         c.p.Value.NumCap = (nint)arg + 1;
     }
@@ -285,7 +285,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 
 [GoRecv] internal static frag empty(this ref compiler c, EmptyOp op) {
     var f = c.inst(InstEmptyWidth);
-    (~c.p).Inst[(nint)(f.i)].Arg = (uint32)(uint8)op;
+    (~c.p).Inst[f.i].Arg = (uint32)(uint8)op;
     f.@out = makePatchList((f.i << (int)(1)));
     return f;
 }

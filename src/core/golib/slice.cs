@@ -586,7 +586,10 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     // An UNSIGNED index is checked here, before any narrowing: `(nint)index` of a value at or above
     // 2^63 reads negative and would report Go's signed text ([-1]) where Go reports the unsigned value
-    // with the length (goPanicIndexU, boundsError.signed false).
+    // with the length (goPanicIndexU, boundsError.signed false). The converter emits every unsigned
+    // slice index bare onto this overload, so it is the nint overload's body with ONE unsigned compare
+    // as the whole bounds check (past it, index < m_length <= nint.MaxValue) -- not a call through
+    // the nint overload, which would check twice on the hot path.
     public ref T this[ulong index]
     {
         get
@@ -594,7 +597,13 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index >= (ulong)m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            return ref this[(nint)index];
+            if (GoZeroSizeFacts<T>.IsZeroSize)
+                return ref ZeroSizeElementRef();
+
+            if (m_nativeBase == 0)
+                return ref m_array[m_low + (nint)index];
+
+            return ref NativeElementRef((nint)index);
         }
     }
 

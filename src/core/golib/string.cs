@@ -250,7 +250,9 @@ public readonly struct @string :
         }
     }
 
-    // An UNSIGNED index is checked before any narrowing, as slice's is (goPanicIndexU).
+    // An UNSIGNED index is checked before any narrowing, as slice's is (goPanicIndexU); the converter
+    // emits every unsigned string index bare onto this overload, so the one unsigned compare is the
+    // whole bounds check.
     public byte this[ulong index]
     {
         get
@@ -258,7 +260,7 @@ public readonly struct @string :
             if (index >= (ulong)m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            return this[(nint)index];
+            return m_value![m_offset + (int)index];
         }
     }
 

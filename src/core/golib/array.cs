@@ -302,7 +302,9 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     // An UNSIGNED index is checked here, before any narrowing: `(nint)index` of a value at or above
     // 2^63 reads negative and would report Go's signed text ([-1]) where Go reports the unsigned value
-    // with the length (goPanicIndexU, boundsError.signed false).
+    // with the length (goPanicIndexU, boundsError.signed false). The converter emits every unsigned
+    // array index bare onto this overload, so the one unsigned compare is the whole bounds check
+    // (past it, index < m_length <= int.MaxValue), as in slice<T>.
     public ref T this[ulong index]
     {
         get
@@ -310,7 +312,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index >= (ulong)m_length)
                 throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            return ref this[(nint)index];
+            return ref Backing[m_low + (int)index];
         }
     }
 

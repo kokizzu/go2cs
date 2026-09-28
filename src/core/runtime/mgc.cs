@@ -926,8 +926,8 @@ internal static void gcMarkTermination(worldStop stw) {
     work.tEnd = now;
     atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_unix), (uint64)unixNow); // must be Unix time to make sense to user
     atomic.Store64(Ꮡmemstats.of(mstats.Ꮡlast_gc_nanotime), (uint64)now); // monotonic time for us
-    memstats.pause_ns[(nint)(memstats.numgc % (uint32)len(memstats.pause_ns))] = (uint64)work.pauseNS;
-    memstats.pause_end[(nint)(memstats.numgc % (uint32)len(memstats.pause_end))] = (uint64)unixNow;
+    memstats.pause_ns[memstats.numgc % (uint32)len(memstats.pause_ns)] = (uint64)work.pauseNS;
+    memstats.pause_end[memstats.numgc % (uint32)len(memstats.pause_end)] = (uint64)unixNow;
     memstats.pause_total_ns += (uint64)work.pauseNS;
     // Accumulate CPU stats.
     //
@@ -1547,7 +1547,7 @@ internal static void gcResetMarkState() {
     var arenas = mheap_.allArenas;
     unlock(Ꮡmheap_.of(mheap.Ꮡlock));
     foreach (var (_, ai) in arenas) {
-        var ha = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
+        var ha = mheap_.arenas[ai.l1()].Value[ai.l2()];
         builtin.clear((~ha).pageMarks[..]);
     }
     work.bytesMarked = 0;

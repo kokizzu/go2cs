@@ -169,13 +169,13 @@ loop:
         // If there is a hash table hit for this key then we continue the loop
         // and do not emit a code yet.
         var hash = (uint32)(((uint32)((key >> (int)(12)) ^ key)) & (uint32)tableMask);
-        for (var (h, t) = (hash, w.table[(nint)(hash)]); t != invalidEntry; ) {
+        for (var (h, t) = (hash, w.table[hash]); t != invalidEntry; ) {
             if (key == (t >> (int)(12))) {
                 code = (uint32)(t & (uint32)maxCode);
                 goto continue_loop;
             }
             h = (uint32)((h + 1) & (uint32)tableMask);
-            t = w.table[(nint)(h)];
+            t = w.table[h];
         }
         // Otherwise, write the current code, and literal becomes the start of
         // the next emitted code.
@@ -198,8 +198,8 @@ loop:
         }
         // Otherwise, insert key -> e.hi into the map that e.table represents.
         while (ᐧ) {
-            if (w.table[(nint)(hash)] == invalidEntry) {
-                w.table[(nint)(hash)] = (uint32)(((key << (int)(12))) | w.hi);
+            if (w.table[hash] == invalidEntry) {
+                w.table[hash] = (uint32)(((key << (int)(12))) | w.hi);
                 break;
             }
             hash = (uint32)((hash + 1) & (uint32)tableMask);

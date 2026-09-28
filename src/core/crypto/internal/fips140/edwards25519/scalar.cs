@@ -329,10 +329,10 @@ internal static array<int8> nonAdjacentForm(this ж<Scalar> Ꮡs, nuint w) {
         uint64 bitBuf = default!;
         if (indexBit < 64 - w){
             // This window's bits are contained in a single u64
-            bitBuf = digits[(nint)(indexU64)].Rsh(indexBit);
+            bitBuf = digits[indexU64].Rsh(indexBit);
         } else {
             // Combine the current 64 bits with bits from the next 64
-            bitBuf = (uint64)((digits[(nint)(indexU64)].Rsh(indexBit)) | (digits[(nint)(1 + indexU64)].Lsh((64 - indexBit))));
+            bitBuf = (uint64)((digits[indexU64].Rsh(indexBit)) | (digits[1 + indexU64].Lsh((64 - indexBit))));
         }
         // Add carry into the current window
         var window = carry + ((uint64)(bitBuf & windowMask));
@@ -348,10 +348,10 @@ internal static array<int8> nonAdjacentForm(this ж<Scalar> Ꮡs, nuint w) {
         }
         if (window < width / 2){
             carry = 0;
-            naf[(nint)(pos)] = (int8)window;
+            naf[pos] = (int8)window;
         } else {
             carry = 1;
-            naf[(nint)(pos)] = (int8)((int8)window - (int8)width);
+            naf[pos] = (int8)((int8)window - (int8)width);
         }
         pos += w;
     }

@@ -300,7 +300,7 @@ internal static slice<byte> itoa(this nat x, bool neg, nint @base) {
                 // convert full digits
                 while (nbits >= shift) {
                     i--;
-                    s[i] = digits[(int)(nuint)((Word)(w & mask))];
+                    s[i] = digits[(Word)(w & mask)];
                     w >>= (int)(shift);
                     nbits -= shift;
                 }
@@ -313,7 +313,7 @@ internal static slice<byte> itoa(this nat x, bool neg, nint @base) {
                     // partial digit in current word w (== x[k-1]) and next word x[k]
                     w |= (Word)((x[k] << (int)(nbits)));
                     i--;
-                    s[i] = digits[(int)(nuint)((Word)(w & mask))];
+                    s[i] = digits[(Word)(w & mask)];
                     // advance
                     w = (x[k] >> (int)((shift - nbits)));
                     nbits = (nuint)_W - (shift - nbits);
@@ -322,7 +322,7 @@ internal static slice<byte> itoa(this nat x, bool neg, nint @base) {
             // convert digits of most-significant word w (omit leading zeros)
             while (w != 0) {
                 i--;
-                s[i] = digits[(int)(nuint)((Word)(w & mask))];
+                s[i] = digits[(Word)(w & mask)];
                 w >>= (int)(shift);
             }
         } else {
@@ -416,7 +416,7 @@ internal static void convertWords(this nat q, slice<byte> s, Word b, nint ndigit
             (q, r) = q.divW(q, bb);
             for (nint j = 0; j < ndigits && i > 0; j++) {
                 i--;
-                s[i] = digits[(int)(nuint)(r % b)];
+                s[i] = digits[r % b];
                 r /= b;
             }
         }

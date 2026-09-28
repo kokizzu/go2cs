@@ -413,7 +413,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
             if (val >= (uint64)len(r.directories)) {
                 return ("", 0, 0, new DecodeError("line"u8, r.buf.off, "directory index out of range"u8));
             }
-            dir = r.directories[(nint)(val)];
+            dir = r.directories[val];
         }
         else if (exprᴛ2 == lnctTimestamp) {
             mtime = val;

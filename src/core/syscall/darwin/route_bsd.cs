@@ -244,7 +244,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = new SockaddrDatalinkжSockaddr(sa);
+            sas[i] = new SockaddrDatalinkжSockaddr(sa);
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
         }
         else if (exprᴛ1 == AF_INET || exprᴛ1 == AF_INET6) {
@@ -252,7 +252,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = sa;
+            sas[i] = sa;
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
             family = rsa.Value.Family;
         }
@@ -261,7 +261,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = sa;
+            sas[i] = sa;
             b = b[(int)(rsaAlignOf((nint)b[0]))..];
         }
 
@@ -315,7 +315,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = new SockaddrDatalinkжSockaddr(sa);
+            sas[i] = new SockaddrDatalinkжSockaddr(sa);
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
         }
         else if (exprᴛ1 == AF_INET || exprᴛ1 == AF_INET6) {
@@ -323,7 +323,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = sa;
+            sas[i] = sa;
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
             family = rsa.Value.Family;
         }
@@ -332,7 +332,7 @@ internal const nint anyMessageLen = /* int(unsafe.Sizeof(anyMessage{})) */ 4;
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = sa;
+            sas[i] = sa;
             b = b[(int)(rsaAlignOf((nint)b[0]))..];
         }
 

@@ -71,7 +71,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
-                weights[count + 1] = fseTable[(nint)(state2)].sym;
+                weights[count + 1] = fseTable[state2].sym;
                 count += 2;
                 break;
             }
@@ -91,7 +91,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
-                weights[count + 1] = fseTable[(nint)(state1)].sym;
+                weights[count + 1] = fseTable[state1].sym;
                 count += 2;
                 break;
             }
@@ -178,7 +178,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         var tval = (uint16)((uint16)((uint16)i << (int)(8)) | ((uint16)tableBits + 1 - (uint16)w));
         var start = weightMark[w];
         for (var j = (uint32)0; j < length; j++) {
-            table[(nint)(start + j)] = tval;
+            table[start + j] = tval;
         }
         weightMark[w] += length;
     }

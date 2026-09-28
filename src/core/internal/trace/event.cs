@@ -575,7 +575,7 @@ public static ΔStateTransition StateTransition(this ΔEvent e) {
     }
     else if (exprᴛ1 == go122.EvProcStatus) {
         s = procStateTransition(((ProcID)(int64)e.@base.args[0]), // N.B. ordering.advance populates e.base.extra.
- ((ProcState)(uint8)e.@base.extra(version.Go122)[0]), go122ProcStatus2ProcState[(nint)(e.@base.args[1])]);
+ ((ProcState)(uint8)e.@base.extra(version.Go122)[0]), go122ProcStatus2ProcState[e.@base.args[1]]);
     }
     else if (exprᴛ1 == go122.EvGoCreate || exprᴛ1 == go122.EvGoCreateBlocked) {
         var status = GoRunnable;
@@ -629,7 +629,7 @@ public static ΔStateTransition StateTransition(this ΔEvent e) {
     else if (exprᴛ1 == go122.EvGoStatus || exprᴛ1 == go122.EvGoStatusStack) {
         var packedStatus = e.@base.args[2];
         var (from, to) = ((packedStatus >> (int)(32)), (uint64)(packedStatus & ((uint64)((4294967296L) - 1))));
-        s = goStateTransition(((GoID)(int64)e.@base.args[0]), ((GoState)(uint8)from), go122GoStatus2GoState[(nint)(to)]);
+        s = goStateTransition(((GoID)(int64)e.@base.args[0]), ((GoState)(uint8)from), go122GoStatus2GoState[to]);
     }
     else { /* default: */
         throw panic(fmt.Sprintf("internal error: unexpected event type for StateTransition kind: %s"u8, go122.EventString(e.@base.typ)));

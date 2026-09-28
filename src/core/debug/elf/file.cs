@@ -121,7 +121,7 @@ internal static readonly @string sectionHasInvalidStringˢ = "section has invali
     if (link <= 0 || link >= (uint32)len(f.Sections)) {
         return (default!, errors.New(sectionHasInvalidStringˢ));
     }
-    return f.Sections[(nint)(link)].Data();
+    return f.Sections[link].Data();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

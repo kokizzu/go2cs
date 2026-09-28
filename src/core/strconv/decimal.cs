@@ -326,8 +326,8 @@ internal static bool prefixIsLessThan(slice<byte> b, @string s) {
 
 // Binary shift left (* 2) by k bits.  k <= maxShift to avoid overflow.
 internal static void leftShift(ref @decimal a, nuint k) {
-    nint delta = leftcheats[(nint)(k)].delta;
-    if (prefixIsLessThan(a.d[0..(int)(a.nd)], leftcheats[(nint)(k)].cutoff)) {
+    nint delta = leftcheats[k].delta;
+    if (prefixIsLessThan(a.d[0..(int)(a.nd)], leftcheats[k].cutoff)) {
         delta--;
     }
     nint r = a.nd; // read index

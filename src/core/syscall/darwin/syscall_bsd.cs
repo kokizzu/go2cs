@@ -340,7 +340,7 @@ public static (@string value, error err) Sysctl(@string name) {
         }
     }
     // Throw away terminating NUL.
-    if (n > 0 && buf[(nint)(n - 1)] == (rune)'\x00') {
+    if (n > 0 && buf[n - 1] == (rune)'\x00') {
         n--;
     }
     return (((@string)(buf[0..(int)(n)])), default!);
