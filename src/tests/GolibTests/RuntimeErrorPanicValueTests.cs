@@ -6,6 +6,7 @@ using go;
 using go.golib;
 using static go.builtin;
 using Δruntime = go.runtime_package;
+using fmt = go.fmt_package;
 
 namespace GolibTests;
 
@@ -298,6 +299,36 @@ public class RuntimeErrorPanicValueTests
             slice<nint> s = new(2);
             _ = s[i];
         }), "runtime error: index out of range [-1]", "negative slice index");
+    }
+
+    // ---- fmt prints the recovered VALUE as Go does -----------------------------------------------
+
+    // `fmt.Println(name, "->", recover())` is how the behavioral suite reads these panics
+    // (CloseWakesBlocked), and its golden is Go's output. A plainError or boundsError reaches fmt as a
+    // converted struct, and fmt must find its Error() (the GoImplement row) rather than print its
+    // fields, or every such golden moves.
+    [TestMethod]
+    public void RecoveredValuesPrintAsGosText()
+    {
+        (Action fn, string want)[] cases =
+        [
+            (() => { map<uint64, bool> m = default!; m[1] = true; }, "assignment to entry in nil map"),
+            (() => { channel<bool> ch = new(0); close(ch); close(ch); }, "close of closed channel"),
+            (() => close((channel<bool>)default!), "close of nil channel"),
+            (() => { channel<int> ch = new(1); close(ch); ch.ᐸꟷ(1); }, "send on closed channel"),
+            (() => { nint n = -1; _ = new channel<bool>(n); }, "makechan: size out of range"),
+            (() => { slice<nint> s = new(2); _ = s[2]; }, "runtime error: index out of range [2] with length 2"),
+            (() => { nint i = -1; slice<nint> s = new(2); _ = s[i]; }, "runtime error: index out of range [-1]"),
+        ];
+
+        foreach ((Action fn, string want) in cases)
+        {
+            object? recovered = PanicValue(fn);
+
+            Assert.IsNotNull(recovered, $"{want}: did not panic");
+            Assert.AreEqual(want, fmt.Sprint(recovered).ToString(), "fmt.Sprint of the recovered value");
+            Assert.AreEqual(want, fmt.Sprintf("%v", recovered).ToString(), "fmt %v of the recovered value");
+        }
     }
 
     // ---- the fallback: with no runtime registered, the message stands as a string --------------
