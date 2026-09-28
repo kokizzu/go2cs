@@ -137,6 +137,10 @@ public ref struct GoFrame
     /// re-raise a panic it never caught. See the claim below.
     /// </para>
     /// </remarks>
+    // NoInlining is a CONTRACT here, not a heuristic: runtime's captureCallers pairs each Run frame it
+    // walks with this thread's panic-sequence entries (see PushSequence), so an inlined Run would leave
+    // no frame to pair and shift every splice by one sequence.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public void Run()
     {
         // The panic THIS frame is responsible for continuing, if any: the one its own catch just
@@ -172,6 +176,11 @@ public ref struct GoFrame
             if (!ReferenceEquals(outerRecoverable, handling))
                 GoFuncRoot.RecoverablePanicValue = handling;
 
+            // This sequence's entry for runtime's captureCallers: the panic it is running, or null for
+            // a normal return. It is pushed for EVERY deferring Run, since a normal-return Run can sit
+            // between a Callers and a panicking one ([P2-1]).
+            int sequence = PushSequence(handling);
+
             try
             {
                 while (m_count > 0)
@@ -179,6 +188,12 @@ public ref struct GoFrame
                     try
                     {
                         Pop()();
+
+                        // A deferred call that recovered this sequence's panic has RETURNED: Go's recovery
+                        // completes here and the panicking frames leave the stack, so a later deferred
+                        // call's Callers no longer shows them (runtime's TestCallersAfterRecovery).
+                        if (handling is { Recovered: true })
+                            SetSequence(sequence, null);
                     }
                     catch (Exception ex) when (IsPanic(ex, out PanicException? raised))
                     {
@@ -236,6 +251,16 @@ public ref struct GoFrame
                         GoFuncRoot.RecoverablePanicValue = raised;
                         handling = raised;
 
+                        // The new panic REPLACES the one this sequence was running, so the sequence's
+                        // later deferred calls see it (the TestCallersAbortedPanic shape). The replaced
+                        // panic stays beneath it on Go's stack until a recovery completes: the deferred
+                        // call that raised the new one was called by the old one's gopanic. A panic whose
+                        // recovery already completed is gone, and its entry is already null.
+                        if (t_sequences![sequence] is { } running && !ReferenceEquals(running, raised))
+                            raised.Beneath ??= running;
+
+                        SetSequence(sequence, raised);
+
                         // A panic raised by THIS frame's own deferred call is this frame's to
                         // continue, whether or not the frame was already panicking — so the tail
                         // re-raises it even when nothing was claimed on entry.
@@ -245,6 +270,7 @@ public ref struct GoFrame
             }
             finally
             {
+                PopSequence(sequence);
                 GoFuncRoot.HandledPanicValue = outer;
 
                 if (!ReferenceEquals(GoFuncRoot.RecoverablePanicValue, outerRecoverable))
@@ -268,6 +294,64 @@ public ref struct GoFrame
             m_foreignRethrow = null;
             foreignRethrow.Throw();
         }
+    }
+
+    // THE PANIC SEQUENCES (docs/phase4/DESIGN-panic-stack-frames.md §3.B). Go runs a panic's deferred
+    // calls ON the panicking stack, so a Callers from one still finds runtime.gopanic and the frames it
+    // panicked through. Here the CLR has already unwound those frames, and runtime's captureCallers
+    // splices them back from the panic's SiteTrace. To know WHICH panic a Run frame on the live stack
+    // is running, every deferring Run pushes one entry: its own panic, or null. The k-th Run frame met
+    // walking down from the top pairs with the k-th entry from the top. Per thread, as the other panic
+    // slots are (GoFuncRoot), and the array is allocated once per thread and reused.
+    [ThreadStatic] private static PanicException?[]? t_sequences;
+    [ThreadStatic] private static int t_sequenceDepth;
+
+    private static int PushSequence(PanicException? panic)
+    {
+        int index = t_sequenceDepth;
+        PanicException?[] entries = t_sequences ??= new PanicException?[16];
+
+        if (index == entries.Length)
+        {
+            Array.Resize(ref t_sequences, index * 2);
+            entries = t_sequences;
+        }
+
+        entries[index] = panic;
+        t_sequenceDepth = index + 1;
+
+        return index;
+    }
+
+    private static void SetSequence(int index, PanicException? panic) => t_sequences![index] = panic;
+
+    private static void PopSequence(int index)
+    {
+        t_sequences![index] = null;
+        t_sequenceDepth = index;
+    }
+
+    // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
+    // so this only matters for a thread reused after an abnormal end.
+    internal static void ResetSequences()
+    {
+        if (t_sequences is { } entries)
+            Array.Clear(entries);
+
+        t_sequenceDepth = 0;
+    }
+
+    /// <summary>The <see cref="Run"/> method, for matching its frames by identity rather than by name ([P2-4]).</summary>
+    internal static readonly System.Reflection.MethodBase RunMethod = typeof(GoFrame).GetMethod(nameof(Run))!;
+
+    /// <summary>
+    /// The panic the <paramref name="fromTop"/>-th deferring <see cref="Run"/> frame below the caller
+    /// is running (0 is the innermost), or null for a normal-return sequence or no such frame.
+    /// </summary>
+    internal static PanicException? SequenceFromTop(int fromTop)
+    {
+        int index = t_sequenceDepth - 1 - fromTop;
+        return index >= 0 ? t_sequences![index] : null;
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it

@@ -63,6 +63,8 @@ public class ThreadStateCensusTests
         ("golib/AllocationCounter.cs|t_count", Disposition.GolibReset, "internal static void ResetThread() => t_count = 0;", "the per-thread allocation tally"),
         ("golib/builtin.cs|s_fallthrough", Disposition.GolibReset, "internal static void ResetFallthrough() => s_fallthrough.Value = false;", "a switch fallthrough flag, set and consumed within one statement"),
         ("golib/channel.cs|t_frames", Disposition.GolibReset, "internal static void ResetThread() => t_frames = null;", "a select's pending receive frames"),
+        ("golib/GoFrame.cs|t_sequences", Disposition.GolibReset, "Array.Clear(entries);", "the panic-sequence entries captureCallers pairs with GoFrame.Run frames (GoFuncRoot.ResetThread calls GoFrame.ResetSequences)"),
+        ("golib/GoFrame.cs|t_sequenceDepth", Disposition.GolibReset, "t_sequenceDepth = 0;", "how many of those entries are live"),
         ("golib/GoFuncRoot.cs|CapturedPanic", Disposition.GolibReset, "CapturedPanic.Value = null!;", "a frame's captured panic"),
         ("golib/GoFuncRoot.cs|HandledPanic", Disposition.GolibReset, "HandledPanic.Value = null;", "the panic whose defers are running"),
         ("golib/GoFuncRoot.cs|UnclaimedPanic", Disposition.GolibReset, "UnclaimedPanic.Value = null;", "a captured panic no frame has claimed"),

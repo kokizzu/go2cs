@@ -1900,17 +1900,45 @@ partial class runtime_package
     private static nint captureCallers(nint skip, slice<uintptr> pc)
     {
         StackTrace stack = new(skipFrames: 0, fNeedFileInfo: true);
+        StackFrame[] frames = stack.GetFrames();
         nint remainingSkip = skip;
         nint count = 0;
 
         bool sawRoot = false;
+        int sequencesMet = 0;
 
-        foreach (StackFrame frame in stack.GetFrames())
+        for (int i = 0; i < frames.Length; i++)
         {
+            StackFrame frame = frames[i];
             System.Reflection.MethodBase? method = frame.GetMethod();
 
             if (method is null)
                 continue;
+
+            // A deferring GoFrame.Run: if its sequence is running a panic, Go's unwinder would find that
+            // panic's frames here, beneath the deferred call (splicePanic). Spliced frames take the
+            // live frames' own skip and capacity path, since Go's skip counts gopanic ([P2-3]).
+            if (method == GoFrame.RunMethod)
+            {
+                if (GoFrame.SequenceFromTop(sequencesMet++) is { } panic)
+                {
+                    foreach (uintptr spliced in splicePanic(panic, frames, i))
+                    {
+                        if (remainingSkip > 0)
+                        {
+                            remainingSkip--;
+                            continue;
+                        }
+
+                        if (count >= len(pc))
+                            return count;
+
+                        pc[count++] = spliced;
+                    }
+                }
+
+                continue;
+            }
 
             GoStackRootAttribute? root = null;
 
@@ -1975,6 +2003,105 @@ partial class runtime_package
         }
     }
 
+    // GO'S PANICKING FRAMES (docs/phase4/DESIGN-panic-stack-frames.md §3.B, option B). Go runs a
+    // panic's deferred calls ON the panicking stack, so its unwinder, walking down from a deferred
+    // call, finds runtime.gopanic, the fault frames (panicmem and sigpanic for a hardware fault,
+    // panicdivide for an integer divide), then the frames the panic was raised in, then the deferring
+    // function. The CLR has unwound those frames before the emitted finally runs the deferred call.
+    // They survive as the panic's SiteTrace, the raised exception's trace from its throw site to its
+    // first catching frame, and this splices them back. Go's lines are go1.24.13's: gopanic calls the
+    // deferred func at panic.go:792.
+    //
+    // THE OWNER IS CHECKED, NOT ASSUMED ([P2-2]). SiteTrace's last Go frame is the frame that caught
+    // the panic. It is dropped only when it IS the next live Go frame below this Run, the function
+    // whose deferred sequence is running. On a mismatch nothing is spliced and the live stack is
+    // answered: a missing splice is a known divergence, and a wrong one is a silent lie. A panic
+    // propagated through an intermediate deferring frame (first caught there, re-raised by that
+    // frame's Run) is that mismatch, a stated residual. A panic a deferred call raised while another
+    // was running is NOT: its site ends at Run, and its Beneath (the panic whose gopanic called that
+    // deferred call) continues the chain down to the owner. A site with no Go frame (the
+    // nil-deferred-func thunk, which raises from the deferring function's own exit) splices the
+    // runtime frames alone.
+    //
+    // A WRAPPER THAT IS THE PANIC SITE IS KEPT (COORD 93c2bdd50b): Go's elideWrapperCalling keeps a
+    // wrapper whose callee is gopanic, sigpanic or panicwrap. So a GoWrapper frame that is the site's
+    // FIRST Go frame is emitted; every other wrapper keeps the live walk's elision.
+    //
+    // Named, not folded ([P2-4]): runtime.gopanic is also a real converted method, and a live walk
+    // through it (Go code calling it directly) interns a second record for the function.
+    private static List<uintptr> splicePanic(PanicException panic, StackFrame[] live, int runIndex)
+    {
+        System.Reflection.MethodBase? owner = null;
+
+        for (int j = runIndex + 1; j < live.Length && owner is null; j++)
+        {
+            if (live[j].GetMethod() is { } liveMethod && isGoSourceFrame(liveMethod))
+                owner = liveMethod;
+        }
+
+        List<uintptr> spliced = [];
+        return splicePanicInto(spliced, panic, owner, depth: 0) ? spliced : [];
+    }
+
+    // One panic of the chain: gopanic, its fault frames, and its site. A site that ends at the owner
+    // drops the owner and completes the splice. A panic a deferred call raised with no frame of its
+    // own ends at GoFrame.Run instead: all of its Go frames stay (the deferred call is still on Go's
+    // stack), and the splice continues with the panic beneath it, which that deferred call's gopanic
+    // was running. A site with no Go frame completes the splice at its runtime frames. Anything else
+    // is the owner mismatch, and fails the whole splice.
+    private static bool splicePanicInto(List<uintptr> spliced, PanicException panic, System.Reflection.MethodBase? owner, int depth)
+    {
+        // A chain is as deep as the nesting of panicking deferred calls. The bound only keeps an
+        // unforeseen cycle from recursing forever: it fails the splice rather than looping.
+        if (depth > 64)
+            return false;
+
+        List<StackFrame> site = [];
+
+        if (panic.SiteTrace?.GetFrames() is { } siteFrames)
+        {
+            foreach (StackFrame siteFrame in siteFrames)
+            {
+                System.Reflection.MethodBase? siteMethod = siteFrame.GetMethod();
+
+                if (siteMethod is not null && (isGoSourceFrame(siteMethod) || site.Count == 0 && isGoSourceFrame(siteMethod, keepWrapper: true)))
+                    site.Add(siteFrame);
+            }
+        }
+
+        PanicException? beneath = null;
+
+        if (site.Count > 0)
+        {
+            if (owner is not null && site[^1].GetMethod() == owner)
+                site.RemoveAt(site.Count - 1);
+            else if (panic.Beneath is { } older)
+                beneath = older;
+            else
+                return false;
+        }
+
+        spliced.Add(internRootFrame("runtime.gopanic", "runtime/panic.go", 792));
+
+        switch (panic.FaultKind)
+        {
+            case PanicFaultKind.Memory:
+                spliced.Add(internRootFrame("runtime.panicmem", "runtime/panic.go", 262));
+                spliced.Add(GOOS == "windows"u8
+                    ? internRootFrame("runtime.sigpanic", "runtime/signal_windows.go", 401)
+                    : internRootFrame("runtime.sigpanic", "runtime/signal_unix.go", 925));
+                break;
+            case PanicFaultKind.Divide:
+                spliced.Add(internRootFrame("runtime.panicdivide", "runtime/panic.go", 241));
+                break;
+        }
+
+        foreach (StackFrame siteFrame in site)
+            spliced.Add(internCallerFrame(siteFrame.GetMethod()!, siteFrame));
+
+        return beneath is null || splicePanicInto(spliced, beneath, owner, depth + 1);
+    }
+
     // Frames.Next expands the next recorded PC into a Frame. The auto body resolves PCs through
     // findfunc's linker-built funcInfo tables, which have no managed form; the records minted by
     // Callers carry the same answers (Function in Go's spelling, File, Line). A PC this runtime
@@ -2035,8 +2162,9 @@ partial class runtime_package
     // synthesized member (RecvGenerator's ж-forwarders carry [GeneratedCode("go2cs-gen", …)]), or a
     // [StackTraceHidden] linkname forwarder.
     // Everything outside a package class — golib, the BCL, the test-host runtime — is not Go
-    // code and never counts.
-    private static bool isGoSourceFrame(System.Reflection.MethodBase method)
+    // code and never counts. keepWrapper admits a method-expression wrapper, which only splicePanic
+    // asks for: the one place Go keeps a wrapper frame is directly beneath the panic machinery.
+    private static bool isGoSourceFrame(System.Reflection.MethodBase method, bool keepWrapper = false)
     {
         Type? declaring = method.DeclaringType;
 
@@ -2066,8 +2194,9 @@ partial class runtime_package
 
         // A method-expression WRAPPER is elided, as Go's tracebackPCs elides a wrapper whose callee
         // is an ordinary function (elideWrapperCalling). A live walk only ever sees that case: Go
-        // keeps the wrapper only when its callee is the panic machinery, which no live frame is.
-        if (method.IsDefined(typeof(GoWrapperAttribute), inherit: false))
+        // keeps the wrapper only when its callee is the panic machinery, which no live frame is
+        // (splicePanic passes keepWrapper for the spliced site's first frame).
+        if (!keepWrapper && method.IsDefined(typeof(GoWrapperAttribute), inherit: false))
             return false;
 
         Type topLevel = declaring;

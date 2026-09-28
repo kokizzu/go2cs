@@ -67,6 +67,7 @@ public class GoFuncRoot
         UnclaimedPanic.Value = null;
         InFlightForeign.Value = null;
         RecoverablePanic.Value = null;
+        GoFrame.ResetSequences();
     }
 
     internal static System.Runtime.ExceptionServices.ExceptionDispatchInfo? InFlightForeignException

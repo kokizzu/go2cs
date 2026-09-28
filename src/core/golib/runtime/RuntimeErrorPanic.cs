@@ -19,7 +19,8 @@ public static class RuntimeErrorPanic
     private const string NilPointerDereferenceMessage = $"{RuntimeErrorMessage}invalid memory address or nil pointer dereference";
     public static PanicException NilPointerDereference()
     {
-        return new PanicException(NilPointerDereferenceMessage);
+        // A fault: Go reaches gopanic through sigpanic and panicmem (runtime's captureCallers splices both).
+        return new PanicException(NilPointerDereferenceMessage) { FaultKind = PanicFaultKind.Memory };
     }
 
     private const string TokenArithmeticMessage =
@@ -166,7 +167,8 @@ public static class RuntimeErrorPanic
 
     public static PanicException IntegerDivideByZero()
     {
-        return new PanicException(IntegerDivideByZeroValue?.Invoke() ?? IntegerDivideByZeroMessage);
+        // Go reaches gopanic through panicdivide, the compiler's zero check (runtime's captureCallers splices it).
+        return new PanicException(IntegerDivideByZeroValue?.Invoke() ?? IntegerDivideByZeroMessage) { FaultKind = PanicFaultKind.Divide };
     }
 
     private const string ComparingUncomparableTypeMessage = $"{RuntimeErrorMessage}comparing uncomparable type {{0}}";

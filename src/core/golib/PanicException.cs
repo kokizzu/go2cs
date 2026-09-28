@@ -230,12 +230,48 @@ public class PanicException(object? state, Exception? innerException = null) :
         }
     }
 
+    /// <summary>
+    /// Gets this panic's OWN site: the trace of the raised exception as its first catching frame saw
+    /// it, from the throw site to that frame. Unlike <see cref="PanicTrace"/>, a re-panic's inheritance
+    /// never overwrites it.
+    /// </summary>
+    /// <remarks>
+    /// runtime's <c>captureCallers</c> splices it beneath <c>runtime.gopanic</c> when a
+    /// <c>Callers</c> runs inside this panic's deferred sequence, which is where Go's unwinder still
+    /// finds the panicking frames (docs/phase4/DESIGN-panic-stack-frames.md §3.B, [P2-2]).
+    /// </remarks>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal StackTrace? SiteTrace { get; private set; }
+
+    /// <summary>
+    /// Gets the runtime frames Go's unwinder shows between <c>runtime.gopanic</c> and the panic site:
+    /// a hardware fault adds <c>panicmem</c> and <c>sigpanic</c>, an integer divide adds
+    /// <c>panicdivide</c>, and an explicit <c>panic(v)</c> adds none.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal PanicFaultKind FaultKind { get; init; }
+
+    /// <summary>
+    /// Gets the panic whose deferred sequence raised this one, when a deferred call panicked while that
+    /// panic was being handled. Go's stack still holds it beneath: the deferred call's frame sits on
+    /// the older panic's <c>runtime.gopanic</c>, until a recovery completes. Set by
+    /// <see cref="GoFrame.Run"/>'s own catch; runtime's <c>captureCallers</c> splices down the chain.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal PanicException? Beneath { get; set; }
+
     // Snapshot the throw site the first time this panic is caught. `thrown` is the exception that
     // actually travelled: for a mapped .NET runtime error (nil deref, divide by zero) THIS instance
     // was synthesized by RuntimeErrorPanic and was never thrown, so only the original carries frames.
+    // One capture serves both properties: the first catch is the panic's own site, and PanicTrace
+    // takes the same snapshot unless a re-panic's inheritance has already set it.
     internal void CaptureThrowSite(Exception thrown)
     {
-        PanicTrace ??= new StackTrace(thrown, fNeedFileInfo: true);
+        if (SiteTrace is not null)
+            return;
+
+        SiteTrace = new StackTrace(thrown, fNeedFileInfo: true);
+        PanicTrace ??= SiteTrace;
     }
 
     // Adopt the origin of the panic being handled when this one is raised from a deferred call —
@@ -247,4 +283,16 @@ public class PanicException(object? state, Exception? innerException = null) :
     {
         PanicTrace = origin.PanicTrace ?? PanicTrace;
     }
+}
+
+/// <summary>
+/// The runtime frames between <c>runtime.gopanic</c> and a panic's site in Go's traceback: a hardware
+/// fault reaches gopanic through <c>sigpanic</c> and <c>panicmem</c>, an integer divide through
+/// <c>panicdivide</c>, and an explicit <c>panic(v)</c> directly.
+/// </summary>
+internal enum PanicFaultKind
+{
+    None,
+    Memory,
+    Divide
 }
