@@ -180,7 +180,7 @@ public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byt
     //	[x y 7 7 7 7 7 7 7]
     // If we detect a bad padding, we assume it is an invalid password.
     nint dlen = builtin.len(data);
-    if (dlen == 0 || dlen % (~ciph).blockSize != 0) {
+    if (dlen == 0 || rem(dlen, (~ciph).blockSize) != 0) {
         return (default!, errors.New(x509InvalidPaddingˢ));
     }
     nint last = (nint)data[dlen - 1];

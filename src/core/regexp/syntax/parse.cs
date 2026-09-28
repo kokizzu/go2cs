@@ -450,7 +450,7 @@ internal static bool repeatIsValid(ref Regexp re, nint n) {
             return false;
         }
         if (m > 0) {
-            n /= m;
+            n = quo(n, m);
         }
     }
     foreach (var (_, sub) in re.Sub) {

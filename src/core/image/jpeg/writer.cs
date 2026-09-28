@@ -15,9 +15,9 @@ partial class jpeg_package {
 // div returns a/b rounded to the nearest integer, instead of rounded to zero.
 internal static int32 div(int32 a, int32 b) {
     if (a >= 0) {
-        return (a + ((b >> (int)(1)))) / b;
+        return quo((a + ((b >> (int)(1)))), b);
     }
-    return -((-a + ((b >> (int)(1)))) / b);
+    return -(quo((-a + ((b >> (int)(1)))), b));
 }
 
 // bitCount counts the number of bits needed to hold an integer.
