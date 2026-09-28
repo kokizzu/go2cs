@@ -418,6 +418,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDefinedOverNamedComposite() => CheckTarget("DefinedOverNamedComposite");
 
     [TestMethod]
+    public void CheckDefinedStructArrayFields() => CheckTarget("DefinedStructArrayFields");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]
