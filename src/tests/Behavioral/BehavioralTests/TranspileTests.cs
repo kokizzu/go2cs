@@ -2071,6 +2071,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUntypedIntFloatContexts() => CheckTarget("UntypedIntFloatContexts");
 
     [TestMethod]
+    public void CheckUntypedIntFloatLiteralFold() => CheckTarget("UntypedIntFloatLiteralFold");
+
+    [TestMethod]
     public void CheckUntypedIntInterfaceBox() => CheckTarget("UntypedIntInterfaceBox");
 
     [TestMethod]
