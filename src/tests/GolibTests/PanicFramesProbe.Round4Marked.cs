@@ -63,4 +63,34 @@ internal static partial class panicframesprobe_package
         finally { ᒐ.Run(); }
         return got;
     }
+
+    // The receiver as the converter passes it: Go's `nil` is golib's `nil`, whose conversion to ж<T> is the
+    // canonical NilBox, a NON-null box (runtime's TestStackWrapperStackPanic/panicwrap calls `wrapper(nil)`).
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static List<string> nilBoxThroughPointerWrapper()
+    {
+        List<string> got = [];
+        GoFrame ᒐ = default;
+        try {
+            defer(() => { recoveredPanicwrap = recover(); got = callersHere(); }, ref ᒐ);
+            got = [pointerWrapper(nil).ToString()];
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        return got;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static List<string> nilBoxThroughMarkedPromotedWrapper()
+    {
+        List<string> got = [];
+        GoFrame ᒐ = default;
+        try {
+            defer(() => { recover(); got = callersHere(); }, ref ᒐ);
+            got = [promotedWrapperMarked(nil).ToString()];
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        return got;
+    }
 }

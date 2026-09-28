@@ -49,4 +49,32 @@ public class PanicFramesRound4MarkedTests
 
         Assert.AreEqual(panicframesprobe_package.PanicwrapMessage, panicframesprobe_package.recoveredPanicwrap?.ToString());
     }
+
+    // The receiver as the CONVERTER passes it (golib's nil, the canonical NON-null NilBox), not C#'s null.
+    // Go: gopanic | panicwrap | (*T).M | owner, recovering Go's message.
+    [TestMethod]
+    public void ANilBoxThroughTheValueMethodWrapperIsPanicwrap()
+    {
+        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.nilBoxThroughPointerWrapper);
+        int end = names.IndexOf(Pkg + "nilBoxThroughPointerWrapper", 3);
+        Assert.IsTrue(end >= 3, string.Join(" | ", names));
+
+        CollectionAssert.AreEqual(
+            new[] { "runtime.gopanic", "runtime.panicwrap", Pkg + "(*T).M", Pkg + "nilBoxThroughPointerWrapper" },
+            names.GetRange(3, end - 3 + 1), string.Join(" | ", names));
+        Assert.AreEqual(panicframesprobe_package.PanicwrapMessage, panicframesprobe_package.recoveredPanicwrap?.ToString());
+    }
+
+    // Go: gopanic | panicmem | sigpanic | (*OuterV).IM | owner.
+    [TestMethod]
+    public void ANilBoxThroughTheMarkedPromotedWrapperKeepsGosList()
+    {
+        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.nilBoxThroughMarkedPromotedWrapper);
+        int end = names.IndexOf(Pkg + "nilBoxThroughMarkedPromotedWrapper", 3);
+        Assert.IsTrue(end >= 3, string.Join(" | ", names));
+
+        CollectionAssert.AreEqual(
+            new[] { "runtime.gopanic", "runtime.panicmem", "runtime.sigpanic", Pkg + "(*OuterV).IM", Pkg + "nilBoxThroughMarkedPromotedWrapper" },
+            names.GetRange(3, end - 3 + 1), string.Join(" | ", names));
+    }
 }
