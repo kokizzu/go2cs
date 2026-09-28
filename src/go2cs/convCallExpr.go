@@ -149,6 +149,69 @@ func argRendersAsUntypedConst(info *types.Info, arg ast.Expr) bool {
 	return untypedConstLeaves(info, arg) && hasNamedUntypedConstLeaf(info, arg)
 }
 
+// isUntypedConstArg reports whether an argument is an untyped constant in Go: a constant value whose
+// every leaf is an untyped constant (a literal, a named untyped constant, or a fold over them).
+func isUntypedConstArg(info *types.Info, arg ast.Expr) bool {
+	tv, ok := info.Types[arg]
+
+	return ok && tv.Value != nil && untypedConstLeaves(info, arg)
+}
+
+// minMaxBareConstsInferCallType reports whether golib's generic min/max (`T max<T>(T, T)` and
+// `T max<T>(T, params ReadOnlySpan<T>)`) still infers the call's own type when every untyped-constant
+// argument is left as the converter renders it bare. It does so only for these cases:
+//
+//   - an unnamed float kind: the literal is emitted with the context's `F`/`D` suffix;
+//   - int32 (and rune): a bare integer literal IS a C# int;
+//   - int or int64 beside at least one typed argument, with every constant inside int32's range: the
+//     C# int literal widens to nint or long, the typed argument's own type.
+//
+// Everything else infers a different T or none: a sized or unsigned integer (`max(u8, 1)` infers int,
+// `max(u64, 1)` fails), uintptr, string, any NAMED type, and an all-constant int call, whose literals
+// infer int32 where Go's default type is int.
+func minMaxBareConstsInferCallType(info *types.Info, callExpr *ast.CallExpr, callType types.Type) bool {
+	var untyped []ast.Expr
+
+	for _, arg := range callExpr.Args {
+		if isUntypedConstArg(info, arg) {
+			untyped = append(untyped, arg)
+		}
+	}
+
+	// No untyped constant: nothing for this arm to state, and the call keeps its ordinary emission.
+	if len(untyped) == 0 {
+		return true
+	}
+
+	// A NAMED type is a *types.Named even after Unalias, so it falls out here.
+	basic, ok := types.Unalias(callType).(*types.Basic)
+
+	if !ok {
+		return false
+	}
+
+	if basic.Info()&types.IsInteger != 0 {
+		for _, arg := range untyped {
+			value, exact := constant.Int64Val(constant.ToInt(info.Types[arg].Value))
+
+			if !exact || value < math.MinInt32 || value > math.MaxInt32 {
+				return false
+			}
+		}
+	}
+
+	hasTyped := len(untyped) < len(callExpr.Args)
+
+	switch basic.Kind() {
+	case types.Float32, types.Float64, types.Int32:
+		return true
+	case types.Int, types.Int64:
+		return hasTyped
+	}
+
+	return false
+}
+
 // untypedConstLeaves reports whether every leaf of a constant expression is an untyped constant.
 func untypedConstLeaves(info *types.Info, expr ast.Expr) bool {
 	switch e := expr.(type) {
@@ -3404,6 +3467,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if funIdent, ok := callExpr.Fun.(*ast.Ident); ok {
 			if _, isBuiltin := v.info.ObjectOf(funIdent).(*types.Builtin); isBuiltin {
 				if callType := v.info.TypeOf(callExpr); callType != nil {
+					// An all-constant call in an untyped context takes the default type, as Go does.
+					callType = types.Default(callType)
+
 					argIsNamedUntypedConst := func(arg ast.Expr) bool {
 						return argRendersAsUntypedConst(v.info, arg)
 					}
@@ -3417,6 +3483,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						}
 					}
 
+					// A pure-LITERAL untyped constant is the second trigger, when golib's generic
+					// inference would not land on the call's type with the literal left bare:
+					// `max(u8, 1)` inferred T = int from the C# int `1` (%T int32, and uint8's wrap
+					// lost), `max(u64, 1)` inferred nothing (CS1503), `min(s, "a")` bound neither
+					// `@string` nor the u8 span (CS0411). Go converts the constant to the call's
+					// type, so the cast states that conversion.
+					literalTrigger := !needsCast && !minMaxBareConstsInferCallType(v.info, callExpr, callType)
+					needsCast = needsCast || literalTrigger
+
 					if needsCast {
 						// Once one argument is cast, an untyped LITERAL sibling (`min(big, limit,
 						// 500)` — a bare `500` is a C# int) breaks T inference against the cast
@@ -3428,7 +3503,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						for i, arg := range callExpr.Args {
 							args[i] = v.convExpr(arg, nil)
 
-							if _, isLit := arg.(*ast.BasicLit); isLit || argIsNamedUntypedConst(arg) {
+							if _, isLit := arg.(*ast.BasicLit); isLit || argIsNamedUntypedConst(arg) || literalTrigger && isUntypedConstArg(v.info, arg) {
 								args[i] = fmt.Sprintf("(%s)(%s)", csCallType, args[i])
 							}
 						}

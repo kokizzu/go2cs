@@ -181,6 +181,44 @@ matching the golib `uintptr` and `@string` structs, which are both. (Guarded by 
 floating and signed underlyings, values vs Go; the pre-fix generator is CS0315 ×10 across the three
 kinds.)
 
+## An untyped constant argument to `min`/`max` takes the call's type
+
+Go converts an untyped constant argument of `min`/`max` to the call's type: the type of its typed
+arguments, or the constant's default type when every argument is constant. golib's `min`/`max` are
+generic, so C# infers `T` from the arguments as emitted, and a bare integer literal is a C# `int`. The
+converter therefore casts each untyped-constant argument to the call's type wherever the bare form
+would infer a different `T`:
+
+<!-- source: src/tests/Behavioral/MinMaxBuiltin/main.go:143-144 -->
+```go
+x := max(u8, 1) // u8 is a uint8
+x += 100
+```
+<!-- source: src/tests/Behavioral/MinMaxBuiltin/main.cs.target:91-92 -->
+```csharp
+var x = max(u8, (uint8)(1));
+x += 100;
+```
+
+Left bare, `max(u8, 1)` infers `T = int`: `%T` prints `int32`, the value boxes as the wrong type in an
+interface, and `x += 100` gives 300 where Go's `uint8` wraps to 44. With `uint32`, `uint64`, `uint` or
+`uintptr` there is no implicit conversion from `int` at all, so the bare call does not compile, and
+`min(s, "a")` over strings binds neither `@string` nor the literal's UTF-8 span. The cast is emitted
+for every sized or unsigned integer type, `uintptr`, `string` (`(@string)("a"u8)`), every named type
+(`(fieldElement)(1)`), and an all-constant `int` call, whose literals would infer `int32` where Go's
+default type is `int`: `max((nint)(1), (nint)(2))`.
+
+The bare form is kept wherever it already infers the call's type, so that output reads as before:
+the float types (the literal carries the context's `F` or `D` suffix), `int32` and `rune` (a C#
+integer literal is an `int`), and `int` or `int64` beside a typed argument when every constant fits in
+an `int`, which then widens to `nint` or `long`. The same arm casts a NAMED untyped constant argument,
+which renders as its `UntypedInt` static (see
+[Named Numeric Types and Constant Contexts](named-numeric-types.md)).
+
+Guarded by: `MinMaxBuiltin` (each shape prints `%T` and `%v` against Go: int8 through uint64,
+uintptr, int and uint, float32 and float64, a mixed float/int constant, strings, the three named
+kinds, all-constant calls, and a later wrap in `uint8`).
+
 ## Lifted shift constraint uses the BCL shape `IShiftOperators<T, int, T>`
 
 The lifted Integer operator set constrains shifts as `IShiftOperators<T, int, T>` — the shift **count** is `int`, not the type parameter. Every [BCL](../Glossary.md#bcl) binary integer implements exactly that shape (`IShiftOperators<TSelf, int, TSelf>`); only C# `int` itself happens to also satisfy the self-typed form, so the self-typed constraint made every non-`int` instantiation fail (CS0315 — strconv's `bsearch[S ~[]E, E ~uint16 | ~uint32]` on `ushort`/`uint`). The shape is also exactly what emitted bodies need: the converter coerces every shift count to `int` (`x << (int)(k)`), so a generic body can only ever perform `T << int`. The generated named-constraint interface template (`Integer` in go2cs-gen) and its dynamic-conversion placeholder shift operators use the same `int`-count shape, keeping the two emitters consistent. (Guarded by the `GenericTypeInference` extensions `bsearchLike`/`halve` — `~uint16 | ~uint32` instantiations with a shift on the type parameter, values vs Go.)
