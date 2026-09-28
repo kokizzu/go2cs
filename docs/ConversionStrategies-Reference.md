@@ -1,7 +1,7 @@
+# Conversion Strategies — Technical Reference (moved)
+
 > **This reference has moved** to [`ConversionStrategies-Reference/`](ConversionStrategies-Reference/README.md),
 > one page per topic. The short, example-driven summary is [Conversion Strategies](ConversionStrategies.md).
-
-# Conversion Strategies — Technical Reference (moved)
 
 Links written against the single-page reference still land here. Each line below keeps one old
 anchor and links to the same heading in its new page.
