@@ -1414,6 +1414,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckPointerCoreConstraints() => CheckTarget("PointerCoreConstraints");
 
     [TestMethod]
+    public void CheckPointerElementAtUnsignedIndex() => CheckTarget("PointerElementAtUnsignedIndex");
+
+    [TestMethod]
     public void CheckPointerEmbedBoxReceiver() => CheckTarget("PointerEmbedBoxReceiver");
 
     [TestMethod]

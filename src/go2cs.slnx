@@ -748,6 +748,7 @@
     <Project Path="tests/Behavioral/PipeCloseUnblocksRead/PipeCloseUnblocksRead.csproj" />
     <Project Path="tests/Behavioral/PointerArraySlice/PointerArraySlice.csproj" />
     <Project Path="tests/Behavioral/PointerEmbedValueChainPromotion/PointerEmbedValueChainPromotion.csproj" />
+    <Project Path="tests/Behavioral/PointerElementAtUnsignedIndex/PointerElementAtUnsignedIndex.csproj" />
     <Project Path="tests/Behavioral/PointerParamWalk/PointerParamWalk.csproj" />
     <Project Path="tests/Behavioral/PointerArrayRange/PointerArrayRange.csproj" />
     <Project Path="tests/Behavioral/PointerCastSliceRange/PointerCastSliceRange.csproj" />
