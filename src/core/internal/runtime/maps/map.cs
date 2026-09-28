@@ -333,7 +333,7 @@ public static ж<ΔMap> NewEmptyMap() {
 
     // The number of entries that reference the same table doubles for each
     // time the globalDepth grows without the table splitting.
-    nint entries = ((nint)1).Lsh((uint64)((m.globalDepth - nt.localDepth)));
+    nint entries = ((nint)1).Lsh((uint64)((uint8)(m.globalDepth - nt.localDepth)));
     for (nint i = 0; i < entries; i++) {
         //m.directory[nt.index+i] = nt
         m.directorySet((uintptr)(nt.index + i), Ꮡnt);
@@ -371,7 +371,7 @@ public static ж<ΔMap> NewEmptyMap() {
     // directory has grown multiple times since old was last split.
     left.index = old.index;
     m.replaceTable(Ꮡleft);
-    nint entries = ((nint)1).Lsh((uint64)((m.globalDepth - left.localDepth)));
+    nint entries = ((nint)1).Lsh((uint64)((uint8)(m.globalDepth - left.localDepth)));
     right.index = left.index + entries;
     m.replaceTable(Ꮡright);
 }

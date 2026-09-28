@@ -407,7 +407,7 @@ internal static bool shouldRoundUp(ref @decimal a, nint nd) {
         if (a.trunc) {
             return true;
         }
-        return nd > 0 && (byte)((a.d[nd - 1] - (rune)'0') % 2) != 0;
+        return nd > 0 && (byte)((byte)(a.d[nd - 1] - (rune)'0') % 2) != 0;
     }
     // not halfway - digit tells all
     return a.d[nd] >= (rune)'5';
@@ -474,7 +474,7 @@ public static uint64 RoundedInteger(this ж<@decimal> Ꮡa) {
     nint i = default!;
     var n = (uint64)0;
     for (i = 0; i < a.dp && i < a.nd; i++) {
-        n = n * 10 + (uint64)(a.d[i] - (rune)'0');
+        n = n * 10 + (uint64)((byte)(a.d[i] - (rune)'0'));
     }
     for (; i < a.dp; i++) {
         n *= 10;

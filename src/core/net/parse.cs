@@ -150,7 +150,7 @@ internal static (nint n, nint i, bool ok) dtoi(@string s) {
 
     n = 0;
     for (i = 0; i < len(s) && (rune)'0' <= s[i] && s[i] <= (rune)'9'; i++) {
-        n = n * 10 + (nint)(s[i] - (rune)'0');
+        n = n * 10 + (nint)((byte)(s[i] - (rune)'0'));
         if (n >= big) {
             return (big, i, false);
         }
@@ -171,15 +171,15 @@ internal static (nint n, nint i, bool ok) xtoi(@string s) {
     for (i = 0; i < len(s); i++) {
         if ((rune)'0' <= s[i] && s[i] <= (rune)'9'){
             n *= 16;
-            n += (nint)(s[i] - (rune)'0');
+            n += (nint)((byte)(s[i] - (rune)'0'));
         } else 
         if ((rune)'a' <= s[i] && s[i] <= (rune)'f'){
             n *= 16;
-            n += (nint)(s[i] - (rune)'a') + 10;
+            n += (nint)((byte)(s[i] - (rune)'a')) + 10;
         } else 
         if ((rune)'A' <= s[i] && s[i] <= (rune)'F'){
             n *= 16;
-            n += (nint)(s[i] - (rune)'A') + 10;
+            n += (nint)((byte)(s[i] - (rune)'A')) + 10;
         } else {
             break;
         }

@@ -111,7 +111,7 @@ internal static fieldElement decompress(uint16 y, uint8 d) {
     // The d'th least-significant bit of the dividend (the most significant bit
     // of the remainder) is 1 for the top half of the values that divide to the
     // same quotient, which are the ones that round up.
-    quotient += (uint32)(dividend.Rsh((uint64)((d - 1))) & 1);
+    quotient += (uint32)(dividend.Rsh((uint64)((uint8)(d - 1))) & 1);
     // quotient is at most (2¹¹-1) * q / 2¹¹ + 1 = 3328, so it didn't overflow.
     return ((fieldElement)(uint16)quotient);
 }
@@ -444,8 +444,8 @@ internal static ringElement samplePolyCBD(slice<byte> s, byte b) {
         var bΔ1 = B[i / 2];
         var (b_7, b_6, b_5, b_4) = ((byte)((bΔ1 >> (int)(7))), (byte)((bΔ1 >> (int)(6)) & 1), (byte)((bΔ1 >> (int)(5)) & 1), (byte)((bΔ1 >> (int)(4)) & 1));
         var (b_3, b_2, b_1, b_0) = ((byte)((bΔ1 >> (int)(3)) & 1), (byte)((bΔ1 >> (int)(2)) & 1), (byte)((bΔ1 >> (int)(1)) & 1), (byte)(bΔ1 & 1));
-        f[i] = fieldSub(((fieldElement)(uint16)(b_0 + b_1)), ((fieldElement)(uint16)(b_2 + b_3)));
-        f[i + 1] = fieldSub(((fieldElement)(uint16)(b_4 + b_5)), ((fieldElement)(uint16)(b_6 + b_7)));
+        f[i] = fieldSub(((fieldElement)(uint16)((byte)(b_0 + b_1))), ((fieldElement)(uint16)((byte)(b_2 + b_3))));
+        f[i + 1] = fieldSub(((fieldElement)(uint16)((byte)(b_4 + b_5))), ((fieldElement)(uint16)((byte)(b_6 + b_7))));
     }
     return f.Clone();
 }

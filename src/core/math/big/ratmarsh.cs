@@ -59,7 +59,7 @@ internal static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid
     }
     var b = buf[0];
     if ((byte)((b >> (int)(1))) != ratGobVersion) {
-        return fmt.Errorf("Rat.GobDecode: encoding version %d not supported"u8, (b >> (int)(1)));
+        return fmt.Errorf("Rat.GobDecode: encoding version %d not supported"u8, (byte)((b >> (int)(1))));
     }
     UntypedInt j = /* 1 + 4 */ 5;
     var ln = byteorder.BEUint32(buf[(int)(j - 4)..(int)(j)]);

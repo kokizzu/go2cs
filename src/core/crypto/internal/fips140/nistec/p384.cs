@@ -358,7 +358,7 @@ public static ж<P384Point> Select(this ж<P384Point> Ꮡq, ж<P384Point> Ꮡp1,
     Ꮡp.Set(NewP384Point());
     for (var i = (uint8)1; i < 16; i++) {
         nint cond = subtle.ConstantTimeByteEq(i, n);
-        Ꮡp.Select(table.Value[i - 1], Ꮡp, cond);
+        Ꮡp.Select(table.Value[(uint8)(i - 1)], Ꮡp, cond);
     }
 }
 

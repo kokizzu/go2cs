@@ -152,7 +152,7 @@ public static slice<byte> Decomposition(this ΔProperties p) {
     var i = p.index;
     var n = (byte)(decomps[i] & (byte)headerLenMask);
     i++;
-    return decomps[(int)(i)..(int)(i + (uint16)n)];
+    return decomps[(int)(i)..(int)((uint16)(i + (uint16)n))];
 }
 
 // Size returns the length of UTF-8 encoding of the rune.
@@ -276,7 +276,7 @@ internal static ΔProperties compInfo(uint16 v, nint sz) {
                 p.index = 0;
                 return p;
             }
-            p.ccc = decomps[v + 1];
+            p.ccc = decomps[(uint16)(v + 1)];
         }
     }
     return p;

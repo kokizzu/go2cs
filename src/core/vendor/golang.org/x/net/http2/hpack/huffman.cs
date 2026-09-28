@@ -76,7 +76,7 @@ internal static error huffmanDecode(ж<bytes.Buffer> Ꮡbuf, nint maxLen, slice<
         cbits += 8;
         sbits += 8;
         while (cbits >= 8) {
-            var idx = (byte)(cur.Rsh((uint64)((cbits - 8))));
+            var idx = (byte)(cur.Rsh((uint64)((uint8)(cbits - 8))));
             n = (~n).children.Value[idx];
             if (n == nil) {
                 return ErrInvalidHuffman;
@@ -95,7 +95,7 @@ internal static error huffmanDecode(ж<bytes.Buffer> Ꮡbuf, nint maxLen, slice<
         }
     }
     while (cbits > 0) {
-        n = (~n).children.Value[(byte)(cur.Lsh((uint64)((8 - cbits))))];
+        n = (~n).children.Value[(byte)(cur.Lsh((uint64)((uint8)(8 - cbits))))];
         if (n == nil) {
             return ErrInvalidHuffman;
         }

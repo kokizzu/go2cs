@@ -371,7 +371,7 @@ internal static array<int8> signedRadix16(this ж<Scalar> Ꮡs) {
     }
     // Recenter coefficients:
     for (nint i = 0; i < 63; i++) {
-        var carry = (int8)(((digits[i] + 8) >> (int)(4)));
+        var carry = (int8)(((int8)(digits[i] + 8) >> (int)(4)));
         digits[i] -= (int8)(carry << (int)(4));
         digits[i + 1] += carry;
     }

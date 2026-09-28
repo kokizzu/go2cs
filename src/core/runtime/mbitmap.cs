@@ -1760,7 +1760,7 @@ internal static void dumpGCProg(ж<byte> Ꮡp) {
         }
         if ((byte)(x & 0x80) == 0){
             print((@string)"\t"u8, nptr, (@string)" lit "u8, x, (@string)":"u8);
-            nint n = (nint)(x + 7) / 8;
+            nint n = (nint)((byte)(x + 7)) / 8;
             for (nint i = 0; i < n; i++) {
                 print((@string)" "u8, ((Δhex)(uint64)(Δp)));
                 Ꮡp = add1(Ꮡp); Δp = ref Ꮡp.DerefOrNull();

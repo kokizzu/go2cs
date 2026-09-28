@@ -107,10 +107,10 @@ internal static (slice<byte> after, bool found) cutPrefix(slice<byte> s, slice<b
 }
 
 internal static (slice<byte> buf, slice<byte> rest, bool ok) readUint8LengthPrefixed(slice<byte> b) {
-    if (len(b) == 0 || len(b) < (nint)(1 + b[0])) {
+    if (len(b) == 0 || len(b) < (nint)((byte)(1 + b[0]))) {
         return (default!, default!, false);
     }
-    return (b[1..(int)(1 + b[0])], b[(int)(1 + b[0])..], true);
+    return (b[1..(int)((byte)(1 + b[0]))], b[(int)((byte)(1 + b[0]))..], true);
 }
 
 // AppendBinary implements the [encoding.BinaryAppender] interface.

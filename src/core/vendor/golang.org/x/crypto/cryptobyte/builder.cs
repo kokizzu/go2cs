@@ -250,7 +250,7 @@ private static readonly @string pendingAsn1ChildTooLongˢ = "pending ASN.1 child
         // Insert the initial length byte, make space for successive length bytes,
         // and adjust the offset.
         child.Value.result[(~child).offset] = lenByte;
-        nint extraBytes = (nint)(lenLen - 1);
+        nint extraBytes = (nint)((uint8)(lenLen - 1));
         if (extraBytes != 0) {
             child.add(new slice<byte>(extraBytes).ꓸꓸꓸ);
             nint childStart = (~child).offset + (~child).pendingLenLen;

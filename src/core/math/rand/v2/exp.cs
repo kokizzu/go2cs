@@ -35,7 +35,7 @@ internal static UntypedFloat re => 7.69711747013104972;
         if (i == 0) {
             return (float64)re - math.Log(r.Float64());
         }
-        if (fe[i] + (float32)r.Float64() * (fe[i - 1] - fe[i]) < (float32)math.Exp(-x)) {
+        if (fe[i] + (float32)r.Float64() * (fe[(uint8)(i - 1)] - fe[i]) < (float32)math.Exp(-x)) {
             return x;
         }
     }

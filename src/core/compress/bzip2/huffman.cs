@@ -120,7 +120,7 @@ internal static (huffmanTree, error) newHuffmanTree(slice<uint8> lengths) {
         codes[i].value = pairs[i].value;
         // We need to 'increment' the code, which means treating |code|
         // like a |length| bit number.
-        code += ((uint32)1).Lsh((uint64)((32 - length)));
+        code += ((uint32)1).Lsh((uint64)((uint8)(32 - length)));
     }
     // Now we can sort by the code so that the left half of each branch are
     // grouped together, recursively.

@@ -129,7 +129,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         }
         weightMark[w]++;
         if (w > 0) {
-            weightMask += ((uint32)1).Lsh((uint64)((w - 1)));
+            weightMask += ((uint32)1).Lsh((uint64)((uint8)(w - 1)));
         }
     }
     if (weightMask == 0) {
@@ -174,7 +174,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         if (w == 0) {
             continue;
         }
-        var length = ((uint32)1).Lsh((uint64)((w - 1)));
+        var length = ((uint32)1).Lsh((uint64)((uint8)(w - 1)));
         var tval = (uint16)((uint16)((uint16)i << (int)(8)) | ((uint16)tableBits + 1 - (uint16)w));
         var start = weightMark[w];
         for (var j = (uint32)0; j < length; j++) {

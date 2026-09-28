@@ -57,7 +57,7 @@ internal static void initMetrics() {
         // value up to 2^53 and size classes are relatively small
         // (nowhere near 2^48 even) so this will give us exact
         // boundaries.
-        sizeClassBuckets[i] = (float64)(class_to_size[i] + 1);
+        sizeClassBuckets[i] = (float64)((uint16)(class_to_size[i] + 1));
     }
     sizeClassBuckets = append(sizeClassBuckets, float64Inf());
     timeHistBuckets = timeHistogramMetricsBuckets();

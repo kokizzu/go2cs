@@ -41,7 +41,7 @@ Loop:
     foreach (var (_, b) in release[..]) {
         switch (ᐧ) {
         case {} when b >= (rune)'0' && b <= (rune)'9': {
-            mmp[c] = 10 * mmp[c] + (nint)(b - (rune)'0');
+            mmp[c] = 10 * mmp[c] + (nint)((byte)(b - (rune)'0'));
             break;
         }
         case {} when b is (rune)'.': {

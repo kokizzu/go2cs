@@ -530,7 +530,7 @@ internal static void length_8_32(slice<byte> text, slice<int32> sa, nint numLMS)
     var (c0, c1, isTypeS) = ((byte)0, (byte)0, false);
     for (nint i = builtin.len(text) - 1; i >= 0; i--) {
         (c0, c1) = (text[i], c0);
-        cx = (uint32)((cx << (int)(8)) | (uint32)(c1 + 1)); // byte-only
+        cx = (uint32)((cx << (int)(8)) | (uint32)((byte)(c1 + 1))); // byte-only
         if (c0 < c1){
             isTypeS = true;
         } else 
@@ -551,7 +551,7 @@ internal static void length_8_32(slice<byte> text, slice<int32> sa, nint numLMS)
             }
             sa[(j >> (int)(1))] = code;
             end = j + 1;
-            cx = (uint32)(c1 + 1); // byte-only
+            cx = (uint32)((byte)(c1 + 1)); // byte-only
         }
     }
 }

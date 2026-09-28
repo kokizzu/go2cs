@@ -269,7 +269,7 @@ internal static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"
                 //
                 // If this span was cached before sweep, then gcController.heapLive was totally
                 // recomputed since caching this span, so we don't do this for stale spans.
-                dHeapLive -= (int64)((~s).nelems - (~s).allocCount) * (int64)(~s).elemsize;
+                dHeapLive -= (int64)((uint16)((~s).nelems - (~s).allocCount)) * (int64)(~s).elemsize;
             }
             // Release the span to the mcentral.
             mheap_.central[i].mcentral.uncacheSpan(s);

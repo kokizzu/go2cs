@@ -829,8 +829,8 @@ public static void JSEscape(io.Writer w, slice<byte> b) {
             default: {
                 w.Write(jsLowUni);
                 var (t, bΔ2) = ((byte)((c >> (int)(4))), (byte)(c & 0x0f));
-                w.Write(hex[(int)(t)..(int)(t + 1)]);
-                w.Write(hex[(int)(bΔ2)..(int)(bΔ2 + 1)]);
+                w.Write(hex[(int)(t)..(int)((byte)(t + 1))]);
+                w.Write(hex[(int)(bΔ2)..(int)((byte)(bΔ2 + 1))]);
                 break;
             }}
 

@@ -233,14 +233,14 @@ internal static ж<timeꓸLocation> timeZone(time.Duration offset) {
 // See: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-dosdatetimetofiletime
 internal static time.Time msDosTimeToTime(uint16 dosDate, uint16 dosTime) {
     return time.Date(
-        (nint)((dosDate >> (int)(9)) + 1980), // date bits 0-4: day of month; 5-8: month; 9-15: years since 1980
+        (nint)((uint16)((dosDate >> (int)(9)) + 1980)), // date bits 0-4: day of month; 5-8: month; 9-15: years since 1980
 
         ((timeꓸMonth)(nint)((uint16)((dosDate >> (int)(5)) & 0xf))),
         (nint)((uint16)(dosDate & 0x1f)), // time bits 0-4: second/2; 5-10: minute; 11-15: hour
 
         (nint)((dosTime >> (int)(11))),
         (nint)((uint16)((dosTime >> (int)(5)) & 0x3f)),
-        (nint)((uint16)(dosTime & 0x1f) * 2),
+        (nint)((uint16)((uint16)(dosTime & 0x1f) * 2)),
         0, // nanoseconds
 
         time.ΔUTC);

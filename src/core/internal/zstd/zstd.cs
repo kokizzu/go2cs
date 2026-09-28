@@ -228,7 +228,7 @@ retry:
     nint dictionaryIdSize = 0;
     {
         var dictIdFlag = (byte)(descriptor & 3); if (dictIdFlag != 0) {
-            dictionaryIdSize = ((nint)1).Lsh((uint64)((dictIdFlag - 1)));
+            dictionaryIdSize = ((nint)1).Lsh((uint64)((byte)(dictIdFlag - 1)));
         }
     }
     relativeOffset++;
