@@ -39,3 +39,30 @@ Falsifiers:
    −8/+3) but not the file set or the line kinds. A count inside that band is MET.
 2. The runtime1.cs callers of enableWER (all three targets) are unchanged: a call site does not
    depend on where the body lives.
+
+---
+
+## SCORED: the footprint (appended 2026-09-27; the prediction above is unedited)
+
+**MET.** Base 1dae85e093 / cut 672257571b:
+- windows: 2 files. runtime/windows/signal_windows.cs reads −8/+1: the doc comment, the func line,
+  the inner comment, the body and the closing brace go, and the placeholder comes in. That is inside
+  uncertainty 1's band; the inner comment was NOT hoisted. runtime/windows/package_info.cs reads 1/1:
+  the signal_windows.go map line is re-encoded, not removed.
+- linux: 0 files. darwin: 0 files.
+- No falsifier fired.
+
+## PREDICTION: the gates (written before any gate runs)
+
+- Converter suite (unfiltered go test ./...): green.
+- GolibTests, Release and Debug: the base's failure set and nothing more (the host symlink-privilege
+  trio), plus the 4 new arms passing.
+- Full behavioral suite: 0 new failures. The runner starts programs without GODEBUG or GOTRACEBACK, so
+  parsedebugvars only applies defaults, and no behavioral output reads a dbgvar.
+- runtime row (windows, -tests, cut vs base): 0 verdicts move. TestWERDialogue keeps its verdict,
+  because its child fails both ways. What changes is HOW the child fails. Before: GOTRACEBACK=wer is
+  never parsed, so RaiseException kills the child with the error mode unchanged. After: parsedebugvars
+  runs setTraceback("wer") and enableWER clears SEM_NOGPFAULTERRORBOX before the child raises.
+  UNCERTAINTY, ranked first: with the fault box re-enabled, WER may hold the dying child, which the
+  parent would see as a stall to its deadline rather than a failure.
+- runtime/debug, os/exec, os/signal (banked sweeps): PASS at their banked counts, 0 moved.
