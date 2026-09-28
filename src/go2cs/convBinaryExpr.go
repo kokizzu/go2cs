@@ -135,6 +135,144 @@ func (v *Visitor) foldedNamedFloatConstLiteral(operand ast.Expr, targetCSType st
 	return fmt.Sprintf("/* %s */ %s%s", strings.TrimSpace(v.getPrintedNode(operand)), exactFloatText(tv.Value, "", isFloat32), suffix)
 }
 
+// foldedMixedIntegerConstLiteral folds a constant expression that go/types types as a (non-float)
+// INTEGER — explicitly (`uint64(1.0 / (retainExtraPercent / 100.0))`) or by its context (an operand
+// compared against a uint64, an int64 assignment) — when it mixes a NAMED untyped-int constant with a
+// float operand (a float literal or a named untyped-float constant). It returns "" for anything else.
+// The named int constant emits as an UntypedInt wrapper, and C# then binds the WRONG operator: with a
+// double literal, UntypedInt's own (the literal converted to UntypedInt, truncated: 10 / 100.0 is 0,
+// then 1 / 0 throws); with an UntypedFloat, no user-defined operator applies and C# falls back to
+// int32 arithmetic. Go's constant is exact and, under an integer type, integral, so the fold renders
+// that value in the float fold's comment form, typed the way overflowingConstLiteral types its folds.
+// Pure-integer and pure-float expressions, and a float operand beside only integer LITERALS, keep
+// their emission: C# already evaluates those correctly.
+func (v *Visitor) foldedMixedIntegerConstLiteral(expr ast.Expr) string {
+	tv, ok := v.info.Types[expr]
+
+	if !ok || tv.Value == nil || tv.Type == nil {
+		return ""
+	}
+
+	basic, ok := tv.Type.Underlying().(*types.Basic)
+
+	if !ok || basic.Info()&types.IsInteger == 0 || basic.Info()&types.IsUntyped != 0 {
+		return ""
+	}
+
+	if !v.containsUntypedNamedIntegerConstRef(expr) || !v.containsFloatConstOperand(expr) {
+		return ""
+	}
+
+	val := constant.ToInt(tv.Value)
+
+	if val.Kind() != constant.Int {
+		return ""
+	}
+
+	comment := "/* " + strings.TrimSpace(v.getPrintedNode(expr)) + " */ "
+	csType := v.getCSharpTypeName(basic)
+	named, isNamed := tv.Type.(*types.Named)
+
+	if basic.Info()&types.IsUnsigned != 0 {
+		u, exact := constant.Uint64Val(val)
+
+		if !exact {
+			return ""
+		}
+
+		lit := comment + strconv.FormatUint(u, 10) + "UL"
+
+		switch {
+		case csType == "nuint" || csType == "uintptr":
+			return uncheckedIfBeyond32Bit("nuint", lit, u > math.MaxUint32)
+		case isNamed:
+			return "(" + convertToCSTypeName(v.getScopeCheckedTypeName(named)) + ")(" + lit + ")"
+		case csType == "uint64":
+			return lit
+		default:
+			return "(" + csType + ")(" + lit + ")"
+		}
+	}
+
+	i, exact := constant.Int64Val(val)
+
+	if !exact {
+		return ""
+	}
+
+	lit := comment + strconv.FormatInt(i, 10) + "L"
+
+	switch {
+	case basic.Kind() == types.Int:
+		return uncheckedIfBeyond32Bit("nint", lit, i > math.MaxInt32 || i < math.MinInt32)
+	case isNamed:
+		return "(" + convertToCSTypeName(v.getScopeCheckedTypeName(named)) + ")(" + lit + ")"
+	case basic.Kind() == types.Int64:
+		return lit
+	default:
+		return "(" + csType + ")(" + lit + ")"
+	}
+}
+
+// containsFloatConstOperand reports whether any subexpression is a FLOAT literal or a reference to a
+// named untyped-float constant, not looking inside a type conversion (whose operand is typed by it),
+// exactly as containsUntypedNamedIntegerConstRef walks.
+func (v *Visitor) containsFloatConstOperand(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		if callExpr, ok := n.(*ast.CallExpr); ok {
+			if isConversion, _ := v.isTypeConversion(callExpr); isConversion {
+				return false
+			}
+		}
+
+		if lit, ok := n.(*ast.BasicLit); ok && lit.Kind == token.FLOAT {
+			found = true
+			return false
+		}
+
+		if e, ok := n.(ast.Expr); ok && v.isUntypedNamedFloatConstRef(e) {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// isUntypedNamedFloatConstRef is the untyped-FLOAT subset of isUntypedNamedConstRef.
+func (v *Visitor) isUntypedNamedFloatConstRef(expr ast.Expr) bool {
+	if !v.isUntypedNamedConstRef(expr) {
+		return false
+	}
+
+	var sel *ast.Ident
+
+	switch e := expr.(type) {
+	case *ast.Ident:
+		sel = e
+	case *ast.SelectorExpr:
+		sel = e.Sel
+	default:
+		return false
+	}
+
+	if constObj, ok := v.info.ObjectOf(sel).(*types.Const); ok {
+		if basic, ok := constObj.Type().(*types.Basic); ok {
+			return basic.Kind() == types.UntypedFloat
+		}
+	}
+
+	return false
+}
+
 // isUntypedNamedConstRef reports whether the expression is a reference (ident or selector) to an
 // untyped numeric constant — which the converter emits as a golib `Untyped*` wrapper. It is false
 // for literals (those render as ordinary C# literals and follow normal numeric promotion rules).
@@ -1174,6 +1312,13 @@ func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatc
 	// The same in a FLOAT context, where the fold above does not apply (the constant's type is not
 	// an integer) but C# still evaluates the int-literal operands in int32 — silently, not loudly.
 	if lit := v.floatContextConstLiteral(binaryExpr); lit != "" {
+		return lit
+	}
+
+	// An INTEGER-typed constant expression mixing a named untyped-int constant with a float operand
+	// folds to Go's exact value — see foldedMixedIntegerConstLiteral. After the overflow fold, so a
+	// site that fold already renders exactly keeps its emission.
+	if lit := v.foldedMixedIntegerConstLiteral(binaryExpr); lit != "" {
 		return lit
 	}
 

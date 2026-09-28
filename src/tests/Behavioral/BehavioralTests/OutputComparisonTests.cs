@@ -2012,6 +2012,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUntypedIntFloatContexts() => CheckTarget("UntypedIntFloatContexts");
 
     [TestMethod]
+    public void CheckUntypedIntFloatLiteralFold() => CheckTarget("UntypedIntFloatLiteralFold");
+
+    [TestMethod]
     public void CheckUntypedIntInterfaceBox() => CheckTarget("UntypedIntInterfaceBox");
 
     [TestMethod]

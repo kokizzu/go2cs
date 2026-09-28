@@ -981,6 +981,7 @@
     <Project Path="tests/Behavioral/UntypedFloatConstExpr/UntypedFloatConstExpr.csproj" />
     <Project Path="tests/Behavioral/UntypedFloatDefault/UntypedFloatDefault.csproj" />
     <Project Path="tests/Behavioral/UntypedIntFloatContexts/UntypedIntFloatContexts.csproj" />
+    <Project Path="tests/Behavioral/UntypedIntFloatLiteralFold/UntypedIntFloatLiteralFold.csproj" />
     <Project Path="tests/Behavioral/UntypedIntWideShift/UntypedIntWideShift.csproj" />
     <Project Path="tests/Behavioral/ValueAdapterDynamicType/ValueAdapterDynamicType.csproj" />
     <Project Path="tests/Behavioral/ValueAdapterDynamicType/colorlike/ValueAdapterDynamicType.colorlike.csproj" />

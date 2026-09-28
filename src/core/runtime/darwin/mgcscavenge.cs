@@ -158,7 +158,7 @@ internal static void gcPaceScavenger(int64 memoryLimit, uint64 heapGoal, uint64 
     // looks strange but the purpose is to arrive at an integer division
     // (e.g. if retainExtraPercent = 12.5, then we get a divisor of 8)
     // that also avoids the overflow from a multiplication.
-    gcPercentGoal += gcPercentGoal / (uint64)(1.0D / (retainExtraPercent / 100.0D));
+    gcPercentGoal += gcPercentGoal / (uint64)(/* 1.0 / (retainExtraPercent / 100.0) */ 10UL);
     // Align it to a physical page boundary to make the following calculations
     // a bit more exact.
     gcPercentGoal = (uint64)((gcPercentGoal + (uint64)physPageSize - 1) & ~((uint64)physPageSize - 1));
