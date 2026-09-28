@@ -2561,6 +2561,24 @@ partial class runtime_package
         return (stopFailure, acquired.Wait(timeoutMs));
     }
 
+    // ---- the guard's view (GolibTests RuntimeSchedZeroValueTests) ----
+
+    /// <summary>
+    /// The lengths of the count arrays of the five time histograms Go's schedt embeds by value
+    /// (timeToRun and the four stop-the-world ones). Go's zero value holds each as a zeroed
+    /// [timeHistNumBuckets*timeHistNumSubBuckets]atomic.Uint64; a zero length here means sched was
+    /// built as default(schedt), which skips the field initializers that allocate those arrays, and a
+    /// record into any of them indexes out of range.
+    /// </summary>
+    public static (nint timeToRun, nint stwStoppingGC, nint stwStoppingOther, nint stwTotalGC, nint stwTotalOther) GoSchedHistogramLengths() =>
+        (len(sched.timeToRun.counts), len(sched.stwStoppingTimeGC.counts), len(sched.stwStoppingTimeOther.counts),
+         len(sched.stwTotalTimeGC.counts), len(sched.stwTotalTimeOther.counts));
+
+    /// <summary>
+    /// Go's timeHistNumBuckets * timeHistNumSubBuckets: the length every one of those arrays has in Go.
+    /// </summary>
+    public static nint GoTimeHistogramLength => timeHistNumBuckets * timeHistNumSubBuckets;
+
     /// <summary>
     /// GolibTests' probe for shrinkstack's refusal (RuntimeHostFatalRefusalTests): shrinks the
     /// calling goroutine's stack, as runtime's ShrinkStackAndVerifyFramePointers export does, and
