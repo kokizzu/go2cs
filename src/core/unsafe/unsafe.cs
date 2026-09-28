@@ -1004,7 +1004,10 @@ public static ж<T> SliceData<T>(slice<T> slice) {
     // TryGetElementWindow arm rebuilds a window over the original backing, so a write through the
     // rebuilt slice reaches the source — Go's semantics. Guarded by the UnsafeStringEmpty and
     // UnsafeSliceDataAliasing behavioral tests.
-    return Ꮡ(slice, 0);
+    //
+    // UNCHECKED, because Go's SliceData is `&s[:1][0]`: it names the underlying array's first element
+    // whenever cap(s) > 0, even at len(s) == 0, where Go's `&s[0]` (the checked Ꮡ) would panic.
+    return ElementAddressUnchecked(slice, 0);
 }
 
 // String returns a string value whose underlying bytes

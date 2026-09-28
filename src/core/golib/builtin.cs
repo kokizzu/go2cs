@@ -2226,7 +2226,22 @@ public static partial class builtin
     public static ж<T> Ꮡ<T>(slice<T> target, int index)
     {
         CheckElementIndex(index, target.Length);
+        return ElementAddressUnchecked(target, index);
+    }
 
+    /// <summary>
+    /// Gets a pointer to slice element at <paramref name="index"/> WITHOUT Go's index check, for the
+    /// runtime-level addressing Go itself does unchecked: <c>unsafe.SliceData(s)</c> is
+    /// <c>&amp;s[:1][0]</c>, the underlying array's first element even when <c>len(s)</c> is 0 and
+    /// <c>cap(s)</c> is not. Converted code never calls this; Go's <c>&amp;s[i]</c> is
+    /// <see cref="Ꮡ{T}(slice{T}, int)"/>, which panics unless <c>0 &lt;= i &lt; len(s)</c>.
+    /// </summary>
+    /// <typeparam name="T">Target type of reference.</typeparam>
+    /// <param name="target">Target slice.</param>
+    /// <param name="index">Index of element, relative to the slice's window.</param>
+    /// <returns>Pointer to slice element at <paramref name="index"/>.</returns>
+    public static ж<T> ElementAddressUnchecked<T>(slice<T> target, int index)
+    {
         if (target.IsNativeBacked)
         {
             unsafe
