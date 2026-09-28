@@ -66,7 +66,7 @@ using static go.vendor.golang.org.x.net.idna_package;
 
 namespace go.vendor.golang.org.x.net;
 
-[GoPackage("idna")]
+[GoPackage("idna", ImportPath = "vendor/golang.org/x/net/idna")]
 public static partial class idna_package
 {
     // C# nested types declared with no access modifier are always private, and the

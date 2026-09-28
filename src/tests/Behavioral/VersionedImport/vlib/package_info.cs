@@ -55,7 +55,7 @@ using static go.vlib.vlib_package;
 
 namespace go.vlib;
 
-[GoPackage("vlib")]
+[GoPackage("vlib", ImportPath = "vlib/v2")]
 public static partial class vlib_package
 {
     // C# nested types declared with no access modifier are always private, and the

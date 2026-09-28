@@ -78,7 +78,7 @@ using static go.vendor.golang.org.x.net.dns.dnsmessage_package;
 
 namespace go.vendor.golang.org.x.net.dns;
 
-[GoPackage("dnsmessage")]
+[GoPackage("dnsmessage", ImportPath = "vendor/golang.org/x/net/dns/dnsmessage")]
 public static partial class dnsmessage_package
 {
     // C# nested types declared with no access modifier are always private, and the

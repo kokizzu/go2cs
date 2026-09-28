@@ -58,7 +58,7 @@ using static go.vendor.golang.org.x.text.transform_package;
 
 namespace go.vendor.golang.org.x.text;
 
-[GoPackage("transform")]
+[GoPackage("transform", ImportPath = "vendor/golang.org/x/text/transform")]
 public static partial class transform_package
 {
     // C# nested types declared with no access modifier are always private, and the

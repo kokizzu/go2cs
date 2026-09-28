@@ -105,7 +105,7 @@ using static go.crypto.x509.@internal.macOS_package;
 
 namespace go.crypto.x509.@internal;
 
-[GoPackage("macOS")]
+[GoPackage("macOS", ImportPath = "crypto/x509/internal/macos")]
 public static partial class macOS_package
 {
     // C# nested types declared with no access modifier are always private, and the

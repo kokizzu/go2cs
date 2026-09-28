@@ -82,7 +82,7 @@ using static go.vendor.golang.org.x.net.nettest_package;
 
 namespace go.vendor.golang.org.x.net;
 
-[GoPackage("nettest")]
+[GoPackage("nettest", ImportPath = "vendor/golang.org/x/net/nettest")]
 public static partial class nettest_package
 {
     // C# nested types declared with no access modifier are always private, and the

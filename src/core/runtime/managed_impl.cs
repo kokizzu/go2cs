@@ -1023,6 +1023,19 @@ partial class runtime_package
         // "go.runtime.debug_package" -> "runtime/debug"
         string importPath = typeName[3..packageSuffix].Replace('.', '/');
 
+        // ...unless the package class carries its VERBATIM import path (GoPackageAttribute.ImportPath),
+        // which the converter stamps exactly where the line above cannot reproduce it: a '.' inside a
+        // segment (`example.com/x`), a major-version directory, a name that differs from its directory.
+        // The stamp is final, test variants included (each is stamped with the path Go gives it), so
+        // the internal-test suffix rule below does not apply to it. The frame may be a closure class
+        // nested in the package class, so the class is found by walking out to the `_package` level.
+        Type? packageClass = declaring;
+
+        while (packageClass is not null && !packageClass.Name.EndsWith("_package", StringComparison.Ordinal))
+            packageClass = packageClass.DeclaringType;
+
+        bool stamped = go.GoReflect.GoPackageImportPathOf(packageClass) is { } verbatim && (importPath = verbatim) is not null;
+
         // An INTERNAL test file (`package slog`, in logger_test.go) is compiled INTO the package
         // under test, so Go names its frames with that package's own import path and NO suffix at
         // all. The `-tests` pipeline cannot compile it into the production class — it emits a
@@ -1057,7 +1070,8 @@ partial class runtime_package
         // derivation stands as the design ruled it (§8: "goImportPath stays").
         const string internalTestSuffix = "_internal_test";
 
-        if (importPath.Length > internalTestSuffix.Length &&
+        if (!stamped &&
+            importPath.Length > internalTestSuffix.Length &&
             importPath.EndsWith(internalTestSuffix, StringComparison.Ordinal))
         {
             importPath = importPath[..^internalTestSuffix.Length];

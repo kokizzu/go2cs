@@ -1555,7 +1555,7 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, goPackag
 	b.WriteString("\r\n")
 	b.WriteString(fmt.Sprintf("namespace %s;\r\n", projectNamespace))
 	b.WriteString("\r\n")
-	b.WriteString(fmt.Sprintf("[GoPackage(\"%s\")]\r\n", goPackageName))
+	b.WriteString(goPackageAttributeLine(projectNamespace, goPackageName, goPackageImportPathFor(testClassName, goPackageName)) + "\r\n")
 	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n", testClassName))
 	b.WriteString(productionInitForcingHook(projectNamespace, productionClassName))
 	b.WriteString("}\r\n")
@@ -2723,6 +2723,7 @@ type productionSeed struct {
 func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, seed productionSeed, options Options) ([]string, HashSet[string], error) {
 	resetPackageState(pkg)
 	packageNamespace = projectNamespace
+	currentPackageGorootVendored = isGorootVendoredDir(pkg.Dir, options.goRoot)
 
 	// The lifted type names the production conversion already claimed (see
 	// productionLiftedTypeNames). Non-nil for the INTERNAL variant only — its test files emit into
@@ -3093,7 +3094,10 @@ func appendExternalTestPackageClass(testInfoPath, packageNamespace, productionPa
 		contents = strings.Replace(contents, productionUsing, productionUsing+"\r\n"+testUsing, 1)
 	}
 
-	block := fmt.Sprintf("\r\n[GoPackage(\"%s\")]\r\npublic static partial class %s\r\n{\r\n}\r\n", external.Name, className)
+	// The stamp is rendered by the same rule convergeGoPackageStamps applies, so a rerun that finds
+	// this block already converged still matches it and appends nothing. The external test package's
+	// Go path is its own (`<path>_test`).
+	block := fmt.Sprintf("\r\n%s\r\npublic static partial class %s\r\n{\r\n}\r\n", goPackageAttributeLine(packageNamespace, external.Name, goReflectPackagePath(external.PkgPath)), className)
 
 	if !strings.Contains(contents, block) {
 		contents += block
@@ -3383,7 +3387,7 @@ func internalTestPackageInfoSeed(projectNamespace, productionClassName, bridgeCl
 	b.WriteString("\r\n")
 	b.WriteString(fmt.Sprintf("namespace %s;\r\n", projectNamespace))
 	b.WriteString("\r\n")
-	b.WriteString(fmt.Sprintf("[GoPackage(\"%s\")]\r\n", goPackageName))
+	b.WriteString(goPackageAttributeLine(projectNamespace, goPackageName, goPackageImportPathFor(bridgeClassName, goPackageName)) + "\r\n")
 	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n}\r\n", bridgeClassName))
 
 	return b.String()

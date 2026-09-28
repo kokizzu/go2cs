@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -240,6 +241,11 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 	// as it has had rewrites.
 	packageInfoLines = migrateProseBlock(packageInfoLines, legacyInterfaceImplementationsFirstLine,
 		"<InterfaceImplementations>", interfaceImplementationsProseLines())
+
+	// Converge every [GoPackage] stamp on the current rule, for the same reason: a persisted file
+	// is copied through verbatim outside its marker sections, so without this a package whose
+	// verbatim import path changed (or that predates the ImportPath stamp) would keep a stale one.
+	packageInfoLines = convergeGoPackageStamps(packageInfoLines, packageNamespace)
 
 	// Handle imported type aliases
 	startLineIndex := -1
@@ -970,4 +976,157 @@ func applyGoSourcePositionMaps(packageInfoLines []string, packageInfoFileName st
 	updated = append(updated, packageInfoLines[namespaceIndex:]...)
 
 	return updated
+}
+
+// goPackageStampPrefix opens every [GoPackage] stamp the converter writes: the package NAME, and
+// optionally the verbatim import path (`[GoPackage("dotted", ImportPath = "example.com/dotted/v2")]`).
+const goPackageStampPrefix = `[GoPackage("`
+
+// goPackageAttributeLine renders the [GoPackage] stamp for one package class. The package NAME is
+// always there; the verbatim IMPORT PATH is added exactly where golib's decoders cannot rebuild it
+// from the emission (goPackageImportPathStamp), which keeps the stamp -- and the corpus footprint --
+// to the packages that need it.
+func goPackageAttributeLine(namespace, name, importPath string) string {
+	if stamp := goPackageImportPathStamp(namespace, name, importPath); stamp != "" {
+		return fmt.Sprintf(`%s%s", ImportPath = "%s")]`, goPackageStampPrefix, name, stamp)
+	}
+
+	return fmt.Sprintf(`%s%s")]`, goPackageStampPrefix, name)
+}
+
+// goPackageImportPathStamp returns importPath when golib's package-path decoders would NOT reproduce
+// it, and "" when they would. The decoders (GoReflect.GoPackageClassPath, GoSyntheticPC.GoNameOf,
+// the runtime's goFrameName) rebuild a path as the namespace below the `go` root, '.' read as '/',
+// plus '/' and the package name -- so a '.' inside a segment (`example.com/x`,
+// `vendor/golang.org/x/...`), a major-version directory (`math/rand/v2` names package rand), a
+// package name that differs from its directory, and a sanitized segment all decode wrong. This
+// predicate mirrors that decode exactly (the '@' keyword escape is a source spelling the runtime
+// namespace string does not carry), so it names every such case without listing any of them.
+func goPackageImportPathStamp(namespace, name, importPath string) string {
+	if importPath == "" {
+		return ""
+	}
+
+	derived := name
+	tail := strings.ReplaceAll(namespace, "@", "")
+
+	if strings.HasPrefix(tail, RootNamespace+".") {
+		derived = strings.ReplaceAll(strings.TrimPrefix(tail, RootNamespace+"."), ".", "/") + "/" + name
+	}
+
+	if derived == importPath {
+		return ""
+	}
+
+	return importPath
+}
+
+// goPackageImportPathFor returns Go's import path for a package class that the CURRENT conversion
+// writes, or "" for a class it does not own (left as it is). One file can carry several classes -- a
+// -tests package_test_info.cs holds the production class, the internal-test bridge and the external
+// test package -- and each has its own Go path:
+//   - the production class `<name>_package`: the package's path, or "main" for package main (Go's
+//     reflect names a main package's types `main.T` whatever its module path);
+//   - the internal-test bridge `<name>_internal_test_package`: the PRODUCTION path, because an
+//     internal _test.go file is compiled into the package under test;
+//   - the external test class `<name>_test_package`: the production path + "_test", Go's own path
+//     for an external test package.
+//
+// currentPackagePath is the path of the package (or test VARIANT) being converted, so for the
+// external variant it already ends in "_test"; the production path is recovered from it.
+func goPackageImportPathFor(className, name string) string {
+	productionName := strings.TrimSuffix(packageName, "_test")
+	productionPath := goReflectPackagePath(currentPackagePath)
+
+	if productionName != packageName {
+		productionPath = strings.TrimSuffix(productionPath, "_test")
+	}
+
+	switch {
+	case productionPath == "" || productionName == "":
+		return ""
+	case strings.HasSuffix(className, "_internal_test"+PackageSuffix):
+		return productionPath
+	case className != getSanitizedImport(name+PackageSuffix):
+		return ""
+	case name == productionName+"_test":
+		return productionPath + "_test"
+	case name == productionName && name == "main":
+		return "main"
+	case name == productionName:
+		return productionPath
+	}
+
+	return ""
+}
+
+// currentPackageGorootVendored reports that the package being converted lives under
+// GOROOT/src/vendor. resetPackageState clears it; the two drivers set it beside that call, since
+// they hold the GOROOT the conversion was given.
+var currentPackageGorootVendored bool
+
+// isGorootVendoredDir reports whether dir is a package directory under GOROOT/src/vendor. The test
+// is on the DIRECTORY, never on the import path: a module outside GOROOT may itself be
+// golang.org/x/net, and its packages are not vendored.
+func isGorootVendoredDir(dir, goRoot string) bool {
+	if dir == "" || goRoot == "" {
+		return false
+	}
+
+	return isPathUnder(dir, filepath.Join(goRoot, "src", "vendor"))
+}
+
+// goReflectPackagePath returns the path Go's reflect and runtime report for the package being
+// converted, given the loader's path for it. The two differ only for a GOROOT-vendored package.
+// go/packages loads $GOROOT/src/vendor/golang.org/x/net/idna as `golang.org/x/net/idna`, because
+// that is how std resolves it. The compiled package's own path is `vendor/golang.org/x/net/idna`:
+// reflect's PkgPath, runtime.FuncForPC's names, and `go list std` all report that form.
+func goReflectPackagePath(loaderPath string) string {
+	if currentPackageGorootVendored && loaderPath != "" && !strings.HasPrefix(loaderPath, "vendor/") {
+		return "vendor/" + loaderPath
+	}
+
+	return loaderPath
+}
+
+// convergeGoPackageStamps rewrites each [GoPackage] stamp in a package info file to the current rule
+// (goPackageAttributeLine), keyed by the class declared on the next line. It is what makes the stamp
+// REGENERATED on every reconvert: the writer copies a persisted file verbatim outside its marker
+// sections, so a stale or missing ImportPath would otherwise survive forever. A stamp whose class
+// this conversion does not own (goPackageImportPathFor == "") is left exactly as it is.
+func convergeGoPackageStamps(lines []string, namespace string) []string {
+	const classPrefix = "public static partial class "
+
+	for i := 0; i+1 < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+
+		if !strings.HasPrefix(line, goPackageStampPrefix) || !strings.HasSuffix(line, ")]") {
+			continue
+		}
+
+		name := line[len(goPackageStampPrefix):]
+
+		if end := strings.IndexByte(name, '"'); end >= 0 {
+			name = name[:end]
+		} else {
+			continue
+		}
+
+		next := strings.TrimSpace(lines[i+1])
+
+		if !strings.HasPrefix(next, classPrefix) {
+			continue
+		}
+
+		className := strings.Fields(next[len(classPrefix):])[0]
+		importPath := goPackageImportPathFor(className, name)
+
+		if importPath == "" {
+			continue
+		}
+
+		lines[i] = goPackageAttributeLine(namespace, name, importPath)
+	}
+
+	return lines
 }

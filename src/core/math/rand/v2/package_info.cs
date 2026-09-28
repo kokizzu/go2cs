@@ -64,7 +64,7 @@ using static go.math.rand.rand_package;
 
 namespace go.math.rand;
 
-[GoPackage("rand")]
+[GoPackage("rand", ImportPath = "math/rand/v2")]
 public static partial class rand_package
 {
     // C# nested types declared with no access modifier are always private, and the

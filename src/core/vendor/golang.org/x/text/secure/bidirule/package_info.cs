@@ -58,7 +58,7 @@ using static go.vendor.golang.org.x.text.secure.bidirule_package;
 
 namespace go.vendor.golang.org.x.text.secure;
 
-[GoPackage("bidirule")]
+[GoPackage("bidirule", ImportPath = "vendor/golang.org/x/text/secure/bidirule")]
 public static partial class bidirule_package
 {
     // C# nested types declared with no access modifier are always private, and the

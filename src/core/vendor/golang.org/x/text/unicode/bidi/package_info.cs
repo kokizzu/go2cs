@@ -62,7 +62,7 @@ using static go.vendor.golang.org.x.text.unicode.bidi_package;
 
 namespace go.vendor.golang.org.x.text.unicode;
 
-[GoPackage("bidi")]
+[GoPackage("bidi", ImportPath = "vendor/golang.org/x/text/unicode/bidi")]
 public static partial class bidi_package
 {
     // C# nested types declared with no access modifier are always private, and the

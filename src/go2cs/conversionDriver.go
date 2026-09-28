@@ -274,6 +274,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 
 		var projectName, projectFileName, projectFileContents string
 		projectName, packageNamespace = getProjectName(packageInputPath, options)
+		currentPackageGorootVendored = isGorootVendoredDir(packageInputPath, options.goRoot)
 
 		if projectFileName, projectFileContents, err = prepareProjectFiles(projectName, packageNamespace, packageOutputPath); err != nil {
 			log.Fatalf("Failed to write project files for directory \"%s\": %s\n", packageOutputPath, err)

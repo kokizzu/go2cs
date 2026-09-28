@@ -79,7 +79,7 @@ using static go.vendor.golang.org.x.sys.cpu_package;
 
 namespace go.vendor.golang.org.x.sys;
 
-[GoPackage("cpu")]
+[GoPackage("cpu", ImportPath = "vendor/golang.org/x/sys/cpu")]
 public static partial class cpu_package
 {
     // C# nested types declared with no access modifier are always private, and the

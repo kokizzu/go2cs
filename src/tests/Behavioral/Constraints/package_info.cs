@@ -54,7 +54,7 @@ using static go.constraints_package;
 
 namespace go;
 
-[GoPackage("constraints")]
+[GoPackage("constraints", ImportPath = "go2cs/Constraints")]
 public static partial class constraints_package
 {
     // C# nested types declared with no access modifier are always private, and the
