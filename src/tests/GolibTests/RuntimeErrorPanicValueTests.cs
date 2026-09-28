@@ -7,6 +7,7 @@ using go.golib;
 using static go.builtin;
 using Δruntime = go.runtime_package;
 using fmt = go.fmt_package;
+using reflect = go.reflect_package;
 
 namespace GolibTests;
 
@@ -382,6 +383,134 @@ public class RuntimeErrorPanicValueTests
         {
             PanicException ex = Assert.ThrowsException<PanicException>(fn);
             Assert.AreEqual(want, ex.Message);
+        }
+    }
+
+    // ---- the follow-up (COORD review, ledger 02:38): the doors the first cut did not reach ------
+
+    // reflect's hand-owned nil-map write raised the text as a string, so `m[k] = v` and
+    // `reflect.ValueOf(m).SetMapIndex(k, v)` recovered different types for one Go panic.
+    [TestMethod]
+    public void ReflectSetMapIndexOnANilMapIsARuntimeError()
+    {
+        AssertRuntimeError(PanicValue(() =>
+        {
+            map<@string, nint> m = default!;
+            reflect.ValueOf(m).SetMapIndex(reflect.ValueOf((@string)"k"), reflect.ValueOf((nint)1));
+        }), "assignment to entry in nil map", "reflect SetMapIndex on a nil map");
+    }
+
+    [TestMethod]
+    public void ReflectCloseOfANilChannelIsARuntimeError()
+    {
+        AssertRuntimeError(PanicValue(() =>
+        {
+            channel<nint> ch = default!;
+            reflect.ValueOf(ch).Close();
+        }), "close of nil channel", "reflect Close of a nil channel");
+    }
+
+    // Go's makechan predicate: size < 0, or elem.Size_*size overflowing or above maxAlloc-hchanSize,
+    // panics with plainError. The CLR threw OverflowException narrowing the size, which escaped recover().
+    [TestMethod]
+    public void MakeChanTooLargeIsARuntimeError()
+    {
+        nint n = (nint)1 << 62;
+
+        AssertRuntimeError(PanicValue(() => _ = new channel<nint>(n)),
+            "makechan: size out of range", "make(chan int, 1<<62)");
+    }
+
+    // A size Go ACCEPTS (a zero-size element has no memory bound) but the CLR cannot buffer: a named,
+    // recoverable panic, never an escaping .NET exception.
+    [TestMethod]
+    public void MakeChanBeyondTheManagedBufferPanicsByName()
+    {
+        nint n = (nint)1 << 31;
+
+        object? recovered = PanicValue(() => _ = new channel<EmptyStruct>(n));
+
+        Assert.IsNotNull(recovered, "make(chan struct{}, 1<<31) did not panic");
+        StringAssert.Contains(recovered.ToString(), "makechan", $"recovered {recovered}");
+        StringAssert.Contains(recovered.ToString(), "2147483648", $"recovered {recovered}");
+    }
+
+    // An unsigned index Go reports as unsigned: the text keeps the length, and boundsError.signed is false.
+    [TestMethod]
+    public void AnUnsignedSliceIndexPrintsGosTextWithTheLength()
+    {
+        ulong u = ulong.MaxValue;
+
+        object? recovered = PanicValue(() => { slice<nint> s = new(2); _ = s[u]; });
+
+        AssertRuntimeError(recovered, "runtime error: index out of range [18446744073709551615] with length 2", "slice[uint64 max]");
+        StringAssert.Contains(fmt.Sprintf("%#v", recovered).ToString(), "signed:false", "%#v of the recovered value");
+    }
+
+    [TestMethod]
+    public void AnUnsignedArrayIndexPastTheSignedRangePrintsGosText()
+    {
+        ulong u = 1UL << 63;
+
+        AssertRuntimeError(PanicValue(() => { array<nint> a = new(3); _ = a[u]; }),
+            "runtime error: index out of range [9223372036854775808] with length 3", "array[1<<63]");
+    }
+
+    [TestMethod]
+    public void AnUnsignedStringIndexPrintsGosText()
+    {
+        ulong u = (1UL << 32) + 5;
+
+        AssertRuntimeError(PanicValue(() => { @string s = "abcdefgh"; _ = s[u]; }),
+            "runtime error: index out of range [4294967301] with length 8", "string[1<<32+5]");
+    }
+
+    [TestMethod]
+    public void AnUnsignedIndexInRangeStillReads()
+    {
+        slice<nint> s = new(3);
+        s[1] = 7;
+        ulong u = 1;
+
+        Assert.AreEqual((nint)7, s[u]);
+    }
+
+    // &p[i] through a pointer-to-array (ж.at) threw a raw IndexOutOfRangeException.
+    [TestMethod]
+    public void AnElementAddressPastTheEndIsARuntimeError()
+    {
+        nint i = 5;
+
+        AssertRuntimeError(PanicValue(() =>
+        {
+            ж<array<nint>> p = Ꮡ(new array<nint>(3));
+            _ = p.at<nint>(i);
+        }), "runtime error: index out of range [5] with length 3", "&p[5] through *[3]int");
+    }
+
+    // With nothing registered (a program whose import closure never reaches runtime), the value is a
+    // string, and its TEXT is still Go's: a negative index prints the boundsNeg shape, no length.
+    [TestMethod]
+    public void UnregisteredFallbackTextIsGosForNegativeAndUnsignedIndexes()
+    {
+        Func<long, long, bool, byte, object>? bounds = RuntimeErrorPanic.BoundsErrorValue;
+
+        try
+        {
+            RuntimeErrorPanic.BoundsErrorValue = null;
+
+            nint neg = -1;
+            ulong big = ulong.MaxValue;
+
+            object? negative = PanicValue(() => { slice<nint> s = new(2); _ = s[neg]; });
+            object? unsigned = PanicValue(() => { slice<nint> s = new(2); _ = s[big]; });
+
+            Assert.AreEqual("runtime error: index out of range [-1]", negative?.ToString());
+            Assert.AreEqual("runtime error: index out of range [18446744073709551615] with length 2", unsigned?.ToString());
+        }
+        finally
+        {
+            RuntimeErrorPanic.BoundsErrorValue = bounds;
         }
     }
 }
