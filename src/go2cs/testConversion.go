@@ -6795,6 +6795,13 @@ type normalizedTestEvent struct {
 	Action  string  `json:"action"`
 	Output  string  `json:"output,omitempty"`
 	Elapsed float64 `json:"elapsed,omitempty"`
+
+	// Records is the converted host's log-record LIST on a terminal fail/skip event (nil when the
+	// event carries none: every other event, go test's stream, and a host from before the field).
+	// Output joins the same records with the host's newline, which a record can itself contain, so
+	// the record boundaries a disclosure's count pin needs survive only here.
+	Records        []string `json:"records,omitempty"`
+	RecordsDropped int      `json:"recordsDropped,omitempty"`
 }
 
 type testComparison struct {
@@ -6823,6 +6830,14 @@ type testComparison struct {
 	// proof page so the omission is stated rather than absorbed. Empty for every package whose
 	// disclosed tests have no subtests, which is all of them before crypto/tls's TestBogoSuite.
 	Withdrawn []string `json:"withdrawn,omitempty"`
+
+	// DisclosedRecords publishes, for every disclosed test whose C# terminal event carried a record
+	// list, the records OUTSIDE its signature. A record-count pin catches an extra or a missing
+	// record but not a substitution at an unchanged count, so those records are printed at every
+	// sweep, where a changed one is visible. UnpinnedDisclosures names the disclosed tests whose entry
+	// has no record-count pin yet (the disclosure-completeness guard's migration state, phase A).
+	DisclosedRecords    map[string][]string `json:"disclosedRecords,omitempty"`
+	UnpinnedDisclosures []string            `json:"unpinnedDisclosures,omitempty"`
 
 	// OrphanedDisclosures are the manifest entries this run found naming a test whose CONVERTED side
 	// records a terminal `pass` — a disclosure that no longer describes anything on this platform.
@@ -7532,6 +7547,25 @@ type testDisclosure struct {
 	// entries WITHDRAW their test from both command lines before either child runs, so an entry
 	// filtered anywhere later would already have changed what the run contains.
 	Platforms goosScope `json:"platforms,omitempty"`
+
+	// Records pins the EXACT number of log records the converted side's terminal event carried in the
+	// run that minted the entry (the disclosure-completeness guard, phase A). The signature is matched
+	// by a substring test over the test's WHOLE log, so without a count it absorbs any number of other
+	// failures printed beside the pinned one: runtime/debug's TestStack validated on linux with five
+	// misaligned asserts around its signature. With a pin, an extra or a missing record is a mismatch
+	// that names the records outside the signature (recordPinFailure).
+	//
+	// ZERO MEANS UNPINNED, the legacy state every entry is in until the phase-B mint; the comparison
+	// record lists those entries. The pin is platform-agnostic on purpose: a count that differs by
+	// platform is an undisclosed divergence, which is what the guard exists to surface. A
+	// host-conditional entry's pin governs its PRIMARY shape (Go pass / C# fail) only; its fail/fail
+	// shape keeps signature-only admission, because its two environmental arms print differently.
+	//
+	// STATED LIMIT: a count catches an extra or a missing record, not a SUBSTITUTION among the records
+	// outside the signature at an unchanged count. The comparison record therefore publishes every
+	// disclosed test's non-signature records at each sweep (disclosedRecords), and per-record
+	// signatures are reconsidered at phase C.
+	Records int `json:"records,omitempty"`
 }
 
 
@@ -7620,6 +7654,15 @@ func readTestDisclosureManifest(outputPath string) (map[string]testDisclosure, [
 		}
 		if disclosure.Signature == "" && disclosure.Class != hostFatalClass {
 			return nil, nil, fmt.Errorf("disclosure entries require a signature except for %s: %+v", hostFatalClass, disclosure)
+		}
+
+		// The record-count pin (Records): a count of log records, so never negative, and never on a
+		// host-fatal entry, whose test runs on neither side and so logs no records to count.
+		if disclosure.Records < 0 {
+			return nil, nil, fmt.Errorf("disclosure %s has a negative record count (%d): records pins how many log records the converted side's terminal event carried", disclosure.Name, disclosure.Records)
+		}
+		if disclosure.Records > 0 && disclosure.Class == hostFatalClass {
+			return nil, nil, fmt.Errorf("disclosure %s pins %d record(s), but a %s test is withdrawn from both sides and logs nothing to count", disclosure.Name, disclosure.Records, hostFatalClass)
 		}
 
 		// The DEFERRED class's contract, enforced where every other required field is (coordinator
@@ -7832,8 +7875,9 @@ var addressTokenPattern = regexp.MustCompile(`0x[0-9a-fA-F]+`)
 // used as a subtest name is never collapsed. Only UNAMBIGUOUS 1:1 pairs are re-keyed: a
 // normalized key claimed by multiple names on either side, or colliding with an existing exact
 // name, keeps all originals — the rows stay one-sided and the comparison fails loud, never
-// masking. csOutputs follows the C# rename so disclosure-signature matching keeps its text.
-func pairAddressVariantNames(goResults, csResults, csOutputs map[string]string) {
+// masking. csOutputs and csRecords follow the C# rename so disclosure-signature matching keeps its
+// text and a record-count pin its records.
+func pairAddressVariantNames(goResults, csResults, csOutputs map[string]string, csRecords map[string]testRecords) {
 	goOnly := make(map[string][]string)
 	csOnly := make(map[string][]string)
 
@@ -7877,10 +7921,91 @@ func pairAddressVariantNames(goResults, csResults, csOutputs map[string]string) 
 			csOutputs[key] = output
 			delete(csOutputs, csNames[0])
 		}
+
+		if records, ok := csRecords[csNames[0]]; ok {
+			csRecords[key] = records
+			delete(csRecords, csNames[0])
+		}
 	}
 }
 
+// testRecords is one test's log-record list from the converted host's terminal event. Present is
+// false when the event carried no list, which a count-pinned disclosure refuses rather than
+// reading as zero records.
+type testRecords struct {
+	Present bool
+	Records []string
+	Dropped int
+}
+
+// terminalTestRecords captures each test's log-record list from its terminal event, keyed by test
+// name, for the disclosure record-count pin (see recordPinFailure).
+func terminalTestRecords(output string) map[string]testRecords {
+	result := make(map[string]testRecords)
+	for _, line := range strings.Split(output, "\n") {
+		var event normalizedTestEvent
+		if json.Unmarshal([]byte(line), &event) != nil || event.Test == "" {
+			continue
+		}
+		switch event.Action {
+		case "pass", "fail", "skip", "timeout", "infrastructure-error":
+			result[event.Test] = testRecords{Present: event.Records != nil, Records: event.Records, Dropped: event.RecordsDropped}
+		}
+	}
+	return result
+}
+
+// nonSignatureRecords answers the records that do not contain the disclosure's signature, the part
+// a signature alone cannot pin: what a count mismatch names, and what the comparison record publishes
+// for every disclosed test so a substitution at an unchanged count is still visible to a reader.
+func nonSignatureRecords(records []string, signature string) []string {
+	others := []string{}
+	for _, record := range records {
+		if signature == "" || !strings.Contains(record, signature) {
+			others = append(others, record)
+		}
+	}
+	return others
+}
+
+// recordPinFailure answers "" when a disclosure's record-count pin holds for the named test's C#
+// terminal event, or the mismatch text that names the records outside the signature. An unpinned
+// entry (Records == 0) always holds, and so does every entry when csRecords is nil, the legacy entry
+// point (matchTerminalStatuses) that carries no record stream at all. A pinned entry whose event
+// carries no record list is a failure, never a fall-back to the signature alone: a host without the
+// field cannot show the pin holds.
+func recordPinFailure(name string, disclosure testDisclosure, csRecords map[string]testRecords) string {
+	if disclosure.Records == 0 || csRecords == nil {
+		return ""
+	}
+
+	records, ok := csRecords[name]
+
+	if !ok || !records.Present {
+		return fmt.Sprintf("%s: the %s disclosure pins %d log record(s), but the C# terminal event carries no record list", name, disclosure.Class, disclosure.Records)
+	}
+
+	if records.Dropped == 0 && len(records.Records) == disclosure.Records {
+		return ""
+	}
+
+	text := fmt.Sprintf("%s: C# logged %d record(s) where the %s disclosure pins %d", name, len(records.Records), disclosure.Class, disclosure.Records)
+
+	if records.Dropped > 0 {
+		text += fmt.Sprintf(", and the host's log cap dropped %d more", records.Dropped)
+	}
+
+	return text + fmt.Sprintf("; records outside the signature: %q", nonSignatureRecords(records.Records, disclosure.Signature))
+}
+
+// matchTerminalStatuses is matchTerminalStatusesWithRecords without a record stream: every
+// record-count pin is out of play, so each disclosure admits by its signature alone. It is the
+// entry point of callers that carry no terminal records.
 func matchTerminalStatuses(names []string, goResults, csResults map[string]string, disclosures map[string]testDisclosure, csOutputs map[string]string) (mismatches, skipped, disclosed, withdrawn []string) {
+	return matchTerminalStatusesWithRecords(names, goResults, csResults, disclosures, csOutputs, nil)
+}
+
+func matchTerminalStatusesWithRecords(names []string, goResults, csResults map[string]string, disclosures map[string]testDisclosure, csOutputs map[string]string, csRecords map[string]testRecords) (mismatches, skipped, disclosed, withdrawn []string) {
 	// Deepest names classify FIRST: a subtest failure rolls up to its ancestors in BOTH
 	// runtimes, so an ancestor whose Go=pass/C#=fail divergence is PURELY the aggregation of
 	// disclosed descendants — no failure output of its own, no own disclosure entry, at least
@@ -7921,7 +8046,8 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 		// its t.Run fan-out, so the rows under it are Go-only by construction (see
 		// compilerPropertyClass). No other skip-shape class roots a withdrawal.
 		if disclosure.Class == compilerPropertyClass {
-			if goResults[name] == "pass" && csResults[name] == "skip" && strings.Contains(csOutputs[name], disclosure.Signature) {
+			if goResults[name] == "pass" && csResults[name] == "skip" && strings.Contains(csOutputs[name], disclosure.Signature) &&
+				recordPinFailure(name, disclosure, csRecords) == "" {
 				disclosureRoots.Add(name)
 			}
 
@@ -7932,8 +8058,14 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			continue
 		}
 
+		// A root must hold its record-count pin as well as its signature: a root whose record count
+		// moved is itself a mismatch below, so its fan-out is not its mechanical consequence and
+		// compares strictly.
 		if goResults[name] == "pass" && strings.Contains(csOutputs[name], disclosure.Signature) {
-			disclosureRoots.Add(name)
+			if recordPinFailure(name, disclosure, csRecords) == "" {
+				disclosureRoots.Add(name)
+			}
+
 			continue
 		}
 
@@ -8002,6 +8134,12 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			if disclosure, ok := disclosures[name]; ok && classAdmitsSkipShape(disclosure.Class) &&
 				goOK && csOK && goStatus == "pass" && csStatus == "skip" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
+					if failure := recordPinFailure(name, disclosure, csRecords); failure != "" {
+						mismatches = append(mismatches, failure)
+						mismatchNames.Add(name)
+						continue
+					}
+
 					disclosed = append(disclosed, name)
 					disclosedNames.Add(name)
 					continue
@@ -8030,6 +8168,14 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 				!classAdmitsSkipShape(disclosure.Class) && disclosure.Class != hostFatalClass &&
 				goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
+					// The signature is a substring of the test's WHOLE log, so it proves the pinned
+					// failure is present, not that it is the only one: the record-count pin does that.
+					if failure := recordPinFailure(name, disclosure, csRecords); failure != "" {
+						mismatches = append(mismatches, failure)
+						mismatchNames.Add(name)
+						continue
+					}
+
 					disclosed = append(disclosed, name)
 					disclosedNames.Add(name)
 					continue
@@ -8436,6 +8582,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	goResults := terminalTestResults(goOutput)
 	csResults := terminalTestResults(csOutput)
 	csOutputs := terminalTestOutputs(csOutput)
+	csRecords := terminalTestRecords(csOutput)
 	var manifest testManifest
 	var censusGaps []string
 	var gated []capabilityGatedDeclaration
@@ -8455,7 +8602,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 			csResults = eligibleTerminalTestResults(csResults, manifest)
 		}
 	}
-	pairAddressVariantNames(goResults, csResults, csOutputs)
+	pairAddressVariantNames(goResults, csResults, csOutputs, csRecords)
 
 	names := make([]string, 0, len(goResults)+len(csResults))
 	seen := HashSet[string]{}
@@ -8505,15 +8652,36 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		result.Errors = append(result.Errors, "census: go test reported tests the manifest does not declare: "+strings.Join(censusGaps, ", "))
 	}
 
-	mismatches, skipped, disclosed, withdrawn := matchTerminalStatuses(names, goResults, csResults, disclosures, csOutputs)
+	mismatches, skipped, disclosed, withdrawn := matchTerminalStatusesWithRecords(names, goResults, csResults, disclosures, csOutputs, csRecords)
 	if len(mismatches) > 0 {
 		result.Matched = false
 		result.Errors = append(result.Errors, mismatches...)
 	}
 	result.Skipped = append(result.Skipped, skipped...)
 	for _, name := range disclosed {
-		disclosure := disclosures[name]
+		disclosure, own := disclosures[name]
 		result.Disclosed = append(result.Disclosed, fmt.Sprintf("%s (%s): %s", name, disclosure.Class, disclosure.Reason))
+
+		// An aggregated ancestor is disclosed through its children and has no entry of its own, so
+		// only an OWN entry has records to publish or a pin to lack.
+		if !own {
+			continue
+		}
+
+		// A count cannot see a SUBSTITUTION among the records outside the signature, so every
+		// disclosed test's non-signature records are published, where a sweep-to-sweep reader sees
+		// them move.
+		if records, ok := csRecords[name]; ok && records.Present {
+			if result.DisclosedRecords == nil {
+				result.DisclosedRecords = map[string][]string{}
+			}
+
+			result.DisclosedRecords[name] = nonSignatureRecords(records.Records, disclosure.Signature)
+		}
+
+		if disclosure.Records == 0 {
+			result.UnpinnedDisclosures = append(result.UnpinnedDisclosures, name)
+		}
 	}
 
 	// Withdrawn rows leave the comparison record the way capability-gated rows do: removed from

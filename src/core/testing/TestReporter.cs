@@ -14,6 +14,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +40,13 @@ namespace go.testing_runtime;
 /// <param name="Output">Log or failure text, when the event carries any.</param>
 /// <param name="Source">Go source file of the declaration, when known.</param>
 /// <param name="Line">Go source line of the declaration, when known.</param>
+/// <param name="Records">
+/// The execution's log records as a LIST, on a terminal <c>fail</c>/<c>skip</c> event only. <c>Output</c>
+/// joins the same records with <see cref="Environment.NewLine"/>, which is also the separator inside one
+/// record (a panic's stack frames), so the record boundaries survive only here. A disclosure pins the
+/// record COUNT, so a failure printing an extra assert beside the pinned one cannot be absorbed.
+/// </param>
+/// <param name="RecordsDropped">Records the log cap dropped, when it dropped any: a count pin cannot hold then.</param>
 /// <remarks>
 /// The shape is deliberate: the Phase-4 pipeline runs the same suite twice — once here and once
 /// under real <c>go test -json</c> — and diffs the two verdict streams. Matching Go's event
@@ -51,7 +59,9 @@ public sealed record TestEvent(
     double Elapsed = 0.0D,
     string? Output = null,
     string? Source = null,
-    int? Line = null);
+    int? Line = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Records = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? RecordsDropped = null);
 
 /// <summary>
 /// Collects every <see cref="TestEvent"/> of a run and writes it out, either as <c>go test

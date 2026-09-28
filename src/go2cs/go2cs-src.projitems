@@ -104,6 +104,7 @@
     <None Include="$(MSBuildThisFileDirectory)diagnosticProfiling.go" />
     <None Include="$(MSBuildThisFileDirectory)directiveOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)disclosedParentAggregation_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)disclosureRecordPin_test.go" />
     <None Include="$(MSBuildThisFileDirectory)displacedCommentDrain_test.go" />
     <None Include="$(MSBuildThisFileDirectory)displacedPromotedCall_test.go" />
     <None Include="$(MSBuildThisFileDirectory)displacedRefReceiverCall_test.go" />
