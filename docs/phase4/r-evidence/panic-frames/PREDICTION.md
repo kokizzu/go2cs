@@ -159,3 +159,22 @@ That sentence above is FALSE for two classes. Both are stated, not new:
 
 The tail-call arms (shapeA's AggressiveOptimization closure, the tail-calling forwarder) guard the
 delegate-identity rule in the OPTIMIZED (Release) build only; GolibTests do not run at TC0.
+
+---
+
+## ROUND 4: the converter change's FOOTPRINT, PREDICTED before any corpus emission (2026-09-28)
+
+Round 4 (6e03d08c2a) changes the converter: every method-expression wrapper lambda reads its receiver
+through builtin.wrapperRecv or builtin.panicwrapRecv. A census of the committed trees at 5acb0a58a2 for
+every such lambda shape (`(p0…) => p0.M(…)` and `(p0…) => M(p0.Value…)`) finds 7 sites, ALL in
+runtime/stack_test.cs, a test source that -stdlib does not emit. None is in production code (as F's own
+footprint found) and none is in a behavioral golden.
+
+- Two-seeded -stdlib footprint, base e6fc210500 converter vs cut: **0 files on windows, linux and darwin.**
+  This is the NEGATIVE arm. Its falsifier is any file at all.
+- CNR: **0 CHANGED.** Its falsifier is any golden or .cs that moves.
+- Stated, not predicted: the 7 runtime/stack_test.cs lines change the next time runtime's test sources
+  are refreshed (-tests). The gate's runtime row converts them fresh, so it measures the new emission.
+- The 10-row runtime prediction stands. The two wrapper subtests' parents now rest on the marker:
+  I.M(nil) raises through wrapperRecv, and (*structWithMethod).nop(nil) raises Go's panicwrap through
+  panicwrapRecv.
