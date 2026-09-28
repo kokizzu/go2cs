@@ -300,6 +300,41 @@ public class RuntimeErrorPanicValueTests
         }), "runtime error: index out of range [-1]", "negative slice index");
     }
 
+    // ---- the fallback: with no runtime registered, the message stands as a string --------------
+
+    // A converted program that never loads the runtime package has nobody to register the values, and
+    // golib must still raise a readable panic. Also the control that every arm above reads the HOOK:
+    // unregistered, the same sites recover strings again. MSTest runs an assembly's tests serially,
+    // so the process-global hooks can be swapped and restored here.
+    [TestMethod]
+    public void UnregisteredHooksFallBackToThePlainMessage()
+    {
+        Func<string, object>? plain = RuntimeErrorPanic.PlainErrorValue;
+        Func<long, long, bool, byte, object>? bounds = RuntimeErrorPanic.BoundsErrorValue;
+
+        Assert.IsNotNull(plain, "the runtime module did not register PlainErrorValue");
+        Assert.IsNotNull(bounds, "the runtime module did not register BoundsErrorValue");
+
+        try
+        {
+            RuntimeErrorPanic.PlainErrorValue = null;
+            RuntimeErrorPanic.BoundsErrorValue = null;
+
+            object? closed = PanicValue(() => close((channel<bool>)default!));
+            object? index = PanicValue(() => { slice<nint> s = new(2); _ = s[2]; });
+
+            Assert.IsTrue(closed is string or @string, $"unregistered plain error recovered {closed?.GetType().FullName}");
+            Assert.IsTrue(index is string or @string, $"unregistered bounds error recovered {index?.GetType().FullName}");
+            Assert.AreEqual("close of nil channel", closed.ToString());
+            Assert.AreEqual("runtime error: index out of range [2] with length 2", index.ToString());
+        }
+        finally
+        {
+            RuntimeErrorPanic.PlainErrorValue = plain;
+            RuntimeErrorPanic.BoundsErrorValue = bounds;
+        }
+    }
+
     // ---- the TEXT is not this change's business: it must read exactly as it did ----------------
 
     [TestMethod]

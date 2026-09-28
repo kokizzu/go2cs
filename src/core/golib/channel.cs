@@ -459,7 +459,7 @@ internal sealed class ChanCore<T> : ChanCore
         if (Closed)
         {
             Monitor.Exit(SyncRoot);
-            throw new PanicException("send on closed channel");
+            throw RuntimeErrorPanic.PlainError("send on closed channel");
         }
 
         Waiter? receiver = Recvq.DequeueForWake();
@@ -516,7 +516,7 @@ internal sealed class ChanCore<T> : ChanCore
         }
 
         if (!parked.Ok)
-            throw new PanicException("send on closed channel");
+            throw RuntimeErrorPanic.PlainError("send on closed channel");
 
         return true;
     }
@@ -630,7 +630,7 @@ internal sealed class ChanCore<T> : ChanCore
         if (Closed)
         {
             Monitor.Exit(SyncRoot);
-            throw new PanicException("close of closed channel");
+            throw RuntimeErrorPanic.PlainError("close of closed channel");
         }
 
         Closed = true;
@@ -987,7 +987,7 @@ internal static class SelectRuntime
             // select's committed frame may be in flight when this select runs nested inside the
             // outer guard's target expression.
             if (!won.Ok)
-                throw new PanicException("send on closed channel");
+                throw RuntimeErrorPanic.PlainError("send on closed channel");
         }
         else
         {
@@ -1041,7 +1041,7 @@ internal static class SelectRuntime
                 if (core.Closed)
                 {
                     UnlockAll(lockOrder);
-                    throw new PanicException("send on closed channel");
+                    throw RuntimeErrorPanic.PlainError("send on closed channel");
                 }
 
                 bool sent;
@@ -1213,7 +1213,11 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// </param>
     public channel(nint size)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(size);
+        // Go's makechan panics with runtime.plainError("makechan: size out of range"), which recover()
+        // sees; the CLR's ArgumentOutOfRangeException here escaped it (TestRuntimePanicWithRuntimeError).
+        if (size < 0)
+            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+
         m_core = new ChanCore<T>(size);
     }
 
@@ -1233,7 +1237,9 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// </remarks>
     public channel(nint size, GoChanDir direction)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(size);
+        if (size < 0)
+            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+
         m_core = new ChanCore<T>(size);
         m_cargo = ChanCargo.Of(direction);
     }
@@ -1303,6 +1309,11 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// </summary>
     public channel(nint size, ChanCargo? cargo)
     {
+        // This make form had no size check at all: a negative size built a core with a negative
+        // buffer size where Go panics.
+        if (size < 0)
+            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+
         m_core = new ChanCore<T>(size);
         m_cargo = cargo;
     }
@@ -1375,7 +1386,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     public void Close()
     {
         if (m_core is null)
-            throw new PanicException("close of nil channel");
+            throw RuntimeErrorPanic.PlainError("close of nil channel");
 
         m_core.Close();
     }

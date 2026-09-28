@@ -112,9 +112,67 @@ public static class RuntimeErrorPanic
     }
 
     private const string IndexOutOfRangeMessage = $"{RuntimeErrorMessage}index out of range [{{0}}] with length {{1}}";
+
+    // runtime's boundsErrorCode for `s[x], 0 <= x < len(s) failed` (runtime/error.go: boundsIndex).
+    private const byte BoundsIndex = 0;
+
+    /// <summary>
+    /// Go's panic for an index out of range: <c>runtime.boundsError{x: index, signed: true, y: length,
+    /// code: boundsIndex}</c>, which goPanicIndex raises and which satisfies <c>runtime.Error</c>.
+    /// </summary>
+    /// <remarks>
+    /// The value comes from <see cref="BoundsErrorValue"/>, so its <c>Error()</c> is Go's own
+    /// formatting: <c>index out of range [2] with length 2</c>, and for a NEGATIVE index
+    /// <c>index out of range [-1]</c> with no length. Unregistered, the plain message stands.
+    /// </remarks>
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {
-        return new PanicException(string.Format(IndexOutOfRangeMessage, index, length));
+        return new PanicException(BoundsErrorValue?.Invoke(index, length, true, BoundsIndex) ??
+                                  string.Format(IndexOutOfRangeMessage, index, length));
+    }
+
+    /// <summary>
+    /// Supplies the Go runtime's <c>runtime.boundsError</c> for (x, y, signed, code), the value Go's
+    /// goPanicIndex family panics with.
+    /// </summary>
+    /// <remarks>
+    /// Registered by the runtime package (its <c>panicvalues_impl.cs</c> bridge) for the same reason as
+    /// <see cref="IntegerDivideByZeroValue"/>: golib sits UNDER <c>runtime</c> and cannot name the type.
+    /// runtime's TestRuntimePanicWithRuntimeError asserts <c>recover().(runtime.Error)</c> on
+    /// <c>s[2]</c>.
+    /// </remarks>
+    public static Func<long, long, bool, byte, object>? BoundsErrorValue { get; set; }
+
+    /// <summary>
+    /// Supplies the Go runtime's <c>runtime.plainError</c> for a message: the value Go panics with
+    /// for a nil-map write, a close of a closed or nil channel, a send on a closed channel and
+    /// makechan's size check.
+    /// </summary>
+    /// <remarks>
+    /// Registered by the runtime package, as <see cref="BoundsErrorValue"/> is. A plainError prints
+    /// as its bare text (no <c>runtime error: </c> prefix, exactly as Go prints it), so the panic TEXT
+    /// is what these sites raised before; only the recovered value's TYPE changes, from a string to
+    /// one satisfying <c>runtime.Error</c>. Unregistered, the plain message stands.
+    /// </remarks>
+    public static Func<string, object>? PlainErrorValue { get; set; }
+
+    /// <summary>
+    /// A Go runtime panic whose value is <c>runtime.plainError(message)</c>.
+    /// </summary>
+    public static PanicException PlainError(string message)
+    {
+        return new PanicException(PlainErrorValue?.Invoke(message) ?? message);
+    }
+
+    private const string MakeChanSizeOutOfRangeMessage = "makechan: size out of range";
+
+    /// <summary>
+    /// Go's panic for <c>make(chan T, n)</c> with a negative <c>n</c> (runtime/chan.go's makechan),
+    /// where the CLR would otherwise raise an ArgumentOutOfRangeException that recover() cannot see.
+    /// </summary>
+    public static PanicException MakeChanSizeOutOfRange()
+    {
+        return PlainError(MakeChanSizeOutOfRangeMessage);
     }
 
     private const string SliceBoundsOutOfRangeMessage = $"{RuntimeErrorMessage}slice bounds out of range ";
