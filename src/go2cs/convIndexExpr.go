@@ -245,22 +245,26 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 		}
 	}
 
-	// A STRING base indexed by a wide/unsigned integer: a string LITERAL renders as a
-	// ReadOnlySpan<byte> (`"…"u8`) whose indexer takes int — a uintptr index is CS1503
-	// (runtime heapdump.go's `"0123456789abcdef"[pc&15]`, pc a uintptr) — so the wide kinds
-	// (uint/uint32/uint64/uintptr/int64) take the `(int)` cast the element-address seams use.
-	// An `@string` VARIABLE's indexers (int, nint, ulong) each bounds-check before any
-	// narrowing, so its index keeps its full value (see stringIndexOperand); an
-	// int/small-integer index is emitted unchanged (no churn).
+	// A STRING base: an `@string` VARIABLE's indexers (int, nint, ulong) each bounds-check before
+	// any narrowing, so its index keeps its full value (see fullValueIndexOperand); an
+	// int/small-integer index is emitted unchanged (no churn). A string LITERAL renders as a
+	// ReadOnlySpan<byte> (`"…"u8`), whose int-only indexer throws a CLR IndexOutOfRangeException
+	// that recover() cannot see, so a NON-CONSTANT index reads through golib's LiteralByteAt, which
+	// checks the full value and panics as Go does. A CONSTANT index is in range by Go's own compile-time
+	// check and keeps the span indexer (no churn).
+	literalByteAt := false
+
 	if baseType := v.getType(indexExpr.X, false); baseType != nil {
 		if basic, ok := baseType.Underlying().(*types.Basic); ok && basic.Info()&types.IsString != 0 {
-			// A string LITERAL base (`"…"u8`) is an int-only-indexed ReadOnlySpan<byte>, so a
-			// plain Go `int` index (→ C# nint) needs the (int) cast too; an @string variable's
-			// indexer accepts nint, so only its wide kinds are routed (no churn on int indices).
 			if _, isLit := indexExpr.X.(*ast.BasicLit); isLit {
-				index = v.castStringLiteralIndexToInt(indexExpr.Index)
+				if tv, ok := v.info.Types[indexExpr.Index]; ok && tv.Value != nil {
+					index = v.convExpr(indexExpr.Index, nil)
+				} else {
+					index = v.fullValueIndexOperand(indexExpr.Index)
+					literalByteAt = true
+				}
 			} else {
-				index = v.stringIndexOperand(indexExpr.Index)
+				index = v.fullValueIndexOperand(indexExpr.Index)
 			}
 		}
 
@@ -326,6 +330,10 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 	// the cast-precedence family.
 	if call, ok := indexExpr.X.(*ast.CallExpr); ok && v.callExprIsTypeConversion(call) {
 		baseExpr = "(" + baseExpr + ")"
+	}
+
+	if literalByteAt {
+		return fmt.Sprintf("LiteralByteAt(%s, %s)", baseExpr, index)
 	}
 
 	// A map READ whose element carries shape takes golib's zero-factory indexer overload.

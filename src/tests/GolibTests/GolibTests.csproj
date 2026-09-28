@@ -91,6 +91,8 @@
        assumed: `-getProperty:GoTargetOS` returns "" here. -->
   <ItemGroup Condition="'$(GoTargetOS)' != '' and '$(GoTargetOS)' != 'windows'">
     <Compile Remove="WindowsNetUserInfoTests.cs" />
+    <!-- syscall's readNativeSockaddr lives in its windows/ folder. -->
+    <Compile Remove="WindowsUnnamedUnixSockaddrTests.cs" />
 
     <!-- The F1 observer binds internal/syscall/windows' TOKEN_GROUPS.AllGroups, a windows-EXCLUSIVE
          package (its csproj compiles nothing under another flavour). Unlisted here since it landed

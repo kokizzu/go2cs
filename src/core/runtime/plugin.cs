@@ -107,7 +107,7 @@ internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
         if (md.minpc <= entry && entry <= md.maxpc) {
             continue;
         }
-        var f = new ΔfuncInfo(Ꮡ(md.pclntable, (int)(md.ftab[i].funcoff)).Reinterpret<byte, _func>(), Ꮡmd);
+        var f = new ΔfuncInfo(Ꮡ(md.pclntable, md.ftab[i].funcoff).Reinterpret<byte, _func>(), Ꮡmd);
         @string name = funcname(f);
         // A common bug is f.entry has a relocation to a duplicate
         // function symbol, meaning if we search for its PC we get

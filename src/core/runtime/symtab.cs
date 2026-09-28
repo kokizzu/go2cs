@@ -494,15 +494,15 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     for (nint i = 0; i < nftab; i++) {
         // NOTE: ftab[nftab].entry is legal; it is the address beyond the final function.
         if (datap.ftab[i].entryoff > datap.ftab[i + 1].entryoff) {
-            var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
-            var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i + 1].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
+            var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[i].funcoff).Reinterpret<byte, _func>(), Ꮡdatap);
+            var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[i + 1].funcoff).Reinterpret<byte, _func>(), Ꮡdatap);
             @string f2name = endˢ;
             if (i + 1 < nftab) {
                 f2name = funcname(f2);
             }
             println((@string)"function symbol table not sorted by PC offset:"u8, ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), (@string)">"u8, ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, (@string)", plugin:"u8, datap.pluginpath);
             for (nint j = 0; j <= i; j++) {
-                println((@string)"\t"u8, ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap)));
+                println((@string)"\t"u8, ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[j].funcoff).Reinterpret<byte, _func>(), Ꮡdatap)));
             }
             if (GOOS == "aix"u8 && isarchive) {
                 println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive"u8);
@@ -716,7 +716,7 @@ internal static ΔfuncInfo findfunc(uintptr pc) {
         idx++;
     }
     var funcoff = (~datap).ftab[idx].funcoff;
-    return new ΔfuncInfo(Ꮡ((~datap).pclntable, (int)(funcoff)).Reinterpret<byte, _func>(), datap);
+    return new ΔfuncInfo(Ꮡ((~datap).pclntable, funcoff).Reinterpret<byte, _func>(), datap);
 }
 
 // A srcFunc represents a logical function in the source code. This may
@@ -934,7 +934,7 @@ internal static @string funcfile(ΔfuncInfo f, int32 fileno) {
     // Make sure the cu index and file offset are valid
     {
         var fileoff = (~datap).cutab[f.cuOffset + (uint32)fileno]; if (fileoff != ~(uint32)0) {
-            return gostringnocopy(Ꮡ((~datap).filetab, (int)(fileoff)));
+            return gostringnocopy(Ꮡ((~datap).filetab, fileoff));
         }
     }
     // pcln section is corrupt.

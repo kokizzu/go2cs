@@ -329,6 +329,16 @@ partial class syscall_package
                 return (new SockaddrUnixжΔSockaddr(sa), default!);
             }
 
+            // An UNNAMED address (the kernel's addrlen == 2: the family alone) has no path, and the answer is the
+            // empty name. It returns before the element take below, because Go's `&name[0]` of an empty array is an
+            // index panic (golib's checked Ꮡ). Go itself answers "@" here: a pre-existing divergence, named and
+            // not changed by this guard, which keeps the answer this decode has always given.
+            if (n == 0) {
+                sa.Value.Name = "";
+
+                return (new SockaddrUnixжΔSockaddr(sa), default!);
+            }
+
             var name = new array<byte>(n);
 
             for (nint i = 0; i < n; i++) {

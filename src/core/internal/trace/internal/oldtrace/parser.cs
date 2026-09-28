@@ -1582,7 +1582,7 @@ public static ref array<EventDescriptionsᴛ1> EventDescriptions => ref ᏑEvent
         @out = new slice<uint64>(1024 * 128);
     }
     p.stacksData = @out[(int)(size)..];
-    return @out.slice(-1, (int)(size), (int)(size));
+    return @out.slice(-1, (nint)(size), (nint)(size));
 }
 
 [GoRecv] public static ΔSTWReason STWReason(this ref Trace tr, uint64 kindID) {

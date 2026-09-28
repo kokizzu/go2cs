@@ -65,7 +65,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         // There are two independent FSE streams, tracked by
         // state1 and state2. We decode them alternately.
         while (ᐧ) {
-            var pt = Ꮡ(fseTable, (int)(state1));
+            var pt = Ꮡ(fseTable, state1);
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
@@ -85,7 +85,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
             }
             weights[count] = pt.Value.sym;
             count++;
-            pt = Ꮡ(fseTable, (int)(state2));
+            pt = Ꮡ(fseTable, state2);
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));

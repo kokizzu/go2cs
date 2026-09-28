@@ -349,7 +349,7 @@ Again:
     d.Value.t = default!;
     d.Value.pc = pc;
     q.sparse[pc] = (uint32)j;
-    var i = Ꮡ((~m.p).Inst, (int)(pc));
+    var i = Ꮡ((~m.p).Inst, pc);
     var exprᴛ1 = (~i).Op;
     if (exprᴛ1 == syntax.InstFail) {
     }

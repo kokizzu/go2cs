@@ -30,7 +30,7 @@ internal static void patch(this patchList l, ж<Prog> Ꮡp, uint32 val) {
 
     var head = l.head;
     while (head != 0) {
-        var i = Ꮡ(p.Inst, (int)((head >> (int)(1))));
+        var i = Ꮡ(p.Inst, (head >> (int)(1)));
         if ((uint32)(head & 1) == 0){
             head = i.Value.Out;
             i.Value.Out = val;
@@ -50,7 +50,7 @@ internal static patchList append(this patchList l1, ж<Prog> Ꮡp, patchList l2)
     if (l2.head == 0) {
         return l1;
     }
-    var i = Ꮡ(p.Inst, (int)((l1.tail >> (int)(1))));
+    var i = Ꮡ(p.Inst, (l1.tail >> (int)(1)));
     if ((uint32)(l1.tail & 1) == 0){
         i.Value.Out = l2.head;
     } else {
@@ -229,7 +229,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
         return f1;
     }
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst, (int)(f.i));
+    var i = Ꮡ((~c.p).Inst, f.i);
     i.Value.Out = f1.i;
     i.Value.Arg = f2.i;
     f.@out = f1.@out.append(c.p, f2.@out);
@@ -239,7 +239,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 
 [GoRecv] internal static frag quest(this ref compiler c, frag f1, bool nongreedy) {
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst, (int)(f.i));
+    var i = Ꮡ((~c.p).Inst, f.i);
     if (nongreedy){
         i.Value.Arg = f1.i;
         f.@out = makePatchList((f.i << (int)(1)));
@@ -258,7 +258,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 // to get the priority match order correct.)
 [GoRecv] internal static frag loop(this ref compiler c, frag f1, bool nongreedy) {
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst, (int)(f.i));
+    var i = Ꮡ((~c.p).Inst, f.i);
     if (nongreedy){
         i.Value.Arg = f1.i;
         f.@out = makePatchList((f.i << (int)(1)));
@@ -293,7 +293,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 [GoRecv] internal static frag rune(this ref compiler c, slice<rune> r, Flags flags) {
     var f = c.inst(InstRune);
     f.nullable = false;
-    var i = Ꮡ((~c.p).Inst, (int)(f.i));
+    var i = Ꮡ((~c.p).Inst, f.i);
     i.Value.Rune = r;
     flags &= (Flags)(FoldCase); // only relevant flag is FoldCase
     if (len(r) != 1 || unicode.SimpleFold(r[0]) == r[0]) {
