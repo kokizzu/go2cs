@@ -132,9 +132,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **220 / 230 testable packages validated — 95.7%**
+> ### Phase 4 progress: **221 / 230 testable packages validated — 96.1%**
 >
-> **58,394 matching test verdicts · 278 disclosed** *(updated 2026-09-27 — maintained as part of the
+> **58,789 matching test verdicts · 301 disclosed** *(updated 2026-09-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 230 of the 346
 > packages `go list std` reports at go1.24.13 whose test files surviving the corpus axis —
 > windows/amd64, `-tags purego,math_big_pure_go` — declare a `Test` function. The 230 are enumerated,
@@ -149,7 +149,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > two disagree — and the one figure the table cannot know, the denominator, is checked against the
 > enumerated population file instead, along with every banked and excluded row's membership in it.
 >
-> **Against the implementable set (230 − 6 excluded = 224): 220 / 224 — 98.2%.** Both numbers are
+> **Against the implementable set (230 − 6 excluded = 224): 221 / 224 — 98.7%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > six, each with its class, mechanism and evidence, are in
@@ -162,7 +162,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > record kept in [The 215, derived](#the-215-derived--and-the-thirteen-rows-that-are-not-yet-banked)
 > beneath it.
 >
-> **Linux: 218 of 218 applicable rows validated at their Linux counts** — 58,238 matching verdicts · 299 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 219 of 219 applicable rows validated at their Linux counts** — 58,633 matching verdicts · 322 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 <!-- Superseded 2026-09-24 (H12 C5; the 1.24.13.1 announcement's Piece 5(a), owner-accepted r3 at
      claude/coord-handover 77f85249fe). From 2026-09-22 until the H10 close re-banked every row at its
@@ -427,6 +427,7 @@ leveling re-sweep re-annotated the rows it moved.
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · linux: 9 · [proof](validation/current/path.md) |
 | [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's · host-conditional (symlink-creation privilege — the parent test skips before spawning them without it): `TestWalkSymlinkRoot/no_slash`, `TestWalkSymlinkRoot/slash`, `TestWalkSymlinkRoot/abs_no_slash`, `TestWalkSymlinkRoot/abs_with_slash`, `TestWalkSymlinkRoot/double_link_no_slash`, `TestWalkSymlinkRoot/double_link_with_slash` · linux: 54 · [proof](validation/current/path.filepath.md) |
 | [`plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) | 1 |  | That a program importing `plugin` links and starts at all — Go's own regression test for issue 28789 is an empty body asserting precisely that, and the converted binary runs it. · linux: 1 · [proof](validation/current/plugin.md) |
+| [`reflect`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/reflect) | 395 | 23 | Go's run-time reflection, the reflection bridge's own suite: `TypeOf`/`ValueOf` over every kind, `Kind` and `String` for named, generic and function-local types, struct fields with tags, embedding and `VisibleFields`, method sets and `Method`/`MethodByName` calls, `Call` and `MakeFunc`, `Set`/`Addr`/`CanSet` and the settability rules, `Convert`/`CanConvert`, `DeepEqual`, `IsZero` and `Comparable`, maps with `MapIndex`, `SetMapIndex` and `MapIter`, channels with `Select`, `Copy` and `Swapper`, the `Seq`/`Seq2` iterators, and the types built at run time by `PointerTo`, `SliceOf`, `ArrayOf`, `MapOf`, `ChanOf`, `FuncOf` and `StructOf`. The 23 disclosures are runtime capabilities the managed runtime does not have (a pointer compared as a number, GC bitmaps, address arithmetic, write-protected memory, an assembly trampoline), stack-allocation counts, and one frame-liveness assert. · linux: 395 + 23 · [proof](validation/current/reflect.md) |
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · linux: 45 · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · linux: 12 · [proof](validation/current/regexp.syntax.md) |
 | [`runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug) | 4 | 5 | The runtime's own debugging surface — `ReadGCStats`' packed pause history (`n` pauses, `n` end times, `lastGC`, `numGC`, `totalPause`, most-recent-first) cross-checked against `ReadMemStats` in nine assertions that hold because both read one shared recorder, the `SetGCPercent`/`SetMaxThreads` get-set knobs including the overflow path, and `SetCrashOutput`, which re-executes the test binary, panics inside `TestMain`, and reads Go's crash report back from BOTH the child's stderr and the crash file. That last one is the row that made every converted program print `panic: <value>`, a blank line, `goroutine N [running]:` and a Go-spelled traceback where a .NET exception dump used to go. host-limit + runtime-capability + codegen-liveness disclosures. · linux: 4 + 5 · [proof](validation/current/runtime.debug.md) |
@@ -936,8 +937,8 @@ Three of the 2026-09-22 block's eight candidates have since banked: `embed/inter
 rows for them read as they stood on its date.
 
 `net/http` has since re-entered: it banked at 1,387 of 1,387 with TRAIN A on 2026-09-25, when the synctest work
-landed, and `internal/synctest` banked at 28 of 28 with TRAIN F on 2026-09-27, which leaves four
-candidates. This block's identities and its candidates table read as they stood at
+landed, and `internal/synctest` banked at 28 of 28 with TRAIN F on 2026-09-27, and `reflect`
+banked at 395 of 418 with 23 disclosed the same day, which leaves three candidates. This block's identities and its candidates table read as they stood at
 the close.
 
 **The 6 candidates**, each a population member with no banked row:
