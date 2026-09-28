@@ -114,6 +114,12 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
             m_hasValue = true;
             m_coro!.Switch();
 
+            // Resumed with the loop stopped: seq unwinds on this coro thread for a break, a panic or a
+            // Goexit in the body alike, so runtime.Callers splices nothing here from now on
+            // (GoFrame.RefuseSplicesOnThisThread).
+            if (m_stopped)
+                GoFrame.RefuseSplicesOnThisThread();
+
             return !m_stopped;
         }
 

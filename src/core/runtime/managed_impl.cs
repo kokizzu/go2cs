@@ -1920,7 +1920,9 @@ partial class runtime_package
             // live frames' own skip and capacity path, since Go's skip counts gopanic ([P2-3]).
             if (method == GoFrame.RunMethod)
             {
-                if (GoFrame.SequenceFromTop(sequencesMet++) is ({ } panic, long activation))
+                // Pairing advances for every Run frame; a thread that refuses splices (a stopped
+                // range-over-func seq's coro) answers its live stack only.
+                if (GoFrame.SequenceFromTop(sequencesMet++) is ({ } panic, long activation) && !GoFrame.SplicesRefused)
                 {
                     foreach (uintptr spliced in splicePanic(panic, activation, frames, i))
                     {
@@ -2083,6 +2085,17 @@ partial class runtime_package
             if (link.FaultKind == PanicFaultKind.Explicit && firstMethodOf(raw) is { } thrower && !isGoSourceFrame(thrower, keepWrapper: true))
                 return [];
 
+            // An explicit panic from a function Go replaces with an INTRINSIC on amd64: Go's frames are the
+            // intrinsic's runtime frames (panicdivide, panicoverflow), not the Go source's, so it is refused.
+            if (link.FaultKind == PanicFaultKind.Explicit && site.Count > 0 && isPanickingIntrinsic(site[0].GetMethod()))
+                return [];
+
+            // A nil receiver box dereferenced inside a go2cs-gen interface ADAPTER: Go answers panicwrap when the
+            // call is dispatched and panicmem/sigpanic when its compiler devirtualizes it, which a run cannot
+            // know, so it is refused.
+            if (link.FaultKind == PanicFaultKind.Memory && adapterBeforeFirstGoFrame(raw))
+                return [];
+
             // An ends-at-Run site: only the nil-func thunk, or the deferred delegate that caught first.
             if (link.SiteEndsAtRun && !link.SiteIsTheDeferredCall &&
                 !(site.Count == 0 && link.FaultKind == PanicFaultKind.Memory && firstMethodOf(raw) == GoFrame.NilDeferredCallMethod))
@@ -2093,6 +2106,15 @@ partial class runtime_package
             switch (link.FaultKind)
             {
                 case PanicFaultKind.Memory:
+                    // A nil *T through the value-method wrapper `(*T).M`: Go's wrapper calls panicwrap, not
+                    // sigpanic ("value method T.M called using nil *T pointer"), and that is its list:
+                    // gopanic | runtime.panicwrap | (*T).M | owner.
+                    if (site.Count > 0 && isPointerMethodWrapper(site[0].GetMethod()))
+                    {
+                        spliced.Add(internRootFrame("runtime.panicwrap", "runtime/error.go", 356));
+                        break;
+                    }
+
                     spliced.Add(internRootFrame("runtime.panicmem", "runtime/panic.go", 262));
                     spliced.Add(GOOS == "windows"u8
                         ? internRootFrame("runtime.sigpanic", "runtime/signal_windows.go", 401)
@@ -2122,6 +2144,37 @@ partial class runtime_package
         }
 
         return spliced;
+    }
+
+    // Go's amd64 intrinsics whose Go source panics (cmd/compile/internal/ssagen/intrinsics.go, go1.24.13):
+    // math/bits.Div64, and Div, its alias on amd64. Their panic(divideError)/panic(overflowError) never runs;
+    // the intrinsic raises through runtime.panicdivide/panicoverflow. Div32 is NOT intrinsified, so its
+    // Go-source panic keeps its frame (gopanic | math/bits.Div32), as Go's does. Matched by declaring type
+    // and name because runtime cannot reference math/bits.
+    private static bool isPanickingIntrinsic(System.Reflection.MethodBase? method) =>
+        method is { Name: "Div64" or "Div", DeclaringType.FullName: "go.math.bits_package" };
+
+    // The `(*T).M` method-expression wrapper the converter stamps: a value method reached through a pointer.
+    private static bool isPointerMethodWrapper(System.Reflection.MethodBase? method) =>
+        method?.GetCustomAttributes(typeof(GoWrapperAttribute), inherit: false) is [GoWrapperAttribute { GoName: var name }] &&
+        name.StartsWith("(*", StringComparison.Ordinal);
+
+    // Whether a go2cs-gen interface adapter frame lies between the throw and the site's first Go frame.
+    private static bool adapterBeforeFirstGoFrame(StackFrame[] frames)
+    {
+        foreach (StackFrame frame in frames)
+        {
+            if (frame.GetMethod() is not { } method)
+                continue;
+
+            if (method.DeclaringType is { } declaring && typeof(IGoAdapter).IsAssignableFrom(declaring))
+                return true;
+
+            if (isGoSourceFrame(method, keepWrapper: true))
+                return false;
+        }
+
+        return false;
     }
 
     private static System.Reflection.MethodBase? firstMethodOf(StackFrame[] frames)

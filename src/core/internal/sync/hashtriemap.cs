@@ -605,7 +605,7 @@ private static void mustBeComparable<V>(V value) {
     }
     Type dynamicType = value.GetType();
     if (!GoReflect.IsComparable(dynamicType)) {
-        throw panic((@string)$"comparing uncomparable type {GoReflect.GoTypeName(dynamicType)}");
+        throw RuntimeErrorPanic.ComparingUncomparableType(GoReflect.GoTypeName(dynamicType)); // Go's runtime error, raised from runtime.efaceeq
     }
 }
 

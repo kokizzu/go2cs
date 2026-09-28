@@ -194,6 +194,11 @@ public ref struct GoFrame
             // (ReRaisedByTheDeferredDelegate), never by frames missing from a trace.
             Action? deferred = null;
 
+            // Whether a recovery completed in this sequence. Go then runs the frame's remaining deferred calls
+            // from runtime.deferreturn, so a nil deferred func faulting after it shows deferreturn beneath
+            // sigpanic, which is not modelled (COORD's second verification, item 3).
+            bool recoveryCompleted = false;
+
             try
             {
                 while (m_count > 0)
@@ -207,7 +212,10 @@ public ref struct GoFrame
                         // completes here and the panicking frames leave the stack, so a later deferred
                         // call's Callers no longer shows them (runtime's TestCallersAfterRecovery).
                         if (handling is { Recovered: true })
+                        {
                             SetSequence(sequence, null);
+                            recoveryCompleted = true;
+                        }
                     }
                     catch (Exception ex) when (IsPanic(ex, out PanicException? raised))
                     {
@@ -278,7 +286,12 @@ public ref struct GoFrame
                         bool firstHere = raised is { SiteOwner: 0, Catches: 1 };
                         bool reRaised = !firstHere && ReRaisedByTheDeferredDelegate(deferred, raised);
 
-                        if ((firstHere || reRaised) && !(running is null && GoexitException.Started))
+                        // The nil-func thunk faulting with no newer panic running, after this sequence's recovery
+                        // completed: Go's frames there include runtime.deferreturn beneath sigpanic (only when the
+                        // nil call itself faults), so it is left unowned too.
+                        bool afterCompletedRecovery = running is null && recoveryCompleted && ReferenceEquals(deferred, s_nilDeferredCall);
+
+                        if ((firstHere || reRaised) && !(running is null && GoexitException.Started) && !afterCompletedRecovery)
                         {
                             raised.SiteOwner = t_sequences[sequence].Activation;
                             raised.SiteOwnerThread = ThreadToken;
@@ -405,6 +418,16 @@ public ref struct GoFrame
     /// <summary>The zero-argument nil-deferred-func thunk's method: the one site-less ends-at-Run site runtime's captureCallers accepts.</summary>
     internal static System.Reflection.MethodInfo NilDeferredCallMethod => s_nilDeferredCall.Method;
 
+    // A range-over-func seq resumed with its loop STOPPED (a break, a panic or a Goexit in the loop body,
+    // which the adapter cannot tell apart) runs the rest of seq on its coro's thread, where Go would show
+    // the body's frames beneath it. Every splice on that thread is refused from then on (a missing splice,
+    // never a partial one); the pooled thread is reset with the rest of its state.
+    [ThreadStatic] private static bool t_splicesRefused;
+
+    internal static void RefuseSplicesOnThisThread() => t_splicesRefused = true;
+
+    internal static bool SplicesRefused => t_splicesRefused;
+
     // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
     // so this only matters for a thread reused after an abnormal end.
     internal static void ResetSequences()
@@ -413,6 +436,7 @@ public ref struct GoFrame
             Array.Clear(entries);
 
         t_sequenceDepth = 0;
+        t_splicesRefused = false;
     }
 
     /// <summary>The <see cref="Run"/> method, for matching its frames by identity rather than by name ([P2-4]).</summary>
