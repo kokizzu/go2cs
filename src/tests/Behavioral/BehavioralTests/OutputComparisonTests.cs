@@ -1967,6 +1967,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]
+    public void CheckUnsignedIndexPastIntRange() => CheckTarget("UnsignedIndexPastIntRange");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]

@@ -2047,6 +2047,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
 
     [TestMethod]
+    public void CheckUnsignedIndexPastIntRange() => CheckTarget("UnsignedIndexPastIntRange");
+
+    [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");
 
     [TestMethod]
