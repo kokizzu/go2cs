@@ -324,7 +324,8 @@ func (v *Visitor) noInliningPrefix(fnObj types.Object) string {
 // grammar places the attribute list before everything else, including an explicit return type, so
 // every convFuncLit emission site prepends this ahead of its own return-type prefix, not after it.
 func (v *Visitor) litNoInliningPrefix(funcLit *ast.FuncLit) string {
-	needsIt := literalCallsSkipCountedRuntimeCaller(v.info, funcLit)
+	needsIt := literalCallsSkipCountedRuntimeCaller(v.info, funcLit) ||
+		(funcLit.Body != nil && callsSkipCountedWalker(v.info, funcLit.Body))
 
 	if !needsIt {
 		if target := thinForwarderTarget(v.info, v.pkg, funcLit.Body); target != nil {

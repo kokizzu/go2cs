@@ -70,7 +70,7 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 				continue
 			}
 
-			if callsSkipCountedRuntimeCaller(info, fn.Body) {
+			if callsSkipCountedRuntimeCaller(info, fn.Body) || callsSkipCountedWalker(info, fn.Body) {
 				seed[obj] = true
 				continue
 			}
@@ -133,6 +133,73 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 	}
 
 	return seed
+}
+
+// skipCountedWalkers are the stack walkers whose recorded frames include their CALLER's, keyed by package
+// path and name: the runtime's own skip-counting walkers -- `callers` and `gcallers` (hand-owned over the
+// managed walk, captureCallers) and `saveblockevent` (hand-owned, forwarding its skip to callers) -- and
+// the frame-LISTING walkers a Go program calls, `runtime.Stack`, `runtime/debug.Stack` and
+// `runtime/debug.PrintStack`, whose printed traceback starts at their caller's frame. runtime/debug's
+// TestStack is the measured frame-listing case: its one-line `(*T).ptrmethod` / `T.method` forwarders into
+// debug.Stack vanished from the traceback, and hand-marking both [MethodImpl(NoInlining)] brought both
+// frames back (G, 2026-09-28, linux). A test extends the set copy-on-write to stand a fixture package in.
+var skipCountedWalkers = map[string]bool{
+	"runtime.callers":          true,
+	"runtime.gcallers":         true,
+	"runtime.saveblockevent":   true,
+	"runtime.Stack":            true,
+	"runtime/debug.Stack":      true,
+	"runtime/debug.PrintStack": true,
+}
+
+// callsSkipCountedWalker reports whether body calls one of skipCountedWalkers directly. Such a function
+// is the HOP nearest the walk: its own frame is one of the Go frames the skip it passes counts, so a JIT
+// that inlines it removes a counted frame and every stack the walk records starts one real frame too
+// high -- the rule captureCallers states for runtime's own entry points (managed_impl.cs: "an inlined hop
+// would silently shift every answer by one"). The converted runtime.blockevent is the measured case:
+// runtime/pprof's TestBlockProfileBias read [TestBlockProfileBias, tRunner] where Go reads
+// [blockFrequentShort, TestBlockProfileBias, tRunner], and hand-marking blockevent [MethodImpl(NoInlining)]
+// alone restored the frame and passed the test (G, 2026-09-28, linux). runtime.mutexevent is the same
+// shape, one hop over the same walker.
+func callsSkipCountedWalker(info *types.Info, body *ast.BlockStmt) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		if _, isLit := n.(*ast.FuncLit); isLit {
+			return false // a literal's calls belong to the literal's own frame
+		}
+
+		call, ok := n.(*ast.CallExpr)
+
+		if !ok {
+			return true
+		}
+
+		var ident *ast.Ident
+
+		switch fun := ast.Unparen(call.Fun).(type) {
+		case *ast.Ident:
+			ident = fun
+		case *ast.SelectorExpr:
+			ident = fun.Sel
+		}
+
+		if ident == nil {
+			return true
+		}
+
+		if callee, ok := info.Uses[ident].(*types.Func); ok && callee.Pkg() != nil && skipCountedWalkers[callee.Pkg().Path()+"."+callee.Name()] {
+			found = true
+		}
+
+		return !found
+	})
+
+	return found
 }
 
 // isThinAllocator reports whether body is a single statement whose whole work is ONE heap allocation

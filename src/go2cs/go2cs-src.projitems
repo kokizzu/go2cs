@@ -31,6 +31,7 @@
     <None Include="$(MSBuildThisFileDirectory)autoSiblingOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)behavioralPackageInfoAttributes_test.go" />
     <None Include="$(MSBuildThisFileDirectory)bestEffortTranspile_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)blockEventFrames_test.go" />
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)callerInliningAnalysis.go" />
     <None Include="$(MSBuildThisFileDirectory)embedDirective.go" />
