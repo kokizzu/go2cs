@@ -61,6 +61,24 @@
       "want": "0 < /gc/heap/live:bytes <= MemStats.HeapSys, the MemStats ReadMetricsSlow reads through readmemstats_m in the same stopped world",
       "reading": "0 on linux/amd64 at 5dd6bce97b, Release (the go2cs -tests runtime row filtered to TestReadMetrics): gcController.heapMarked = 0 and HeapSys = 0; the test printed only 'live bytes is 0' (at 3d3883d4bb, before M1, it also printed the gogc and gomemlimit lines)",
       "plan": "the OQ-4 coherent-snapshot wiring seat, docs/phase4/DESIGN-oq4-heap-accounting-snapshot.md (the wiring ruled OWED 2026-09-28, ledger 96edeb700a; scheduled after the objective banks, sooner if ready and green): one CLR heap snapshot per completed gen2 feeds gcController's heap figures, heapMarked and consistentHeapStats.read together, so readmemstats_m's double check holds by construction and heapMarked has a HeapSys to sit under"
+    },
+    {
+      "name": "TestReadMetricsConsistency",
+      "halves": [
+        {
+          "class": "runtime-capability",
+          "signature": "found no time spent on GC work",
+          "reason": "runtime-capability (ruled 2026-09-27 00:35, not reopened 2026-09-28, ledger 96edeb700a): Go's linux-only check wants some GC mark CPU time in /cpu/classes/gc/mark/{assist,dedicated,idle}. The managed host's collections are the CLR's, and a blocking CLR collection marks INSIDE its pause, so Go's own accounting puts that time in /cpu/classes/gc/pause (non-zero here) and the three mark classes stay 0; a background CLR gen2's mark time is not separately measurable, and runtime.GC() is a blocking Collect, so even a background-GC measure would read 0 for this test. Scoped to linux because Go's source makes the check only there (runtime.GOOS == \"linux\"). The rest of the test's CPU identities hold (gc/total = the four gc classes, total = gc + scavenge + user + idle).",
+          "platforms": [
+            "linux"
+          ]
+        },
+        {
+          "class": "structural",
+          "signature": "scannable GC space is empty: 0",
+          "reason": "structural (ruled 2026-09-28, ledger 96edeb700a): /gc/scan/{heap,stack,globals}:bytes read gcController.heapScan, lastStackScan and globalsScan, which Go writes at mark termination from its own pointer bitmaps. The CLR does not separate scannable bytes from pointer-free ones, so no managed measurement means the same quantity, and the honest reading is 0 (DESIGN-readmemstats-surface's rule: a field is answered only when a managed measurement means what the Go field means). Every target: the check is unconditional."
+        }
+      ]
     }
   ]
 }
