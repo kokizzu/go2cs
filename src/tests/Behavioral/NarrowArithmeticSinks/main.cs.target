@@ -95,7 +95,7 @@ internal static void Main() {
         any x = (int8)(a + a);
         return show(x);
     });
-    arm(anyParamˢ, () => show((uint8)(u * 2)) + " "u8 + show((uint8)((uint8)0 - u)));
+    arm(anyParamˢ, () => show((uint8)(u * 2)) + " "u8 + show((uint8)(((uint8)0 - u))));
     arm(anyReturnˢ, () => show(ret(a)));
     arm(variadicAnyˢ, () => variadic((int8)(a + a), (uint8)(u + u)));
     arm(compositeAnyˢ, () => {
@@ -109,7 +109,7 @@ internal static void Main() {
         ch.ᐸꟷ((uint8)(u + u));
         return show(ᐸꟷ(ch));
     });
-    arm(typeOnlyˢ, () => show((uint8)(u / 3)) + " "u8 + show((int8)(a % 7)) + " "u8 + show((uint8)(u >> (int)(1))) + " "u8 + show((int8)(+a)) + " "u8 + show((int8)(~a)));
+    arm(typeOnlyˢ, () => show((uint8)(u / 3)) + " "u8 + show((int8)(a % 7)) + " "u8 + show((uint8)((u >> (int)(1)))) + " "u8 + show((int8)(+a)) + " "u8 + show((int8)(~a)));
     arm(namedAnyˢ, () => {
         I i = (int8)(a + a);
         return show(i);
@@ -136,7 +136,7 @@ internal static void Main() {
         return fmt.Sprint(((nint)1).Lsh((uint64)((uint8)(u + u - 140))), (@string)" "u8, ((uint32)1).Lsh((uint64)((uint8)(d + 10))), (@string)" "u8, y);
     });
     arm(divremOperandˢ, () => fmt.Sprint((int8)((int8)(a + a) / 2), (@string)" "u8, (int8)((int8)(a + a) % 7), (@string)" "u8, (uint8)((uint8)(u + u) / 3)));
-    arm(shrOperandˢ, () => fmt.Sprint((int8)((int8)(a + a) >> (int)(1)), (@string)" "u8, (uint8)((uint8)(u + u) >> (int)(4))));
+    arm(shrOperandˢ, () => fmt.Sprint((int8)(((int8)(a + a) >> (int)(1))), (@string)" "u8, (uint8)(((uint8)(u + u) >> (int)(4)))));
     arm(minint81ˢ, () => fmt.Sprint((int8)(m8 / n1), (@string)" "u8, (int8)(m8 % n1)));
     arm(parenCompareˢ, () => fmt.Sprint((int8)(a + a) < 0, (@string)" "u8, (uint8)(u + u) == 144));
     arm(switchTagˢ, () => {

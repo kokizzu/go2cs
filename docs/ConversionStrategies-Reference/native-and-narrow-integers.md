@@ -89,12 +89,12 @@ channel send, map-literal value or keyed array element does not compile.
 `markUntypedConstContexts`) classifies each narrow arithmetic expression by its consumer, seen through
 parentheses, and `convBinaryExpr` / `convUnaryExpr` emit the cast on the expression itself:
 
-- **Wrap-invariant** consumers add nothing: a same-width `+ - * & | ^ &^`, the left operand of `<<`, a unary
-  `- ^ +`, or a conversion to an integer no wider than the operand. Each reads only the low bits, and the
-  result above it is narrowed in turn.
+- **Wrap-invariant** consumers add nothing: a same-width `+ - * & | ^ &^` (and its compound assignment,
+  `x += e`), the left operand of `<<`, a unary `- ^ +`, or a conversion to an integer no wider than the
+  operand. Each reads only the low bits, and the result above it is narrowed in turn.
 - **Value** consumers read the whole value but not its C# type: a widening or float conversion, an index, a
-  slice bound, a shift count (including the right side of `<<=` / `>>=`), a `/`, `%` or `>>` operand, a switch
-  tag or case value. Only a result that can leave the narrow range in C# takes the cast: `+`, `-`, `*`, a
+  slice bound, a shift count (including the right side of `<<=` / `>>=`), a `/`, `%` or `>>` operand (and
+  the right side of `/=` / `%=`), a switch tag or case value. Only a result that can leave the narrow range in C# takes the cast: `+`, `-`, `*`, a
   unary `-`, and a signed `/` (`int8(-128) / -1` is 128 in C#).
 - **Typed** consumers take the value at its Go type: every other consumer, including a comparison, an
   interface or generic argument, and every typed destination. Here every narrow result takes the cast,
@@ -103,9 +103,10 @@ parentheses, and `convBinaryExpr` / `convUnaryExpr` emit the cast on the express
 
 At a typed destination of the identical Go type the cast takes the destination's own spelling (`byte` for a
 `[]byte` element fed `uint8` arithmetic), so the destination casts described above see a whole-expression cast
-of their own type and add nothing: their emission does not change. A parenthesized operand drops its
-redundant parentheses once its content is a cast: `(a+a)/2` becomes `(int8)((int8)(a + a) / 2)` when the
-quotient itself reaches a typed consumer.
+of their own type and add nothing: their emission does not change. For the same reason the cast is always
+written `(T)(…)`, even around a rendering that is already parenthesized. A parenthesized Go operand drops its
+own parentheses once its content is a cast: `(a+a)/2` becomes `(int8)((int8)(a + a) / 2)` when the quotient
+itself reaches a typed consumer.
 
 **Not covered here.** A named narrow type (`type T uint8`) is excluded: its `[GoType]` wrapper operators already
 cast back. So are the operators whose emission already narrows its whole result, `& | ^ &^`, `<<` and an

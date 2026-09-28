@@ -216,8 +216,12 @@ func (v *Visitor) narrowConsumerOf(expr ast.Expr, stack []ast.Node) narrowConsum
 	case *ast.SwitchStmt, *ast.CaseClause:
 		return narrowConsumerValue
 	case *ast.AssignStmt:
-		// The right side of `x <<= n` / `x >>= n` is a shift count, not a value of x's type
-		if parent.Tok == token.SHL_ASSIGN || parent.Tok == token.SHR_ASSIGN {
+		switch parent.Tok {
+		case token.ADD_ASSIGN, token.SUB_ASSIGN, token.MUL_ASSIGN, token.AND_ASSIGN, token.OR_ASSIGN, token.XOR_ASSIGN, token.AND_NOT_ASSIGN:
+			// `x += e` is `x = x + e`: the operator reads the low bits and the assignment narrows
+			return narrowConsumerInvariant
+		case token.QUO_ASSIGN, token.REM_ASSIGN, token.SHL_ASSIGN, token.SHR_ASSIGN:
+			// A divisor, or the right side of `x <<= n` / `x >>= n`, a shift count: read whole
 			return narrowConsumerValue
 		}
 	}
@@ -412,17 +416,14 @@ func integerKindSize(kind types.BasicKind) int {
 }
 
 // narrowArithmeticSelfCast wraps a marked expression's rendering in its narrowing cast (see
-// markNarrowArithmeticContexts), or returns it unchanged. A rendering that is already fully
-// parenthesized — `((a + a) >> (int)(1))` — takes the cast directly rather than a second pair.
+// markNarrowArithmeticContexts), or returns it unchanged. The cast is always `(T)(…)`, even around a
+// rendering that is already parenthesized (`(uint8)((u >> (int)(1)))`), because that is the exact text
+// the typed-destination arms emit: a destination that sees it adds nothing and reads as it did.
 func (v *Visitor) narrowArithmeticSelfCast(expr ast.Expr, rendered string) string {
 	castType, ok := v.narrowArithmeticCasts[expr]
 
 	if !ok || wholeExprIsCastOfType(rendered, castType) {
 		return rendered
-	}
-
-	if isFullyParenthesized(rendered) {
-		return "(" + castType + ")" + rendered
 	}
 
 	return "(" + castType + ")(" + rendered + ")"
