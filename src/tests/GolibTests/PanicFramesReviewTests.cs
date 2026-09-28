@@ -74,6 +74,13 @@ public class PanicFramesReviewTests
             new[] { "runtime.gopanic", Pkg + "gDeferPanics", "runtime.gopanic", Pkg + "deferTheCatcher" },
             Below(Run(panicframesprobe_package.deferTheCatcher), "deferTheCatcher"));
 
+    // The same re-raise out of Run's NORMAL-RETURN loop: the raising delegate is re-read from its slot.
+    [TestMethod]
+    public void TheDeferredDelegateThatCaughtFirstIsSplicedOnANormalReturn() =>
+        CollectionAssert.AreEqual(
+            new[] { "runtime.gopanic", Pkg + "gDeferPanics", Pkg + "deferTheCatcherOnNormalReturn" },
+            Below(Run(panicframesprobe_package.deferTheCatcherOnNormalReturn), "deferTheCatcherOnNormalReturn"));
+
     // ---- a panic a deferred CLOSURE raises: NO splice (a stated residual). The converter's defer
     // wrappers (`defer panic(v)`'s thunk, `() => c()`, the lambda for a call whose results are dropped)
     // are indistinguishable from Go closures at run time, and Go shows its deferwrap only over the panic

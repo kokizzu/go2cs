@@ -95,6 +95,23 @@ internal static partial class panicframesprobe_package
         return got;
     }
 
+    // The same accepted re-raise on a NORMAL return: no panic runs in this sequence when gDeferPanics
+    // raises, so the raise comes out of Run's normal-return loop (the defer-cost cut) and the delegate is
+    // re-read from its slot. Go (go1.24.13, measured): O.func1 | gopanic | gDeferPanics | O. Spliced.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static List<string> deferTheCatcherOnNormalReturn()
+    {
+        List<string> got = [];
+        GoFrame ᒐ = default;
+        try {
+            defer(() => { recover(); got = callersHere(); }, ref ᒐ);
+            defer(gDeferPanics, ref ᒐ);
+        }
+        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+        finally { ᒐ.Run(); }
+        return got;
+    }
+
     // Review S06 G shape: `defer D()` where D calls G, and G defers and panics. Go: O.func1 | gopanic | G |
     // D | gopanic | O. D lies between the first catcher and this Run: NO splice (residual).
     [MethodImpl(MethodImplOptions.NoInlining)]
