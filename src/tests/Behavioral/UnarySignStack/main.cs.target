@@ -15,8 +15,8 @@ internal static void Main() {
     fmt.Println(- -a, a);
     fmt.Println(+ +a, a);
     int8 b = -7;
-    fmt.Println(- -b, b);
-    fmt.Println(+ +b, b);
+    fmt.Println((int8)(- -b), b);
+    fmt.Println((int8)(+ +b), b);
     float64 f = 2.5D;
     fmt.Println(- -f, f);
     fmt.Println(+ +f, f);

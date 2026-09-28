@@ -231,7 +231,7 @@ internal static void Main() {
     arm(invariantˢ, () => fmt.Sprint((int8)(u + u), (@string)" "u8, (int8)(a + a + a), (@string)" "u8, (uint8)(w + w)));
     arm(builtinArgˢ, () => {
         var b = append(new byte[]{}.slice(), (byte)(u + u), (byte)(u * 2), (byte)(u - 1));
-        return fmt.Sprint(min((int8)(a + a), 0), (@string)" "u8, max((uint8)(u + u), 0), (@string)" "u8, b);
+        return fmt.Sprint(min((int8)(a + a), (int8)(0)), (@string)" "u8, max((uint8)(u + u), (uint8)(0)), (@string)" "u8, b);
     });
     arm(parenDefineˢ, () => {
         var t2 = (int8)(a + a);

@@ -699,6 +699,7 @@
     <Project Path="tests/Behavioral/NativeIntConstMask/NativeIntConstMask.csproj" />
     <Project Path="tests/Behavioral/NativeIntWideConstAssign/NativeIntWideConstAssign.csproj" />
     <Project Path="tests/Behavioral/NativeIntWideConstElement/NativeIntWideConstElement.csproj" />
+    <Project Path="tests/Behavioral/NegativeShiftCount/NegativeShiftCount.csproj" />
     <Project Path="tests/Behavioral/NestedAliasUser/NestedAliasUser.csproj" />
     <Project Path="tests/Behavioral/NestedAliasUser/inner/NestedAliasUser.inner.csproj" />
     <Project Path="tests/Behavioral/NestedEmbeddingPromotion/NestedEmbeddingPromotion.csproj" />
@@ -974,6 +975,7 @@
     <Project Path="tests/Behavioral/UnsafePointerArgPassing/UnsafePointerArgPassing.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerInferredNoImport/UnsafePointerInferredNoImport.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerKeywordParam/UnsafePointerKeywordParam.csproj" />
+    <Project Path="tests/Behavioral/UnsafePointerParamAssign/UnsafePointerParamAssign.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerParamPin/UnsafePointerParamPin.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerPrint/UnsafePointerPrint.csproj" />
     <Project Path="tests/Behavioral/UnsafePointerReinterpret/UnsafePointerReinterpret.csproj" />

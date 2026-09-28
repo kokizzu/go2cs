@@ -300,7 +300,7 @@ public static class RuntimeErrorPanic
 
     /// <summary>
     /// A panic Go raises from a RUNTIME frame, reproduced by hand-owned C# (unsafe.Slice's length checks,
-    /// reflect's nil-map and nil-channel refusals, runtime's hash refusals). The value is converted exactly
+    /// runtime's hash refusals; reflect's nil-map write and nil-channel close raise Go's plainError through PlainError, which is equally unspliced). The value is converted exactly
     /// as <see cref="builtin.panic"/> converts it, but the panic keeps the default fault kind
     /// (<see cref="PanicFaultKind.Unmodelled"/>), so runtime.Callers does not splice it as Go source.
     /// </summary>
