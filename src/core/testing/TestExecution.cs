@@ -1101,6 +1101,8 @@ public sealed class TestExecution
         string message = $"panic on a goroutine started by {Name}{Environment.NewLine}{report}";
         bool completed;
         string output;
+        IReadOnlyList<string>? records;
+        int? dropped;
 
         lock (m_syncRoot)
         {
@@ -1116,6 +1118,7 @@ public sealed class TestExecution
             }
 
             output = LogOutput();
+            (records, dropped) = LogRecords("fail");
         }
 
         if (completed)
@@ -1125,7 +1128,7 @@ public sealed class TestExecution
         }
 
         m_parent?.FailFromChild();
-        m_runner.Report(new TestEvent(m_runner.Package, Name, "fail", 0.0D, output, Source, Line));
+        m_runner.Report(new TestEvent(m_runner.Package, Name, "fail", 0.0D, output, Source, Line, records, dropped));
         m_runner.Completed(this);
     }
 
@@ -1182,6 +1185,19 @@ public sealed class TestExecution
 
         return $"{output}{Environment.NewLine}testing: {m_logsDropped} further log record(s) dropped after {MaxLogCharacters} characters";
     }
+
+    /// <summary>
+    /// This execution's log records as a list, for a terminal <c>fail</c>/<c>skip</c> event (null on
+    /// every other terminal, so a passing row's event is unchanged). Callers must hold <c>m_syncRoot</c>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LogOutput"/> joins these with <see cref="Environment.NewLine"/>, the same separator a
+    /// record can contain, so only this list says where one record ends. A disclosure pins the COUNT:
+    /// it is what makes an extra failure beside the pinned one visible (testConversion.go's
+    /// record-count pin).
+    /// </remarks>
+    private (IReadOnlyList<string>? records, int? dropped) LogRecords(string terminal) =>
+        terminal is "fail" or "skip" ? (m_logs.ToArray(), m_logsDropped > 0 ? m_logsDropped : null) : (null, null);
 
     // Go runs every test body from testing.tRunner (testing.go:1792 is its `fn(t)`), and a Callers walk
     // reports that frame here, where the host stands in for it, above runtime.goexit (GoStackRoot).
@@ -1267,10 +1283,16 @@ public sealed class TestExecution
 
             string terminal = InfrastructureFailed ? "infrastructure-error" : Failed ? "fail" : Skipped ? "skip" : "pass";
             string? output;
-            lock (m_syncRoot)
-                output = LogOutput();
+            IReadOnlyList<string>? records;
+            int? dropped;
 
-            m_runner.Report(new TestEvent(m_runner.Package, Name, terminal, timer.Elapsed.TotalSeconds, output, Source, Line));
+            lock (m_syncRoot)
+            {
+                output = LogOutput();
+                (records, dropped) = LogRecords(terminal);
+            }
+
+            m_runner.Report(new TestEvent(m_runner.Package, Name, terminal, timer.Elapsed.TotalSeconds, output, Source, Line, records, dropped));
             m_runner.Completed(this);
         }
     }

@@ -217,7 +217,7 @@ func TestPairAddressVariantNames(t *testing.T) {
 		"TestAsValidation/*string(0x10d6126)": "captured output",
 	}
 
-	pairAddressVariantNames(goResults, csResults, csOutputs)
+	pairAddressVariantNames(goResults, csResults, csOutputs, nil)
 
 	if _, ok := goResults["TestAsValidation/*string(0x?)"]; !ok {
 		t.Fatalf("go side not re-keyed: %#v", goResults)
