@@ -85,3 +85,26 @@ internal static class GoZeroSizeFacts<T>
         return true;
     }
 }
+
+/// <summary>
+/// The element a non-nil ZERO-CAPACITY <see cref="slice{T}"/>'s data pointer names — golib's stand-in
+/// for the <c>zerobase</c> Go's <c>make([]T, 0)</c> answers.
+/// </summary>
+/// <remarks>
+/// <c>unsafe.SliceData</c> over a non-nil slice of capacity 0 returns "a non-nil pointer to an
+/// unspecified memory address", and no correct program reaches an element through it, because there
+/// is none. Minting element 0 of the slice's own backing named a slot that does not exist (a zero-length
+/// backing, or one past the end of a <c>s[len:len]</c> window), so reading or converting the pointer
+/// raised <see cref="IndexOutOfRangeException"/> — a host fault Go has no equivalent of. This element is
+/// real storage instead: one slot per element type, never charged to a Go allocation, and for a
+/// zero-size <typeparamref name="T"/> the very slot <see cref="GoZeroSizeFacts{T}.Storage"/> every
+/// element of every such slice already is.
+/// </remarks>
+/// <typeparam name="T">Element type of the zero-capacity slice.</typeparam>
+internal static class GoZeroCapacityElement<T>
+{
+    /// <summary>The shared element pointer.</summary>
+    internal static readonly ж<T> Element = new ElemRefBox<T>(new slice<T>(Backing()), 0);
+
+    private static T[] Backing() => GoZeroSizeFacts<T>.IsZeroSize ? GoZeroSizeFacts<T>.Storage : new T[1];
+}
