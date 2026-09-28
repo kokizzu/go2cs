@@ -75,6 +75,29 @@ partial class runtime_package
     [LibraryImport("kernel32.dll", EntryPoint = "SetConsoleCtrlHandler", SetLastError = true)]
     private static unsafe partial int SetConsoleCtrlHandlerNative(delegate* unmanaged<uint, int> handlerRoutine, int add);
 
+    // enableWER is Go's (signal_windows.go): re-enable Windows Error Reporting without the fault UI --
+    // read the process error mode and clear SEM_NOGPFAULTERRORBOX. Hand-owned (manualConversionFuncs,
+    // goosWindows) because the converted body reaches the mode through stdcall0 -> asmstdcall, whose
+    // generated stub throws NotImplementedException, and setTraceback("wer") calls it from
+    // parsedebugvars at MODULE INIT whenever GOTRACEBACK=wer is in the environment (runtime's
+    // TestWERDialogue re-execs itself exactly so). A raw exception there would take down the runtime
+    // assembly and every assembly that depends on it. Go's act is these two calls; so is this.
+    internal static void enableWER()
+    {
+        uint errormode = GetErrorModeNative();
+
+        if ((errormode & SemNoGpFaultErrorBox) != 0)
+            SetErrorModeNative(errormode ^ SemNoGpFaultErrorBox);
+    }
+
+    private const uint SemNoGpFaultErrorBox = 0x0002; // _SEM_NOGPFAULTERRORBOX
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetErrorMode")]
+    private static partial uint GetErrorModeNative();
+
+    [LibraryImport("kernel32.dll", EntryPoint = "SetErrorMode")]
+    private static partial uint SetErrorModeNative(uint uMode);
+
     [ModuleInitializer]
     internal static unsafe void ᴛInstallConsoleCtrlHandler()
     {

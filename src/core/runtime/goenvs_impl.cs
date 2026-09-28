@@ -62,5 +62,55 @@ partial class runtime_package
         }
 
         envs = snapshot;
+
+        // schedinit's NEXT step in Go is parsedebugvars, and it belongs here for the same reason envs
+        // does: it reads the environment (gogetenv, so envs must be set first) and must precede any
+        // Go code. Without it every dbgvar default stayed zero, and a GODEBUG or GOTRACEBACK present
+        // at PROCESS START was never parsed -- only a later os.Setenv reached the runtime (through
+        // syscall_runtimeSetenv's reparse). It also retires mprof_impl.cs's profstackdepth patch,
+        // which applied one default by hand and would now override a GODEBUG=profstackdepth=0.
+        //
+        // This runs inside a module initializer, where a raw exception becomes a
+        // TypeInitializationException that takes down the runtime assembly and everything that
+        // depends on it. parsedebugvars' own failures are Go fatals already (cgocheck > 1 throws);
+        // anything ELSE is converted into one here, reason and all, which is the exit Go would take.
+        try
+        {
+            parsedebugvars();
+        }
+        catch (Exception ex)
+        {
+            @throw($"parsedebugvars at startup: {ex.GetType().FullName}: {ex.Message}");
+        }
     }
+
+    // TEST SEAMS (pinner_impl.cs's pattern: GolibTests is outside the InternalsVisibleTo grant). They re-run
+    // the start sequence over a given environment, as a process started with it would: envs, then
+    // parsedebugvars. The call is RAW, not through the fatal wrapper above, so a failure reaches the arm as
+    // the exception it is instead of ending the test host. The caller restores by passing back what
+    // GoStartEnvironment returned.
+    public static string[] GoStartEnvironment()
+    {
+        string[] environment = new string[(int)envs.Length];
+
+        for (int i = 0; i < environment.Length; i++)
+            environment[i] = envs[i].ToString();
+
+        return environment;
+    }
+
+    public static void GoParseDebugVarsAtStart(string[] environment)
+    {
+        slice<@string> snapshot = new slice<@string>(environment.Length);
+
+        for (int i = 0; i < environment.Length; i++)
+            snapshot[i] = environment[i];
+
+        envs = snapshot;
+        parsedebugvars();
+    }
+
+    public static int GoDebugProfStackDepth => debug.profstackdepth;
+
+    public static int GoDebugCgoCheck => debug.cgocheck;
 }

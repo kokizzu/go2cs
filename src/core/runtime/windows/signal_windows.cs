@@ -28,14 +28,7 @@ internal static void preventErrorDialogs() {
     stdcall1(_WerSetFlags, (uintptr)(werflags | (uintptr)_WER_FAULT_REPORTING_NO_UI));
 }
 
-// enableWER re-enables Windows error reporting without fault reporting UI.
-internal static void enableWER() {
-    // re-enable Windows Error Reporting
-    var errormode = stdcall0(_GetErrorMode);
-    if ((uintptr)(errormode & (uintptr)_SEM_NOGPFAULTERRORBOX) != 0) {
-        stdcall1(_SetErrorMode, (uintptr)(errormode ^ (uintptr)_SEM_NOGPFAULTERRORBOX));
-    }
-}
+// go2cs generated this placeholder — func enableWER is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // in sys_windows_386.s, sys_windows_amd64.s, sys_windows_arm.s, and sys_windows_arm64.s
 internal static partial void exceptiontramp();

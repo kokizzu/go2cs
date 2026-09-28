@@ -71,11 +71,10 @@
 // rule). When the Q49 fix retires the `(uintptr)` wrap, the `case uintptr` arm in
 // pinnerReferentOf is one deleted arm and this paragraph is its reason.
 //
-// GODEBUG. The check is ON by default (Go's cgocheck=1) and off only under GODEBUG=cgocheck=0,
-// read once here rather than through the converted `debug` struct that parsedebugvars would have
-// filled: a module initializer writing one field of a struct whose other readers are init-path-
-// only would be a second policy for one variable. The `cgocheck > 1` mode Go 1.23 rejects at
-// startup is not reproduced.
+// GODEBUG. The check is ON by default (Go's cgocheck=1) and off only under GODEBUG=cgocheck=0, read
+// from the converted `debug` struct exactly as Go reads it: parsedebugvars runs at startup
+// (goenvs_impl.cs) and fills it, including rejecting the `cgocheck > 1` mode with Go's own fatal.
+// (It used to parse GODEBUG privately here, because nothing filled `debug`.)
 //
 // TEST SEAMS. runtime's own suite reaches isPinned / pinnerGetPinCounter / cgoCheckPointer /
 // pinnerLeakPanic through export_test.go (the internal-test assembly, which the csproj already
@@ -326,34 +325,17 @@ private static class PinTable
 
 // ---- the cgo argument check over managed values ----
 
-private static readonly bool s_cgoCheckEnabled = readCgoCheckSetting();
-
-private static bool readCgoCheckSetting()
-{
-    string? godebug = Environment.GetEnvironmentVariable("GODEBUG");
-
-    if (string.IsNullOrEmpty(godebug))
-        return true;
-
-    bool enabled = true;
-
-    // Last setting wins, as Go's parser reads the list.
-    foreach (string setting in godebug.Split(','))
-    {
-        string trimmed = setting.Trim();
-
-        if (trimmed.StartsWith("cgocheck=", StringComparison.Ordinal))
-            enabled = trimmed.Substring("cgocheck=".Length) != "0";
-    }
-
-    return enabled;
-}
+// Go's cgoCheckPointer reads debug.cgocheck on every call, and so does this: parsedebugvars now runs at
+// startup (goenvs_impl.cs), giving it Go's default of 1 and honoring a start-time GODEBUG=cgocheck=0.
+// A cached static would be WRONG here, not just redundant -- runtime_package's static constructor runs
+// before parsedebugvars does, so a field initializer would capture the pre-parse 0.
+private static bool cgoCheckEnabled => debug.cgocheck != 0;
 
 // cgoCheckPointer checks if the argument contains a Go pointer that
 // points to an unpinned Go pointer, and panics if it does.
 internal static void cgoCheckPointer(any ptr, any arg)
 {
-    if (!s_cgoCheckEnabled)
+    if (!cgoCheckEnabled)
         return;
 
     if (ptr is null || ptr is NilType)
