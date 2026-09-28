@@ -83,4 +83,34 @@ partial class runtime_package
             @throw($"parsedebugvars at startup: {ex.GetType().FullName}: {ex.Message}");
         }
     }
+
+    // TEST SEAMS (pinner_impl.cs's pattern: GolibTests is outside the InternalsVisibleTo grant). They re-run
+    // the start sequence over a given environment, as a process started with it would: envs, then
+    // parsedebugvars. The call is RAW, not through the fatal wrapper above, so a failure reaches the arm as
+    // the exception it is instead of ending the test host. The caller restores by passing back what
+    // GoStartEnvironment returned.
+    public static string[] GoStartEnvironment()
+    {
+        string[] environment = new string[(int)envs.Length];
+
+        for (int i = 0; i < environment.Length; i++)
+            environment[i] = envs[i].ToString();
+
+        return environment;
+    }
+
+    public static void GoParseDebugVarsAtStart(string[] environment)
+    {
+        slice<@string> snapshot = new slice<@string>(environment.Length);
+
+        for (int i = 0; i < environment.Length; i++)
+            snapshot[i] = environment[i];
+
+        envs = snapshot;
+        parsedebugvars();
+    }
+
+    public static int GoDebugProfStackDepth => debug.profstackdepth;
+
+    public static int GoDebugCgoCheck => debug.cgocheck;
 }
