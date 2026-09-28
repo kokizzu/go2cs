@@ -205,6 +205,34 @@ namespace GolibTests
             Assert.IsTrue(frame.Line >= 100 && frame.Line <= 120, $"a Go line inside the recorded span, got {frame.Line}");
         }
 
+        // A GOROOT-relative record (a standard-library source, recorded without a host path) is ROOTED
+        // at run time against the LINK-TIME root, runtime.defaultGOROOT, which the -tests pipeline
+        // hands the host through GO2CS_DEFAULT_GOROOT: default `go test` bakes the absolute GOROOT
+        // path, and a re-exec child that opens its own source through runtime.Caller
+        // (TestTracebackSystem) needs a path that exists. The AMBIENT GOROOT never roots it: Go's
+        // frames do not move with it (runtime/debug's TestStack), and it can name another Go install.
+        // This host is not launched by the pipeline, so the recorded form stands whatever GOROOT says.
+        [TestMethod]
+        public void AGorootRelativeRecordIgnoresTheAmbientGoroot()
+        {
+            if (Environment.GetEnvironmentVariable(go.runtime_package.GoDefaultGorootVariable) is not null)
+                Assert.Inconclusive("this host was handed a link-time GOROOT");
+
+            var frame = SyntheticFrame(LiteralOf(typeof(go.litguard.probe_package), nameof(go.litguard.probe_package.recordedOuterLiteralFrame)));
+
+            Assert.AreEqual("litguard/probe/probe.go", frame.File.ToString(), $"the recorded form, whatever GOROOT says ({Environment.GetEnvironmentVariable("GOROOT") ?? "unset"})");
+        }
+
+        [TestMethod]
+        public void AGorootRelativeRecordRootsAgainstTheLinkTimeRoot()
+        {
+            Assert.AreEqual("/go/root/src/runtime/debug/stack.go", go.runtime_package.GoResolveRecordedFileProbe("runtime/debug/stack.go", "/out/runtime/debug/stack.cs", "/go/root/"));
+            Assert.AreEqual("C:/Go/src/runtime/debug/stack.go", go.runtime_package.GoResolveRecordedFileProbe("runtime/debug/stack.go", "/out/stack.cs", @"C:\Go"), "a Windows root is forward-slashed");
+            Assert.AreEqual("runtime/debug/stack.go", go.runtime_package.GoResolveRecordedFileProbe("runtime/debug/stack.go", "/out/stack.cs", ""), "no link-time root: the recorded (-trimpath) form");
+            Assert.AreEqual("/out/app/main.go", go.runtime_package.GoResolveRecordedFileProbe("main.go", "/out/app/main.cs", "/go/root"), "a bare name roots beside its C# file");
+            Assert.AreEqual("/mod/app/main.go", go.runtime_package.GoResolveRecordedFileProbe("/mod/app/main.go", "/out/main.cs", "/go/root"), "an absolute record is verbatim");
+        }
+
         [TestMethod]
         public void SyntheticPCOfAnUnrecordedFunctionReportsItsConvertedPosition()
         {

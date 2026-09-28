@@ -62,6 +62,7 @@ partial class runtime_package
         }
 
         envs = snapshot;
+        defaultGOROOT = Environment.GetEnvironmentVariable(GoDefaultGorootVariable) ?? "";
 
         // schedinit's NEXT step in Go is parsedebugvars, and it belongs here for the same reason envs
         // does: it reads the environment (gogetenv, so envs must be set first) and must precede any
@@ -83,6 +84,20 @@ partial class runtime_package
             @throw($"parsedebugvars at startup: {ex.GetType().FullName}: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// The environment variable that carries this program's link-time GOROOT, which cmd/link bakes
+    /// into Go's binary as runtime.defaultGOROOT.
+    /// </summary>
+    /// <remarks>
+    /// There is no linker here, so the -tests pipeline hands the host the GOROOT it converted from
+    /// through this variable, and the module initializer above copies it into defaultGOROOT once, as
+    /// the link would have. It is deliberately NOT the GOROOT variable: Go's own tests run children
+    /// with <c>GOROOT=</c> (runtime/debug's TestStack) and expect runtime.GOROOT() to fall back to the
+    /// link-time root, and an ambient GOROOT can name an unrelated Go install. Unset (a program run
+    /// outside the pipeline, like a Go binary built with -trimpath), defaultGOROOT stays empty.
+    /// </remarks>
+    public const string GoDefaultGorootVariable = "GO2CS_DEFAULT_GOROOT";
 
     // TEST SEAMS (pinner_impl.cs's pattern: GolibTests is outside the InternalsVisibleTo grant). They re-run
     // the start sequence over a given environment, as a process started with it would: envs, then
