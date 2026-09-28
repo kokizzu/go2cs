@@ -2345,6 +2345,11 @@ public static partial class builtin
     /// </remarks>
     public static ж<array<T>> NativeArrayPointer<T>(nuint address, nint length)
     {
+        // A reference-bearing element cannot alias native bytes: its elements live in a managed store that
+        // SHADOWS the block, whose address stays the pointer's (A16; see ShadowArrayBox).
+        if (ShadowArrayBox<T>.Needed)
+            return ShadowArrayBox<T>.Over(address, length);
+
         return NativeArrayBox<T>.Over(address, length);
     }
 
