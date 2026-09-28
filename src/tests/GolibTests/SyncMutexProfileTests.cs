@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
@@ -110,5 +112,32 @@ public class SyncMutexProfileTests
             Assert.AreEqual(mutexBefore, Total(mutex: true), "at fraction 0 the mutex profile records nothing");
             Assert.AreEqual(blockBefore, Total(mutex: false), "at rate 0 the block profile records nothing");
         });
+    }
+
+    // R's review arm: a stamped waiter that acquires WITHOUT a handoff (the snapshot race the hand-own
+    // names: it saw the gate held, stamped, and the gate came free before it blocked) must not leave its
+    // stamp behind. Otherwise the next contention episode's handoff charges the whole idle gap since that
+    // stale stamp as one mutex event. Reached by reflection: WaitStamps is private to the hand-own.
+    [TestMethod]
+    public void AStampThatAcquiresWithoutAHandoffDoesNotLeakIntoTheNextEpisode()
+    {
+        Type type = typeof(sync_package).GetNestedType("WaitStamps", BindingFlags.NonPublic)!;
+        Assert.IsNotNull(type, "the hand-own's WaitStamps type");
+        object stamps = Activator.CreateInstance(type, nonPublic: true)!;
+        MethodInfo enqueue = type.GetMethod("Enqueue", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        MethodInfo acquired = type.GetMethod("Acquired", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        MethodInfo tryHandoff = type.GetMethod("TryHandoff", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        const long stale = 1_000_000_000_000L;
+        long now = GoCputicks();
+        enqueue.Invoke(stamps, [now - stale]);   // episode 1: stamped, then acquired with no handoff
+        acquired.Invoke(stamps, null);
+        enqueue.Invoke(stamps, [GoCputicks()]);  // episode 2: a fresh contended wait
+        object[] args = [0L];
+        bool handed = (bool)tryHandoff.Invoke(stamps, args)!;
+        acquired.Invoke(stamps, null);           // balance the process-wide stamped-waiter count
+
+        Assert.IsTrue(handed, "episode 2's waiter is stamped, so its handoff charges it");
+        Assert.IsTrue((long)args[0] < stale / 2, $"the handoff charged {args[0]} cycles: episode 1's stale stamp leaked into episode 2");
     }
 }

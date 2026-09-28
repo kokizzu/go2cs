@@ -110,9 +110,16 @@ private static SemaphoreSlim gateOf(ref Mutex m) {
 // This gate never reaches semacquire1, so Lock does the same accounting itself, and only while a
 // profile rate is on (Go stamps t0 only then): the default path adds two static reads. "Contended" is
 // the gate's CurrentCount seen at 0, a SNAPSHOT rather than a Wait(0), so the protocol above stays
-// untouched even while profiling. The snapshot can race a release and stamp a wait that then does not
-// block; that records one short block event where Go records none, the accepted accounting error. The
-// block event's cycles end when this waiter wakes, where Go's end at the releaser's readyWithTime.
+// untouched even while profiling. STATED DEVIATIONS from Go's accounting, each accepted as such:
+// - the snapshot can race a release and stamp a wait that then does not block; that records one short
+//   block event where Go records none (its stamp is cleared when it acquires; see WaitStamps.Acquired);
+// - the block event's cycles end when this waiter wakes, where Go's end at the releaser's readyWithTime;
+// - one block event per Lock, where Go records one per semacquire, so a waiter that loses a barge and
+//   re-queues records again in Go;
+// - a handoff charges the OLDEST stamped wait (Go's dequeued head), not necessarily the waiter the gate
+//   actually wakes;
+// - a blocked waiter that stamped nothing (a rate turned on mid-wait, or a snapshot that saw the gate
+//   free and then blocked) is invisible to both profiles.
 [GoRecv] public static void Lock(this ref Mutex m) {
     SemaphoreSlim gate = gateOf(ref m);
     bool block = runtime_package.GoBlockProfileOn;
@@ -128,10 +135,15 @@ private static SemaphoreSlim gateOf(ref Mutex m) {
     } else {
         block = false;
     }
-    using (Goroutine.Park(WaitReason.SyncMutexLock)) {
-        gate.Wait();
+    // try/finally: a Wait that throws must still retire its stamp, or s_outstanding stays above zero
+    // and every later Unlock pays the side-table lookup.
+    try {
+        using (Goroutine.Park(WaitReason.SyncMutexLock)) {
+            gate.Wait();
+        }
+    } finally {
+        stamps?.Acquired();
     }
-    stamps?.Acquired();
     if (block) {
         runtime_package.GoSyncBlockEvent(runtime_package.GoCputicks() - t0);
     }
@@ -160,9 +172,15 @@ private sealed class WaitStamps {
         Interlocked.Increment(ref s_outstanding);
     }
 
+    // The last stamped waiter leaving clears the stamps, handoff or not: a stamp that acquired without a
+    // handoff (the snapshot race) must not survive into the next contention episode, whose handoff would
+    // otherwise charge the whole idle gap since it.
     internal void Acquired() {
         lock (this) {
-            m_waiters--;
+            if (--m_waiters == 0) {
+                m_head = 0;
+                m_tail = 0;
+            }
         }
         Interlocked.Decrement(ref s_outstanding);
     }
