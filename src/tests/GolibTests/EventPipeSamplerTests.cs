@@ -186,6 +186,37 @@ public class EventPipeSamplerTests
         Assert.IsTrue(diff <= 0.10, $"samples x period must be within 10% of the CPU time used (Go's limit); sampled {sampledTotal / 1_000_000} ms against {usedTotal / 1_000_000} ms on CPU");
     }
 
+    // The /serial charge's SHAPE: a thread that used CPU but never ran Go code is written as Go's sigprof
+    // writes a non-Go thread's sample -- the one-frame stack [runtime._ExternalCode], nothing more -- and
+    // every sample the sampler says it charged is exactly that stack. Both OSes: the CLR's own threads (JIT,
+    // EventPipe) use CPU while any session runs.
+    [TestMethod]
+    public void ANonGoThreadsCpuIsChargedToExternalCodeAlone()
+    {
+        const int hz = 100;
+        var stacks = new List<uintptr[]>();
+        var sampler = new EventPipeSampler(EventPipeSampler.OpenInProcessSession);
+
+        sampler.Start(hz);
+        Assert.IsTrue(sampler.LastSessionOpened, "a SampleProfiler session must open on this process");
+
+        var hog = new Thread(() => cpusamplerprobe_package.cpuHogger(1000));
+        hog.Start();
+        hog.Join();
+
+        sampler.Stop((nanotime, stack, tag) => stacks.Add((uintptr[])stack));
+
+        uintptr externalCode = runtime_package.GoExternalCodePC();
+        int charged = stacks.FindAll(s => s.Length == 1 && s[0] == externalCode).Count;
+
+        Assert.IsTrue(sampler.LastExternalCodeSamples > 0, "the CLR's own threads used CPU while the session ran, and none of it was charged");
+        Assert.AreEqual(sampler.LastExternalCodeSamples, charged, "every charged sample must be exactly the one-frame [runtime._ExternalCode] stack");
+
+        var (frame, more) = runtime_package.CallersFrames(new slice<uintptr>([externalCode])).Next();
+        Assert.AreEqual("runtime._ExternalCode", (string)frame.Function, "the charge's one frame must name Go's _ExternalCode");
+        Assert.IsFalse(more, "the charge is ONE frame");
+    }
+
     [TestMethod]
     public void AProfileAddsUpToTheProcessCpuTime()
     {
