@@ -63,18 +63,12 @@ public class ThreadStateCensusTests
         ("golib/AllocationCounter.cs|t_count", Disposition.GolibReset, "internal static void ResetThread() => t_count = 0;", "the per-thread allocation tally"),
         ("golib/builtin.cs|s_fallthrough", Disposition.GolibReset, "internal static void ResetFallthrough() => s_fallthrough.Value = false;", "a switch fallthrough flag, set and consumed within one statement"),
         ("golib/channel.cs|t_frames", Disposition.GolibReset, "internal static void ResetThread() => t_frames = null;", "a select's pending receive frames"),
-        ("golib/GoFrame.cs|t_sequences", Disposition.GolibReset, "Array.Clear(entries);", "the panic-sequence entries captureCallers pairs with GoFrame.Run frames (GoFuncRoot.ResetThread calls GoFrame.ResetSequences)"),
-        ("golib/GoFrame.cs|t_sequenceDepth", Disposition.GolibReset, "t_sequenceDepth = 0;", "how many of those entries are live"),
+        ("golib/GoThreadState.cs|t_current", Disposition.GolibReset, "internal static void ResetThread() { if (t_current is { } state) state.Reset(); }", "the thread's ONE panic-and-defer holder: the five panic slots (captured, handled, unclaimed, in-flight foreign, recoverable), the panic-sequence depth and the entries captureCallers pairs with GoFrame.Run frames (GoFuncRoot.ResetThread calls GoThreadState.ResetThread)"),
         ("golib/GoFrame.cs|t_lastActivation", Disposition.KeptThreadResource, "[ThreadStatic] private static long t_lastActivation;", "the last Run activation number on this thread: it only ever increases, so it is unique WITHIN the thread (not across threads; a panic's SiteOwnerThread carries the thread) and needs no reset"),
         ("golib/GoFrame.cs|t_splicesRefused", Disposition.GolibReset, "t_splicesRefused = false;", "set once a stopped range-over-func seq resumes on its coro thread; cleared with the sequences (GoFrame.ResetSequences)"),
         ("golib/PanicException.cs|t_lastAdopted", Disposition.GolibReset, "internal static void ResetThread() => t_lastAdopted = null;", "the panic this thread's catches adopted last, which a range-over-func early stop marks (GoFuncRoot.ResetThread calls PanicException.ResetThread)"),
         ("golib/GoFrame.cs|t_threadToken", Disposition.KeptThreadResource, "[ThreadStatic] private static object? t_threadToken;", "this thread's identity for a panic's SiteOwnerThread: a thread property, not goroutine state"),
         ("golib/GoexitException.cs|t_started", Disposition.GolibReset, "internal static void ResetThread() => t_started = false;", "whether a Goexit has been raised on this goroutine (GoFuncRoot.ResetThread calls GoexitException.ResetThread)"),
-        ("golib/GoFuncRoot.cs|CapturedPanic", Disposition.GolibReset, "CapturedPanic.Value = null!;", "a frame's captured panic"),
-        ("golib/GoFuncRoot.cs|HandledPanic", Disposition.GolibReset, "HandledPanic.Value = null;", "the panic whose defers are running"),
-        ("golib/GoFuncRoot.cs|UnclaimedPanic", Disposition.GolibReset, "UnclaimedPanic.Value = null;", "a captured panic no frame has claimed"),
-        ("golib/GoFuncRoot.cs|InFlightForeign", Disposition.GolibReset, "InFlightForeign.Value = null;", "a foreign exception unwinding through emitted frames"),
-        ("golib/GoFuncRoot.cs|RecoverablePanic", Disposition.GolibReset, "RecoverablePanic.Value = null;", "the panic the running deferred sequence may recover"),
         ("golib/runtime/GoschedBackoff.cs|t_consecutiveInertYields", Disposition.GolibReset, "internal static void ResetThread() => t_consecutiveInertYields = 0;", "a Gosched backoff streak"),
         ("golib/runtime/Goroutine.cs|t_current", Disposition.RetiredByRun, "t_current = null;", "the goroutine identity; Goroutine.Run's scope retires it"),
         ("golib/runtime/Goroutine.cs|s_profileLabels", Disposition.FlowsWithContext, "AsyncLocal<object?> s_profileLabels", "pprof labels, inherited at goroutine creation"),
@@ -311,11 +305,14 @@ public class ThreadStateCensusTests
         yield return ("SelectPending.t_frames", () => Field(typeof(Coro).Assembly.GetType("go.SelectPending")!, "t_frames").GetValue(null), null);
         yield return ("builtin.s_fallthrough", () => ((ThreadLocal<bool>)Field(typeof(builtin), "s_fallthrough").GetValue(null)!).Value, false);
 
-        foreach (string slot in new[] { "CapturedPanic", "HandledPanic", "UnclaimedPanic", "InFlightForeign", "RecoverablePanic" })
-            yield return ($"GoFuncRoot.{slot}", () => LocalValue(Field(typeof(GoFuncRoot), slot).GetValue(null)!), null);
-
-        yield return ("GoFrame.t_sequenceDepth", () => Field(typeof(GoFrame), "t_sequenceDepth").GetValue(null), 0);
-        yield return ("GoFrame.t_sequences (no live entry)", () => SequencesClear(), true);
+        // The panic-and-defer holder (GoThreadState): the five panic slots, the sequence depth and entries.
+        yield return ("GoThreadState.CapturedPanic", () => GoThreadState.Current.CapturedPanic, null);
+        yield return ("GoThreadState.HandledPanic", () => GoThreadState.Current.HandledPanic, null);
+        yield return ("GoThreadState.UnclaimedPanic", () => GoThreadState.Current.UnclaimedPanic, null);
+        yield return ("GoThreadState.InFlightForeign", () => GoThreadState.Current.InFlightForeign, null);
+        yield return ("GoThreadState.RecoverablePanic", () => GoThreadState.Current.RecoverablePanic, null);
+        yield return ("GoThreadState.SequenceDepth", () => GoThreadState.Current.SequenceDepth, 0);
+        yield return ("GoThreadState.Sequences (no live entry)", () => SequencesClear(), true);
         yield return ("GoexitException.t_started", () => Field(typeof(GoexitException), "t_started").GetValue(null), false);
         yield return ("GoFrame.t_splicesRefused", () => Field(typeof(GoFrame), "t_splicesRefused").GetValue(null), false);
         yield return ("PanicException.t_lastAdopted", () => Field(typeof(PanicException), "t_lastAdopted").GetValue(null), null);
@@ -332,22 +329,20 @@ public class ThreadStateCensusTests
         ((ThreadLocal<bool>)Field(typeof(builtin), "s_fallthrough").GetValue(null)!).Value = true;
 
         PanicException stale = new("goroutine A's panic");
-        SetLocal(Field(typeof(GoFuncRoot), "CapturedPanic").GetValue(null)!, stale);
-        SetLocal(Field(typeof(GoFuncRoot), "HandledPanic").GetValue(null)!, stale);
-        SetLocal(Field(typeof(GoFuncRoot), "UnclaimedPanic").GetValue(null)!, stale);
-        SetLocal(Field(typeof(GoFuncRoot), "RecoverablePanic").GetValue(null)!, stale);
-        SetLocal(Field(typeof(GoFuncRoot), "InFlightForeign").GetValue(null)!, System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(new InvalidOperationException("A")));
+        GoThreadState state = GoThreadState.Current;
+        state.CapturedPanic = stale;
+        state.HandledPanic = stale;
+        state.UnclaimedPanic = stale;
+        state.RecoverablePanic = stale;
+        state.InFlightForeign = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(new InvalidOperationException("A"));
 
         // A stale panic-sequence entry and depth, as a goroutine that ended mid-sequence would leave them,
         // and a Goexit mark: runtime.Callers would pair them with the next goroutine's Run frames.
-        FieldInfo sequencesField = Field(typeof(GoFrame), "t_sequences");
-        Type sequenceType = sequencesField.FieldType.GetElementType()!;
-        Array sequences = Array.CreateInstance(sequenceType, 16);
-        object entry = Activator.CreateInstance(sequenceType)!;
-        sequenceType.GetField("Panic", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(entry, stale);
-        sequences.SetValue(entry, 0);
-        sequencesField.SetValue(null, sequences);
-        Field(typeof(GoFrame), "t_sequenceDepth").SetValue(null, 1);
+        GoFrame.Sequence[] sequences = new GoFrame.Sequence[16];
+        sequences[0].Panic = stale;
+        sequences[0].Activation = 1;
+        state.Sequences = sequences;
+        state.SequenceDepth = 1;
         Field(typeof(GoexitException), "t_started").SetValue(null, true);
         Field(typeof(GoFrame), "t_splicesRefused").SetValue(null, true);
         Field(typeof(PanicException), "t_lastAdopted").SetValue(null, stale);
@@ -358,14 +353,12 @@ public class ThreadStateCensusTests
     // True when this thread holds no live panic-sequence entry (the array is absent, or every entry is clear).
     private static bool SequencesClear()
     {
-        if (Field(typeof(GoFrame), "t_sequences").GetValue(null) is not Array sequences)
+        if (GoThreadState.Current.Sequences is not { } sequences)
             return true;
 
-        FieldInfo panic = sequences.GetType().GetElementType()!.GetField("Panic", BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-        foreach (object? entry in sequences)
+        foreach (GoFrame.Sequence entry in sequences)
         {
-            if (entry is not null && panic.GetValue(entry) is not null)
+            if (entry.Panic is not null || entry.Activation != 0)
                 return false;
         }
 
@@ -374,8 +367,4 @@ public class ThreadStateCensusTests
 
     private static FieldInfo Field(Type type, string name) =>
         type.GetField(name, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) ?? throw new MissingFieldException(type.FullName, name);
-
-    private static object? LocalValue(object threadLocal) => threadLocal.GetType().GetProperty("Value")!.GetValue(threadLocal);
-
-    private static void SetLocal(object threadLocal, object value) => threadLocal.GetType().GetProperty("Value")!.SetValue(threadLocal, value);
 }
