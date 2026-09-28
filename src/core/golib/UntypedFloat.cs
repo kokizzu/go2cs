@@ -131,6 +131,16 @@ public readonly struct UntypedFloat(float64 value) : IEquatable<UntypedFloat>
 
     public static implicit operator float64(UntypedFloat value) => value.m_value;
 
+    // An untyped int WIDENS to an untyped float: Go evaluates `procs * capacityPerProc` (untyped int
+    // times untyped float) as an untyped FLOAT. Without this, no user-defined operator applies to the
+    // mixed pair, and C# falls back to the predefined `int * int` through both wrappers' implicit
+    // numeric conversions: the product wraps at 2^31 and a fractional operand truncates. With it, the
+    // mixed pair binds `UntypedFloat op UntypedFloat`. This is one conversion, not mixed operators: an
+    // `UntypedFloat op UntypedInt` operator would make every `untypedFloat op typedNumber` ambiguous
+    // (the typed operand converts implicitly to both wrappers, CS9342). Only this direction is implicit;
+    // `UntypedInt op UntypedInt` never considers it, so integer arithmetic and division stay integer.
+    public static implicit operator UntypedFloat(UntypedInt value) => new((float64)value);
+
     // EXPLICIT (not implicit) in BOTH directions: an untyped float already converts implicitly to
     // float64, so letting it ALSO relate implicitly to a complex type makes every
     // `complexExpr op untypedFloat` (Go's `1i * math.Pi`) ambiguous — the operands can bind either
