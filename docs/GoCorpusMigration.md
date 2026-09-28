@@ -799,6 +799,7 @@ inert.
 | `src/version.props` | the corpus pin guard reads it beside `core`; H5's root takes `<H2>`'s file — the pin AND the reset build number the emitted badges read — never a sed of the pin line; H4a's takes `<landing>`'s |
 | `docs/validation` | the README Tests and Source·C# badges read it with `version.props`; without either, both badges vanish corpus-wide |
 | `src/Directory.Build.props`, `src/gen` minus build dirs | to BUILD the root: `core/Directory.Build.props` imports the file above it (the TFM) and resolves the analyzer at `$(go2csPath)gen/go2cs-gen`, which the generated solution also lists |
+
 <!-- Lane R's seeding, 2026-09-07/08 and 2026-09-13: r-h5b-setup.sh:36-51, setup-convert.sh:38-51 (archived, sha256 in the rehearsal's
      archive manifest). Exclusions and the badge reason: .claude/skills/corpus-reconvert/SKILL.md:84-85; both seeds before either arm:
      same file :88; the binary proven at its invoked path and by its embedded release: same file :91. The tracked count: git quotes
