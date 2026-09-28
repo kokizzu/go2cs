@@ -46,7 +46,7 @@ public class GoZeroResidualTests
 
     // The registration a type's module initializer made, read through the same reflection for every arm
     // so the positive arm shows the instrument can report one.
-    private static object? RegisteredFactory(Type type) =>
+    private static object RegisteredFactory(Type type) =>
         typeof(GoZeroFactory<>).MakeGenericType(type).GetField(nameof(GoZeroFactory<int>.Create))!.GetValue(null);
 
     // A converted package's module initializer is its Go package init, and a Go program that holds one of

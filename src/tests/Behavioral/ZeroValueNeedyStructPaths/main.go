@@ -24,6 +24,20 @@ func zeroNew[T any]() T {
 	return *new(T)
 }
 
+// A generic local a closure captures (iter.Pull's shape) and one whose address is taken: both are declared on the
+// heap rather than as a plain local.
+func zeroCaptured[T any]() T {
+	var z T
+	get := func() T { return z }
+	return get()
+}
+
+func zeroAddressed[T any]() T {
+	var z T
+	p := &z
+	return *p
+}
+
 func arm(name string, f func()) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -50,6 +64,14 @@ func main() {
 	arm("generic new:", func() {
 		z := zeroNew[counts]()
 		fmt.Println("generic new:", len(z.vals), z.vals[3])
+	})
+	arm("generic captured var:", func() {
+		z := zeroCaptured[counts]()
+		fmt.Println("generic captured var:", len(z.vals), z.vals[3])
+	})
+	arm("generic addressed var:", func() {
+		z := zeroAddressed[counts]()
+		fmt.Println("generic addressed var:", len(z.vals), z.vals[3])
 	})
 	arm("closed channel:", func() {
 		ch := make(chan counts)

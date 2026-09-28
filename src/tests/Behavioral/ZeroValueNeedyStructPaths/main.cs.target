@@ -24,6 +24,19 @@ internal static T zeroNew<T>() {
     return @new<T>().ValueSlot;
 }
 
+internal static T zeroCaptured<T>() {
+    T z = GoZero<T>();
+    var zʗ1 = z;
+    T get() => zʗ1;
+    return get();
+}
+
+internal static T zeroAddressed<T>() {
+    ref var z = ref heap<T>(out var Ꮡz);
+    var p = Ꮡz;
+    return p.ValueSlot;
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object panicˢ = (@string)"PANIC"u8;
 
@@ -48,6 +61,8 @@ private static readonly @string mapMissingKeyˢ = "map missing key:"u8;
 private static readonly @string genericVarˢ = "generic var:"u8;
 private static readonly @string genericNamedResultˢ = "generic named result:"u8;
 private static readonly @string genericNewˢ = "generic new:"u8;
+private static readonly @string genericCapturedVarˢ = "generic captured var:"u8;
+private static readonly @string genericAddressedVarˢ = "generic addressed var:"u8;
 private static readonly @string closedChannelˢ = "closed channel:"u8;
 private static readonly @string failedAssertionˢ = "failed assertion:"u8;
 
@@ -68,6 +83,14 @@ internal static void Main() {
     arm(genericNewˢ, () => {
         var z = zeroNew<counts>();
         fmt.Println(genericNewˢ, len(z.vals), z.vals[3]);
+    });
+    arm(genericCapturedVarˢ, () => {
+        var z = zeroCaptured<counts>();
+        fmt.Println(genericCapturedVarˢ, len(z.vals), z.vals[3]);
+    });
+    arm(genericAddressedVarˢ, () => {
+        var z = zeroAddressed<counts>();
+        fmt.Println(genericAddressedVarˢ, len(z.vals), z.vals[3]);
     });
     arm(closedChannelˢ, () => {
         var ch = new channel<counts>(0);

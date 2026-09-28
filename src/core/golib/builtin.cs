@@ -2387,7 +2387,9 @@ public static partial class builtin
     /// </remarks>
     public static ref T heap<T>(out ж<T> pointer)
     {
-        pointer = Ꮡ<T>(default!);
+        // GoZero, not `default`: this is how the converter declares an address-taken or closure-written local
+        // (`var z T` in generic code, iter.Pull's state), so a needy T must get its constructed zero here too.
+        pointer = Ꮡ<T>(GoZero<T>());
         // ValueSlot, not Value: the box was just allocated, so it is structurally a non-nil pointer —
         // the Value getter's nil-pointer-dereference check is always spurious here. For a value-type T
         // this is identical to Value; for a reference-type T (a heap-boxed pointer/slice/map local whose
