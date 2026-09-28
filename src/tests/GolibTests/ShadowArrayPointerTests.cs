@@ -28,6 +28,9 @@ public class ShadowArrayPointerTests
 
         try
         {
+            // AllocHGlobal does not zero; the untouched-block check below needs a known starting word.
+            Marshal.WriteInt64(block, 0);
+
             ж<array<RefElem>> p = builtin.NativeArrayPointer<RefElem>((nuint)block, N);
 
             Assert.IsInstanceOfType(p, typeof(ShadowArrayBox<RefElem>));
@@ -46,7 +49,7 @@ public class ShadowArrayPointerTests
             Assert.AreEqual(7UL, p.Value[5].bits[3], "the element door and Value name one store");
 
             // The native block itself is never written: it stands unused behind the store.
-            Assert.AreEqual((byte)0, Marshal.ReadByte(block), "the store is managed; the block is untouched");
+            Assert.AreEqual(0L, Marshal.ReadInt64(block), "the store is managed; the block is untouched");
         }
         finally
         {

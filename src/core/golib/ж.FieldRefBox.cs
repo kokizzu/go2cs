@@ -115,7 +115,14 @@ public sealed class FieldRefBox<T> : ж<T>, INativeRooted
     /// </para>
     /// </remarks>
     internal unsafe nuint NativeSlotAddress =>
-        m_source is INativeRooted { IsNativeRooted: true } ? (nuint)Unsafe.AsPointer(ref ValueSlot) : 0;
+        !GoZeroSizeFacts<T>.IsZeroSize && m_source is INativeRooted { IsNativeRooted: true } ? (nuint)Unsafe.AsPointer(ref ValueSlot) : 0;
+
+    // A Go ZERO-SIZE field's ref target is not its storage: a readonly zero-size field laid out at Go's
+    // offset answers golib's shared per-type slot (GoZeroSizeSlot, A17), so the TARGET's address names no
+    // field at all. Identity stays (source, field): NativeSlotAddress answers 0 above, and StorageKind None
+    // below makes ж -> uintptr hand out the order token (source base + Go field offset). &x.f != &y.f for
+    // distinct x and y, as in Go (C2's Z2 field-stays-distinct rule). GoZeroSizeFacts<T>.IsZeroSize is a
+    // static readonly per T, so every other field type folds the test away at JIT time.
 
     /// <inheritdoc/>
     public override bool Equals(ж<T>? other)
@@ -175,7 +182,7 @@ public sealed class FieldRefBox<T> : ж<T>, INativeRooted
     // A token is refused by the kernel (EFAULT) and carried by the linux keystone's marshal. The
     // repair above is untouched: the TCP dial's Sysfd is reference-free and keeps its address.
     public override PointerStorage StorageKind =>
-        RuntimeHelpers.IsReferenceOrContainsReferences<T>() ? PointerStorage.None :
+        RuntimeHelpers.IsReferenceOrContainsReferences<T>() || GoZeroSizeFacts<T>.IsZeroSize ? PointerStorage.None :
         PinnableStorage is null ? PointerStorage.Unpinnable : PointerStorage.Pinnable;
 
     /// <inheritdoc/>
