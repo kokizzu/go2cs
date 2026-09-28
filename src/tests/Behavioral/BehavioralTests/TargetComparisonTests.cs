@@ -1036,6 +1036,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckMixedEmbedKindPromotion() => CheckTarget("MixedEmbedKindPromotion");
 
     [TestMethod]
+    public void CheckMixedUntypedConstArithmetic() => CheckTarget("MixedUntypedConstArithmetic");
+
+    [TestMethod]
     public void CheckMultiFileInitOrder() => CheckTarget("MultiFileInitOrder");
 
     [TestMethod]

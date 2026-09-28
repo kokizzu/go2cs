@@ -619,6 +619,7 @@
     <Project Path="tests/Behavioral/MethodlessFuncTypeAssert/MethodlessFuncTypeAssert.csproj" />
     <Project Path="tests/Behavioral/MinMaxBuiltin/MinMaxBuiltin.csproj" />
     <Project Path="tests/Behavioral/MixedEmbedKindPromotion/MixedEmbedKindPromotion.csproj" />
+    <Project Path="tests/Behavioral/MixedUntypedConstArithmetic/MixedUntypedConstArithmetic.csproj" />
     <Project Path="tests/Behavioral/MultiFileInitOrder/MultiFileInitOrder.csproj" />
     <Project Path="tests/Behavioral/MultiPointerEmbedPromotion/MultiPointerEmbedPromotion.csproj" />
     <Project Path="tests/Behavioral/MultiValueReturnOrder/MultiValueReturnOrder.csproj" />
