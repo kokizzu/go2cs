@@ -95,3 +95,21 @@ These stay as they are:
 - Full behavioral suite: 0 moved.
 - runtime/pprof, runtime/debug and io sweeps: PASS.
 - linux (WSL): the five TestCallers* rows and the wrapper subtree move the same way.
+
+---
+
+## AMENDED 2026-09-28, after COORD's verification of the re-cut, before the gates' results are read
+
+The runtime row prediction above (EXACTLY 10 moves, 0 else) stands unchanged: none of the verification's
+shapes is in a predicted row. The RESIDUALS change, and each still splices NOTHING, never a partial list:
+- EVERY panic a deferred call raises from a closure, while panicking or on a normal return. This covers
+  the normal-return and after-recovery shapes, `defer panic(v)`, the two-link chain and recover-then-panic.
+  The converter's defer wrappers cannot be told from Go closures at run time, and Go elides its deferwrap
+  except over the panic machinery. The accepted ends-at-Run sites are now only the zero-argument
+  nil-func thunk and the deferred delegate that is itself the first catcher.
+- A nil func reached through golib's defer<T...> closure or the converter's `() => c()` (Go's deferwrap
+  frame is not modelled).
+- A site owned by a Run on another thread (range-over-func).
+- A deferred call's panic during ANY Goexit: runtime.Goexit, the test host's FailNow/SkipNow, and a
+  range-over-func seq's Goexit.
+- Every runtime error except an explicit panic, a nil dereference and an integer divide.
