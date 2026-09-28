@@ -51,7 +51,9 @@ internal static partial class panicframesprobe_package
         GoFrame ᒐ = default;
         try {
             defer(() => { recover(); got = callersHere(); }, ref ᒐ);
-            defer(() => { gDeferPanics(); }, ref ᒐ);
+            // Fully optimized from its first call, so the JIT may tail-call gDeferPanics and drop this frame
+            // from the re-raise's trace: the acceptance must not depend on that trace (verification B1).
+            defer([MethodImpl(MethodImplOptions.AggressiveOptimization)] () => { gDeferPanics(); }, ref ᒐ);
             throw panic("p1");
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

@@ -74,35 +74,26 @@ public class PanicFramesReviewTests
             new[] { "runtime.gopanic", Pkg + "gDeferPanics", "runtime.gopanic", Pkg + "deferTheCatcher" },
             Below(Run(panicframesprobe_package.deferTheCatcher), "deferTheCatcher"));
 
+    // ---- a panic a deferred CLOSURE raises: NO splice (a stated residual). The converter's defer
+    // wrappers (`defer panic(v)`'s thunk, `() => c()`, the lambda for a call whose results are dropped)
+    // are indistinguishable from Go closures at run time, and Go shows its deferwrap only over the panic
+    // machinery, so splicing any closure-raised site risks a frame Go does not show (verification B2/C3).
+
+    // Go: normalReturnPanic.func1 | gopanic | normalReturnPanic.func2 | normalReturnPanic.
     [TestMethod]
-    public void ADeferredCallPanickingOnANormalReturnIsSpliced()
-    {
-        List<string> below = Below(Run(panicframesprobe_package.normalReturnPanic), "normalReturnPanic");
+    public void ADeferredClosurePanickingOnANormalReturnSplicesNothing() =>
+        AssertNoSplice(Run(panicframesprobe_package.normalReturnPanic), "normalReturnPanic");
 
-        Assert.AreEqual(3, below.Count, string.Join(" | ", below));
-        Assert.AreEqual("runtime.gopanic", below[0]);
-        StringAssert.StartsWith(below[1], Pkg + "normalReturnPanic.func");
-    }
-
+    // Go: panicAfterRecovery.func1 | gopanic | panicAfterRecovery.func2 | panicAfterRecovery.
     [TestMethod]
-    public void ADeferredCallPanickingAfterACompletedRecoveryIsSpliced()
-    {
-        List<string> below = Below(Run(panicframesprobe_package.panicAfterRecovery), "panicAfterRecovery");
+    public void ADeferredClosurePanickingAfterACompletedRecoverySplicesNothing() =>
+        AssertNoSplice(Run(panicframesprobe_package.panicAfterRecovery), "panicAfterRecovery");
 
-        Assert.AreEqual(3, below.Count, string.Join(" | ", below));
-        Assert.AreEqual("runtime.gopanic", below[0]);
-        StringAssert.StartsWith(below[1], Pkg + "panicAfterRecovery.func");
-    }
-
+    // Go: deferPanicArg.func1 | gopanic | deferPanicArg.deferwrap1 | deferPanicArg. The converter's thunk
+    // would splice as deferPanicArg.funcN: a misnamed frame.
     [TestMethod]
-    public void DeferPanicArgIsSpliced()
-    {
-        List<string> below = Below(Run(panicframesprobe_package.deferPanicArg), "deferPanicArg");
-
-        Assert.AreEqual(3, below.Count, string.Join(" | ", below));
-        Assert.AreEqual("runtime.gopanic", below[0]);
-        StringAssert.StartsWith(below[1], Pkg + "deferPanicArg.func");
-    }
+    public void DeferPanicArgSplicesNothing() =>
+        AssertNoSplice(Run(panicframesprobe_package.deferPanicArg), "deferPanicArg");
 
     [TestMethod]
     public void ANilDeferredFuncFaultingWhileAPanicRunsKeepsTheOlderGopanic() =>
@@ -110,27 +101,15 @@ public class PanicFramesReviewTests
             new[] { "runtime.gopanic", "runtime.panicmem", "runtime.sigpanic", "runtime.gopanic", Pkg + "nilDeferWhilePanicking" },
             Below(Run(panicframesprobe_package.nilDeferWhilePanicking), "nilDeferWhilePanicking"));
 
+    // Go: twoLinkChain.func2 | gopanic | twoLinkChain.func3 | gopanic | twoLinkChain.func4 | gopanic | twoLinkChain.
     [TestMethod]
-    public void ATwoLinkChainSplicesBothRaisersInOrder()
-    {
-        List<string> below = Below(Run(panicframesprobe_package.twoLinkChain), "twoLinkChain");
+    public void ATwoLinkChainOfClosureRaisersSplicesNothing() =>
+        AssertNoSplice(Run(panicframesprobe_package.twoLinkChain), "twoLinkChain");
 
-        CollectionAssert.AreEqual(
-            new[] { "runtime.gopanic", panicframesprobe_package.p3Thrower, "runtime.gopanic", panicframesprobe_package.p2Thrower, "runtime.gopanic", Pkg + "twoLinkChain" },
-            below, string.Join(" | ", below));
-        Assert.AreNotEqual(panicframesprobe_package.p2Thrower, panicframesprobe_package.p3Thrower);
-    }
-
+    // Go: recoverThenPanic.func1 | gopanic | recoverThenPanic.func2 | gopanic | recoverThenPanic.
     [TestMethod]
-    public void RecoverThenPanicInOneDeferredCallKeepsTheOlderGopanic()
-    {
-        List<string> below = Below(Run(panicframesprobe_package.recoverThenPanic), "recoverThenPanic");
-
-        Assert.AreEqual(4, below.Count, string.Join(" | ", below));
-        Assert.AreEqual("runtime.gopanic", below[0]);
-        StringAssert.StartsWith(below[1], Pkg + "recoverThenPanic.func");
-        Assert.AreEqual("runtime.gopanic", below[2]);
-    }
+    public void RecoverThenPanicInOneDeferredClosureSplicesNothing() =>
+        AssertNoSplice(Run(panicframesprobe_package.recoverThenPanic), "recoverThenPanic");
 
     // ---- [P2-3]: skip, capacity, and the spliced frames' lines ----
 

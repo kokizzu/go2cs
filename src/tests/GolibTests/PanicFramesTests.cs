@@ -89,18 +89,15 @@ public class PanicFramesTests
             $"got {string.Join(" | ", below)}");
     }
 
-    // The entry UPDATE: panic 2 replaces panic 1 in the running sequence, and panic 1 is still beneath it.
+    // A panic a deferred CLOSURE raises (here, replacing panic 1) splices NOTHING: the converter's defer
+    // wrappers are indistinguishable from Go closures at run time, and Go elides its deferwrap, so the
+    // splice refuses every closure-raised site (a stated residual; COORD's verification of the re-cut).
+    // Go: replacedPanic.func2 | gopanic | replacedPanic.func3 | gopanic | replacedPanic.
     [TestMethod]
-    public void AReplacingPanicIsSplicedWithTheReplacedPanicBeneathIt()
+    public void AReplacingPanicRaisedByADeferredClosureSplicesNothing()
     {
-        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.replacedPanic);
-        List<string> below = Below(names, "replacedPanic");
-
-        Assert.AreEqual(4, below.Count, $"got {string.Join(" | ", below)}");
-        Assert.AreEqual("runtime.gopanic", below[0]);
-        StringAssert.StartsWith(below[1], Pkg + "replacedPanic.func", "the deferred call that raised panic 2");
-        Assert.AreEqual("runtime.gopanic", below[2], "panic 1's gopanic, which called that deferred call");
-        Assert.AreEqual(Pkg + "replacedPanic", below[3]);
+        List<string> below = Below(panicframesprobe_package.onGoroutine(panicframesprobe_package.replacedPanic), "replacedPanic");
+        CollectionAssert.AreEqual(new[] { Pkg + "replacedPanic" }, below, $"expected NO splice; got {string.Join(" | ", below)}");
     }
 
     // [P2-2]: a site that does not end at the deferring function splices NOTHING (a stated residual).
