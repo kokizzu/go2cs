@@ -113,3 +113,49 @@ shapes is in a predicted row. The RESIDUALS change, and each still splices NOTHI
 - A deferred call's panic during ANY Goexit: runtime.Goexit, the test host's FailNow/SkipNow, and a
   range-over-func seq's Goexit.
 - Every runtime error except an explicit panic, a nil dereference and an integer divide.
+
+---
+
+## AMENDED 2026-09-28 (2), after COORD's SECOND verification, before the re-gate
+
+The 10-row runtime prediction stands unchanged.
+
+### The missing splices the design makes (stated; each is the safe direction)
+
+- Every panic a deferred call raises from its OWN code, with no deferring frame between. This covers
+  Go closures, directly deferred named functions and methods, `defer G(args)` through golib's
+  defer<T...> rung, pointer-receiver method groups (the ж twin), value-receiver method values (emitted
+  as lambdas) and the converter's defer wrappers. The exceptions are the zero-argument nil-func thunk
+  and a directly deferred delegate that is itself the panic's first catcher.
+- Every GENERIC catcher: StackFrame reports the open definition, so the delegate identity check cannot
+  match an instantiation.
+- A panic re-raised past its first catcher, or owned by a Run on another thread.
+- Any Goexit's deferred sequence: runtime.Goexit, the test host's FailNow/SkipNow, and a range-over-func
+  seq's Goexit.
+- A stopped range-over-func seq's coro. This covers a body panic, Goexit or BREAK; the adapter cannot
+  tell them apart, so Go's spliced break list is given up too.
+- A nil func reached through golib's defer<T...> closure or the converter's `() => c()`.
+- A zero-argument nil func faulting after a COMPLETED recovery with no newer panic running (Go shows
+  runtime.deferreturn).
+- Runtime errors Go raises from runtime frames: every golib-raised panic; hand-owned C# that reproduces
+  one (unsafe, reflect, runtime hash refusals, internal/sync's mustBeComparable); and the amd64
+  intrinsics math/bits.Div64 and Div.
+- A nil receiver box dereferenced inside a go2cs-gen interface adapter (Go answers panicwrap or
+  panicmem/sigpanic depending on devirtualization).
+
+MODELLED rather than refused: a nil *T through the `(*T).M` wrapper, as Go's
+`gopanic | runtime.panicwrap | (*T).M | owner`.
+
+### "Never a partial list" restated
+
+That sentence above is FALSE for two classes. Both are stated, not new:
+- The ruled deferreturn residual. A nil deferred func on a NORMAL return is spliced without Go's
+  runtime.deferreturn in the non-open-coded forms: a defer in a loop (TestCallersDeferNilFuncPanicWithLoop,
+  which stays FAIL), more than 8 defers, or returns×defers over 15.
+- Frames the JIT inlines or tail-calls out of an accepted site's SiteTrace (at TC0 as after tier-up).
+  This is the same exposure the live walk has always had; Go never loses them.
+
+### Gate line note
+
+The tail-call arms (shapeA's AggressiveOptimization closure, the tail-calling forwarder) guard the
+delegate-identity rule in the OPTIMIZED (Release) build only; GolibTests do not run at TC0.
