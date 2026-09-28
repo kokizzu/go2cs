@@ -27,6 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoTypeAlias("Test", "object")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -52,7 +53,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("InterfaceImplementation.go", "InterfaceImplementation.cs", "ABwugoKCkoSCgoyChIKChIKEgpaEhoaCAAcSgsqCgpQACQaCgoKUgpqUpKT+goLWooLWooSi6ILWgtaC1oI=")]
+[assembly: go.GoPositionMap("InterfaceImplementation.go", "InterfaceImplementation.cs", "AB4ugoKCkoSCgoyChIKChIKEgpaEhoaCAAcSgsqCgpQACQaCgoKUgpqUpKT+goLWooLWooSi6ILWgtaC1oI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -70,7 +71,6 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial struct errno {}
     public partial interface Animal {}
-    public partial interface Test {}
     public partial struct Dog {}
     public partial struct Frog {}
     // </TypeAccessibility>
