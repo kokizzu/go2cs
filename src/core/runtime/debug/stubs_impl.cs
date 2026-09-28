@@ -181,9 +181,12 @@ partial class debug_package
         return ""u8;
     }
 
+    // Go's WriteHeapDump is a //go:linkname push into runtime (heapdump.go), which has no
+    // cross-assembly form, so it forwards through the runtime's public crossing: the stop-the-world
+    // pair and a well-formed minimal dump (runtime managed_impl.cs, runtime_debug_WriteHeapDump).
     public static partial void WriteHeapDump(uintptr fd)
     {
-        throw panic((@string)"runtime/debug: WriteHeapDump is not supported by the managed runtime"u8);
+        global::go.runtime_package.WriteHeapDumpManaged(fd);
     }
 
     public static partial void SetTraceback(@string level)

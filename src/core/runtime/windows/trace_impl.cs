@@ -33,13 +33,14 @@ using go;
 // (manualTypeOperations.go): StartTrace was widened from goosLinux to windowsLinux at 4c4e7a425
 // and StopTrace joined at that scope at 138b8f7fd, both 2026-09-02. On each of those two targets
 // the -stdlib emission drops the auto bodies in <goos>/trace.cs to placeholders and this file
-// supplies them; the darwin emission displaces neither name (darwin/trace.cs keeps both auto
-// bodies), so no darwin copy exists. Layout L3 routes a hand-own by DISPLACEMENT, not by where its
-// principal is built (handOwnEmitters in platformHandOwn.go, pinned by platformHandOwn_test.go):
-// trace.cs is emitted per-GOOS on all three targets, but a target needs this companion exactly
-// when its own trace.cs carries the placeholders — windows and linux — so the three-target merge
-// places one copy in each of those two folders and refuses, by raw byte comparison, to choose
-// between two hand-maintained copies that differ. Neither the error text nor the no-op is
+// supplies them. darwin carries the same copy since the stop-the-world seat (ruling 2026-09-28
+// 02:10, Q6): under the stop-the-world contract its converted StartTrace would now stop the world
+// and enter a tracer the managed host does not have, so it refuses first, as the other two do.
+// Layout L3 routes a hand-own by DISPLACEMENT, not by where its principal is built
+// (handOwnEmitters in platformHandOwn.go, pinned by platformHandOwn_test.go): trace.cs is emitted
+// per-GOOS on all three targets, and a target needs this companion exactly when its own trace.cs
+// carries the placeholders — all three now — so the three-target merge places one copy in each
+// folder and refuses, by raw byte comparison, to choose between hand-maintained copies that differ. Neither the error text nor the no-op is
 // platform-specific, which is why one header serves both copies verbatim. (Until Q48, 2026-09-04,
 // the two headers differed in prose alone — the flavor word, the named consumer and the
 // registration note — and the -platforms merge refused at master over exactly that.)

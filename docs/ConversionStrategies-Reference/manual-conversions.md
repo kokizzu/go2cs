@@ -3050,6 +3050,52 @@ message merely names the type and says "see inner exception", so the actual faul
 lost (a whole `gob` run's real cause was invisible this way). The backstop now writes `ex.ToString()`
 for the non-panic case, carrying the full inner-exception chain and stacks.
 
+## Stop-the-world: the CONTRACT model, and the regions that run without Ps
+
+Go's `stopTheWorld` takes `worldsema` and then stops every P (preempt them all, retake those in
+syscalls, wait for `sched.stopwait`); `startTheWorld` restarts them, and the pair records the pause
+into `sched`'s four `/sched/pauses` histograms. A dozen runtime entry points stop the world: `GC`,
+`GOMAXPROCS`, `ReadMemStats`, `Stack(all)`, `GoroutineProfile`, `debug.WriteHeapDump`,
+`trace.Start`, `syscall.AllThreadsSyscall`, and the test exports behind `ReadMemStatsSlow`,
+`ReadMetricsSlow`, `CountPagesInUse` and the debug log. There are no Ps here (`m.p` is nil by
+construction), so the converted stop died on its first P while holding `worldsema`, and every later
+caller parked on the leaked permit.
+
+The owner ruled the **contract model plus managed region bodies** (2026-09-28). `stopTheWorld` takes
+`worldsema` and records a stopping sample; `startTheWorld` records the total sample and releases
+`worldsema` with handoff. **Other goroutines are NOT suspended** — the CLR cannot do that safely, and a
+real goroutine barrier was ruled too invasive — so a caller that reads state it expects the world to
+hold still reads it live. What the pair keeps is Go's mutual exclusion among stoppers and Go's pause
+accounting, which is what `TestSchedPauseMetrics` measures. The stop itself is the acquisition, so the
+stopping time is what taking `worldsema` took, and `stoppingCPUTime` is 0. The samples are recorded
+through cells boxed once per histogram, so `ReadMemStats` stays allocation-free.
+
+Every stopped-world region the runtime reaches is either **managed** or **refuses by name BEFORE the
+world is stopped** — never inside it:
+
+| Region | Realization |
+|---|---|
+| `flushallmcaches` | a no-op: there are no Ps, so no mcaches to flush |
+| the debug log (`dlogImpl`, `printDebugLogImpl`, `printDebugLogPC`) | managed memory in place of `sysAllocOS` reinterprets; the prepend-only logger list is a CAS on its reference slot; a PC is symbolized through the caller records `runtime.Caller` and `FuncForPC` read (`runtime/debuglog_impl.cs`) |
+| `readMetricsLocked` | a REVERSED crossing: its caller hands it the raw address of a `[]runtime/metrics.Sample`, a type runtime cannot name, so `runtime/metrics` registers the piece it lacks at module initialization and the values land in the caller's own samples |
+| `GoroutineProfile` | the COUNT path is kept, pair and all (`(n, false)` when the slice is too short); the FILL path needs every goroutine's stack and refuses by name before any semaphore |
+| `debug.WriteHeapDump` | the pair and a well-formed **minimal** dump: the header, the params record, the EOF tag, and no objects (below) |
+| `syscall.AllThreadsSyscall` (linux) | refused before the world: there are no Ms to signal, so a successful stop would run the call on one thread and report success |
+| `trace.Start` | refused before the world on every target, as the tracer does not exist |
+
+**The heap dump is truthful and empty rather than invented.** Go's dump walks its own heap arenas,
+spans and goroutine stacks; the managed model has none of them, since the CLR owns the heap. The
+params record says what this host can say: pointer byte order and size, no Go arena (`0, 0`),
+`GOARCH`, the Go release the corpus was converted from, and `ncpu`. A reader of the Go dump format
+sees a valid dump of a heap with nothing in it.
+
+**The leak class has a safety net.** A region that throws while holding `worldsema` or `metricsSema`
+would leave it held for every later caller; Go fatals there ("panic during preemptoff"). golib's
+`RuntimeErrorPanic.PanicObserved` runs on the throwing goroutine whenever a Go frame's panic filter
+examines an exception, before the frames between the throw and the handler unwind, and the runtime
+registers the release of both locks there, keyed on the recorded holder. `startTheWorld` and
+`metricsUnlock` release only by compare-and-swap on that holder, so a lock is never released twice.
+
 ## The GC measurement surface — one recorder, one ring, one snapshot
 
 The recorder is `golib/runtime/GcPauseRecorder.cs`, landed 2026-08-21; the design and measurements are in

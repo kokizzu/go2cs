@@ -104,6 +104,17 @@ partial class runtime_package
         return (nuint)parseHugePageSize(text);
     }
 
+    // syscall.AllThreadsSyscall's runtime half (os_linux.go), REFUSED BY NAME BEFORE THE WORLD IS
+    // STOPPED (ruling 2026-09-28 02:10, Q6). Go stops the world and then runs the system call on
+    // every M, signalling each thread to run it too. There are no Ms to signal here, and under the
+    // stop-the-world contract the stop now succeeds, so the converted body would run the call on the
+    // calling thread alone and report success: a credential change that reached one thread. Go
+    // refuses the same way under cgo, where it cannot see every thread either. The credential
+    // setters do not come through here (syscall/linux/cgocaller_linux_impl.cs), and
+    // AllThreadsSyscall answers ENOTSUP before it would, as a cgo build's does.
+    internal static (uintptr r1, uintptr r2, uintptr err) syscall_runtime_doAllThreadsSyscall(uintptr trap, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) =>
+        throw new PanicException("runtime: doAllThreadsSyscall: the managed host cannot run a system call on every thread (goroutines are CLR threads with no Ms to signal), so it is refused before the world is stopped");
+
     /// <summary>
     /// syscall.AllThreadsSyscall's runtime half, syscall_runtime_doAllThreadsSyscall, called the way
     /// Setuid/Setgid reach it (the trap is getpid; amd64's number, and it is never executed: the
