@@ -302,7 +302,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     {
         // Reading from a nil map yields the zero value in Go, so route through the
         // null-safe TryGetValue rather than dereferencing m_map directly.
-        get => TryGetValue(key, out TValue? value) ? value : default!;
+        get => TryGetValue(key, out TValue? value) ? value : GoZero<TValue>();
         set
         {
             // Writing to a nil map panics in Go ("assignment to entry in nil map").
@@ -323,7 +323,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     public (TValue, bool) this[TKey key, bool _]
     {
         // Comma-ok read of a nil (or absent) key yields (zero, false).
-        get => TryGetValue(key, out TValue? value) ? (value!, true) : (default!, false);
+        get => TryGetValue(key, out TValue? value) ? (value!, true) : (GoZero<TValue>(), false);
     }
 
     /// <summary>

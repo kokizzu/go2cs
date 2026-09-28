@@ -62,7 +62,7 @@ internal class StructTypeTemplate : TemplateBase
 
                 // Constructors
                 {{Constructors}}
-                {{ValueCloneImplementation}}
+                {{ValueCloneImplementation}}{{GoZeroRegistration}}
                 // Handle comparisons between struct '{{NonGenericStructName}}' instances
                 public bool Equals({{StructName}} other) =>
                     {{CompareFields}};
@@ -92,6 +92,28 @@ internal class StructTypeTemplate : TemplateBase
                 ]), "}");
             }{{PromotedStructReceivers()}}
         """;
+
+    // A struct whose `default` is NOT its Go zero value (see IsNeedy) registers its parameterless
+    // constructor, which runs the field initializers and builds the embed boxes, as golib's
+    // GoZeroFactory<T>. Generic code reads that registration through builtin.GoZero<T>() wherever
+    // Go produces a zero of a type parameter (`var z T`, a named result, a map miss, a closed-channel
+    // receive, a failed comma-ok assertion), where `default` is wrong only for a needy T. A GENERIC
+    // struct cannot host a module initializer and has no closed type to register, so it keeps
+    // `default`: the residual option B states (pinned by GolibTests' GoZeroResidualTests).
+    private string GoZeroRegistration =>
+        StructName.Contains('<') || !IsNeedy
+            ? string.Empty
+            : $"\r\n{TypeElemIndent}[global::System.Runtime.CompilerServices.ModuleInitializer]\r\n" +
+              $"{TypeElemIndent}internal static void {TempVarMarker}RegisterGoZero() =>\r\n" +
+              $"{TypeElemIndent}    global::go.GoZeroFactory<{StructName}>.Create = static () => new {StructName}();\r\n";
+
+    // The rule NeedsConstruction applies to a FIELD of this type, asked of this struct's own members:
+    // a promoted embed (its box is constructor-built), a fixed-size array field (`default` skips its
+    // `= new(N)` initializer), or a value field whose own type needs construction.
+    private bool IsNeedy => StructMembers.Any(member =>
+        GetSimpleName(member.memberName) != "_" &&
+        (member.isPromotedStruct ||
+         !member.isReferenceType && (member.typeName.Contains("go.array<") || StructTypeNeedsConstruction(member.typeName))));
 
     // A Go struct carrying FIXED-SIZE ARRAY fields is not completely copied by a plain C# struct
     // assignment: `array<T>` (and the generated named-array wrapper) is a struct over a shared T[]

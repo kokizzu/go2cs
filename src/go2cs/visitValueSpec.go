@@ -414,6 +414,10 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 								// reflect's TestChanOf read TypeOf(left) as bidirectional off
 								// exactly this gap.
 								v.writeOutput("%s %s = %s;", csTypeName, csIDName, nilChan)
+							} else if zero := v.typeParamZero(def.Type()); zero != "" {
+								// A TYPE-PARAMETER local (`var z T`): the zeroValueInitializer rung
+								// this ladder copies, for a type argument whose `default` is broken.
+								v.writeOutput("%s %s = %s;", csTypeName, csIDName, zero)
 							} else {
 								v.writeOutput("%s %s = default!;", csTypeName, csIDName)
 							}

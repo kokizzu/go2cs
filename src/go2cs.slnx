@@ -997,6 +997,7 @@
     <Project Path="tests/Behavioral/ZeroSizeFieldLayout/ZeroSizeFieldLayout.csproj" />
     <Project Path="tests/Behavioral/ZeroValueArrayField/ZeroValueArrayField.csproj" />
     <Project Path="tests/Behavioral/ZeroValueArrayNamedResult/ZeroValueArrayNamedResult.csproj" />
+    <Project Path="tests/Behavioral/ZeroValueNeedyStructPaths/ZeroValueNeedyStructPaths.csproj" />
     <Project Path="tests/Behavioral/ZeroValueStructVar/ZeroValueStructVar.csproj" />
   </Folder>
   <Folder Name="/tests/library/">
