@@ -1993,6 +1993,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
+    public void CheckUnarySignStack() => CheckTarget("UnarySignStack");
+
+    [TestMethod]
     public void CheckUncomparableEquality() => CheckTarget("UncomparableEquality");
 
     [TestMethod]

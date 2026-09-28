@@ -1993,6 +1993,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
+    public void CheckUnarySignStack() => CheckTarget("UnarySignStack");
+
+    [TestMethod]
     public void CheckUncomparableEquality() => CheckTarget("UncomparableEquality");
 
     [TestMethod]
