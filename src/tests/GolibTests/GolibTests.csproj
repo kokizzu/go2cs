@@ -179,6 +179,8 @@
     <!-- The ready-seam guards (GoroutineReadyTests) drive sync.Cond, whose notify list is one of the
          park sites the waker readies (sync/runtime_impl.cs), through its converted public surface. -->
     <ProjectReference Include="..\..\core\sync\sync.csproj" />
+    <!-- math/bits: the panic-frame arms read Div64's runtime-raised divideError (PanicFramesRound3Tests). -->
+    <ProjectReference Include="..\..\core\math\bits\math.bits.csproj" />
 
     <!-- The synctest fake-time guards (SyncTestFakeTimeTests) drive time's Now / Sleep / NewTimer /
          AfterFunc inside a bubble, through its converted public surface over time_impl.cs. -->

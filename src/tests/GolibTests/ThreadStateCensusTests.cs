@@ -66,6 +66,7 @@ public class ThreadStateCensusTests
         ("golib/GoFrame.cs|t_sequences", Disposition.GolibReset, "Array.Clear(entries);", "the panic-sequence entries captureCallers pairs with GoFrame.Run frames (GoFuncRoot.ResetThread calls GoFrame.ResetSequences)"),
         ("golib/GoFrame.cs|t_sequenceDepth", Disposition.GolibReset, "t_sequenceDepth = 0;", "how many of those entries are live"),
         ("golib/GoFrame.cs|t_lastActivation", Disposition.KeptThreadResource, "[ThreadStatic] private static long t_lastActivation;", "the last Run activation number on this thread: it only ever increases, so it is unique WITHIN the thread (not across threads; a panic's SiteOwnerThread carries the thread) and needs no reset"),
+        ("golib/GoFrame.cs|t_splicesRefused", Disposition.GolibReset, "t_splicesRefused = false;", "set once a stopped range-over-func seq resumes on its coro thread; cleared with the sequences (GoFrame.ResetSequences)"),
         ("golib/GoFrame.cs|t_threadToken", Disposition.KeptThreadResource, "[ThreadStatic] private static object? t_threadToken;", "this thread's identity for a panic's SiteOwnerThread: a thread property, not goroutine state"),
         ("golib/GoexitException.cs|t_started", Disposition.GolibReset, "internal static void ResetThread() => t_started = false;", "whether a Goexit has been raised on this goroutine (GoFuncRoot.ResetThread calls GoexitException.ResetThread)"),
         ("golib/GoFuncRoot.cs|CapturedPanic", Disposition.GolibReset, "CapturedPanic.Value = null!;", "a frame's captured panic"),
@@ -315,6 +316,7 @@ public class ThreadStateCensusTests
         yield return ("GoFrame.t_sequenceDepth", () => Field(typeof(GoFrame), "t_sequenceDepth").GetValue(null), 0);
         yield return ("GoFrame.t_sequences (no live entry)", () => SequencesClear(), true);
         yield return ("GoexitException.t_started", () => Field(typeof(GoexitException), "t_started").GetValue(null), false);
+        yield return ("GoFrame.t_splicesRefused", () => Field(typeof(GoFrame), "t_splicesRefused").GetValue(null), false);
         yield return ("registered probe", () => t_registeredProbe, 0);
     }
 
@@ -345,6 +347,7 @@ public class ThreadStateCensusTests
         sequencesField.SetValue(null, sequences);
         Field(typeof(GoFrame), "t_sequenceDepth").SetValue(null, 1);
         Field(typeof(GoexitException), "t_started").SetValue(null, true);
+        Field(typeof(GoFrame), "t_splicesRefused").SetValue(null, true);
 
         t_registeredProbe = 7;
     }
