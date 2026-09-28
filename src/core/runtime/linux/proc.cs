@@ -14,6 +14,7 @@ using stringslite = @internal.stringslite_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.CompilerServices;
 
 partial class runtime_package {
 
@@ -951,7 +952,7 @@ internal static void mProfStackInit(ref m mp) {
 // makeProfStackFP creates a buffer large enough to hold a maximum-sized stack
 // trace as well as any additional frames needed for frame pointer unwinding
 // with delayed inline expansion.
-internal static slice<uintptr> makeProfStackFP() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static slice<uintptr> makeProfStackFP() {
     // The "1" term is to account for the first stack entry being
     // taken up by a "skip" sentinel value for profilers which
     // defer inline frame expansion until the profile is reported.
@@ -963,12 +964,12 @@ internal static slice<uintptr> makeProfStackFP() {
 
 // makeProfStack returns a buffer large enough to hold a maximum-sized stack
 // trace.
-internal static slice<uintptr> makeProfStack() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static slice<uintptr> makeProfStack() {
     return new slice<uintptr>(debug.profstackdepth);
 }
 
 //go:linkname pprof_makeProfStack
-public static slice<uintptr> pprof_makeProfStack() {
+[MethodImpl(MethodImplOptions.NoInlining)] public static slice<uintptr> pprof_makeProfStack() {
     return makeProfStack();
 }
 
