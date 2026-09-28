@@ -77,6 +77,7 @@ Each topic is its own page. The summary, [Conversion Strategies](../ConversionSt
   - [Logical operators on a named boolean type cast through `bool`](named-numeric-types.md#logical-operators-on-a-named-boolean-type-cast-through-bool)
   - [Casting a negative value to a non-keyword type parenthesizes the operand](named-numeric-types.md#casting-a-negative-value-to-a-non-keyword-type-parenthesizes-the-operand)
   - [A cast's operand asks TWO questions: parse ambiguity AND precedence](named-numeric-types.md#a-casts-operand-asks-two-questions-parse-ambiguity-and-precedence)
+  - [A stacked sign keeps its space: `- -a` never becomes `--a`](named-numeric-types.md#a-stacked-sign-keeps-its-space----a-never-becomes---a)
   - [A named complex type emits only Go's complex operator set](named-numeric-types.md#a-named-complex-type-emits-only-gos-complex-operator-set)
 - **[Floating-Point Formatting](floating-point-formatting.md)**
   - [A folded constant of a NAMED type carries its type in the fold](floating-point-formatting.md#a-folded-constant-of-a-named-type-carries-its-type-in-the-fold)

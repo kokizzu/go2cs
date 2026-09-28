@@ -1246,7 +1246,18 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 		return fmt.Sprintf("((%s)(!(bool)%s))", typeName, v.convExpr(unaryExpr.X, nil))
 	}
 
-	return unaryExpr.Op.String() + v.convExpr(unaryExpr.X, nil)
+	op, operand := unaryExpr.Op.String(), v.convExpr(unaryExpr.X, nil)
+
+	// A sign over an operand whose rendering starts with the SAME sign character must keep a
+	// separator. Go reads gofmt's `- -a` as two negations; C# lexes `--a` as a PRE-DECREMENT (and
+	// `++a` as a pre-increment), which mutates a, and `--1` or `--k` over a constant does not
+	// compile (CS1059, CS0200). The space is gofmt's own spelling, and every other shape, `-a`
+	// included, keeps the bare form.
+	if (op == "-" || op == "+") && strings.HasPrefix(operand, op) {
+		return op + " " + operand
+	}
+
+	return op + operand
 }
 
 // isNamedBooleanType reports whether the expression's DECLARED type is a defined (named) type
