@@ -138,7 +138,7 @@ public ref struct GoFrame
     /// </para>
     /// </remarks>
     // NoInlining is a CONTRACT here, not a heuristic: runtime's captureCallers pairs each Run frame it
-    // walks with this thread's panic-sequence entries (see t_sequenceDepth), so an inlined Run would leave
+    // walks with this thread's panic-sequence entries (see GoThreadState.SequenceDepth), so an inlined Run would leave
     // no frame to pair and shift every splice by one sequence.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void Run()
@@ -154,7 +154,10 @@ public ref struct GoFrame
         // Conn.Raw panic path left the connection open because withLock — three calls below the
         // deferred release, panicking nothing itself — threw the parked panic on the way out and
         // Conn.close never reached `c.dc = nil`.
-        PanicException? owned = GoFuncRoot.ClaimPanic();
+        // This thread's panic and defer state, fetched ONCE: every slot below is a field of it (the
+        // defer-cost cut; see GoThreadState).
+        GoThreadState state = GoThreadState.Current;
+        PanicException? owned = GoFuncRoot.ClaimPanic(state);
 
         if (m_count > 0)
         {
@@ -163,36 +166,36 @@ public ref struct GoFrame
             // traceback keeps showing the panicking frames until the panic completes. Strictly
             // save/restore scoped, so it cannot outlive the sequence.
             PanicException? handling = owned;
-            PanicException? outer = GoFuncRoot.HandledPanicValue;
+            PanicException? outer = state.HandledPanic;
 
-            GoFuncRoot.HandledPanicValue = handling ?? outer;
+            state.HandledPanic = handling ?? outer;
 
             // What a recover() in THIS sequence's deferred calls may stop: the panic being handled,
             // or nothing for a normal-return sequence — NOT the outer sequence's panic, even when this
             // frame is itself a deferred call that panic is running (Go's direct-call rule; runtime's
             // TestRecoverMatching). Written only when it changes, and restored on exit below.
-            PanicException? outerRecoverable = GoFuncRoot.RecoverablePanicValue;
+            PanicException? outerRecoverable = state.RecoverablePanic;
 
             if (!ReferenceEquals(outerRecoverable, handling))
-                GoFuncRoot.RecoverablePanicValue = handling;
+                state.RecoverablePanic = handling;
 
             // This sequence's slot for runtime's captureCallers. EVERY deferring Run takes one, since a
             // normal-return Run can sit between a Callers and a panicking one ([P2-1]), but a normal
             // return pays only this depth: the entry itself (the panic and the activation) is written
             // once a panic is running in, or raised into, the sequence. An unwritten slot reads as a
             // normal-return entry (SequenceFromTop).
-            int sequence = t_sequenceDepth++;
+            int sequence = state.SequenceDepth++;
             bool recorded = handling is not null;
 
             if (recorded)
-                SetSequence(sequence, handling);
+                SetSequence(state, sequence, handling);
 
             // The panic this frame's own catch caught FIRST has its site ending at this frame, so this
             // activation owns it. Owned by ACTIVATION, not by method: a recursive activation of the
             // same function is a different owner (review C1 of the cut).
             if (owned is { Catches: 1, SiteOwner: 0 })
             {
-                owned.SiteOwner = t_sequences![sequence].Activation;
+                owned.SiteOwner = state.Sequences![sequence].Activation;
                 owned.SiteOwnerThread = ThreadToken;
             }
 
@@ -231,7 +234,7 @@ public ref struct GoFrame
                         // call's Callers no longer shows them (runtime's TestCallersAfterRecovery).
                         if (handling.Recovered)
                         {
-                            SetSequence(sequence, null);
+                            SetSequence(state, sequence, null);
                             recoveryCompleted = true;
                         }
                     }
@@ -277,9 +280,9 @@ public ref struct GoFrame
                         // another deferred call still supersedes it — Go's own replacement rule —
                         // because the tail prefers `owned`.
                         if (handling is null && raised.State is null &&
-                            GoFuncRoot.InFlightForeignException is { } preservedForeign)
+                            state.InFlightForeign is { } preservedForeign)
                         {
-                            GoFuncRoot.InFlightForeignException = null;
+                            state.InFlightForeign = null;
                             m_foreignRethrow = preservedForeign;
                             continue;
                         }
@@ -296,10 +299,10 @@ public ref struct GoFrame
                         // The panic this sequence was running when the deferred call raised: Go keeps it
                         // beneath the new one until a recovery completes, because the deferred call was
                         // called by its gopanic. A recovery that already completed nulled the entry.
-                        PanicException? running = recorded ? t_sequences![sequence].Panic : null;
+                        PanicException? running = recorded ? state.Sequences![sequence].Panic : null;
 
                         // The entry (and its activation) exists from here on.
-                        SetSequence(sequence, running);
+                        SetSequence(state, sequence, running);
                         recorded = true;
 
                         // Whether this activation OWNS the new panic's site (review B1, B2, C3). It does
@@ -322,7 +325,7 @@ public ref struct GoFrame
 
                         if ((firstHere || reRaised) && !(running is null && GoexitException.Started) && !afterCompletedRecovery)
                         {
-                            raised.SiteOwner = t_sequences![sequence].Activation;
+                            raised.SiteOwner = state.Sequences![sequence].Activation;
                             raised.SiteOwnerThread = ThreadToken;
                             raised.SiteEndsAtRun = true;
                             raised.SiteIsTheDeferredCall = reRaised;
@@ -331,14 +334,14 @@ public ref struct GoFrame
                                 raised.Beneath = running;
                         }
 
-                        GoFuncRoot.CapturedPanicValue = raised;
-                        GoFuncRoot.HandledPanicValue = raised;
-                        GoFuncRoot.RecoverablePanicValue = raised;
+                        state.CapturedPanic = raised;
+                        state.HandledPanic = raised;
+                        state.RecoverablePanic = raised;
                         handling = raised;
 
                         // The new panic REPLACES the one this sequence was running, so the sequence's
                         // later deferred calls see it (the TestCallersAbortedPanic shape).
-                        SetSequence(sequence, raised);
+                        SetSequence(state, sequence, raised);
 
                         // A panic raised by THIS frame's own deferred call is this frame's to
                         // continue, whether or not the frame was already panicking — so the tail
@@ -352,13 +355,13 @@ public ref struct GoFrame
                 // Only an entry this activation wrote is cleared (so no stale panic outlives it); the depth
                 // is the normal return's one store.
                 if (recorded)
-                    t_sequences![sequence] = default;
+                    state.Sequences![sequence] = default;
 
-                t_sequenceDepth = sequence;
-                GoFuncRoot.HandledPanicValue = outer;
+                state.SequenceDepth = sequence;
+                state.HandledPanic = outer;
 
-                if (!ReferenceEquals(GoFuncRoot.RecoverablePanicValue, outerRecoverable))
-                    GoFuncRoot.RecoverablePanicValue = outerRecoverable;
+                if (!ReferenceEquals(state.RecoverablePanic, outerRecoverable))
+                    state.RecoverablePanic = outerRecoverable;
             }
         }
 
@@ -394,25 +397,23 @@ public ref struct GoFrame
     // ever shares (a slot index is reused as soon as its Run returns, so it cannot tell two activations
     // apart). A panic's SiteOwner names the activation its site provably ends at, and the splice
     // requires it on every link.
-    private struct Sequence
+    internal struct Sequence
     {
         internal PanicException? Panic;
         internal long Activation;
     }
 
-    [ThreadStatic] private static Sequence[]? t_sequences;
-    [ThreadStatic] private static int t_sequenceDepth;
     [ThreadStatic] private static long t_lastActivation;
 
     // Writes a sequence's entry on first need: grows the array and numbers the activation lazily, once.
-    private static void SetSequence(int index, PanicException? panic)
+    private static void SetSequence(GoThreadState state, int index, PanicException? panic)
     {
-        Sequence[] entries = t_sequences ??= new Sequence[16];
+        Sequence[] entries = state.Sequences ??= new Sequence[16];
 
         if (index >= entries.Length)
         {
-            Array.Resize(ref t_sequences, Math.Max(index + 1, entries.Length * 2));
-            entries = t_sequences;
+            Array.Resize(ref state.Sequences, Math.Max(index + 1, entries.Length * 2));
+            entries = state.Sequences;
         }
 
         ref Sequence entry = ref entries[index];
@@ -458,14 +459,11 @@ public ref struct GoFrame
 
     internal static bool SplicesRefused => t_splicesRefused;
 
-    // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
-    // so this only matters for a thread reused after an abnormal end.
+    // A goroutine's thread starts with no sequences and no refusal (GoFuncRoot.ResetThread): the entries and the
+    // depth are cleared with the rest of GoThreadState. Run's finally always pops, so this only matters for a
+    // thread reused after an abnormal end.
     internal static void ResetSequences()
     {
-        if (t_sequences is { } entries)
-            Array.Clear(entries);
-
-        t_sequenceDepth = 0;
         t_splicesRefused = false;
     }
 
@@ -479,8 +477,9 @@ public ref struct GoFrame
     /// </summary>
     internal static (PanicException? Panic, long Activation) SequenceFromTop(int fromTop)
     {
-        int index = t_sequenceDepth - 1 - fromTop;
-        return index >= 0 && t_sequences is { } entries && index < entries.Length ? (entries[index].Panic, entries[index].Activation) : (null, 0);
+        GoThreadState state = GoThreadState.Current;
+        int index = state.SequenceDepth - 1 - fromTop;
+        return index >= 0 && state.Sequences is { } entries && index < entries.Length ? (entries[index].Panic, entries[index].Activation) : (null, 0);
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it

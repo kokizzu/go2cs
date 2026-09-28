@@ -326,7 +326,8 @@ public static partial class builtin
     /// </remarks>
     public static object? recover()
     {
-        PanicException? panic = GoFuncRoot.RecoverablePanicValue;
+        GoThreadState state = GoThreadState.Current;
+        PanicException? panic = state.RecoverablePanic;
 
         if (panic is null || panic.Recovered)
             return null;
@@ -335,8 +336,8 @@ public static partial class builtin
 
         // The traceback view (GoFuncRoot.InFlightPanic) falls back to the captured slot, and a
         // recover always cleared it — kept, for exactly the panic being recovered.
-        if (ReferenceEquals(GoFuncRoot.CapturedPanicValue, panic))
-            GoFuncRoot.CapturedPanicValue = null;
+        if (ReferenceEquals(state.CapturedPanic, panic))
+            state.CapturedPanic = null;
 
         return panic.State;
     }
