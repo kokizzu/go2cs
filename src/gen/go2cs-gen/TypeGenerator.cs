@@ -262,6 +262,25 @@ public class TypeGenerator : ISourceGenerator
 
                         (StructDeclarationSyntax? underlyingStruct, Compilation? underlyingCompilation) = context.GetStructDeclaration(typeDefinition);
 
+                        // A defined type over another DEFINED type (`type Tally Counts`, `type Counts counts`)
+                        // resolves by name to the intermediate wrapper's `[GoType("counts")]` declaration,
+                        // which declares no members (the InheritedType template generates them), so follow
+                        // the definitions down to the struct itself. Same compilation only: a definition
+                        // is a bare name relative to its own package.
+                        HashSet<string> followedDefinitions = [typeDefinition];
+
+                        while (underlyingStruct is not null && underlyingCompilation == context.Compilation &&
+                               StructTypeTemplate.InheritedStructDefinition(underlyingStruct) is { } nextDefinition &&
+                               followedDefinitions.Add(nextDefinition))
+                        {
+                            (StructDeclarationSyntax? nextStruct, Compilation? nextCompilation) = context.GetStructDeclaration(nextDefinition);
+
+                            if (nextStruct is null)
+                                break;
+
+                            (underlyingStruct, underlyingCompilation) = (nextStruct, nextCompilation);
+                        }
+
                         // Captured for the W3a wrapper-scaffolding fix below — the SAME symbol
                         // GetForeignStructMembers already resolves in the `else if` arm, needed again
                         // once execution is past that arm's own scope. Null under the ordinary

@@ -1939,6 +1939,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckTupleSpreadIntoCall() => CheckTarget("TupleSpreadIntoCall");
 
     [TestMethod]
+    public void CheckTwoLevelDefinedStruct() => CheckTarget("TwoLevelDefinedStruct");
+
+    [TestMethod]
     public void CheckTypeAssert() => CheckTarget("TypeAssert");
 
     [TestMethod]

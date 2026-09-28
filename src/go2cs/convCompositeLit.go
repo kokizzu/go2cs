@@ -624,6 +624,26 @@ func (v *Visitor) convCompositeLitAs(compositeLit *ast.CompositeLit, elidedType 
 			if rhs, okRHS := packageTypeSpecRHS[t.Obj()]; okRHS && rhs != nil {
 				if rhsNamed, ok := types.Unalias(rhs).(*types.Named); ok {
 					if _, isStruct := rhsNamed.Underlying().(*types.Struct); isStruct {
+						// A defined type over another DEFINED type (`type Tally Counts`, `type Counts
+						// counts`) wraps the INNERMOST named struct, the only one with a keyed ctor:
+						// `new Tally(new counts(n: …))`, which the wrappers' implicit conversions carry
+						// up the chain. One level stops at once (its RHS spec is a struct literal).
+						for {
+							next, okNext := packageTypeSpecRHS[rhsNamed.Obj()]
+
+							if !okNext || next == nil {
+								break
+							}
+
+							nextNamed, okNamed := types.Unalias(next).(*types.Named)
+
+							if !okNamed {
+								break
+							}
+
+							rhsNamed = nextNamed
+						}
+
 						namedStructWrapRender = convertToCSTypeName(v.getAliasQualifiedTypeName(rhsNamed, false))
 					}
 				}

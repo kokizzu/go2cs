@@ -928,6 +928,7 @@
     <Project Path="tests/Behavioral/TupleDestructureEscapingLocal/TupleDestructureEscapingLocal.csproj" />
     <Project Path="tests/Behavioral/TupleMixedDeclareReassign/TupleMixedDeclareReassign.csproj" />
     <Project Path="tests/Behavioral/TupleSpreadIntoCall/TupleSpreadIntoCall.csproj" />
+    <Project Path="tests/Behavioral/TwoLevelDefinedStruct/TwoLevelDefinedStruct.csproj" />
     <Project Path="tests/Behavioral/TypeAssert/TypeAssert.csproj" />
     <Project Path="tests/Behavioral/TypeConversion/TypeConversion.csproj" />
     <Project Path="tests/Behavioral/TypeConversionInterfaceParam/TypeConversionInterfaceParam.csproj" />
