@@ -109,8 +109,11 @@ public class NativeBackedArrayPointerTests
             ж<array<Elem>> p = NativeArrayBox<Elem>.Over(addr, 4);
 
             Assert.AreEqual((ulong)0, p.at<Elem>(3).Value.A, "index 3 is inside the minted length");
-            Assert.ThrowsException<IndexOutOfRangeException>(() => p.at<Elem>(4), "index 4 is past the minted length");
-            Assert.ThrowsException<IndexOutOfRangeException>(() => p.at<Elem>(-1), "a negative index");
+            // Go's runtime.boundsError, which recover() sees, and its text names the MINTED length.
+            PanicException past = Assert.ThrowsException<PanicException>(() => p.at<Elem>(4), "index 4 is past the minted length");
+            StringAssert.Contains(past.Message, "index out of range [4] with length 4");
+            PanicException negative = Assert.ThrowsException<PanicException>(() => p.at<Elem>(-1), "a negative index");
+            StringAssert.Contains(negative.Message, "index out of range [-1]");
         }
         finally
         {

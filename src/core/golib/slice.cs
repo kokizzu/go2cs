@@ -584,7 +584,19 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         }
     }
 
-    public ref T this[ulong index] => ref this[(nint)index];
+    // An UNSIGNED index is checked here, before any narrowing: `(nint)index` of a value at or above
+    // 2^63 reads negative and would report Go's signed text ([-1]) where Go reports the unsigned value
+    // with the length (goPanicIndexU, boundsError.signed false).
+    public ref T this[ulong index]
+    {
+        get
+        {
+            if (index >= (ulong)m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
+
+            return ref this[(nint)index];
+        }
+    }
 
     // Go reslice expression s[low:high]: bounds are RELATIVE to this slice (which may itself be an
     // offset view over its backing array), a from-end index resolves against the slice LENGTH

@@ -88,7 +88,19 @@ public ref struct sslice<T>
         }
     }
 
-    public ref T this[ulong index] => ref this[(nint)index];
+    // An UNSIGNED index is checked here, before any narrowing: `(nint)index` of a value at or above
+    // 2^63 reads negative and would report Go's signed text ([-1]) where Go reports the unsigned value
+    // with the length (goPanicIndexU, boundsError.signed false).
+    public ref T this[ulong index]
+    {
+        get
+        {
+            if (index >= (ulong)m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
+
+            return ref this[(nint)index];
+        }
+    }
 
     public sslice<T> this[Range range]
     {
