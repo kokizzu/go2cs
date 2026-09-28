@@ -37,6 +37,10 @@ private static readonly object copyˢ = (@string)"copy:"u8;
 private static readonly object globalˢ = (@string)"global:"u8;
 private static readonly object nestedˢ = (@string)"nested:"u8;
 private static readonly object structsˢ = (@string)"structs:"u8;
+private static readonly object arrayˢ = (@string)"array:"u8;
+private static readonly object fieldˢ = (@string)"field:"u8;
+private static readonly object fieldLiteralˢ = (@string)"field literal:"u8;
+private static readonly object sliceˢ = (@string)"slice:"u8;
 
 internal static void Main() {
     Counts c = new();
@@ -59,6 +63,23 @@ internal static void Main() {
     Path pa = new();
     pa.pts[2].Y = 8;
     fmt.Println(structsˢ, len(pa.pts), pa.pts);
+    array<Counts> arr = new(3, () => new());
+    arr[1].vals[1] = 5;
+    fmt.Println(arrayˢ, len(arr[1].vals), arr[1].vals, arr[2].vals);
+    holder h = new();
+    h.c.vals[2] = 4;
+    fmt.Println(fieldˢ, len(h.c.vals), h.c.vals, h.id);
+    var hl = new holder(id: 1);
+    hl.c.vals[3] = 6;
+    fmt.Println(fieldLiteralˢ, len(hl.c.vals), hl.c.vals, hl.id);
+    var s = new slice<Counts>(2, () => new());
+    s[1].vals[3] = 2;
+    fmt.Println(sliceˢ, len(s[1].vals), s[1].vals, s[0].vals);
+}
+
+[GoType] partial struct holder {
+    internal nint id;
+    internal Counts c;
 }
 
 } // end main_package

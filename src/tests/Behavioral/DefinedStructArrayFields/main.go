@@ -58,4 +58,26 @@ func main() {
 	pa.pts[2].Y = 8
 	fmt.Println("structs:", len(pa.pts), pa.pts)
 
+	// Zero values that exist without a `var`, new() or literal of the defined type itself: an array
+	// element, a field inside another struct's zero value or keyed literal, and a slice element.
+	var arr [3]Counts
+	arr[1].vals[1] = 5
+	fmt.Println("array:", len(arr[1].vals), arr[1].vals, arr[2].vals)
+
+	var h holder
+	h.c.vals[2] = 4
+	fmt.Println("field:", len(h.c.vals), h.c.vals, h.id)
+
+	hl := holder{id: 1}
+	hl.c.vals[3] = 6
+	fmt.Println("field literal:", len(hl.c.vals), hl.c.vals, hl.id)
+
+	s := make([]Counts, 2)
+	s[1].vals[3] = 2
+	fmt.Println("slice:", len(s[1].vals), s[1].vals, s[0].vals)
+}
+
+type holder struct {
+	id int
+	c  Counts
 }
