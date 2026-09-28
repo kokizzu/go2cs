@@ -418,6 +418,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDefinedOverNamedComposite() => CheckTarget("DefinedOverNamedComposite");
 
     [TestMethod]
+    public void CheckDefinedStructArrayFields() => CheckTarget("DefinedStructArrayFields");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]

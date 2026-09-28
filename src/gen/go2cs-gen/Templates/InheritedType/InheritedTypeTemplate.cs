@@ -584,6 +584,15 @@ internal class InheritedTypeTemplate : TemplateBase
     private string NilValueExpression => ForwardedStructMembers is null || ForwardedStructMembers.Count == 0 ?
         "default!" : $"new {TypeName}(nil)";
 
+    // A defined type over a STRUCT (`type TimeHistogram timeHistogram`) is zero-constructed with `new T()`,
+    // and without a parameterless constructor of its own that is C#'s default: m_value stays
+    // default(underlying), whose field initializers never ran, so a fixed-size array field keeps no
+    // backing and indexes as length 0 where Go's zero value holds a zeroed array. Constructing the
+    // underlying struct through its own parameterless constructor runs those initializers. Every other
+    // inherited kind emits nothing here: its default is already its zero value.
+    private string ParameterlessConstructor => ForwardedStructMembers is null || ForwardedStructMembers.Count == 0 ?
+        "" : $"\r\n\r\n        public {ConstructorName}() => m_value = new {TypeName}();";
+
     // A C# constructor name must not carry the type's generic parameters (e.g. the constructor for
     // a generic named array type `vec<T>` is `vec(...)`, not `vec<T>(...)`). Non-generic types have
     // no '<' so ConstructorName equals ObjectName — emitting byte-identical output.
@@ -607,7 +616,7 @@ internal class InheritedTypeTemplate : TemplateBase
 
                 {{MemberScope}} {{ConstructorName}}({{TypeName}} value) => m_value = {{ValueConstructorArgument}};
 
-                public {{ConstructorName}}(NilType _) => m_value = {{NilValueExpression}};
+                public {{ConstructorName}}(NilType _) => m_value = {{NilValueExpression}};{{ParameterlessConstructor}}
 
         {{ValueProperty}}
                 public override string ToString() => {{ToStringImplementation}};
