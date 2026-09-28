@@ -38,6 +38,8 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using go.golib;
 
 [module: go.GoManualConversion]
 
@@ -100,5 +102,38 @@ partial class runtime_package
     public static nuint GoParseHugePageSize(string text)
     {
         return (nuint)parseHugePageSize(text);
+    }
+
+    /// <summary>
+    /// syscall.AllThreadsSyscall's runtime half, syscall_runtime_doAllThreadsSyscall, called the way
+    /// Setuid/Setgid reach it (the trap is getpid; amd64's number, and it is never executed: the
+    /// call refuses before it could run). Returns what it raised by type and message, or null if it
+    /// returned, and whether worldsema was free afterwards: a plain acquire on another goroutine
+    /// within the timeout.
+    /// </summary>
+    public static (string? failure, bool worldsemaFree) GoAllThreadsSyscallProbe(int timeoutMs)
+    {
+        string? failure = null;
+
+        try
+        {
+            syscall_runtime_doAllThreadsSyscall((uintptr)39, 0, 0, 0, 0, 0, 0);
+        }
+        catch (Exception ex)
+        {
+            failure = $"{ex.GetType().Name}: {ex.Message}";
+        }
+
+        ManualResetEventSlim acquired = new(false);
+
+        Goroutine.Start(() =>
+        {
+            semacquire(Ꮡworldsema);
+            acquired.Set();
+            semrelease(Ꮡworldsema);
+        });
+
+        // The event is not disposed: on a leak the parked goroutine still holds it.
+        return (failure, acquired.Wait(timeoutMs));
     }
 }

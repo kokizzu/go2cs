@@ -2389,6 +2389,311 @@ partial class runtime_package
         return (stopFailure, acquired.Wait(timeoutMs));
     }
 
+    // ---- the guard's view (GolibTests RuntimeStopTheWorldContractTests) ----
+
+    /// <summary>
+    /// Two stop/start-the-world pairs in sequence, each on its own goroutine, the shape of
+    /// TestDebugLog followed by TestDebugLogInterleaving. Returns the first pair's failure by name,
+    /// if it had one, and whether the second pair got through worldsema within the timeout: a
+    /// first pair that dies while holding worldsema leaves the second parked for ever.
+    /// </summary>
+    public static (string? firstFailure, bool secondCompleted) GoStopTheWorldTwiceProbe(int timeoutMs)
+    {
+        string? firstFailure = null;
+
+        using (ManualResetEventSlim first = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    worldStop stw = stopTheWorld(stwUnknown);
+                    startTheWorld(stw);
+                }
+                catch (Exception ex)
+                {
+                    firstFailure = $"{ex.GetType().Name}: {ex.Message}";
+                }
+
+                first.Set();
+            });
+
+            if (!first.Wait(timeoutMs))
+                return ("the first stop-the-world never returned", false);
+        }
+
+        ManualResetEventSlim second = new(false);
+
+        Goroutine.Start(() =>
+        {
+            try
+            {
+                worldStop stw = stopTheWorld(stwUnknown);
+                startTheWorld(stw);
+            }
+            catch (Exception)
+            {
+                // A failure of the second pair still returned, which is not what this watches.
+            }
+
+            second.Set();
+        });
+
+        // The event is not disposed: on a leak the parked goroutine still holds it.
+        return (firstFailure, second.Wait(timeoutMs));
+    }
+
+    /// <summary>
+    /// One stop/start-the-world pair on the calling thread, with a GC reason (stwGCMarkTerm) or an
+    /// other one (stwUnknown). What it raises propagates.
+    /// </summary>
+    public static void GoStopTheWorldPair(bool gcReason)
+    {
+        worldStop stw = stopTheWorld(gcReason ? stwGCMarkTerm : stwUnknown);
+        startTheWorld(stw);
+    }
+
+    /// <summary>
+    /// The four /sched/pauses sample counts, read the way runtime/metrics reads them: each
+    /// histogram written into a metric value, every bucket summed (underflow and overflow included),
+    /// which is exactly what TestSchedPauseMetrics' sampleCount adds up.
+    /// </summary>
+    public static (uint64 stoppingGC, uint64 stoppingOther, uint64 totalGC, uint64 totalOther) GoStwPauseSampleCounts()
+    {
+        // metrics.Read's own order: the metrics lock, then initMetrics (which sets timeHistBuckets,
+        // the bucket boundaries every time histogram writes against), then the reads.
+        metricsLock();
+
+        try
+        {
+            initMetrics();
+
+            return (count(Ꮡsched.of(schedt.ᏑstwStoppingTimeGC)), count(Ꮡsched.of(schedt.ᏑstwStoppingTimeOther)),
+                    count(Ꮡsched.of(schedt.ᏑstwTotalTimeGC)), count(Ꮡsched.of(schedt.ᏑstwTotalTimeOther)));
+        }
+        finally
+        {
+            metricsUnlock();
+        }
+
+        static uint64 count(ж<timeHistogram> h)
+        {
+            ж<metricValue> value = Ꮡ(new metricValue(nil));
+            h.write(value);
+            ж<metricFloat64Histogram> hist = (ж<metricFloat64Histogram>)(uintptr)value.Value.pointer;
+            uint64 n = 0;
+
+            slice<uint64> counts = hist.Value.counts;
+
+            for (nint i = 0; i < len(counts); i++)
+                n += counts[i];
+
+            return n;
+        }
+    }
+
+    /// <summary>
+    /// flushallmcaches, as ReadMemStatsSlow, ReadMetricsSlow and readmemstats_m reach it inside their
+    /// stopped world. Returns what it raised by type and message, or null if it returned.
+    /// </summary>
+    public static string? GoFlushAllMcachesProbe()
+    {
+        try
+        {
+            flushallmcaches();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return $"{ex.GetType().Name}: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// THE LEAK ARM. A goroutine stops the world and then panics INSIDE the stopped-world region,
+    /// under a frame that recovers, the way a test body recovers what its callee raised. Then a
+    /// second goroutine stops and starts the world. Returns whether the region was entered, what the
+    /// first goroutine recovered, and whether the second pair got through worldsema within the
+    /// timeout. Go would throw "panic during preemptoff" here; the managed contract releases
+    /// worldsema as the panic leaves the region, so the next stop does not park on it.
+    /// </summary>
+    public static (bool regionEntered, string? recovered, bool secondCompleted) GoStopTheWorldRegionPanicProbe(int timeoutMs)
+    {
+        bool regionEntered = false;
+        string? recovered = null;
+
+        using (ManualResetEventSlim first = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    GoFrame frame = default;
+
+                    try
+                    {
+                        frame.Push(() => recovered = recover()?.ToString());
+                        stopTheWorld(stwUnknown);
+                        regionEntered = true;
+                        throw panic((@string)"a panic inside a stop-the-world region");
+                    }
+                    catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException? p))
+                    {
+                        GoFrame.Capture(p);
+                    }
+                    finally
+                    {
+                        frame.Run();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    recovered ??= $"escaped: {ex.GetType().Name}: {ex.Message}";
+                }
+
+                first.Set();
+            });
+
+            if (!first.Wait(timeoutMs))
+                return (regionEntered, "the first goroutine never finished", false);
+        }
+
+        ManualResetEventSlim second = new(false);
+
+        Goroutine.Start(() =>
+        {
+            try
+            {
+                worldStop stw = stopTheWorld(stwUnknown);
+                startTheWorld(stw);
+            }
+            catch (Exception)
+            {
+                // A failure of the second pair still returned, which is not what this watches.
+            }
+
+            second.Set();
+        });
+
+        bool secondCompleted = second.Wait(timeoutMs);
+
+        // On a leak, release the permit the panic left held so the parked goroutine finishes and a
+        // red arm does not park every later stop in the test host. The reading is taken first.
+        if (!secondCompleted)
+            semrelease(Ꮡworldsema);
+
+        return (regionEntered, recovered, secondCompleted);
+    }
+
+    /// <summary>
+    /// THE metricsSema LEAK ARM, the same shape: a goroutine takes metricsLock and then panics
+    /// INSIDE the region under a recovering frame; a second goroutine then takes and releases
+    /// metricsLock. The 2026-09-26 park came from this lock (readMetricsLocked threw while holding
+    /// it). Returns whether the region was entered, what was recovered, and whether the second
+    /// goroutine got the lock within the timeout.
+    /// </summary>
+    public static (bool regionEntered, string? recovered, bool secondCompleted) GoMetricsRegionPanicProbe(int timeoutMs)
+    {
+        bool regionEntered = false;
+        string? recovered = null;
+
+        using (ManualResetEventSlim first = new(false))
+        {
+            Goroutine.Start(() =>
+            {
+                try
+                {
+                    GoFrame frame = default;
+
+                    try
+                    {
+                        frame.Push(() => recovered = recover()?.ToString());
+                        metricsLock();
+                        regionEntered = true;
+                        throw panic((@string)"a panic inside a metricsSema region");
+                    }
+                    catch (Exception ex) when (GoFrame.IsPanic(ex, out PanicException? p))
+                    {
+                        GoFrame.Capture(p);
+                    }
+                    finally
+                    {
+                        frame.Run();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    recovered ??= $"escaped: {ex.GetType().Name}: {ex.Message}";
+                }
+
+                first.Set();
+            });
+
+            if (!first.Wait(timeoutMs))
+                return (regionEntered, "the first goroutine never finished", false);
+        }
+
+        ManualResetEventSlim second = new(false);
+
+        Goroutine.Start(() =>
+        {
+            metricsLock();
+            metricsUnlock();
+            second.Set();
+        });
+
+        bool secondCompleted = second.Wait(timeoutMs);
+
+        // On a leak, release the permit the panic left held (see the worldsema arm above).
+        if (!secondCompleted)
+            metricsUnlock();
+
+        return (regionEntered, recovered, secondCompleted);
+    }
+
+    /// <summary>
+    /// readMetricsLocked as ReadMetricsSlow (export_test) reaches it: the metrics lock and
+    /// initMetrics, then the RAW ADDRESS of the caller's []runtime/metrics.Sample backing store.
+    /// What it raises propagates; the lock is released either way, so a red arm leaks nothing.
+    /// </summary>
+    public static void GoReadMetricsLockedProbe(@unsafe.Pointer samplesp, nint len, nint cap)
+    {
+        metricsLock();
+
+        try
+        {
+            initMetrics();
+            readMetricsLocked(samplesp, len, cap);
+        }
+        finally
+        {
+            metricsUnlock();
+        }
+    }
+
+    /// <summary>
+    /// The shape of runtime's TestDebugLog without its ResetDebugLog: one record written through a
+    /// debug logger, then the dump DumpDebugLog takes (printDebugLogImpl into the goroutine's
+    /// writebuf). Returns the dump. What it raises propagates.
+    /// </summary>
+    public static string GoDebugLogRoundTripProbe(string text)
+    {
+        dlogImpl().s(text).end();
+
+        ж<g> gp = getg();
+        gp.Value.writebuf = new slice<byte>(0, 1 << 20);
+
+        try
+        {
+            printDebugLogImpl();
+            return ((@string)gp.Value.writebuf).ToString();
+        }
+        finally
+        {
+            gp.Value.writebuf = default!;
+        }
+    }
+
     // ---- the guard's view (GolibTests RuntimeSchedZeroValueTests) ----
 
     /// <summary>
