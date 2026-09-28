@@ -11,7 +11,7 @@ using static go.runtime_package;
 // one deferred call reports, and recovers, so the probe returns normally.
 namespace go;
 
-internal static class panicframesprobe_package
+internal static partial class panicframesprobe_package
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static List<string> callersHere()
@@ -19,7 +19,23 @@ internal static class panicframesprobe_package
         slice<uintptr> pcs = new(64);
         pcs = pcs[..(int)Callers(0, pcs)];
 
-        List<string> names = [];
+        return namesOf(pcs);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static List<(string function, long line)> callersHereWithLines()
+    {
+        slice<uintptr> pcs = new(64);
+        pcs = pcs[..(int)Callers(0, pcs)];
+
+        return framesOf(pcs);
+    }
+
+    internal static List<string> namesOf(slice<uintptr> pcs) => framesOf(pcs).ConvertAll(frame => frame.function);
+
+    internal static List<(string function, long line)> framesOf(slice<uintptr> pcs)
+    {
+        List<(string function, long line)> frames = [];
         var iterator = CallersFrames(pcs);
 
         while (true)
@@ -29,23 +45,29 @@ internal static class panicframesprobe_package
             if (frame.PC == 0 && !more)
                 break;
 
-            names.Add((string)frame.Function);
+            frames.Add(((string)frame.Function, frame.Line));
 
             if (!more)
                 break;
         }
 
-        return names;
+        return frames;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    internal static void f1() => f2();
+    // Each of f1-f3 is on ONE line, which records that line: the throw line for f3, the call lines for f2
+    // and f1, which are the lines Go reports for those frames.
+    internal static int f1Line, f2Line, f3Line;
+
+    internal static int Line([CallerLineNumber] int line = 0) => line;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    internal static void f2() => f3();
+    internal static void f1() { f1Line = Line(); f2(); }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    internal static void f3() => throw panic("f3");
+    internal static void f2() { f2Line = Line(); f3(); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void f3() { f3Line = Line(); throw panic("f3"); }
 
     // TestCallersPanic: a panic raised three calls down, recovered by the deferring function's defer.
     [MethodImpl(MethodImplOptions.NoInlining)]

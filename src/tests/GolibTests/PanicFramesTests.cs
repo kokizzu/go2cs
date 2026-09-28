@@ -41,13 +41,13 @@ public class PanicFramesTests
 
     [TestMethod]
     public void APanicsDeferredCallSeesGopanicAndThePanickingFrames() =>
-        AssertBelow(panicframesprobe_package.plainPanic(), "plainPanic",
+        AssertBelow(panicframesprobe_package.onGoroutine(panicframesprobe_package.plainPanic), "plainPanic",
             "runtime.gopanic", Pkg + "f3", Pkg + "f2", Pkg + "f1", Pkg + "plainPanic");
 
     [TestMethod]
     public void ADoublePanicSeesBothGopanics()
     {
-        List<string> names = panicframesprobe_package.doublePanic();
+        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.doublePanic);
         List<string> below = Below(names, "doublePanic");
 
         Assert.AreEqual(4, below.Count, $"got {string.Join(" | ", below)}");
@@ -59,28 +59,28 @@ public class PanicFramesTests
 
     [TestMethod]
     public void ANilDereferenceAddsPanicmemAndSigpanic() =>
-        AssertBelow(panicframesprobe_package.nilPointerPanic(), "nilPointerPanic",
+        AssertBelow(panicframesprobe_package.onGoroutine(panicframesprobe_package.nilPointerPanic), "nilPointerPanic",
             "runtime.gopanic", "runtime.panicmem", "runtime.sigpanic", Pkg + "nilPointerPanic");
 
     [TestMethod]
     public void AnIntegerDivideByZeroAddsPanicdivide() =>
-        AssertBelow(panicframesprobe_package.divZeroPanic(0), "divZeroPanic",
+        AssertBelow(panicframesprobe_package.onGoroutine(() => panicframesprobe_package.divZeroPanic(0)), "divZeroPanic",
             "runtime.gopanic", "runtime.panicdivide", Pkg + "divZeroPanic");
 
     [TestMethod]
     public void ANilDeferredFuncFaultsFromTheDeferringFunctionsExit() =>
-        AssertBelow(panicframesprobe_package.deferNilFuncPanic(), "deferNilFuncPanic",
+        AssertBelow(panicframesprobe_package.onGoroutine(panicframesprobe_package.deferNilFuncPanic), "deferNilFuncPanic",
             "runtime.gopanic", "runtime.panicmem", "runtime.sigpanic", Pkg + "deferNilFuncPanic");
 
     [TestMethod]
     public void OnceTheRecoveringCallReturnsThePanicIsGone() =>
-        AssertBelow(panicframesprobe_package.afterRecovery(), "afterRecovery", Pkg + "afterRecovery");
+        AssertBelow(panicframesprobe_package.onGoroutine(panicframesprobe_package.afterRecovery), "afterRecovery", Pkg + "afterRecovery");
 
     // [P2-1]: the helper's normal-return Run holds a null entry, so the splice pairs with the panicking Run.
     [TestMethod]
     public void ANormalReturnSequenceBetweenTheCallersAndThePanicPairsCorrectly()
     {
-        List<string> names = panicframesprobe_package.helperDefers();
+        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.helperDefers);
         List<string> below = Below(names, "helperDefers");
 
         Assert.AreEqual(Pkg + "helper", below[0], $"got {string.Join(" | ", below)}");
@@ -93,7 +93,7 @@ public class PanicFramesTests
     [TestMethod]
     public void AReplacingPanicIsSplicedWithTheReplacedPanicBeneathIt()
     {
-        List<string> names = panicframesprobe_package.replacedPanic();
+        List<string> names = panicframesprobe_package.onGoroutine(panicframesprobe_package.replacedPanic);
         List<string> below = Below(names, "replacedPanic");
 
         Assert.AreEqual(4, below.Count, $"got {string.Join(" | ", below)}");
@@ -106,13 +106,13 @@ public class PanicFramesTests
     // [P2-2]: a site that does not end at the deferring function splices NOTHING (a stated residual).
     [TestMethod]
     public void AnOwnerMismatchSplicesNothing() =>
-        AssertBelow(panicframesprobe_package.ownerMismatch(), "ownerMismatch", Pkg + "ownerMismatch");
+        AssertBelow(panicframesprobe_package.onGoroutine(panicframesprobe_package.ownerMismatch), "ownerMismatch", Pkg + "ownerMismatch");
 
     // COORD 93c2bdd50b: a wrapper that IS the panic site is kept beneath the fault frames.
     [TestMethod]
     public void AWrapperThatIsThePanicSiteIsKept()
     {
-        List<string> below = Below(panicframesprobe_package.wrapperIsTheSite(), "wrapperIsTheSite");
+        List<string> below = Below(panicframesprobe_package.onGoroutine(panicframesprobe_package.wrapperIsTheSite), "wrapperIsTheSite");
 
         CollectionAssert.AreEqual(new[] { "runtime.gopanic", "runtime.panicmem", "runtime.sigpanic", "wrapperprobe.I.M", Pkg + "wrapperIsTheSite" }, below,
             $"got {string.Join(" | ", below)}");
@@ -122,7 +122,7 @@ public class PanicFramesTests
     [TestMethod]
     public void AWrapperBelowThePanicSiteIsStillElided()
     {
-        List<string> below = Below(panicframesprobe_package.wrapperBelowTheSite(), "wrapperBelowTheSite");
+        List<string> below = Below(panicframesprobe_package.onGoroutine(panicframesprobe_package.wrapperBelowTheSite), "wrapperBelowTheSite");
 
         Assert.AreEqual(3, below.Count, $"got {string.Join(" | ", below)}");
         Assert.AreEqual("runtime.gopanic", below[0]);

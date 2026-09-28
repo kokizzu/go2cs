@@ -65,6 +65,8 @@ public class ThreadStateCensusTests
         ("golib/channel.cs|t_frames", Disposition.GolibReset, "internal static void ResetThread() => t_frames = null;", "a select's pending receive frames"),
         ("golib/GoFrame.cs|t_sequences", Disposition.GolibReset, "Array.Clear(entries);", "the panic-sequence entries captureCallers pairs with GoFrame.Run frames (GoFuncRoot.ResetThread calls GoFrame.ResetSequences)"),
         ("golib/GoFrame.cs|t_sequenceDepth", Disposition.GolibReset, "t_sequenceDepth = 0;", "how many of those entries are live"),
+        ("golib/GoFrame.cs|t_lastActivation", Disposition.KeptThreadResource, "[ThreadStatic] private static long t_lastActivation;", "the last Run activation number on this thread: only ever increases, so a number is never reused across goroutines and needs no reset"),
+        ("golib/GoexitException.cs|t_started", Disposition.GolibReset, "internal static void ResetThread() => t_started = false;", "whether a Goexit has been raised on this goroutine (GoFuncRoot.ResetThread calls GoexitException.ResetThread)"),
         ("golib/GoFuncRoot.cs|CapturedPanic", Disposition.GolibReset, "CapturedPanic.Value = null!;", "a frame's captured panic"),
         ("golib/GoFuncRoot.cs|HandledPanic", Disposition.GolibReset, "HandledPanic.Value = null;", "the panic whose defers are running"),
         ("golib/GoFuncRoot.cs|UnclaimedPanic", Disposition.GolibReset, "UnclaimedPanic.Value = null;", "a captured panic no frame has claimed"),
@@ -309,6 +311,9 @@ public class ThreadStateCensusTests
         foreach (string slot in new[] { "CapturedPanic", "HandledPanic", "UnclaimedPanic", "InFlightForeign", "RecoverablePanic" })
             yield return ($"GoFuncRoot.{slot}", () => LocalValue(Field(typeof(GoFuncRoot), slot).GetValue(null)!), null);
 
+        yield return ("GoFrame.t_sequenceDepth", () => Field(typeof(GoFrame), "t_sequenceDepth").GetValue(null), 0);
+        yield return ("GoFrame.t_sequences (no live entry)", () => SequencesClear(), true);
+        yield return ("GoexitException.t_started", () => Field(typeof(GoexitException), "t_started").GetValue(null), false);
         yield return ("registered probe", () => t_registeredProbe, 0);
     }
 
@@ -328,7 +333,36 @@ public class ThreadStateCensusTests
         SetLocal(Field(typeof(GoFuncRoot), "RecoverablePanic").GetValue(null)!, stale);
         SetLocal(Field(typeof(GoFuncRoot), "InFlightForeign").GetValue(null)!, System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(new InvalidOperationException("A")));
 
+        // A stale panic-sequence entry and depth, as a goroutine that ended mid-sequence would leave them,
+        // and a Goexit mark: runtime.Callers would pair them with the next goroutine's Run frames.
+        FieldInfo sequencesField = Field(typeof(GoFrame), "t_sequences");
+        Type sequenceType = sequencesField.FieldType.GetElementType()!;
+        Array sequences = Array.CreateInstance(sequenceType, 16);
+        object entry = Activator.CreateInstance(sequenceType)!;
+        sequenceType.GetField("Panic", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(entry, stale);
+        sequences.SetValue(entry, 0);
+        sequencesField.SetValue(null, sequences);
+        Field(typeof(GoFrame), "t_sequenceDepth").SetValue(null, 1);
+        Field(typeof(GoexitException), "t_started").SetValue(null, true);
+
         t_registeredProbe = 7;
+    }
+
+    // True when this thread holds no live panic-sequence entry (the array is absent, or every entry is clear).
+    private static bool SequencesClear()
+    {
+        if (Field(typeof(GoFrame), "t_sequences").GetValue(null) is not Array sequences)
+            return true;
+
+        FieldInfo panic = sequences.GetType().GetElementType()!.GetField("Panic", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        foreach (object? entry in sequences)
+        {
+            if (entry is not null && panic.GetValue(entry) is not null)
+                return false;
+        }
+
+        return true;
     }
 
     private static FieldInfo Field(Type type, string name) =>
