@@ -114,6 +114,49 @@ public class SyncMutexProfileTests
         });
     }
 
+    // runtime/pprof TestMutexBlockFullAggregation's own shape: two workers, each re-locking right after its
+    // own Unlock and holding across a 1 ms sleep. Every Lock after the first comes nanoseconds after the
+    // locker's own Release, so a CurrentCount snapshot reads the gate free (the woken waiter has not
+    // consumed the release yet) and the Lock goes unstamped, then blocks anyway. Probed: 0-2 of 200 Locks
+    // classed contended, so the test recorded nothing in 3 of 8 solo runs. Go's semacquire1 records every
+    // wait whose fast path failed; a waiter blocked through most of the other worker's holds must make most
+    // of those Unlocks mutex events. The bound is loose on purpose (a tenth of the Locks): the defect reads
+    // about one in a hundred.
+    [TestMethod]
+    public void AWorkerThatReLocksRightAfterUnlockStillRecordsItsContention()
+    {
+        const int iterations = 50;
+        WithRates(1, 1, () =>
+        {
+            int64 mutexBefore = Total(mutex: true), blockBefore = Total(mutex: false);
+            var shared = new Shared();
+            using var start = new ManualResetEventSlim();
+            Thread[] workers = new Thread[2];
+            for (int w = 0; w < workers.Length; w++)
+            {
+                workers[w] = new Thread(() =>
+                {
+                    start.Wait();
+                    for (int i = 0; i < iterations; i++)
+                    {
+                        shared.M.Lock();
+                        Thread.Sleep(1);
+                        shared.M.Unlock();
+                    }
+                });
+                workers[w].Start();
+            }
+            start.Set();
+            foreach (Thread worker in workers)
+                worker.Join();
+
+            int64 mutexEvents = Total(mutex: true) - mutexBefore, blockEvents = Total(mutex: false) - blockBefore;
+            int locks = iterations * workers.Length;
+            Assert.IsTrue(mutexEvents >= locks / 10, $"{mutexEvents} mutex events for {locks} Locks by two workers that contend on every hold");
+            Assert.IsTrue(blockEvents >= 1, $"{blockEvents} block events for {locks} contended Locks");
+        });
+    }
+
     // R's review arm: a stamped waiter that acquires WITHOUT a handoff (the snapshot race the hand-own
     // names: it saw the gate held, stamped, and the gate came free before it blocked) must not leave its
     // stamp behind. Otherwise the next contention episode's handoff charges the whole idle gap since that
