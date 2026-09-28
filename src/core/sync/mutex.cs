@@ -103,11 +103,97 @@ private static SemaphoreSlim gateOf(ref Mutex m) {
 // is a protocol change — a newcomer barging ahead of the queue — where this cut is required to
 // change no protocol at all. The cost is therefore two volatile stores on every Lock, contended or
 // not, measured by the cost canary named in this arc's commit.
+//
+// PROFILING (class F; DESIGN-managed-profiling I4 and the Mutex slice of I3). Go records a contended
+// acquire in semacquire1 -- a block event on the waiter, and the waiter's acquire time for the mutex
+// event its unlocker records -- and an uncontended one not at all, because cansemacquire returns first.
+// This gate never reaches semacquire1, so Lock does the same accounting itself, and only while a
+// profile rate is on (Go stamps t0 only then): the default path adds two static reads. "Contended" is
+// the gate's CurrentCount seen at 0, a SNAPSHOT rather than a Wait(0), so the protocol above stays
+// untouched even while profiling. The snapshot can race a release and stamp a wait that then does not
+// block; that records one short block event where Go records none, the accepted accounting error. The
+// block event's cycles end when this waiter wakes, where Go's end at the releaser's readyWithTime.
 [GoRecv] public static void Lock(this ref Mutex m) {
+    SemaphoreSlim gate = gateOf(ref m);
+    bool block = runtime_package.GoBlockProfileOn;
+    bool mutex = runtime_package.GoMutexProfileOn;
+    int64 t0 = 0;
+    WaitStamps? stamps = null;
+    if ((block || mutex) && gate.CurrentCount == 0) {
+        t0 = runtime_package.GoCputicks();
+        if (mutex) {
+            stamps = s_waitStamps.GetValue(gate, static _ => new WaitStamps());
+            stamps.Enqueue(t0);
+        }
+    } else {
+        block = false;
+    }
     using (Goroutine.Park(WaitReason.SyncMutexLock)) {
-        gateOf(ref m).Wait();
+        gate.Wait();
+    }
+    stamps?.Acquired();
+    if (block) {
+        runtime_package.GoSyncBlockEvent(runtime_package.GoCputicks() - t0);
     }
 }
+
+// The acquire times of a gate's stamped waiters, Go's per-sudog acquiretime reduced to the two its
+// semrelease1 reads: the HEAD (the waiter a handoff dequeues) and the TAIL (the newest), plus the count
+// between them. Kept beside the gate rather than in Mutex, so Mutex's layout does not change, and
+// reached only while stamped waiters exist anywhere (s_outstanding), so an Unlock with profiling off
+// pays one volatile read.
+private sealed class WaitStamps {
+    internal static int s_outstanding;
+
+    private int64 m_head;
+    private int64 m_tail;
+    private int m_waiters;
+
+    internal void Enqueue(int64 t0) {
+        lock (this) {
+            if (m_head == 0) {
+                m_head = t0;
+            }
+            m_tail = t0;
+            m_waiters++;
+        }
+        Interlocked.Increment(ref s_outstanding);
+    }
+
+    internal void Acquired() {
+        lock (this) {
+            m_waiters--;
+        }
+        Interlocked.Decrement(ref s_outstanding);
+    }
+
+    // Go's semrelease1 over dequeue: the dequeued waiter's wait (dt0) plus the tail-average estimate
+    // for the waiters still queued, (dtail + dt0) / 2 each, after which the remaining waiters' acquire
+    // times restart at now so no wait is charged twice.
+    internal bool TryHandoff(out int64 dt) {
+        lock (this) {
+            if (m_waiters == 0 || m_head == 0) {
+                dt = 0;
+                return false;
+            }
+            int64 now = runtime_package.GoCputicks();
+            int64 dt0 = now - m_head;
+            dt = dt0;
+            int remaining = m_waiters - 1;
+            if (remaining > 0) {
+                dt += (now - m_tail + dt0) / 2 * remaining;
+                m_head = now;
+                m_tail = now;
+            } else {
+                m_head = 0;
+                m_tail = 0;
+            }
+            return true;
+        }
+    }
+}
+
+private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SemaphoreSlim, WaitStamps> s_waitStamps = new();
 
 // TryLock tries to lock m and reports whether it succeeded.
 [GoRecv] public static bool TryLock(this ref Mutex m) => gateOf(ref m).Wait(0);
@@ -116,9 +202,17 @@ private static SemaphoreSlim gateOf(ref Mutex m) {
 // It is a run-time error if m is not locked on entry to Unlock.
 // A locked Mutex is not associated with a particular goroutine; one goroutine may lock a Mutex and
 // then arrange for another goroutine to unlock it.
+//
+// A handoff to a stamped waiter records Go's mutex event first, on this unlocker's stack, as
+// semrelease1 does before it readies the waiter.
 [GoRecv] public static void Unlock(this ref Mutex m) {
+    SemaphoreSlim gate = gateOf(ref m);
+    if (Volatile.Read(ref WaitStamps.s_outstanding) != 0 &&
+        s_waitStamps.TryGetValue(gate, out WaitStamps? stamps) && stamps.TryHandoff(out int64 dt)) {
+        runtime_package.GoSyncMutexEvent(dt);
+    }
     try {
-        gateOf(ref m).Release();
+        gate.Release();
     } catch (SemaphoreFullException) {
         fatal("sync: unlock of unlocked mutex"u8);
     }

@@ -438,4 +438,29 @@ public static void GoBlockEventProbe(int64 cycles, nint count) {
     }
 }
 
+// ---- the hand-owned sync.Mutex's profile events (class F; DESIGN-managed-profiling I4 plus the Mutex
+//      slice of I3). Go records these in semacquire1 and semrelease1, which the SemaphoreSlim-backed
+//      sync.Mutex never reaches, so sync/mutex.cs calls these Go-prefixed public helpers instead ----
+
+/// <summary>Whether a contended Lock should stamp its wait for the block profile (Go: semacquire1's
+/// <c>blockprofilerate &gt; 0</c>).</summary>
+public static bool GoBlockProfileOn => Volatile.Read(ref blockprofilerate) > 0;
+
+/// <summary>Whether a contended Lock should stamp its wait for the mutex profile (Go: semacquire1's
+/// <c>mutexprofilerate &gt; 0</c>).</summary>
+public static bool GoMutexProfileOn => Volatile.Read(ref mutexprofilerate) > 0;
+
+/// <summary>The clock both profiles measure in: <c>runtime.cputicks</c>.</summary>
+public static int64 GoCputicks() => cputicks();
+
+/// <summary>A contended Lock's block event, on the WAITER's stack: <c>blockevent(cycles, 2)</c>, so the
+/// stack starts at the Lock that called this helper (Go's top frame, sync.(*Mutex).Lock).</summary>
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+public static void GoSyncBlockEvent(int64 cycles) => blockevent(cycles, 2);
+
+/// <summary>A contended Unlock's mutex event, on the UNLOCKER's stack: <c>mutexevent(cycles, 2)</c>, so
+/// the stack starts at the Unlock that called this helper (Go's top frame, sync.(*Mutex).Unlock).</summary>
+[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+public static void GoSyncMutexEvent(int64 cycles) => mutexevent(cycles, 2);
+
 } // end runtime_package
