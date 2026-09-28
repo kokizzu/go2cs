@@ -98,4 +98,49 @@ func main() {
 	i, j, k := delta(-5), delta(3), delta(-100)
 	fmt.Println(min(i, j, k), max(i, j, k)) // -100 3
 	fmt.Println(min(i, j), max(i, j))       // -5 3
+
+	untypedConstTypes()
+}
+
+// An UNTYPED constant argument takes the type of the call, which is its typed sibling's type (all
+// constants: the default type). A bare literal left as a C# int widened the inferred T instead:
+// `max(u8, 1)` was int32, so %T, interface identity, typed assignment and later overflow all
+// diverged. Each line prints the result's type and value.
+func untypedConstTypes() {
+	var i8 int8 = -100
+	var u8 uint8 = 200
+	var i16 int16 = -300
+	var u16 uint16 = 60000
+	var i32 int32 = -70000
+	var u32 uint32 = 4000000000
+	var i64 int64 = -5000000000
+	var u64 uint64 = 18000000000000000000
+	var up uintptr = 4096
+	var n int = 9
+	var un uint = 11
+	var f32 float32 = 0.5
+	var f64 float64 = 0.25
+	var s string = "m"
+	fe, rt, dl := fieldElement(10), ratio(2.5), delta(-5)
+
+	fmt.Printf("%T %v | %T %v\n", max(i8, 1), max(i8, 1), min(i8, 1), min(i8, 1))
+	fmt.Printf("%T %v | %T %v\n", max(u8, 1), max(u8, 1), min(u8, 1), min(u8, 1))
+	fmt.Printf("%T %v | %T %v\n", max(i16, 1), max(i16, 1), min(i16, 1), min(i16, 1))
+	fmt.Printf("%T %v | %T %v\n", max(u16, 1), max(u16, 1), min(u16, 1), min(u16, 1))
+	fmt.Printf("%T %v | %T %v\n", max(i32, 1), max(i32, 1), min(i32, 1), min(i32, 1))
+	fmt.Printf("%T %v | %T %v\n", max(u32, 1), max(u32, 1), min(u32, 1), min(u32, 1))
+	fmt.Printf("%T %v | %T %v\n", max(i64, 1), max(i64, 1), min(i64, 1), min(i64, 1))
+	fmt.Printf("%T %v | %T %v\n", max(u64, 1), max(u64, 1), min(u64, 1), min(u64, 1))
+	fmt.Printf("%T %v | %T %v\n", max(up, 1), max(up, 1), min(up, 1), min(up, 1))
+	fmt.Printf("%T %v | %T %v\n", max(n, 1), max(n, 1), min(un, 1), min(un, 1))
+	fmt.Printf("%T %v | %T %v\n", max(f32, 1), max(f32, 1), min(f64, 1), min(f64, 1))
+	fmt.Printf("%T %v\n", max(f32, 1, 2.5), max(f32, 1, 2.5)) // a mixed float/int constant: float32
+	fmt.Printf("%T %v | %T %v\n", min(s, "a"), min(s, "a"), max(s, "z"), max(s, "z"))
+	fmt.Printf("%T %v | %T %v | %T %v\n", max(fe, 1), max(fe, 1), min(rt, 1), min(rt, 1), max(dl, 1), max(dl, 1))
+	fmt.Printf("%T %v | %T %v | %T %v\n", max(1, 2), max(1, 2), max(1, 2.5), max(1, 2.5), min('a', 'b'), min('a', 'b'))
+
+	// The result's type carries into later arithmetic: uint8 wraps, int32 would not.
+	x := max(u8, 1)
+	x += 100
+	fmt.Printf("%T %v\n", x, x) // uint8 44
 }
