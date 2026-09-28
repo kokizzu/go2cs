@@ -421,6 +421,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDefinedStructArrayFields() => CheckTarget("DefinedStructArrayFields");
 
     [TestMethod]
+    public void CheckDefinedStructConversionCopy() => CheckTarget("DefinedStructConversionCopy");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]

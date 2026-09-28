@@ -326,10 +326,18 @@ internal class InheritedTypeTemplate : TemplateBase
     private string UnderlyingConversionOperators => TypeName is "any" or "object" || OmitUnderlyingConversionOperators ? "" :
         $$"""
                 // Handle implicit conversions between '{{TypeName}}' and {{ObjectKind}} '{{ObjectName}}'
-                public static implicit operator {{ObjectName}}({{TypeName}} value) => new {{ObjectName}}(value);
+                public static implicit operator {{ObjectName}}({{TypeName}} value) => new {{ObjectName}}(value{{ConversionCopy}});
 
-                public static implicit operator {{TypeName}}({{ObjectName}} value) => value.{{Value}};
+                public static implicit operator {{TypeName}}({{ObjectName}} value) => value.{{Value}}{{ConversionCopy}};
         """;
+
+    // Go's conversion between a defined type and the struct it is defined over (`counts(c)`, `Counts(x)`)
+    // yields a COPY. A wrapper the converter stamped [GoValueClone("Value")] holds reference-backed array
+    // storage at some depth, so handing the value over as-is ALIASED it: writes through the converted value
+    // reached the source's arrays (DefinedStructArrayFields found `99 99` where Go prints `5 99`). Go has no
+    // implicit conversion between named struct types, so these operators run only where Go converts, and
+    // copying there is always Go's semantics. Every other wrapper keeps the plain hand-over.
+    private string ConversionCopy => EmitsValueClone ? $".{ValueCloneMethod}()" : "";
 
     private string UintptrBridgeOperators => TypeName != "uintptr" ? "" :
         $"""

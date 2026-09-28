@@ -395,6 +395,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDefinedStructArrayFields() => CheckTarget("DefinedStructArrayFields");
 
     [TestMethod]
+    public void CheckDefinedStructConversionCopy() => CheckTarget("DefinedStructConversionCopy");
+
+    [TestMethod]
     public void CheckDefinedTypeOverForeignStruct() => CheckTarget("DefinedTypeOverForeignStruct");
 
     [TestMethod]
