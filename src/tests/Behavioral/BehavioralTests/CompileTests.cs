@@ -1927,6 +1927,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckTupleSpreadIntoCall() => CheckTarget("TupleSpreadIntoCall");
 
     [TestMethod]
+    public void CheckTwoLevelDefinedStruct() => CheckTarget("TwoLevelDefinedStruct");
+
+    [TestMethod]
     public void CheckTypeAssert() => CheckTarget("TypeAssert");
 
     [TestMethod]
