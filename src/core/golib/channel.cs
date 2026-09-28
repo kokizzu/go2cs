@@ -1214,12 +1214,41 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     public channel(nint size)
     {
         // Go's makechan panics with runtime.plainError("makechan: size out of range"), which recover()
-        // sees; the CLR's ArgumentOutOfRangeException here escaped it (TestRuntimePanicWithRuntimeError).
-        if (size < 0)
-            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+        // sees; the CLR's ArgumentOutOfRangeException and OverflowException here escaped it
+        // (TestRuntimePanicWithRuntimeError).
+        checkMakeChanSize(size);
 
         m_core = new ChanCore<T>(size);
     }
+
+    // Go's makechan size predicate (runtime/chan.go), plus the one bound Go does not have. Go rejects a
+    // negative size, and a buffer whose byte size (elem.Size_ * size) overflows or exceeds
+    // maxAlloc - hchanSize (1<<48 less the 96-byte hchan on amd64): plainError "makechan: size out of
+    // range". A size Go ACCEPTS but a managed ring buffer cannot hold (more than Array.MaxLength
+    // elements; a zero-size element has no memory bound in Go at all) is a NAMED, recoverable panic:
+    // ChanCore keeps an int-sized buffer, and widening it is not worth a platform bound. The element's
+    // Go size is read only above 65536 elements: below that, passing 1<<48 would need an element over
+    // 4 GiB, which no managed value can be. A type whose Go size is not derivable (an array whose
+    // length the managed type does not carry) takes only the managed bound.
+    private static void checkMakeChanSize(nint size)
+    {
+        if (size < 0)
+            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+
+        if (size <= 65536)
+            return;
+
+        if (GoReflect.TryGoSizeOf(typeof(T), null, out nuint elemSize) && elemSize != 0 &&
+            (ulong)size > (MakeChanMaxAlloc - MakeChanHchanSize) / elemSize)
+            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+
+        if (size > Array.MaxLength)
+            throw RuntimeErrorPanic.MakeChanSizeBeyondManagedBuffer(size);
+    }
+
+    private const ulong MakeChanMaxAlloc = 1UL << 48;
+
+    private const ulong MakeChanHchanSize = 96;
 
     /// <summary>
     /// Creates a new channel of a DIRECTIONAL Go channel type — <c>make(chan&lt;- T[, size])</c>
@@ -1237,8 +1266,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// </remarks>
     public channel(nint size, GoChanDir direction)
     {
-        if (size < 0)
-            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+        checkMakeChanSize(size);
 
         m_core = new ChanCore<T>(size);
         m_cargo = ChanCargo.Of(direction);
@@ -1311,8 +1339,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     {
         // This make form had no size check at all: a negative size built a core with a negative
         // buffer size where Go panics.
-        if (size < 0)
-            throw RuntimeErrorPanic.MakeChanSizeOutOfRange();
+        checkMakeChanSize(size);
 
         m_core = new ChanCore<T>(size);
         m_cargo = cargo;

@@ -97,9 +97,29 @@ public readonly ref struct sstring
         }
     }
 
-    public byte this[nint index] => this[(int)index];
+    // Checked BEFORE the (int) narrowing: an index past int's range would otherwise wrap to a valid
+    // position and read the wrong byte where Go panics.
+    public byte this[nint index]
+    {
+        get
+        {
+            if (index < 0 || index >= Length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, Length);
 
-    public byte this[ulong index] => this[(int)index];
+            return this[(int)index];
+        }
+    }
+
+    public byte this[ulong index]
+    {
+        get
+        {
+            if (index >= (ulong)Length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, Length);
+
+            return this[(int)index];
+        }
+    }
 
     // Slicing a Go string yields a string, so the range indexer returns an sstring — a zero-copy
     // sub-view over the same backing span (mirrors @string.this[Range] returning @string, but without

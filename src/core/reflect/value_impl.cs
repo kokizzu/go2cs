@@ -1700,7 +1700,7 @@ public static void Close(this ΔValue v) {
         return;
     }
     // Go's own text for the nil case, which its runtime raises one frame down.
-    throw panic("close of nil channel");
+    throw global::go.golib.RuntimeErrorPanic.PlainError("close of nil channel");
 }
 
 // MakeChan creates a new channel with the specified type and buffer size — MakeMapWithSize's
@@ -1784,7 +1784,7 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     }
     elem.flag.mustBeExported();
     if (nilMap) {
-        throw panic("assignment to entry in nil map");
+        throw global::go.golib.RuntimeErrorPanic.PlainError("assignment to entry in nil map");
     }
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k, GoReflect.GoTypeRelation.Assignable)) {
         throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +

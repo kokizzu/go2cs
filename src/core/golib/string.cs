@@ -250,7 +250,17 @@ public readonly struct @string :
         }
     }
 
-    public byte this[ulong index] => this[(nint)index];
+    // An UNSIGNED index is checked before any narrowing, as slice's is (goPanicIndexU).
+    public byte this[ulong index]
+    {
+        get
+        {
+            if (index >= (ulong)m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
+
+            return this[(nint)index];
+        }
+    }
 
     // Slicing a Go string yields a string (e.g. `s[a:b]`), so the range indexer
     // returns @string. Returning slice<byte> here would break string comparisons

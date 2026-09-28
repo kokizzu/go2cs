@@ -113,21 +113,38 @@ public static class RuntimeErrorPanic
 
     private const string IndexOutOfRangeMessage = $"{RuntimeErrorMessage}index out of range [{{0}}] with length {{1}}";
 
+    // Go's boundsNegErrorFmt for boundsIndex: a NEGATIVE signed index prints without the length.
+    private const string IndexNegativeMessage = $"{RuntimeErrorMessage}index out of range [{{0}}]";
+
     // runtime's boundsErrorCode for `s[x], 0 <= x < len(s) failed` (runtime/error.go: boundsIndex).
     private const byte BoundsIndex = 0;
 
     /// <summary>
-    /// Go's panic for an index out of range: <c>runtime.boundsError{x: index, signed: true, y: length,
-    /// code: boundsIndex}</c>, which goPanicIndex raises and which satisfies <c>runtime.Error</c>.
+    /// Go's panic for a SIGNED index out of range: <c>runtime.boundsError{x: index, signed: true,
+    /// y: length, code: boundsIndex}</c>, which goPanicIndex raises and which satisfies
+    /// <c>runtime.Error</c>.
     /// </summary>
     /// <remarks>
     /// The value comes from <see cref="BoundsErrorValue"/>, so its <c>Error()</c> is Go's own
     /// formatting: <c>index out of range [2] with length 2</c>, and for a NEGATIVE index
-    /// <c>index out of range [-1]</c> with no length. Unregistered, the plain message stands.
+    /// <c>index out of range [-1]</c> with no length. Unregistered, the fallback string carries the
+    /// same text; see <see cref="BoundsErrorValue"/> for that bound.
     /// </remarks>
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {
         return new PanicException(BoundsErrorValue?.Invoke(index, length, true, BoundsIndex) ??
+                                  string.Format(index < 0 ? IndexNegativeMessage : IndexOutOfRangeMessage, index, length));
+    }
+
+    /// <summary>
+    /// Go's panic for an UNSIGNED index out of range: <c>runtime.boundsError{x: index, signed: false,
+    /// y: length, code: boundsIndex}</c>, goPanicIndexU's value. An unsigned index is never negative,
+    /// so the text always carries the length: <c>index out of range [18446744073709551615] with
+    /// length 2</c>, where a signed reading of the same bits would print <c>[-1]</c>.
+    /// </summary>
+    public static PanicException IndexOutOfRange(uint64 index, int64 length)
+    {
+        return new PanicException(BoundsErrorValue?.Invoke(unchecked((int64)index), length, false, BoundsIndex) ??
                                   string.Format(IndexOutOfRangeMessage, index, length));
     }
 
@@ -136,10 +153,24 @@ public static class RuntimeErrorPanic
     /// goPanicIndex family panics with.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Registered by the runtime package (its <c>panicvalues_impl.cs</c> bridge) for the same reason as
     /// <see cref="IntegerDivideByZeroValue"/>: golib sits UNDER <c>runtime</c> and cannot name the type.
     /// runtime's TestRuntimePanicWithRuntimeError asserts <c>recover().(runtime.Error)</c> on
     /// <c>s[2]</c>.
+    /// </para>
+    /// <para>
+    /// THE DESIGN LIMIT, shared by every hook here (this one, <see cref="PlainErrorValue"/> and
+    /// <see cref="IntegerDivideByZeroValue"/>): a hook is registered by runtime's module initializer,
+    /// so a program whose import closure never reaches runtime has nothing registered, and these
+    /// panics recover as a STRING rather than a value satisfying <c>runtime.Error</c>. The TEXT is
+    /// Go's either way; only the type differs. Measured (COORD review, 2026-09-28): a program with no
+    /// imports has no runtime.dll in its output and recovers strings, while one importing
+    /// <c>errors</c> matches Go exactly, because every package's import hooks force its imports'
+    /// initializers and errors reaches runtime through internal/reflectlite (so do strings, io,
+    /// strconv, sort, fmt, os and sync). Only closures made entirely of leaf packages (math,
+    /// math/bits, unicode, unicode/utf8, cmp, unsafe) stay unregistered.
+    /// </para>
     /// </remarks>
     public static Func<long, long, bool, byte, object>? BoundsErrorValue { get; set; }
 
@@ -167,12 +198,25 @@ public static class RuntimeErrorPanic
     private const string MakeChanSizeOutOfRangeMessage = "makechan: size out of range";
 
     /// <summary>
-    /// Go's panic for <c>make(chan T, n)</c> with a negative <c>n</c> (runtime/chan.go's makechan),
-    /// where the CLR would otherwise raise an ArgumentOutOfRangeException that recover() cannot see.
+    /// Go's panic for <c>make(chan T, n)</c> with a size Go rejects (runtime/chan.go's makechan): a
+    /// negative <c>n</c>, or one whose buffer (<c>elem.Size_ * n</c>) overflows or exceeds
+    /// <c>maxAlloc - hchanSize</c>. The CLR raised an ArgumentOutOfRangeException or an
+    /// OverflowException there, and recover() sees neither.
     /// </summary>
     public static PanicException MakeChanSizeOutOfRange()
     {
         return PlainError(MakeChanSizeOutOfRangeMessage);
+    }
+
+    /// <summary>
+    /// A NAMED platform bound, not a Go panic: <c>make(chan T, n)</c> with a size Go ACCEPTS but a
+    /// managed ring buffer cannot hold (more than <see cref="Array.MaxLength"/> elements; for a
+    /// zero-size element Go has no memory bound at all). Recoverable and named, never an escaping
+    /// OverflowException.
+    /// </summary>
+    public static PanicException MakeChanSizeBeyondManagedBuffer(nint size)
+    {
+        return new PanicException($"makechan: size {size} exceeds the {Array.MaxLength}-element buffer a managed channel can hold (Go accepts it for this element type; a platform bound of go2cs)");
     }
 
     private const string SliceBoundsOutOfRangeMessage = $"{RuntimeErrorMessage}slice bounds out of range ";
