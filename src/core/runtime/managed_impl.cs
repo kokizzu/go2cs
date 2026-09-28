@@ -2067,7 +2067,7 @@ partial class runtime_package
             if (!visited.Add(link) || link.SiteOwner != activation || !ReferenceEquals(link.SiteOwnerThread, GoFrame.ThreadToken))
                 return [];
 
-            if (link.FaultKind == PanicFaultKind.Unmodelled)
+            if (link.FaultKind == PanicFaultKind.Unmodelled || link.CrossedRangeFunc)
                 return [];
 
             StackFrame[] raw = link.SiteTrace?.GetFrames() ?? [];
@@ -2083,6 +2083,20 @@ partial class runtime_package
 
             // The second guard: an explicit panic that golib code, not Go source, threw.
             if (link.FaultKind == PanicFaultKind.Explicit && firstMethodOf(raw) is { } thrower && !isGoSourceFrame(thrower, keepWrapper: true))
+                return [];
+
+            // THE WRAPPER FRAME, keyed on the EMITTER'S marker, never on names or frame shapes (COORD's check of
+            // round 3). A method-expression wrapper as the site's first Go frame is kept only when the wrapper
+            // raised the panic itself (RaisedByWrapper: builtin.wrapperRecv/panicwrapRecv on a nil receiver),
+            // because Go keeps a wrapper only when its callee is the panic machinery. Any other panic with a
+            // wrapper there (a callee the JIT inlined into it, a promoted method's embedded deref) is refused.
+            if (site.Count > 0 && isWrapperFrame(site[0].GetMethod()) != link.RaisedByWrapper)
+                return [];
+
+            // An INTRINSIFIED atomic on a nil address: Go's intrinsic faults with no frame of its own, while a
+            // call through a func value keeps the frame, and a run cannot tell the two apart (COORD's check of
+            // round 3), so a fault whose first site frame is one of them is refused.
+            if (link.FaultKind == PanicFaultKind.Memory && site.Count > 0 && isIntrinsifiedAtomic(site[0].GetMethod()))
                 return [];
 
             // An explicit panic from a function Go replaces with an INTRINSIC on amd64: Go's frames are the
@@ -2105,16 +2119,12 @@ partial class runtime_package
 
             switch (link.FaultKind)
             {
+                case PanicFaultKind.Panicwrap:
+                    // Go's `(*T).M` wrapper called with a nil *T (builtin.panicwrapRecv raised it, the
+                    // emitter's marker): gopanic | runtime.panicwrap | (*T).M | owner.
+                    spliced.Add(internRootFrame("runtime.panicwrap", "runtime/error.go", 356));
+                    break;
                 case PanicFaultKind.Memory:
-                    // A nil *T through the value-method wrapper `(*T).M`: Go's wrapper calls panicwrap, not
-                    // sigpanic ("value method T.M called using nil *T pointer"), and that is its list:
-                    // gopanic | runtime.panicwrap | (*T).M | owner.
-                    if (site.Count > 0 && isPointerMethodWrapper(site[0].GetMethod()))
-                    {
-                        spliced.Add(internRootFrame("runtime.panicwrap", "runtime/error.go", 356));
-                        break;
-                    }
-
                     spliced.Add(internRootFrame("runtime.panicmem", "runtime/panic.go", 262));
                     spliced.Add(GOOS == "windows"u8
                         ? internRootFrame("runtime.sigpanic", "runtime/signal_windows.go", 401)
@@ -2154,10 +2164,29 @@ partial class runtime_package
     private static bool isPanickingIntrinsic(System.Reflection.MethodBase? method) =>
         method is { Name: "Div64" or "Div", DeclaringType.FullName: "go.math.bits_package" };
 
-    // The `(*T).M` method-expression wrapper the converter stamps: a value method reached through a pointer.
-    private static bool isPointerMethodWrapper(System.Reflection.MethodBase? method) =>
-        method?.GetCustomAttributes(typeof(GoWrapperAttribute), inherit: false) is [GoWrapperAttribute { GoName: var name }] &&
-        name.StartsWith("(*", StringComparison.Ordinal);
+    private static bool isWrapperFrame(System.Reflection.MethodBase? method) =>
+        method is not null && method.IsDefined(typeof(GoWrapperAttribute), inherit: false);
+
+    // Go's intrinsified atomics (cmd/compile's intrinsics.go): internal/runtime/atomic wholesale, and
+    // sync/atomic's Load/Store/Swap/CompareAndSwap/Add/And/Or functions except the *Pointer forms, which Go
+    // does not intrinsify (their frame stays, as it does here). Keyed by declaring type and name because
+    // runtime cannot reference sync/atomic; a refusal, never a model.
+    private static bool isIntrinsifiedAtomic(System.Reflection.MethodBase? method)
+    {
+        if (method?.DeclaringType?.FullName is not { } type)
+            return false;
+
+        if (type == "go.@internal.runtime.atomic_package" || type == "go.internal.runtime.atomic_package")
+            return true;
+
+        if (type != "go.sync.atomic_package" || method.Name.EndsWith("Pointer", StringComparison.Ordinal))
+            return false;
+
+        return method.Name.StartsWith("Load", StringComparison.Ordinal) || method.Name.StartsWith("Store", StringComparison.Ordinal) ||
+               method.Name.StartsWith("Swap", StringComparison.Ordinal) || method.Name.StartsWith("CompareAndSwap", StringComparison.Ordinal) ||
+               method.Name.StartsWith("Add", StringComparison.Ordinal) || method.Name.StartsWith("And", StringComparison.Ordinal) ||
+               method.Name.StartsWith("Or", StringComparison.Ordinal);
+    }
 
     // Whether a go2cs-gen interface adapter frame lies between the throw and the site's first Go frame.
     private static bool adapterBeforeFirstGoFrame(StackFrame[] frames)
@@ -2311,7 +2340,9 @@ partial class runtime_package
             if (s_callerTokens.TryGetValue(key, out nuint token))
                 return token;
 
-            (string file, int line) = goFramePosition(method, frame);
+            // A method-expression wrapper is Go's AUTOGENERATED function, positioned as Go positions it
+            // (the same rule the FuncForPC record applies).
+            (string file, int line) = method.IsDefined(typeof(GoWrapperAttribute), inherit: false) ? ("<autogenerated>", 1) : goFramePosition(method, frame);
 
             CallerFrameRecord record = new()
             {

@@ -89,8 +89,13 @@ internal static partial class panicframesprobe_package
         public nint M() => n;
     }
 
-    // `(*T).M`, as the converter emits the pointer form of a value-method expression.
-    internal static readonly Func<ж<T>, nint> pointerWrapper = ((Func<ж<T>, nint>)([GoWrapper("(*T).M")] (p0) => p0.Value.M()));
+    // `(*T).M`, as the converter emits the pointer form of a DIRECT value-method expression: the receiver read
+    // through panicwrapRecv, which raises Go's panicwrap (with Go's message) on a nil *T.
+    internal const string PanicwrapMessage = "value method panicframesprobe.T.M called using nil *T pointer";
+
+    internal static readonly Func<ж<T>, nint> pointerWrapper = ((Func<ж<T>, nint>)([GoWrapper("(*T).M")] (p0) => panicwrapRecv(p0, PanicwrapMessage).Value.M()));
+
+    internal static object? recoveredPanicwrap;
 
     // C2 / R2: a nil *T through (*T).M. Go: gopanic | runtime.panicwrap | (*T).M | owner. Modelled: Go's list.
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -99,7 +104,7 @@ internal static partial class panicframesprobe_package
         List<string> got = [];
         GoFrame ᒐ = default;
         try {
-            defer(() => { recover(); got = callersHere(); }, ref ᒐ);
+            defer(() => { recoveredPanicwrap = recover(); got = callersHere(); }, ref ᒐ);
             got = [pointerWrapper(null!).ToString()];
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

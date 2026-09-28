@@ -149,7 +149,10 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
             if (m_coro is null || m_done)
                 return;
 
-            // The loop ended early: resume seq once with yield answering false, so it unwinds.
+            // The loop ended early: resume seq once with yield answering false, so it unwinds. If it ended
+            // for a panic in the loop body, that panic crossed frames Go has and this adapter does not
+            // model (the body's rangefunc closure, seq): mark it so runtime.Callers splices nothing for it.
+            PanicException.MarkLastAdoptedCrossedRangeFunc();
             m_stopped = true;
             m_coro.Switch();
             rethrowFailure();
