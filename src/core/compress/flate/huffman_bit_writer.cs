@@ -279,7 +279,7 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     ref var litEnc = ref ᏑlitEnc.DerefOrNull();
     ref var offEnc = ref ᏑoffEnc.DerefOrNull();
     numCodegens = len(w.codegenFreq);
-    while (numCodegens > 4 && w.codegenFreq[(nint)(codegenOrder[numCodegens - 1])] == 0) {
+    while (numCodegens > 4 && w.codegenFreq[codegenOrder[numCodegens - 1]] == 0) {
         numCodegens--;
     }
     nint header = 3 + 5 + 5 + 4 + (3 * numCodegens) + w.codegenEncoding.bitLength(w.codegenFreq[..]) + (nint)w.codegenFreq[16] * 2 + (nint)w.codegenFreq[17] * 3 + (nint)w.codegenFreq[18] * 7;
@@ -350,7 +350,7 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     w.writeBits((int32)(numOffsets - 1), 5);
     w.writeBits((int32)(numCodegens - 4), 4);
     for (nint iΔ1 = 0; iΔ1 < numCodegens; iΔ1++) {
-        nuint value = (nuint)(~w.codegenEncoding).codes[(nint)(codegenOrder[iΔ1])].len;
+        nuint value = (nuint)(~w.codegenEncoding).codes[codegenOrder[iΔ1]].len;
         w.writeBits((int32)value, 3);
     }
     nint i = 0;
@@ -360,7 +360,7 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
         if (codeWord == badCode) {
             break;
         }
-        w.writeCode((~w.codegenEncoding).codes[(nint)((uint32)codeWord)]);
+        w.writeCode((~w.codegenEncoding).codes[(uint32)codeWord]);
         switch (codeWord) {
         case 16: {
             w.writeBits((int32)w.codegen[i], 2);
@@ -509,13 +509,13 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     clear(w.offsetFreq);
     foreach (var (_, t) in tokens) {
         if (t < matchType) {
-            w.literalFreq[(nint)(t.literal())]++;
+            w.literalFreq[t.literal()]++;
             continue;
         }
         var length = t.length();
         var offset = t.offset();
-        w.literalFreq[(nint)((uint32)lengthCodesStart + lengthCode(length))]++;
-        w.offsetFreq[(nint)(offsetCode(offset))]++;
+        w.literalFreq[(uint32)lengthCodesStart + lengthCode(length)]++;
+        w.offsetFreq[offsetCode(offset)]++;
     }
     // get the number of literals
     numLiterals = len(w.literalFreq);
@@ -546,25 +546,25 @@ internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with u
     }
     foreach (var (_, t) in tokens) {
         if (t < matchType) {
-            w.writeCode(leCodes[(nint)(t.literal())]);
+            w.writeCode(leCodes[t.literal()]);
             continue;
         }
         // Write the length
         var length = t.length();
         var lengthCodeΔ1 = lengthCode(length);
-        w.writeCode(leCodes[(nint)(lengthCodeΔ1 + (uint32)lengthCodesStart)]);
-        nuint extraLengthBits = (nuint)lengthExtraBits[(nint)(lengthCodeΔ1)];
+        w.writeCode(leCodes[lengthCodeΔ1 + (uint32)lengthCodesStart]);
+        nuint extraLengthBits = (nuint)lengthExtraBits[lengthCodeΔ1];
         if (extraLengthBits > 0) {
-            var extraLength = (int32)(length - lengthBase[(nint)(lengthCodeΔ1)]);
+            var extraLength = (int32)(length - lengthBase[lengthCodeΔ1]);
             w.writeBits(extraLength, extraLengthBits);
         }
         // Write the offset
         var offset = t.offset();
         var offsetCodeΔ1 = offsetCode(offset);
-        w.writeCode(oeCodes[(nint)(offsetCodeΔ1)]);
-        nuint extraOffsetBits = (nuint)offsetExtraBits[(nint)(offsetCodeΔ1)];
+        w.writeCode(oeCodes[offsetCodeΔ1]);
+        nuint extraOffsetBits = (nuint)offsetExtraBits[offsetCodeΔ1];
         if (extraOffsetBits > 0) {
-            var extraOffset = (int32)(offset - offsetBase[(nint)(offsetCodeΔ1)]);
+            var extraOffset = (int32)(offset - offsetBase[offsetCodeΔ1]);
             w.writeBits(extraOffset, extraOffsetBits);
         }
     }

@@ -1756,6 +1756,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckSliceAliasing() => CheckTarget("SliceAliasing");
 
     [TestMethod]
+    public void CheckSliceBoundsEscapeRoutes() => CheckTarget("SliceBoundsEscapeRoutes");
+
+    [TestMethod]
     public void CheckSliceElementFieldAddress() => CheckTarget("SliceElementFieldAddress");
 
     [TestMethod]
@@ -2048,6 +2051,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckUnsafeStringEmpty() => CheckTarget("UnsafeStringEmpty");
+
+    [TestMethod]
+    public void CheckUnsignedIndexPastIntRange() => CheckTarget("UnsignedIndexPastIntRange");
 
     [TestMethod]
     public void CheckUnsignedNamedNumeric() => CheckTarget("UnsignedNamedNumeric");

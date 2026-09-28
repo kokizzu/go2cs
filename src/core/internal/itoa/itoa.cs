@@ -45,12 +45,12 @@ public static @string Uitox(nuint val) {
     nint i = len(buf) - 1;
     while (val >= 16) {
         nuint q = val / 16;
-        buf[i] = hex[(int)(val % 16)];
+        buf[i] = hex[val % 16];
         i--;
         val = q;
     }
     // val < 16
-    buf[i] = hex[(int)(val % 16)];
+    buf[i] = hex[val % 16];
     i--;
     buf[i] = (rune)'x';
     i--;

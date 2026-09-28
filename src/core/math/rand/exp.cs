@@ -27,14 +27,14 @@ internal static UntypedFloat re => 7.69711747013104972;
     while (ᐧ) {
         var j = r.Uint32();
         var i = (uint32)(j & 0xFF);
-        var x = (float64)j * (float64)we[(nint)(i)];
-        if (j < ke[(nint)(i)]) {
+        var x = (float64)j * (float64)we[i];
+        if (j < ke[i]) {
             return x;
         }
         if (i == 0) {
             return (float64)re - math.Log(r.Float64());
         }
-        if (fe[(nint)(i)] + (float32)r.Float64() * (fe[(nint)(i - 1)] - fe[(nint)(i)]) < (float32)math.Exp(-x)) {
+        if (fe[i] + (float32)r.Float64() * (fe[i - 1] - fe[i]) < (float32)math.Exp(-x)) {
             return x;
         }
     }

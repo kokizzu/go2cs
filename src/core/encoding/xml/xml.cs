@@ -747,7 +747,7 @@ internal static readonly @string attributeNameWithoutInˢ = "attribute name with
                         return (default!, d.err);
                     }
                 }
-                if (b != "CDATA["u8[(int)(i)]) {
+                if (b != LiteralByteAt("CDATA["u8, i)) {
                     d.err = d.syntaxError(invalidSequenceˢ);
                     return (default!, d.err);
                 }

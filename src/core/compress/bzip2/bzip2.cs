@@ -137,7 +137,7 @@ internal static (nint n, error err) Read(this ж<reader> Ꮡbz2, slice<byte> buf
             }
             continue;
         }
-        bz2.tPos = bz2.preRLE[(nint)(bz2.tPos)];
+        bz2.tPos = bz2.preRLE[bz2.tPos];
         var b = (byte)bz2.tPos;
         bz2.tPos >>= (int)(8);
         bz2.preRLEUsed++;
@@ -277,7 +277,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
             nint bits = br.ReadBits(16);
             for (nuint symbol = (nuint)0; symbol < 16; symbol++) {
                 if ((nint)(bits & (((nint)1).Lsh((15 - symbol)))) != 0) {
-                    symbolPresent[(nint)(16 * symRange + symbol)] = true;
+                    symbolPresent[16 * symRange + symbol] = true;
                     numSymbols++;
                 }
             }
@@ -464,10 +464,10 @@ internal static uint32 inverseBWT(slice<uint32> tt, nuint origPtr, slice<nuint> 
     }
     foreach (var (i, _) in tt) {
         var b = (uint32)(tt[i] & 0xff);
-        tt[(nint)(c[(nint)(b)])] |= (uint32)(((uint32)i << (int)(8)));
-        c[(nint)(b)]++;
+        tt[c[b]] |= (uint32)(((uint32)i << (int)(8)));
+        c[b]++;
     }
-    return (tt[(nint)(origPtr)] >> (int)(8));
+    return (tt[origPtr] >> (int)(8));
 }
 
 // This is a standard CRC32 like in hash/crc32 except that all the shifts are reversed,

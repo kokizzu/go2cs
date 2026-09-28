@@ -104,9 +104,9 @@ internal static ж<deflateFast> newDeflateFast() {
             if (nextS > sLimit) {
                 goto emitRemainder;
             }
-            candidate = e.table[(nint)((uint32)(nextHash & (uint32)tableMask))];
+            candidate = e.table[(uint32)(nextHash & (uint32)tableMask)];
             var now = load32(src, nextS);
-            e.table[(nint)((uint32)(nextHash & (uint32)tableMask))] = new tableEntry(offset: s + e.cur, val: cv);
+            e.table[(uint32)(nextHash & (uint32)tableMask)] = new tableEntry(offset: s + e.cur, val: cv);
             nextHash = hash(now);
             var offset = s - (candidate.offset - e.cur);
             if (offset > maxMatchOffset || cv != candidate.val) {
@@ -151,11 +151,11 @@ internal static ж<deflateFast> newDeflateFast() {
             // three load32 calls.
             var x = load64(src, s - 1);
             var prevHash = hash((uint32)x);
-            e.table[(nint)((uint32)(prevHash & (uint32)tableMask))] = new tableEntry(offset: e.cur + s - 1, val: (uint32)x);
+            e.table[(uint32)(prevHash & (uint32)tableMask)] = new tableEntry(offset: e.cur + s - 1, val: (uint32)x);
             x >>= (int)(8);
             var currHash = hash((uint32)x);
-            candidate = e.table[(nint)((uint32)(currHash & (uint32)tableMask))];
-            e.table[(nint)((uint32)(currHash & (uint32)tableMask))] = new tableEntry(offset: e.cur + s, val: (uint32)x);
+            candidate = e.table[(uint32)(currHash & (uint32)tableMask)];
+            e.table[(uint32)(currHash & (uint32)tableMask)] = new tableEntry(offset: e.cur + s, val: (uint32)x);
             var offset = s - (candidate.offset - e.cur);
             if (offset > maxMatchOffset || (uint32)x != candidate.val) {
                 cv = (uint32)((x >> (int)(8)));

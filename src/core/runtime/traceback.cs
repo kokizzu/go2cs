@@ -1158,7 +1158,7 @@ internal static void goroutineheader(ж<g> Ꮡgp) {
     // Basic string status
     @string status = default!;
     if (0 <= gpstatus && gpstatus < (uint32)len(gStatusStrings)){
-        status = gStatusStrings[(nint)(gpstatus)];
+        status = gStatusStrings[gpstatus];
     } else {
         status = "???"u8;
     }

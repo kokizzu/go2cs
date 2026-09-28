@@ -339,7 +339,7 @@ Again:
         return Ꮡt;
     }
     {
-        var jΔ1 = q.sparse[(nint)(pc)]; if (jΔ1 < (uint32)len(q.dense) && q.dense[(nint)(jΔ1)].pc == pc) {
+        var jΔ1 = q.sparse[pc]; if (jΔ1 < (uint32)len(q.dense) && q.dense[jΔ1].pc == pc) {
             return Ꮡt;
         }
     }
@@ -348,8 +348,8 @@ Again:
     var d = Ꮡ(q.dense, j);
     d.Value.t = default!;
     d.Value.pc = pc;
-    q.sparse[(nint)(pc)] = (uint32)j;
-    var i = Ꮡ((~m.p).Inst, (int)(pc));
+    q.sparse[pc] = (uint32)j;
+    var i = Ꮡ((~m.p).Inst, pc);
     var exprᴛ1 = (~i).Op;
     if (exprᴛ1 == syntax.InstFail) {
     }
@@ -371,10 +371,10 @@ Again:
     }
     else if (exprᴛ1 == syntax.InstCapture) {
         if ((nint)(~i).Arg < len(cap)){
-            nint opos = cap[(nint)((~i).Arg)];
-            cap[(nint)((~i).Arg)] = pos;
+            nint opos = cap[(~i).Arg];
+            cap[(~i).Arg] = pos;
             m.add(Ꮡq, (~i).Out, pos, cap, Ꮡcond, nil);
-            cap[(nint)((~i).Arg)] = opos;
+            cap[(~i).Arg] = opos;
         } else {
             pc = i.Value.Out;
             goto Again;
@@ -518,7 +518,7 @@ internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, io.RuneReader ir, s
         }
         else if (exprᴛ1 == syntax.InstCapture) {
             if ((nint)(~inst).Arg < len((~m).matchcap)) {
-                m.Value.matchcap[(nint)((~inst).Arg)] = pos;
+                m.Value.matchcap[(~inst).Arg] = pos;
             }
             continue;
         }

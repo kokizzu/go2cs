@@ -54,7 +54,7 @@ internal static RoutingMessage toRoutingMessage(this ж<anyMessage> Ꮡany, slic
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = new SockaddrDatalinkжSockaddr(sa);
+            sas[i] = new SockaddrDatalinkжSockaddr(sa);
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
         }
         else if (exprᴛ1 == AF_INET || exprᴛ1 == AF_INET6) {
@@ -62,7 +62,7 @@ internal static RoutingMessage toRoutingMessage(this ж<anyMessage> Ꮡany, slic
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = sa;
+            sas[i] = sa;
             b = b[(int)(rsaAlignOf((nint)(~rsa).Len))..];
         }
         else { /* default: */
@@ -70,7 +70,7 @@ internal static RoutingMessage toRoutingMessage(this ж<anyMessage> Ꮡany, slic
             if (err != default!) {
                 return (default!, err);
             }
-            sas[(nint)(i)] = new SockaddrDatalinkжSockaddr(sa);
+            sas[i] = new SockaddrDatalinkжSockaddr(sa);
             b = b[(int)(l)..];
         }
 

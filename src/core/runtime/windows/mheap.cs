@@ -605,7 +605,7 @@ internal static ж<mspan> spanOf(uintptr Δp) {
             return default!;
         }
     }
-    var l2 = mheap_.arenas[(nint)(ri.l1())];
+    var l2 = mheap_.arenas[ri.l1()];
     if (arenaL1Bits != 0 && l2 == nil) {
         // Should never happen if there's no L1.
         return default!;
@@ -614,7 +614,7 @@ internal static ж<mspan> spanOf(uintptr Δp) {
     if (ha == nil) {
         return default!;
     }
-    return (~ha).spans[(nint)((Δp / (uintptr)pageSize) % (uintptr)pagesPerArena)];
+    return (~ha).spans[(Δp / (uintptr)pageSize) % (uintptr)pagesPerArena];
 }
 
 // spanOfUnchecked is equivalent to spanOf, but the caller must ensure
@@ -625,7 +625,7 @@ internal static ж<mspan> spanOf(uintptr Δp) {
 //go:nosplit
 internal static ж<mspan> spanOfUnchecked(uintptr Δp) {
     arenaIdx ai = arenaIndex(Δp);
-    return (~mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()]).spans[(nint)((Δp / (uintptr)pageSize) % (uintptr)pagesPerArena)];
+    return (~mheap_.arenas[ai.l1()].Value[ai.l2()]).spans[(Δp / (uintptr)pageSize) % (uintptr)pagesPerArena];
 }
 
 // spanOfHeap is like spanOf, but returns nil if p does not point to a
@@ -655,7 +655,7 @@ internal static (ж<heapArena> arena, uintptr pageIdx, uint8 pageMask) pageIndex
     uint8 pageMask = default!;
 
     arenaIdx ai = arenaIndex(Δp);
-    arena = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
+    arena = mheap_.arenas[ai.l1()].Value[ai.l2()];
     pageIdx = ((Δp / (uintptr)pageSize) / 8) % (uintptr)len((~arena).pageInUse);
     pageMask = (byte)((byte)(1 << (int)(((Δp / (uintptr)pageSize) % 8))));
     return (arena, pageIdx, pageMask);
@@ -789,8 +789,8 @@ internal static uintptr reclaimChunk(this ж<mheap> Ꮡh, slice<arenaIdx> arenas
         return 0;
     }
     while (n > 0) {
-        arenaIdx ai = arenas[(nint)(pageIdx / (uintptr)pagesPerArena)];
-        var ha = h.arenas[(nint)(ai.l1())].Value[ai.l2()];
+        arenaIdx ai = arenas[pageIdx / (uintptr)pagesPerArena];
+        var ha = h.arenas[ai.l1()].Value[ai.l2()];
         // Get a chunk of the bitmap to work on.
         nuint arenaPage = (nuint)(pageIdx % (uintptr)pagesPerArena);
         var inUse = (~ha).pageInUse[(int)(arenaPage / 8)..];
@@ -808,7 +808,7 @@ internal static uintptr reclaimChunk(this ж<mheap> Ꮡh, slice<arenaIdx> arenas
             }
             for (nuint j = (nuint)0; j < 8; j++) {
                 if ((uint8)(inUseUnmarked & (((uint8)1).Lsh(j))) != 0) {
-                    var s = (~ha).spans[(nint)(arenaPage + (nuint)i * 8 + j)];
+                    var s = (~ha).spans[arenaPage + (nuint)i * 8 + j];
                     {
                         var (sΔ1, ok) = sl.tryAcquire(s); if (ok) {
                             var npages = sΔ1.npages;
@@ -910,14 +910,14 @@ internal static ж<mspan> allocManual(this ж<mheap> Ꮡh, uintptr npages, spanA
 [GoRecv] internal static void setSpans(this ref mheap h, uintptr @base, uintptr npage, ж<mspan> Ꮡs) {
     var Δp = @base / (uintptr)pageSize;
     arenaIdx ai = arenaIndex(@base);
-    var ha = h.arenas[(nint)(ai.l1())].Value[ai.l2()];
+    var ha = h.arenas[ai.l1()].Value[ai.l2()];
     for (var n = (uintptr)0; n < npage; n++) {
         var i = (Δp + n) % (uintptr)pagesPerArena;
         if (i == 0) {
             ai = arenaIndex(@base + n * (uintptr)pageSize);
-            ha = h.arenas[(nint)(ai.l1())].Value[ai.l2()];
+            ha = h.arenas[ai.l1()].Value[ai.l2()];
         }
-        ha.Value.spans[(nint)(i)] = Ꮡs;
+        ha.Value.spans[i] = Ꮡs;
     }
 }
 
@@ -939,7 +939,7 @@ internal static readonly @string potentiallyOverlappingInˢ = "potentially overl
 
     while (npage > 0) {
         arenaIdx ai = arenaIndex(@base);
-        var ha = h.arenas[(nint)(ai.l1())].Value[ai.l2()];
+        var ha = h.arenas[ai.l1()].Value[ai.l2()];
         var zeroedBase = atomic.Loaduintptr(ha.of(heapArena.ᏑzeroedBase));
         var arenaBase = @base % (uintptr)heapArenaBytes;
         if (arenaBase < zeroedBase) {
@@ -1779,7 +1779,7 @@ internal static void spanHasSpecials(ж<mspan> Ꮡs) {
 
     var arenaPage = (s.@base() / (uintptr)pageSize) % (uintptr)pagesPerArena;
     arenaIdx ai = arenaIndex(s.@base());
-    var ha = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
+    var ha = mheap_.arenas[ai.l1()].Value[ai.l2()];
     atomic.Or8(ha.at(heapArena.ᏑpageSpecials, (nint)(arenaPage / 8)), (uint8)((uint8)1 << (int)((arenaPage % 8))));
 }
 
@@ -1789,7 +1789,7 @@ internal static void spanHasNoSpecials(ж<mspan> Ꮡs) {
 
     var arenaPage = (s.@base() / (uintptr)pageSize) % (uintptr)pagesPerArena;
     arenaIdx ai = arenaIndex(s.@base());
-    var ha = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
+    var ha = mheap_.arenas[ai.l1()].Value[ai.l2()];
     atomic.And8(ha.at(heapArena.ᏑpageSpecials, (nint)(arenaPage / 8)), (uint8)(((uint8)(~((uint8)((uint8)1 << (int)((arenaPage % 8))))))));
 }
 
@@ -2401,7 +2401,7 @@ internal static ж<gcBits> tryAlloc(this ж<gcBitsArena> Ꮡb, uintptr bytes) {
     }
     // There was enough room.
     var start = end - bytes;
-    return Ꮡ(b.bits, (int)(start));
+    return Ꮡ(b.bits, start);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

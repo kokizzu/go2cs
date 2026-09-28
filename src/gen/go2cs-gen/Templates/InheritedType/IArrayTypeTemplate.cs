@@ -29,7 +29,8 @@ internal static class IArrayTypeTemplate
             
                 public ref {{targetTypeName}} this[int index] => ref Value[(nint)index];
             
-                public ref {{targetTypeName}} this[ulong index] => ref Value[(nint)index];
+                // An unsigned index forwards UNNARROWED: array<T>'s ulong indexer checks it first.
+                public ref {{targetTypeName}} this[ulong index] => ref Value[index];
 
                 public slice<{{targetTypeName}}> this[global::System.Range range] => Value[range];
 

@@ -189,8 +189,8 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
             (~(~casΔ1).c).timer.maybeRunChan();
         }
         var j = cheaprandn((uint32)(norder + 1));
-        pollorder[norder] = pollorder[(nint)(j)];
-        pollorder[(nint)(j)] = (uint16)i;
+        pollorder[norder] = pollorder[j];
+        pollorder[j] = (uint16)i;
         norder++;
     }
     pollorder = pollorder[..(int)(norder)];

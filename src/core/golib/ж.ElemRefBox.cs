@@ -65,12 +65,12 @@ public sealed class ElemRefBox<T> : ж<T>
             // after, in the family of the ISlice : IArray one. Q58.
             case slice<T> slice when !slice.IsNativeBacked && slice.m_array is not null:
                 m_backing = slice.m_array;
-                m_index = slice.Low + index;
+                m_index = FastIndex(slice.m_array, slice.Low + index);
                 break;
 
             case ISlice<T> view when view.Slice((nint)0, view.Length) is slice<T> shared && !shared.IsNativeBacked && shared.m_array is not null:
                 m_backing = shared.m_array;
-                m_index = shared.Low + index;
+                m_index = FastIndex(shared.m_array, shared.Low + index);
                 break;
 
             case array<T> arr when arr.Source is not null:
@@ -111,10 +111,20 @@ public sealed class ElemRefBox<T> : ж<T>
         else
         {
             m_backing = slice.m_array;
-            m_index = slice.Low + index;
+            m_index = FastIndex(slice.m_array, slice.Low + index);
         }
 
         AllocationCounter.Count();
+    }
+
+    // A slice of a ZERO-SIZE element type carries ONE shared element (GoZeroSizeFacts<T>.Storage, a
+    // one-slot array) whatever its length or window, so every element index names that slot: Go's
+    // &s[i] is data + i*0. The absolute index would address slot i of a one-slot array and fault on
+    // the first read or conversion. A zero-size slice over a REAL backing (a slice of an array<T>)
+    // keeps its index, which is in range there.
+    private static nint FastIndex(T[] backing, nint absoluteIndex)
+    {
+        return GoZeroSizeFacts<T>.IsZeroSize && ReferenceEquals(backing, GoZeroSizeFacts<T>.Storage) ? 0 : absoluteIndex;
     }
 
     internal ElemRefBox(array<T> array, int index)

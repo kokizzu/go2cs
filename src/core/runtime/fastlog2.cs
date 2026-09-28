@@ -21,7 +21,7 @@ internal static float64 fastlog2(float64 x) {
     var xExp = (int64)((uint64)(((xBits >> (int)(52))) & 0x7FF)) - 1023;
     var xManIndex = ((xBits >> (int)((52 - fastlogNumBits)))) % (uint64)(((uint64)1 << (int)(fastlogNumBits)));
     var xManScale = ((xBits >> (int)((52 - fastlogNumBits - fastlogScaleBits)))) % (uint64)(((uint64)1 << (int)(fastlogScaleBits)));
-    var (low, high) = (fastlog2Table[(nint)(xManIndex)], fastlog2Table[(nint)(xManIndex + 1)]);
+    var (low, high) = (fastlog2Table[xManIndex], fastlog2Table[xManIndex + 1]);
     return (float64)xExp + low + (high - low) * (float64)xManScale * fastlogScaleRatio;
 }
 

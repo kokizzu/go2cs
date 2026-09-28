@@ -30,7 +30,7 @@ public static nint TrailingZeros32(uint32 x) {
         return 32;
     }
     // see comment in TrailingZeros64
-    return (nint)deBruijn32tab[(nint)((((uint32)(x & ((uint32)0 - x))) * (uint32)deBruijn32 >> (int)((32 - 5))))];
+    return (nint)deBruijn32tab[(((uint32)(x & ((uint32)0 - x))) * (uint32)deBruijn32 >> (int)((32 - 5)))];
 }
 
 // TrailingZeros64 returns the number of trailing zero bits in x; the result is 64 for x == 0.
@@ -49,7 +49,7 @@ public static nint TrailingZeros64(uint64 x) {
     // find by how many bits it was shifted by looking at which six bit
     // substring ended up at the top of the word.
     // (Knuth, volume 4, section 7.3.1)
-    return (nint)deBruijn64tab[(nint)((((uint64)(x & ((uint64)0 - x))) * (uint64)deBruijn64 >> (int)((64 - 6))))];
+    return (nint)deBruijn64tab[(((uint64)(x & ((uint64)0 - x))) * (uint64)deBruijn64 >> (int)((64 - 6)))];
 }
 
 // TrailingZeros8 returns the number of trailing zero bits in x; the result is 8 for x == 0.
@@ -79,7 +79,7 @@ public static nint /*n*/ Len64(uint64 x) {
         x >>= (int)(8);
         n += 8;
     }
-    return n + (nint)len8tab[(int)(x)];
+    return n + (nint)len8tab[x];
 }
 
 // --- OnesCount ---

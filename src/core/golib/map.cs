@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using go.golib;
 
 namespace go;
 
@@ -307,7 +308,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         {
             // Writing to a nil map panics in Go ("assignment to entry in nil map").
             if (m_map is null)
-                throw new PanicException("assignment to entry in nil map");
+                throw RuntimeErrorPanic.PlainError("assignment to entry in nil map");
 
             if (isNilKey(key))
                 setNilKey(value);
@@ -370,7 +371,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     {
         // Adding to a nil map panics in Go, the same as an index assignment.
         if (m_map is null)
-            throw new PanicException("assignment to entry in nil map");
+            throw RuntimeErrorPanic.PlainError("assignment to entry in nil map");
 
         if (isNilKey(key))
             addNilKey(value);
@@ -386,7 +387,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     public void Set(TKey key, TValue value)
     {
         if (m_map is null)
-            throw new PanicException("assignment to entry in nil map");
+            throw RuntimeErrorPanic.PlainError("assignment to entry in nil map");
 
         if (isNilKey(key))
             setNilKey(value);

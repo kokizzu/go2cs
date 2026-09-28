@@ -18,6 +18,18 @@ using go;
 // value identical whether it was raised explicitly by panicdivide() or implicitly by the hardware
 // trap — which is exactly Go's own invariant.
 //
+// The same inversion serves the two value classes golib RAISES by name rather than by trap: a
+// runtime.plainError (nil-map write, close of a closed or nil channel, send on a closed channel,
+// makechan's size check) and a runtime.boundsError (an index out of range, goPanicIndex's value).
+// golib raised their TEXT as a string, so recover() yielded a `string` where Go yields a value that
+// satisfies runtime.Error -- runtime's TestRuntimePanicWithRuntimeError asserts exactly that on six
+// such panics. The panic text is unchanged for every SIGNED non-negative index (both types' Error()
+// print what golib printed); a negative index prints Go's `index out of range [-1]`, without a length;
+// and an UNSIGNED index reaching golib's ulong indexers prints Go's unsigned value with the length
+// (boundsError.signed false), where a signed reading of 2^63 and above printed `[-N]`. golib's
+// unregistered fallback strings carry the same texts. Sizing:
+// docs/phase4/CENSUS-runtime-error-factories-go1.24.13.md; follow-up per COORD's review (2026-09-28).
+//
 // This file has no `<name>.go` counterpart, so a -stdlib reconvert never emits over it; the module
 // marker states the ownership explicitly and matches the other hand-owned runtime files.
 [module: GoManualConversion]
@@ -52,5 +64,11 @@ public static partial class runtime_package
             panicnil.IncNonDefault();
             return null;
         };
+
+        // Constructed per panic, as Go constructs them: neither touches a static of this package, so
+        // registering them here runs nothing ahead of the package's own initialization.
+        RuntimeErrorPanic.PlainErrorValue = static message => (error)(plainError)(@string)message;
+        RuntimeErrorPanic.BoundsErrorValue = static (x, y, signed, code) =>
+            (error)new boundsError(x: x, signed: signed, y: (nint)y, code: (boundsErrorCode)code);
     }
 }

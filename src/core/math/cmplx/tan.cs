@@ -197,9 +197,9 @@ internal static float64 reducePi(float64 x) {
     // Note, exp >= 50 since x >= reduceThreshold and exp < 971 for maximum float64.
     nuint digit = (nuint)(exp + 64) / 64;
     nuint bitshift = (nuint)(exp + 64) % 64;
-    var z0 = (uint64)((mPi[(nint)(digit)].Lsh(bitshift)) | (mPi[(nint)(digit + 1)].Rsh((64 - bitshift))));
-    var z1 = (uint64)((mPi[(nint)(digit + 1)].Lsh(bitshift)) | (mPi[(nint)(digit + 2)].Rsh((64 - bitshift))));
-    var z2 = (uint64)((mPi[(nint)(digit + 2)].Lsh(bitshift)) | (mPi[(nint)(digit + 3)].Rsh((64 - bitshift))));
+    var z0 = (uint64)((mPi[digit].Lsh(bitshift)) | (mPi[digit + 1].Rsh((64 - bitshift))));
+    var z1 = (uint64)((mPi[digit + 1].Lsh(bitshift)) | (mPi[digit + 2].Rsh((64 - bitshift))));
+    var z2 = (uint64)((mPi[digit + 2].Lsh(bitshift)) | (mPi[digit + 3].Rsh((64 - bitshift))));
     // Multiply mantissa by the digits and extract the upper two digits (hi, lo).
     var (z2hi, _) = bits.Mul64(z2, ix);
     var (z1hi, z1lo) = bits.Mul64(z1, ix);

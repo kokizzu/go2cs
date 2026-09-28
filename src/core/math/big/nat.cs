@@ -660,21 +660,21 @@ internal static nuint trailingZeroBits(this nat x) {
         return 0;
     }
     nuint i = default!;
-    while (x[(nint)(i)] == 0) {
+    while (x[i] == 0) {
         i++;
     }
     // x[i] != 0
-    return i * (nuint)_W + (nuint)bits.TrailingZeros((nuint)x[(nint)(i)]);
+    return i * (nuint)_W + (nuint)bits.TrailingZeros((nuint)x[i]);
 }
 
 // isPow2 returns i, true when x == 2**i and 0, false otherwise.
 internal static (nuint, bool) isPow2(this nat x) {
     nuint i = default!;
-    while (x[(nint)(i)] == 0) {
+    while (x[i] == 0) {
         i++;
     }
-    if (i == (nuint)len(x) - 1 && (Word)(x[(nint)(i)] & (x[(nint)(i)] - 1)) == 0) {
-        return (i * (nuint)_W + (nuint)bits.TrailingZeros((nuint)x[(nint)(i)]), true);
+    if (i == (nuint)len(x) - 1 && (Word)(x[i] & (x[i] - 1)) == 0) {
+        return (i * (nuint)_W + (nuint)bits.TrailingZeros((nuint)x[i]), true);
     }
     return (0, false);
 }
@@ -764,7 +764,7 @@ internal static nuint bit(this nat x, nuint i) {
         return 0;
     }
     // 0 <= j < len(x)
-    return (nuint)((Word)((x[(nint)(j)] >> (int)((i % (nuint)_W))) & 1));
+    return (nuint)((Word)((x[j] >> (int)((i % (nuint)_W))) & 1));
 }
 
 // sticky returns 1 if there's a 1 bit within the
@@ -783,7 +783,7 @@ internal static nuint sticky(this nat x, nuint i) {
             return 1;
         }
     }
-    if ((x[(nint)(j)] << (int)(((nuint)_W - i % (nuint)_W))) != 0) {
+    if ((x[j] << (int)(((nuint)_W - i % (nuint)_W))) != 0) {
         return 1;
     }
     return 0;

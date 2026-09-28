@@ -63,7 +63,7 @@ internal static ж<slicing8Table> slicingMakeTable(uint32 poly) {
     for (nint i = 0; i < 256; i++) {
         var crc = t.Value[0][i];
         for (nint j = 1; j < 8; j++) {
-            crc = (uint32)(t.Value[0][(nint)((uint32)(crc & 0xFF))] ^ ((crc >> (int)(8))));
+            crc = (uint32)(t.Value[0][(uint32)(crc & 0xFF)] ^ ((crc >> (int)(8))));
             t.Value[j][i] = crc;
         }
     }
@@ -79,7 +79,7 @@ internal static uint32 slicingUpdate(uint32 crc, ж<slicing8Table> Ꮡtab, slice
         crc = ~crc;
         while (len(p) > 8) {
             crc ^= (uint32)(byteorder.LEUint32(p));
-            crc = (uint32)((uint32)((uint32)((uint32)((uint32)((uint32)((uint32)(tab[0][p[7]] ^ tab[1][p[6]]) ^ tab[2][p[5]]) ^ tab[3][p[4]]) ^ tab[4][(nint)((crc >> (int)(24)))]) ^ tab[5][(nint)((uint32)(((crc >> (int)(16))) & 0xFF))]) ^ tab[6][(nint)((uint32)(((crc >> (int)(8))) & 0xFF))]) ^ tab[7][(nint)((uint32)(crc & 0xFF))]);
+            crc = (uint32)((uint32)((uint32)((uint32)((uint32)((uint32)((uint32)(tab[0][p[7]] ^ tab[1][p[6]]) ^ tab[2][p[5]]) ^ tab[3][p[4]]) ^ tab[4][(crc >> (int)(24))]) ^ tab[5][(uint32)(((crc >> (int)(16))) & 0xFF)]) ^ tab[6][(uint32)(((crc >> (int)(8))) & 0xFF)]) ^ tab[7][(uint32)(crc & 0xFF)]);
             p = p[8..];
         }
         crc = ~crc;

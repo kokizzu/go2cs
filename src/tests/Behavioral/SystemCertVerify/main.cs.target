@@ -128,7 +128,7 @@ internal static void walkChain(slice<byte> der) {
         fmt.Println(chainCountˢ, (~chainCtx).ChainCount);
         fmt.Println(chainReportsUntrustedˢ, (uint32)((~chainCtx).TrustStatus.ErrorStatus & (uint32)syscall.CERT_TRUST_IS_UNTRUSTED_ROOT) != 0);
         var simpleChains = @unsafe.Slice((~chainCtx).Chains, (~chainCtx).ChainCount);
-        var last = simpleChains[(nint)((~chainCtx).ChainCount - 1)];
+        var last = simpleChains[(~chainCtx).ChainCount - 1];
         fmt.Println(simpleChainElementsˢ, (~last).NumElements);
         var elements = @unsafe.Slice((~last).Elements, (~last).NumElements);
         var leaf = elements[0].Value.CertContext;

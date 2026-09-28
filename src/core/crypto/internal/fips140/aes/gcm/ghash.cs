@@ -123,7 +123,7 @@ internal static void ghashMul(ref array<gcmFieldElement> productTable, ref gcmFi
             z.high >>= (int)(4);
             z.high |= (uint64)((z.low << (int)(60)));
             z.low >>= (int)(4);
-            z.low ^= (uint64)(((uint64)ghashReductionTable[(nint)(msw)] << (int)(48)));
+            z.low ^= (uint64)(((uint64)ghashReductionTable[msw] << (int)(48)));
             // the values in |table| are ordered for little-endian bit
             // positions. See the comment in New.
             var t = productTable[(uint64)(word & 0xf)];

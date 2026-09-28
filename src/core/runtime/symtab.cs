@@ -494,15 +494,15 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     for (nint i = 0; i < nftab; i++) {
         // NOTE: ftab[nftab].entry is legal; it is the address beyond the final function.
         if (datap.ftab[i].entryoff > datap.ftab[i + 1].entryoff) {
-            var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
-            var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i + 1].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
+            var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[i].funcoff).Reinterpret<byte, _func>(), Ꮡdatap);
+            var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[i + 1].funcoff).Reinterpret<byte, _func>(), Ꮡdatap);
             @string f2name = endˢ;
             if (i + 1 < nftab) {
                 f2name = funcname(f2);
             }
             println((@string)"function symbol table not sorted by PC offset:"u8, ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), (@string)">"u8, ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, (@string)", plugin:"u8, datap.pluginpath);
             for (nint j = 0; j <= i; j++) {
-                println((@string)"\t"u8, ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap)));
+                println((@string)"\t"u8, ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, datap.ftab[j].funcoff).Reinterpret<byte, _func>(), Ꮡdatap)));
             }
             if (GOOS == "aix"u8 && isarchive) {
                 println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive"u8);
@@ -710,13 +710,13 @@ internal static ΔfuncInfo findfunc(uintptr pc) {
     var b = x / (uintptr)abi.FuncTabBucketSize;
     var i = x % (uintptr)abi.FuncTabBucketSize / (uintptr)((uintptr)abi.FuncTabBucketSize / nsub);
     var ffb = (ж<findfuncbucket>)(uintptr)(add((@unsafe.Pointer)(~datap).findfunctab, b * /* unsafe.Sizeof(findfuncbucket{}) */ (uintptr)20));
-    var idx = (~ffb).idx + (uint32)(~ffb).subbuckets[(nint)(i)];
+    var idx = (~ffb).idx + (uint32)(~ffb).subbuckets[i];
     // Find the ftab entry.
-    while ((~datap).ftab[(nint)(idx + 1)].entryoff <= pcOff) {
+    while ((~datap).ftab[idx + 1].entryoff <= pcOff) {
         idx++;
     }
-    var funcoff = (~datap).ftab[(nint)(idx)].funcoff;
-    return new ΔfuncInfo(Ꮡ((~datap).pclntable, (int)(funcoff)).Reinterpret<byte, _func>(), datap);
+    var funcoff = (~datap).ftab[idx].funcoff;
+    return new ΔfuncInfo(Ꮡ((~datap).pclntable, funcoff).Reinterpret<byte, _func>(), datap);
 }
 
 // A srcFunc represents a logical function in the source code. This may
@@ -802,7 +802,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
         // even if we get signaled in the middle of it.
         cache.Value.inUse++;
         if ((~cache).inUse == 1){
-            foreach (var (i, _) in (~cache).entries[(nint)(ck)]) {
+            foreach (var (i, _) in (~cache).entries[ck]) {
                 // We check off first because we're more
                 // likely to have multiple entries with
                 // different offsets for the same targetpc
@@ -866,7 +866,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
                 cache.Value.inUse++;
                 if ((~cache).inUse == 1) {
                     var e = cache.at(pcvalueCache.Ꮡentries, (nint)(ck));
-                    var ci = cheaprandn((uint32)len((~cache).entries[(nint)(ck)]));
+                    var ci = cheaprandn((uint32)len((~cache).entries[ck]));
                     e.Value[ci] = e.Value[0];
                     e.Value[0] = new pcvalueCacheEnt(
                         targetpc: targetpc,
@@ -933,8 +933,8 @@ internal static @string funcfile(ΔfuncInfo f, int32 fileno) {
     }
     // Make sure the cu index and file offset are valid
     {
-        var fileoff = (~datap).cutab[(nint)(f.cuOffset + (uint32)fileno)]; if (fileoff != ~(uint32)0) {
-            return gostringnocopy(Ꮡ((~datap).filetab, (int)(fileoff)));
+        var fileoff = (~datap).cutab[f.cuOffset + (uint32)fileno]; if (fileoff != ~(uint32)0) {
+            return gostringnocopy(Ꮡ((~datap).filetab, fileoff));
         }
     }
     // pcln section is corrupt.
@@ -1079,7 +1079,7 @@ internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
     uint32 shift = default!;
     uint32 n = default!;
     while (ᐧ) {
-        var b = Δp[(nint)(n)];
+        var b = Δp[n];
         n++;
         v |= (uint32)(((uint32)((byte)(b & 0x7F)) << (int)(((uint32)(shift & 31)))));
         if ((byte)(b & 0x80) == 0) {

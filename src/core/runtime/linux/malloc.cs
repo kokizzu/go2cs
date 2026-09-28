@@ -587,7 +587,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
 mapped:
     for (arenaIdx ri = arenaIndex((uintptr)v); ri <= arenaIndex((uintptr)v + size - 1); ri++) {
         // Create arena metadata.
-        var l2 = h.arenas[(nint)(ri.l1())];
+        var l2 = h.arenas[ri.l1()];
         if (l2 == nil) {
             // Allocate an L2 arena map.
             //
@@ -606,7 +606,7 @@ mapped:
             } else {
                 sysNoHugePage(@unsafe.Pointer.FromPinnedBox(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
             }
-            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, (int)(ri.l1()))), @unsafe.Pointer.FromPinnedBox(l2));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, ri.l1())), @unsafe.Pointer.FromPinnedBox(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
             @throw(arenaAlreadyInitializedˢ);
@@ -1128,9 +1128,9 @@ internal static (@unsafe.Pointer, uintptr) mallocgcSmallNoscan(uintptr size, ж<
     var c = getMCache(ref (mp).DerefOrNull());
     uint8 sizeclass = default!;
     if (size <= (uintptr)(smallSizeMax - 8)){
-        sizeclass = size_to_class8[(nint)(divRoundUp(size, smallSizeDiv))];
+        sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)];
     } else {
-        sizeclass = size_to_class128[(nint)(divRoundUp(size - (uintptr)smallSizeMax, largeSizeDiv))];
+        sizeclass = size_to_class128[divRoundUp(size - (uintptr)smallSizeMax, largeSizeDiv)];
     }
     size = (uintptr)class_to_size[sizeclass];
     var spc = makeSpanClass(sizeclass, true);
@@ -1218,7 +1218,7 @@ internal static (@unsafe.Pointer, uintptr) mallocgcSmallScanNoHeader(uintptr siz
     mp.Value.mallocing = 1;
     var checkGCTrigger = false;
     var c = getMCache(ref (mp).DerefOrNull());
-    var sizeclass = size_to_class8[(nint)(divRoundUp(size, smallSizeDiv))];
+    var sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)];
     var spc = makeSpanClass(sizeclass, false);
     var span = (~c).alloc[spc];
     var v = nextFreeFast(span);
@@ -1314,9 +1314,9 @@ internal static (@unsafe.Pointer, uintptr) mallocgcSmallScanHeader(uintptr size,
     size += mallocHeaderSize;
     uint8 sizeclass = default!;
     if (size <= (uintptr)(smallSizeMax - 8)){
-        sizeclass = size_to_class8[(nint)(divRoundUp(size, smallSizeDiv))];
+        sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)];
     } else {
-        sizeclass = size_to_class128[(nint)(divRoundUp(size - (uintptr)smallSizeMax, largeSizeDiv))];
+        sizeclass = size_to_class128[divRoundUp(size - (uintptr)smallSizeMax, largeSizeDiv)];
     }
     size = (uintptr)class_to_size[sizeclass];
     var spc = makeSpanClass(sizeclass, false);

@@ -868,6 +868,7 @@
     <Project Path="tests/Behavioral/SignalPrimitives/SignalPrimitives.csproj" />
     <Project Path="tests/Behavioral/Slice3IndexWideBound/Slice3IndexWideBound.csproj" />
     <Project Path="tests/Behavioral/SliceAliasing/SliceAliasing.csproj" />
+    <Project Path="tests/Behavioral/SliceBoundsEscapeRoutes/SliceBoundsEscapeRoutes.csproj" />
     <Project Path="tests/Behavioral/SliceElementFieldAddress/SliceElementFieldAddress.csproj" />
     <Project Path="tests/Behavioral/SliceFieldElementAddress/SliceFieldElementAddress.csproj" />
     <Project Path="tests/Behavioral/SliceNilVsEmpty/SliceNilVsEmpty.csproj" />
@@ -966,6 +967,7 @@
     <Project Path="tests/Behavioral/UnsafePointerReinterpret/UnsafePointerReinterpret.csproj" />
     <Project Path="tests/Behavioral/UnsafeStringEmpty/UnsafeStringEmpty.csproj" />
     <Project Path="tests/Behavioral/UnsafeSliceDataAliasing/UnsafeSliceDataAliasing.csproj" />
+    <Project Path="tests/Behavioral/UnsignedIndexPastIntRange/UnsignedIndexPastIntRange.csproj" />
     <Project Path="tests/Behavioral/UnsignedNamedNumeric/UnsignedNamedNumeric.csproj" />
     <Project Path="tests/Behavioral/UntypedConstArithmetic/UntypedConstArithmetic.csproj" />
     <Project Path="tests/Behavioral/UntypedConstDefine/UntypedConstDefine.csproj" />

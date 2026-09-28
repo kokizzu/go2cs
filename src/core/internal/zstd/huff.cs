@@ -65,13 +65,13 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         // There are two independent FSE streams, tracked by
         // state1 and state2. We decode them alternately.
         while (ᐧ) {
-            var pt = Ꮡ(fseTable, (int)(state1));
+            var pt = Ꮡ(fseTable, state1);
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
-                weights[count + 1] = fseTable[(nint)(state2)].sym;
+                weights[count + 1] = fseTable[state2].sym;
                 count += 2;
                 break;
             }
@@ -85,13 +85,13 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
             }
             weights[count] = pt.Value.sym;
             count++;
-            pt = Ꮡ(fseTable, (int)(state2));
+            pt = Ꮡ(fseTable, state2);
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
                     return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
-                weights[count + 1] = fseTable[(nint)(state1)].sym;
+                weights[count + 1] = fseTable[state1].sym;
                 count += 2;
                 break;
             }
@@ -178,7 +178,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         var tval = (uint16)((uint16)((uint16)i << (int)(8)) | ((uint16)tableBits + 1 - (uint16)w));
         var start = weightMark[w];
         for (var j = (uint32)0; j < length; j++) {
-            table[(nint)(start + j)] = tval;
+            table[start + j] = tval;
         }
         weightMark[w] += length;
     }

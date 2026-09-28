@@ -35,7 +35,7 @@ internal static bitReader makeBitReader(this ж<Reader> Ꮡr, block data, nint o
         if (br.off >= (uint32)builtin.len(br.data)) {
             return br.r.makeEOFError((nint)br.off);
         }
-        var c = br.data[(nint)(br.off)];
+        var c = br.data[br.off];
         br.off++;
         br.bits |= (uint32)(((uint32)c).Lsh((uint64)(br.cnt)));
         br.cnt += 8;
@@ -117,7 +117,7 @@ internal static (reverseBitReader, error) makeReverseBitReader(this ж<Reader> �
             return false;
         }
         rbr.off--;
-        var c = rbr.data[(nint)(rbr.off)];
+        var c = rbr.data[rbr.off];
         rbr.bits <<= (int)(8);
         rbr.bits |= (uint32)((uint32)c);
         rbr.cnt += 8;

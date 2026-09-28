@@ -382,7 +382,7 @@ Read:
             dst[0] = (uint64)(2 + b.hdrsize + 1);
             dst[1] = time;
             builtin.clear(dst[2..(int)(2 + b.hdrsize)]);
-            dst[(nint)(2 + b.hdrsize)] = (uint64)count;
+            dst[2 + b.hdrsize] = (uint64)count;
             return (dst[..(int)(2 + b.hdrsize + 1)], overflowTag[..1], false);
         }
         if (Ꮡb.of(profBuf.Ꮡeof).Load() > 0) {

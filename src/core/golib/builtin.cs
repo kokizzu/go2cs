@@ -2182,6 +2182,8 @@ public static partial class builtin
     /// </remarks>
     public static ж<T> Ꮡ<T>(IArray<T> target, int index)
     {
+        CheckElementIndex(index, target.Length);
+
         // ONE object beyond the box: the caller's boxing temp. A slice<T>/array<T> header is a
         // struct, so `Ꮡ(s, i)` — the only shape the converter emits for Go's `&s[i]` — boxes one on
         // every call. That box is emitted at the CALL SITE rather than inside golib, but this
@@ -2212,6 +2214,8 @@ public static partial class builtin
     /// <remarks>By value, for the lifetime reason the <see cref="int"/> overload documents.</remarks>
     public static ж<T> Ꮡ<T>(IArray<T> target, nint index)
     {
+        CheckElementIndex(index, target.Length);
+
         // A NATIVE-backed slice element has a real address, and the pointer to it is the
         // address-model box over exactly that address (the design table: (uintptr)Ꮡ(s,i) yields
         // the mapping, which is what Mprotect(b[:n]) hands the kernel). The managed identity
@@ -2228,6 +2232,37 @@ public static partial class builtin
         // The caller's boxing temp, exactly as in the int overload above.
         AllocationCounter.Count();
         return new ElemRefBox<T>(target, (int)index);
+    }
+
+    /// <summary>
+    /// Gets a pointer to slice or array element at an UNSIGNED <paramref name="index"/>, checked at its
+    /// full value (goPanicIndexU): an index at or past 2^63 must report its unsigned value, which the
+    /// <see cref="nint"/> overload would read as negative.
+    /// </summary>
+    /// <typeparam name="T">Target type of reference.</typeparam>
+    /// <param name="target">Target value.</param>
+    /// <param name="index">Index of element.</param>
+    /// <returns>Pointer to slice or array element at <paramref name="index"/>.</returns>
+    public static ж<T> Ꮡ<T>(IArray<T> target, ulong index)
+    {
+        CheckElementIndex(index, target.Length);
+        return Ꮡ(target, (nint)index);
+    }
+
+    // Go's &x[i] panics unless 0 <= i < len(x) (goPanicIndex / goPanicIndexU), and the check reads the
+    // index at its FULL value, before anything narrows it. Without it a nint index at or past 2^31
+    // narrowed to a small one and addressed THAT element, and an index past the LENGTH but inside the
+    // capacity addressed an element the slice does not contain; neither panicked.
+    private static void CheckElementIndex(nint index, nint length)
+    {
+        if ((nuint)index >= (nuint)length)
+            throw RuntimeErrorPanic.IndexOutOfRange(index, length);
+    }
+
+    private static void CheckElementIndex(ulong index, nint length)
+    {
+        if (index >= (ulong)length)
+            throw RuntimeErrorPanic.IndexOutOfRange(index, length);
     }
 
     // ---- the CONCRETE-header element takes (the os want-zero residue's candidate A, 2026-09-05) ----
@@ -2255,6 +2290,23 @@ public static partial class builtin
     /// <returns>Pointer to slice element at <paramref name="index"/>.</returns>
     public static ж<T> Ꮡ<T>(slice<T> target, int index)
     {
+        CheckElementIndex(index, target.Length);
+        return ElementAddressUnchecked(target, index);
+    }
+
+    /// <summary>
+    /// Gets a pointer to slice element at <paramref name="index"/> WITHOUT Go's index check, for the
+    /// runtime-level addressing Go itself does unchecked: <c>unsafe.SliceData(s)</c> is
+    /// <c>&amp;s[:1][0]</c>, the underlying array's first element even when <c>len(s)</c> is 0 and
+    /// <c>cap(s)</c> is not. Converted code never calls this; Go's <c>&amp;s[i]</c> is
+    /// <see cref="Ꮡ{T}(slice{T}, int)"/>, which panics unless <c>0 &lt;= i &lt; len(s)</c>.
+    /// </summary>
+    /// <typeparam name="T">Target type of reference.</typeparam>
+    /// <param name="target">Target slice.</param>
+    /// <param name="index">Index of element, relative to the slice's window.</param>
+    /// <returns>Pointer to slice element at <paramref name="index"/>.</returns>
+    public static ж<T> ElementAddressUnchecked<T>(slice<T> target, int index)
+    {
         if (target.IsNativeBacked)
         {
             unsafe
@@ -2262,6 +2314,13 @@ public static partial class builtin
                 return new NativeBox<T>(target.NativeElementAddress(index));
             }
         }
+
+        // A ZERO-CAPACITY slice has no underlying element to name: Go's SliceData answers "a non-nil
+        // pointer to an unspecified memory address" there (zerobase, for a make), and an element box
+        // at the slice's low index would name a slot past the end of its backing, faulting on the
+        // first read or conversion. The shared per-type element is that non-nil address.
+        if (target.Capacity == 0)
+            return GoZeroCapacityElement<T>.Element;
 
         // ONE object: the box (charged in its ctor). No header temp exists to charge.
         return new ElemRefBox<T>(target, index);
@@ -2276,6 +2335,8 @@ public static partial class builtin
     /// <returns>Pointer to slice element at <paramref name="index"/>.</returns>
     public static ж<T> Ꮡ<T>(slice<T> target, nint index)
     {
+        CheckElementIndex(index, target.Length);
+
         if (target.IsNativeBacked)
         {
             unsafe
@@ -2288,6 +2349,20 @@ public static partial class builtin
     }
 
     /// <summary>
+    /// Gets a pointer to slice element at an UNSIGNED <paramref name="index"/>, checked at its full
+    /// value, without boxing the header.
+    /// </summary>
+    /// <typeparam name="T">Target type of reference.</typeparam>
+    /// <param name="target">Target slice.</param>
+    /// <param name="index">Index of element.</param>
+    /// <returns>Pointer to slice element at <paramref name="index"/>.</returns>
+    public static ж<T> Ꮡ<T>(slice<T> target, ulong index)
+    {
+        CheckElementIndex(index, target.Length);
+        return Ꮡ(target, (nint)index);
+    }
+
+    /// <summary>
     /// Gets a pointer to array element at <paramref name="index"/> without boxing the header.
     /// </summary>
     /// <typeparam name="T">Target type of reference.</typeparam>
@@ -2296,6 +2371,7 @@ public static partial class builtin
     /// <returns>Pointer to array element at <paramref name="index"/>.</returns>
     public static ж<T> Ꮡ<T>(array<T> target, int index)
     {
+        CheckElementIndex(index, target.Length);
         return new ElemRefBox<T>(target, index);
     }
 
@@ -2308,7 +2384,50 @@ public static partial class builtin
     /// <returns>Pointer to array element at <paramref name="index"/>.</returns>
     public static ж<T> Ꮡ<T>(array<T> target, nint index)
     {
+        CheckElementIndex(index, target.Length);
         return new ElemRefBox<T>(target, (int)index);
+    }
+
+    /// <summary>
+    /// Gets a pointer to array element at an UNSIGNED <paramref name="index"/>, checked at its full
+    /// value, without boxing the header.
+    /// </summary>
+    /// <typeparam name="T">Target type of reference.</typeparam>
+    /// <param name="target">Target array.</param>
+    /// <param name="index">Index of element.</param>
+    /// <returns>Pointer to array element at <paramref name="index"/>.</returns>
+    public static ж<T> Ꮡ<T>(array<T> target, ulong index)
+    {
+        CheckElementIndex(index, target.Length);
+        return new ElemRefBox<T>(target, (int)index);
+    }
+
+    /// <summary>
+    /// Go's <c>"…"[i]</c>: a byte of a string LITERAL, which the converter renders as a
+    /// <c>ReadOnlySpan&lt;byte&gt;</c> (<c>"…"u8</c>). The span's own indexer takes an int and throws
+    /// a CLR <see cref="IndexOutOfRangeException"/> that <c>recover()</c> cannot see; this checks the
+    /// index at its full value first and panics with Go's runtime error. Nothing is allocated: a
+    /// <c>(@string)</c> of the literal would copy it on every call (image/jpeg's tables are hot).
+    /// </summary>
+    /// <param name="literal">The string literal's bytes.</param>
+    /// <param name="index">Index of the byte.</param>
+    /// <returns>The byte at <paramref name="index"/>.</returns>
+    public static byte LiteralByteAt(ReadOnlySpan<byte> literal, nint index)
+    {
+        CheckElementIndex(index, literal.Length);
+        return literal[(int)index];
+    }
+
+    /// <summary>
+    /// Go's <c>"…"[i]</c> at an UNSIGNED index, checked at its full value (goPanicIndexU).
+    /// </summary>
+    /// <param name="literal">The string literal's bytes.</param>
+    /// <param name="index">Index of the byte.</param>
+    /// <returns>The byte at <paramref name="index"/>.</returns>
+    public static byte LiteralByteAt(ReadOnlySpan<byte> literal, ulong index)
+    {
+        CheckElementIndex(index, literal.Length);
+        return literal[(int)index];
     }
 
     /// <summary>

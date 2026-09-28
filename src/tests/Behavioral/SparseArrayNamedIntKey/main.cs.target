@@ -53,7 +53,7 @@ internal static void Main() {
     var data = new byte[]{10, 20, 30}.slice();
     int64 cur = 2;
     uint32 u32 = 1;
-    fmt.Println(data[(nint)(cur)], data[(nint)(u32)]);
+    fmt.Println(data[(nint)(cur)], data[u32]);
     fmt.Println(kindNames[((kindT)3)], len(kindNames));
 }
 

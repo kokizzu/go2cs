@@ -273,9 +273,9 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
         if (builtin.len(r.buffer) + builtin.len(litbuf) > (128 << (int)(10))) {
             return rbr.makeError(uncompressedSizeTooBigˢ);
         }
-        var ptoffset = Ꮡ(r.seqTables[seqOffset], (int)(offsetState));
-        var ptmatch = Ꮡ(r.seqTables[seqMatch], (int)(matchState));
-        var ptliteral = Ꮡ(r.seqTables[seqLiteral], (int)(literalState));
+        var ptoffset = Ꮡ(r.seqTables[seqOffset], offsetState);
+        var ptmatch = Ꮡ(r.seqTables[seqMatch], matchState);
+        var ptliteral = Ꮡ(r.seqTables[seqLiteral], literalState);
         var (add, errΔ1) = rbr.val((~ptoffset).basebits);
         if (errΔ1 != default!) {
             return errΔ1;

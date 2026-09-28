@@ -226,7 +226,7 @@ internal static void printhex(uint64 v) {
     array<byte> buf = new(100);
     nint i = len(buf);
     for (i--; i > 0; i--) {
-        buf[i] = dig[(int)(v % 16)];
+        buf[i] = dig[v % 16];
         if (v < 16 && len(buf) - i >= minhexdigits) {
             break;
         }

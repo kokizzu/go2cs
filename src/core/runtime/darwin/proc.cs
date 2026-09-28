@@ -3650,7 +3650,7 @@ internal static (ж<g> gp, bool inheritTime, int64 rnow, int64 pollUntil, bool n
                 // GC work may be available.
                 return (default!, false, now, pollUntil, true);
             }
-            var p2 = allp[(nint)(@enum.position())];
+            var p2 = allp[@enum.position()];
             if (pp == p2) {
                 continue;
             }
@@ -5200,7 +5200,7 @@ internal static void destroy(this ж<Δp> Ꮡpp) {
     while (pp.runqhead != pp.runqtail) {
         // Pop from tail of local queue
         pp.runqtail--;
-        var gp = pp.runq[(nint)(pp.runqtail % (uint32)len(pp.runq))].ptr();
+        var gp = pp.runq[pp.runqtail % (uint32)len(pp.runq)].ptr();
         // Push onto head of global queue
         globrunqputhead(gp);
     }
@@ -6143,7 +6143,7 @@ internal static ж<g> globrunqget(ж<Δp> Ꮡpp, int32 max) {
 internal static bool read(this pMask Δp, uint32 id) {
     var word = id / 32;
     var mask = ((uint32)1 << (int)((id % 32)));
-    return ((uint32)(atomic.Load(Ꮡ(Δp, (int)(word))) & mask)) != 0;
+    return ((uint32)(atomic.Load(Ꮡ(Δp, word)) & mask)) != 0;
 }
 
 // set sets P id's bit.
@@ -6297,7 +6297,7 @@ retry:
     var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead)); // load-acquire, synchronize with consumers
     var t = pp.runqtail;
     if (t - h < (uint32)len(pp.runq)) {
-        pp.runq[(nint)(t % (uint32)len(pp.runq))].set(Ꮡgp);
+        pp.runq[t % (uint32)len(pp.runq)].set(Ꮡgp);
         atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + 1); // store-release, makes the item available for consumption
         return;
     }
@@ -6324,26 +6324,26 @@ internal static bool runqputslow(ж<Δp> Ꮡpp, ж<g> Ꮡgp, uint32 h, uint32 t)
         @throw(runqputslowQueueIsNotˢ);
     }
     for (var i = (uint32)0; i < n; i++) {
-        batch[(nint)(i)] = pp.runq[(nint)((h + i) % (uint32)len(pp.runq))].ptr();
+        batch[i] = pp.runq[(h + i) % (uint32)len(pp.runq)].ptr();
     }
     if (!atomic.CasRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead), h, h + n)) {
         // cas-release, commits consume
         return false;
     }
-    batch[(nint)(n)] = Ꮡgp;
+    batch[n] = Ꮡgp;
     if (randomizeScheduler) {
         for (var i = (uint32)1; i <= n; i++) {
             var j = cheaprandn(i + 1);
-            (batch[(nint)(i)], batch[(nint)(j)]) = (batch[(nint)(j)], batch[(nint)(i)]);
+            (batch[i], batch[j]) = (batch[j], batch[i]);
         }
     }
     // Link the goroutines.
     for (var i = (uint32)0; i < n; i++) {
-        batch[(nint)(i)].of(g.Ꮡschedlink).set(batch[(nint)(i + 1)]);
+        batch[i].of(g.Ꮡschedlink).set(batch[i + 1]);
     }
     gQueue q = default!;
     q.head.set(batch[0]);
-    q.tail.set(batch[(nint)(n)]);
+    q.tail.set(batch[n]);
     // Now put the batch on global queue.
     @lock(Ꮡsched.of(schedt.Ꮡlock));
     globrunqputbatch(ref q, (int32)(n + 1));
@@ -6364,7 +6364,7 @@ internal static void runqputbatch(ж<Δp> Ꮡpp, ж<gQueue> Ꮡq, nint qsize) {
     var n = (uint32)0;
     while (!q.empty() && t - h < (uint32)len(pp.runq)) {
         var gp = q.pop();
-        pp.runq[(nint)(t % (uint32)len(pp.runq))].set(gp);
+        pp.runq[t % (uint32)len(pp.runq)].set(gp);
         t++;
         n++;
     }
@@ -6373,7 +6373,7 @@ internal static void runqputbatch(ж<Δp> Ꮡpp, ж<gQueue> Ꮡq, nint qsize) {
         uint32 off(uint32 o) => (Ꮡpp.Value.runqtail + o) % (uint32)len(Ꮡpp.Value.runq);
         for (var i = (uint32)1; i < n; i++) {
             var j = cheaprandn(i + 1);
-            (pp.runq[(nint)(off(i))], pp.runq[(nint)(off(j))]) = (pp.runq[(nint)(off(j))], pp.runq[(nint)(off(i))]);
+            (pp.runq[off(i)], pp.runq[off(j)]) = (pp.runq[off(j)], pp.runq[off(i)]);
         }
     }
     atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t);
@@ -6405,7 +6405,7 @@ internal static (ж<g> gp, bool inheritTime) runqget(ж<Δp> Ꮡpp) {
         if (t == h) {
             return (default!, false);
         }
-        var gpΔ1 = pp.runq[(nint)(h % (uint32)len(pp.runq))].ptr();
+        var gpΔ1 = pp.runq[h % (uint32)len(pp.runq)].ptr();
         if (atomic.CasRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead), h, h + 1)) {
             // cas-release, commits consume
             return (gpΔ1, false);
@@ -6448,7 +6448,7 @@ retry:
     // meanwhile, other P's can't access to all G's in local P's runnable queue and steal them.
     // See https://groups.google.com/g/golang-dev/c/0pTKxEKhHSc/m/6Q85QjdVBQAJ for more details.
     for (var i = (uint32)0; i < qn; i++) {
-        var gp = pp.runq[(nint)((h + i) % (uint32)len(pp.runq))].ptr();
+        var gp = pp.runq[(h + i) % (uint32)len(pp.runq)].ptr();
         drainQ.pushBack(gp);
         n++;
     }
@@ -6508,7 +6508,7 @@ internal static uint32 runqgrab(ж<Δp> Ꮡpp, [GoArrayDims(256)] ж<array<Δgui
             continue;
         }
         for (var i = (uint32)0; i < n; i++) {
-            var g = pp.runq[(nint)((h + i) % (uint32)len(pp.runq))];
+            var g = pp.runq[(h + i) % (uint32)len(pp.runq)];
             batch[(batchHead + i) % (uint32)256] = g;
         }
         if (atomic.CasRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead), h, h + n)) {
@@ -6533,7 +6533,7 @@ internal static ж<g> runqsteal(ж<Δp> Ꮡpp, ж<Δp> Ꮡp2, bool stealRunNextG
         return default!;
     }
     n--;
-    var gp = pp.runq[(nint)((t + n) % (uint32)len(pp.runq))].ptr();
+    var gp = pp.runq[(t + n) % (uint32)len(pp.runq)].ptr();
     if (n == 0) {
         return gp;
     }
@@ -6823,7 +6823,7 @@ internal static ref randomOrder stealOrder => ref ᏑstealOrder.Value;
     return new randomEnum(
         count: ord.count,
         pos: i % ord.count,
-        inc: ord.coprimes[(nint)(i / ord.count % (uint32)len(ord.coprimes))]
+        inc: ord.coprimes[i / ord.count % (uint32)len(ord.coprimes)]
     );
 }
 

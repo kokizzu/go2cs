@@ -228,7 +228,7 @@ internal static void initSysDirectory() {
     if (l == 0 || l > (uintptr)(len(sysDirectory) - 1)) {
         @throw(unableToDetermineSystemˢ);
     }
-    sysDirectory[(nint)(l)] = (rune)'\\';
+    sysDirectory[l] = (rune)'\\';
     sysDirectoryLen = l + 1;
 }
 

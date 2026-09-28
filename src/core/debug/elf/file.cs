@@ -121,7 +121,7 @@ internal static readonly @string sectionHasInvalidStringˢ = "section has invali
     if (link <= 0 || link >= (uint32)len(f.Sections)) {
         return (default!, errors.New(sectionHasInvalidStringˢ));
     }
-    return f.Sections[(nint)(link)].Data();
+    return f.Sections[link].Data();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -853,7 +853,7 @@ internal static readonly @string lengthOfRelocationˢ = "length of relocation se
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -901,7 +901,7 @@ internal static readonly @string lengthOfRelocationˢ2 = "length of relocation s
         if (symNo == 0 || symNo > (uint32)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (t == R_386_32) {
             if (rel.Off + 4 >= (uint32)len(dst)) {
                 continue;
@@ -932,7 +932,7 @@ internal static readonly @string lengthOfRelocationˢ2 = "length of relocation s
         if (symNo == 0 || symNo > (uint32)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         var exprᴛ1 = t;
         if (exprᴛ1 == R_ARM_ABS32) {
             if (rel.Off + 4 >= (uint32)len(dst)) {
@@ -965,7 +965,7 @@ internal static readonly @string lengthOfRelocationˢ2 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1013,7 +1013,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint32)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1048,7 +1048,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1090,7 +1090,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint32)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         var exprᴛ1 = t;
         if (exprᴛ1 == R_MIPS_32) {
             if (rel.Off + 4 >= (uint32)len(dst)) {
@@ -1130,7 +1130,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1174,7 +1174,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1216,7 +1216,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1258,7 +1258,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }
@@ -1300,7 +1300,7 @@ internal static readonly @string lengthOfRelocationˢ3 = "length of relocation s
         if (symNo == 0 || symNo > (uint64)len(symbols)) {
             continue;
         }
-        var sym = Ꮡ(symbols, (int)(symNo - 1));
+        var sym = Ꮡ(symbols, symNo - 1);
         if (!canApplyRelocation(ref (sym).DerefOrNull())) {
             continue;
         }

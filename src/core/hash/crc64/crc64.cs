@@ -166,7 +166,7 @@ internal static uint64 update(uint64 crc, ref Table tab, slice<byte> p) {
         // Update using slicing-by-8
         while (len(p) > 8) {
             crc ^= (uint64)(byteorder.LEUint64(p));
-            crc = (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)(helperTable.Value[7][(nint)((uint64)(crc & 0xff))] ^ helperTable.Value[6][(nint)((uint64)(((crc >> (int)(8))) & 0xff))]) ^ helperTable.Value[5][(nint)((uint64)(((crc >> (int)(16))) & 0xff))]) ^ helperTable.Value[4][(nint)((uint64)(((crc >> (int)(24))) & 0xff))]) ^ helperTable.Value[3][(nint)((uint64)(((crc >> (int)(32))) & 0xff))]) ^ helperTable.Value[2][(nint)((uint64)(((crc >> (int)(40))) & 0xff))]) ^ helperTable.Value[1][(nint)((uint64)(((crc >> (int)(48))) & 0xff))]) ^ helperTable.Value[0][(nint)((crc >> (int)(56)))]);
+            crc = (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)(helperTable.Value[7][(uint64)(crc & 0xff)] ^ helperTable.Value[6][(uint64)(((crc >> (int)(8))) & 0xff)]) ^ helperTable.Value[5][(uint64)(((crc >> (int)(16))) & 0xff)]) ^ helperTable.Value[4][(uint64)(((crc >> (int)(24))) & 0xff)]) ^ helperTable.Value[3][(uint64)(((crc >> (int)(32))) & 0xff)]) ^ helperTable.Value[2][(uint64)(((crc >> (int)(40))) & 0xff)]) ^ helperTable.Value[1][(uint64)(((crc >> (int)(48))) & 0xff)]) ^ helperTable.Value[0][(crc >> (int)(56))]);
             p = p[8..];
         }
     }

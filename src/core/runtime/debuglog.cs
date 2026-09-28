@@ -503,8 +503,8 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 
 //go:nosplit
 [GoRecv] internal static bool writeFrameAt(this ref debugLogWriter l, uint64 pos, uint64 size) {
-    l.data.b[(nint)(pos % (uint64)len(l.data.b))] = (uint8)size;
-    l.data.b[(nint)((pos + 1) % (uint64)len(l.data.b))] = (uint8)((size >> (int)(8)));
+    l.data.b[pos % (uint64)len(l.data.b)] = (uint8)size;
+    l.data.b[(pos + 1) % (uint64)len(l.data.b)] = (uint8)((size >> (int)(8)));
     return size <= 0xFFFF;
 }
 
@@ -538,7 +538,7 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
     l.ensure(1);
     var pos = l.write;
     l.write++;
-    l.data.b[(nint)(pos % (uint64)len(l.data.b))] = x;
+    l.data.b[pos % (uint64)len(l.data.b)] = x;
 }
 
 //go:nosplit
@@ -608,14 +608,14 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 
 //go:nosplit
 [GoRecv] internal static uint16 readUint16LEAt(this ref debugLogReader r, uint64 pos) {
-    return (uint16)((uint16)(~r.data).b[(nint)(pos % (uint64)len((~r.data).b))] | (uint16)((uint16)(~r.data).b[(nint)((pos + 1) % (uint64)len((~r.data).b))] << (int)(8)));
+    return (uint16)((uint16)(~r.data).b[pos % (uint64)len((~r.data).b)] | (uint16)((uint16)(~r.data).b[(pos + 1) % (uint64)len((~r.data).b)] << (int)(8)));
 }
 
 //go:nosplit
 [GoRecv] internal static uint64 readUint64LEAt(this ref debugLogReader r, uint64 pos) {
     array<byte> b = new(8);
     foreach (var (i, _) in b) {
-        b[i] = (~r.data).b[(nint)(pos % (uint64)len((~r.data).b))];
+        b[i] = (~r.data).b[pos % (uint64)len((~r.data).b)];
         pos++;
     }
     return (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)b[0] | ((uint64)b[1] << (int)(8))) | ((uint64)b[2] << (int)(16))) | ((uint64)b[3] << (int)(24))) | ((uint64)b[4] << (int)(32))) | ((uint64)b[5] << (int)(40))) | ((uint64)b[6] << (int)(48))) | ((uint64)b[7] << (int)(56)));
@@ -647,7 +647,7 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
     var pos = r.begin + (uint64)debugLogHeaderSize;
     uint64 u = default!;
     for (nuint i = (nuint)0; ᐧ ; i += 7) {
-        var b = (~r.data).b[(nint)(pos % (uint64)len((~r.data).b))];
+        var b = (~r.data).b[pos % (uint64)len((~r.data).b)];
         pos++;
         u |= (uint64)(((uint64)((byte)(b & ~0x80))).Lsh(i));
         if ((byte)(b & 0x80) == 0) {
@@ -681,7 +681,7 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 [GoRecv] internal static uint64 uvarint(this ref debugLogReader r) {
     uint64 u = default!;
     for (nuint i = (nuint)0; ᐧ ; i += 7) {
-        var b = (~r.data).b[(nint)(r.begin % (uint64)len((~r.data).b))];
+        var b = (~r.data).b[r.begin % (uint64)len((~r.data).b)];
         r.begin++;
         u |= (uint64)(((uint64)((byte)(b & ~0x80))).Lsh(i));
         if ((byte)(b & 0x80) == 0) {
@@ -703,7 +703,7 @@ internal static readonly @string recordWrappedAroundˢ = "record wrapped around"
 }
 
 [GoRecv] internal static bool printVal(this ref debugLogReader r) {
-    var typ = (~r.data).b[(nint)(r.begin % (uint64)len((~r.data).b))];
+    var typ = (~r.data).b[r.begin % (uint64)len((~r.data).b)];
     r.begin++;
     var exprᴛ1 = typ;
     if (exprᴛ1 == debugLogUnknown) {

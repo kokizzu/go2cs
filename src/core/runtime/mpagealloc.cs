@@ -304,7 +304,7 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
 //
 // Returns nil if the chunk data has not been mapped.
 [GoRecv] internal static ж<pallocData> tryChunkOf(this ref pageAlloc Δp, chunkIdx ci) {
-    var l2 = Δp.chunks[(nint)(ci.l1())];
+    var l2 = Δp.chunks[ci.l1()];
     if (l2 == nil) {
         return default!;
     }
@@ -315,7 +315,7 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
 //
 // The chunk index must be valid or this method may throw.
 [GoRecv] internal static ж<pallocData> chunkOf(this ref pageAlloc Δp, chunkIdx ci) {
-    return Δp.chunks[(nint)(ci.l1())].at<pallocData>((nint)(ci.l2()));
+    return Δp.chunks[ci.l1()].at<pallocData>((nint)(ci.l2()));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -368,7 +368,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
     // Newly-grown memory is always considered scavenged.
     // Set all the bits in the scavenged bitmaps high.
     for (chunkIdx c = chunkIndex(@base); c < chunkIndex(limit); c++) {
-        if (Δp.chunks[(nint)(c.l1())] == nil) {
+        if (Δp.chunks[c.l1()] == nil) {
             // Create the necessary l2 entry.
             uintptr l2Size = /* unsafe.Sizeof(*p.chunks[0]) */ 1048576;
             @unsafe.Pointer r = (uintptr)sysAlloc(l2Size, Δp.sysStat);
@@ -387,7 +387,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
             }
             // Store the new chunk block but avoid a write barrier.
             // grow is used in call chains that disallow write barriers.
-            Ꮡ(Δp.chunks, (int)(c.l1())).Value = NativeArrayPointer<pallocData>((nuint)((uintptr)r), 8192);
+            Ꮡ(Δp.chunks, c.l1()).Value = NativeArrayPointer<pallocData>((nuint)((uintptr)r), 8192);
         }
         Δp.chunkOf(c).of(pallocData.Ꮡscavenged).setRange(0, pallocChunkPages);
     }
@@ -437,7 +437,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
         for (nuint i = chunkIndex(r.@base.addr()).l1(); i < chunkIndex(r.limit.addr() - 1).l1(); i++) {
             // N.B. We can assume that p.chunks[i] is non-nil and in a mapped part of p.chunks
             // because it's derived from inUse, which never shrinks.
-            sysHugePage(@unsafe.Pointer.FromPinnedBox(Δp.chunks[(nint)(i)]), /* unsafe.Sizeof(*p.chunks[0]) */ (uintptr)1048576);
+            sysHugePage(@unsafe.Pointer.FromPinnedBox(Δp.chunks[i]), /* unsafe.Sizeof(*p.chunks[0]) */ (uintptr)1048576);
         }
     }
 }
@@ -574,7 +574,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
     // If we're not in a test, validate first by checking mheap_.arenas.
     // This is a fast path which is only safe to use outside of testing.
     arenaIdx ai = arenaIndex(addr.addr());
-    if (Δp.test || mheap_.arenas[(nint)(ai.l1())] == nil || mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()] == nil) {
+    if (Δp.test || mheap_.arenas[ai.l1()] == nil || mheap_.arenas[ai.l1()].Value[ai.l2()] == nil) {
         var (vAddr, ok) = Δp.inUse.findAddrGreaterEqual(addr.addr());
         if (ok){
             return new offAddr(vAddr);

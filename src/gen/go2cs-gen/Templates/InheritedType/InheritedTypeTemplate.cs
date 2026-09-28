@@ -417,6 +417,8 @@ internal class InheritedTypeTemplate : TemplateBase
 
                 public byte this[nint index] => {{Value}}[index];
 
+                public byte this[ulong index] => {{Value}}[index];
+
                 public {{ObjectName}} this[global::System.Range range] => new {{ObjectName}}({{Value}}[range]);
 
                 public nint Length => {{Value}}.Length;

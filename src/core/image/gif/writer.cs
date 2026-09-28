@@ -112,7 +112,7 @@ internal static void close(this blockWriter b) {
         b.e.writeByte(0);
     } else {
         nuint n = (nuint)(~b.e).buf[0];
-        b.e.Value.buf[(nint)(n + 1)] = 0;
+        b.e.Value.buf[n + 1] = 0;
         b.e.write((~b.e).buf[..(int)(n + 2)]);
     }
     b.e.flush();

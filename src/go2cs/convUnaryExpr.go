@@ -734,7 +734,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 						// throwaway 251-entry array, so every semaphore-queue mutation through it was
 						// lost. `.Value` runs the wrapper's own mutating getter against the REAL
 						// storage first (see lazyArrayBackingProjection).
-						return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(ptr.Elem()), v.castWideIntegerToInt(indexExpr.Index))
+						return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(ptr.Elem()), v.fullValueIndexOperand(indexExpr.Index))
 					}
 
 					elemCSType := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
@@ -782,7 +782,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				// For address of an indexed reference into slice we use the "Ꮡ(x, index)" syntax.
 				// The golib element-address overloads take `int`/`nint`, so an unsigned/wide index
 				// (`&pclntable[funcoff]`, funcoff uint32) is cast to int (CS1503 otherwise).
-				return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
+				return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.fullValueIndexOperand(indexExpr.Index))
 			}
 
 			typeName := v.getAliasQualifiedTypeName(exprType, false)
@@ -821,7 +821,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// array-PARAMETER case below) — EXCEPT when the field's type is a NAMED array,
 					// whose wrapper allocates its backing lazily and would materialize it on that
 					// copy. `.Value` materializes in place first; see lazyArrayBackingProjection.
-					return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(v.getType(indexExpr.X, false)), v.castWideIntegerToInt(indexExpr.Index))
+					return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(v.getType(indexExpr.X, false)), v.fullValueIndexOperand(indexExpr.Index))
 				} else {
 					// For an indexed reference into an array, we use the "ж.at<T>(index)" syntax.
 					// Prefer the readable file-local package alias for the element type

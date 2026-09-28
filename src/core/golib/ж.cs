@@ -412,8 +412,10 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
     {
         IArray<Telem> array = arrayView<Telem>();
 
+        // Go's &p[i] through a pointer-to-array panics with runtime.boundsError, which recover() sees;
+        // a raw IndexOutOfRangeException escaped it.
         if (!array.IndexIsValid(index))
-            throw new IndexOutOfRangeException("Index is out of range for array or slice.");
+            throw RuntimeErrorPanic.IndexOutOfRange(index, array.Length);
 
         return new ElemRefBox<Telem>(array, (int)index);
     }

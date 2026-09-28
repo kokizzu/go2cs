@@ -109,13 +109,13 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
                     nuint isΔ1 = usΔ1 % 100 * 2;
                     usΔ1 /= 100;
                     i -= 2;
-                    a[i + 1] = smallsString[(int)(isΔ1 + 1)];
-                    a[i + 0] = smallsString[(int)(isΔ1 + 0)];
+                    a[i + 1] = smallsString[isΔ1 + 1];
+                    a[i + 0] = smallsString[isΔ1 + 0];
                 }
                 // us < 10, since it contains the last digit
                 // from the initial 9-digit us.
                 i--;
-                a[i] = smallsString[(int)(usΔ1 * 2 + 1)];
+                a[i] = smallsString[usΔ1 * 2 + 1];
                 u = q;
             }
         }
@@ -126,16 +126,16 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
             nuint isΔ2 = us % 100 * 2;
             us /= 100;
             i -= 2;
-            a[i + 1] = smallsString[(int)(isΔ2 + 1)];
-            a[i + 0] = smallsString[(int)(isΔ2 + 0)];
+            a[i + 1] = smallsString[isΔ2 + 1];
+            a[i + 0] = smallsString[isΔ2 + 0];
         }
         // us < 100
         nuint @is = us * 2;
         i--;
-        a[i] = smallsString[(int)(@is + 1)];
+        a[i] = smallsString[@is + 1];
         if (us >= 10) {
             i--;
-            a[i] = smallsString[(int)(@is)];
+            a[i] = smallsString[@is];
         }
     } else 
     if (isPowerOfTwo(@base)){
@@ -145,12 +145,12 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
         nuint m = (nuint)@base - 1; // == 1<<shift - 1
         while (u >= b) {
             i--;
-            a[i] = digits[(int)((nuint)((nuint)u & m))];
+            a[i] = digits[(nuint)((nuint)u & m)];
             u.RshAssign(shift);
         }
         // u < base
         i--;
-        a[i] = digits[(int)((nuint)u)];
+        a[i] = digits[(nuint)u];
     } else {
         // general case
         var b = (uint64)@base;
@@ -160,12 +160,12 @@ internal static (slice<byte> d, @string s) formatBits(slice<byte> dst, uint64 u,
             // since 64bit division and modulo operations
             // are calculated by runtime functions on 32bit machines.
             var q = u / b;
-            a[i] = digits[(int)((nuint)(u - q * b))];
+            a[i] = digits[(nuint)(u - q * b)];
             u = q;
         }
         // u < base
         i--;
-        a[i] = digits[(int)((nuint)u)];
+        a[i] = digits[(nuint)u];
     }
     // add sign, if any
     if (neg) {

@@ -135,9 +135,9 @@ public static @string String(this ж<Prog> Ꮡp) {
 
 // skipNop follows any no-op or capturing instructions.
 [GoRecv] internal static ж<Inst> skipNop(this ref Prog p, uint32 pc) {
-    var i = Ꮡ(p.Inst, (int)(pc));
+    var i = Ꮡ(p.Inst, pc);
     while ((~i).Op == InstNop || (~i).Op == InstCapture) {
-        i = Ꮡ(p.Inst, (int)((~i).Out));
+        i = Ꮡ(p.Inst, (~i).Out);
     }
     return i;
 }
@@ -176,7 +176,7 @@ public static @string String(this ж<Prog> Ꮡp) {
 [GoRecv] public static EmptyOp StartCond(this ref Prog p) {
     EmptyOp flag = default!;
     var pc = (uint32)p.Start;
-    var i = Ꮡ(p.Inst, (int)(pc));
+    var i = Ꮡ(p.Inst, pc);
 Loop:
     while (ᐧ) {
         var exprᴛ1 = (~i).Op;
@@ -194,7 +194,7 @@ Loop:
 
         // skip
         pc = i.Value.Out;
-        i = Ꮡ(p.Inst, (int)(pc));
+        i = Ꮡ(p.Inst, pc);
 continue_Loop:;
     }
 break_Loop:;
