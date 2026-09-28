@@ -177,6 +177,7 @@ Each topic is its own page. The summary, [Conversion Strategies](../ConversionSt
   - [A single-term pointer constraint `[P *T]` erases the parameter to `ж<T>`](generic-constraints.md#a-single-term-pointer-constraint-p-t-erases-the-parameter-to-жt)
   - [An integer named-numeric wrapper implements the integer operator interfaces](generic-constraints.md#an-integer-named-numeric-wrapper-implements-the-integer-operator-interfaces)
   - [A named-numeric wrapper is `IComparable<T>` as well as ordered by operators](generic-constraints.md#a-named-numeric-wrapper-is-icomparablet-as-well-as-ordered-by-operators)
+  - [An untyped constant argument to `min`/`max` takes the call's type](generic-constraints.md#an-untyped-constant-argument-to-minmax-takes-the-calls-type)
   - [Lifted shift constraint uses the BCL shape `IShiftOperators<T, int, T>`](generic-constraints.md#lifted-shift-constraint-uses-the-bcl-shape-ishiftoperatorst-int-t)
   - [Builtins over constrained slice type parameters](generic-constraints.md#builtins-over-constrained-slice-type-parameters)
   - [Integer type-parameter conversions route through golib (the `E(100)` family)](generic-constraints.md#integer-type-parameter-conversions-route-through-golib-the-e100-family)
