@@ -21,13 +21,13 @@ internal static int64 advance(duration d) {
 }
 
 internal static void Main() {
-    fmt.Println((uint64)(1.0D / (retainExtraPercent / 100.0D)));
-    fmt.Println((nint)(1.2D * baseline), (int64)(1.5D * baseline), (nint)(0.2D * baseline));
-    fmt.Println((uint64)(pct / 100.0D * 100));
+    fmt.Println((uint64)(/* 1.0 / (retainExtraPercent / 100.0) */ 10UL));
+    fmt.Println((nint)((nint)(/* 1.2 * baseline */ 125829120L)), (int64)(/* 1.5 * baseline */ 157286400L), (nint)((nint)(/* 0.2 * baseline */ 20971520L)));
+    fmt.Println((uint64)(/* pct / 100.0 * 100 */ 29UL));
     fmt.Println((nint)(unchecked((nint)(14000000000L))));
     uint64 capacity = 14000000000UL;
-    fmt.Println(capacity == (uint64)(procs * capacityPerProc), capacity == (uint64)(capacityPerProc * procs));
-    int64 want = 1.5D * baseline;
+    fmt.Println(capacity == (uint64)(/* procs * capacityPerProc */ 14000000000UL), capacity == (uint64)(/* capacityPerProc * procs */ 14000000000UL));
+    int64 want = /* 1.5 * baseline */ 157286400L;
     fmt.Println(want);
     fmt.Println(advance((duration)(28000000000L)));
 }
