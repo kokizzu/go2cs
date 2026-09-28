@@ -1084,6 +1084,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNamedDelegateStructuralParam() => CheckTarget("NamedDelegateStructuralParam");
 
     [TestMethod]
+    public void CheckNamedEmptyInterface() => CheckTarget("NamedEmptyInterface");
+
+    [TestMethod]
     public void CheckNamedFuncResultPointerArg() => CheckTarget("NamedFuncResultPointerArg");
 
     [TestMethod]
