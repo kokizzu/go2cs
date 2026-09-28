@@ -688,6 +688,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							moved = false
 						}
 
+						// The initializer's line gets its own position marker. Without one, a frame the
+						// initializer creates (a call reading runtime.Caller) inherited the last marker
+						// above it, some earlier function's statement, where Go reports the spec's own
+						// line. It marks the line the initializer RUNS on: the relocated init method, else
+						// the hoisted tuple holder when there is one (its call is the one that runs), else
+						// the field.
 						if moved {
 							if v.isAddressedGlobal(ident) {
 								v.writeAddressedGlobalDecl(access, csTypeName, csIDName, "", isInherentlyHeapAllocatedType(v.getIdentType(ident)))
@@ -697,9 +703,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 							methodName := packageInitMethodName(csIDName)
 							v.outputBuilder.WriteString(v.newline)
+							v.writePositionSentinel(ident.Pos())
 							v.writeOutput("internal static void %s() { %s = %s; }", methodName, csIDName, valExpr)
 							recordMovedInitMethod(ordinal, methodName)
 						} else {
+							v.writePositionSentinel(ident.Pos())
+
 							if globalHoist.Len() > 0 {
 								v.outputBuilder.WriteString(globalHoist.String())
 							}
@@ -1413,6 +1422,10 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 	componentSource := callExpr
 	firstLine := true
 
+	// The call runs on the first emitted line (the hidden holder, else the first field), which gets the
+	// spec's position marker (see the single-value path's note in visitValueSpec).
+	v.writePositionSentinel(valueSpec.Pos())
+
 	if nonBlankCount > 1 {
 		// Hidden once-evaluated tuple holder; the named fields read components from it.
 		tempName := getGlobalTempVarName("tuple") + CapturedVarMarker
@@ -1513,6 +1526,10 @@ func (v *Visitor) writeMovedPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple 
 	}
 
 	v.outputBuilder.WriteString(v.newline)
+
+	// The call runs on the init method's line, which gets the spec's position marker (see the
+	// single-value path's note in visitValueSpec).
+	v.writePositionSentinel(valueSpec.Pos())
 
 	if nonBlankCount > 1 {
 		v.writeOutput("internal static void %s() { var %s = %s; %s }", methodName, componentSource, callExpr, strings.Join(assignments, " "))
