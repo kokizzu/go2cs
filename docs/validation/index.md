@@ -219,6 +219,7 @@ it beside the proofs on every release.
 | `net/http/httputil` | [`net.http.httputil.md`](current/net.http.httputil.md) | [`src/core/net/http/httputil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httputil) |
 | `net/http/internal` | [`net.http.internal.md`](current/net.http.internal.md) | [`src/core/net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal) |
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |
+| `net/http/pprof` | [`net.http.pprof.md`](current/net.http.pprof.md) | [`src/core/net/http/pprof`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/pprof) |
 | `net/mail` | [`net.mail.md`](current/net.mail.md) | [`src/core/net/mail`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/mail) |
 | `net/netip` | [`net.netip.md`](current/net.netip.md) | [`src/core/net/netip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/netip) |
 | `net/rpc` | [`net.rpc.md`](current/net.rpc.md) | [`src/core/net/rpc`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/rpc) |
