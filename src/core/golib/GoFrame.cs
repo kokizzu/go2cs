@@ -138,7 +138,7 @@ public ref struct GoFrame
     /// </para>
     /// </remarks>
     // NoInlining is a CONTRACT here, not a heuristic: runtime's captureCallers pairs each Run frame it
-    // walks with this thread's panic-sequence entries (see PushSequence), so an inlined Run would leave
+    // walks with this thread's panic-sequence entries (see t_sequenceDepth), so an inlined Run would leave
     // no frame to pair and shift every splice by one sequence.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void Run()
@@ -176,10 +176,16 @@ public ref struct GoFrame
             if (!ReferenceEquals(outerRecoverable, handling))
                 GoFuncRoot.RecoverablePanicValue = handling;
 
-            // This sequence's entry for runtime's captureCallers: the panic it is running, or null for
-            // a normal return. It is pushed for EVERY deferring Run, since a normal-return Run can sit
-            // between a Callers and a panicking one ([P2-1]).
-            int sequence = PushSequence(handling);
+            // This sequence's slot for runtime's captureCallers. EVERY deferring Run takes one, since a
+            // normal-return Run can sit between a Callers and a panicking one ([P2-1]), but a normal
+            // return pays only this depth: the entry itself (the panic and the activation) is written
+            // once a panic is running in, or raised into, the sequence. An unwritten slot reads as a
+            // normal-return entry (SequenceFromTop).
+            int sequence = t_sequenceDepth++;
+            bool recorded = handling is not null;
+
+            if (recorded)
+                SetSequence(sequence, handling);
 
             // The panic this frame's own catch caught FIRST has its site ending at this frame, so this
             // activation owns it. Owned by ACTIVATION, not by method: a recursive activation of the
@@ -205,13 +211,25 @@ public ref struct GoFrame
                 {
                     try
                     {
+                        // THE NORMAL-RETURN LOOP, at base's per-call cost: no delegate kept live into the
+                        // catch and no recovery check. The slot is cleared only AFTER the call returns, so
+                        // when the call panics, the catch below re-reads the raising delegate from its slot.
+                        // A panic makes `handling` non-null for good, so every later call takes the loop below.
+                        if (handling is null)
+                        {
+                            int top = --m_count;
+                            Slot(top)();
+                            ClearSlot(top);
+                            continue;
+                        }
+
                         deferred = Pop();
                         deferred();
 
                         // A deferred call that recovered this sequence's panic has RETURNED: Go's recovery
                         // completes here and the panicking frames leave the stack, so a later deferred
                         // call's Callers no longer shows them (runtime's TestCallersAfterRecovery).
-                        if (handling is { Recovered: true })
+                        if (handling.Recovered)
                         {
                             SetSequence(sequence, null);
                             recoveryCompleted = true;
@@ -219,6 +237,13 @@ public ref struct GoFrame
                     }
                     catch (Exception ex) when (IsPanic(ex, out PanicException? raised))
                     {
+                        // Raised from the normal-return loop: its delegate is still in its slot.
+                        if (handling is null)
+                        {
+                            deferred = Slot(m_count);
+                            ClearSlot(m_count);
+                        }
+
                         // A deferred call PANICKED. Go does not stop the sequence here: the new
                         // panic joins the one already unwinding (replacing it as the value a
                         // recover() answers), and this frame's REMAINING deferred calls still run —
@@ -271,7 +296,11 @@ public ref struct GoFrame
                         // The panic this sequence was running when the deferred call raised: Go keeps it
                         // beneath the new one until a recovery completes, because the deferred call was
                         // called by its gopanic. A recovery that already completed nulled the entry.
-                        PanicException? running = t_sequences![sequence].Panic;
+                        PanicException? running = recorded ? t_sequences![sequence].Panic : null;
+
+                        // The entry (and its activation) exists from here on.
+                        SetSequence(sequence, running);
+                        recorded = true;
 
                         // Whether this activation OWNS the new panic's site (review B1, B2, C3). It does
                         // when this catch is the panic's FIRST: the deferred call raised it with no
@@ -293,7 +322,7 @@ public ref struct GoFrame
 
                         if ((firstHere || reRaised) && !(running is null && GoexitException.Started) && !afterCompletedRecovery)
                         {
-                            raised.SiteOwner = t_sequences[sequence].Activation;
+                            raised.SiteOwner = t_sequences![sequence].Activation;
                             raised.SiteOwnerThread = ThreadToken;
                             raised.SiteEndsAtRun = true;
                             raised.SiteIsTheDeferredCall = reRaised;
@@ -320,7 +349,12 @@ public ref struct GoFrame
             }
             finally
             {
-                PopSequence(sequence);
+                // Only an entry this activation wrote is cleared (so no stale panic outlives it); the depth
+                // is the normal return's one store.
+                if (recorded)
+                    t_sequences![sequence] = default;
+
+                t_sequenceDepth = sequence;
                 GoFuncRoot.HandledPanicValue = outer;
 
                 if (!ReferenceEquals(GoFuncRoot.RecoverablePanicValue, outerRecoverable))
@@ -350,9 +384,11 @@ public ref struct GoFrame
     // calls ON the panicking stack, so a Callers from one still finds runtime.gopanic and the frames it
     // panicked through. Here the CLR has already unwound those frames, and runtime's captureCallers
     // splices them back from the panic's SiteTrace. To know WHICH panic a Run frame on the live stack
-    // is running, every deferring Run pushes one entry: its own panic, or null. The k-th Run frame met
-    // walking down from the top pairs with the k-th entry from the top. Per thread, as the other panic
-    // slots are (GoFuncRoot), and the array is allocated once per thread and reused.
+    // is running, every deferring Run takes one slot: its own panic, or null. The k-th Run frame met
+    // walking down from the top pairs with the k-th slot from the top. Per thread, as the other panic
+    // slots are (GoFuncRoot), and the array is allocated once per thread, on the first panic, and reused.
+    // A normal return pays the depth alone (Go's commonest idiom is `mu.Lock(); defer mu.Unlock()`):
+    // a slot's entry is written only while a panic is running in it, and cleared by whoever wrote it.
     //
     // Each entry also carries its ACTIVATION: a per-thread number no other Run activation on the thread
     // ever shares (a slot index is reused as soon as its Run returns, so it cannot tell two activations
@@ -368,30 +404,24 @@ public ref struct GoFrame
     [ThreadStatic] private static int t_sequenceDepth;
     [ThreadStatic] private static long t_lastActivation;
 
-    private static int PushSequence(PanicException? panic)
+    // Writes a sequence's entry on first need: grows the array and numbers the activation lazily, once.
+    private static void SetSequence(int index, PanicException? panic)
     {
-        int index = t_sequenceDepth;
         Sequence[] entries = t_sequences ??= new Sequence[16];
 
-        if (index == entries.Length)
+        if (index >= entries.Length)
         {
-            Array.Resize(ref t_sequences, index * 2);
+            Array.Resize(ref t_sequences, Math.Max(index + 1, entries.Length * 2));
             entries = t_sequences;
         }
 
-        entries[index] = new Sequence { Panic = panic, Activation = ++t_lastActivation };
-        t_sequenceDepth = index + 1;
+        ref Sequence entry = ref entries[index];
+        entry.Panic = panic;
 
-        return index;
+        if (entry.Activation == 0)
+            entry.Activation = ++t_lastActivation;
     }
 
-    private static void SetSequence(int index, PanicException? panic) => t_sequences![index].Panic = panic;
-
-    private static void PopSequence(int index)
-    {
-        t_sequences![index] = default;
-        t_sequenceDepth = index;
-    }
 
     // The one re-raise an activation accepts as its own site (see Run's catch): the panic was caught FIRST
     // by an emitted frame (its site ends at that frame, not at a Run), caught exactly once since, here, and
@@ -450,7 +480,7 @@ public ref struct GoFrame
     internal static (PanicException? Panic, long Activation) SequenceFromTop(int fromTop)
     {
         int index = t_sequenceDepth - 1 - fromTop;
-        return index >= 0 ? (t_sequences![index].Panic, t_sequences[index].Activation) : (null, 0);
+        return index >= 0 && t_sequences is { } entries && index < entries.Length ? (entries[index].Panic, entries[index].Activation) : (null, 0);
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it
@@ -490,6 +520,38 @@ public ref struct GoFrame
         }
 
         return deferred;
+    }
+
+    // The normal-return loop's halves of Pop: read a slot, and clear it once its call has returned (Run).
+    private readonly Action Slot(int index) => index switch
+    {
+        0 => m_d0!,
+        1 => m_d1!,
+        2 => m_d2!,
+        3 => m_d3!,
+        _ => m_overflow![index - 4]
+    };
+
+    private void ClearSlot(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                m_d0 = null;
+                break;
+            case 1:
+                m_d1 = null;
+                break;
+            case 2:
+                m_d2 = null;
+                break;
+            case 3:
+                m_d3 = null;
+                break;
+            default:
+                m_overflow!.RemoveAt(index - 4);
+                break;
+        }
     }
 
     /// <summary>
