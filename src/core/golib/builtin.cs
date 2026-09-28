@@ -2492,7 +2492,9 @@ public static partial class builtin
         {
             unsafe
             {
-                return new NativeBox<T>(target.NativeElementAddress(index));
+                // Unchecked here too: the length-checked NativeElementAddress refused SliceData over an
+                // empty native window.
+                return new NativeBox<T>(target.NativeElementAddressUnchecked(index));
             }
         }
 

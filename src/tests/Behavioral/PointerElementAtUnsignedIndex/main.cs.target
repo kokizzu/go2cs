@@ -45,21 +45,21 @@ internal static void Main() {
     uint32 u32 = unchecked((uint32)(4294967295UL));
     uint64 ok = 2;
     var pʗ1 = p;
-    @try(pointerToArrayUint64Maxˢ, () => pʗ1.at<nint>((nint)(u64)));
+    @try(pointerToArrayUint64Maxˢ, () => pʗ1.at<nint>((ulong)(u64)));
     var pʗ2 = p;
-    @try(pointerToArrayUintPast2ˢ, () => pʗ2.at<nint>((nint)(u)));
+    @try(pointerToArrayUintPast2ˢ, () => pʗ2.at<nint>((ulong)(u)));
     var pʗ3 = p;
-    @try(pointerToArrayUintptrˢ, () => pʗ3.at<nint>((nint)(up)));
+    @try(pointerToArrayUintptrˢ, () => pʗ3.at<nint>((ulong)(up)));
     var pʗ4 = p;
-    @try(pointerToArrayUint32Maxˢ, () => pʗ4.at<nint>((nint)(u32)));
+    @try(pointerToArrayUint32Maxˢ, () => pʗ4.at<nint>((ulong)(u32)));
     var pʗ5 = p;
-    @try(pointerToArrayInRangeˢ, () => pʗ5.at<nint>((nint)(ok)));
+    @try(pointerToArrayInRangeˢ, () => pʗ5.at<nint>((ulong)(ok)));
     var psʗ1 = ps;
-    @try(fieldArrayUint64Maxˢ, () => psʗ1.at(S.Ꮡa, (nint)(u64)));
+    @try(fieldArrayUint64Maxˢ, () => psʗ1.at(S.Ꮡa, (ulong)(u64)));
     var psʗ2 = ps;
-    @try(fieldArrayUintPast263ˢ, () => psʗ2.at(S.Ꮡa, (nint)(u)));
+    @try(fieldArrayUintPast263ˢ, () => psʗ2.at(S.Ꮡa, (ulong)(u)));
     var psʗ3 = ps;
-    @try(fieldArrayInRangeˢ, () => psʗ3.at(S.Ꮡa, (nint)(ok)));
+    @try(fieldArrayInRangeˢ, () => psʗ3.at(S.Ꮡa, (ulong)(ok)));
     fmt.Println(arr, (~ps).a);
 }
 
