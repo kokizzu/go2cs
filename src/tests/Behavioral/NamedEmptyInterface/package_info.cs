@@ -27,7 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("Test", "object")]
+[assembly: GoTypeAlias("I", "object")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -37,9 +37,6 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<Dog, Animal>(Pointer = true)]
-[assembly: GoImplement<Frog, Animal>(Pointer = true)]
-[assembly: GoImplement<errno, error>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -53,7 +50,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("InterfaceImplementation.go", "InterfaceImplementation.cs", "AB4ugoKCkoSCgoyChIKChIKEgpaEhoaCAAcSgsqCgpQACQaCgoKUgpqUpKT+goLWooLWooSi6ILWgtaC1oI=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA8agKSApICkgpSkpKb2hIKCgoKChoKCgoKCgoKCgoaCgpiCgoCCpJTEqIKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -69,10 +66,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct errno {}
-    public partial interface Animal {}
-    public partial struct Dog {}
-    public partial struct Frog {}
+    internal partial struct point {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

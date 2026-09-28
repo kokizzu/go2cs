@@ -634,6 +634,7 @@
     <Project Path="tests/Behavioral/NamedByteSliceFromStringLit/NamedByteSliceFromStringLit.csproj" />
     <Project Path="tests/Behavioral/NamedConstConversionPrecedence/NamedConstConversionPrecedence.csproj" />
     <Project Path="tests/Behavioral/NamedConstFloatFold/NamedConstFloatFold.csproj" />
+    <Project Path="tests/Behavioral/NamedEmptyInterface/NamedEmptyInterface.csproj" />
     <Project Path="tests/Behavioral/NamedDelegateStructuralParam/NamedDelegateStructuralParam.csproj" />
     <Project Path="tests/Behavioral/NamedFuncResultPointerArg/NamedFuncResultPointerArg.csproj" />
     <Project Path="tests/Behavioral/NamedFuncTypeMapParam/NamedFuncTypeMapParam.csproj" />

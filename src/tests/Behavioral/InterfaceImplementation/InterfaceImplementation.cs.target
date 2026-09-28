@@ -1,3 +1,5 @@
+global using Test = object;
+
 namespace go;
 
 using fmt = fmt_package;
@@ -8,9 +10,9 @@ partial class main_package {
     @string Type();
     @string Swim();
 }
+// Descriptor carrier for `Test` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Test")] public interface Testᴅ { }
 
-[GoType] partial interface Test {
-}
 
 [GoType] partial struct Dog {
     public @string Name;

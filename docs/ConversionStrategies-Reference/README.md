@@ -90,6 +90,7 @@ Each topic is its own page. The summary, [Conversion Strategies](../ConversionSt
   - [A pointer crossing into an interface carries its static type, however the pointer was produced](nil-and-zero-values.md#a-pointer-crossing-into-an-interface-carries-its-static-type-however-the-pointer-was-produced)
   - [Pointer-to-interface assignment through selector fields](nil-and-zero-values.md#pointer-to-interface-assignment-through-selector-fields)
 - **[Empty Interface (`any`)](empty-interface.md)**
+  - [A named empty interface is an alias to `object`, whether it is spelled `any` or `interface{}`](empty-interface.md#a-named-empty-interface-is-an-alias-to-object-whether-it-is-spelled-any-or-interface)
   - [A string literal in an `any` slot boxes through `@string` — as `(@string)"…"u8`](empty-interface.md#a-string-literal-in-an-any-slot-boxes-through-string--as-stringu8)
   - [An untyped constant boxed as `any` boxes at Go's DEFAULT TYPE](empty-interface.md#an-untyped-constant-boxed-as-any-boxes-at-gos-default-type)
   - [Comparing two interfaces of one UNCOMPARABLE dynamic type panics, as Go does](empty-interface.md#comparing-two-interfaces-of-one-uncomparable-dynamic-type-panics-as-go-does)

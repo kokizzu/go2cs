@@ -1087,6 +1087,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNamedDelegateStructuralParam() => CheckTarget("NamedDelegateStructuralParam");
 
     [TestMethod]
+    public void CheckNamedEmptyInterface() => CheckTarget("NamedEmptyInterface");
+
+    [TestMethod]
     public void CheckNamedFuncResultPointerArg() => CheckTarget("NamedFuncResultPointerArg");
 
     [TestMethod]

@@ -4,6 +4,44 @@
 [Reference index](README.md) · [Summary of this topic](../ConversionStrategies.md#empty-interface-any)
 In Go, every type satisfies the method-less interface `interface{}`, now spelled `any`. This operates fundamentally like .NET's `System.Object`, so the converter maps the Go empty interface to `any` (a global alias for `object`). For example, a Go `func(i interface{})` becomes `void f(any i)`, and a `map[any]string` becomes `map<any, @string>`.
 
+## A named empty interface is an alias to `object`, whether it is spelled `any` or `interface{}`
+A defined type over the empty interface holds every Go value, so it is emitted as a `global using` alias to
+`object`, the same route as a defined type over any other named interface. That holds for both spellings,
+`type I any` and the inline `type I interface{}`: the empty interface is `any`'s type set, whatever the RHS
+syntax. The declaration keeps its Go name wherever the converted code uses it, and an uninhabited
+descriptor carrier stamped `[GoLocalName]` keeps that name for reflection.
+
+<!-- source: src/tests/Behavioral/NamedEmptyInterface/main.go:9 + :13 + :17 -->
+```go
+type I interface{}
+
+func show(v I) { fmt.Printf("I: %T %v\n", v, v) }
+…
+func back(n int8) I { return n }
+```
+<!-- source: src/tests/Behavioral/NamedEmptyInterface/main.cs.target:1 + :8-9 + :16 + :24 -->
+```csharp
+global using I = object;
+…
+// Descriptor carrier for `I` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("I")] public interface Iᴅ { }
+…
+internal static void show(I v) {
+…
+internal static I back(int8 n) {
+```
+
+Emitted as a nested C# interface instead, it holds nothing, because no primitive or converted struct
+implements an interface it was never declared on: every assignment, argument, return and element was CS0029
+or CS1503. Only an inline interface with an EMPTY type set takes this route. An inline interface with methods
+is a real nested C# interface, and a constraint interface (`interface{ ~int }`) is not the empty interface.
+Importers reach the alias through the published type-alias entries
+([Empty-interface targets](golib-namespace.md)).
+
+Guarded by: `NamedEmptyInterface` (int8, int, string, a struct and nil assigned to, passed as, and returned as
+a named `I` and an anonymous `interface{}` parameter; a type assertion, a type switch, comparison, and
+`[]I` and `map[string]I`; each printed as `%T %v` against Go).
+
 ## A string literal in an `any` slot boxes through `@string` — as `(@string)"…"u8`
 A Go string literal normally emits as a `"…"u8` `ReadOnlySpan<byte>` (which converts implicitly to `@string`). But a `ReadOnlySpan<byte>` has **no conversion to `object`**, so a string literal RETURNED (or returned as a tuple element) where the result type is the empty interface fails with CS0029 — testing's `func (f *chattyFlag) Get() any { return "test2json" }`. Such a result must box a golib `@string` (preserving Go string identity for a later `x.(string)` assertion), so `visitReturnStmt` renders the literal as `(@string)"…"u8` for an empty-interface result element:
 
