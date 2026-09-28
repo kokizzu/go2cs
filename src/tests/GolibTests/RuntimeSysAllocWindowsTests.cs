@@ -97,18 +97,27 @@ public class RuntimeSysAllocWindowsTests
     }
 
     // A range spanning TWO reservations: one VirtualAlloc/VirtualFree call cannot span them, so Go's halving
-    // retry commits and decommits the pieces. Needs the kernel to place the second reservation right after
-    // the first; when it will not, there is nothing to assert.
+    // retry commits and decommits the pieces. The two must be ADJACENT: reserve 2n, release it, then reserve
+    // each half at its exact hint -- the kernel honours a hint over a range it just freed. (The first cut
+    // hinted just past a fresh reservation and the kernel placed it elsewhere, so the arm was INCONCLUSIVE on
+    // its first gate run and never exercised the retry.) When the kernel still will not, nothing is asserted.
     [TestMethod]
     public void CommitAndDecommitAcrossTwoAdjacentReservationsTakeGosHalvingRetry()
     {
         const nuint n = 64 * 1024;
-        nuint first = runtime_package.GoSysReserveOS(0, n);
+        nuint span = runtime_package.GoSysReserveOS(0, 2 * n);
+        Assert.AreNotEqual((nuint)0, span);
+        runtime_package.GoSysFreeOS(span, 2 * n);
+
+        nuint first = runtime_package.GoSysReserveOS(span, n);
         Assert.AreNotEqual((nuint)0, first);
         nuint second = 0;
 
         try
         {
+            if (first != span)
+                Assert.Inconclusive($"the kernel did not honour the first hint ({span:x} then {first:x})");
+
             second = runtime_package.GoSysReserveOS(first + n, n);
 
             if (second != first + n)
