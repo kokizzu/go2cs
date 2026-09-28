@@ -81,18 +81,15 @@ differ from the sizing above:
 - R2's helper is `LiteralByteAt(ReadOnlySpan<byte>, nint|ulong)`, not `index`. A local named `index` is common
   in Go code and would shadow a `using static` method.
 
-## Predicted footprint, as a named file list
-It is derived from the census sites: each Go file:line mapped to its converted file in the base tree, per GOOS
-folder where the package has one. The counts are sites (files). Windows 148 (45), linux 162 (44), darwin 159
-(43). 21 files in the union carry a hand-ownership marker. In five of them, the whole file's `.cs.auto` sibling
-moves in place of the `.cs` (C1's footprint precedent):
-- crypto/internal/boring/bcache/cache.cs
-- internal/sync/hashtriemap.cs
-- runtime/mfinal.cs
-- sync/pool.cs
-- sync/poolqueue.cs
-The rest are per-function hand-owns, where a site inside a hand-owned body does not move. The -stdlib footprint
-settles these, and anything beyond the list is named site by site.
+## Predicted footprint, as a named file list (PRODUCTION sites; stated before the measurement)
+It is derived from the census's production sites only. `-stdlib` converts production files, and a `_test.go`
+site moves through the `-tests` pipeline instead (6 of them here: R2 2, R3a 4). Each Go file:line is mapped to
+its converted file in the base tree, per GOOS folder where the package has one. The counts are sites (files):
+windows 142 (42), linux 156 (41), darwin 153 (40), and 57 files in the union. Hand-ownership flags: the whole
+file's `.cs.auto` sibling moves in place of the `.cs` for crypto/internal/boring/bcache/cache.cs,
+internal/sync/hashtriemap.cs, runtime/mfinal.cs, sync/pool.cs and sync/poolqueue.cs (C1's footprint
+precedent). The other flagged files are per-function hand-owns, where a site inside a hand-owned body does
+not move.
 
 | target | file (sites) |
 |---|---|
@@ -101,7 +98,6 @@ settles these, and anything beyond the list is named site by site.
 | windows | debug/elf/file.cs (12) |
 | windows | encoding/xml/xml.cs (1) |
 | windows | image/jpeg/writer.cs (3) |
-| windows | index/suffixarray/suffixarray_test.cs (1) |
 | windows | internal/bisect/bisect.cs (3) |
 | windows | internal/sync/hashtriemap.cs (9) |
 | windows | internal/syscall/windows/windows/security_windows.cs (2) |
@@ -109,7 +105,6 @@ settles these, and anything beyond the list is named site by site.
 | windows | internal/zstd/block.cs (3) |
 | windows | internal/zstd/huff.cs (2) |
 | windows | os/user/windows/lookup_windows.cs (2) |
-| windows | reflect/all_test.cs (1) |
 | windows | regexp/backtrack.cs (1) |
 | windows | regexp/exec.cs (1) |
 | windows | regexp/onepass.cs (6) |
@@ -138,7 +133,6 @@ settles these, and anything beyond the list is named site by site.
 | windows | runtime/windows/sigqueue.cs (9) |
 | windows | runtime/windows/syscall_windows.cs (1) |
 | windows | runtime/windows/trace.cs (6) |
-| windows | sync/atomic/atomic_test.cs (4) |
 | windows | sync/pool.cs (1) |
 | windows | sync/poolqueue.cs (3) |
 | linux | compress/flate/deflate.cs (3) |
@@ -146,13 +140,11 @@ settles these, and anything beyond the list is named site by site.
 | linux | debug/elf/file.cs (12) |
 | linux | encoding/xml/xml.cs (1) |
 | linux | image/jpeg/writer.cs (3) |
-| linux | index/suffixarray/suffixarray_test.cs (1) |
 | linux | internal/bisect/bisect.cs (3) |
 | linux | internal/sync/hashtriemap.cs (9) |
 | linux | internal/trace/internal/oldtrace/parser.cs (2) |
 | linux | internal/zstd/block.cs (3) |
 | linux | internal/zstd/huff.cs (2) |
-| linux | reflect/all_test.cs (1) |
 | linux | regexp/backtrack.cs (1) |
 | linux | regexp/exec.cs (1) |
 | linux | regexp/onepass.cs (6) |
@@ -182,7 +174,6 @@ settles these, and anything beyond the list is named site by site.
 | linux | runtime/tracemap.cs (1) |
 | linux | runtime/traceregion.cs (2) |
 | linux | runtime/tracestatus.cs (4) |
-| linux | sync/atomic/atomic_test.cs (4) |
 | linux | sync/pool.cs (1) |
 | linux | sync/poolqueue.cs (3) |
 | darwin | compress/flate/deflate.cs (3) |
@@ -190,13 +181,11 @@ settles these, and anything beyond the list is named site by site.
 | darwin | debug/elf/file.cs (12) |
 | darwin | encoding/xml/xml.cs (1) |
 | darwin | image/jpeg/writer.cs (3) |
-| darwin | index/suffixarray/suffixarray_test.cs (1) |
 | darwin | internal/bisect/bisect.cs (3) |
 | darwin | internal/sync/hashtriemap.cs (9) |
 | darwin | internal/trace/internal/oldtrace/parser.cs (2) |
 | darwin | internal/zstd/block.cs (3) |
 | darwin | internal/zstd/huff.cs (2) |
-| darwin | reflect/all_test.cs (1) |
 | darwin | regexp/backtrack.cs (1) |
 | darwin | regexp/exec.cs (1) |
 | darwin | regexp/onepass.cs (6) |
@@ -225,6 +214,25 @@ settles these, and anything beyond the list is named site by site.
 | darwin | runtime/tracemap.cs (1) |
 | darwin | runtime/traceregion.cs (2) |
 | darwin | runtime/tracestatus.cs (4) |
-| darwin | sync/atomic/atomic_test.cs (4) |
 | darwin | sync/pool.cs (1) |
 | darwin | sync/poolqueue.cs (3) |
+
+## Measured (two-seeded three-target -stdlib footprint; converters from git objects, base 3d5a871e9f, cut 9eab81dc77)
+The seeded tree moved 35 files and the stages 87 (the per-target copies plus 6 timing-only reports). 30 of the
+35 were predicted. The other five are sites of this seat's own shape that the census predicates missed, each
+an in-place replace:
+- runtime/{windows,linux,darwin}/mgcscavenge.cs: `Ꮡ(s.chunks, (int)(nuint)(i)).load()` became
+  `Ꮡ(s.chunks, i).load()`. It is a SAME-package pointer-receiver method on an ARRAY-FIELD element, which
+  takes the element-address path. The census assumed every same-package method call on an element was
+  correct: the probe's slice-element case takes a `this ref` extension over the ref indexer and is correct,
+  but the array-field case is not.
+- runtime/sema.cs: `&semtable[i].root`, the address of a FIELD of an element. The census matched `&x[i]`
+  only.
+- sync/poolqueue.cs.auto: the hand-own sibling, as flagged.
+27 predicted files did not move. Most are sites that take the pointer-to-array route,
+`Ꮡx.at<T>((nint)(i))` / `x.at(field, (nint)(i))`. That route already passes the full index, and on this base
+C1's 2c97dd9bce makes ж.at panic as Go does, so those sites were already right. The rest are sites inside
+hand-owned bodies. Nothing unpredicted moved outside the seat's shape.
+
+CNR moved 6 behavioral goldens, re-baselined at ce61c1cb02. Five are this seat's emission. One,
+SystemCertVerify, is C1's unsigned direct-index rule on a windows-only project that C1's linux CNR skipped.
