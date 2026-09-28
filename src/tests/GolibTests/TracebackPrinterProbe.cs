@@ -21,4 +21,8 @@ internal static class tracebackprobe_package
     // call in tail position into a jump, and a tail call leaves no frame behind.
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     internal static string Deep(int depth) => depth == 0 ? StackText() : Deep(depth - 1);
+
+    // A panic raised from a Go frame, for the crash report's own guard.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void Raise(PanicException panic) => throw panic;
 }
