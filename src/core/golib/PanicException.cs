@@ -230,12 +230,127 @@ public class PanicException(object? state, Exception? innerException = null) :
         }
     }
 
+    /// <summary>
+    /// Gets this panic's OWN site: the trace of the raised exception as its first catching frame saw
+    /// it, from the throw site to that frame. Unlike <see cref="PanicTrace"/>, a re-panic's inheritance
+    /// never overwrites it.
+    /// </summary>
+    /// <remarks>
+    /// runtime's <c>captureCallers</c> splices it beneath <c>runtime.gopanic</c> when a
+    /// <c>Callers</c> runs inside this panic's deferred sequence, which is where Go's unwinder still
+    /// finds the panicking frames (docs/phase4/DESIGN-panic-stack-frames.md §3.B, [P2-2]).
+    /// </remarks>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal StackTrace? SiteTrace { get; private set; }
+
+    /// <summary>
+    /// Gets the runtime frames Go's unwinder shows between <c>runtime.gopanic</c> and the panic site:
+    /// a hardware fault adds <c>panicmem</c> and <c>sigpanic</c>, an integer divide adds
+    /// <c>panicdivide</c>, and an explicit <c>panic(v)</c> adds none. Tagged where the panic is RAISED
+    /// (builtin.panic, and RuntimeErrorPanic's nil-dereference and divide factories); every other panic
+    /// golib raises keeps the default, <see cref="PanicFaultKind.Unmodelled"/>, which runtime's
+    /// captureCallers refuses to splice.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal PanicFaultKind FaultKind { get; init; }
+
+    /// <summary>
+    /// Gets the panic whose deferred sequence raised this one, when a deferred call panicked while that
+    /// panic was being handled. Go's stack still holds it beneath: the deferred call's frame sits on
+    /// the older panic's <c>runtime.gopanic</c>, until a recovery completes. Set by
+    /// <see cref="GoFrame.Run"/>'s own catch; runtime's <c>captureCallers</c> splices down the chain.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal PanicException? Beneath { get; set; }
+
+    /// <summary>
+    /// Gets how many catches have adopted this panic (each <c>IsPanic</c> filter that caught it). One
+    /// means the catch now running is the FIRST, so <see cref="SiteTrace"/> ends at it.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal int Catches { get; private set; }
+
+    /// <summary>
+    /// Gets the deferring <see cref="GoFrame.Run"/> ACTIVATION that owns this panic's site, or 0 when
+    /// none provably does. It is stamped only at the first catch: by the Run of the frame whose catch
+    /// that was, or by the Run whose own catch caught a deferred call's panic. A panic re-raised past
+    /// its first catcher keeps its stamp, so a later Run never matches it: its site does not reach that
+    /// Run, and runtime's <c>captureCallers</c> then splices nothing rather than a wrong list.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal long SiteOwner { get; set; }
+
+    /// <summary>
+    /// Gets whether the site ends at the owning <see cref="GoFrame.Run"/>, not at the deferring
+    /// function: a deferred call raised this panic with no deferring frame of its own. Every Go frame
+    /// of the site then stays on Go's stack, above the deferring function.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool SiteEndsAtRun { get; set; }
+
+    /// <summary>
+    /// Gets the THREAD whose Run activation <see cref="SiteOwner"/> numbers: activation numbers are unique
+    /// only within a thread, and a panic can cross threads (range-over-func re-raises a seq's panic on the
+    /// ranging goroutine). runtime's captureCallers requires both to match.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal object? SiteOwnerThread { get; set; }
+
+    /// <summary>
+    /// Gets whether this panic's site ends at a Run because the deferred delegate that Run invoked IS the
+    /// frame that caught the panic first, re-raised straight to it (checked by the popped delegate's own
+    /// method, never inferred from missing stack frames).
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool SiteIsTheDeferredCall { get; set; }
+
+    /// <summary>
+    /// Gets whether a converter-emitted method-expression WRAPPER raised this panic itself, on a nil
+    /// receiver (builtin.wrapperRecv / builtin.panicwrapRecv). It is the emitter's marker that the
+    /// wrapper's frame is the panic site: runtime's captureCallers keeps a wrapper frame only then,
+    /// because Go keeps one only when its callee is the panic machinery.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool RaisedByWrapper { get; init; }
+
+    /// <summary>
+    /// Gets whether this panic unwound through a range-over-func loop that stopped early: the loop BODY's
+    /// frame (Go's rangefunc closure) and seq's lie between the site and the ranging function, and are
+    /// not modelled, so runtime's captureCallers splices nothing for it.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool CrossedRangeFunc { get; set; }
+
+    // The panic this thread's catches adopted last (CaptureThrowSite): the one a range-over-func loop's
+    // early stop is unwinding for, when it is unwinding for one. Read only on that path.
+    [ThreadStatic] private static PanicException? t_lastAdopted;
+
+    // A range-over-func loop stopped early. If it stopped for a panic, the filters already adopted it
+    // (first pass) before the loop's Dispose runs (second pass), so the last adopted panic is it; a break
+    // marks an older panic instead, which only refuses that panic's splices (the safe direction).
+    internal static void MarkLastAdoptedCrossedRangeFunc()
+    {
+        if (t_lastAdopted is { } panic)
+            panic.CrossedRangeFunc = true;
+    }
+
+    internal static void ResetThread() => t_lastAdopted = null;
+
     // Snapshot the throw site the first time this panic is caught. `thrown` is the exception that
     // actually travelled: for a mapped .NET runtime error (nil deref, divide by zero) THIS instance
     // was synthesized by RuntimeErrorPanic and was never thrown, so only the original carries frames.
+    // One capture serves both properties: the first catch is the panic's own site, and PanicTrace
+    // takes the same snapshot unless a re-panic's inheritance has already set it.
     internal void CaptureThrowSite(Exception thrown)
     {
-        PanicTrace ??= new StackTrace(thrown, fNeedFileInfo: true);
+        Catches++;
+        t_lastAdopted = this;
+
+        if (SiteTrace is not null)
+            return;
+
+        SiteTrace = new StackTrace(thrown, fNeedFileInfo: true);
+        PanicTrace ??= SiteTrace;
     }
 
     // Adopt the origin of the panic being handled when this one is raised from a deferred call —
@@ -247,4 +362,27 @@ public class PanicException(object? state, Exception? innerException = null) :
     {
         PanicTrace = origin.PanicTrace ?? PanicTrace;
     }
+}
+
+/// <summary>
+/// The runtime frames between <c>runtime.gopanic</c> and a panic's site in Go's traceback: a hardware
+/// fault reaches gopanic through <c>sigpanic</c> and <c>panicmem</c>, an integer divide through
+/// <c>panicdivide</c>, and an explicit <c>panic(v)</c> directly.
+/// </summary>
+internal enum PanicFaultKind
+{
+    /// <summary>The default: a panic raised through a runtime frame that is not modelled (goPanicIndex, panicdottypeE, mapassign, closechan, ...).</summary>
+    Unmodelled,
+
+    /// <summary>An explicit <c>panic(v)</c> (builtin.panic): no runtime frame between gopanic and the site.</summary>
+    Explicit,
+
+    /// <summary>A nil dereference: sigpanic and panicmem.</summary>
+    Memory,
+
+    /// <summary>An integer divide by zero: panicdivide.</summary>
+    Divide,
+
+    /// <summary>A value method called through a nil *T by Go's autogenerated `(*T).M` wrapper: panicwrap.</summary>
+    Panicwrap
 }

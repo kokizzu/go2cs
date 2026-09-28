@@ -366,7 +366,7 @@ public static ulong GoMemhash(ReadOnlySpan<byte> data, ulong seed) {
 /// <summary>Go's <c>memhash32Fallback</c>: the hash of exactly four bytes.</summary>
 public static ulong GoMemhash32(ReadOnlySpan<byte> four, ulong seed) {
     if (four.Length != 4)
-        throw panic($"runtime.memhash32: {four.Length} bytes where the contract is 4");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.memhash32: {four.Length} bytes where the contract is 4");
     ensureHashKey();
     ulong a = hashR4(four);
     return hashMix(hashM5 ^ 4, hashMix(a ^ hashkey[1].Value, (a ^ seed) ^ hashkey[0].Value));
@@ -375,7 +375,7 @@ public static ulong GoMemhash32(ReadOnlySpan<byte> four, ulong seed) {
 /// <summary>Go's <c>memhash64Fallback</c>: the hash of exactly eight bytes.</summary>
 public static ulong GoMemhash64(ReadOnlySpan<byte> eight, ulong seed) {
     if (eight.Length != 8)
-        throw panic($"runtime.memhash64: {eight.Length} bytes where the contract is 8");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.memhash64: {eight.Length} bytes where the contract is 8");
     ensureHashKey();
     ulong a = hashR8(eight);
     return hashMix(hashM5 ^ 8, hashMix(a ^ hashkey[1].Value, (a ^ seed) ^ hashkey[0].Value));
@@ -398,7 +398,7 @@ private static void refuseNonPointer(string caller, @unsafe.Pointer p) {
         return;
     Type actual = ((object)p).GetType();
     if (!actual.IsAssignableTo(typeof(@unsafe.Pointer)))
-        throw panic($"runtime.{caller}: the pointer argument is not an unsafe.Pointer but a {actual.FullName} reference — a slice/string HEADER read through a reinterpretation golib cannot alias (bytesHash's (*slice)(unsafe.Pointer(&b)), strhashFallback's (*stringStruct)(a)); dereferencing it would fault natively. The header seam is a separate increment.");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: the pointer argument is not an unsafe.Pointer but a {actual.FullName} reference — a slice/string HEADER read through a reinterpretation golib cannot alias (bytesHash's (*slice)(unsafe.Pointer(&b)), strhashFallback's (*stringStruct)(a)); dereferencing it would fault natively. The header seam is a separate increment.");
 }
 
 private static object? recoverReferent(@unsafe.Pointer p) {
@@ -408,7 +408,7 @@ private static object? recoverReferent(@unsafe.Pointer p) {
 private static ReadOnlySpan<byte> scalarBytes<T>(string caller, ж<T> box, ulong size) where T : unmanaged {
     Span<byte> all = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref box.Value, 1));
     if (size > (ulong)all.Length)
-        throw panic($"runtime.{caller}: {size} bytes asked of a {typeof(T).Name} box that holds {all.Length}");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: {size} bytes asked of a {typeof(T).Name} box that holds {all.Length}");
     return all.Slice(0, (int)size);
 }
 
@@ -417,7 +417,7 @@ private static ReadOnlySpan<byte> referentBytes(string caller, @unsafe.Pointer p
     refuseNonPointer(caller, p);
 
     if (size > int.MaxValue)
-        throw panic($"runtime.{caller}: a {size}-byte hash is outside what a managed span can address");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: a {size}-byte hash is outside what a managed span can address");
 
     // Go reads nothing for a zero size, whatever the pointer names (computeHash hashes a pointer to
     // an empty struct{} with size 0)
@@ -425,11 +425,11 @@ private static ReadOnlySpan<byte> referentBytes(string caller, @unsafe.Pointer p
         return ReadOnlySpan<byte>.Empty;
 
     if (p is null || p.IsNull)
-        throw panic($"runtime.{caller}: nil pointer with a non-zero size ({size})");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: nil pointer with a non-zero size ({size})");
 
     object? referent = recoverReferent(p);
     if (referent is null)
-        throw panic($"runtime.{caller}: the pointer carries no recoverable managed referent (a raw address, or a reference-bearing box the provenance record cannot resolve through the uintptr bridge before Q44)");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: the pointer carries no recoverable managed referent (a raw address, or a reference-bearing box the provenance record cannot resolve through the uintptr bridge before Q44)");
 
     switch (referent) {
         case ж<byte> elem: {
@@ -437,21 +437,21 @@ private static ReadOnlySpan<byte> referentBytes(string caller, @unsafe.Pointer p
             if (elem.PinnableStorage is byte[] backing) {
                 nint offset = Unsafe.ByteOffset(ref MemoryMarshal.GetArrayDataReference(backing), ref first);
                 if (offset < 0 || (ulong)offset + size > (ulong)backing.Length)
-                    throw panic($"runtime.{caller}: {size} bytes from element {offset} of a {backing.Length}-byte backing reads past its end");
+                    throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: {size} bytes from element {offset} of a {backing.Length}-byte backing reads past its end");
                 return MemoryMarshal.CreateReadOnlySpan(ref first, (int)size);
             }
             if (size > 1)
-                throw panic($"runtime.{caller}: {size} bytes asked of a lone byte box");
+                throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: {size} bytes asked of a lone byte box");
             return MemoryMarshal.CreateReadOnlySpan(ref first, (int)size);
         }
         case ж<array<byte>> arr: {
             Span<byte> all = arr.Value.ToSpan();
             if (size > (ulong)all.Length)
-                throw panic($"runtime.{caller}: {size} bytes asked of a [{all.Length}]byte");
+                throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: {size} bytes asked of a [{all.Length}]byte");
             return all.Slice(0, (int)size);
         }
         case ж<@string>:
-            throw panic($"runtime.{caller}: a string HEADER (unsafe.Pointer(&s)); Go's memhash over a string header hashes the (ptr, len) words, which the managed string does not have — string CONTENT is strhash's contract");
+            throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: a string HEADER (unsafe.Pointer(&s)); Go's memhash over a string header hashes the (ptr, len) words, which the managed string does not have — string CONTENT is strhash's contract");
         case ж<sbyte> b: return scalarBytes(caller, b, size);
         case ж<ushort> b: return scalarBytes(caller, b, size);
         case ж<short> b: return scalarBytes(caller, b, size);
@@ -466,7 +466,7 @@ private static ReadOnlySpan<byte> referentBytes(string caller, @unsafe.Pointer p
         case ж<double> b: return scalarBytes(caller, b, size);
         case ж<bool> b: return scalarBytes(caller, b, size);
         default:
-            throw panic($"runtime.{caller}: no byte view of a {referent.GetType().Name} referent (only byte element boxes, [N]byte boxes and unmanaged scalar boxes are admitted; a struct with references has no Go memory image here)");
+            throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.{caller}: no byte view of a {referent.GetType().Name} referent (only byte element boxes, [N]byte boxes and unmanaged scalar boxes are admitted; a struct with references has no Go memory image here)");
     }
 }
 
@@ -497,16 +497,16 @@ private static ReadOnlySpan<byte> strhashContent(@unsafe.Pointer p) {
     refuseNonPointer("strhash", p);
 
     if (p is null || p.IsNull)
-        throw panic("runtime.strhash: nil string pointer");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("runtime.strhash: nil string pointer");
 
     object? referent = recoverReferent(p);
     if (referent is ж<@string> str)
         return str.Value.ToSpan();
 
     if (referent is null)
-        throw panic("runtime.strhash: the pointer carries no recoverable managed referent — a @string box is reference-bearing, so the provenance record cannot resolve it through the uintptr bridge the emitted stringHash uses (SUB-Q42's class, Q44's fix); stringHash stays red until the header seam or Q44 lands");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("runtime.strhash: the pointer carries no recoverable managed referent — a @string box is reference-bearing, so the provenance record cannot resolve it through the uintptr bridge the emitted stringHash uses (SUB-Q42's class, Q44's fix); stringHash stays red until the header seam or Q44 lands");
 
-    throw panic($"runtime.strhash: the referent is a {referent.GetType().Name}, not a string box");
+    throw go.golib.RuntimeErrorPanic.RuntimeRaised($"runtime.strhash: the referent is a {referent.GetType().Name}, not a string box");
 }
 
 // GolibTests' dispatcher probes (RuntimeAesHashTests): the four dispatchers below exactly as the

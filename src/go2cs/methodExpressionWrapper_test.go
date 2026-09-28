@@ -42,12 +42,17 @@ func (s S) value(x int) int { return s.v + x }
 
 func (s *S) pointer(x int) int { return s.v * x }
 
+type Outer struct{ S }
+
 func main() {
 	// POSITIVE 1: an interface method expression.
 	ifaceExpr := I.M
 
 	// POSITIVE 2: a value-receiver method taken off the pointer type.
 	ptrOfValueExpr := (*S).value
+
+	// POSITIVE 3: a PROMOTED value method off the outer pointer type (no panicwrap in Go).
+	promotedExpr := (*Outer).value
 
 	// CONTROL 1: a value-receiver method off the value type is the method itself.
 	valueExpr := S.value
@@ -56,7 +61,7 @@ func main() {
 	ptrExpr := (*S).pointer
 
 	s := &S{v: 2}
-	fmt.Println(ifaceExpr != nil, ptrOfValueExpr(s, 1), valueExpr(*s, 1), ptrExpr(s, 3))
+	fmt.Println(ifaceExpr != nil, ptrOfValueExpr(s, 1), valueExpr(*s, 1), ptrExpr(s, 3), promotedExpr(&Outer{S{v: 4}}, 1))
 }
 `)
 
@@ -94,8 +99,13 @@ func TestMethodExpressionWrapperMark(t *testing.T) {
 		local string
 		want  string // "" for a control: no mark at all
 	}{
-		{"ifaceExpr", `[GoWrapper("I.M")] (p0, p1) => p0.M(p1)`},
-		{"ptrOfValueExpr", `[GoWrapper("(*S).value")] (p0, p1) => value(p0.Value, p1)`},
+		// Each wrapper reads its receiver through a golib helper that raises the wrapper's OWN panic on a
+		// nil receiver, the marker runtime.Callers keys the wrapper frame on: Go's panicwrap (with Go's
+		// message) only for a DIRECT value method off *T, and a plain wrapper fault otherwise.
+		{"ifaceExpr", `[GoWrapper("I.M")] (p0, p1) => wrapperRecv(p0).M(p1)`},
+		{"ptrOfValueExpr", `[GoWrapper("(*S).value")] (p0, p1) => value(panicwrapRecv(p0, "value method main.S.value called using nil *S pointer").Value, p1)`},
+		{"promotedExpr", `[GoWrapper("(*Outer).value")] (p0, p1) => `},
+		{"promotedExpr", `wrapperRecv(p0).Value`},
 		{"valueExpr", ""},
 		{"ptrExpr", ""},
 	}

@@ -137,6 +137,10 @@ public ref struct GoFrame
     /// re-raise a panic it never caught. See the claim below.
     /// </para>
     /// </remarks>
+    // NoInlining is a CONTRACT here, not a heuristic: runtime's captureCallers pairs each Run frame it
+    // walks with this thread's panic-sequence entries (see PushSequence), so an inlined Run would leave
+    // no frame to pair and shift every splice by one sequence.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public void Run()
     {
         // The panic THIS frame is responsible for continuing, if any: the one its own catch just
@@ -172,13 +176,46 @@ public ref struct GoFrame
             if (!ReferenceEquals(outerRecoverable, handling))
                 GoFuncRoot.RecoverablePanicValue = handling;
 
+            // This sequence's entry for runtime's captureCallers: the panic it is running, or null for
+            // a normal return. It is pushed for EVERY deferring Run, since a normal-return Run can sit
+            // between a Callers and a panicking one ([P2-1]).
+            int sequence = PushSequence(handling);
+
+            // The panic this frame's own catch caught FIRST has its site ending at this frame, so this
+            // activation owns it. Owned by ACTIVATION, not by method: a recursive activation of the
+            // same function is a different owner (review C1 of the cut).
+            if (owned is { Catches: 1, SiteOwner: 0 })
+            {
+                owned.SiteOwner = t_sequences![sequence].Activation;
+                owned.SiteOwnerThread = ThreadToken;
+            }
+
+            // The delegate the loop last invoked: the one accepted re-raise is recognised by its OWN method
+            // (ReRaisedByTheDeferredDelegate), never by frames missing from a trace.
+            Action? deferred = null;
+
+            // Whether a recovery completed in this sequence. Go then runs the frame's remaining deferred calls
+            // from runtime.deferreturn, so a nil deferred func faulting after it shows deferreturn beneath
+            // sigpanic, which is not modelled (COORD's second verification, item 3).
+            bool recoveryCompleted = false;
+
             try
             {
                 while (m_count > 0)
                 {
                     try
                     {
-                        Pop()();
+                        deferred = Pop();
+                        deferred();
+
+                        // A deferred call that recovered this sequence's panic has RETURNED: Go's recovery
+                        // completes here and the panicking frames leave the stack, so a later deferred
+                        // call's Callers no longer shows them (runtime's TestCallersAfterRecovery).
+                        if (handling is { Recovered: true })
+                        {
+                            SetSequence(sequence, null);
+                            recoveryCompleted = true;
+                        }
                     }
                     catch (Exception ex) when (IsPanic(ex, out PanicException? raised))
                     {
@@ -231,10 +268,48 @@ public ref struct GoFrame
                             raised.InheritThrowSite(handling);
                         }
 
+                        // The panic this sequence was running when the deferred call raised: Go keeps it
+                        // beneath the new one until a recovery completes, because the deferred call was
+                        // called by its gopanic. A recovery that already completed nulled the entry.
+                        PanicException? running = t_sequences![sequence].Panic;
+
+                        // Whether this activation OWNS the new panic's site (review B1, B2, C3). It does
+                        // when this catch is the panic's FIRST: the deferred call raised it with no
+                        // deferring frame of its own, so the site ends here. It also does in the one
+                        // accepted re-raise: the deferred delegate IS the frame that caught the panic
+                        // first, and that frame's Run re-raised it straight here (`defer D()` where D
+                        // defers and panics). Anything else leaves the site unowned here, so it splices
+                        // nothing rather than a list with frames missing. A panic raised while a Goexit
+                        // runs this sequence is left unowned too: Go shows runtime.Goexit beneath the
+                        // deferred call, and that frame is not modelled. (runtime's captureCallers
+                        // accepts only some owned ends-at-Run sites: see splicePanic.)
+                        bool firstHere = raised is { SiteOwner: 0, Catches: 1 };
+                        bool reRaised = !firstHere && ReRaisedByTheDeferredDelegate(deferred, raised);
+
+                        // The nil-func thunk faulting with no newer panic running, after this sequence's recovery
+                        // completed: Go's frames there include runtime.deferreturn beneath sigpanic (only when the
+                        // nil call itself faults), so it is left unowned too.
+                        bool afterCompletedRecovery = running is null && recoveryCompleted && ReferenceEquals(deferred, s_nilDeferredCall);
+
+                        if ((firstHere || reRaised) && !(running is null && GoexitException.Started) && !afterCompletedRecovery)
+                        {
+                            raised.SiteOwner = t_sequences[sequence].Activation;
+                            raised.SiteOwnerThread = ThreadToken;
+                            raised.SiteEndsAtRun = true;
+                            raised.SiteIsTheDeferredCall = reRaised;
+
+                            if (running is not null && !ReferenceEquals(running, raised))
+                                raised.Beneath = running;
+                        }
+
                         GoFuncRoot.CapturedPanicValue = raised;
                         GoFuncRoot.HandledPanicValue = raised;
                         GoFuncRoot.RecoverablePanicValue = raised;
                         handling = raised;
+
+                        // The new panic REPLACES the one this sequence was running, so the sequence's
+                        // later deferred calls see it (the TestCallersAbortedPanic shape).
+                        SetSequence(sequence, raised);
 
                         // A panic raised by THIS frame's own deferred call is this frame's to
                         // continue, whether or not the frame was already panicking — so the tail
@@ -245,6 +320,7 @@ public ref struct GoFrame
             }
             finally
             {
+                PopSequence(sequence);
                 GoFuncRoot.HandledPanicValue = outer;
 
                 if (!ReferenceEquals(GoFuncRoot.RecoverablePanicValue, outerRecoverable))
@@ -268,6 +344,113 @@ public ref struct GoFrame
             m_foreignRethrow = null;
             foreignRethrow.Throw();
         }
+    }
+
+    // THE PANIC SEQUENCES (docs/phase4/DESIGN-panic-stack-frames.md §3.B). Go runs a panic's deferred
+    // calls ON the panicking stack, so a Callers from one still finds runtime.gopanic and the frames it
+    // panicked through. Here the CLR has already unwound those frames, and runtime's captureCallers
+    // splices them back from the panic's SiteTrace. To know WHICH panic a Run frame on the live stack
+    // is running, every deferring Run pushes one entry: its own panic, or null. The k-th Run frame met
+    // walking down from the top pairs with the k-th entry from the top. Per thread, as the other panic
+    // slots are (GoFuncRoot), and the array is allocated once per thread and reused.
+    //
+    // Each entry also carries its ACTIVATION: a per-thread number no other Run activation on the thread
+    // ever shares (a slot index is reused as soon as its Run returns, so it cannot tell two activations
+    // apart). A panic's SiteOwner names the activation its site provably ends at, and the splice
+    // requires it on every link.
+    private struct Sequence
+    {
+        internal PanicException? Panic;
+        internal long Activation;
+    }
+
+    [ThreadStatic] private static Sequence[]? t_sequences;
+    [ThreadStatic] private static int t_sequenceDepth;
+    [ThreadStatic] private static long t_lastActivation;
+
+    private static int PushSequence(PanicException? panic)
+    {
+        int index = t_sequenceDepth;
+        Sequence[] entries = t_sequences ??= new Sequence[16];
+
+        if (index == entries.Length)
+        {
+            Array.Resize(ref t_sequences, index * 2);
+            entries = t_sequences;
+        }
+
+        entries[index] = new Sequence { Panic = panic, Activation = ++t_lastActivation };
+        t_sequenceDepth = index + 1;
+
+        return index;
+    }
+
+    private static void SetSequence(int index, PanicException? panic) => t_sequences![index].Panic = panic;
+
+    private static void PopSequence(int index)
+    {
+        t_sequences![index] = default;
+        t_sequenceDepth = index;
+    }
+
+    // The one re-raise an activation accepts as its own site (see Run's catch): the panic was caught FIRST
+    // by an emitted frame (its site ends at that frame, not at a Run), caught exactly once since, here, and
+    // the delegate this Run just invoked IS that frame's method, so no Go frame lies between. Decided by the
+    // delegate's own method: a trace cannot be read for "no frame between", because the JIT's implicit
+    // tail calls remove exactly those frames (COORD's verification of the re-cut, B1). A catcher whose Run
+    // registered no defer (an unreached conditional defer) left the site unstamped, and passes too.
+    private static bool ReRaisedByTheDeferredDelegate(Action? deferred, PanicException raised)
+    {
+        if (deferred is null || raised.Catches != 2 || raised.SiteEndsAtRun || raised.SiteTrace?.GetFrames() is not { Length: > 0 } site)
+            return false;
+
+        System.Reflection.MethodBase? catcher = site[^1].GetMethod();
+
+        return catcher is not null && catcher != RunMethod && deferred.Method == catcher;
+    }
+
+    // Identifies this thread for SiteOwnerThread: an object, so no two threads ever share one (a managed
+    // thread id can be reused once a thread ends). Read only on the panic path.
+    [ThreadStatic] private static object? t_threadToken;
+
+    internal static object ThreadToken => t_threadToken ??= new object();
+
+    /// <summary>The zero-argument nil-deferred-func thunk's method: the one site-less ends-at-Run site runtime's captureCallers accepts.</summary>
+    internal static System.Reflection.MethodInfo NilDeferredCallMethod => s_nilDeferredCall.Method;
+
+    // A range-over-func seq resumed with its loop STOPPED (a break, a panic or a Goexit in the loop body,
+    // which the adapter cannot tell apart) runs the rest of seq on its coro's thread, where Go would show
+    // the body's frames beneath it. Every splice on that thread is refused from then on (a missing splice,
+    // never a partial one); the pooled thread is reset with the rest of its state.
+    [ThreadStatic] private static bool t_splicesRefused;
+
+    internal static void RefuseSplicesOnThisThread() => t_splicesRefused = true;
+
+    internal static bool SplicesRefused => t_splicesRefused;
+
+    // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
+    // so this only matters for a thread reused after an abnormal end.
+    internal static void ResetSequences()
+    {
+        if (t_sequences is { } entries)
+            Array.Clear(entries);
+
+        t_sequenceDepth = 0;
+        t_splicesRefused = false;
+    }
+
+    /// <summary>The <see cref="Run"/> method, for matching its frames by identity rather than by name ([P2-4]).</summary>
+    internal static readonly System.Reflection.MethodBase RunMethod = typeof(GoFrame).GetMethod(nameof(Run))!;
+
+    /// <summary>
+    /// The panic the <paramref name="fromTop"/>-th deferring <see cref="Run"/> frame below the caller
+    /// is running (0 is the innermost), or null for a normal-return sequence or no such frame, with that
+    /// Run's activation.
+    /// </summary>
+    internal static (PanicException? Panic, long Activation) SequenceFromTop(int fromTop)
+    {
+        int index = t_sequenceDepth - 1 - fromTop;
+        return index >= 0 ? (t_sequences![index].Panic, t_sequences[index].Activation) : (null, 0);
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it

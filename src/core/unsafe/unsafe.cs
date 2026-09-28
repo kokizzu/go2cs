@@ -543,7 +543,7 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     public void StoreThrough(Pointer? val)
     {
         if (ResolveReferent() is not IUntypedSlotAccess slot)
-            throw panic("unsafe.Pointer store-through: the pointer carries no recoverable managed referent (raw-address stores are not part of the managed model)");
+            throw go.golib.RuntimeErrorPanic.RuntimeRaised("unsafe.Pointer store-through: the pointer carries no recoverable managed referent (raw-address stores are not part of the managed model)");
 
         if (val is null || val.IsNull)
         {
@@ -570,7 +570,7 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
                 return;
         }
 
-        throw panic("unsafe.Pointer store-through: the named slot cannot hold the stored pointer value");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("unsafe.Pointer store-through: the named slot cannot hold the stored pointer value");
     }
 
     /// <summary>
@@ -581,10 +581,10 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
     public Pointer LoadThrough()
     {
         if (ResolveReferent() is not IUntypedSlotAccess slot)
-            throw panic("unsafe.Pointer load-through: the pointer carries no recoverable managed referent (raw-address loads are not part of the managed model)");
+            throw go.golib.RuntimeErrorPanic.RuntimeRaised("unsafe.Pointer load-through: the pointer carries no recoverable managed referent (raw-address loads are not part of the managed model)");
 
         if (!slot.TryLoadThrough(out object? value))
-            throw panic("unsafe.Pointer load-through: nil pointer dereference");
+            throw go.golib.RuntimeErrorPanic.RuntimeRaised("unsafe.Pointer load-through: nil pointer dereference");
 
         return value switch
         {
@@ -592,7 +592,7 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
             Pointer p => p,
             uintptr u => new Pointer(u),
             INilPointer referent => FromReferent(referent),
-            _ => throw panic("unsafe.Pointer load-through: the named slot does not hold a pointer-shaped value"),
+            _ => throw go.golib.RuntimeErrorPanic.RuntimeRaised("unsafe.Pointer load-through: the named slot does not hold a pointer-shaped value"),
         };
     }
 
@@ -920,14 +920,14 @@ public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.N
     int n = int.CreateTruncating(len);
 
     if (n < 0)
-        throw panic("len is negative");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("len is negative");
 
     if (ptr == nil)
     {
         if (n == 0)
             return [];
 
-        throw panic("ptr is nil and len is not zero");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("ptr is nil and len is not zero");
     }
 
     // A pointer that ALIASES a GENUINELY NATIVE address yields a NATIVE-BACKED slice over that
@@ -1028,7 +1028,7 @@ public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.N
     int n = int.CreateTruncating(len);
 
     if (n < 0)
-        throw panic("len is negative");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("len is negative");
 
     // A zero length reads no bytes, so the pointer is never dereferenced — in Go, and now here
     // either. SliceData over a non-nil slice of capacity 0 is documented to return a NON-nil
@@ -1043,7 +1043,7 @@ public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.N
 
     // Only a nil pointer with a NON-zero length is the panic Go specifies.
     if (ptr == nil)
-        throw panic("ptr is nil and len is not zero");
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised("ptr is nil and len is not zero");
 
     // A pointer that ALIASES a native address reads its n bytes from that address (see Slice above).
     // @string has no native-backed representation — its header is (byte[], offset, length) — so this

@@ -1,10 +1,12 @@
 using System;
 using System.Runtime.CompilerServices;
+using static go.builtin;
 using static go.runtime_package;
 
 // Go-source frames for the method-expression wrapper guards (runtime's callers() counts a method as a Go
 // frame when its top-level type is a `*_package` class in namespace go). The lambdas are spelled the way
-// the converter emits Go's two wrapper-shaped method expressions.
+// the converter emits Go's two wrapper-shaped method expressions, their receivers read through golib's
+// wrapperRecv (a nil receiver raised as the wrapper's own panic, the marker runtime.Callers keys on).
 namespace go;
 
 internal static class wrapperprobe_package
@@ -43,12 +45,12 @@ internal static class wrapperprobe_package
     }
 
     // IStack.S, the wrapper that calls an ordinary function: elided from runtime.Stack's text too.
-    internal static readonly Func<IStack, @string> stackWrapper = ((Func<IStack, @string>)([GoWrapper("IStack.S")] (p0) => p0.S()));
+    internal static readonly Func<IStack, @string> stackWrapper = ((Func<IStack, @string>)([GoWrapper("IStack.S")] (p0) => wrapperRecv(p0).S()));
 
     // An ordinary function value, for the reflect-token arm.
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void plain() { }
 
     // I.M, as convSelectorExpr emits an interface method expression.
-    internal static readonly Func<I, slice<uintptr>> interfaceWrapper = ((Func<I, slice<uintptr>>)([GoWrapper("I.M")] (p0) => p0.M()));
+    internal static readonly Func<I, slice<uintptr>> interfaceWrapper = ((Func<I, slice<uintptr>>)([GoWrapper("I.M")] (p0) => wrapperRecv(p0).M()));
 }

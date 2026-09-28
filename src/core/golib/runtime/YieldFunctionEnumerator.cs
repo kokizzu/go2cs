@@ -114,6 +114,12 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
             m_hasValue = true;
             m_coro!.Switch();
 
+            // Resumed with the loop stopped: seq unwinds on this coro thread for a break, a panic or a
+            // Goexit in the body alike, so runtime.Callers splices nothing here from now on
+            // (GoFrame.RefuseSplicesOnThisThread).
+            if (m_stopped)
+                GoFrame.RefuseSplicesOnThisThread();
+
             return !m_stopped;
         }
 
@@ -123,6 +129,12 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
                 return;
 
             m_failure = null;
+
+            // seq's Goexit was raised on the coro's thread and marked THAT thread; it now ends the ranging
+            // goroutine, so mark this one (GoexitException.MarkGoroutineExiting).
+            if (failure.SourceException is GoexitException)
+                GoexitException.MarkGoroutineExiting();
+
             failure.Throw();
         }
 
@@ -137,7 +149,10 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
             if (m_coro is null || m_done)
                 return;
 
-            // The loop ended early: resume seq once with yield answering false, so it unwinds.
+            // The loop ended early: resume seq once with yield answering false, so it unwinds. If it ended
+            // for a panic in the loop body, that panic crossed frames Go has and this adapter does not
+            // model (the body's rangefunc closure, seq): mark it so runtime.Callers splices nothing for it.
+            PanicException.MarkLastAdoptedCrossedRangeFunc();
             m_stopped = true;
             m_coro.Switch();
             rethrowFailure();
