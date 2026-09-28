@@ -59,7 +59,7 @@ using static go.vendor.golang.org.x.crypto.@internal.alias_package;
 
 namespace go.vendor.golang.org.x.crypto.@internal;
 
-[GoPackage("alias")]
+[GoPackage("alias", ImportPath = "vendor/golang.org/x/crypto/internal/alias")]
 public static partial class alias_package
 {
     // C# nested types declared with no access modifier are always private, and the

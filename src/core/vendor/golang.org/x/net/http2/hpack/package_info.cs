@@ -59,7 +59,7 @@ using static go.vendor.golang.org.x.net.http2.hpack_package;
 
 namespace go.vendor.golang.org.x.net.http2;
 
-[GoPackage("hpack")]
+[GoPackage("hpack", ImportPath = "vendor/golang.org/x/net/http2/hpack")]
 public static partial class hpack_package
 {
     // C# nested types declared with no access modifier are always private, and the

@@ -65,7 +65,7 @@ using static go.vendor.golang.org.x.text.unicode.norm_package;
 
 namespace go.vendor.golang.org.x.text.unicode;
 
-[GoPackage("norm")]
+[GoPackage("norm", ImportPath = "vendor/golang.org/x/text/unicode/norm")]
 public static partial class norm_package
 {
     // C# nested types declared with no access modifier are always private, and the

@@ -84,7 +84,7 @@ using static go.vendor.golang.org.x.net.route_package;
 
 namespace go.vendor.golang.org.x.net;
 
-[GoPackage("route")]
+[GoPackage("route", ImportPath = "vendor/golang.org/x/net/route")]
 public static partial class route_package
 {
     // C# nested types declared with no access modifier are always private, and the

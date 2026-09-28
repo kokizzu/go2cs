@@ -61,7 +61,7 @@ using static go.vendor.golang.org.x.crypto.chacha20poly1305_package;
 
 namespace go.vendor.golang.org.x.crypto;
 
-[GoPackage("chacha20poly1305")]
+[GoPackage("chacha20poly1305", ImportPath = "vendor/golang.org/x/crypto/chacha20poly1305")]
 public static partial class chacha20poly1305_package
 {
     // C# nested types declared with no access modifier are always private, and the

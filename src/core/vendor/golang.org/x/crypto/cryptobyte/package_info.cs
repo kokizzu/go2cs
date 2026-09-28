@@ -66,7 +66,7 @@ using static go.vendor.golang.org.x.crypto.cryptobyte_package;
 
 namespace go.vendor.golang.org.x.crypto;
 
-[GoPackage("cryptobyte")]
+[GoPackage("cryptobyte", ImportPath = "vendor/golang.org/x/crypto/cryptobyte")]
 public static partial class cryptobyte_package
 {
     // C# nested types declared with no access modifier are always private, and the

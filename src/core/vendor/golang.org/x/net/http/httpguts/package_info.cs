@@ -58,7 +58,7 @@ using static go.vendor.golang.org.x.net.http.httpguts_package;
 
 namespace go.vendor.golang.org.x.net.http;
 
-[GoPackage("httpguts")]
+[GoPackage("httpguts", ImportPath = "vendor/golang.org/x/net/http/httpguts")]
 public static partial class httpguts_package
 {
     // C# nested types declared with no access modifier are always private, and the

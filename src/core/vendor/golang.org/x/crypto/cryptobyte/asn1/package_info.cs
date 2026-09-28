@@ -54,7 +54,7 @@ using static go.vendor.golang.org.x.crypto.cryptobyte.asn1_package;
 
 namespace go.vendor.golang.org.x.crypto.cryptobyte;
 
-[GoPackage("asn1")]
+[GoPackage("asn1", ImportPath = "vendor/golang.org/x/crypto/cryptobyte/asn1")]
 public static partial class asn1_package
 {
     // C# nested types declared with no access modifier are always private, and the

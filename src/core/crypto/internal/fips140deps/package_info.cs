@@ -53,7 +53,7 @@ using static go.crypto.@internal.fipsdeps_package;
 
 namespace go.crypto.@internal;
 
-[GoPackage("fipsdeps")]
+[GoPackage("fipsdeps", ImportPath = "crypto/internal/fips140deps")]
 public static partial class fipsdeps_package
 {
     // C# nested types declared with no access modifier are always private, and the

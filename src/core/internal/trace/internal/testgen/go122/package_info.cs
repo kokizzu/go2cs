@@ -72,7 +72,7 @@ using static go.@internal.trace.@internal.testgen.testkit_package;
 
 namespace go.@internal.trace.@internal.testgen;
 
-[GoPackage("testkit")]
+[GoPackage("testkit", ImportPath = "internal/trace/internal/testgen/go122")]
 public static partial class testkit_package
 {
     // C# nested types declared with no access modifier are always private, and the
