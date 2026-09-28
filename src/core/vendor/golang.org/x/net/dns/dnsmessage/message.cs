@@ -2141,7 +2141,7 @@ public static @string String(this Name n) {
         return (default!, errNameTooLong);
     }
     // Add a trailing dot to canonicalize name.
-    if (n.Length == 0 || n.Data[n.Length - 1] != (rune)'.') {
+    if (n.Length == 0 || n.Data[(uint8)(n.Length - 1)] != (rune)'.') {
         return (oldMsg, errNonCanonicalName);
     }
     // Allow root domain.

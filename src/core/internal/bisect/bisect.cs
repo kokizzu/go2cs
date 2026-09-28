@@ -264,14 +264,14 @@ public static (ж<Matcher>, error) New(@string pattern) {
         }
         if (fallthrough || !matchᴛ1 && (exprᴛ1 is (rune)'0' or (rune)'1')) { matchᴛ1 = true;
             bits.LshAssign((uint64)(wid));
-            bits |= (uint64)((uint64)(c - (rune)'0'));
+            bits |= (uint64)((uint64)((byte)(c - (rune)'0')));
         }
         else if (exprᴛ1 is (rune)'a' or (rune)'b' or (rune)'c' or (rune)'d' or (rune)'e' or (rune)'f' or (rune)'A' or (rune)'B' or (rune)'C' or (rune)'D' or (rune)'E' or (rune)'F') { matchᴛ1 = true;
             if (wid != 4) {
                 return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
             }
             bits <<= (int)(4);
-            bits |= (uint64)((uint64)((byte)(c & ~0x20) - (rune)'A' + 10));
+            bits |= (uint64)((uint64)((byte)((byte)(c & ~0x20) - (rune)'A' + 10)));
         }
         else if (exprᴛ1 is (rune)'y') {
             if (i + 1 < len(p) && (p[i + 1] == (rune)'0' || p[i + 1] == (rune)'1')) {
@@ -592,15 +592,15 @@ public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
                 var c = idstr[iΔ1];
                 switch (ᐧ) {
                 case {} when (rune)'0' <= c && c <= (rune)'9': {
-                    id |= (uint64)((uint64)(c - (rune)'0'));
+                    id |= (uint64)((uint64)((byte)(c - (rune)'0')));
                     break;
                 }
                 case {} when (rune)'a' <= c && c <= (rune)'f': {
-                    id |= (uint64)((uint64)(c - (rune)'a' + 10));
+                    id |= (uint64)((uint64)((byte)(c - (rune)'a' + 10)));
                     break;
                 }
                 case {} when (rune)'A' <= c && c <= (rune)'F': {
-                    id |= (uint64)((uint64)(c - (rune)'A' + 10));
+                    id |= (uint64)((uint64)((byte)(c - (rune)'A' + 10)));
                     break;
                 }}
             }
@@ -621,7 +621,7 @@ public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
                     return (line, 0, false);
                 }
                 case (rune)'0' or (rune)'1': {
-                    id |= (uint64)((uint64)(c - (rune)'0'));
+                    id |= (uint64)((uint64)((byte)(c - (rune)'0')));
                     break;
                 }}
             }

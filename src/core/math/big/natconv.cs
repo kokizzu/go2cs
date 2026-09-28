@@ -198,18 +198,18 @@ internal static (nat res, nint b, nint count, error err) scan(this nat z, io.Byt
             Word d1 = default!;
             switch (ᐧ) {
             case {} when (rune)'0' <= ch && ch <= (rune)'9': {
-                d1 = ((Word)(nuint)(ch - (rune)'0'));
+                d1 = ((Word)(nuint)((byte)(ch - (rune)'0')));
                 break;
             }
             case {} when (rune)'a' <= ch && ch <= (rune)'z': {
-                d1 = ((Word)(nuint)(ch - (rune)'a' + 10));
+                d1 = ((Word)(nuint)((byte)(ch - (rune)'a' + 10)));
                 break;
             }
             case {} when (rune)'A' <= ch && ch <= (rune)'Z': {
                 if (b <= maxBaseSmall){
-                    d1 = ((Word)(nuint)(ch - (rune)'A' + 10));
+                    d1 = ((Word)(nuint)((byte)(ch - (rune)'A' + 10)));
                 } else {
-                    d1 = ((Word)(nuint)(ch - (rune)'A' + (byte)maxBaseSmall));
+                    d1 = ((Word)(nuint)((byte)(ch - (rune)'A' + (byte)maxBaseSmall)));
                 }
                 break;
             }

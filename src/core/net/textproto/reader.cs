@@ -728,7 +728,7 @@ internal static bool validHeaderFieldByte(byte c) {
 	1<<'|' |
 	1<<'~' */
             maskᶜ;
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (6341068274398134270UL)))) != 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((byte)(c - 64)))) & (6341068274398134270UL)))) != 0;
 }
 
 // Hoisted Go big-integer constant (single parse; Go folds constants at compile time)
@@ -759,7 +759,7 @@ internal static bool validHeaderValueByte(byte c) {
 	1<<0x20 |
 	1<<0x09 */ // HTAB: %x09
             maskᶜ1;
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(9223372036854775807UL)))) == 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((byte)(c - 64)))) & ~(9223372036854775807UL)))) == 0;
 }
 
 // canonicalMIMEHeaderKey is like CanonicalMIMEHeaderKey but is

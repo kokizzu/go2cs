@@ -21,10 +21,10 @@ internal static void Main() {
     int8 s8 = -100;
     int16 s16 = -30000;
     nb n = 200;
-    fmt.Println(b + cb.Lsh(k));
+    fmt.Println((byte)(b + cb.Lsh(k)));
     fmt.Println(cb.Lsh(k));
     fmt.Println(tcb.Lsh(k));
-    fmt.Println(b + ((byte)ucb).Lsh(k));
+    fmt.Println((byte)(b + ((byte)ucb).Lsh(k)));
     fmt.Println((byte)(cb << (int)(3)));
     fmt.Println(cb.Lsh((uint64)(ki)));
     fmt.Println(w.Lsh(k));
@@ -35,7 +35,7 @@ internal static void Main() {
     fmt.Println(cb.Rsh(k));
     fmt.Println(s8.Rsh(k));
     var x = (byte)(cb.Lsh(k));
-    fmt.Println(x + b);
+    fmt.Println((byte)(x + b));
 }
 
 } // end main_package

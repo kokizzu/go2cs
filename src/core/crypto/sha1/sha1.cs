@@ -233,7 +233,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
         separator &= (byte)(mask);
         if (i >= 56) {
             // we might have to write the length here if all fit in one block
-            d.x[i] |= (byte)((byte)(mask1b & length[i - 56]));
+            d.x[i] |= (byte)((byte)(mask1b & length[(byte)(i - 56)]));
         }
     }
     // compress, and only keep the digest if all fit in one block
@@ -251,7 +251,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
             d.x[i] = separator;
             separator = 0;
         } else {
-            d.x[i] = length[i - 56];
+            d.x[i] = length[(byte)(i - 56)];
         }
     }
     // compress, and only keep the digest if we actually needed the second block

@@ -95,7 +95,7 @@ internal static nint goamd64() {
     }
 
     Error = fmt.Errorf("invalid GOAMD64: must be v1, v2, v3, v4"u8);
-    return (nint)(DefaultGOAMD64[len("v")] - (rune)'0');
+    return (nint)((byte)(DefaultGOAMD64[len("v")] - (rune)'0'));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -201,7 +201,7 @@ internal static GoarmFeatures /*g*/ goarm() {
     }
     else { /* default: */
         Error = fmt.Errorf("invalid GOARM: must start with 5, 6, or 7, and may optionally end in either %q or %q"u8, hardFloatOpt, softFloatOpt);
-        g.Version = (nint)(def[0] - (rune)'0');
+        g.Version = (nint)((byte)(def[0] - (rune)'0'));
     }
 
     // 5 defaults to softfloat. 6 and 7 default to hardfloat.
@@ -367,7 +367,7 @@ internal static nint goppc64() {
     }
 
     Error = fmt.Errorf("invalid GOPPC64: must be power8, power9, power10"u8);
-    return (nint)(DefaultGOPPC64[len("power")] - (rune)'0');
+    return (nint)((byte)(DefaultGOPPC64[len("power")] - (rune)'0'));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -515,8 +515,8 @@ internal static slice<@string> gogoarchTags() {
     }
     if (exprᴛ1 == "arm64"u8) {
         slice<@string> list = default!;
-        nint major = (nint)(GOARM64.Version[1] - (rune)'0');
-        nint minor = (nint)(GOARM64.Version[3] - (rune)'0');
+        nint major = (nint)((byte)(GOARM64.Version[1] - (rune)'0'));
+        nint minor = (nint)((byte)(GOARM64.Version[3] - (rune)'0'));
         for (nint i = 0; i <= minor; i++) {
             list = append(list, fmt.Sprintf("%s.v%d.%d"u8, GOARCH, major, i));
         }

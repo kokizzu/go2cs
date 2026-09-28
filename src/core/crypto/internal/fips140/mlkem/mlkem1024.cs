@@ -219,7 +219,7 @@ internal static void kemKeyGen1024(ж<DecapsulationKey1024> Ꮡdk, [GoArrayDims(
     var A = Ꮡdk.of(DecapsulationKey1024.Ꮡa);
     for (var i = (byte)0; i < k1024; i++) {
         for (var j = (byte)0; j < k1024; j++) {
-            A.Value[i * (byte)k1024 + j] = sampleNTT(ρ, j, i);
+            A.Value[(byte)(i * (byte)k1024 + j)] = sampleNTT(ρ, j, i);
         }
     }
     byte N = default!;
@@ -352,7 +352,7 @@ internal static (ж<EncapsulationKey1024>, error) parseEK1024(ж<EncapsulationKe
     copy(ek.ρ[..], ekPKE);
     for (var i = (byte)0; i < k1024; i++) {
         for (var j = (byte)0; j < k1024; j++) {
-            ek.a[i * (byte)k1024 + j] = sampleNTT(ek.ρ[..], j, i);
+            ek.a[(byte)(i * (byte)k1024 + j)] = sampleNTT(ek.ρ[..], j, i);
         }
     }
     return (Ꮡek, default!);

@@ -174,8 +174,8 @@ internal static slice<uint32> /*out*/ ksRotate(uint32 @in) {
     var last = @in;
     for (nint i = 0; i < 16; i++) {
         // 28-bit circular left shift
-        var left = ((last.Lsh((uint64)((4 + ksRotations[i])))) >> (int)(4));
-        var right = ((last << (int)(4))).Rsh((uint64)((32 - ksRotations[i])));
+        var left = ((last.Lsh((uint64)((uint8)(4 + ksRotations[i])))) >> (int)(4));
+        var right = ((last << (int)(4))).Rsh((uint64)((uint8)(32 - ksRotations[i])));
         @out[i] = (uint32)(left | right);
         last = @out[i];
     }

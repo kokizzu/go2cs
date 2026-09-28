@@ -39,7 +39,7 @@ public static (slice<byte>, error) GobEncode(this ж<ΔInt> Ꮡx) {
     }
     var b = buf[0];
     if ((byte)((b >> (int)(1))) != intGobVersion) {
-        return fmt.Errorf("Int.GobDecode: encoding version %d not supported"u8, (b >> (int)(1)));
+        return fmt.Errorf("Int.GobDecode: encoding version %d not supported"u8, (byte)((b >> (int)(1))));
     }
     z.neg = (byte)(b & 1) != 0;
     z.abs = z.abs.setBytes(buf[1..]);

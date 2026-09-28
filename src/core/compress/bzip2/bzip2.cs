@@ -424,7 +424,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
         // it's always referenced with a run-length of 1. Thus 0
         // doesn't need to be encoded and we have |v-1| in the next
         // line.
-        var b = mtf.Decode((nint)(v - 1));
+        var b = mtf.Decode((nint)((uint16)(v - 1)));
         if (bufIndex >= bz2.blockSize) {
             return ((StructuralError)(@string)dataExceedsBlockSizeˢ);
         }

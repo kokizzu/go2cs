@@ -612,9 +612,10 @@ func (v *Visitor) emitGuardedShift(binaryExpr *ast.BinaryExpr, leftOperand, rawC
 		} else {
 			receiver = fmt.Sprintf("((%s)%s)", underlyingCS, leftOperand)
 		}
-	} else if v.needsParentheses(binaryExpr.X) || v.shiftReceiverRendersAsCast(binaryExpr.X) {
-		// A compound expression, or a Go type CONVERSION whose render is a low-precedence C# cast
-		// (`uint64(1)` → `(uint64)1`), on which a trailing `.Lsh(…)` would mis-bind to the inner
+	} else if v.needsParentheses(binaryExpr.X) || v.shiftReceiverRendersAsCast(binaryExpr.X) || v.narrowArithmeticRendersAsCast(binaryExpr.X, leftOperand) {
+		// A compound expression, a Go type CONVERSION whose render is a low-precedence C# cast
+		// (`uint64(1)` → `(uint64)1`), or a parenthesized narrow operand that rendered as its own
+		// narrowing cast (`(int8)(a + b)`), on which a trailing `.Lsh(…)` would mis-bind to the inner
 		// operand — parenthesize so the method binds to the whole converted value.
 		receiver = "(" + leftOperand + ")"
 	} else {
@@ -1332,7 +1333,9 @@ func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatc
 		return "(" + castType + ")(" + core + ")"
 	}
 
-	return core
+	// A NON-constant narrow-integer result whose consumer is not wrap-invariant narrows itself back
+	// to Go's width (see markNarrowArithmeticContexts)
+	return v.narrowArithmeticSelfCast(binaryExpr, core)
 }
 
 // widenedConstExprCastType returns the C# type a TYPED-integer constant operator expression must be

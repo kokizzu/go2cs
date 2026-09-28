@@ -390,8 +390,8 @@ internal static bool asn1Signed(ref int64 @out, slice<byte> n) {
         @out |= (int64)((int64)n[i]);
     }
     // Shift up and down in order to sign extend the result.
-    @out.LshAssign((uint64)(64 - (uint8)length * 8));
-    @out.RshAssign((uint64)(64 - (uint8)length * 8));
+    @out.LshAssign((uint64)((uint8)(64 - (uint8)length * 8)));
+    @out.RshAssign((uint64)((uint8)(64 - (uint8)length * 8)));
     return true;
 }
 
@@ -841,10 +841,10 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
         // used to encode the length.
         var lenLen = (byte)(lenByte & 0x7f);
         ref var len32 = ref heap(new uint32(), out var Ꮡlen32);
-        if (lenLen == 0 || lenLen > 4 || len(s) < (nint)(2 + lenLen)) {
+        if (lenLen == 0 || lenLen > 4 || len(s) < (nint)((byte)(2 + lenLen))) {
             return false;
         }
-        var lenBytes = ((String)((s)[2..(int)(2 + lenLen)]));
+        var lenBytes = ((String)((s)[2..(int)((byte)(2 + lenLen))]));
         if (!lenBytes.readUnsigned(Ꮡlen32, (nint)lenLen)) {
             return false;
         }
@@ -854,7 +854,7 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
             // Length should have used short-form encoding.
             return false;
         }
-        if (len32.Rsh((uint64)(((lenLen - 1) * 8))) == 0) {
+        if (len32.Rsh((uint64)((byte)((lenLen - 1) * 8))) == 0) {
             // Leading octet is 0. Length should have been at least one byte shorter.
             return false;
         }

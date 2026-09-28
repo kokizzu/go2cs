@@ -421,7 +421,7 @@ internal static bool tooLarge(nint x) {
         if (tooLarge(num)) {
             return (0, false, end); // Overflow; crazy long number most likely.
         }
-        num = num * 10 + (nint)(s[newi] - (rune)'0');
+        num = num * 10 + (nint)((byte)(s[newi] - (rune)'0'));
         isnum = true;
     }
     return (num, isnum, newi);

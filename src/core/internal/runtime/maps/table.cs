@@ -122,7 +122,7 @@ internal static ж<table> newTable(ж<abi.SwissMapType> Ꮡtyp, uint64 capacity,
             // TODO(prattmic): Do something cleaner.
             throw panic("overflow");
         }
-        growthLeft = (uint16)((t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots);
+        growthLeft = (uint16)((uint16)(t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots);
     }
     t.growthLeft = growthLeft;
 }
@@ -461,7 +461,7 @@ public static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.SwissM
 // tombstone is a slot that has been deleted but is still considered occupied
 // so as not to violate the probing invariant.
 [GoRecv] internal static uint16 tombstones(this ref table t) {
-    return (uint16)((t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots - t.used - t.growthLeft);
+    return (uint16)((uint16)(t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots - t.used - t.growthLeft);
 }
 
 // Clear deletes all entries from the map resulting in an empty map.
@@ -582,7 +582,7 @@ public static (@unsafe.Pointer, bool) PutSlot(this ж<table> Ꮡt, ж<abi.SwissM
     // We can achieve both of these by using to difference between
     // the directory and table depth to compute how many entries
     // the table covers.
-    nint entries = ((nint)1).Lsh((uint64)(((~it.m).globalDepth - (~it.tab).localDepth)));
+    nint entries = ((nint)1).Lsh((uint64)((uint8)((~it.m).globalDepth - (~it.tab).localDepth)));
     it.dirIdx += entries;
     it.tab = default!;
     it.group = new groupReference(nil);
@@ -971,9 +971,9 @@ internal static void rehash(this ж<table> Ꮡt, ж<abi.SwissMapType> Ꮡtyp, ж
 // Bitmask for the last selection bit at this depth.
 internal static uintptr localDepthMask(uint8 localDepth) {
     if (goarch.PtrSize == 4) {
-        return ((uintptr)1).Lsh((uint64)((32 - localDepth)));
+        return ((uintptr)1).Lsh((uint64)((uint8)(32 - localDepth)));
     }
-    return ((uintptr)1).Lsh((uint64)((64 - localDepth)));
+    return ((uintptr)1).Lsh((uint64)((uint8)(64 - localDepth)));
 }
 
 // split the table into two, installing the new tables in the map directory.

@@ -1219,6 +1219,12 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNarrowArithmeticArg() => CheckTarget("NarrowArithmeticArg");
 
     [TestMethod]
+    public void CheckNarrowArithmeticCompileSinks() => CheckTarget("NarrowArithmeticCompileSinks");
+
+    [TestMethod]
+    public void CheckNarrowArithmeticSinks() => CheckTarget("NarrowArithmeticSinks");
+
+    [TestMethod]
     public void CheckNarrowByteArithFirstOperandCast() => CheckTarget("NarrowByteArithFirstOperandCast");
 
     [TestMethod]

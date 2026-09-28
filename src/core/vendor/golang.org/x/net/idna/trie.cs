@@ -37,10 +37,10 @@ internal static ж<idnaTrie> trie = Ꮡ(new idnaTrie(nil));
     var lo = (uint16)(offset + 1);
     var hi = (uint16)(lo + (uint16)header.lo);
     while (lo < hi) {
-        var m = (uint16)(lo + (hi - lo) / 2);
+        var m = (uint16)(lo + (uint16)(hi - lo) / 2);
         var r = t.values[m];
         if (r.lo <= b && b <= r.hi) {
-            return (uint16)(r.value + (uint16)(b - r.lo) * header.value);
+            return (uint16)(r.value + (uint16)((byte)(b - r.lo)) * header.value);
         }
         if (b < r.lo){
             hi = m;

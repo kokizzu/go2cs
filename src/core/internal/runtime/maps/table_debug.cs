@@ -69,7 +69,7 @@ internal const bool debugLog = false;
         t.Print(Ꮡtyp, Ꮡm);
         throw panic("invariant failed: found mismatched used slot count");
     }
-    var growthLeft = (uint16)((t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots - t.used - deleted);
+    var growthLeft = (uint16)((uint16)(t.capacity * (uint16)maxAvgGroupLoad) / (uint16)abi.SwissMapGroupSlots - t.used - deleted);
     if (growthLeft != t.growthLeft) {
         print((@string)"invariant failed: found "u8, t.growthLeft, (@string)" growthLeft, but expected "u8, growthLeft, (@string)"\n"u8);
         t.Print(Ꮡtyp, Ꮡm);

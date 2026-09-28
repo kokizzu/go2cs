@@ -142,12 +142,12 @@ public static nint OnesCount8(uint8 x) {
 
 // OnesCount16 returns the number of one bits ("population count") in x.
 public static nint OnesCount16(uint16 x) {
-    return (nint)(pop8tab[(x >> (int)(8))] + pop8tab[(uint16)(x & 0xff)]);
+    return (nint)((byte)(pop8tab[(x >> (int)(8))] + pop8tab[(uint16)(x & 0xff)]));
 }
 
 // OnesCount32 returns the number of one bits ("population count") in x.
 public static nint OnesCount32(uint32 x) {
-    return (nint)(pop8tab[(int)((x >> (int)(24)))] + pop8tab[(int)((uint32)((x >> (int)(16)) & 0xff))] + pop8tab[(int)((uint32)((x >> (int)(8)) & 0xff))] + pop8tab[(int)((uint32)(x & 0xff))]);
+    return (nint)((byte)(pop8tab[(int)((x >> (int)(24)))] + pop8tab[(int)((uint32)((x >> (int)(16)) & 0xff))] + pop8tab[(int)((uint32)((x >> (int)(8)) & 0xff))] + pop8tab[(int)((uint32)(x & 0xff))]));
 }
 
 // OnesCount64 returns the number of one bits ("population count") in x.

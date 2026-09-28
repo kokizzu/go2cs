@@ -134,14 +134,14 @@ partial class edwards25519_package {
 [GoRecv] internal static void SelectInto(this ref nafLookupTable5 v, ж<projCached> Ꮡdest, int8 x) {
     ref var dest = ref Ꮡdest.DerefOrNull();
 
-    dest = v.points[x / 2];
+    dest = v.points[(int8)(x / 2)];
 }
 
 // Given odd x with 0 < x < 2^7, return x*Q (in variable time).
 [GoRecv] internal static void SelectInto(this ref nafLookupTable8 v, ж<affineCached> Ꮡdest, int8 x) {
     ref var dest = ref Ꮡdest.DerefOrNull();
 
-    dest = v.points[x / 2];
+    dest = v.points[(int8)(x / 2)];
 }
 
 } // end edwards25519_package

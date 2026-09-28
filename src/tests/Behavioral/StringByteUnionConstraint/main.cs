@@ -72,7 +72,7 @@ internal static nint digitSum<T>(T s)
     nint parse(T part) {
         nint n = 0;
         foreach (var (_, c) in part.ToSlice()) {
-            n = n * 10 + (nint)(c - (rune)'0');
+            n = n * 10 + (nint)((byte)(c - (rune)'0'));
         }
         return n;
     }

@@ -12821,8 +12821,8 @@ internal static void Swap(this http2sortPriorityNodeSiblings z, nint i, nint k) 
 internal static bool Less(this http2sortPriorityNodeSiblings z, nint i, nint k) {
     // Prefer the subtree that has sent fewer bytes relative to its weight.
     // See sections 5.3.2 and 5.3.4.
-    var (wi, bi) = ((float64)((~z[i]).weight + 1), (float64)(~z[i]).subtreeBytes);
-    var (wk, bk) = ((float64)((~z[k]).weight + 1), (float64)(~z[k]).subtreeBytes);
+    var (wi, bi) = ((float64)((uint8)((~z[i]).weight + 1)), (float64)(~z[i]).subtreeBytes);
+    var (wk, bk) = ((float64)((uint8)((~z[k]).weight + 1)), (float64)(~z[k]).subtreeBytes);
     if (bi == 0D && bk == 0D) {
         return wi >= wk;
     }

@@ -485,6 +485,11 @@ type Visitor struct {
 	deadUnsafePointerBoxes  map[*ast.CallExpr]bool        // `unsafe.Pointer(x)` conversions whose wrapper object an enclosing `uintptr(…)` reads straight back — emitted without it (see markDeadUnsafePointerBox)
 	identNames              map[*ast.Ident]string         // Local identifiers to adjusted names map
 	isReassigned            map[*ast.Ident]bool           // Local identifiers to reassignment status map
+	// narrowArithmeticCasts maps a non-constant narrow-integer arithmetic expression to the C# type
+	// its own emission is cast back to, because its consumer is not wrap-invariant (see
+	// markNarrowArithmeticContexts). convBinaryExpr and convUnaryExpr consult it.
+	narrowArithmeticCasts map[ast.Expr]string
+
 	// untypedConstContexts maps an UNTYPED constant subexpression to the resolved type of its
 	// enclosing typed constant expression — the context go/types drops when it leaves constant
 	// operands untyped (see markUntypedConstContexts). convBasicLit consults it for the F/D

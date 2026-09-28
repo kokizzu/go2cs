@@ -25,7 +25,7 @@ public static (nint major, nint minor) KernelVersion() {
     nint vi = default!;
     foreach (var (_, c) in uname.Release.ΔRangeSnapshot()) {
         if ((rune)'0' <= c && c <= (rune)'9'){
-            value = (value * 10) + (nint)(c - (rune)'0');
+            value = (value * 10) + (nint)((int8)(c - (rune)'0'));
         } else {
             // Note that we're assuming N.N.N here.
             // If we see anything else, we are likely to mis-parse it.

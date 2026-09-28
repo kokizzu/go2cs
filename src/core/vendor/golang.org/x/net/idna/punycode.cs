@@ -187,13 +187,13 @@ internal static (int32 next, bool overflow) madd(int32 a, int32 b, int32 c) {
 internal static (int32 digit, bool ok) decodeDigit(byte x) {
     switch (ᐧ) {
     case {} when (rune)'0' <= x && x <= (rune)'9': {
-        return ((int32)(x - ((rune)'0' - 26)), true);
+        return ((int32)((byte)(x - ((rune)'0' - 26))), true);
     }
     case {} when (rune)'A' <= x && x <= (rune)'Z': {
-        return ((int32)(x - (rune)'A'), true);
+        return ((int32)((byte)(x - (rune)'A')), true);
     }
     case {} when (rune)'a' <= x && x <= (rune)'z': {
-        return ((int32)(x - (rune)'a'), true);
+        return ((int32)((byte)(x - (rune)'a')), true);
     }}
 
     return (0, false);

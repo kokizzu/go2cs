@@ -688,6 +688,8 @@
     <Project Path="tests/Behavioral/NamedNumericShiftConv/NamedNumericShiftConv.csproj" />
     <Project Path="tests/Behavioral/NamedResultDeferCapture/NamedResultDeferCapture.csproj" />
     <Project Path="tests/Behavioral/NarrowArithmeticArg/NarrowArithmeticArg.csproj" />
+    <Project Path="tests/Behavioral/NarrowArithmeticCompileSinks/NarrowArithmeticCompileSinks.csproj" />
+    <Project Path="tests/Behavioral/NarrowArithmeticSinks/NarrowArithmeticSinks.csproj" />
     <Project Path="tests/Behavioral/NarrowByteArithFirstOperandCast/NarrowByteArithFirstOperandCast.csproj" />
     <Project Path="tests/Behavioral/NarrowByteArithReturn/NarrowByteArithReturn.csproj" />
     <Project Path="tests/Behavioral/NarrowShiftVarCount/NarrowShiftVarCount.csproj" />

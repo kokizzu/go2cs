@@ -1219,6 +1219,12 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNarrowArithmeticArg() => CheckTarget("NarrowArithmeticArg");
 
     [TestMethod]
+    public void CheckNarrowArithmeticCompileSinks() => CheckTarget("NarrowArithmeticCompileSinks");
+
+    [TestMethod]
+    public void CheckNarrowArithmeticSinks() => CheckTarget("NarrowArithmeticSinks");
+
+    [TestMethod]
     public void CheckNarrowByteArithFirstOperandCast() => CheckTarget("NarrowByteArithFirstOperandCast");
 
     [TestMethod]

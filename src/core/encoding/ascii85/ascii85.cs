@@ -213,7 +213,7 @@ public static (nint ndst, nint nsrc, error err) Decode(slice<byte> dst, slice<by
             break;
         }
         case {} when (rune)'!' <= b && b <= (rune)'u': {
-            v = v * 85 + (uint32)(b - (rune)'!');
+            v = v * 85 + (uint32)((byte)(b - (rune)'!'));
             nb++;
             break;
         }

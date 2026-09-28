@@ -259,7 +259,7 @@ loop:
                 nd++;
                 if (ndMant < maxMantDigits){
                     mantissa *= @base;
-                    mantissa += (uint64)(c - (rune)'0');
+                    mantissa += (uint64)((byte)(c - (rune)'0'));
                     ndMant++;
                 } else 
                 if (c != (rune)'0') {
@@ -273,7 +273,7 @@ loop:
                 nd++;
                 if (ndMant < maxMantDigits){
                     mantissa *= 16;
-                    mantissa += (uint64)(lower(c) - (rune)'a' + 10);
+                    mantissa += (uint64)((byte)(lower(c) - (rune)'a' + 10));
                     ndMant++;
                 } else {
                     trunc = true;

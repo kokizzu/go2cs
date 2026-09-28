@@ -104,11 +104,11 @@ internal static UntypedInt oldQuantum => 1;
             break;
         }
         case {} when code is <= 128: {
-            line -= (nint)(code - 64);
+            line -= (nint)((byte)(code - 64));
             break;
         }
         default: {
-            pc += (uint64)oldQuantum * (uint64)(code - 128);
+            pc += (uint64)oldQuantum * (uint64)((byte)(code - 128));
             continue;
             break;
         }}

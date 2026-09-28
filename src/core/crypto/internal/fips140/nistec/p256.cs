@@ -468,7 +468,7 @@ internal static uint64 Rsh(this ж<p256OrdElement> Ꮡs, nint n) {
     Ꮡp.Set(NewP256Point());
     for (var i = (uint8)1; i <= 16; i++) {
         nint cond = subtle.ConstantTimeByteEq(i, n);
-        Ꮡp.Select(Ꮡ(table.Value, i - 1), Ꮡp, cond);
+        Ꮡp.Select(Ꮡ(table.Value, (uint8)(i - 1)), Ꮡp, cond);
     }
 }
 
@@ -555,8 +555,8 @@ public static ж<P256Point> Negate(this ж<P256Point> Ꮡp, nint cond) {
     }
     for (var i = (uint8)1; i <= 32; i++) {
         nint cond = subtle.ConstantTimeByteEq(i, n);
-        Ꮡp.of(p256AffinePoint.Ꮡx).Select(Ꮡ(table.Value, i - 1).of(p256AffinePoint.Ꮡx), Ꮡp.of(p256AffinePoint.Ꮡx), cond);
-        Ꮡp.of(p256AffinePoint.Ꮡy).Select(Ꮡ(table.Value, i - 1).of(p256AffinePoint.Ꮡy), Ꮡp.of(p256AffinePoint.Ꮡy), cond);
+        Ꮡp.of(p256AffinePoint.Ꮡx).Select(Ꮡ(table.Value, (uint8)(i - 1)).of(p256AffinePoint.Ꮡx), Ꮡp.of(p256AffinePoint.Ꮡx), cond);
+        Ꮡp.of(p256AffinePoint.Ꮡy).Select(Ꮡ(table.Value, (uint8)(i - 1)).of(p256AffinePoint.Ꮡy), Ꮡp.of(p256AffinePoint.Ꮡy), cond);
     }
 }
 

@@ -260,13 +260,13 @@ internal static (ΔAddr, error) parseIPv6(@string @in) {
         for (; off < len(s); off++) {
             var c = s[off];
             if (c >= (rune)'0' && c <= (rune)'9'){
-                acc = ((acc << (int)(4))) + (uint32)(c - (rune)'0');
+                acc = ((acc << (int)(4))) + (uint32)((byte)(c - (rune)'0'));
             } else 
             if (c >= (rune)'a' && c <= (rune)'f'){
-                acc = ((acc << (int)(4))) + (uint32)(c - (rune)'a' + 10);
+                acc = ((acc << (int)(4))) + (uint32)((byte)(c - (rune)'a' + 10));
             } else 
             if (c >= (rune)'A' && c <= (rune)'F'){
-                acc = ((acc << (int)(4))) + (uint32)(c - (rune)'A' + 10);
+                acc = ((acc << (int)(4))) + (uint32)((byte)(c - (rune)'A' + 10));
             } else {
                 break;
             }
@@ -376,19 +376,19 @@ public static (ΔAddr ip, bool ok) AddrFromSlice(slice<byte> Δslice) {
 // v4 returns the i'th byte of ip. If ip is not an IPv4, v4 returns
 // unspecified garbage.
 internal static uint8 v4(this ΔAddr ip, uint8 i) {
-    return (uint8)(ip.addr.lo.Rsh((uint64)(((3 - i) * 8))));
+    return (uint8)(ip.addr.lo.Rsh((uint64)((uint8)((3 - i) * 8))));
 }
 
 // v6 returns the i'th byte of ip. If ip is an IPv4 address, this
 // accesses the IPv4-mapped IPv6 address form of the IP.
 internal static uint8 v6(this ΔAddr ip, uint8 i) {
-    return (uint8)(((Ꮡ(ip).of(netip_package.ΔAddr.Ꮡaddr).halves()[(i / 8) % 2]).Value).Rsh((uint64)(((7 - i % 8) * 8))));
+    return (uint8)(((Ꮡ(ip).of(netip_package.ΔAddr.Ꮡaddr).halves()[(i / 8) % 2]).Value).Rsh((uint64)((uint8)((7 - i % 8) * 8))));
 }
 
 // v6u16 returns the i'th 16-bit word of ip. If ip is an IPv4 address,
 // this accesses the IPv4-mapped IPv6 address form of the IP.
 internal static uint16 v6u16(this ΔAddr ip, uint8 i) {
-    return (uint16)(((Ꮡ(ip).of(netip_package.ΔAddr.Ꮡaddr).halves()[(i / 4) % 2]).Value).Rsh((uint64)(((3 - i % 4) * 16))));
+    return (uint16)(((Ꮡ(ip).of(netip_package.ΔAddr.Ꮡaddr).halves()[(i / 4) % 2]).Value).Rsh((uint64)((uint8)((3 - i % 4) * 16))));
 }
 
 // isZero reports whether ip is the zero value of the IP type.

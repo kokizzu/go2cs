@@ -107,15 +107,15 @@ internal static rune hexDecode(slice<byte> s) {
         n <<= (int)(4);
         switch (ᐧ) {
         case {} when (rune)'0' <= c && c <= (rune)'9': {
-            n |= (rune)((rune)(c - (rune)'0'));
+            n |= (rune)((rune)((byte)(c - (rune)'0')));
             break;
         }
         case {} when (rune)'a' <= c && c <= (rune)'f': {
-            n |= (rune)((rune)(c - (rune)'a') + 10);
+            n |= (rune)((rune)((byte)(c - (rune)'a')) + 10);
             break;
         }
         case {} when (rune)'A' <= c && c <= (rune)'F': {
-            n |= (rune)((rune)(c - (rune)'A') + 10);
+            n |= (rune)((rune)((byte)(c - (rune)'A')) + 10);
             break;
         }
         default: {

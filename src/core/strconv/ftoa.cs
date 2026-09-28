@@ -464,15 +464,15 @@ internal static slice<byte> fmtE(slice<byte> dst, bool neg, decimalSlice d, nint
     // dd or ddd
     switch (ᐧ) {
     case {} when exp is < 10: {
-        dst = append(dst, (byte)((rune)'0'), (byte)exp + (rune)'0');
+        dst = append(dst, (byte)((rune)'0'), (byte)((byte)exp + (rune)'0'));
         break;
     }
     case {} when exp is < 100: {
-        dst = append(dst, (byte)((byte)(exp / 10) + (rune)'0'), (byte)(exp % 10) + (rune)'0');
+        dst = append(dst, (byte)((byte)(exp / 10) + (rune)'0'), (byte)((byte)(exp % 10) + (rune)'0'));
         break;
     }
     default: {
-        dst = append(dst, (byte)((byte)(exp / 100) + (rune)'0'), (byte)(exp / 10) % 10 + (rune)'0', (byte)(exp % 10) + (rune)'0');
+        dst = append(dst, (byte)((byte)(exp / 100) + (rune)'0'), (byte)((byte)(exp / 10) % 10 + (rune)'0'), (byte)((byte)(exp % 10) + (rune)'0'));
         break;
     }}
 
@@ -564,7 +564,7 @@ internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg,
     if (neg) {
         dst = append(dst, (byte)((rune)'-'));
     }
-    dst = append(dst, (byte)((rune)'0'), fmt, (rune)'0' + (byte)((uint64)(((mant >> (int)(60))) & 1)));
+    dst = append(dst, (byte)((rune)'0'), fmt, (byte)((rune)'0' + (byte)((uint64)(((mant >> (int)(60))) & 1))));
     // .fraction
     mant <<= (int)(4); // remove leading 0 or 1
     if (prec < 0 && mant != 0){
@@ -597,15 +597,15 @@ internal static slice<byte> fmtX(slice<byte> dst, nint prec, byte fmt, bool neg,
     // dd or ddd or dddd
     switch (ᐧ) {
     case {} when exp is < 100: {
-        dst = append(dst, (byte)((byte)(exp / 10) + (rune)'0'), (byte)(exp % 10) + (rune)'0');
+        dst = append(dst, (byte)((byte)(exp / 10) + (rune)'0'), (byte)((byte)(exp % 10) + (rune)'0'));
         break;
     }
     case {} when exp is < 1000: {
-        dst = append(dst, (byte)((byte)(exp / 100) + (rune)'0'), (byte)((exp / 10) % 10) + (rune)'0', (byte)(exp % 10) + (rune)'0');
+        dst = append(dst, (byte)((byte)(exp / 100) + (rune)'0'), (byte)((byte)((exp / 10) % 10) + (rune)'0'), (byte)((byte)(exp % 10) + (rune)'0'));
         break;
     }
     default: {
-        dst = append(dst, (byte)((byte)(exp / 1000) + (rune)'0'), (byte)(exp / 100) % 10 + (rune)'0', (byte)((exp / 10) % 10) + (rune)'0', (byte)(exp % 10) + (rune)'0');
+        dst = append(dst, (byte)((byte)(exp / 1000) + (rune)'0'), (byte)((byte)(exp / 100) % 10 + (rune)'0'), (byte)((byte)((exp / 10) % 10) + (rune)'0'), (byte)((byte)(exp % 10) + (rune)'0'));
         break;
     }}
 

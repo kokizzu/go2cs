@@ -165,7 +165,7 @@ internal static bool appendFlush(ж<reorderBuffer> Ꮡrb) {
     nint p = 0;
     for (nint i = 0; i < rb.nrune; i++) {
         var runep = rb.rune[i];
-        p += copy(buf[(int)(p)..], rb.@byte[(int)(runep.pos)..(int)(runep.pos + runep.size)]);
+        p += copy(buf[(int)(p)..], rb.@byte[(int)(runep.pos)..(int)((uint8)(runep.pos + runep.size))]);
     }
     rb.reset();
     return p;
@@ -292,7 +292,7 @@ internal static insertErr insertDecomposed(this ж<reorderBuffer> Ꮡrb, slice<b
 // runeAt returns the rune at position n. It is used for Hangul and recomposition.
 [GoRecv] internal static rune runeAt(this ref reorderBuffer rb, nint n) {
     var inf = rb.rune[n];
-    var (r, _) = utf8.DecodeRune(rb.@byte[(int)(inf.pos)..(int)(inf.pos + inf.size)]);
+    var (r, _) = utf8.DecodeRune(rb.@byte[(int)(inf.pos)..(int)((uint8)(inf.pos + inf.size))]);
     return r;
 }
 

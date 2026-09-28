@@ -31,7 +31,7 @@ internal static void Main() {
     fmt.Println((int32)(((uint8)(~b8))), (uint64)(((uint8)(~b8))));
     uint32 u32 = 5;
     int16 i16 = 5;
-    fmt.Println(~u32, (int32)(~i16), ~i16);
+    fmt.Println(~u32, (int32)(~i16), (int16)(~i16));
     uint16 u16 = 5;
     u16 = (uint16)(((uint16)(~u16)));
     fmt.Println(u16);

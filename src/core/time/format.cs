@@ -249,7 +249,7 @@ internal static (@string prefix, nint std, @string suffix) nextStdChunk(@string 
             case (rune)'0': {
                 if (len(layout) >= i + 2 && (rune)'1' <= layout[i + 1] && layout[i + 1] <= (rune)'6') {
                     // 01, 02, 03, 04, 05, 06, 002
-                    return (layout[0..(int)(i)], std0x[layout[i + 1] - (rune)'1'], layout[(int)(i + 2)..]);
+                    return (layout[0..(int)(i)], std0x[(byte)(layout[i + 1] - (rune)'1')], layout[(int)(i + 2)..]);
                 }
                 if (len(layout) >= i + 3 && layout[i + 1] == (rune)'0' && layout[i + 2] == (rune)'2') {
                     return (layout[0..(int)(i)], stdZeroYearDay, layout[(int)(i + 3)..]);
@@ -1000,9 +1000,9 @@ internal static (nint, @string, error) getnum(@string s, bool @fixed) {
         if (@fixed) {
             return (0, s, errBad);
         }
-        return ((nint)(s[0] - (rune)'0'), s[1..], default!);
+        return ((nint)((byte)(s[0] - (rune)'0')), s[1..], default!);
     }
-    return ((nint)(s[0] - (rune)'0') * 10 + (nint)(s[1] - (rune)'0'), s[2..], default!);
+    return ((nint)((byte)(s[0] - (rune)'0')) * 10 + (nint)((byte)(s[1] - (rune)'0')), s[2..], default!);
 }
 
 // getnum3 parses s[0:1], s[0:2], or s[0:3] (fixed forces s[0:3])
@@ -1012,7 +1012,7 @@ internal static (nint, @string, error) getnum3(@string s, bool @fixed) {
     nint n = default!;
     nint i = default!;
     for (i = 0; i < 3 && isDigit(s, i); i++) {
-        n = n * 10 + (nint)(s[i] - (rune)'0');
+        n = n * 10 + (nint)((byte)(s[i] - (rune)'0'));
     }
     if (i == 0 || @fixed && i != 3) {
         return (0, s, errBad);
