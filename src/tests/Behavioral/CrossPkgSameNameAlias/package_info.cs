@@ -55,7 +55,7 @@ using static go.atomic_package;
 
 namespace go;
 
-[GoPackage("atomic")]
+[GoPackage("atomic", ImportPath = "go2cs/CrossPkgSameNameAlias")]
 public static partial class atomic_package
 {
     // C# nested types declared with no access modifier are always private, and the

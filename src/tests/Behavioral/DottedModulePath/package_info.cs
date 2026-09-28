@@ -10,10 +10,16 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
+global using runtimeꓸError = go.runtime_package.ΔError;
 // </ImportedTypeAliases>
 
 using go;
-using static go.vlib.vlib_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -36,7 +42,8 @@ using static go.vlib.vlib_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<PCG, Source>(Pointer = true)]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -50,13 +57,14 @@ using static go.vlib.vlib_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vlib.go", "vlib.cs", "AAwggqaCgoKCAAYQgqaC")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABIkgoKEgoSEgqSAgoKmhIKAgoKm")]
 // </GoSourcePositionMaps>
 
-namespace go.vlib;
+namespace go;
 
-[GoPackage("vlib", ImportPath = "vlib/v2")]
-public static partial class vlib_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -65,9 +73,6 @@ public static partial class vlib_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial interface Source {}
-    public partial struct PCG {}
-    public partial struct Rand {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -77,5 +82,11 @@ public static partial class vlib_package
     // item of the project guarantees.
 
     // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() => builtin.initPackage(typeof(encoding.gob_package));
+    [GoInit] internal static void initᴛᴛimportꓸexample_comꓸdottedꓸv2() => builtin.initPackage(typeof(example.com.dotted.dotted_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
     // </ImportInitializers>
 }

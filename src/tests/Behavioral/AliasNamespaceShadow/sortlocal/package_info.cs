@@ -54,7 +54,7 @@ using static go.AliasNamespaceShadow.sort_package;
 
 namespace go.AliasNamespaceShadow;
 
-[GoPackage("sort")]
+[GoPackage("sort", ImportPath = "AliasNamespaceShadow/sortlocal")]
 public static partial class sort_package
 {
     // C# nested types declared with no access modifier are always private, and the

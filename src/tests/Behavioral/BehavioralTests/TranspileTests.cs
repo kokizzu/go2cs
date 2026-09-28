@@ -448,6 +448,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDotImportRenamedType() => CheckTarget("DotImportRenamedType");
 
     [TestMethod]
+    public void CheckDottedModulePath() => CheckTarget("DottedModulePath");
+
+    [TestMethod]
     public void CheckDynIfaceParamNameCollision() => CheckTarget("DynIfaceParamNameCollision");
 
     [TestMethod]
