@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using static go.builtin;
@@ -21,7 +22,7 @@ namespace GolibTests;
 //
 // One arm per mechanism, read through runtime's Go-prefixed probes (managed_impl.cs), plus one arm per
 // stop the runtime row reaches (runtime.GC, GOMAXPROCS, ReadMemStats, Stack, GoroutineProfile,
-// debug.WriteHeapDump): the shape of TestSchedPauseMetrics' subtests, which count the samples each
+// debug.WriteHeapDump, trace.Start): the shape of TestSchedPauseMetrics' subtests, which count the samples each
 // call adds in each class. The leak arms cover worldsema and metricsSema (ruling 2026-09-28 02:10,
 // Q1); the crossing arm is TestReadMetrics' raw []Sample address (Q2); GoroutineProfile's count path
 // and its fill-path refusal are Q3; the minimal heap dump is Q4 (a).
@@ -114,6 +115,62 @@ public class RuntimeStopTheWorldContractTests
         var after = GoStwPauseSampleCounts();
 
         AssertMoved(before, after, gc: false, "runtime.Stack(all)");
+    }
+
+    // TestSchedPauseMetrics' runtime/trace.Start subtest (Q5): Go's StartTrace enables the tracer inside
+    // stopTheWorld(stwStartTrace), and StopTrace stops no world. The trace is drained on a reader thread,
+    // as runtime/trace.Start's goroutine does, since StopTrace returns only after the last byte is read.
+    [TestMethod]
+    public void StartTraceRecordsAnOtherPause()
+    {
+        var before = GoStwPauseSampleCounts();
+
+        TraceWindow(() => { });
+
+        var after = GoStwPauseSampleCounts();
+
+        AssertMoved(before, after, gc: false, "runtime.StartTrace");
+    }
+
+    [TestMethod]
+    public void ARefusedStartTraceStopsNoWorld()
+    {
+        // A GUARD, green before and after: Go answers "tracing is already enabled" BEFORE the stop.
+        (ulong, ulong, ulong, ulong) before = default, after = default;
+        error? refusal = null;
+
+        TraceWindow(() =>
+        {
+            before = GoStwPauseSampleCounts();
+            refusal = Δruntime.StartTrace();
+            after = GoStwPauseSampleCounts();
+        });
+
+        // runtime.errorString's Error() prefixes "runtime error: ", as Go's does.
+        Assert.AreEqual("runtime error: tracing is already enabled", refusal?.Error().ToString());
+        Assert.AreEqual(before, after, "a refused StartTrace recorded a pause");
+    }
+
+    // Runs `window` between runtime.StartTrace and runtime.StopTrace with a reader draining ReadTrace.
+    private static void TraceWindow(Action window)
+    {
+        Thread reader = new(() =>
+        {
+            while (Δruntime.ReadTrace() != nil) { }
+        });
+
+        Assert.IsNull(Δruntime.StartTrace(), "no trace may be running when an arm starts one");
+        reader.Start();
+
+        try
+        {
+            window();
+        }
+        finally
+        {
+            Δruntime.StopTrace();
+            Assert.IsTrue(reader.Join(TimeoutMs), "the trace reader did not drain");
+        }
     }
 
     // ---- the regions --------------------------------------------------------------------------
