@@ -181,6 +181,12 @@ public ref struct GoFrame
             // between a Callers and a panicking one ([P2-1]).
             int sequence = PushSequence(handling);
 
+            // The panic this frame's own catch caught FIRST has its site ending at this frame, so this
+            // activation owns it. Owned by ACTIVATION, not by method: a recursive activation of the
+            // same function is a different owner (review C1 of the cut).
+            if (owned is { Catches: 1, SiteOwner: 0 })
+                owned.SiteOwner = t_sequences![sequence].Activation;
+
             try
             {
                 while (m_count > 0)
@@ -246,19 +252,39 @@ public ref struct GoFrame
                             raised.InheritThrowSite(handling);
                         }
 
+                        // The panic this sequence was running when the deferred call raised: Go keeps it
+                        // beneath the new one until a recovery completes, because the deferred call was
+                        // called by its gopanic. A recovery that already completed nulled the entry.
+                        PanicException? running = t_sequences![sequence].Panic;
+
+                        // Whether this activation OWNS the new panic's site (review B1, B2, C3). It does
+                        // when this catch is the panic's FIRST: the deferred call raised it with no
+                        // deferring frame of its own, so the site ends here and every Go frame of it is
+                        // still on Go's stack. It also does in the one accepted re-raise: the deferred
+                        // delegate IS the frame that caught the panic first, and that frame's Run
+                        // re-raised it straight here (`defer D()` where D defers and panics). Anything
+                        // else leaves the site unowned here, so it splices nothing rather than a list
+                        // with frames missing. A panic raised while a Goexit runs this sequence is left
+                        // unowned too: Go shows runtime.Goexit beneath the deferred call, and that frame
+                        // is not modelled.
+                        bool firstHere = raised is { SiteOwner: 0, Catches: 1 };
+
+                        if ((firstHere || ReRaisedByTheDeferredDelegate(ex, raised)) && !(running is null && GoexitException.Started))
+                        {
+                            raised.SiteOwner = t_sequences[sequence].Activation;
+                            raised.SiteEndsAtRun = true;
+
+                            if (running is not null && !ReferenceEquals(running, raised))
+                                raised.Beneath = running;
+                        }
+
                         GoFuncRoot.CapturedPanicValue = raised;
                         GoFuncRoot.HandledPanicValue = raised;
                         GoFuncRoot.RecoverablePanicValue = raised;
                         handling = raised;
 
                         // The new panic REPLACES the one this sequence was running, so the sequence's
-                        // later deferred calls see it (the TestCallersAbortedPanic shape). The replaced
-                        // panic stays beneath it on Go's stack until a recovery completes: the deferred
-                        // call that raised the new one was called by the old one's gopanic. A panic whose
-                        // recovery already completed is gone, and its entry is already null.
-                        if (t_sequences![sequence] is { } running && !ReferenceEquals(running, raised))
-                            raised.Beneath ??= running;
-
+                        // later deferred calls see it (the TestCallersAbortedPanic shape).
                         SetSequence(sequence, raised);
 
                         // A panic raised by THIS frame's own deferred call is this frame's to
@@ -303,13 +329,25 @@ public ref struct GoFrame
     // is running, every deferring Run pushes one entry: its own panic, or null. The k-th Run frame met
     // walking down from the top pairs with the k-th entry from the top. Per thread, as the other panic
     // slots are (GoFuncRoot), and the array is allocated once per thread and reused.
-    [ThreadStatic] private static PanicException?[]? t_sequences;
+    //
+    // Each entry also carries its ACTIVATION: a per-thread number no other Run activation on the thread
+    // ever shares (a slot index is reused as soon as its Run returns, so it cannot tell two activations
+    // apart). A panic's SiteOwner names the activation its site provably ends at, and the splice
+    // requires it on every link.
+    private struct Sequence
+    {
+        internal PanicException? Panic;
+        internal long Activation;
+    }
+
+    [ThreadStatic] private static Sequence[]? t_sequences;
     [ThreadStatic] private static int t_sequenceDepth;
+    [ThreadStatic] private static long t_lastActivation;
 
     private static int PushSequence(PanicException? panic)
     {
         int index = t_sequenceDepth;
-        PanicException?[] entries = t_sequences ??= new PanicException?[16];
+        Sequence[] entries = t_sequences ??= new Sequence[16];
 
         if (index == entries.Length)
         {
@@ -317,18 +355,65 @@ public ref struct GoFrame
             entries = t_sequences;
         }
 
-        entries[index] = panic;
+        entries[index] = new Sequence { Panic = panic, Activation = ++t_lastActivation };
         t_sequenceDepth = index + 1;
 
         return index;
     }
 
-    private static void SetSequence(int index, PanicException? panic) => t_sequences![index] = panic;
+    private static void SetSequence(int index, PanicException? panic) => t_sequences![index].Panic = panic;
 
     private static void PopSequence(int index)
     {
-        t_sequences![index] = null;
+        t_sequences![index] = default;
         t_sequenceDepth = index;
+    }
+
+    // The one re-raise an activation accepts as its own site (see Run's catch): the panic was caught
+    // FIRST by an emitted frame (its site ends at that frame, not at a Run), caught exactly once since,
+    // here, and the only non-machinery frame between that re-raise and this Run is that same frame. So
+    // the deferred delegate is the first catcher itself, and no Go frame is missing between. Read from
+    // the exception's own trace, on the panic path only.
+    private static bool ReRaisedByTheDeferredDelegate(Exception ex, PanicException raised)
+    {
+        if (raised.Catches != 2 || raised.SiteOwner == 0 || raised.SiteEndsAtRun || raised.SiteTrace?.GetFrames() is not { Length: > 0 } site)
+            return false;
+
+        System.Reflection.MethodBase? catcher = site[^1].GetMethod();
+
+        if (catcher is null || catcher == RunMethod)
+            return false;
+
+        // The catcher can appear as CONSECUTIVE frames: its finally runs as a funclet during exception
+        // dispatch, and a re-raise from inside it records the funclet and the parent frame both. Any other
+        // non-machinery frame means a Go frame between (a closure, a caller of the catcher), so no. A
+        // recursive catcher cannot pass as a duplicate: its outer activation's catch would make three.
+        bool sawCatcher = false;
+
+        foreach (StackFrame frame in new StackTrace(ex, fNeedFileInfo: false).GetFrames())
+        {
+            System.Reflection.MethodBase? method = frame.GetMethod();
+
+            if (method is null || method == RunMethod || IsMachinery(method))
+                continue;
+
+            if (method != catcher)
+                return false;
+
+            sawCatcher = true;
+        }
+
+        return sawCatcher;
+    }
+
+    // golib and the BCL: a defer ladder's closure, a delegate's Invoke. Anything in a converted assembly
+    // counts as a frame, so an adapter or forwarder there makes the re-raise indirect (a missing splice).
+    private static bool IsMachinery(System.Reflection.MethodBase method)
+    {
+        System.Reflection.Assembly? assembly = method.DeclaringType?.Assembly;
+
+        return assembly is null || assembly == typeof(GoFrame).Assembly || assembly == typeof(object).Assembly ||
+               (assembly.GetName().Name?.StartsWith("System.", StringComparison.Ordinal) ?? false);
     }
 
     // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
@@ -346,12 +431,13 @@ public ref struct GoFrame
 
     /// <summary>
     /// The panic the <paramref name="fromTop"/>-th deferring <see cref="Run"/> frame below the caller
-    /// is running (0 is the innermost), or null for a normal-return sequence or no such frame.
+    /// is running (0 is the innermost), or null for a normal-return sequence or no such frame, with that
+    /// Run's activation.
     /// </summary>
-    internal static PanicException? SequenceFromTop(int fromTop)
+    internal static (PanicException? Panic, long Activation) SequenceFromTop(int fromTop)
     {
         int index = t_sequenceDepth - 1 - fromTop;
-        return index >= 0 ? t_sequences![index] : null;
+        return index >= 0 ? (t_sequences![index].Panic, t_sequences[index].Activation) : (null, 0);
     }
 
     // LIFO removal. The slot is cleared on the way out so a frame that outlives its drain (it

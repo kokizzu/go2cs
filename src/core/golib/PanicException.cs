@@ -260,6 +260,31 @@ public class PanicException(object? state, Exception? innerException = null) :
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     internal PanicException? Beneath { get; set; }
 
+    /// <summary>
+    /// Gets how many catches have adopted this panic (each <c>IsPanic</c> filter that caught it). One
+    /// means the catch now running is the FIRST, so <see cref="SiteTrace"/> ends at it.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal int Catches { get; private set; }
+
+    /// <summary>
+    /// Gets the deferring <see cref="GoFrame.Run"/> ACTIVATION that owns this panic's site, or 0 when
+    /// none provably does. It is stamped only at the first catch: by the Run of the frame whose catch
+    /// that was, or by the Run whose own catch caught a deferred call's panic. A panic re-raised past
+    /// its first catcher keeps its stamp, so a later Run never matches it: its site does not reach that
+    /// Run, and runtime's <c>captureCallers</c> then splices nothing rather than a wrong list.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal long SiteOwner { get; set; }
+
+    /// <summary>
+    /// Gets whether the site ends at the owning <see cref="GoFrame.Run"/>, not at the deferring
+    /// function: a deferred call raised this panic with no deferring frame of its own. Every Go frame
+    /// of the site then stays on Go's stack, above the deferring function.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool SiteEndsAtRun { get; set; }
+
     // Snapshot the throw site the first time this panic is caught. `thrown` is the exception that
     // actually travelled: for a mapped .NET runtime error (nil deref, divide by zero) THIS instance
     // was synthesized by RuntimeErrorPanic and was never thrown, so only the original carries frames.
@@ -267,6 +292,8 @@ public class PanicException(object? state, Exception? innerException = null) :
     // takes the same snapshot unless a re-panic's inheritance has already set it.
     internal void CaptureThrowSite(Exception thrown)
     {
+        Catches++;
+
         if (SiteTrace is not null)
             return;
 

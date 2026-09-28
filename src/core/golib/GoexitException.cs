@@ -36,5 +36,17 @@ public class GoexitException : Exception
 {
     public GoexitException() : base("runtime.Goexit")
     {
+        // Nothing stops a Goexit, so once one is raised this goroutine ends on it. GoFrame.Run reads the
+        // mark: Go shows runtime.Goexit beneath a deferred call that a Goexit is running, and that frame
+        // is not modelled, so a panic such a call raises is left unowned (a missing splice, never a
+        // wrong one). Cleared with the goroutine's other thread state (GoFuncRoot.ResetThread).
+        t_started = true;
     }
+
+    [ThreadStatic] private static bool t_started;
+
+    /// <summary>Whether a Goexit has been raised on this thread's goroutine.</summary>
+    internal static bool Started => t_started;
+
+    internal static void ResetThread() => t_started = false;
 }
