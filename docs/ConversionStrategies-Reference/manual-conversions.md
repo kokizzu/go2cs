@@ -2918,6 +2918,16 @@ compacting collect; `setPanicOnFault` is `[ThreadStatic]` because it is per-goro
 `modinfo`/`WriteHeapDump`/`SetTraceback`/`runtime_setCrashFD` are inert, matching a binary built
 without module or heap-dump support.
 
+**Two of those knobs later moved back to runtime (2026-09-28, M1).** `setGCPercent` and
+`setMemoryLimit` forward to runtime's own bodies through two public crossings
+(`SetGCPercentManaged`, `SetMemoryLimitManaged`). Once `systemstack` was `fn()` and the heap lock
+managed, those bodies run as written; `gcWaitOnMark` returns at once with no mark phase. So GOGC and
+GOMEMLIMIT have Go's one home, `gcController`, and `runtime/metrics`' `/gc/gogc:percent` and
+`/gc/gomemlimit:bytes` read the values the knobs set. `gcController` starts from the environment as
+Go's `gcinit` does: `goenvs_impl.cs`'s module initializer, schedinit's slot, fills `envs` and then
+runs `gcinitController`, in Go's order and in one initializer, because C# does not order two. The
+knobs still have no effect on the CLR's collection.
+
 **Two assembly primitives DO have exact managed forms** (`runtime/stubs_impl.cs`).
 `systemstack(fn)` is `fn()` — Go's own contract already says that a caller already on a system stack
 "calls fn directly and returns", and in the managed model there is one stack per goroutine and no g0
