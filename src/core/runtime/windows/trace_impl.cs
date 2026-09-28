@@ -21,7 +21,8 @@ using go.golib;
 // GC, heap, syscall, steal or CPU-sample events and no stacks. Go's own parser (`go tool trace
 // -d=parsed`) is the acceptance oracle. Until then StartTrace answered a named tracing-not-supported
 // error (the measured consumers were runtime's TestCrashWhileTracing on windows and os/signal's
-// TestSignalTrace on linux, whose readings move with this change).
+// TestSignalTrace on linux, whose readings move with this change). Since 2026-09-28 (Q5) StartTrace
+// starts the tracer inside the stop-the-world pair, as Go's does, so the start is counted as a pause.
 //
 // Registration and routing. The three names are registered goosAny in manualConversionFuncs
 // (manualTypeOperations.go). StartTrace and StopTrace were scoped goosWindowsLinux from 2026-09-02 and
@@ -50,10 +51,26 @@ partial class runtime_package
     // -test.trace flag instead of calling StartTrace directly.
     public static error StartTrace()
     {
-        // Go's own text for the one refusal: a trace is running (or its data is still being read). Not a
+        // Go refuses BEFORE it stops the world (traceEnabled() || traceShuttingDown()), so a refused
+        // StartTrace records no pause.
+        if (ExecutionTracer.Enabled)
+            return ((errorString)("tracing is already enabled"u8));
+
+        // Go enables the tracer inside stopTheWorld(stwStartTrace), so that every goroutine's next
+        // traceAcquire sees it. Under the stop-the-world contract (managed_impl.cs) the pair keeps
+        // worldsema's exclusion among stoppers and records the /sched/pauses "other" sample that
+        // TestSchedPauseMetrics' runtime/trace.Start subtest counts; other goroutines run on, and the
+        // tracer's own lock orders its start against their lifecycle hooks. StopTrace stops no world
+        // in Go either (traceAdvance takes no pair).
+        worldStop stw = stopTheWorld(stwStartTrace);
+        bool started = ExecutionTracer.Start();
+        startTheWorld(stw);
+
+        // Go's own text for the one refusal: a trace is running (or its data is still being read); a
+        // start that lost a race with another, or with a stop still draining, lands here. Not a
         // conditional expression: `ok ? default! : (errorString)...` types as errorString, and its default
         // boxes to a NON-nil error whose text is empty -- the first cut did exactly that.
-        if (ExecutionTracer.Start())
+        if (started)
             return default!;
 
         return ((errorString)("tracing is already enabled"u8));

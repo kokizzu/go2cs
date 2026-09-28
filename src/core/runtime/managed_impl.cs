@@ -543,9 +543,10 @@ partial class runtime_package
     // safely (a real goroutine barrier was ruled too invasive). A caller that reads state it expects
     // the world to hold still reads it live, and each region the runtime reaches is managed:
     // flushallmcaches is a no-op without Ps, the debug log is managed memory (debuglog_impl.cs),
-    // readMetricsLocked crosses through runtime/metrics (below), and the regions with no managed
-    // form refuse BEFORE the world is stopped (goroutineProfileWithLabels' fill path,
-    // doAllThreadsSyscall on linux, StartTrace everywhere).
+    // readMetricsLocked crosses through runtime/metrics (below), StartTrace starts golib's managed
+    // tracer inside the pair (<goos>/trace_impl.cs), and the regions with no managed form refuse
+    // BEFORE the world is stopped (goroutineProfileWithLabels' fill path, doAllThreadsSyscall on
+    // linux).
     //
     // Go's stopTheWorldWithSema stops every P and its startTheWorldWithSema restarts them; both
     // record the pause into sched's four timeHistograms. There are no Ps here (m.p is nil by

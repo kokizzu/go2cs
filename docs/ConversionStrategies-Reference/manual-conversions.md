@@ -3081,7 +3081,7 @@ world is stopped** — never inside it:
 | `GoroutineProfile` | the COUNT path is kept, pair and all (`(n, false)` when the slice is too short); the FILL path needs every goroutine's stack and refuses by name before any semaphore |
 | `debug.WriteHeapDump` | the pair and a well-formed **minimal** dump: the header, the params record, the EOF tag, and no objects (below) |
 | `syscall.AllThreadsSyscall` (linux) | refused before the world: there are no Ms to signal, so a successful stop would run the call on one thread and report success |
-| `trace.Start` | refused before the world on every target, as the tracer does not exist |
+| `trace.Start` | golib's managed execution tracer starts inside the pair on every target (`<goos>/trace_impl.cs`); a start refused because a trace is running is refused before the world, as Go's is |
 
 **The heap dump is truthful and empty rather than invented.** Go's dump walks its own heap arenas,
 spans and goroutine stacks; the managed model has none of them, since the CLR owns the heap. The
