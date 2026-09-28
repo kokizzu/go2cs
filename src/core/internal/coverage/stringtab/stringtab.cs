@@ -149,7 +149,7 @@ public static ж<Reader> NewReader(ж<slicereader.Reader> Ꮡr) {
 
 // Get returns string 'idx' within the string table.
 [GoRecv] public static @string Get(this ref Reader str, uint32 idx) {
-    return str.strs[(nint)(idx)];
+    return str.strs[idx];
 }
 
 } // end stringtab_package

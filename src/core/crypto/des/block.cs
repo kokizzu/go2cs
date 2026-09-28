@@ -36,13 +36,13 @@ internal static void cryptBlock(slice<uint64> subkeys, slice<byte> dst, slice<by
 internal static (uint32 lout, uint32 rout) feistel(uint32 l, uint32 r, uint64 k0, uint64 k1) {
     uint32 t = default!;
     t = (uint32)(r ^ (uint32)((k0 >> (int)(32))));
-    l ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[7][(nint)((uint32)(t & 0x3f))] ^ feistelBox[5][(nint)((uint32)(((t >> (int)(8))) & 0x3f))]) ^ feistelBox[3][(nint)((uint32)(((t >> (int)(16))) & 0x3f))]) ^ feistelBox[1][(nint)((uint32)(((t >> (int)(24))) & 0x3f))]));
+    l ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[7][(uint32)(t & 0x3f)] ^ feistelBox[5][(uint32)(((t >> (int)(8))) & 0x3f)]) ^ feistelBox[3][(uint32)(((t >> (int)(16))) & 0x3f)]) ^ feistelBox[1][(uint32)(((t >> (int)(24))) & 0x3f)]));
     t = (uint32)(((uint32)(((r << (int)(28))) | ((r >> (int)(4))))) ^ (uint32)k0);
-    l ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[6][(nint)((uint32)((t) & 0x3f))] ^ feistelBox[4][(nint)((uint32)(((t >> (int)(8))) & 0x3f))]) ^ feistelBox[2][(nint)((uint32)(((t >> (int)(16))) & 0x3f))]) ^ feistelBox[0][(nint)((uint32)(((t >> (int)(24))) & 0x3f))]));
+    l ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[6][(uint32)((t) & 0x3f)] ^ feistelBox[4][(uint32)(((t >> (int)(8))) & 0x3f)]) ^ feistelBox[2][(uint32)(((t >> (int)(16))) & 0x3f)]) ^ feistelBox[0][(uint32)(((t >> (int)(24))) & 0x3f)]));
     t = (uint32)(l ^ (uint32)((k1 >> (int)(32))));
-    r ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[7][(nint)((uint32)(t & 0x3f))] ^ feistelBox[5][(nint)((uint32)(((t >> (int)(8))) & 0x3f))]) ^ feistelBox[3][(nint)((uint32)(((t >> (int)(16))) & 0x3f))]) ^ feistelBox[1][(nint)((uint32)(((t >> (int)(24))) & 0x3f))]));
+    r ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[7][(uint32)(t & 0x3f)] ^ feistelBox[5][(uint32)(((t >> (int)(8))) & 0x3f)]) ^ feistelBox[3][(uint32)(((t >> (int)(16))) & 0x3f)]) ^ feistelBox[1][(uint32)(((t >> (int)(24))) & 0x3f)]));
     t = (uint32)(((uint32)(((l << (int)(28))) | ((l >> (int)(4))))) ^ (uint32)k1);
-    r ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[6][(nint)((uint32)((t) & 0x3f))] ^ feistelBox[4][(nint)((uint32)(((t >> (int)(8))) & 0x3f))]) ^ feistelBox[2][(nint)((uint32)(((t >> (int)(16))) & 0x3f))]) ^ feistelBox[0][(nint)((uint32)(((t >> (int)(24))) & 0x3f))]));
+    r ^= (uint32)((uint32)((uint32)((uint32)(feistelBox[6][(uint32)((t) & 0x3f)] ^ feistelBox[4][(uint32)(((t >> (int)(8))) & 0x3f)]) ^ feistelBox[2][(uint32)(((t >> (int)(16))) & 0x3f)]) ^ feistelBox[0][(uint32)(((t >> (int)(24))) & 0x3f)]));
     return (l, r);
 }
 

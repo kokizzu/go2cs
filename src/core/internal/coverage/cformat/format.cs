@@ -142,8 +142,8 @@ public static ж<Formatter> NewFormatter(coverage.CounterMode cm) {
 // being that is better to provide things in the original source order.
 internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
     slices.SortFunc(units, (extcu ui, extcu uj) => {
-        @string ifile = Ꮡp.Value.funcs[(nint)(ui.fnfid)].@file;
-        @string jfile = Ꮡp.Value.funcs[(nint)(uj.fnfid)].@file;
+        @string ifile = Ꮡp.Value.funcs[ui.fnfid].@file;
+        @string jfile = Ꮡp.Value.funcs[uj.fnfid].@file;
         {
             nint r = strings.Compare(ifile, jfile); if (r != 0) {
                 return r;
@@ -209,7 +209,7 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
         p.sortUnits(units);
         foreach (var (_, u) in units) {
             var count = (~p).unitTable[u];
-            @string @file = (~p).funcs[(nint)(u.fnfid)].@file;
+            @string @file = (~p).funcs[u.fnfid].@file;
             {
                 var (_, err) = fmt.Fprintf(w, "%s:%d.%d,%d.%d %d %d\n"u8,
                     @file, u.StLine, u.StCol,
@@ -344,9 +344,9 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) {
             uint64 tstmts = default!;
             var pʗ1 = p;
             void captureFuncStart(extcu u) {
-                fname = (~pʗ1).funcs[(nint)(u.fnfid)].fname;
-                ffile = (~pʗ1).funcs[(nint)(u.fnfid)].@file;
-                flit = (~pʗ1).funcs[(nint)(u.fnfid)].lit;
+                fname = (~pʗ1).funcs[u.fnfid].fname;
+                ffile = (~pʗ1).funcs[u.fnfid].@file;
+                flit = (~pʗ1).funcs[u.fnfid].lit;
                 fline = u.StLine;
             }
             var captureFuncStartʗ1 = captureFuncStart;
@@ -374,7 +374,7 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) {
                 if (k == 0){
                     captureFuncStart(u);
                 } else {
-                    if (fname != (~p).funcs[(nint)(u.fnfid)].fname) {
+                    if (fname != (~p).funcs[u.fnfid].fname) {
                         // New function; emit entry for previous one.
                         {
                             var err = emitFunc(u); if (err != default!) {

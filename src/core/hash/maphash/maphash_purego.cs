@@ -88,7 +88,7 @@ internal static uint64 wyhash(slice<byte> key, uint64 seed, uint64 len) {
 }
 
 internal static uint64 r3(slice<byte> p, uint64 k) {
-    return (uint64)((uint64)((((uint64)p[0] << (int)(16))) | (((uint64)p[(nint)((k >> (int)(1)))] << (int)(8)))) | (uint64)p[(nint)(k - 1)]);
+    return (uint64)((uint64)((((uint64)p[0] << (int)(16))) | (((uint64)p[(k >> (int)(1))] << (int)(8)))) | (uint64)p[k - 1]);
 }
 
 internal static uint64 r4(slice<byte> p) {

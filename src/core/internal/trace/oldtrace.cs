@@ -579,7 +579,7 @@ ev.Args[0], ev.Args[2], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvUserLog) {
         mappedType = go122.EvUserLog;
-        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], it.inlineToStringID[(nint)(ev.Args[3])], (uint64)ev.StkID}.array());
+        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], it.inlineToStringID[ev.Args[3]], (uint64)ev.StkID}.array());
     }
     else if (exprᴛ1 == oldtrace.EvCPUSample) {
         mappedType = go122.EvCPUSample;

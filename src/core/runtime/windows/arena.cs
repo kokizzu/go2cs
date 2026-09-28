@@ -637,7 +637,7 @@ internal static ΔwriteUserArenaHeapBits write(this ΔwriteUserArenaHeapBits h, 
     var idx = h.offset / (uintptr)(ptrBits * goarch.PtrSize);
     var m = ((uintptr)1).Lsh((uint64)(h.low)) - 1;
     var bitmap = s.heapBits();
-    bitmap[(nint)(idx)] = bswapIfBigEndian((uintptr)((uintptr)(bswapIfBigEndian(bitmap[(nint)(idx)]) & m) | data));
+    bitmap[idx] = bswapIfBigEndian((uintptr)((uintptr)(bswapIfBigEndian(bitmap[idx]) & m) | data));
     // Note: no synchronization required for this write because
     // the allocator has exclusive access to the page, and the bitmap
     // entries are all for a single page. Also, visibility of these
@@ -687,7 +687,7 @@ internal static void flush(this ΔwriteUserArenaHeapBits h, ж<mspan> Ꮡs, uint
     if (h.valid != h.low) {
         var m = ((uintptr)1).Lsh((uint64)(h.low)) - 1; // don't clear existing bits below "low"
         m |= (uintptr)(~(((uintptr)1).Lsh((uint64)(h.valid)) - 1)); // don't clear existing bits above "valid"
-        bitmap[(nint)(idx)] = bswapIfBigEndian((uintptr)((uintptr)(bswapIfBigEndian(bitmap[(nint)(idx)]) & m) | h.mask));
+        bitmap[idx] = bswapIfBigEndian((uintptr)((uintptr)(bswapIfBigEndian(bitmap[idx]) & m) | h.mask));
     }
     if (zeros == 0) {
         return;
@@ -703,14 +703,14 @@ internal static void flush(this ΔwriteUserArenaHeapBits h, ж<mspan> Ꮡs, uint
         // Write zero bits.
         var idxΔ1 = h.offset / (uintptr)(ptrBits * goarch.PtrSize);
         if (zeros < ptrBits){
-            bitmap[(nint)(idxΔ1)] = bswapIfBigEndian((uintptr)(bswapIfBigEndian(bitmap[(nint)(idxΔ1)]) & ~(((uintptr)1).Lsh((uint64)(zeros)) - 1)));
+            bitmap[idxΔ1] = bswapIfBigEndian((uintptr)(bswapIfBigEndian(bitmap[idxΔ1]) & ~(((uintptr)1).Lsh((uint64)(zeros)) - 1)));
             break;
         } else 
         if (zeros == ptrBits){
-            bitmap[(nint)(idxΔ1)] = 0;
+            bitmap[idxΔ1] = 0;
             break;
         } else {
-            bitmap[(nint)(idxΔ1)] = 0;
+            bitmap[idxΔ1] = 0;
             zeros -= ptrBits;
         }
         h.offset += ptrBits * goarch.PtrSize;

@@ -214,7 +214,7 @@ internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason 
 // readyNextGen readies r for the generation following gen.
 [GoRecv] internal static void readyNextGen(this ref traceSchedResourceState r, uintptr gen) {
     var nextGen = traceNextGen(gen);
-    r.seq[(nint)(nextGen % 2)] = 0;
+    r.seq[nextGen % 2] = 0;
     Ꮡ(r.statusTraced, (int)(nextGen % 3)).Store(0);
 }
 
@@ -231,8 +231,8 @@ internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason 
 
 // nextSeq returns the next sequence number for the resource.
 [GoRecv] internal static traceArg nextSeq(this ref traceSchedResourceState r, uintptr gen) {
-    r.seq[(nint)(gen % 2)]++;
-    return ((traceArg)r.seq[(nint)(gen % 2)]);
+    r.seq[gen % 2]++;
+    return ((traceArg)r.seq[gen % 2]);
 }
 
 } // end runtime_package

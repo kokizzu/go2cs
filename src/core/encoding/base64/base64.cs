@@ -147,10 +147,10 @@ public static ж<Encoding> RawURLEncoding = (~URLEncoding).WithPadding(NoPadding
     while (si < n) {
         // Convert 3x 8bit source bytes into 4 bytes
         nuint valΔ1 = (nuint)((nuint)(((nuint)src[si + 0] << (int)(16)) | ((nuint)src[si + 1] << (int)(8))) | (nuint)src[si + 2]);
-        dst[di + 0] = enc.encode[(nint)((nuint)((valΔ1 >> (int)(18)) & 0x3F))];
-        dst[di + 1] = enc.encode[(nint)((nuint)((valΔ1 >> (int)(12)) & 0x3F))];
-        dst[di + 2] = enc.encode[(nint)((nuint)((valΔ1 >> (int)(6)) & 0x3F))];
-        dst[di + 3] = enc.encode[(nint)((nuint)(valΔ1 & 0x3F))];
+        dst[di + 0] = enc.encode[(nuint)((valΔ1 >> (int)(18)) & 0x3F)];
+        dst[di + 1] = enc.encode[(nuint)((valΔ1 >> (int)(12)) & 0x3F)];
+        dst[di + 2] = enc.encode[(nuint)((valΔ1 >> (int)(6)) & 0x3F)];
+        dst[di + 3] = enc.encode[(nuint)(valΔ1 & 0x3F)];
         si += 3;
         di += 4;
     }
@@ -163,11 +163,11 @@ public static ж<Encoding> RawURLEncoding = (~URLEncoding).WithPadding(NoPadding
     if (remain == 2) {
         val |= (nuint)(((nuint)src[si + 1] << (int)(8)));
     }
-    dst[di + 0] = enc.encode[(nint)((nuint)((val >> (int)(18)) & 0x3F))];
-    dst[di + 1] = enc.encode[(nint)((nuint)((val >> (int)(12)) & 0x3F))];
+    dst[di + 0] = enc.encode[(nuint)((val >> (int)(18)) & 0x3F)];
+    dst[di + 1] = enc.encode[(nuint)((val >> (int)(12)) & 0x3F)];
     switch (remain) {
     case 2: {
-        dst[di + 2] = enc.encode[(nint)((nuint)((val >> (int)(6)) & 0x3F))];
+        dst[di + 2] = enc.encode[(nuint)((val >> (int)(6)) & 0x3F)];
         if (enc.padChar != NoPadding) {
             dst[di + 3] = (byte)enc.padChar;
         }

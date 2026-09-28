@@ -48,7 +48,7 @@ internal static partial void block([GoArrayDims(4)] ж<array<uint64>> seed, [GoA
         return (0, false);
     }
     s.i = i + 1;
-    return (s.buf[(nint)((uint32)(i & 31))], true); // i&31 eliminates bounds check
+    return (s.buf[(uint32)(i & 31)], true); // i&31 eliminates bounds check
 }
 
 // Init seeds the State with the given seed value.

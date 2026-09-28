@@ -130,7 +130,7 @@ entry: bidiValues[c0]), 1);
             return (new Properties(nil), 1);
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (new Properties(nil), 1);
@@ -148,13 +148,13 @@ entry: bidiValues[c0]), 1);
             return (new Properties(nil), 1);
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (new Properties(nil), 1);
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (new Properties(nil), 1);
@@ -202,7 +202,7 @@ entry: bidiValues[c0]), 1);
             return (new Properties(nil), 1);
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (new Properties(nil), 1);
@@ -220,13 +220,13 @@ entry: bidiValues[c0]), 1);
             return (new Properties(nil), 1);
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (new Properties(nil), 1);
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = bidiIndex[(nint)(o)];
+        i = bidiIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (new Properties(nil), 1);

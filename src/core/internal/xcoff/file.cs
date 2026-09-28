@@ -747,7 +747,7 @@ internal static readonly @string unexpectedReadFromˢ = "unexpected read from se
         ImportedSymbol sym = default!;
         sym.Name = name;
         if (ifile >= 1 && (nint)ifile <= len(libs)) {
-            sym.Library = libs[(nint)(ifile - 1)];
+            sym.Library = libs[ifile - 1];
         }
         all = append(all, sym);
     }

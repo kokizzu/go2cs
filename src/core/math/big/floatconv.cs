@@ -194,10 +194,10 @@ internal static ж<Float> pow5(this ж<Float> Ꮡz, uint64 n) {
 
     const uint64 m = /* uint64(len(pow5tab) - 1) */ 27;
     if (n <= m) {
-        return Ꮡz.SetUint64(pow5tab[(nint)(n)]);
+        return Ꮡz.SetUint64(pow5tab[n]);
     }
     // n > m
-    Ꮡz.SetUint64(pow5tab[(nint)(m)]);
+    Ꮡz.SetUint64(pow5tab[m]);
     n -= m;
     // use more bits for f than for z
     // TODO(gri) what is the right number?

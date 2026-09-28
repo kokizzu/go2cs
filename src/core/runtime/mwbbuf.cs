@@ -233,7 +233,7 @@ internal static void wbBufFlush1(ж<Δp> Ꮡpp) {
         mbits.setMarked();
         // Mark span.
         var (arena, pageIdx, pageMask) = pageIndexOf(span.@base());
-        if ((uint8)((~arena).pageMarks[(nint)(pageIdx)] & pageMask) == 0) {
+        if ((uint8)((~arena).pageMarks[pageIdx] & pageMask) == 0) {
             atomic.Or8(arena.at(heapArena.ᏑpageMarks, (nint)(pageIdx)), pageMask);
         }
         if ((~span).spanclass.noscan()) {

@@ -219,7 +219,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
     array<byte> length = new(8);
     var l = (d.len << (int)(3));
     for (nuint i = (nuint)0; i < 8; i++) {
-        length[(nint)(i)] = (byte)(l.Rsh((56 - 8 * i)));
+        length[i] = (byte)(l.Rsh((56 - 8 * i)));
     }
     var nx = (byte)d.nx;
     var t = (byte)(nx - 56); // if nx < 56 then the MSB of t is one

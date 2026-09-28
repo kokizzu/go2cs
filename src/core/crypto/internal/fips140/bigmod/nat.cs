@@ -523,7 +523,7 @@ internal static ж<ΔNat> rr(ж<Modulus> Ꮡm) {
     nuint logR = (nuint)_W * n;
     // We start by computing R = 2^(_W * n) mod m. We can get pretty close, to
     // 2^⌊log₂m⌋, by setting the highest bit we can without having to reduce.
-    rr.Value.limbs[(nint)(n - 1)] = ((nuint)1 << (int)(((mLen - 1) % (nuint)_W)));
+    rr.Value.limbs[n - 1] = ((nuint)1 << (int)(((mLen - 1) % (nuint)_W)));
     // Then we double until we reach 2^(_W * n).
     for (nuint iΔ1 = mLen - 1; iΔ1 < logR; iΔ1++) {
         rr.Add(rr, Ꮡm);

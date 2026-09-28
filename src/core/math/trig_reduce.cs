@@ -47,9 +47,9 @@ internal static (uint64 j, float64 z) trigReduce(float64 x) {
     // Note, exp >= -53 since x >= PI4 and exp < 971 for maximum float64.
     nuint digit = (nuint)(exp + 61) / 64;
     nuint bitshift = (nuint)(exp + 61) % 64;
-    var z0 = (uint64)((mPi4[(nint)(digit)].Lsh(bitshift)) | (mPi4[(nint)(digit + 1)].Rsh((64 - bitshift))));
-    var z1 = (uint64)((mPi4[(nint)(digit + 1)].Lsh(bitshift)) | (mPi4[(nint)(digit + 2)].Rsh((64 - bitshift))));
-    var z2 = (uint64)((mPi4[(nint)(digit + 2)].Lsh(bitshift)) | (mPi4[(nint)(digit + 3)].Rsh((64 - bitshift))));
+    var z0 = (uint64)((mPi4[digit].Lsh(bitshift)) | (mPi4[digit + 1].Rsh((64 - bitshift))));
+    var z1 = (uint64)((mPi4[digit + 1].Lsh(bitshift)) | (mPi4[digit + 2].Rsh((64 - bitshift))));
+    var z2 = (uint64)((mPi4[digit + 2].Lsh(bitshift)) | (mPi4[digit + 3].Rsh((64 - bitshift))));
     // Multiply mantissa by the digits and extract the upper two digits (hi, lo).
     var (z2hi, _) = bits.Mul64(z2, ix);
     var (z1hi, z1lo) = bits.Mul64(z1, ix);

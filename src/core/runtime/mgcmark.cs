@@ -172,7 +172,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
             print((@string)"runtime: markroot index "u8, i, (@string)" not in stack roots range ["u8, work.baseStacks, (@string)", "u8, work.baseEnd, (@string)")\n"u8);
             @throw(markrootBadIndexˢ);
         }
-        var gp = work.stackRoots[(nint)(i - work.baseStacks)];
+        var gp = work.stackRoots[i - work.baseStacks];
         var status = readgstatus(gp); // We are not in a scan state
         if ((status == _Gwaiting || status == _Gsyscall) && (~gp).waitsince == 0) {
             // remember when we've first observed the G blocked
@@ -316,7 +316,7 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
     var sg = mheap_.sweepgen;
     // Find the arena and page index into that arena for this shard.
     arenaIdx ai = mheap_.markArenas[shard / (nint)(pagesPerArena / pagesPerSpanRoot)];
-    var ha = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
+    var ha = mheap_.arenas[ai.l1()].Value[ai.l2()];
     nuint arenaPage = (nuint)((uintptr)shard * (uintptr)pagesPerSpanRoot % (uintptr)pagesPerArena);
     // Construct slice of bitmap which we'll iterate over.
     var specialsbits = (~ha).pageSpecials[(int)(arenaPage / 8)..];
@@ -337,7 +337,7 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
             // specials implies that the span is in-use, and since we're
             // currently marking we can be sure that we don't have to worry
             // about the span being freed and re-used.
-            var s = (~ha).spans[(nint)(arenaPage + (nuint)i * 8 + j)];
+            var s = (~ha).spans[arenaPage + (nuint)i * 8 + j];
             // The state must be mSpanInUse if the specials bit is set, so
             // sanity check that.
             {
@@ -1586,7 +1586,7 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
         mbits.setMarked();
         // Mark span.
         var (arena, pageIdx, pageMask) = pageIndexOf(span.@base());
-        if ((uint8)((~arena).pageMarks[(nint)(pageIdx)] & pageMask) == 0) {
+        if ((uint8)((~arena).pageMarks[pageIdx] & pageMask) == 0) {
             atomic.Or8(arena.at(heapArena.ᏑpageMarks, (nint)(pageIdx)), pageMask);
         }
         // If this is a noscan object, fast-track it to black
@@ -1681,7 +1681,7 @@ internal static void gcmarknewobject(ж<mspan> Ꮡspan, uintptr obj) {
     span.markBitsForIndex(objIndex).setMarked();
     // Mark span.
     var (arena, pageIdx, pageMask) = pageIndexOf(span.@base());
-    if ((uint8)((~arena).pageMarks[(nint)(pageIdx)] & pageMask) == 0) {
+    if ((uint8)((~arena).pageMarks[pageIdx] & pageMask) == 0) {
         atomic.Or8(arena.at(heapArena.ᏑpageMarks, (nint)(pageIdx)), pageMask);
     }
     var gcw = (~(~getg()).m).p.ptr().of(runtime_package.Δp.Ꮡgcw);

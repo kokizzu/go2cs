@@ -32,7 +32,7 @@ internal static @string signame(uint32 sig) {
     if (sig >= (uint32)len(sigtable)) {
         return ""u8;
     }
-    return sigtable[(nint)(sig)].name;
+    return sigtable[sig].name;
 }
 
 internal static uintptr _SIG_DFL => 0;
@@ -128,19 +128,19 @@ internal static void initsig(bool preinit) {
         }
         // We don't need to use atomic operations here because
         // there shouldn't be any other goroutines running yet.
-        fwdSig[(nint)(i)] = getsig(i);
+        fwdSig[i] = getsig(i);
         if (!sigInstallGoHandler(i)) {
             // Even if we are not installing a signal handler,
             // set SA_ONSTACK if necessary.
-            if (fwdSig[(nint)(i)] != _SIG_DFL && fwdSig[(nint)(i)] != _SIG_IGN){
+            if (fwdSig[i] != _SIG_DFL && fwdSig[i] != _SIG_IGN){
                 setsigstack(i);
             } else 
-            if (fwdSig[(nint)(i)] == _SIG_IGN) {
+            if (fwdSig[i] == _SIG_IGN) {
                 sigInitIgnored(i);
             }
             continue;
         }
-        handlingSig[(nint)(i)] = 1;
+        handlingSig[i] = 1;
         setsig(i, abi.FuncPCABIInternal(sighandler));
     }
 }
@@ -615,7 +615,7 @@ internal static void sighandler(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
     // still let it through to the application.
     var flags = (int32)_SigThrow;
     if (sig < (uint32)len(sigtable)) {
-        flags = sigtable[(nint)(sig)].flags;
+        flags = sigtable[sig].flags;
     }
     if (!c.sigFromUser() && (int32)(flags & (int32)_SigPanic) != 0 && (gp.throwsplit || Ꮡgp != (~mp).curg)) {
         // We can't safely sigpanic because it may grow the
@@ -751,7 +751,7 @@ internal static ж<g> fatalsignal(uint32 sig, ж<sigctxt> Ꮡc, ж<g> Ꮡgp, ref
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     if (sig < (uint32)len(sigtable)){
-        print(sigtable[(nint)(sig)].name, (@string)"\n"u8);
+        print(sigtable[sig].name, (@string)"\n"u8);
     } else {
         print((@string)"Signal "u8, sig, (@string)"\n"u8);
     }
@@ -870,7 +870,7 @@ internal static void sigpanic() {
         // can't happen: we looked up gp.sig in sigtable to decide to call sigpanic
         @throw(unexpectedSignalValueˢ);
     }
-    throw panic(((errorString)sigtable[(nint)((~gp).sig)].name));
+    throw panic(((errorString)sigtable[(~gp).sig].name));
 }
 
 // go2cs generated this placeholder — func dieFromSignal is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -891,7 +891,7 @@ internal static void raisebadsignal(uint32 sig, ж<sigctxt> Ꮡc) {
         handler = _SIG_DFL;
     } else {
         handler = atomic.Loaduintptr(ᏑfwdSig.at<uintptr>((nint)(sig)));
-        flags = sigtable[(nint)(sig)].flags;
+        flags = sigtable[sig].flags;
     }
     // If the signal is ignored, raising the signal is no-op.
     if (handler == _SIG_IGN || (handler == _SIG_DFL && (int32)(flags & (int32)_SigIgn) != 0)) {
@@ -1070,7 +1070,7 @@ internal static bool sigfwdgo(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer c
         return false;
     }
     var fwdFn = atomic.Loaduintptr(ᏑfwdSig.at<uintptr>((nint)(sig)));
-    var flags = sigtable[(nint)(sig)].flags;
+    var flags = sigtable[sig].flags;
     // If we aren't handling the signal, forward it.
     if (atomic.Load(ᏑhandlingSig.at<uint32>((nint)(sig))) == 0 || !signalsOK) {
         // If the signal is ignored, doing nothing is the same as forwarding.
@@ -1288,7 +1288,7 @@ internal static void unminitSignals() {
 // we start a new thread. When linked into a C program we let the C code
 // decide on the disposition of those signals.
 internal static bool blockableSig(uint32 sig) {
-    var flags = sigtable[(nint)(sig)].flags;
+    var flags = sigtable[sig].flags;
     if ((int32)(flags & (int32)_SigUnblock) != 0) {
         return false;
     }

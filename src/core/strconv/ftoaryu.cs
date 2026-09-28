@@ -201,17 +201,17 @@ internal static void formatDecimal(ref decimalSlice d, uint64 m, bool trunc, boo
             (v1, v2) = (v / 100, v % 100);
         }
         n -= 2;
-        d.d[(nint)(n + 1)] = smallsString[(int)(2 * v2 + 1)];
-        d.d[(nint)(n + 0)] = smallsString[(int)(2 * v2 + 0)];
+        d.d[n + 1] = smallsString[2 * v2 + 1];
+        d.d[n + 0] = smallsString[2 * v2 + 0];
         v = v1;
     }
     if (v > 0) {
         n--;
-        d.d[(nint)(n)] = smallsString[(int)(2 * v + 1)];
+        d.d[n] = smallsString[2 * v + 1];
     }
     if (v >= 10) {
         n--;
-        d.d[(nint)(n)] = smallsString[(int)(2 * v)];
+        d.d[n] = smallsString[2 * v];
     }
     while (d.d[d.nd - 1] == (rune)'0') {
         d.nd--;
@@ -394,7 +394,7 @@ internal static void ryuDigits(ref decimalSlice d, uint64 lower, uint64 central,
             var (v1, v2) = (v / 10, v % 10);
             v = v1;
             n--;
-            d.d[(nint)(n)] = (byte)(v2 + (rune)'0');
+            d.d[n] = (byte)(v2 + (rune)'0');
         }
         d.d = d.d[(int)(n)..];
         d.nd = (nint)(9 - n);
@@ -471,8 +471,8 @@ internal static void ryuDigits32(ref decimalSlice d, uint32 lower, uint32 centra
     nint n = endindex;
     while (n > d.nd) {
         var (v1, v2) = (v / 100, v % 100);
-        d.d[n] = smallsString[(int)(2 * v2 + 1)];
-        d.d[n - 1] = smallsString[(int)(2 * v2 + 0)];
+        d.d[n] = smallsString[2 * v2 + 1];
+        d.d[n - 1] = smallsString[2 * v2 + 0];
         n -= 2;
         v = v1;
     }

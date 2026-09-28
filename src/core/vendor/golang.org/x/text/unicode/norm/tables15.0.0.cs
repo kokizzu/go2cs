@@ -2801,7 +2801,7 @@ internal static array<byte> decomps = new byte[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -2819,13 +2819,13 @@ internal static array<byte> decomps = new byte[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -2850,12 +2850,12 @@ internal static array<byte> decomps = new byte[]{
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = nfcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = nfcIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = nfcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = nfcIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -2899,7 +2899,7 @@ internal static array<byte> decomps = new byte[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -2917,13 +2917,13 @@ internal static array<byte> decomps = new byte[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = nfcIndex[(nint)(o)];
+        i = nfcIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -2948,12 +2948,12 @@ internal static array<byte> decomps = new byte[]{
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = nfcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = nfcIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = nfcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = nfcIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -2973,7 +2973,7 @@ internal static ж<nfcTrie> newNfcTrie(nint i) {
 [GoRecv] internal static uint16 lookupValue(this ref nfcTrie t, uint32 n, byte b) {
     switch (ᐧ) {
     case {} when n is < 46: {
-        return (uint16)nfcValues[(nint)((n << (int)(6)) + (uint32)b)];
+        return (uint16)nfcValues[(n << (int)(6)) + (uint32)b];
     }
     default: {
         n -= 46;
@@ -4545,7 +4545,7 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -4563,13 +4563,13 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -4594,12 +4594,12 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = nfkcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = nfkcIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = nfkcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = nfkcIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -4643,7 +4643,7 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -4661,13 +4661,13 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = nfkcIndex[(nint)(o)];
+        i = nfkcIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -4692,12 +4692,12 @@ internal static array<valueRange> nfcSparseValues = new valueRange[]{
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = nfkcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = nfkcIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = nfkcIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = nfkcIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -4717,7 +4717,7 @@ internal static ж<nfkcTrie> newNfkcTrie(nint i) {
 [GoRecv] internal static uint16 lookupValue(this ref nfkcTrie t, uint32 n, byte b) {
     switch (ᐧ) {
     case {} when n is < 95: {
-        return (uint16)nfkcValues[(nint)((n << (int)(6)) + (uint32)b)];
+        return (uint16)nfkcValues[(n << (int)(6)) + (uint32)b];
     }
     default: {
         n -= 95;

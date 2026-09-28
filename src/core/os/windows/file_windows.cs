@@ -271,7 +271,7 @@ internal static @string tempDir() {
         }
         if (n == 3 && b[1] == (rune)':' && b[2] == (rune)'\\'){
         } else 
-        if (n > 0 && b[(nint)(n - 1)] == (rune)'\\') {
+        if (n > 0 && b[n - 1] == (rune)'\\') {
             // Do nothing for path, like C:\.
             // Otherwise remove terminating \.
             n--;

@@ -126,7 +126,7 @@ internal static void traceStopReadCPU() {
 // operations.
 internal static bool traceReadCPU(uintptr gen) {
     array<uintptr> pcBuf = new(128); /* traceStackSize */
-    var (data, tags, eof) = Δtrace.cpuLogRead[(nint)(gen % 2)].read(profBufNonBlocking);
+    var (data, tags, eof) = Δtrace.cpuLogRead[gen % 2].read(profBufNonBlocking);
     while (len(data) > 0) {
         if (len(data) < 4 || data[0] > (uint64)len(data)) {
             break; // truncated profile
@@ -171,7 +171,7 @@ internal static bool traceReadCPU(uintptr gen) {
             pcBuf[nstk] = (uintptr)stk[nstk - 1];
         }
         // Write out a trace event.
-        var w = unsafeTraceWriter(gen, Δtrace.cpuBuf[(nint)(gen % 2)]);
+        var w = unsafeTraceWriter(gen, Δtrace.cpuBuf[gen % 2]);
         // Ensure we have a place to write to.
         bool flushed = default!;
         (w, flushed) = w.ensure(2 + 5 * traceBytesPerNumber);
@@ -189,7 +189,7 @@ internal static bool traceReadCPU(uintptr gen) {
         w.varint(ppid);
         w.varint(goid);
         w.varint(stackID);
-        Δtrace.cpuBuf[(nint)(gen % 2)] = w.traceBuf;
+        Δtrace.cpuBuf[gen % 2] = w.traceBuf;
     }
     return !eof;
 }
@@ -199,13 +199,13 @@ internal static bool traceReadCPU(uintptr gen) {
 internal static void traceCPUFlush(uintptr gen) {
     // Flush any remaining trace buffers containing CPU samples.
     {
-        var buf = Δtrace.cpuBuf[(nint)(gen % 2)]; if (buf != nil) {
+        var buf = Δtrace.cpuBuf[gen % 2]; if (buf != nil) {
             var bufʗ1 = buf;
             systemstack(() => {
                 @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
                 traceBufFlush(bufʗ1, gen);
                 unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-                Δtrace.cpuBuf[(nint)(gen % 2)] = default!;
+                Δtrace.cpuBuf[gen % 2] = default!;
             });
         }
     }

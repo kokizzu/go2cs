@@ -507,7 +507,7 @@ internal static void round(this ж<Float> Ꮡz, nuint sbit) {
                 shrVU(z.mant, z.mant, 1);
                 // set msb == carry == 1 from the mantissa overflow above
                 UntypedInt msb = /* 1 << (_W - 1) */ 9223372036854775808;
-                z.mant[(nint)(n - 1)] |= (Word)(msb);
+                z.mant[n - 1] |= (Word)(msb);
             }
         }
     }

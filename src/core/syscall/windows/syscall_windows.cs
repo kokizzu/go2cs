@@ -159,7 +159,7 @@ public static @string Error(this Errno e) {
         }
     }
     // trim terminating \r and \n
-    for (; n > 0 && (b[(nint)(n - 1)] == (rune)'\n' || b[(nint)(n - 1)] == (rune)'\r'); n--) {
+    for (; n > 0 && (b[n - 1] == (rune)'\n' || b[n - 1] == (rune)'\r'); n--) {
     }
     return UTF16ToString(b[..(int)(n)]);
 }

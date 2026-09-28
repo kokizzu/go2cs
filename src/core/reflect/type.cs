@@ -397,7 +397,7 @@ public static bool IsExported(this ΔMethod m) {
 // String returns the name of k.
 public static @string String(this ΔKind k) {
     if ((nuint)k < (nuint)len(kindNames)) {
-        return kindNames[(nint)((nuint)k)];
+        return kindNames[(nuint)k];
     }
     return "kind"u8 + strconv.Itoa((nint)(nuint)k);
 }
@@ -1570,10 +1570,10 @@ internal static void emitGCMask(slice<byte> @out, uintptr @base, ж<abi.Type> �
     var words = typ.Size_ / (uintptr)goarch.PtrSize;
     var mask = typ.GcSlice(0, (ptrs + 7) / 8);
     for (var j = (uintptr)0; j < ptrs; j++) {
-        if ((byte)(((mask[(nint)(j / 8)] >> (int)((j % 8)))) & 1) != 0) {
+        if ((byte)(((mask[j / 8] >> (int)((j % 8)))) & 1) != 0) {
             for (var i = (uintptr)0; i < n; i++) {
                 var k = @base + i * words + j;
-                @out[(nint)(k / 8)] |= (byte)((byte)(1 << (int)((k % 8))));
+                @out[k / 8] |= (byte)((byte)(1 << (int)((k % 8))));
             }
         }
     }
@@ -1828,7 +1828,7 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
             bv.data = builtin.append(bv.data, (byte)(0));
         }
     }
-    bv.data[(nint)(bv.n / 8)] |= (uint8)((uint8)(bit << (int)((bv.n % 8))));
+    bv.data[bv.n / 8] |= (uint8)((uint8)(bit << (int)((bv.n % 8))));
     bv.n++;
 }
 

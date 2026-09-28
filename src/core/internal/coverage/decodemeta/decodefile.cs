@@ -85,25 +85,25 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
     r.pkgOffsets = new slice<uint64>((nint)(r.hdr.Entries));
     for (var i = (uint64)0; i < r.hdr.Entries; i++) {
         {
-            (r.pkgOffsets[(nint)(i)], err) = r.rdUint64(); if (err != default!) {
+            (r.pkgOffsets[i], err) = r.rdUint64(); if (err != default!) {
                 return err;
             }
         }
-        if (r.pkgOffsets[(nint)(i)] > r.hdr.TotalLength) {
+        if (r.pkgOffsets[i] > r.hdr.TotalLength) {
             return fmt.Errorf("insane pkg offset %d: %d > totlen %d"u8,
-                i, r.pkgOffsets[(nint)(i)], r.hdr.TotalLength);
+                i, r.pkgOffsets[i], r.hdr.TotalLength);
         }
     }
     r.pkgLengths = new slice<uint64>((nint)(r.hdr.Entries));
     for (var i = (uint64)0; i < r.hdr.Entries; i++) {
         {
-            (r.pkgLengths[(nint)(i)], err) = r.rdUint64(); if (err != default!) {
+            (r.pkgLengths[i], err) = r.rdUint64(); if (err != default!) {
                 return err;
             }
         }
-        if (r.pkgLengths[(nint)(i)] > r.hdr.TotalLength) {
+        if (r.pkgLengths[i] > r.hdr.TotalLength) {
             return fmt.Errorf("insane pkg length %d: %d > totlen %d"u8,
-                i, r.pkgLengths[(nint)(i)], r.hdr.TotalLength);
+                i, r.pkgLengths[i], r.hdr.TotalLength);
         }
     }
     // Read string table.
@@ -203,8 +203,8 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
     if ((uint64)pkIdx >= r.hdr.Entries) {
         return (default!, fmt.Errorf("GetPackagePayload: illegal pkg index %d"u8, pkIdx));
     }
-    var off = r.pkgOffsets[(nint)(pkIdx)];
-    var len = r.pkgLengths[(nint)(pkIdx)];
+    var off = r.pkgOffsets[pkIdx];
+    var len = r.pkgLengths[pkIdx];
     if (r.debug) {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=-= for pk %d, off=%d len=%d\n"u8, pkIdx, off, len);
     }

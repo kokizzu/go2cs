@@ -115,10 +115,10 @@ internal static bool shouldBacktrack(ref syntax.Prog prog) {
 // been visited yet.
 [GoRecv] internal static bool shouldVisit(this ref bitState b, uint32 pc, nint pos) {
     nuint n = (nuint)((nint)pc * (b.end + 1) + pos);
-    if ((uint32)(b.visited[(nint)(n / (nuint)visitedBits)] & (((uint32)1 << (int)(((nuint)(n & (nuint)(visitedBits - 1))))))) != 0) {
+    if ((uint32)(b.visited[n / (nuint)visitedBits] & (((uint32)1 << (int)(((nuint)(n & (nuint)(visitedBits - 1))))))) != 0) {
         return false;
     }
-    b.visited[(nint)(n / (nuint)visitedBits)] |= (uint32)(((uint32)1 << (int)(((nuint)(n & (nuint)(visitedBits - 1))))));
+    b.visited[n / (nuint)visitedBits] |= (uint32)(((uint32)1 << (int)(((nuint)(n & (nuint)(visitedBits - 1))))));
     return true;
 }
 
@@ -129,7 +129,7 @@ internal static bool shouldBacktrack(ref syntax.Prog prog) {
 
     // Only check shouldVisit when arg is false.
     // When arg is true, we are continuing a previous visit.
-    if ((~re.prog).Inst[(nint)(pc)].Op != syntax.InstFail && (arg || b.shouldVisit(pc, pos))) {
+    if ((~re.prog).Inst[pc].Op != syntax.InstFail && (arg || b.shouldVisit(pc, pos))) {
         b.jobs = append(b.jobs, new job(pc: pc, arg: arg, pos: pos));
     }
 }
@@ -187,7 +187,7 @@ Skip:
             }
         }
         else if (exprᴛ1 == syntax.InstAltMatch) {
-            var exprᴛ2 = (~re.prog).Inst[(nint)((~inst).Out)].Op;
+            var exprᴛ2 = (~re.prog).Inst[(~inst).Out].Op;
             if (exprᴛ2 == syntax.InstRune || exprᴛ2 == syntax.InstRune1 || exprᴛ2 == syntax.InstRuneAny || exprᴛ2 == syntax.InstRuneAnyNotNL) {
                 b.push(Ꮡre, // One opcode consumes runes; the other leads to match.
  // inst.Arg is the match.
@@ -241,13 +241,13 @@ Skip:
         else if (exprᴛ1 == syntax.InstCapture) {
             if (arg){
                 // Finished inst.Out; restore the old value.
-                b.cap[(nint)((~inst).Arg)] = posΔ1;
+                b.cap[(~inst).Arg] = posΔ1;
                 continue;
             } else {
                 if ((~inst).Arg < (uint32)len(b.cap)) {
                     // Capture pos to register, but save old value.
-                    b.push(Ꮡre, pcΔ1, b.cap[(nint)((~inst).Arg)], true); // come back when we're done.
-                    b.cap[(nint)((~inst).Arg)] = posΔ1;
+                    b.push(Ꮡre, pcΔ1, b.cap[(~inst).Arg], true); // come back when we're done.
+                    b.cap[(~inst).Arg] = posΔ1;
                 }
                 pcΔ1 = inst.Value.Out;
                 goto CheckAndLoop;

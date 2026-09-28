@@ -30,7 +30,7 @@ internal static FileMode direntType(slice<byte> buf) {
     if (off >= (uintptr)len(buf)) {
         return ~((fs.FileMode)((fs.FileMode)0)); // unknown
     }
-    var typ = buf[(nint)(off)];
+    var typ = buf[off];
     var exprᴛ1 = typ;
     if (exprᴛ1 == syscall.DT_BLK) {
         return ModeDevice;

@@ -204,7 +204,7 @@ internal static (slice<byte>, error) readLiteralsOneStream(this ж<Reader> Ꮡr,
         }
         uint16 t = default!;
         var idx = (uint32)((rbr.bits.Rsh((uint64)((rbr.cnt - huffBits)))) & huffMask);
-        t = huffTable[(nint)(idx)];
+        t = huffTable[idx];
         outbuf = append(outbuf, (byte)((t >> (int)(8))));
         rbr.cnt -= (uint32)((uint16)(t & 0xff));
     }
@@ -293,7 +293,7 @@ internal static (slice<byte>, error) readLiteralsFourStreams(this ж<Reader> Ꮡ
                 return (0, rbr.makeError(literalsHuffmanStreamOutˢ));
             }
             var idx = (uint32)(((~rbr).bits.Rsh((uint64)(((~rbr).cnt - huffBits)))) & huffMask);
-            return (huffTableʗ1[(nint)(idx)], default!);
+            return (huffTableʗ1[idx], default!);
         }
         var (t1, errΔ1) = fetchHuff(Ꮡrbr1);
         if (errΔ1 != default!) {

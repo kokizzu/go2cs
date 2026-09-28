@@ -592,8 +592,8 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
 
             // Add the c capability to the permitted and inheritable capability mask,
             // otherwise we will not be able to add it to the ambient capability mask.
-            caps.data[(nint)(capToIndex(c))].permitted |= (uint32)(capToMask(c));
-            caps.data[(nint)(capToIndex(c))].inheritable |= (uint32)(capToMask(c));
+            caps.data[capToIndex(c)].permitted |= (uint32)(capToMask(c));
+            caps.data[capToIndex(c)].inheritable |= (uint32)(capToMask(c));
         }
         {
             var ᴋ14 = Ꮡcaps.of(syscall_package.caps.Ꮡhdr);

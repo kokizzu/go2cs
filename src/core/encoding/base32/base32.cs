@@ -122,14 +122,14 @@ public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
         // for 32 and 64 bit platforms.
         var hi = (uint32)((uint32)((uint32)(((uint32)src[si + 0] << (int)(24)) | ((uint32)src[si + 1] << (int)(16))) | ((uint32)src[si + 2] << (int)(8))) | (uint32)src[si + 3]);
         var lo = (uint32)((hi << (int)(8)) | (uint32)src[si + 4]);
-        dst[di + 0] = enc.encode[(nint)((uint32)(((hi >> (int)(27))) & 0x1F))];
-        dst[di + 1] = enc.encode[(nint)((uint32)(((hi >> (int)(22))) & 0x1F))];
-        dst[di + 2] = enc.encode[(nint)((uint32)(((hi >> (int)(17))) & 0x1F))];
-        dst[di + 3] = enc.encode[(nint)((uint32)(((hi >> (int)(12))) & 0x1F))];
-        dst[di + 4] = enc.encode[(nint)((uint32)(((hi >> (int)(7))) & 0x1F))];
-        dst[di + 5] = enc.encode[(nint)((uint32)(((hi >> (int)(2))) & 0x1F))];
-        dst[di + 6] = enc.encode[(nint)((uint32)(((lo >> (int)(5))) & 0x1F))];
-        dst[di + 7] = enc.encode[(nint)((uint32)((lo) & 0x1F))];
+        dst[di + 0] = enc.encode[(uint32)(((hi >> (int)(27))) & 0x1F)];
+        dst[di + 1] = enc.encode[(uint32)(((hi >> (int)(22))) & 0x1F)];
+        dst[di + 2] = enc.encode[(uint32)(((hi >> (int)(17))) & 0x1F)];
+        dst[di + 3] = enc.encode[(uint32)(((hi >> (int)(12))) & 0x1F)];
+        dst[di + 4] = enc.encode[(uint32)(((hi >> (int)(7))) & 0x1F)];
+        dst[di + 5] = enc.encode[(uint32)(((hi >> (int)(2))) & 0x1F)];
+        dst[di + 6] = enc.encode[(uint32)(((lo >> (int)(5))) & 0x1F)];
+        dst[di + 7] = enc.encode[(uint32)((lo) & 0x1F)];
         si += 5;
         di += 8;
     }
@@ -144,25 +144,25 @@ public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
     var matchᴛ1 = false;
     if (exprᴛ1 is 4) { matchᴛ1 = true;
         val |= (uint32)((uint32)src[si + 3]);
-        dst[di + 6] = enc.encode[(nint)((uint32)((val << (int)(3)) & 0x1F))];
-        dst[di + 5] = enc.encode[(nint)((uint32)((val >> (int)(2)) & 0x1F))];
+        dst[di + 6] = enc.encode[(uint32)((val << (int)(3)) & 0x1F)];
+        dst[di + 5] = enc.encode[(uint32)((val >> (int)(2)) & 0x1F)];
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1 && exprᴛ1 is 3) { matchᴛ1 = true;
         val |= (uint32)(((uint32)src[si + 2] << (int)(8)));
-        dst[di + 4] = enc.encode[(nint)((uint32)((val >> (int)(7)) & 0x1F))];
+        dst[di + 4] = enc.encode[(uint32)((val >> (int)(7)) & 0x1F)];
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1 && exprᴛ1 is 2) {
         val |= (uint32)(((uint32)src[si + 1] << (int)(16)));
-        dst[di + 3] = enc.encode[(nint)((uint32)((val >> (int)(12)) & 0x1F))];
-        dst[di + 2] = enc.encode[(nint)((uint32)((val >> (int)(17)) & 0x1F))];
+        dst[di + 3] = enc.encode[(uint32)((val >> (int)(12)) & 0x1F)];
+        dst[di + 2] = enc.encode[(uint32)((val >> (int)(17)) & 0x1F)];
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1 && exprᴛ1 is 1) { matchᴛ1 = true;
         val |= (uint32)(((uint32)src[si + 0] << (int)(24)));
-        dst[di + 1] = enc.encode[(nint)((uint32)((val >> (int)(22)) & 0x1F))];
-        dst[di + 0] = enc.encode[(nint)((uint32)((val >> (int)(27)) & 0x1F))];
+        dst[di + 1] = enc.encode[(uint32)((val >> (int)(22)) & 0x1F)];
+        dst[di + 0] = enc.encode[(uint32)((val >> (int)(27)) & 0x1F)];
     }
 
     // Pad the final quantum

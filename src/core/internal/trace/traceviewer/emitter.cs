@@ -840,7 +840,7 @@ internal static slice<@string> colorForTask = new @string[]{
 
 internal static @string pickTaskColor(uint64 id) {
     var idx = id % (uint64)len(colorForTask);
-    return colorForTask[(nint)(idx)];
+    return colorForTask[idx];
 }
 
 } // end traceviewer_package

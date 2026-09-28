@@ -88,18 +88,18 @@ internal static uint32 length(this token t) {
 }
 
 internal static uint32 lengthCode(uint32 len) {
-    return lengthCodes[(nint)(len)];
+    return lengthCodes[len];
 }
 
 // Returns the offset code corresponding to a specific offset.
 internal static uint32 offsetCode(uint32 off) {
     if (off < (uint32)len(offsetCodes)) {
-        return offsetCodes[(nint)(off)];
+        return offsetCodes[off];
     }
     if ((off >> (int)(7)) < (uint32)len(offsetCodes)) {
-        return offsetCodes[(nint)((off >> (int)(7)))] + 14;
+        return offsetCodes[(off >> (int)(7))] + 14;
     }
-    return offsetCodes[(nint)((off >> (int)(14)))] + 28;
+    return offsetCodes[(off >> (int)(14))] + 28;
 }
 
 } // end flate_package

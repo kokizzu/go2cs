@@ -220,7 +220,7 @@ internal static void vdsoParseSymbols(ж<vdsoInfo> Ꮡinfo, int32 version) {
         // Old-style DT_HASH table.
         foreach (var (_, k) in vdsoSymbolKeys) {
             if (len(info.bucket) > 0) {
-                for (var chain = info.bucket[(nint)(k.symHash % (uint32)len(info.bucket))]; chain != 0; chain = info.chain[(nint)(chain)]) {
+                for (var chain = info.bucket[k.symHash % (uint32)len(info.bucket)]; chain != 0; chain = info.chain[chain]) {
                     if (apply(chain, k)) {
                         break;
                     }
@@ -231,12 +231,12 @@ internal static void vdsoParseSymbols(ж<vdsoInfo> Ꮡinfo, int32 version) {
     }
     // New-style DT_GNU_HASH table.
     foreach (var (_, k) in vdsoSymbolKeys) {
-        var symIndex = info.bucket[(nint)(k.gnuHash % (uint32)len(info.bucket))];
+        var symIndex = info.bucket[k.gnuHash % (uint32)len(info.bucket)];
         if (symIndex < info.symOff) {
             continue;
         }
         for (; ᐧ ; symIndex++) {
-            var hash = info.chain[(nint)(symIndex - info.symOff)];
+            var hash = info.chain[symIndex - info.symOff];
             if ((uint32)(hash | 1) == (uint32)(k.gnuHash | 1)) {
                 // Found a hash match.
                 if (apply(symIndex, k)) {

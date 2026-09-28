@@ -37,7 +37,7 @@ internal static ж<nfkcTrie> nfkcData = newNfkcTrie(0);
 // is a list of ranges with an accompanying value. Given a matching range r,
 // the value for b is by r.value + (b - r.lo) * stride.
 [GoRecv] internal static uint16 lookup(this ref sparseBlocks t, uint32 n, byte b) {
-    var offset = t.offset[(nint)(n)];
+    var offset = t.offset[n];
     var header = t.values[offset];
     var lo = (uint16)(offset + 1);
     var hi = (uint16)(lo + (uint16)header.lo);

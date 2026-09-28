@@ -421,7 +421,7 @@ internal static void GoStart(this traceLocker tl) {
     var w = tl.eventWriter(traceGoRunnable, traceProcRunning);
     w.@event(traceEvGoStart, ((traceArg)(~gp).goid), gp.of(g.Ꮡtrace).of(gTraceState.ᏑtraceSchedResourceState).nextSeq(tl.gen));
     if ((~pp.ptr()).gcMarkWorkerMode != gcMarkWorkerNotWorker) {
-        w.@event(traceEvGoLabel, Δtrace.markWorkerLabels[(nint)(tl.gen % 2)][(~pp.ptr()).gcMarkWorkerMode]);
+        w.@event(traceEvGoLabel, Δtrace.markWorkerLabels[tl.gen % 2][(~pp.ptr()).gcMarkWorkerMode]);
     }
 }
 
@@ -444,7 +444,7 @@ internal static void GoPreempt(this traceLocker tl) {
 
 // GoStop emits a GoStop event with the provided reason.
 internal static void GoStop(this traceLocker tl, traceGoStopReason reason) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoStop, Δtrace.goStopReasons[(nint)(tl.gen % 2)][reason], tl.stack(1));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoStop, Δtrace.goStopReasons[tl.gen % 2][reason], tl.stack(1));
 }
 
 // GoPark emits a GoBlock event with the provided reason.
@@ -452,7 +452,7 @@ internal static void GoStop(this traceLocker tl, traceGoStopReason reason) {
 // TODO(mknyszek): Replace traceBlockReason with waitReason. It's silly
 // that we have both, and waitReason is way more descriptive.
 internal static void GoPark(this traceLocker tl, traceBlockReason reason, nint skip) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoBlock, Δtrace.goBlockReasons[(nint)(tl.gen % 2)][reason], tl.stack(skip));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoBlock, Δtrace.goBlockReasons[tl.gen % 2][reason], tl.stack(skip));
 }
 
 // GoUnpark emits a GoUnblock event.

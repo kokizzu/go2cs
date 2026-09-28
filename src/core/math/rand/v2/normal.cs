@@ -35,8 +35,8 @@ internal static uint32 absInt32(int32 i) {
         var u = r.Uint64();
         var j = (int32)u; // Possibly negative
         var i = (uint64)((u >> (int)(32)) & 0x7F);
-        var x = (float64)j * (float64)wn[(nint)(i)];
-        if (absInt32(j) < kn[(nint)(i)]) {
+        var x = (float64)j * (float64)wn[i];
+        if (absInt32(j) < kn[i]) {
             // This case should be hit better than 99% of the time.
             return x;
         }
@@ -54,7 +54,7 @@ internal static uint32 absInt32(int32 i) {
             }
             return /* -rn */ -3.442619855899D - x;
         }
-        if (fn[(nint)(i)] + (float32)r.Float64() * (fn[(nint)(i - 1)] - fn[(nint)(i)]) < (float32)math.Exp(-.5D * x * x)) {
+        if (fn[i] + (float32)r.Float64() * (fn[i - 1] - fn[i]) < (float32)math.Exp(-.5D * x * x)) {
             return x;
         }
     }

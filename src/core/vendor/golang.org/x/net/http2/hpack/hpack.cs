@@ -200,7 +200,7 @@ public static error ErrStringLength = errors.New("hpack: string too long"u8);
         return (hf, ok);
     }
     if (i <= (uint64)staticTable.len()) {
-        return ((~staticTable).ents[(nint)(i - 1)], true);
+        return ((~staticTable).ents[i - 1], true);
     }
     if (i > (uint64)d.maxTableIndex()) {
         return (hf, ok);

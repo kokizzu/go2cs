@@ -85,7 +85,7 @@ internal static bool sigsend(uint32 s) {
     }
     // Add signal to outgoing queue.
     while (ᐧ) {
-        var mask = sig.mask[(nint)(s / 32)];
+        var mask = sig.mask[s / 32];
         if ((uint32)(mask & bit) != 0) {
             Ꮡsig.of(sigᴛ1.Ꮡdelivering).Add(-1);
             return true; // signal already in queue
@@ -139,8 +139,8 @@ public static uint32 signal_recv() {
     while (ᐧ) {
         // Serve any signals from local copy.
         for (var i = (uint32)0; i < _NSIG; i++) {
-            if ((uint32)(sig.recv[(nint)(i / 32)] & (((uint32)1 << (int)(((uint32)(i & 31)))))) != 0) {
-                sig.recv[(nint)(i / 32)] &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(i & 31))))));
+            if ((uint32)(sig.recv[i / 32] & (((uint32)1 << (int)(((uint32)(i & 31)))))) != 0) {
+                sig.recv[i / 32] &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(i & 31))))));
                 return i;
             }
         }
@@ -220,10 +220,10 @@ public static void signal_enable(uint32 s) {
     if (s >= (uint32)(len(sig.wanted) * 32)) {
         return;
     }
-    var w = sig.wanted[(nint)(s / 32)];
+    var w = sig.wanted[s / 32];
     w |= (uint32)(((uint32)1 << (int)(((uint32)(s & 31)))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡwanted, (nint)(s / 32)), w);
-    var i = sig.ignored[(nint)(s / 32)];
+    var i = sig.ignored[s / 32];
     i &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(s & 31))))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡignored, (nint)(s / 32)), i);
     sigenable(s);
@@ -237,7 +237,7 @@ public static void signal_disable(uint32 s) {
         return;
     }
     sigdisable(s);
-    var w = sig.wanted[(nint)(s / 32)];
+    var w = sig.wanted[s / 32];
     w &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(s & 31))))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡwanted, (nint)(s / 32)), w);
 }
@@ -250,10 +250,10 @@ public static void signal_ignore(uint32 s) {
         return;
     }
     sigignore(s);
-    var w = sig.wanted[(nint)(s / 32)];
+    var w = sig.wanted[s / 32];
     w &= unchecked((uint32)~(uint32)(((uint32)1 << (int)(((uint32)(s & 31))))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡwanted, (nint)(s / 32)), w);
-    var i = sig.ignored[(nint)(s / 32)];
+    var i = sig.ignored[s / 32];
     i |= (uint32)(((uint32)1 << (int)(((uint32)(s & 31)))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡignored, (nint)(s / 32)), i);
 }
@@ -264,7 +264,7 @@ public static void signal_ignore(uint32 s) {
 //
 //go:nosplit
 internal static void sigInitIgnored(uint32 s) {
-    var i = sig.ignored[(nint)(s / 32)];
+    var i = sig.ignored[s / 32];
     i |= (uint32)(((uint32)1 << (int)(((uint32)(s & 31)))));
     atomic.Store(Ꮡsig.at(sigᴛ1.Ꮡignored, (nint)(s / 32)), i);
 }

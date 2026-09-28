@@ -531,12 +531,12 @@ internal static void readGCStats_m(ref slice<uint64> pauses) {
     Δp = Δp[..(int)(cap(Δp))];
     for (var i = (uint32)0; i < n; i++) {
         var j = (memstats.numgc - 1 - i) % (uint32)len(memstats.pause_ns);
-        Δp[(nint)(i)] = memstats.pause_ns[(nint)(j)];
-        Δp[(nint)(n + i)] = memstats.pause_end[(nint)(j)];
+        Δp[i] = memstats.pause_ns[j];
+        Δp[n + i] = memstats.pause_end[j];
     }
-    Δp[(nint)(n + n)] = memstats.last_gc_unix;
-    Δp[(nint)(n + n + 1)] = (uint64)memstats.numgc;
-    Δp[(nint)(n + n + 2)] = memstats.pause_total_ns;
+    Δp[n + n] = memstats.last_gc_unix;
+    Δp[n + n + 1] = (uint64)memstats.numgc;
+    Δp[n + n + 2] = memstats.pause_total_ns;
     unlock(Ꮡmheap_.of(mheap.Ꮡlock));
     pauses = Δp[..(int)(n + n + 3)];
 }

@@ -337,10 +337,10 @@ internal static void traceAdvance(bool stopTrace) {
                 // trace.lock needed for traceBufFlush, but also to synchronize
                 // with traceThreadDestroy, which flushes both buffers unconditionally.
                 @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-                foreach (var (exp, buf) in (~mpΔ3).trace.buf[(nint)(gen % 2)].ΔRangeSnapshot()) {
+                foreach (var (exp, buf) in (~mpΔ3).trace.buf[gen % 2].ΔRangeSnapshot()) {
                     if (buf != nil) {
                         traceBufFlush(buf, gen);
-                        (~mpΔ3).trace.buf[(nint)(gen % 2)][exp] = default!;
+                        (~mpΔ3).trace.buf[gen % 2][exp] = default!;
                     }
                 }
                 unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
@@ -456,11 +456,11 @@ internal static void traceAdvance(bool stopTrace) {
     // final cleanup if the trace has fully stopped.
     systemstack(() => {
         @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-        if (!Δtrace.full[(nint)(gen % 2)].empty()) {
+        if (!Δtrace.full[gen % 2].empty()) {
             @throw(traceNonEmptyFullTraceˢ);
         }
         if (stopTrace) {
-            if (!Δtrace.full[(nint)(1 - (gen % 2))].empty()) {
+            if (!Δtrace.full[1 - (gen % 2)].empty()) {
                 @throw(traceNonEmptyFullTraceˢ2);
             }
             if (Δtrace.reading != nil || ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡreader).Load() != nil) {
@@ -529,13 +529,13 @@ internal static uintptr traceNextGen(uintptr gen) {
 // generation. Note: the provided generation must not have started yet.
 internal static void traceRegisterLabelsAndReasons(uintptr gen) {
     foreach (var (i, label) in gcMarkWorkerModeStrings[..]) {
-        Δtrace.markWorkerLabels[(nint)(gen % 2)][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, label));
+        Δtrace.markWorkerLabels[gen % 2][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, label));
     }
     foreach (var (i, str) in traceBlockReasonStrings[..]) {
-        Δtrace.goBlockReasons[(nint)(gen % 2)][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, str));
+        Δtrace.goBlockReasons[gen % 2][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, str));
     }
     foreach (var (i, str) in traceGoStopReasonStrings[..]) {
-        Δtrace.goStopReasons[(nint)(gen % 2)][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, str));
+        Δtrace.goStopReasons[gen % 2][i] = ((traceArg)ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑstringTab, (nint)(gen % 2)).put(gen, str));
     }
 }
 
@@ -641,7 +641,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             gen = ᏑΔtrace.of(runtime_package.Δtraceᴛ1.ᏑreaderGen).Load();
             // Check to see if we need to block for more data in this generation
             // or if we need to move our generation forward.
-            if (!Δtrace.full[(nint)(gen % 2)].empty()) {
+            if (!Δtrace.full[gen % 2].empty()) {
                 break;
             }
             // Most of the time readerGen is one generation ahead of flushedGen, as the
@@ -699,7 +699,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             (buf, park) = (default!, true); goto ᒐdone;
         }
         // Pull a buffer.
-        var tbuf = Δtrace.full[(nint)(gen % 2)].pop();
+        var tbuf = Δtrace.full[gen % 2].pop();
         Δtrace.reading = tbuf;
         unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
         (buf, park) = ((~tbuf).arr[..(int)((~tbuf).pos)], false);

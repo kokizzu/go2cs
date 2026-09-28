@@ -298,7 +298,7 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -316,13 +316,13 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -347,12 +347,12 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = idnaIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = idnaIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = idnaIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = idnaIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -396,7 +396,7 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
@@ -414,13 +414,13 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
             return (0, 1); // Illegal UTF-8: not a continuation byte.
         }
         var o = ((uint32)i << (int)(6)) + (uint32)c1;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c2 = s[2];
         if (c2 < 0x80 || 0xC0 <= c2) {
             return (0, 2); // Illegal UTF-8: not a continuation byte.
         }
         o = ((uint32)i << (int)(6)) + (uint32)c2;
-        i = idnaIndex[(nint)(o)];
+        i = idnaIndex[o];
         var c3 = s[3];
         if (c3 < 0x80 || 0xC0 <= c3) {
             return (0, 3); // Illegal UTF-8: not a continuation byte.
@@ -445,12 +445,12 @@ internal static @string xorData = ""u8 + ((@string)(new byte[]{0x02, 0x0c, 0x09,
         // 2-byte UTF-8
         return t.lookupValue((uint32)i, s[1]);
     }
-    i = idnaIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[1])];
+    i = idnaIndex[((uint32)i << (int)(6)) + (uint32)s[1]];
     if (c0 < 0xF0) {
         // 3-byte UTF-8
         return t.lookupValue((uint32)i, s[2]);
     }
-    i = idnaIndex[(nint)(((uint32)i << (int)(6)) + (uint32)s[2])];
+    i = idnaIndex[((uint32)i << (int)(6)) + (uint32)s[2]];
     if (c0 < 0xF8) {
         // 4-byte UTF-8
         return t.lookupValue((uint32)i, s[3]);
@@ -470,7 +470,7 @@ internal static ж<idnaTrie> newIdnaTrie(nint i) {
 [GoRecv] internal static uint16 lookupValue(this ref idnaTrie t, uint32 n, byte b) {
     switch (ᐧ) {
     case {} when n is < 133: {
-        return (uint16)idnaValues[(nint)((n << (int)(6)) + (uint32)b)];
+        return (uint16)idnaValues[(n << (int)(6)) + (uint32)b];
     }
     default: {
         n -= 133;

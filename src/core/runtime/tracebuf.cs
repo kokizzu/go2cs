@@ -48,7 +48,7 @@ internal static traceWriter writer(this traceLocker tl) {
             gp.Value.throwsplit = true;
         }
     }
-    return new traceWriter(traceLocker: tl, traceBuf: (~tl.mp).trace.buf[(nint)(tl.gen % 2)][traceNoExperiment]);
+    return new traceWriter(traceLocker: tl, traceBuf: (~tl.mp).trace.buf[tl.gen % 2][traceNoExperiment]);
 }
 
 // unsafeTraceWriter produces a traceWriter that doesn't lock the trace.
@@ -105,7 +105,7 @@ internal static void end(this traceWriter w) {
         // less error-prone.
         return;
     }
-    (~w.mp).trace.buf[(nint)(w.gen % 2)][w.exp] = w.traceBuf;
+    (~w.mp).trace.buf[w.gen % 2][w.exp] = w.traceBuf;
     if (debugTraceReentrancy) {
         // The writer is no longer live, we can drop throwsplit (if it wasn't
         // already set upon entry).
@@ -361,7 +361,7 @@ internal static void traceBufFlush(ж<traceBuf> Ꮡbuf, uintptr gen) {
     // force serializers to do more work. Nothing else actually needs
     // padding.
     buf.varintAt(buf.lenPos, (uint64)(buf.pos - (buf.lenPos + (nint)traceBytesPerNumber)));
-    Δtrace.full[(nint)(gen % 2)].push(Ꮡbuf);
+    Δtrace.full[gen % 2].push(Ꮡbuf);
     // Notify the scheduler that there's work available and that the trace
     // reader should be scheduled.
     if (!ᏑΔtrace.of(runtime_package.Δtraceᴛ1.ᏑworkAvailable).Load()) {
