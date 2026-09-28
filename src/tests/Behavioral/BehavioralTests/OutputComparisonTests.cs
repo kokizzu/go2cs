@@ -1922,6 +1922,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
+    public void CheckUnarySignStack() => CheckTarget("UnarySignStack");
+
+    [TestMethod]
     public void CheckUncomparableEquality() => CheckTarget("UncomparableEquality");
 
     [TestMethod]

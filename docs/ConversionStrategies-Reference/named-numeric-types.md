@@ -519,6 +519,30 @@ The first was **silently value-changing** and compiled cleanly: Go folds the con
 
 Keyed on the **AST**, not the rendered text: the operand's emission may be a call, a literal or a folded constant, and only the written expression says whether a binary operator is left exposed. A `ParenExpr` operand already renders wrapped, so the direct type test suffices. **Unary operands are deliberately excluded** — a cast and a unary operator share precedence and associate right, so `(T)~0` already means `(T)(~0)`; their only hazard is the sign ambiguity the section above covers. (Guarded by the `NamedConstConversionPrecedence` behavioral test, which is output-compared so the silent value divergence is caught, not merely the CS0030.)
 
+## A stacked sign keeps its space: `- -a` never becomes `--a`
+A unary `-` or `+` whose operand's emitted text starts with the SAME sign keeps a space between the two, which is also how gofmt writes it. C# reads `--` and `++` as single tokens, the decrement and increment operators, so the bare form changes the program: `--a` subtracts one from `a` and stores it, where Go's `- -a` negates twice and leaves `a` alone, and `--1` or `--k` over a constant does not compile.
+
+<!-- source: src/tests/Behavioral/UnarySignStack/main.go:16-17 + :38 + :41 -->
+```go
+a := 5
+fmt.Println(- -a, a)
+…
+fmt.Println(- - -a, + + +a, a)
+fmt.Println(- -1, + +1, - -k, + +k)
+```
+<!-- source: src/tests/Behavioral/UnarySignStack/main.cs.target:14-15 + :30-31 -->
+```csharp
+nint a = 5;
+fmt.Println(- -a, a);
+…
+fmt.Println(- - -a, + + +a, a);
+fmt.Println((nint)(- -1), (nint)(+ +1), (nint)(- -k), (nint)(+ +k));
+```
+
+The test is on the operand's EMITTED text, so it covers every way a sign can arrive first: a nested unary, a negative literal, or a parenthesized operand whose parentheses the emission drops. Every other shape keeps the bare form: `-a` itself, and the mixed `-+a` and `+-a`, which C# already reads as two operators. The same hazard exists for any type, keyword primitive or named wrapper, since a generated named-numeric type declares `++` and `--` too.
+
+Guarded by: `UnarySignStack` (int, int8, float64, a named float and a named int type, constants, parentheses, three signs deep, and an assignment; each line prints the operand after the expression, so a mutation shows in the output comparison).
+
 ## A named complex type emits only Go's complex operator set
 The generated named-numeric wrapper (`go2cs-gen` `InheritedTypeTemplate`/`NumericTypeTemplate`) emits the operator surface of the *underlying kind*, and Go's complex kinds define only `==`/`!=`, `+`/`-`/`*`/`/`, unary `-`, and `++`/`--` — **no ordered comparisons and no `%`** (the Go spec limits `<`/`<=`/`>`/`>=` to ordered types and `%` to integers; C#'s `System.Numerics.Complex` and golib `complex64` have neither operator either). A `type C complex128` therefore gets no `<`/`<=`/`>`/`>=`/`%` operators and no `IComparisonOperators` interface declaration — emitting them was **CS0019 ×5 per type** (first hit: `testing/quick`'s `TestComplex64Alias`/`TestComplex128Alias`, which compile-blocked the whole quick test host). Integer named types keep the full set including `%`/bitwise/shifts, and float named types keep ordering (and C#'s native float `%`, inert for converted Go, stays). Same kind-gate shape as the pre-existing complement/shift gate (`GetComplementOperator`). Guarded by the `NamedNumericIncDec` behavioral test's named-complex block (`++`/`--`/arithmetic/equality on a `type cx complex128`).
 
