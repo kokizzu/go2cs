@@ -105,6 +105,7 @@ using syscall = syscall_package;
 using time = time_package;
 using @internal;
 using @internal.syscall;
+using System.Runtime.CompilerServices;
 using fs = go.io.fs_package;
 using path;
 using ꓸꓸꓸstring = Span<@string>;
@@ -389,7 +390,7 @@ internal static readonly @string godebugExecwait2Detectedˢ = "GODEBUG=execwait=
 // unquoting algorithm. In these or other similar cases, you can do the
 // quoting yourself and provide the full command line in SysProcAttr.CmdLine,
 // leaving Args empty.
-public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
     var arg = argʗp.sslice();
 
     var cmd = Ꮡ(new Cmd(

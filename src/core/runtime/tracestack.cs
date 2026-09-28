@@ -9,6 +9,7 @@ using goarch = @internal.goarch_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.CompilerServices;
 using atomic = @internal.runtime.atomic_package;
 
 partial class runtime_package {
@@ -29,7 +30,7 @@ internal static readonly @string attemptedToTraceStackOfAˢ = "attempted to trac
 // Avoid calling this function directly. gen needs to be the current generation
 // that this stack trace is being written out for, which needs to be synchronized with
 // generations moving forward. Prefer traceEventWriter.stack.
-internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
     ref var gp = ref Ꮡgp.DerefOrNull();
 
     array<uintptr> pcBuf = new(128); /* traceStackSize */

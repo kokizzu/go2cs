@@ -30,6 +30,7 @@ using sync = sync_package;
 using atomic = go.sync.atomic_package;
 using time = time_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+using System.Runtime.CompilerServices;
 using go.database.sql;
 using go.sync;
 using iter = iter_package;
@@ -3974,7 +3975,7 @@ internal static (int64, error) RowsAffected(this driverResult dr) {
     finally { if (ᒐd1) dr.Locker.Unlock(); ᒐ.Run(); }
 }
 
-internal static @string stack() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string stack() {
     array<byte> buf = new(2048); /* (2 << (int)(10)) */
     return ((@string)(buf[..(int)(runtime.Stack(buf[..], false))]));
 }

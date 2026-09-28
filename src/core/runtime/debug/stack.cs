@@ -11,17 +11,18 @@ using os = os_package;
 using runtime = runtime_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal;
+using System.Runtime.CompilerServices;
 
 partial class debug_package {
 
 // PrintStack prints to standard error the stack trace returned by runtime.Stack.
-public static void PrintStack() {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void PrintStack() {
     os.Stderr.Write(Stack());
 }
 
 // Stack returns a formatted stack trace of the goroutine that calls it.
 // It calls [runtime.Stack] with a large enough buffer to capture the entire trace.
-public static slice<byte> Stack() {
+[MethodImpl(MethodImplOptions.NoInlining)] public static slice<byte> Stack() {
     var buf = new slice<byte>(1024);
     while (ᐧ) {
         nint n = runtime.Stack(buf, false);
