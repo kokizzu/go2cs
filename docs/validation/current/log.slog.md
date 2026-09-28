@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `log/slog` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-26 · converter `d78c1e815`*
+*Validated 2026-09-28 · converter `2b8b1fb75`*
 
-**198 matched · 18 disclosed** — Go 1.24.13, `windows/amd64`, converted package
+**199 matched · 17 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog).
 
 Measured at `Release` (tiered JIT on), oracle `go version go1.24.13 windows/amd64`.
@@ -195,7 +195,7 @@ Measured at `Release` (tiered JIT on), oracle `go version go1.24.13 windows/amd6
 | `TestNewLogLogger` | pass | pass |
 | `TestPanics` | pass | pass |
 | `TestRecordAttrs` | pass | pass |
-| `TestRecordSource` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestRecordSource` | pass | pass |
 | `TestReplaceAttrGroups` | pass | pass |
 | `TestSecondWith` | pass | pass |
 | `TestSetAttrs` | pass | pass |
@@ -262,7 +262,6 @@ CLR *can* meet, pinned against the named plan that will retire it; every other c
 | `TestAlloc/pairs` | `deferred` | wantAllocs assert: each key/value pair boxes through `any` into a heap shell; Go's escape analysis keeps the equivalent interface values off the heap entirely. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1). |
 | `TestAnyLevelAlloc` | `deferred` | wantAllocs assert: passing a Level through `any` boxes the value type into a heap shell, which is precisely the allocation Go's two-word interface value avoids. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1). |
 | `TestAttrNoAlloc` | `deferred` | want-zero AllocsPerRun assert: each Attr constructor boxes its payload into a Value shell in the managed model, where Go's Value stores the payload inline in the struct and allocates nothing. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1); it replaces the ruling's fitted F6/F7 for this row: F6 is the per-call literal (the converter's degenerate-slug floor, hoistedLiteralOperations.go:103) and F7 the StringData element reference. |
-| `TestRecordSource` | `host-identity` | the depth-2 sub-case asserts that two frames above the test function sits `testing.tRunner` in `testing.go` — Go's own test binary, whose testing package is compiled from that source. The converted host is the hand-owned structural replacement (F15b): its runner lives in `go.testing_runtime`, so it is not a converted-Go frame at all and never enters the projected traceback, and it carries no position-map record, so its file half could only ever be `.cs`. Passing would require the host to claim `testing/testing.go`, which the standing position-map ruling forbids. The depth-1 sub-case of this SAME test asserts `log/slog.TestRecordSource` and passes — that was the internal-test-variant caller-info defect, fixed 2026-08-26 rather than disclosed, which is what fixes this class's boundary: only the host's own frame is disclosed here |
 | `TestTextHandlerAlloc` | `deferred` | wantAllocs assert: TextHandler.Handle formats through boxed Values and an interface-typed Handler, so the append-only formatting path Go performs allocation-free pays one heap shell per attribute here. RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. |
 | `TestValueNoAlloc` | `deferred` | want-zero AllocsPerRun assert: every Value constructor boxes through `any` into a heap shell, the direct managed counterpart of Go's inline-payload Value (DESIGN-iface-shell-caching §2 — the shell IS the interface value, and nothing short of IDynamicInterfaceCastable removes it). RELABEL 2026-09-23 (C1, as ruled at ledger 2026-09-23 03:37 O2): alloc-profile -> deferred. The boxing/shell proof above is WITHDRAWN: the counter never charges a CLR box or an interface shell (AllocationCounter.cs:50-53), so it cannot explain a COUNT reading. The composition in the plan was READ in the emission at bb54ff0920 (C1); it replaces the ruling's fitted F6/F7 for this row: F6 is the per-call literal (the converter's degenerate-slug floor, hoistedLiteralOperations.go:103) and F7 the StringData element reference. |
 
