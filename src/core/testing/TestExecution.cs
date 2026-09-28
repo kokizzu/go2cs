@@ -344,6 +344,9 @@ public sealed class TestExecution
         if (!TryEnsureOwner(nameof(FailNow)))
             return;
         Fail();
+        // TestAbortException is Go's runtime.Goexit here, so golib is told a Goexit is unwinding: a panic a
+        // deferred call raises during it must not be spliced into runtime.Callers without the Goexit frame.
+        GoexitException.MarkGoroutineExiting();
         throw new TestAbortException();
     }
 
@@ -361,6 +364,7 @@ public sealed class TestExecution
             return;
         lock (m_syncRoot)
             m_skipped = true;
+        GoexitException.MarkGoroutineExiting(); // Go's runtime.Goexit here too (see FailNow).
         throw new TestAbortException();
     }
 

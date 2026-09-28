@@ -246,7 +246,10 @@ public class PanicException(object? state, Exception? innerException = null) :
     /// <summary>
     /// Gets the runtime frames Go's unwinder shows between <c>runtime.gopanic</c> and the panic site:
     /// a hardware fault adds <c>panicmem</c> and <c>sigpanic</c>, an integer divide adds
-    /// <c>panicdivide</c>, and an explicit <c>panic(v)</c> adds none.
+    /// <c>panicdivide</c>, and an explicit <c>panic(v)</c> adds none. Tagged where the panic is RAISED
+    /// (builtin.panic, and RuntimeErrorPanic's nil-dereference and divide factories); every other panic
+    /// golib raises keeps the default, <see cref="PanicFaultKind.Unmodelled"/>, which runtime's
+    /// captureCallers refuses to splice.
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     internal PanicFaultKind FaultKind { get; init; }
@@ -285,6 +288,22 @@ public class PanicException(object? state, Exception? innerException = null) :
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     internal bool SiteEndsAtRun { get; set; }
 
+    /// <summary>
+    /// Gets the THREAD whose Run activation <see cref="SiteOwner"/> numbers: activation numbers are unique
+    /// only within a thread, and a panic can cross threads (range-over-func re-raises a seq's panic on the
+    /// ranging goroutine). runtime's captureCallers requires both to match.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal object? SiteOwnerThread { get; set; }
+
+    /// <summary>
+    /// Gets whether this panic's site ends at a Run because the deferred delegate that Run invoked IS the
+    /// frame that caught the panic first, re-raised straight to it (checked by the popped delegate's own
+    /// method, never inferred from missing stack frames).
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal bool SiteIsTheDeferredCall { get; set; }
+
     // Snapshot the throw site the first time this panic is caught. `thrown` is the exception that
     // actually travelled: for a mapped .NET runtime error (nil deref, divide by zero) THIS instance
     // was synthesized by RuntimeErrorPanic and was never thrown, so only the original carries frames.
@@ -319,7 +338,15 @@ public class PanicException(object? state, Exception? innerException = null) :
 /// </summary>
 internal enum PanicFaultKind
 {
-    None,
+    /// <summary>The default: a panic raised through a runtime frame that is not modelled (goPanicIndex, panicdottypeE, mapassign, closechan, ...).</summary>
+    Unmodelled,
+
+    /// <summary>An explicit <c>panic(v)</c> (builtin.panic): no runtime frame between gopanic and the site.</summary>
+    Explicit,
+
+    /// <summary>A nil dereference: sigpanic and panicmem.</summary>
     Memory,
+
+    /// <summary>An integer divide by zero: panicdivide.</summary>
     Divide
 }

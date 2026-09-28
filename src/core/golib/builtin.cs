@@ -267,7 +267,8 @@ public static partial class builtin
         if (state is null && NilPanicValue is { } nilPanicValue)
             state = nilPanicValue();
 
-        return new PanicException(state is string s ? (@string)s : state);
+        // An explicit panic: runtime.Callers splices gopanic straight over its site (PanicFaultKind).
+        return new PanicException(state is string s ? (@string)s : state) { FaultKind = PanicFaultKind.Explicit };
     }
 
     /// <summary>

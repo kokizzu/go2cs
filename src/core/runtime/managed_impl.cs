@@ -2017,17 +2017,26 @@ partial class runtime_package
     // golib stamps it only where the site provably ends (GoFrame.Run). A link fails the whole splice
     // otherwise, so a panic re-raised past its first catcher, a recursive activation, or a site golib
     // could not place splices NOTHING: a missing splice is a known divergence, and a wrong one is a
-    // silent lie. Two kinds of site pass:
+    // silent lie. The owner is the activation AND its thread (SiteOwnerThread): activation numbers are
+    // per thread, and range-over-func carries a panic from a coro's thread to the ranging goroutine.
+    // Two kinds of site pass:
     //   - one that ends at the DEFERRING FUNCTION (its own catch caught the panic first): the site's
     //     last Go frame is that function, checked again against the next live Go frame by method, and
     //     dropped, since the live walk reports it;
-    //   - one that ends at the RUN (a deferred call raised the panic with no deferring frame of its own,
-    //     or re-raised it straight from the frame that caught it first): all of its Go frames stay, and
-    //     the chain continues with the panic Beneath, whose gopanic called that deferred call. A site
-    //     with no Go frame (the nil-deferred-func thunk) contributes only its runtime frames.
-    // Runtime errors Go raises through a runtime frame this does not model (goPanicIndex, panicdottypeE,
-    // mapassign_faststr, closechan, ...) are refused: a panic with no fault kind thrown outside Go code
-    // (golib's slice indexer, its type assertion) would otherwise splice gopanic straight over the site.
+    //   - one that ends at the RUN, in exactly two cases, and the chain then continues with the panic
+    //     Beneath, whose gopanic called the deferred call: the zero-argument nil-deferred-func thunk
+    //     (no Go frame of its own; its fault frames alone), or the deferred delegate that is itself the
+    //     panic's first catcher (SiteIsTheDeferredCall; all its Go frames stay). Every OTHER panic a
+    //     deferred call raises is refused: the converter's defer wrappers (`() => c()` for a named func
+    //     type, `defer panic(v)`'s thunk, the lambdas for a call whose results are dropped) are
+    //     indistinguishable at run time from Go's closures, and Go ELIDES its deferwrap except over the
+    //     panic machinery, so any of them would splice a frame Go does not show, or misname one Go does
+    //     (COORD's verification of the re-cut, B2 and C3). A stated missing splice until the converter
+    //     marks its defer wrappers.
+    // Only the fault kinds golib tags where the panic is RAISED are spliced: an explicit panic(v), a nil
+    // dereference and an integer divide. Every other runtime error (goPanicIndex, the goPanicSlice family,
+    // panicdottypeE/I, mapassign, closechan, ...: a runtime frame that is not modelled) is refused, and an
+    // explicit panic thrown outside Go code (a golib helper) is refused too, as a second guard.
     //
     // The chain is walked iteratively with a visited set, and every frame goes out through the caller's
     // skip and capacity path, so a long chain truncates from the top as Go's does ([P2-3]).
@@ -2053,7 +2062,10 @@ partial class runtime_package
 
         for (PanicException? link = panic; link is not null; link = link.Beneath)
         {
-            if (!visited.Add(link) || link.SiteOwner != activation)
+            if (!visited.Add(link) || link.SiteOwner != activation || !ReferenceEquals(link.SiteOwnerThread, GoFrame.ThreadToken))
+                return [];
+
+            if (link.FaultKind == PanicFaultKind.Unmodelled)
                 return [];
 
             StackFrame[] raw = link.SiteTrace?.GetFrames() ?? [];
@@ -2067,8 +2079,13 @@ partial class runtime_package
                     site.Add(siteFrame);
             }
 
-            // An unmodelled runtime error: no fault kind, and thrown by code that is not Go source.
-            if (link.FaultKind == PanicFaultKind.None && firstMethodOf(raw) is { } thrower && !isGoSourceFrame(thrower, keepWrapper: true))
+            // The second guard: an explicit panic that golib code, not Go source, threw.
+            if (link.FaultKind == PanicFaultKind.Explicit && firstMethodOf(raw) is { } thrower && !isGoSourceFrame(thrower, keepWrapper: true))
+                return [];
+
+            // An ends-at-Run site: only the nil-func thunk, or the deferred delegate that caught first.
+            if (link.SiteEndsAtRun && !link.SiteIsTheDeferredCall &&
+                !(site.Count == 0 && link.FaultKind == PanicFaultKind.Memory && firstMethodOf(raw) == GoFrame.NilDeferredCallMethod))
                 return [];
 
             spliced.Add(internRootFrame("runtime.gopanic", "runtime/panic.go", 792));

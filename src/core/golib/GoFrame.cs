@@ -185,7 +185,14 @@ public ref struct GoFrame
             // activation owns it. Owned by ACTIVATION, not by method: a recursive activation of the
             // same function is a different owner (review C1 of the cut).
             if (owned is { Catches: 1, SiteOwner: 0 })
+            {
                 owned.SiteOwner = t_sequences![sequence].Activation;
+                owned.SiteOwnerThread = ThreadToken;
+            }
+
+            // The delegate the loop last invoked: the one accepted re-raise is recognised by its OWN method
+            // (ReRaisedByTheDeferredDelegate), never by frames missing from a trace.
+            Action? deferred = null;
 
             try
             {
@@ -193,7 +200,8 @@ public ref struct GoFrame
                 {
                     try
                     {
-                        Pop()();
+                        deferred = Pop();
+                        deferred();
 
                         // A deferred call that recovered this sequence's panic has RETURNED: Go's recovery
                         // completes here and the panicking frames leave the stack, so a later deferred
@@ -259,20 +267,23 @@ public ref struct GoFrame
 
                         // Whether this activation OWNS the new panic's site (review B1, B2, C3). It does
                         // when this catch is the panic's FIRST: the deferred call raised it with no
-                        // deferring frame of its own, so the site ends here and every Go frame of it is
-                        // still on Go's stack. It also does in the one accepted re-raise: the deferred
-                        // delegate IS the frame that caught the panic first, and that frame's Run
-                        // re-raised it straight here (`defer D()` where D defers and panics). Anything
-                        // else leaves the site unowned here, so it splices nothing rather than a list
-                        // with frames missing. A panic raised while a Goexit runs this sequence is left
-                        // unowned too: Go shows runtime.Goexit beneath the deferred call, and that frame
-                        // is not modelled.
+                        // deferring frame of its own, so the site ends here. It also does in the one
+                        // accepted re-raise: the deferred delegate IS the frame that caught the panic
+                        // first, and that frame's Run re-raised it straight here (`defer D()` where D
+                        // defers and panics). Anything else leaves the site unowned here, so it splices
+                        // nothing rather than a list with frames missing. A panic raised while a Goexit
+                        // runs this sequence is left unowned too: Go shows runtime.Goexit beneath the
+                        // deferred call, and that frame is not modelled. (runtime's captureCallers
+                        // accepts only some owned ends-at-Run sites: see splicePanic.)
                         bool firstHere = raised is { SiteOwner: 0, Catches: 1 };
+                        bool reRaised = !firstHere && ReRaisedByTheDeferredDelegate(deferred, raised);
 
-                        if ((firstHere || ReRaisedByTheDeferredDelegate(ex, raised)) && !(running is null && GoexitException.Started))
+                        if ((firstHere || reRaised) && !(running is null && GoexitException.Started))
                         {
                             raised.SiteOwner = t_sequences[sequence].Activation;
+                            raised.SiteOwnerThread = ThreadToken;
                             raised.SiteEndsAtRun = true;
+                            raised.SiteIsTheDeferredCall = reRaised;
 
                             if (running is not null && !ReferenceEquals(running, raised))
                                 raised.Beneath = running;
@@ -369,52 +380,30 @@ public ref struct GoFrame
         t_sequenceDepth = index;
     }
 
-    // The one re-raise an activation accepts as its own site (see Run's catch): the panic was caught
-    // FIRST by an emitted frame (its site ends at that frame, not at a Run), caught exactly once since,
-    // here, and the only non-machinery frame between that re-raise and this Run is that same frame. So
-    // the deferred delegate is the first catcher itself, and no Go frame is missing between. Read from
-    // the exception's own trace, on the panic path only.
-    private static bool ReRaisedByTheDeferredDelegate(Exception ex, PanicException raised)
+    // The one re-raise an activation accepts as its own site (see Run's catch): the panic was caught FIRST
+    // by an emitted frame (its site ends at that frame, not at a Run), caught exactly once since, here, and
+    // the delegate this Run just invoked IS that frame's method, so no Go frame lies between. Decided by the
+    // delegate's own method: a trace cannot be read for "no frame between", because the JIT's implicit
+    // tail calls remove exactly those frames (COORD's verification of the re-cut, B1). A catcher whose Run
+    // registered no defer (an unreached conditional defer) left the site unstamped, and passes too.
+    private static bool ReRaisedByTheDeferredDelegate(Action? deferred, PanicException raised)
     {
-        if (raised.Catches != 2 || raised.SiteOwner == 0 || raised.SiteEndsAtRun || raised.SiteTrace?.GetFrames() is not { Length: > 0 } site)
+        if (deferred is null || raised.Catches != 2 || raised.SiteEndsAtRun || raised.SiteTrace?.GetFrames() is not { Length: > 0 } site)
             return false;
 
         System.Reflection.MethodBase? catcher = site[^1].GetMethod();
 
-        if (catcher is null || catcher == RunMethod)
-            return false;
-
-        // The catcher can appear as CONSECUTIVE frames: its finally runs as a funclet during exception
-        // dispatch, and a re-raise from inside it records the funclet and the parent frame both. Any other
-        // non-machinery frame means a Go frame between (a closure, a caller of the catcher), so no. A
-        // recursive catcher cannot pass as a duplicate: its outer activation's catch would make three.
-        bool sawCatcher = false;
-
-        foreach (StackFrame frame in new StackTrace(ex, fNeedFileInfo: false).GetFrames())
-        {
-            System.Reflection.MethodBase? method = frame.GetMethod();
-
-            if (method is null || method == RunMethod || IsMachinery(method))
-                continue;
-
-            if (method != catcher)
-                return false;
-
-            sawCatcher = true;
-        }
-
-        return sawCatcher;
+        return catcher is not null && catcher != RunMethod && deferred.Method == catcher;
     }
 
-    // golib and the BCL: a defer ladder's closure, a delegate's Invoke. Anything in a converted assembly
-    // counts as a frame, so an adapter or forwarder there makes the re-raise indirect (a missing splice).
-    private static bool IsMachinery(System.Reflection.MethodBase method)
-    {
-        System.Reflection.Assembly? assembly = method.DeclaringType?.Assembly;
+    // Identifies this thread for SiteOwnerThread: an object, so no two threads ever share one (a managed
+    // thread id can be reused once a thread ends). Read only on the panic path.
+    [ThreadStatic] private static object? t_threadToken;
 
-        return assembly is null || assembly == typeof(GoFrame).Assembly || assembly == typeof(object).Assembly ||
-               (assembly.GetName().Name?.StartsWith("System.", StringComparison.Ordinal) ?? false);
-    }
+    internal static object ThreadToken => t_threadToken ??= new object();
+
+    /// <summary>The zero-argument nil-deferred-func thunk's method: the one site-less ends-at-Run site runtime's captureCallers accepts.</summary>
+    internal static System.Reflection.MethodInfo NilDeferredCallMethod => s_nilDeferredCall.Method;
 
     // A goroutine's thread starts with no sequences (GoFuncRoot.ResetThread). Run's finally always pops,
     // so this only matters for a thread reused after an abnormal end.

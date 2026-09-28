@@ -123,6 +123,12 @@ internal class YieldFunctionEnumerable<T>(Action<Func<T, bool>> enumerator) : IE
                 return;
 
             m_failure = null;
+
+            // seq's Goexit was raised on the coro's thread and marked THAT thread; it now ends the ranging
+            // goroutine, so mark this one (GoexitException.MarkGoroutineExiting).
+            if (failure.SourceException is GoexitException)
+                GoexitException.MarkGoroutineExiting();
+
             failure.Throw();
         }
 

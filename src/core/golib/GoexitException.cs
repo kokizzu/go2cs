@@ -40,13 +40,21 @@ public class GoexitException : Exception
         // mark: Go shows runtime.Goexit beneath a deferred call that a Goexit is running, and that frame
         // is not modelled, so a panic such a call raises is left unowned (a missing splice, never a
         // wrong one). Cleared with the goroutine's other thread state (GoFuncRoot.ResetThread).
-        t_started = true;
+        MarkGoroutineExiting();
     }
 
     [ThreadStatic] private static bool t_started;
 
     /// <summary>Whether a Goexit has been raised on this thread's goroutine.</summary>
     internal static bool Started => t_started;
+
+    /// <summary>
+    /// Marks this thread's goroutine as running a Goexit. The constructor calls it; so does every other
+    /// Goexit that unwinds by a different exception or on a different thread than the one that raised it:
+    /// the test host's FailNow/SkipNow (TestAbortException, its Goexit on the test's own thread), and the
+    /// range-over-func adapter, which re-raises a seq's Goexit on the ranging goroutine.
+    /// </summary>
+    public static void MarkGoroutineExiting() => t_started = true;
 
     internal static void ResetThread() => t_started = false;
 }
