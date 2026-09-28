@@ -6143,7 +6143,7 @@ internal static ж<g> globrunqget(ж<Δp> Ꮡpp, int32 max) {
 internal static bool read(this pMask Δp, uint32 id) {
     var word = id / 32;
     var mask = ((uint32)1 << (int)((id % 32)));
-    return ((uint32)(atomic.Load(Ꮡ(Δp, (int)(word))) & mask)) != 0;
+    return ((uint32)(atomic.Load(Ꮡ(Δp, word)) & mask)) != 0;
 }
 
 // set sets P id's bit.

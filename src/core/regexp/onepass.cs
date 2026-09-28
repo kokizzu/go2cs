@@ -49,10 +49,10 @@ internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<synt
         return ("", (~i).Op == syntax.InstMatch, (uint32)p.Start);
     }
     pc = i.Value.Out;
-    i = Ꮡ(p.Inst, (int)(pc));
+    i = Ꮡ(p.Inst, pc);
     while ((~i).Op == syntax.InstNop) {
         pc = i.Value.Out;
-        i = Ꮡ(p.Inst, (int)(pc));
+        i = Ꮡ(p.Inst, pc);
     }
     // Avoid allocation of buffer if prefix is empty.
     if (iop(ref (i).DerefOrNull()) != syntax.InstRune || len((~i).Rune) != 1) {
@@ -62,7 +62,7 @@ internal static (@string prefix, bool complete, uint32 pc) onePassPrefix(ж<synt
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     while (iop(ref (i).DerefOrNull()) == syntax.InstRune && len((~i).Rune) == 1 && (syntax.Flags)(((syntax.Flags)(uint16)(~i).Arg) & syntax.FoldCase) == 0 && (~i).Rune[0] != utf8.RuneError) {
         Ꮡbuf.WriteRune((~i).Rune[0]);
-        (pc, i) = (i.Value.Out, Ꮡ(p.Inst, (int)((~i).Out)));
+        (pc, i) = (i.Value.Out, Ꮡ(p.Inst, (~i).Out));
     }
     if ((~i).Op == syntax.InstEmptyWidth && (syntax.EmptyOp)(((syntax.EmptyOp)(uint8)(~i).Arg) & syntax.EmptyEndText) != 0 && p.Inst[(~i).Out].Op == syntax.InstMatch) {
         complete = true;
@@ -277,8 +277,8 @@ internal static ж<onePassProg> onePassCopy(ref syntax.Prog prog) {
                 // too complicated
                 continue;
             }
-            var p_B_Alt = Ꮡ((~p).Inst, (int)(p_A_Alt.Value)).of(onePassInst.ᏑOut);
-            var p_B_Other = Ꮡ((~p).Inst, (int)(p_A_Alt.Value)).of(onePassInst.ᏑArg);
+            var p_B_Alt = Ꮡ((~p).Inst, p_A_Alt.Value).of(onePassInst.ᏑOut);
+            var p_B_Other = Ꮡ((~p).Inst, p_A_Alt.Value).of(onePassInst.ᏑArg);
             var patch = false;
             if (instAlt.Out == (uint32)pc){
                 // simple empty transition loop
@@ -334,7 +334,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
     check = (uint32 pc, slice<bool> mΔ1) => {
         bool ok = default!;
         ok = true;
-        var inst = Ꮡ(Ꮡp.Value.Inst, (int)(pc));
+        var inst = Ꮡ(Ꮡp.Value.Inst, pc);
         if (visitQueueʗ1.contains(pc)) {
             return ok;
         }
@@ -360,8 +360,8 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
                     inst.Value.Op = syntax.InstAltMatch;
                 }
                 (onePassRunesʗ1[pc], inst.Value.Next) = mergeRuneSets(
-                    Ꮡ(onePassRunesʗ1, (int)((~inst).Out)), // build a dispatch operator from the two legs of the alt.
- Ꮡ(onePassRunesʗ1, (int)((~inst).Arg)), (~inst).Out, (~inst).Arg);
+                    Ꮡ(onePassRunesʗ1, (~inst).Out), // build a dispatch operator from the two legs of the alt.
+ Ꮡ(onePassRunesʗ1, (~inst).Arg), (~inst).Out, (~inst).Arg);
                 if (len((~inst).Next) > 0 && (~inst).Next[0] == mergeFailed) {
                     ok = false;
                     break;

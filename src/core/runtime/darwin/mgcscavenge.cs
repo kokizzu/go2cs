@@ -1034,7 +1034,7 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
     // N.B. We'll never map the 0'th chunk, so minHeapIdx ensures this loop overflow.
     for (chunkIdx i = start; i >= min; i--) {
         // Skip over chunks.
-        if (!Ꮡ(s.chunks, (int)(nuint)(i)).load().shouldScavenge(gen, force)) {
+        if (!Ꮡ(s.chunks, i).load().shouldScavenge(gen, force)) {
             continue;
         }
         // We're still scavenging this chunk.
@@ -1071,14 +1071,14 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
 //
 // alloc may only run concurrently with find.
 [GoRecv] internal static void alloc(this ref scavengeIndex s, chunkIdx ci, nuint npages) {
-    var sc = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
+    var sc = Ꮡ(s.chunks, ci).load();
     sc.alloc(npages, s.gen);
     // TODO(mknyszek): Consider eagerly backing memory with huge pages
     // here and track whether we believe this chunk is backed by huge pages.
     // In the past we've attempted to use sysHugePageCollapse (which uses
     // MADV_COLLAPSE on Linux, and is unsupported elswhere) for this purpose,
     // but that caused performance issues in production environments.
-    Ꮡ(s.chunks, (int)(nuint)(ci)).store(sc);
+    Ꮡ(s.chunks, ci).store(sc);
 }
 
 // free updates metadata for chunk at index ci with the fact that
@@ -1088,9 +1088,9 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
 internal static void free(this ж<scavengeIndex> Ꮡs, chunkIdx ci, nuint page, nuint npages) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    var sc = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
+    var sc = Ꮡ(s.chunks, ci).load();
     sc.free(npages, s.gen);
-    Ꮡ(s.chunks, (int)(nuint)(ci)).store(sc);
+    Ꮡ(s.chunks, ci).store(sc);
     // Update scavenge search addresses.
     var addr = chunkBase(ci) + (uintptr)(page + npages - 1) * (uintptr)pageSize;
     if (s.freeHWM.lessThan(new offAddr(addr))) {
@@ -1129,9 +1129,9 @@ internal static void nextGen(this ж<scavengeIndex> Ꮡs) {
 //
 // setEmpty may only run concurrently with find.
 [GoRecv] internal static void setEmpty(this ref scavengeIndex s, chunkIdx ci) {
-    var val = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
+    var val = Ꮡ(s.chunks, ci).load();
     val.scavChunkFlags.setEmpty();
-    Ꮡ(s.chunks, (int)(nuint)(ci)).store(val);
+    Ꮡ(s.chunks, ci).store(val);
 }
 
 // atomicScavChunkData is an atomic wrapper around a scavChunkData

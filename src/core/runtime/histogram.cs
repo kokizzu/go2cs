@@ -80,7 +80,7 @@ internal static void record(this ж<timeHistogram> Ꮡh, int64 duration) {
     }
     // The sub-bucket index is just next timeHistSubBucketBits after the bucketBit.
     nuint subBucket = (nuint)(duration.Rsh((bucketBit - 1 - (nuint)timeHistSubBucketBits))) % (nuint)timeHistNumSubBuckets;
-    Ꮡ(h.counts, (int)(bucket * (nuint)timeHistNumSubBuckets + subBucket)).Add(1);
+    Ꮡ(h.counts, bucket * (nuint)timeHistNumSubBuckets + subBucket).Add(1);
 }
 
 // write dumps the histogram to the passed metricValue as a float64 histogram.

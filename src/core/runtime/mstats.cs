@@ -724,7 +724,7 @@ internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
         }
     }
     var gen = Ꮡm.of(consistentHeapStats.Ꮡgen).Load() % 3;
-    return Ꮡ(m.stats, (int)(gen));
+    return Ꮡ(m.stats, gen);
 }
 
 // release indicates that the writer is done modifying

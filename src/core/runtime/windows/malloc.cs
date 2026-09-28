@@ -606,7 +606,7 @@ mapped:
             } else {
                 sysNoHugePage(@unsafe.Pointer.FromPinnedBox(l2), /* unsafe.Sizeof(*l2) */ (uintptr)8388608);
             }
-            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, (int)(ri.l1()))), @unsafe.Pointer.FromPinnedBox(l2));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, ri.l1())), @unsafe.Pointer.FromPinnedBox(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
             @throw(arenaAlreadyInitializedˢ);
