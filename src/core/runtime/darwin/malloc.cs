@@ -759,8 +759,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
 }
 
 // base address for all 0-byte allocations
-internal static ж<uintptr> Ꮡzerobase = new StandardBox<uintptr>(default(uintptr));
-internal static ref uintptr zerobase => ref Ꮡzerobase.Value;
+// go2cs generated this placeholder — var zerobase is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
