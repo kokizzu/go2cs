@@ -95,6 +95,11 @@ partial class cpu_package
     [ModuleInitializer]
     internal static void initX86FeatureDetection()
     {
+        // Go's cpuinit sets DebugOptions to true for the same GOOS list getGodebugEarly answers
+        // GODEBUG for, right before cpu.Initialize, so internal/cpu's own GODEBUG tests
+        // (TestDisableAllCapabilities, TestDisableSSE3) run exactly where the options are applied.
+        DebugOptions = GoCpuAppliesGodebug;
+
         if (!X86Base.IsSupported)
             return;
 
