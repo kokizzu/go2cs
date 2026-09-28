@@ -327,6 +327,32 @@ func (v *Visitor) castStringLiteralIndexToInt(expr ast.Expr) string {
 	return converted
 }
 
+// stringIndexOperand renders the index of a string VARIABLE (an @string, or a named string's
+// generated wrapper, which forwards the same surface). Its int, nint and ulong indexers each
+// bounds-check the index BEFORE any narrowing, so the index keeps its full value, as Go's does:
+// an UNSIGNED index (uint/uint32/uint64/uintptr, named or not) is emitted BARE and binds
+// `this[ulong]`, and a signed int64 takes `(nint)`, since long→nint does not convert implicitly.
+// castWideIntegerToInt's `(int)` narrowing TRUNCATED here: `s[uint64(1<<32+5)]` read s[5] where Go
+// panics with the unsigned value and the length (goPanicIndexU), and `s[int64(1<<32+5)]` read it
+// too. A string LITERAL base keeps castStringLiteralIndexToInt (a `"…"u8` span is int-only).
+func (v *Visitor) stringIndexOperand(expr ast.Expr) string {
+	converted := v.convExpr(expr, nil)
+
+	if exprType := v.getType(expr, false); exprType != nil {
+		if basic, ok := exprType.Underlying().(*types.Basic); ok && basic.Kind() == types.Int64 {
+			// A NAMED int64 converts through its OWN underlying first — the generated struct
+			// only converts to that (the intCastOperand rule).
+			if _, isNamed := exprType.(*types.Named); isNamed {
+				return fmt.Sprintf("(nint)(%s)(%s)", v.getCSharpTypeName(basic), converted)
+			}
+
+			return fmt.Sprintf("(nint)(%s)", converted)
+		}
+	}
+
+	return converted
+}
+
 func (v *Visitor) intCastOperand(expr ast.Expr, converted string) string {
 	if named, ok := v.getType(expr, false).(*types.Named); ok {
 		if basic, ok := named.Underlying().(*types.Basic); ok && basic.Info()&types.IsNumeric != 0 {

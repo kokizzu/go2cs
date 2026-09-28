@@ -45,6 +45,11 @@ internal static class ISliceTypeTemplate
                 }
                     
                 public ref {{targetTypeName}} this[nint index] => ref m_value[index];
+
+                public ref {{targetTypeName}} this[int index] => ref m_value[index];
+
+                // An unsigned index forwards UNNARROWED: slice<T>'s ulong indexer checks it first.
+                public ref {{targetTypeName}} this[ulong index] => ref m_value[index];
         
                 // Slicing a named slice KEEPS the named type (Go: nat[a:b] IS a nat - math/big's
                 // `u[s:].norm()` bound slice<Word> instead, CS1929 x21); the wrapper shares the

@@ -247,37 +247,39 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 
 	// A STRING base indexed by a wide/unsigned integer: a string LITERAL renders as a
 	// ReadOnlySpan<byte> (`"…"u8`) whose indexer takes int — a uintptr index is CS1503
-	// (runtime heapdump.go's `"0123456789abcdef"[pc&15]`, pc a uintptr). Go converts any
-	// integer index to int for the access; route the wide kinds (uint/uint32/uint64/
-	// uintptr/int64) through the same `(int)` cast the element-address seams use. An
-	// `@string` variable's indexer binds an int argument too, so the cast is safe for
-	// both renders; an int/small-integer index is emitted unchanged (no churn).
+	// (runtime heapdump.go's `"0123456789abcdef"[pc&15]`, pc a uintptr) — so the wide kinds
+	// (uint/uint32/uint64/uintptr/int64) take the `(int)` cast the element-address seams use.
+	// An `@string` VARIABLE's indexers (int, nint, ulong) each bounds-check before any
+	// narrowing, so its index keeps its full value (see stringIndexOperand); an
+	// int/small-integer index is emitted unchanged (no churn).
 	if baseType := v.getType(indexExpr.X, false); baseType != nil {
 		if basic, ok := baseType.Underlying().(*types.Basic); ok && basic.Info()&types.IsString != 0 {
 			// A string LITERAL base (`"…"u8`) is an int-only-indexed ReadOnlySpan<byte>, so a
 			// plain Go `int` index (→ C# nint) needs the (int) cast too; an @string variable's
-			// indexer accepts nint, so it keeps the wide-only cast (no churn on int indices).
+			// indexer accepts nint, so only its wide kinds are routed (no churn on int indices).
 			if _, isLit := indexExpr.X.(*ast.BasicLit); isLit {
 				index = v.castStringLiteralIndexToInt(indexExpr.Index)
 			} else {
-				index = v.castWideIntegerToInt(indexExpr.Index)
+				index = v.stringIndexOperand(indexExpr.Index)
 			}
 		}
 
-		// A SLICE/ARRAY base indexed by a PLAIN BASIC integer kind with no implicit
-		// conversion to the golib nint indexer — int64/uint/uint32/uint64 (`r.s[r.i]`,
-		// bytes Reader's int64 cursor; CS1503 long→nint) — takes an explicit (nint) cast,
-		// matching Go's implicit index conversion. Kinds that widen implicitly (int32,
-		// int16, byte, …) are unchanged, and a NAMED index type is left alone — its own
-		// conversion surface binds the indexer (a `(nint)` cast of a named-over-uintptr
-		// would chain two user conversions, CS0030 — SparseArrayNamedIntKey's errno keys).
+		// A SLICE/ARRAY base indexed by a signed `int64` (`r.s[r.i]`, bytes Reader's int64
+		// cursor) takes an explicit (nint) cast: there is no `this[long]` overload and long→nint
+		// does not convert implicitly (CS1503). An UNSIGNED index — uint/uint32/uint64/uintptr —
+		// is emitted BARE and binds golib's `this[ulong]`, which bounds-checks the full value
+		// before any narrowing, as Go does (goPanicIndexU): a `(nint)` cast read an index at or
+		// above 2^63 as negative and reported `[-N]` where Go reports the unsigned value with the
+		// length. Kinds that widen implicitly (int32, int16, byte, …) are unchanged, and a NAMED
+		// index type is left alone — its own conversion surface binds the indexer (a `(nint)` cast
+		// of a named-over-uintptr would chain two user conversions, CS0030 —
+		// SparseArrayNamedIntKey's errno keys).
 		switch baseType.Underlying().(type) {
 		case *types.Slice, *types.Array:
 			idxType := types.Unalias(v.getType(indexExpr.Index, false))
 
 			if basic, isBasic := idxType.(*types.Basic); isBasic {
-				switch basic.Kind() {
-				case types.Uint, types.Uint32, types.Uint64, types.Uintptr, types.Int64:
+				if basic.Kind() == types.Int64 {
 					index = fmt.Sprintf("(nint)(%s)", index)
 				}
 			} else if named, isNamed := idxType.(*types.Named); isNamed {

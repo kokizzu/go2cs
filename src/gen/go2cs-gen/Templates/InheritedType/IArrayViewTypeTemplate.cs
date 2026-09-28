@@ -59,7 +59,8 @@ internal static class IArrayViewTypeTemplate
 
                 public ref {{targetTypeName}} this[int index] => ref view[(nint)index];
 
-                public ref {{targetTypeName}} this[ulong index] => ref view[(nint)index];
+                // An unsigned index forwards UNNARROWED to the underlying wrapper's ulong indexer.
+                public ref {{targetTypeName}} this[ulong index] => ref view[index];
 
                 public global::System.Span<{{targetTypeName}}> {{EllipsisOperator}} => ToSpan();
 

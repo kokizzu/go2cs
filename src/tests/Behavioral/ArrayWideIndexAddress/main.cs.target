@@ -25,7 +25,7 @@ internal static void Main() {
     fmt.Println("0123456789abcdef"u8[(int)((uintptr)((pc >> (int)(4)) & 15))]);
     @string hex = "0123456789abcdef"u8;
     uint64 k = 12;
-    fmt.Println(hex[(int)(k)]);
+    fmt.Println(hex[k]);
 }
 
 } // end main_package
