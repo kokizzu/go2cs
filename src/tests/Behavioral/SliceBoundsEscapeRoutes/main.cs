@@ -50,13 +50,13 @@ internal static void Main() {
     nint wideInt = unchecked((nint)(4294967301L));
     arm(addressUint64ˢ, () => {
         var a = new slice<nint>(10);
-        var p = Ꮡ(a, (int)(wideU));
+        var p = Ꮡ(a, wideU);
         p.Value = 7;
         fmt.Println((@string)"a[5] ="u8, a[5]);
     });
     arm(addressInt64ˢ, () => {
         var a = new slice<nint>(10);
-        var p = Ꮡ(a, (int)(wideI));
+        var p = Ꮡ(a, (nint)(wideI));
         p.Value = 7;
         fmt.Println((@string)"a[5] ="u8, a[5]);
     });
@@ -75,21 +75,21 @@ internal static void Main() {
     });
     arm(indexBoundˢ, () => {
         var s = new slice<nint>(10);
-        var t = s.slice(0, (int)(wideU), (int)(wideU));
+        var t = s.slice(0, (nint)(wideU), (nint)(wideU));
         fmt.Println(lenˢ, len(t), capˢ, cap(t));
     });
     arm(elementMethodˢ, () => {
         var a = new slice<atomic.Uint64>(10);
-        Ꮡ(a, (int)(wideU)).Add(1);
+        Ꮡ(a, wideU).Add(1);
         fmt.Println((@string)"a[5] ="u8, Ꮡ(a, 5).Load());
     });
     nint past = 5;
     arm(literalIndexˢ, () => {
-        fmt.Println(byteˢ, "abc"u8[(int)(past)]);
+        fmt.Println(byteˢ, LiteralByteAt("abc"u8, past));
     });
     nint neg = -1;
     arm(literalNegativeIndexˢ, () => {
-        fmt.Println(byteˢ, "abc"u8[(int)(neg)]);
+        fmt.Println(byteˢ, LiteralByteAt("abc"u8, neg));
     });
     arm(stringPastEndˢ, () => {
         @string s = abcˢ;

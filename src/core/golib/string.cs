@@ -268,9 +268,10 @@ public readonly struct @string :
     // returns @string. Returning slice<byte> here would break string comparisons
     // (slice<byte> != string) and put a ref-struct-convertible value into tuples.
     //
-    // The result WINDOWS the same backing array — no allocation, no copy, exactly as in Go. The
-    // bounds checks reproduce what the slice<byte> construction this used to route through
-    // reported, measured against the receiver's window instead of the whole backing.
+    // The result WINDOWS the same backing array — no allocation, no copy, exactly as in Go. An
+    // out-of-range bound is Go's runtime panic, measured against the receiver's window: CLR
+    // ArgumentExceptions here escaped recover(). (A NEGATIVE bound cannot arrive: System.Index
+    // refuses it in the caller's conversion, before this runs; that is the slice-bounds sizing's R1.)
     public @string this[Range range]
     {
         get
@@ -278,11 +279,8 @@ public readonly struct @string :
             int low = range.Start.GetOffset(m_length);
             int high = range.End.GetOffset(m_length);
 
-            if (low < 0)
-                throw new ArgumentOutOfRangeException(nameof(range), "Value is less than zero.");
-
-            if (high < low || high > m_length)
-                throw new ArgumentException($"Indices low and high represent a range outside bounds of the string.", nameof(range));
+            if (low < 0 || high < low || high > m_length)
+                throw RuntimeErrorPanic.StringSliceBoundsOutOfRange(low, high, m_length);
 
             return new @string(m_value ?? [], m_offset + low, high - low);
         }

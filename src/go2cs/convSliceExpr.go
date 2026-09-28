@@ -196,14 +196,15 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 
 	// sliceExpr[:High:Max] => sliceExpr.slice(-1, High, Max). The golib `.slice(nint low, nint high,
 	// nint max)` method takes nint, so a High/Max bound of a wide integer (uintptr/uint/…) is cast to
-	// int (CS1503 otherwise — runtime/mprof `stk[:b.nstk:b.nstk]` with a uintptr b.nstk).
+	// nint (CS1503 otherwise — runtime/mprof `stk[:b.nstk:b.nstk]` with a uintptr b.nstk); see
+	// castWideIntegerToNint for why nint and not int.
 	if sliceExpr.Low == nil && sliceExpr.High != nil && sliceExpr.Slice3 {
-		return ident + ".slice(-1, " + v.castWideIntegerToInt(sliceExpr.High) + ", " + v.castWideIntegerToInt(sliceExpr.Max) + ")"
+		return ident + ".slice(-1, " + v.castWideIntegerToNint(sliceExpr.High) + ", " + v.castWideIntegerToNint(sliceExpr.Max) + ")"
 	}
 
 	// sliceExpr[Low:High:Max] => sliceExpr.slice(Low, High, Max)
 	if sliceExpr.Low != nil && sliceExpr.High != nil && sliceExpr.Slice3 {
-		return ident + ".slice(" + v.castWideIntegerToInt(sliceExpr.Low) + ", " + v.castWideIntegerToInt(sliceExpr.High) + ", " + v.castWideIntegerToInt(sliceExpr.Max) + ")"
+		return ident + ".slice(" + v.castWideIntegerToNint(sliceExpr.Low) + ", " + v.castWideIntegerToNint(sliceExpr.High) + ", " + v.castWideIntegerToNint(sliceExpr.Max) + ")"
 	}
 
 	expr := v.getPrintedNode(sliceExpr)
@@ -280,22 +281,22 @@ func (v *Visitor) getRangeIndexer(expr ast.Expr) string {
 // basic), a direct `(int)(x)` is CS0030 — the generated struct only converts to its OWN underlying
 // basic — so it casts through the underlying first: `(int)(nuint)(x)`. A plain basic operand keeps
 // the bare `(int)(x)` form (no churn).
-// castWideIntegerToInt converts an integer index/bound expression, casting it to `int` only when its
-// type does not already bind an `int`/`nint` parameter — used for an element-address index (`&arr[i]` →
-// `Ꮡ(arr, i)`, the golib `Ꮡ(IArray<T>, int)` / `(…, nint)` overloads) and for a 3-index slice's
-// `.slice(low, high, max)` bounds (the golib method takes `nint`). Go `int` (→ C# nint) and the small
-// integer types (int8/16/32, uint8/16, which implicitly widen to `int`) bind directly and are left
-// uncast to avoid churn; an unsigned 32-bit-or-wider or 64-bit value (uint/uint32/uint64/uintptr/int64)
-// does not implicitly convert to `int`/`nint` (CS1503) and is cast (through its underlying for a named
-// numeric). Go's own slice bounds are `int`, so the `(int)` narrowing matches Go semantics.
-func (v *Visitor) castWideIntegerToInt(expr ast.Expr) string {
+// castWideIntegerToNint converts a 3-index slice's bound for the golib `.slice(low, high, max)`
+// method, which takes `nint`. Go `int` (→ C# nint) and the small integer kinds bind directly and are
+// left uncast; an unsigned 32-bit-or-wider or a 64-bit value (uint/uint32/uint64/uintptr/int64) does
+// not convert implicitly (CS1503) and is cast to `nint` (through its underlying for a named numeric).
+// It was cast to `int`, which TRUNCATED a bound past 2^31: `s[0:w:w]` with w = 1<<32+5 read
+// `len 5 cap 5` where Go panics. `nint` is exact below 2^63; an unsigned bound at or above it reads
+// negative and panics with a signed bound in the text (a stated residual: the three bounds can mix
+// kinds, so no single unsigned overload set binds them).
+func (v *Visitor) castWideIntegerToNint(expr ast.Expr) string {
 	converted := v.convExpr(expr, nil)
 
 	if exprType := v.getType(expr, false); exprType != nil {
 		if basic, ok := exprType.Underlying().(*types.Basic); ok {
 			switch basic.Kind() {
 			case types.Uint, types.Uint32, types.Uint64, types.Uintptr, types.Int64:
-				return v.intCastOperand(expr, converted)
+				return v.numericCastOperand(expr, converted, "nint")
 			}
 		}
 	}
@@ -303,39 +304,15 @@ func (v *Visitor) castWideIntegerToInt(expr ast.Expr) string {
 	return converted
 }
 
-// castStringLiteralIndexToInt is castWideIntegerToInt plus the plain `int` kind, for a string
-// LITERAL base. A string literal renders as a `"…"u8` ReadOnlySpan<byte> whose indexer is
-// int-ONLY, and Go's `int` maps to C# `nint`, which does not implicitly narrow to int
-// (image/jpeg writer.go's `"\x00\x10\x01\x11"u8[i]`, i a range int; CS1503). A CONSTANT index
-// is already a C# int literal (implicit conversion), so it is left unchanged to avoid churn.
-func (v *Visitor) castStringLiteralIndexToInt(expr ast.Expr) string {
-	converted := v.convExpr(expr, nil)
-
-	if tv, ok := v.info.Types[expr]; ok && tv.Value != nil {
-		return converted
-	}
-
-	if exprType := v.getType(expr, false); exprType != nil {
-		if basic, ok := exprType.Underlying().(*types.Basic); ok {
-			switch basic.Kind() {
-			case types.Int, types.Uint, types.Uint32, types.Uint64, types.Uintptr, types.Int64:
-				return v.intCastOperand(expr, converted)
-			}
-		}
-	}
-
-	return converted
-}
-
-// stringIndexOperand renders the index of a string VARIABLE (an @string, or a named string's
-// generated wrapper, which forwards the same surface). Its int, nint and ulong indexers each
-// bounds-check the index BEFORE any narrowing, so the index keeps its full value, as Go's does:
-// an UNSIGNED index (uint/uint32/uint64/uintptr, named or not) is emitted BARE and binds
-// `this[ulong]`, and a signed int64 takes `(nint)`, since long→nint does not convert implicitly.
-// castWideIntegerToInt's `(int)` narrowing TRUNCATED here: `s[uint64(1<<32+5)]` read s[5] where Go
-// panics with the unsigned value and the length (goPanicIndexU), and `s[int64(1<<32+5)]` read it
-// too. A string LITERAL base keeps castStringLiteralIndexToInt (a `"…"u8` span is int-only).
-func (v *Visitor) stringIndexOperand(expr ast.Expr) string {
+// fullValueIndexOperand renders an index whose consumer bounds-checks it BEFORE any narrowing, so
+// the index keeps its full value, as Go's does: a string VARIABLE's indexers (int, nint and ulong),
+// the golib element-address overloads `Ꮡ(x, i)` (int, nint and ulong), and the string-literal byte
+// helper `LiteralByteAt`. An UNSIGNED index (uint/uint32/uint64/uintptr, named or not) is emitted
+// BARE and binds the `ulong` overload, and a signed int64 takes `(nint)`, since long→nint does not
+// convert implicitly. The `(int)` narrowing it replaced TRUNCATED: `s[uint64(1<<32+5)]` read s[5],
+// and `&a[i]` at that index addressed a[5], where Go panics with the value and the length
+// (goPanicIndex / goPanicIndexU).
+func (v *Visitor) fullValueIndexOperand(expr ast.Expr) string {
 	converted := v.convExpr(expr, nil)
 
 	if exprType := v.getType(expr, false); exprType != nil {
@@ -354,9 +331,15 @@ func (v *Visitor) stringIndexOperand(expr ast.Expr) string {
 }
 
 func (v *Visitor) intCastOperand(expr ast.Expr, converted string) string {
+	return v.numericCastOperand(expr, converted, "int")
+}
+
+// numericCastOperand is intCastOperand's rule for a C# integer target of the caller's choosing
+// (`int` for a slice-range bound, `nint` for a 3-index bound).
+func (v *Visitor) numericCastOperand(expr ast.Expr, converted, csType string) string {
 	if named, ok := v.getType(expr, false).(*types.Named); ok {
 		if basic, ok := named.Underlying().(*types.Basic); ok && basic.Info()&types.IsNumeric != 0 {
-			return fmt.Sprintf("(int)(%s)(%s)", v.getCSharpTypeName(basic), converted)
+			return fmt.Sprintf("(%s)(%s)(%s)", csType, v.getCSharpTypeName(basic), converted)
 		}
 	}
 
@@ -365,10 +348,10 @@ func (v *Visitor) intCastOperand(expr ast.Expr, converted string) string {
 	// type parameter is not directly convertible). Route through golib's ConvertToUInt64<T> bridge
 	// (the E(100) integer-type-param family), then narrow — the same shape as the slice-index cast.
 	if tp, ok := types.Unalias(v.getType(expr, false)).(*types.TypeParam); ok && typeParamIsInteger(tp) {
-		return fmt.Sprintf("(int)(ConvertToUInt64<%s>(%s))", v.getCSharpTypeName(tp), converted)
+		return fmt.Sprintf("(%s)(ConvertToUInt64<%s>(%s))", csType, v.getCSharpTypeName(tp), converted)
 	}
 
-	return fmt.Sprintf("(int)(%s)", converted)
+	return fmt.Sprintf("(%s)(%s)", csType, converted)
 }
 
 func isIntegerLiteral(expr ast.Expr) bool {

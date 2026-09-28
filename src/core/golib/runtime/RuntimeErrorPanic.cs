@@ -237,6 +237,18 @@ public static class RuntimeErrorPanic
         return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
     }
 
+    /// <summary>
+    /// Go's panic for a STRING slice expression <c>s[low:high]</c> out of range, in the Go runtime's
+    /// string shapes: <c>[:5] with length 3</c> when high passes the length, <c>[4:3]</c> when low
+    /// passes high. A string has a length, not a capacity, which is the only difference from
+    /// <see cref="SliceBoundsOutOfRange"/>.
+    /// </summary>
+    public static PanicException StringSliceBoundsOutOfRange(int64 low, int64 high, int64 length)
+    {
+        string bounds = high > length ? $"[:{high}] with length {length}" : low < 0 ? $"[{low}:]" : $"[{low}:{high}]";
+        return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
+    }
+
     private const string ArrayConversionLengthMessage = $"{RuntimeErrorMessage}cannot convert slice with length {{0}} to array or pointer to array with length {{1}}";
 
     /// <summary>
