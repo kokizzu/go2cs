@@ -35,10 +35,11 @@ public static partial class runtime_package
     [ModuleInitializer]
     internal static void ᴛRegisterRuntimePanicValues()
     {
-        // Deferred to first use: divideError is a static of this package, and reading it during
-        // module initialization would force this type's static constructor to run ahead of the
-        // rest of the package's own initialization order.
+        // Deferred to first use: divideError and shiftError are statics of this package, and reading
+        // them during module initialization would force this type's static constructor to run ahead
+        // of the rest of the package's own initialization order.
         RuntimeErrorPanic.IntegerDivideByZeroValue = static () => divideError;
+        RuntimeErrorPanic.ShiftErrorValue = static () => shiftError;
 
         // Go 1.21's panic(nil), gopanic's own first branch verbatim (panic.go): a *PanicNilError unless
         // GODEBUG=panicnil=1, which keeps the nil and counts the non-default event. golib's panic never
