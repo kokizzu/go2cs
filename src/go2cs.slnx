@@ -580,6 +580,8 @@
     <Project Path="tests/Behavioral/LiftAccessibilityTier/LiftAccessibilityTier.csproj" />
     <Project Path="tests/Behavioral/LiftedLocalTypes/LiftedLocalTypes.csproj" />
     <Project Path="tests/Behavioral/LibraryImportPartial/LibraryImportPartial.csproj" />
+    <Project Path="tests/Behavioral/LineMarkerDeferEndTC0/LineMarkerDeferEndTC0.csproj" />
+    <Project Path="tests/Behavioral/LineMarkerPackageVars/LineMarkerPackageVars.csproj" />
     <Project Path="tests/Behavioral/LinknameVarPull/LinknameVarPull.csproj" />
     <Project Path="tests/Behavioral/LinknameVarPullLib/LinknameVarPullLib.csproj" />
     <Project Path="tests/Behavioral/LinuxSpawnBasics/LinuxSpawnBasics.csproj" />
