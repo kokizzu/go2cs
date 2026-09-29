@@ -2837,9 +2837,13 @@ public static partial class builtin
     /// Formats arguments in an implementation-specific way and writes the result to standard-error.
     /// </summary>
     /// <param name="args">Arguments to display.</param>
+    /// <remarks>
+    /// The arguments are written back to back, with NO separator: gc lowers <c>print(a, b)</c> to one
+    /// runtime printer call per argument, so Go writes <c>ab</c>. Only <c>println</c> separates them.
+    /// </remarks>
     public static void print(params object[] args)
     {
-        Console.Error.Write(string.Join(" ", args.Select(printArg)));
+        Console.Error.Write(string.Concat(args.Select(printArg)));
     }
 
     /// <summary>
