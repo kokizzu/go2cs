@@ -108,18 +108,28 @@ public ref struct sslice<T>
         {
             nint low = range.Start.IsFromEnd ? m_length - range.Start.Value : range.Start.Value;
             nint high = range.End.IsFromEnd ? m_length - range.End.Value : range.End.Value;
-            return Reslice(low, high, Capacity);
+            return Reslice(low, high);
         }
     }
 
     public sslice<T> Slice(int start, int length)
     {
-        return Reslice(start, start + length, Capacity);
+        return Reslice(start, start + length);
     }
 
     public sslice<T> Slice(nint start, nint length)
     {
-        return Reslice(start, start + length, Capacity);
+        return Reslice(start, start + length);
+    }
+
+    // Go's 2-index s[low:high]: high against the capacity, then low against high (goPanicSliceAcap, goPanicSliceB),
+    // as slice<T>.Reslice(low, high) does. The 3-index Reslice below reports the 3-index shapes.
+    public sslice<T> Reslice(nint low, nint high)
+    {
+        if ((nuint)high > (nuint)Capacity || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, Capacity);
+
+        return Reslice(low, high, Capacity);
     }
 
     public sslice<T> Reslice(nint low, nint high, nint max)

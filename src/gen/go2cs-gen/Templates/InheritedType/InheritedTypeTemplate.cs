@@ -429,6 +429,12 @@ internal class InheritedTypeTemplate : TemplateBase
 
                 public {{ObjectName}} this[global::System.Range range] => new {{ObjectName}}({{Value}}[range]);
 
+                // The same sub-slice when a bound is not a constant that fits int32: @string's sentinel-free
+                // pair, which panics as Go does, keeping the named type (S-c R1-A).
+                public {{ObjectName}} slice(nint low) => new {{ObjectName}}({{Value}}.slice(low));
+
+                public {{ObjectName}} slice(nint low, nint high) => new {{ObjectName}}({{Value}}.slice(low, high));
+
                 public nint Length => {{Value}}.Length;
 
                 public static implicit operator {{ObjectName}}(global::System.ReadOnlySpan<byte> value) => new {{ObjectName}}(new @string(value));

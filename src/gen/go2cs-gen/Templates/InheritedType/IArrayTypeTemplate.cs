@@ -34,6 +34,12 @@ internal static class IArrayTypeTemplate
 
                 public slice<{{targetTypeName}}> this[global::System.Range range] => Value[range];
 
+                // The same sub-slice when a bound is not a constant that fits int32: golib's sentinel-free
+                // array<T> pair, checked against the array's length as Go does (S-c R1-A).
+                public slice<{{targetTypeName}}> slice(nint low) => Value.slice(low);
+
+                public slice<{{targetTypeName}}> slice(nint low, nint high) => Value.slice(low, high);
+
                 public slice<{{targetTypeName}}> Slice(nint start, nint length) => Value.Slice(start, length);
 
                 public global::System.Span<{{targetTypeName}}> {{EllipsisOperator}} => ToSpan();
