@@ -584,10 +584,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"rawstring": goosAny,
 		// efaceHash hashes the interface's DYNAMIC VALUE (managed_impl.cs): the converted body reads an eface
 		// through a pointer to the interface variable, which here is a managed reference with no address, so it
-		// died in the arm-2a refusal and took runtime's TestSmhasherAvalanche with it. ifaceHash is NOT
-		// registered: displacing it drops the GoDynamicTypeLift record for its interface{ F() } parameter,
-		// and the -tests conversion of export_test.go fails on the unresolved type.
+		// died in the arm-2a refusal and took runtime's TestSmhasherAvalanche with it.
 		"efaceHash": goosAny,
+		// ifaceHash is efaceHash's twin over interface{ F() } (managed_impl.cs), the IfaceKey half of the
+		// same test. It waited for C2's manual-signature lift (9c6305277f): a manual declaration's
+		// signature still lifts its anonymous interface, so the placeholder declares ifaceHash_i and
+		// export_test.go's IfaceHash resolves its type through the published record.
+		"ifaceHash": goosAny,
 		// spanOf ANSWERS NIL (coordinator ruling 2026-09-28 22:01, the P1 disclosure seat): Go's own
 		// answer for an address that no heap span contains, and true for every address here, since the
 		// managed model has no Go heap arenas. The converted body indexed mheap_.arenas[0], which is nil
