@@ -420,6 +420,10 @@ partial class runtime_package
 
     public static void syscallRuntimeUnsetenv(@string key) => syscall_runtimeUnsetenv(key);
 
+    // TEST SEAM (A15): Go's export_test.go `var ForceGCPeriod = &forcegcperiod`, which
+    // runtime's TestPeriodicGC writes. GolibTests is outside runtime's InternalsVisibleTo grant.
+    public static ref int64 GoForceGCPeriod => ref forcegcperiod;
+
     // GC runs a garbage collection and blocks the caller until the garbage collection is complete.
     public static void GC()
     {
