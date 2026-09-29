@@ -788,8 +788,10 @@ partial class runtime_package
     // schedinit, so both stayed 0.
     //
     // THE ORDER. goenvs_impl.cs's module initializer is schedinit's slot here, and it calls
-    // gcinitController right after it fills envs: Go's own order, since readGOGC and readGOMEMLIMIT
-    // read through gogetenv, which throws "getenv before env init" on a nil environment. It is ONE
+    // gcinitController after it fills envs and runs parsedebugvars (schedinit's goenvs, parsedebugvars,
+    // gcinit): Go's own order, since readGOGC and readGOMEMLIMIT read through gogetenv, which throws
+    // "getenv before env init" on a nil environment. It sits outside parsedebugvars' try/catch because
+    // its only failure is a Go fatal (the malformed-GOMEMLIMIT throw below). It is ONE
     // initializer, not a second one, because C# leaves the order between two module initializers
     // unspecified. It is eager, not lazy on first use, because Go's values exist before any Go code
     // runs: a reader that never touches a knob (a metrics exporter) still reads GOGC. A malformed
@@ -2999,7 +3001,8 @@ partial class runtime_package
     // Minted like FuncForPC's (a FuncRecord in s_funcRecords, so Name/Entry/FileLine answer the same way),
     // with the entry of the first frame that reached it. Every frame here is a Go frame (captureCallers
     // keeps no other), and nothing is ever inlined, so every frame with a name carries one; an unnamed
-    // record keeps Go's nil.
+    // record keeps Go's nil. The box is a HandleBox for FuncForPC's reason below: Func is zero-size, and
+    // a plain box of it would be the zerobase, making every frame's *Func equal to every other.
     private static ж<Func> frameFunc(string function, uintptr entry)
     {
         if (function.Length == 0)
@@ -3010,7 +3013,7 @@ partial class runtime_package
             if (s_frameFuncs.TryGetValue(function, out ж<Func>? box))
                 return box;
 
-            box = Ꮡ(new Func());
+            box = new HandleBox<Func>(new Func());
             s_funcRecords.Add(box, new FuncRecord { Name = function, Pc = entry });
             s_frameFuncs[function] = box;
             return box;
@@ -3067,10 +3070,12 @@ partial class runtime_package
     // Frame.Func are deliberately UNCHANGED by this arc: see docs/phase4/CENSUS-runtime-semantic-bill.md.
     // AMENDED 2026-09-28 (census A2, D3; COORD reopened the Frame.Func half): Frames.Next now sets
     // Frame.Func, one *Func interned per Go function (frameFunc, a record in this same table), because
-    // Go leaves Func nil only for an inlined frame and no frame here is inlined. A FuncForPC box is
-    // still minted per call, so FuncForPC(pc) and a frame's Func are NOT the same pointer, where Go's are;
-    // stated, not modeled (the one reader, TestFunctionAlignmentTraceback, is disclosed on its code-byte
-    // read before it gets there). firstmoduledata stays unchanged.
+    // Go leaves Func nil only for an inlined frame and no frame here is inlined. FuncForPC interns one
+    // box per call-site ENTRY (s_funcHandles below) and Frame.Func one per Go function NAME (frameFunc),
+    // so FuncForPC(pc) and a frame's Func are NOT the same pointer, where Go's are, and two call sites of
+    // one function give two FuncForPC boxes but one Frame.Func; stated, not modeled (the one reader,
+    // TestFunctionAlignmentTraceback, is disclosed on its code-byte read before it gets there).
+    // firstmoduledata stays unchanged.
     private sealed class FuncRecord
     {
         public string Name = string.Empty;
