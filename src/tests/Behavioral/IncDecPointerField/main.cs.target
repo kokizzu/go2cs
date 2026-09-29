@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -13,7 +14,7 @@ partial class main_package {
     internal inner sub;
 }
 
-internal static ж<counter> get(ж<counter> Ꮡc) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<counter> get(ж<counter> Ꮡc) {
     return Ꮡc;
 }
 

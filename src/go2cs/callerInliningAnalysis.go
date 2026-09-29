@@ -54,6 +54,18 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 		inTest bool
 	}
 	var thinAllocators []thinAllocator
+	// directed collects the declarations Go's own source marks //go:noinline. They join the set only
+	// after the fixed point below, so a thin forwarder TO one does not join (the directive protects
+	// that one frame, not its callers), and they never count as the package's Caller/Callers user the
+	// opaque-forwarder gate asks about.
+	var directed []types.Object
+	// genericFuncs collects the GENERIC declarations: one that directly calls a seeded thin allocator
+	// joins the set once the allocators are decided (see callsSeededThinAllocator below).
+	type genericFunc struct {
+		obj  types.Object
+		body *ast.BlockStmt
+	}
+	var genericFuncs []genericFunc
 
 	for _, entry := range files {
 		if entry.file == nil {
@@ -68,6 +80,14 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 			obj := info.ObjectOf(fn.Name)
 			if obj == nil {
 				continue
+			}
+
+			if hasNoinlineDirective(fn.Doc) {
+				directed = append(directed, obj)
+			}
+
+			if fn.Type.TypeParams != nil {
+				genericFuncs = append(genericFuncs, genericFunc{obj: obj, body: fn.Body})
 			}
 
 			if callsSkipCountedRuntimeCaller(info, fn.Body) || callsSkipCountedWalker(info, fn.Body) {
@@ -99,9 +119,28 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 	if len(thinAllocators) > 0 {
 		productionReads := readsHeapProfile(files, info, false)
 		anyReads := productionReads || readsHeapProfile(files, info, true)
+		seededAllocators := map[types.Object]bool{}
 		for _, a := range thinAllocators {
 			if productionReads || (a.inTest && anyReads) {
 				seed[a.obj] = true
+				seededAllocators[a.obj] = true
+			}
+		}
+
+		// A GENERIC function that directly calls a seeded thin allocator is marked too, before the
+		// fixed point so a thin forwarder to it chains as usual. Its specialized instantiation is small
+		// and the JIT inlines it under the Release TieredCompilation=0 default, so its frame vanishes
+		// from the allocation's stack: runtime/pprof's TestGenericsInlineLocations read
+		// TestGenericsInlineLocations;storeAlloc with both nonRecursiveGenericAllocFunction frames gone.
+		// Generic callers only (a census of the heap-profile-reading packages found 4, all in test
+		// files): a non-generic direct caller there is a large Test* body the JIT does not inline, so
+		// marking it would add emission without keeping a frame. The allocator's own gate decides
+		// production versus test, so a production caller is emitted identically by -stdlib and -tests.
+		if len(seededAllocators) > 0 {
+			for _, g := range genericFuncs {
+				if callsSeededThinAllocator(info, g.body, seededAllocators) {
+					seed[g.obj] = true
+				}
 			}
 		}
 	}
@@ -132,7 +171,30 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 		}
 	}
 
+	for _, obj := range directed {
+		seed[obj] = true
+	}
+
 	return seed
+}
+
+// hasNoinlineDirective reports whether a declaration's doc comment carries Go's `//go:noinline`. Go's
+// compiler then keeps the function's own frame, and Go code relies on that frame: runtime's
+// TestRuntimePanic needs unexportedPanicForTesting's frame to exist when its index panic is raised, so
+// panicCheck1 sees package runtime (golib's RuntimePanicCheck), and under the Release TieredCompilation=0
+// default the JIT otherwise inlines it into the caller and the fatal becomes a recoverable panic.
+func hasNoinlineDirective(doc *ast.CommentGroup) bool {
+	if doc == nil {
+		return false
+	}
+
+	for _, comment := range doc.List {
+		if comment.Text == "//go:noinline" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // skipCountedWalkers are the stack walkers whose recorded frames include their CALLER's, keyed by package
@@ -259,6 +321,55 @@ func isThinAllocator(info *types.Info, body *ast.BlockStmt) bool {
 	}
 
 	return false
+}
+
+// callsSeededThinAllocator reports whether body directly calls one of the seeded thin allocators --
+// by name, through an instantiation (f[T](...)), or through a selector -- resolved through go/types, so
+// a generic allocator's instantiation matches its origin.
+func callsSeededThinAllocator(info *types.Info, body *ast.BlockStmt, seeded map[types.Object]bool) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		var ident *ast.Ident
+
+		switch fun := call.Fun.(type) {
+		case *ast.Ident:
+			ident = fun
+		case *ast.IndexExpr:
+			ident, _ = fun.X.(*ast.Ident)
+		case *ast.IndexListExpr:
+			ident, _ = fun.X.(*ast.Ident)
+		case *ast.SelectorExpr:
+			ident = fun.Sel
+		}
+
+		if ident == nil {
+			return true
+		}
+
+		obj := info.Uses[ident]
+
+		if fn, ok := obj.(*types.Func); ok && fn.Origin() != nil {
+			obj = fn.Origin()
+		}
+
+		if obj != nil && seeded[obj] {
+			found = true
+		}
+
+		return !found
+	})
+
+	return found
 }
 
 // heapProfileReaders are the functions through which Go code reads the memory profile, by the

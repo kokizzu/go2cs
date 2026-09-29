@@ -16,6 +16,7 @@
     <None Include="$(MSBuildThisFileDirectory)addressTakenPredicates_test.go" />
     <None Include="$(MSBuildThisFileDirectory)aliasReferenceImports_test.go" />
     <None Include="$(MSBuildThisFileDirectory)allocInliningFrames_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)genericAllocCallerFrames_test.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructPublicization_test.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift_test.go" />
@@ -214,6 +215,7 @@
     <None Include="$(MSBuildThisFileDirectory)nativeIntConstWidth_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nestedArgScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)nestedMapPointerValue_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)noinlineDirective_test.go" />
     <None Include="$(MSBuildThisFileDirectory)oracleTestArgs_test.go" />
     <None Include="$(MSBuildThisFileDirectory)orphanDisclosureCheck_test.go" />
     <None Include="$(MSBuildThisFileDirectory)packageClassNaming_test.go" />

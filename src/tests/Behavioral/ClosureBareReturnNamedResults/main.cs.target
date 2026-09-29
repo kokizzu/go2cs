@@ -1,16 +1,17 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static void forEach(slice<nint> items, Action<nint> f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void forEach(slice<nint> items, Action<nint> f) {
     foreach (var (_, x) in items) {
         f(x);
     }
 }
 
-internal static (nint n, bool ok) run() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint n, bool ok) run() {
     nint n = default!;
     bool ok = default!;
 

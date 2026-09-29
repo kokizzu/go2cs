@@ -20,6 +20,45 @@
       "reason": "containsInlinedCall(inlinedCaller, 4<<10) at pprof_test.go:284. Go's own compiler-inlining self-check, the first statement of the test, and the OWNER ruled the family STRUCTURAL on 2026-09-26 (ledger 4a122cd994, class I of docs/phase4/DESIGN-managed-profiling.md). The check scans the named function's PC range with runtime.FuncForPC for a PC that resolves to a DIFFERENT function, which exists only where the Go compiler inlined a callee. The converted program carries no inlining decisions: each function owns a synthetic-PC span that resolves to that function by construction (golib/GoSyntheticPC.cs), so the check can never succeed and the test skips at the line Go's source writes."
     },
     {
+      "name": "TestCPUProfileRecursion",
+      "class": "runtime-capability",
+      "signature": "runtime/pprof.inlinedCallee has 0 samples out of",
+      "reason": "Go PASS / C# SKIP, admitted by the OWNER RULING of 2026-09-28 03:17 (ledger 435557647c). The test demands CPU samples attributed to runtime/pprof.inlinedCallee, a frame that exists only in the Go compiler's inline tree; the managed sampler resolves physical frames and no inlined callee is ever sampled (bank rehearsal, union cd2fc7dba1: 0 of 137 on windows, 0 of 72 on linux, recursionCallee and recursionCaller sampled). testenv.CPUProfilingBroken() stays true, so the test is bounded at Go's own 10 s and takes Go's issue-13841 skip path; Go's per-OS false is unusable here (G's reading, ledger 2026-09-28 03:14: 2,606 s for one test, lostProfileEvent-dominated, no clean bound). Re-read every sweep; retires when the managed profiler can attribute a sample to an inlined Go callee."
+    },
+    {
+      "name": "TestGenericsHashKeyInPprofBuilder",
+      "halves": [
+        {
+          "class": "runtime-capability",
+          "signature": "runtime/pprof.genericAllocFunc[go.shape.uint32] [1 128 0 0]",
+          "reason": "SHAPE-NAME half. Go names each generic instantiation's frame with its GC shape (genericAllocFunc[go.shape.uint32]); the CLR's StackFrame.GetMethod() returns the generic method DEFINITION (measured), so every instantiation's managed frame is genericAllocFunc and the test's want lines -- printed only while the names differ -- cannot match. Retires only if frame resolution can recover an instantiation's shape."
+        },
+        {
+          "class": "codegen-liveness",
+          "signature": "runtime/pprof.genericAllocFunc [1 64 1 64]",
+          "reason": "IN-USE half. Go reads the 64 B and 256 B allocations as freed after the test's GC (in-use 0 0); the managed profile still reports them in use ([1 64 1 64], [1 256 1 256]) because the discarded temporaries stay rooted for the frame's lifetime: the CLR reports a frame's slots live throughout, where Go's liveness maps drop them at their last use. Retires with that liveness gap."
+        }
+      ]
+    },
+    {
+      "name": "TestGenericsInlineLocations",
+      "class": "runtime-capability",
+      "signature": "runtime/pprof.TestGenericsInlineLocations;runtime/pprof.nonRecursiveGenericAllocFunction;runtime/pprof.nonRecursiveGenericAllocFunction;runtime/pprof.storeAlloc [1 16 1 16]",
+      "reason": "SHAPE NAMES ONLY. Go names each inlined generic frame with its GC shape (nonRecursiveGenericAllocFunction[go.shape.struct {},go.shape.struct { runtime/pprof.buf [128]uint8 }] and its swap); the CLR's StackFrame.GetMethod() returns the generic method DEFINITION (measured), so both managed frames read nonRecursiveGenericAllocFunction and the expected sample and location cannot match. The pin is the managed stack WITH both generic frames present: until the generic-caller NoInlining rule (claude/g-inline-locations) the JIT inlined them under TieredCompilation=0 and the stack read TestGenericsInlineLocations;storeAlloc, a fixable defect this entry must not absorb -- if either frame vanishes again the pin fails. Retires only if frame resolution can recover an instantiation's shape."
+    },
+    {
+      "name": "TestLabelSystemstack",
+      "class": "runtime-capability",
+      "signature": "runtime.systemstack;key=value has 0 samples out of 0",
+      "reason": "Go PASS / C# SKIP, admitted by the OWNER RULING of 2026-09-28 03:17 (ledger 435557647c). The test requires CPU samples taken on runtime.systemstack carrying the goroutine's labels; the managed runtime has no system stack, so no systemstack frame is ever sampled (the labelHog samples themselves carry key=value: 2,934 windows / 2,202 linux in the bank rehearsal). CPUProfilingBroken() stays true and the test takes Go's issue-13841 skip path (G's reading, ledger 2026-09-28 03:14, is why Go's per-OS false is unusable). Re-read every sweep; retires only if the runtime gains a systemstack frame the sampler can see."
+    },
+    {
+      "name": "TestMorestack",
+      "class": "runtime-capability",
+      "signature": "runtime.newstack,runtime/pprof.growstack has 0 samples out of 0",
+      "reason": "Go PASS / C# SKIP, admitted by the OWNER RULING of 2026-09-28 03:17 (ledger 435557647c). The test requires samples in runtime.newstack beneath growstack; CLR thread stacks do not grow by copying, so there is no newstack frame to sample (growstack's own recursion IS sampled). CPUProfilingBroken() stays true and the test takes Go's issue-13841 skip path (G's reading, ledger 2026-09-28 03:14, is why Go's per-OS false is unusable). Re-read every sweep; permanent while CLR stacks are fixed-size."
+    },
+    {
       "name": "TestMutexProfile",
       "class": "host-fatal",
       "signature": "",

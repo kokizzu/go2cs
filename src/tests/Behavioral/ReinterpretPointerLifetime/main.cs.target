@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -17,11 +18,11 @@ partial class main_package {
     internal @string name;
 }
 
-internal static ж<view> asView(ж<header> Ꮡh) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<view> asView(ж<header> Ꮡh) {
     return Ꮡh.Reinterpret<header, view>();
 }
 
-internal static void churn() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void churn() {
     var keep = new slice<slice<byte>>(64);
     for (nint i = 0; i < 400000; i++) {
         keep[(nint)(i & 63)] = new slice<byte>(24);

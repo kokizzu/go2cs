@@ -2,24 +2,25 @@ namespace go;
 
 using fmt = fmt_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
 [GoType("num:uintptr")] partial struct Handle;
 
-internal static uintptr addrOfNamed(ж<Handle> Ꮡh) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr addrOfNamed(ж<Handle> Ꮡh) {
     return (uintptr)Ꮡh;
 }
 
-internal static uintptr addrOfPtrPtr(ж<ж<uint16>> Ꮡpp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr addrOfPtrPtr(ж<ж<uint16>> Ꮡpp) {
     return (uintptr)Ꮡpp;
 }
 
-internal static uintptr addrOfBasic(ж<uint16> Ꮡb) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr addrOfBasic(ж<uint16> Ꮡb) {
     return (uintptr)Ꮡb;
 }
 
-internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
     ref var h = ref Ꮡh.DerefOrNull();
 
     h = h + 7;
@@ -31,11 +32,11 @@ internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
     internal ж<node> parent;
 }
 
-internal static ж<node> newNode(nint id, ж<node> Ꮡparent) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<node> newNode(nint id, ж<node> Ꮡparent) {
     return Ꮡ(new node(id: id, parent: Ꮡparent));
 }
 
-internal static nint depth(ref node n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint depth(ref node n) {
     nint d = 0;
     for (var p = n.parent; p != nil; p = p.Value.parent) {
         d++;

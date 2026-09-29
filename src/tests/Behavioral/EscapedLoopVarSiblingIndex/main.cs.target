@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -8,11 +9,11 @@ partial class main_package {
     internal ж<node> next;
 }
 
-[GoRecv] internal static void link(this ref node n, ж<node> Ꮡm) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static void link(this ref node n, ж<node> Ꮡm) {
     n.next = Ꮡm;
 }
 
-internal static array<nint> process(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static array<nint> process(nint n) {
     array<nint> a = new(5);
     for (nint i = 0; i < n; i++) {
         a[i] = i * 10;
@@ -29,7 +30,7 @@ internal static array<nint> process(nint n) {
     return a.Clone();
 }
 
-internal static nint mapShadow(nint ns) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint mapShadow(nint ns) {
     var m = new map<nint, nint>{};
     m[ns] = ns * 100;
     {
@@ -39,7 +40,7 @@ internal static nint mapShadow(nint ns) {
     return m[ns] * 10 + len(m);
 }
 
-internal static nint boxedSiblings(nint kind) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint boxedSiblings(nint kind) {
     nint total = 0;
     switch (kind) {
     case 1: {
@@ -63,7 +64,7 @@ internal static nint boxedSiblings(nint kind) {
     return total;
 }
 
-internal static nint caseSiblings(nint kind) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint caseSiblings(nint kind) {
     nint total = 0;
     switch (kind) {
     case 1: {

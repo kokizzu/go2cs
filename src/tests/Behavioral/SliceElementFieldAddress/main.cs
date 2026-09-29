@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -22,11 +23,11 @@ partial class main_package {
     internal nint n, m;
 }
 
-internal static void setU32(ref uint32 p, uint32 v) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void setU32(ref uint32 p, uint32 v) {
     p = v;
 }
 
-internal static void setInt(ref nint p, nint v) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void setInt(ref nint p, nint v) {
     p = v;
 }
 
