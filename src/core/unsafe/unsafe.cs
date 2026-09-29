@@ -915,9 +915,21 @@ public static slice<T> Slice<T>(ж<T> ptr, uintptr len) {
     return Slice(ptr, len.Value);
 }
 
+// SpanLength reduces Go's length argument to the Int32 length the managed model can represent. slice<T> and
+// @string here are built over CLR arrays and spans, whose length is Int32, so a longer length has no
+// representation: it used to WRAP (int.CreateTruncating), which made 3 GiB negative and 4 GiB + 5 a
+// five-element slice. It is refused by name instead (coordinator ruling 2026-09-29 11:33). A negative
+// length still returns negative for the caller's own "len is negative" panic.
+private static int SpanLength<TLen>(TLen len, string function) where TLen : System.Numerics.IBinaryInteger<TLen> {
+    if (!TLen.IsNegative(len) && len > TLen.CreateSaturating(int.MaxValue))
+        throw go.golib.RuntimeErrorPanic.RuntimeRaised($"{function}: length {len} exceeds the maximum slice length of this runtime");
+
+    return int.CreateTruncating(len);
+}
+
 public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.Numerics.IBinaryInteger<TLen> {
     // Go's len is of any integer type (the `IntegerType` constraint); reduce it to int.
-    int n = int.CreateTruncating(len);
+    int n = SpanLength(len, "unsafe.Slice");
 
     if (n < 0)
         throw go.golib.RuntimeErrorPanic.RuntimeRaised("len is negative");
@@ -1028,7 +1040,7 @@ public static @string String(ж<byte> ptr, uintptr len) {
 
 public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.Numerics.IBinaryInteger<TLen> {
     // Go's len is of any integer type (the `IntegerType` constraint); reduce it to int.
-    int n = int.CreateTruncating(len);
+    int n = SpanLength(len, "unsafe.String");
 
     if (n < 0)
         throw go.golib.RuntimeErrorPanic.RuntimeRaised("len is negative");
