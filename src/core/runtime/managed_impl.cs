@@ -3021,6 +3021,12 @@ partial class runtime_package
         };
     }
 
+    // GoIfaceHashProbe is the GolibTests seam for ifaceHash (alg.go): the hash Go gives a value held in
+    // interface{ F() }. GolibTests cannot name the lifted ifaceHash_i, so the argument arrives as an object
+    // and only null is passable from there; the value-hashing arms are the ones GoEfaceHashProbe covers and
+    // TestSmhasherAvalanche's IfaceKey row reads through the runtime's own converted test types.
+    public static uintptr GoIfaceHashProbe(object? i, uintptr seed) => ifaceHash((ifaceHash_i)i!, seed);
+
     // GoEfaceHashProbe is the GolibTests seam for efaceHash (GolibTests is outside the
     // InternalsVisibleTo grant): the hash Go gives an interface value, as export_test.go's EfaceHash does.
     public static uintptr GoEfaceHashProbe(any i, uintptr seed) => efaceHash(i, seed);
