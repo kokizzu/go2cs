@@ -1,10 +1,11 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static void run() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run() {
     var pcs = new uintptr[]{10, 20, 30}.slice();
     var pcsʗ1 = pcs;
     uintptr casePC(nint casi) {

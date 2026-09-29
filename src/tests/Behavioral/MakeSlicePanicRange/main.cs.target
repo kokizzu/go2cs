@@ -1,10 +1,11 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static any /*r*/ tryMake(nint length, nint capacity) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static any /*r*/ tryMake(nint length, nint capacity) {
     any r = default!;
     GoFrame ᒐ = default;
     try {

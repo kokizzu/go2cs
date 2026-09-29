@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -9,7 +10,7 @@ private static readonly @string zeroˢ = "zero"u8;
 private static readonly @string oneˢ = "one"u8;
 private static readonly @string manyˢ = "many"u8;
 
-internal static @string classify(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string classify(nint n) {
     var exprᴛ1 = n;
     var matchᴛ1 = false;
     if (exprᴛ1 is 0) { matchᴛ1 = true;
@@ -28,7 +29,7 @@ internal static @string classify(nint n) {
 
 }
 
-internal static nint nonTerminal(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint nonTerminal(nint n) {
     nint acc = 0;
     var exprᴛ1 = n;
     var matchᴛ1 = false;
@@ -45,7 +46,7 @@ internal static nint nonTerminal(nint n) {
     return acc + n;
 }
 
-internal static nint conditionalReturn(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint conditionalReturn(nint n) {
     var exprᴛ1 = n;
     var matchᴛ1 = false;
     if (exprᴛ1 is 0) { matchᴛ1 = true;
@@ -63,7 +64,7 @@ internal static nint conditionalReturn(nint n) {
     return 777;
 }
 
-internal static (nint r, bool ok) namedDefer(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint r, bool ok) namedDefer(nint n) {
     nint r = default!;
     bool ok = default!;
     GoFrame ᒐ = default;
@@ -111,7 +112,7 @@ internal static @string keepAlive(nint idle, nint interval) {
     return bothOrIdleˢ;
 }
 
-internal static nint leadingDefault(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint leadingDefault(nint n) {
     nint v = 0;
     var exprᴛ1 = n;
     var matchᴛ1 = false;
@@ -143,7 +144,7 @@ internal static nint waitFailed = -1;
 private static readonly @string failedˢ = "failed"u8;
 private static readonly @string unexpectedˢ = "unexpected"u8;
 
-internal static @string waitShape(nint s) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string waitShape(nint s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == waitObject0) {
         do {

@@ -1339,6 +1339,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
 
     [TestMethod]
+    public void CheckNoinlineDirectiveFrame() => CheckTarget("NoinlineDirectiveFrame");
+
+    [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]

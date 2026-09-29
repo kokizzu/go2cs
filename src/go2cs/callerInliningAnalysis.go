@@ -54,6 +54,11 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 		inTest bool
 	}
 	var thinAllocators []thinAllocator
+	// directed collects the declarations Go's own source marks //go:noinline. They join the set only
+	// after the fixed point below, so a thin forwarder TO one does not join (the directive protects
+	// that one frame, not its callers), and they never count as the package's Caller/Callers user the
+	// opaque-forwarder gate asks about.
+	var directed []types.Object
 
 	for _, entry := range files {
 		if entry.file == nil {
@@ -68,6 +73,10 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 			obj := info.ObjectOf(fn.Name)
 			if obj == nil {
 				continue
+			}
+
+			if hasNoinlineDirective(fn.Doc) {
+				directed = append(directed, obj)
 			}
 
 			if callsSkipCountedRuntimeCaller(info, fn.Body) || callsSkipCountedWalker(info, fn.Body) {
@@ -132,7 +141,30 @@ func computeNoInliningClosure(files []FileEntry, pkg *types.Package, info *types
 		}
 	}
 
+	for _, obj := range directed {
+		seed[obj] = true
+	}
+
 	return seed
+}
+
+// hasNoinlineDirective reports whether a declaration's doc comment carries Go's `//go:noinline`. Go's
+// compiler then keeps the function's own frame, and Go code relies on that frame: runtime's
+// TestRuntimePanic needs unexportedPanicForTesting's frame to exist when its index panic is raised, so
+// panicCheck1 sees package runtime (golib's RuntimePanicCheck), and under the Release TieredCompilation=0
+// default the JIT otherwise inlines it into the caller and the fatal becomes a recoverable panic.
+func hasNoinlineDirective(doc *ast.CommentGroup) bool {
+	if doc == nil {
+		return false
+	}
+
+	for _, comment := range doc.List {
+		if comment.Text == "//go:noinline" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // skipCountedWalkers are the stack walkers whose recorded frames include their CALLER's, keyed by package

@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -20,7 +21,7 @@ internal static slice<splitTest> tests = new splitTest[]{
     new("zero"u8, maxInt - maxInt)
 }.slice();
 
-internal static nint half(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint half(nint n) {
     return n / 2;
 }
 

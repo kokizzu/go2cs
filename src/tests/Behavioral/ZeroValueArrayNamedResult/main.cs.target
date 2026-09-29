@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -15,7 +16,7 @@ partial class main_package {
     internal ticket t;
 }
 
-internal static array<byte> /*a16*/ as16(uint64 hi, uint64 lo) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static array<byte> /*a16*/ as16(uint64 hi, uint64 lo) {
     array<byte> a16 = new(16);
 
     putUint64(a16[..8], hi);
@@ -29,7 +30,7 @@ internal static void putUint64(slice<byte> b, uint64 v) {
     }
 }
 
-internal static ticket /*key*/ ticketFromBytes([GoArrayDims(32)] array<byte> b) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ticket /*key*/ ticketFromBytes([GoArrayDims(32)] array<byte> b) {
     ticket key = new();
 
     b = b.Clone();
@@ -39,7 +40,7 @@ internal static ticket /*key*/ ticketFromBytes([GoArrayDims(32)] array<byte> b) 
     return key.ΔClone();
 }
 
-internal static box /*bx*/ makeBox() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static box /*bx*/ makeBox() {
     box bx = new();
 
     bx.id = 3;
@@ -48,7 +49,7 @@ internal static box /*bx*/ makeBox() {
     return bx.ΔClone();
 }
 
-internal static (array<byte> a4, error err) withDefer() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (array<byte> a4, error err) withDefer() {
     array<byte> a4 = new(4);
     error err = default!;
     GoFrame ᒐ = default;
@@ -70,7 +71,7 @@ internal static Func<array<byte>> literalAs3 = () => {
     return a3.Clone();
 };
 
-internal static (nint n, @string s) scalars() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint n, @string s) scalars() {
     nint n = default!;
     @string s = default!;
 

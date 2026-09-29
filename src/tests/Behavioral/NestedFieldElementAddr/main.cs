@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -27,11 +28,11 @@ partial class main_package {
     return s.data;
 }
 
-internal static void bump(ref uintptr p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void bump(ref uintptr p) {
     p = p + 7;
 }
 
-internal static void bumpInt(ref nint p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void bumpInt(ref nint p) {
     p = p + 3;
 }
 

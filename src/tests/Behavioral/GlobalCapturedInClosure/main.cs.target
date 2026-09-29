@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -16,15 +17,15 @@ partial class main_package {
 internal static ж<heap> Ꮡmheap = new StandardBox<heap>(default(heap));
 internal static ref heap mheap => ref Ꮡmheap.Value;
 
-internal static void keep(ж<heap> Ꮡh) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void keep(ж<heap> Ꮡh) {
     _ = Ꮡh;
 }
 
-internal static void run(Action f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run(Action f) {
     f();
 }
 
-internal static nint boxedLocal() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint boxedLocal() {
     ref var h = ref heap(new heap(), out var Ꮡh);
     var p = Ꮡh;
     p.Value.count += 7;

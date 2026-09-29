@@ -1,10 +1,11 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static int64 f(int64 ns) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static int64 f(int64 ns) {
     var total = ns;
     if (ns < 0) {
         UntypedInt nsΔ1 = 10;

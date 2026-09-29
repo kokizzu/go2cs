@@ -20,7 +20,7 @@ partial class main_package {
 private static readonly object sibling1ˢ = (@string)"sibling-1:"u8;
 private static readonly object sibling2ˢ = (@string)"sibling-2:"u8;
 
-internal static void siblings() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void siblings() {
     void f1() {
         fmt.Println(sibling1ˢ, who());
     }
@@ -36,7 +36,7 @@ private static readonly object nestedInnerˢ = (@string)"nested-inner:"u8;
 private static readonly object nestedOuterˢ = (@string)"nested-outer:"u8;
 private static readonly object afterNestˢ = (@string)"after-nest:"u8;
 
-internal static void nested() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void nested() {
     var outer = () => {
         void inner() {
             fmt.Println(nestedInnerˢ, who());
@@ -54,7 +54,7 @@ internal static void nested() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object secondFnˢ = (@string)"second-fn:"u8;
 
-internal static void second() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void second() {
     void g() {
         fmt.Println(secondFnˢ, who());
     }
@@ -66,7 +66,7 @@ private static readonly object deep3ˢ = (@string)"deep-3:"u8;
 private static readonly object deep2ˢ = (@string)"deep-2:"u8;
 private static readonly object deep1ˢ = (@string)"deep-1:"u8;
 
-internal static void deep() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void deep() {
     var l1 = () => {
         var l2 = () => {
             void l3() {
@@ -85,7 +85,7 @@ internal static void deep() {
 private static readonly object nestSibAˢ = (@string)"nest-sib-a:"u8;
 private static readonly object nestSibBˢ = (@string)"nest-sib-b:"u8;
 
-internal static void nestedSiblings() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void nestedSiblings() {
     var o = () => {
         void a() {
             fmt.Println(nestSibAˢ, who());
@@ -116,7 +116,7 @@ private static readonly object viaArgˢ = (@string)"via-arg:"u8;
 private static readonly object namedControlˢ = (@string)"named-control:"u8;
 private static readonly object deferredˢ = (@string)"deferred:"u8;
 
-internal static void deferred() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void deferred() {
     GoFrame ᒐ = default;
     try {
         fmt.Println(namedControlˢ, who());

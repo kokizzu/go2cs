@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -8,11 +9,11 @@ internal static UntypedInt limit => /* 128 << 10 */ 131072;
 
 internal static UntypedInt floor => 16;
 
-internal static uintptr clampU(uintptr n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr clampU(uintptr n) {
     return min(n, (uintptr)(limit));
 }
 
-internal static int32 clampI(int32 d) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static int32 clampI(int32 d) {
     return max(d, (int32)(floor));
 }
 
@@ -22,7 +23,7 @@ internal static int32 clampI(int32 d) {
 
 [GoType("num:int8")] partial struct delta;
 
-internal static fieldElement spread(fieldElement a, fieldElement b) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static fieldElement spread(fieldElement a, fieldElement b) {
     return min((fieldElement)(a - b), (fieldElement)(b - a), (fieldElement)(a - b + 3329), (fieldElement)(b - a + 3329));
 }
 
