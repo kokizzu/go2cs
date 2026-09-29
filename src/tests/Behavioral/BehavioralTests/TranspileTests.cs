@@ -811,6 +811,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
+    public void CheckIndexChainAddressBox() => CheckTarget("IndexChainAddressBox");
+
+    [TestMethod]
     public void CheckIndexExprCaseLabel() => CheckTarget("IndexExprCaseLabel");
 
     [TestMethod]
