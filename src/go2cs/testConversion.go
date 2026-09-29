@@ -664,6 +664,23 @@ type testManifest struct {
 	UnsupportedCapabilities []string          `json:"unsupportedCapabilities"`
 }
 
+// testImplCompanionAppliesTo reports whether a hand-owned TEST companion (`*_impl_test.cs`) is compiled
+// into the test project for goos. A companion that hand-owns part of a PLATFORM-SPECIFIC Go test file
+// -- runtime's export_windows_impl_test.cs beside export_windows_test.go -- names that file's GOOS just
+// before `_impl_test.cs` and applies to that target alone, exactly as Go's own `_GOOS` file-name
+// constraint scopes the file it stands beside: its declarations name types only that platform's
+// conversion emits, so on any other target it could not compile. Every other companion applies to
+// every target, which keeps the three existing companions (all named `export_impl_test.cs`) unchanged.
+func testImplCompanionAppliesTo(name, goos string) bool {
+	base := strings.TrimSuffix(filepath.Base(name), "_impl_test.cs")
+
+	if i := strings.LastIndex(base, "_"); i >= 0 && isKnownGOOS(base[i+1:]) {
+		return base[i+1:] == goos
+	}
+
+	return true
+}
+
 func processTestConversion(inputPath, outputPath string, options Options) error {
 	// The sibling declarator names steer the PRODUCTION pass only (see siblingTestFuncMethodNames);
 	// that pass is complete by the time this runs. Each variant's own analysis then computes the
@@ -861,13 +878,17 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// side's existing test-artifact exclusion (csproj template and productionCSFiles both),
 	// so no production emission changes. Globbed FRESH (F7) so a companion appearing or
 	// disappearing re-shapes the project without a recorded list; testInputDigest globs the
-	// same pattern so editing one invalidates a prior comparison.
+	// same pattern so editing one invalidates a prior comparison. A companion named for ONE
+	// platform applies to that target alone (testImplCompanionAppliesTo).
 	testImplCompanions, err := filepath.Glob(filepath.Join(outputPath, "*_impl_test.cs"))
 	if err != nil {
 		return err
 	}
 	for _, companion := range testImplCompanions {
 		name := filepath.Base(companion)
+		if !testImplCompanionAppliesTo(name, goosOfTarget(options.targetPlatform)) {
+			continue
+		}
 		if !containsString(outputFiles, name) {
 			outputFiles = append(outputFiles, name)
 		}

@@ -46,6 +46,34 @@ func TestIsGoTestName(t *testing.T) {
 	}
 }
 
+// A hand-owned TEST companion named for one platform (runtime's export_windows_impl_test.cs, beside
+// export_windows_test.go) joins that target's test project alone; every other companion joins every
+// target's. The three committed companions are all `export_impl_test.cs`, so they must stay universal.
+func TestTestImplCompanionAppliesTo(t *testing.T) {
+	tests := []struct {
+		name, goos string
+		want       bool
+	}{
+		{"export_impl_test.cs", "windows", true},
+		{"export_impl_test.cs", "linux", true},
+		{"export_windows_impl_test.cs", "windows", true},
+		{"export_windows_impl_test.cs", "linux", false},
+		{"export_windows_impl_test.cs", "darwin", false},
+		{"export_linux_impl_test.cs", "linux", true},
+		{"export_linux_impl_test.cs", "windows", false},
+		// A descriptive suffix is not a platform: `_tables` constrains nothing, as in Go's own rule.
+		{"hash_tables_impl_test.cs", "linux", true},
+		// The path does not matter, only the file name.
+		{filepath.Join("runtime", "export_windows_impl_test.cs"), "linux", false},
+	}
+
+	for _, test := range tests {
+		if got := testImplCompanionAppliesTo(test.name, test.goos); got != test.want {
+			t.Errorf("testImplCompanionAppliesTo(%q, %q) = %v, want %v", test.name, test.goos, got, test.want)
+		}
+	}
+}
+
 // The FLAVOR census gap: a native-flavor-only `_test.go` (excluded by the conversion's tags,
 // included by a bare `go test` on the same platform) must contribute disclosed-unsupported
 // declarations, a purego-selected file must not be re-declared, and a file excluded on BOTH sides
