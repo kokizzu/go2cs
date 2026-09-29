@@ -410,6 +410,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"semacquire1": goosAny,
 		"semrelease1": goosAny,
 		"SemNwait":    goosAny,
+		// export_windows_test.go's two exports, hand-owned for windows alone in
+		// runtime/export_windows_impl_test.cs (a platform-named test companion, joined only to the
+		// windows test project). NewContextStub builds a machine CONTEXT from Go's own caller PC, SP
+		// and FP for the SEH tests (runtime-seh_windows_test.go) to hand to RtlLookupFunctionEntry
+		// and RtlVirtualUnwind; there is no Go machine code, so no such PC exists and the export
+		// REFUSES BY NAME where the auto body reached sys.GetCallerPC's throwing stub. That is the
+		// representational point, not GetCallerPC itself, whose other callers are ruled separately.
+		// NumberOfProcessors is GetSystemInfo's processor count, which the auto body read through
+		// stdcall1 -> asmcgocall's stub; the hand-own asks kernel32 directly.
+		"NewContextStub":     goosWindows,
+		"NumberOfProcessors": goosWindows,
 		// The mutex/note key-slot protocol. Go has TWO flavors of it and selects one per GOOS:
 		// lock_sema.go (windows, darwin, plan9, aix …) smuggles an *m address through the uintptr
 		// slot and parks waiters on OS semaphores; lock_futex.go (linux, freebsd, dragonfly) uses a
@@ -820,7 +831,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// netpollBreak's write to the never-created eventfd answers -EBADF and takes Go's throw, a
 		// fatal that ends the test host. The linux hand-own refuses by name before the write, which
 		// keeps the one loud row. See runtime/linux/netpoll_epoll_impl.cs.
-		"netpollBreak": goosLinux,
+		//
+		// AND on windows, where the auto body's PostQueuedCompletionStatus reaches stdcall4 ->
+		// asmcgocall's stub: an infrastructure error rather than a Go panic, which no disclosure can
+		// absorb. The windows hand-own refuses by name with the same cause and the same leading words
+		// (runtime/windows/netpoll_windows_impl.cs); no break is sent to a completion port that
+		// netpollGenericInit never created. darwin (wakeNetpoll over kq) is unmeasured and stays auto.
+		"netpollBreak": goosScope{"linux", "windows"},
 		// runtime.throw and runtime.fatal -- the FATAL path (runtime/panic_impl.cs;
 		// docs/phase4/DESIGN-fatal-path.md). Both converted bodies print Go's `fatal error: <text>`
 		// line through golib's print and then call fatalthrow, whose FIRST statement is
