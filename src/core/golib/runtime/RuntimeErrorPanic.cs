@@ -153,7 +153,7 @@ public static class RuntimeErrorPanic
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {
         return new PanicException(BoundsErrorValue?.Invoke(index, length, true, BoundsIndex) ??
-                                  string.Format(index < 0 ? IndexNegativeMessage : IndexOutOfRangeMessage, index, length));
+                                  string.Format(index < 0 ? IndexNegativeMessage : IndexOutOfRangeMessage, index, length)) { RuntimeThrowText = "index out of range" };
     }
 
     /// <summary>
@@ -165,7 +165,7 @@ public static class RuntimeErrorPanic
     public static PanicException IndexOutOfRange(uint64 index, int64 length)
     {
         return new PanicException(BoundsErrorValue?.Invoke(unchecked((int64)index), length, false, BoundsIndex) ??
-                                  string.Format(IndexOutOfRangeMessage, index, length));
+                                  string.Format(IndexOutOfRangeMessage, index, length)) { RuntimeThrowText = "index out of range" };
     }
 
     /// <summary>
@@ -266,7 +266,7 @@ public static class RuntimeErrorPanic
             BoundsSlice3Acap => x < 0 ? $"[::{x}]" : $"[::{x}] with capacity {y}",
             BoundsSlice3B => x < 0 ? $"[:{x}:]" : $"[:{x}:{y}]",
             _ => x < 0 ? $"[{x}::]" : $"[{x}:{y}:]"
-        });
+        }) { RuntimeThrowText = "slice bounds out of range" };
     }
 
     // Go's check ORDER (cmd/compile's ssagen slice): the highest bound against the length or capacity first, then
@@ -335,7 +335,10 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException ArrayConversionLength(int64 sourceLength, int64 length)
     {
-        return new PanicException(string.Format(ArrayConversionLengthMessage, sourceLength, length));
+        return new PanicException(string.Format(ArrayConversionLengthMessage, sourceLength, length))
+        {
+            RuntimeThrowText = "slice length too short to convert to array or pointer to array"
+        };
     }
 
     private const string IntegerDivideByZeroMessage = $"{RuntimeErrorMessage}integer divide by zero";
@@ -387,7 +390,7 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException NegativeShiftAmount()
     {
-        return new PanicException(ShiftErrorValue?.Invoke() ?? NegativeShiftAmountMessage);
+        return new PanicException(ShiftErrorValue?.Invoke() ?? NegativeShiftAmountMessage) { RuntimeThrowText = "negative shift amount" };
     }
 
     private const string ComparingUncomparableTypeMessage = $"{RuntimeErrorMessage}comparing uncomparable type {{0}}";

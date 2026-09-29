@@ -255,6 +255,16 @@ public class PanicException(object? state, Exception? innerException = null) :
     internal PanicFaultKind FaultKind { get; init; }
 
     /// <summary>
+    /// Gets Go's throw text when this panic is one of <c>panicCheck1</c>'s -- an index, slice, slice3 or
+    /// slice-convert bounds check, or a negative shift -- and <see langword="null"/> otherwise. Raised by
+    /// code in package <c>runtime</c>, such a panic is Go's FATAL error with this text; anywhere else it is
+    /// an ordinary panic. Tagged where the panic is raised (<see cref="golib.RuntimeErrorPanic"/>'s
+    /// factories), and read where the panic is recovered or reported (<see cref="golib.RuntimePanicCheck"/>).
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    internal string? RuntimeThrowText { get; init; }
+
+    /// <summary>
     /// Gets the panic whose deferred sequence raised this one, when a deferred call panicked while that
     /// panic was being handled. Go's stack still holds it beneath: the deferred call's frame sits on
     /// the older panic's <c>runtime.gopanic</c>, until a recovery completes. Set by

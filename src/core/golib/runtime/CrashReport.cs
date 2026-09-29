@@ -209,6 +209,10 @@ public static class CrashReport
     /// </remarks>
     public static void Report(PanicException panic, Exception thrown)
     {
+        // Go's panicCheck1: an unrecovered bounds or shift panic raised in package runtime reports as
+        // the fatal error it is, not as a panic.
+        RuntimePanicCheck.FatalIfRaisedInRuntime(panic);
+
         string report = Format(panic, thrown);
 
         try
