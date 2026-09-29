@@ -109,6 +109,22 @@
       "signature": "runtime: netpollBreak: the managed host has no runtime poller to break",
       "records": 1,
       "reason": "runtime-capability (census B6, COORD routing 2026-09-29; the linux row is P1's sizing bucket D): the test starts a runtime.Netpoll wait on a goroutine and breaks it with runtime.NetpollBreak. The managed host has no runtime poller: netpollGenericInit is a no-op (runtime/netpoll_impl.cs), because Go's poller is drained by the Go scheduler itself (findRunnable, sysmon), which the host does not run. With no eventfd (linux) or I/O completion port (windows) there is nothing for a break to interrupt, so netpollBreak REFUSES BY NAME before any write or post (runtime/linux/netpoll_epoll_impl.cs, runtime/windows/netpoll_windows_impl.cs), with the same leading words on both targets. Before it, linux's write to the absent eventfd took Go's fatal throw and windows' post reached asmcgocall's stub, an infrastructure error. ONE entry covers both targets because the loader admits one entry per test name; the signature is the prefix both refusals share, with ONE record. darwin is unmeasured (wakeNetpoll over kq) and out of scope. Retires if the host ever runs Go's poller (never, by design: internal/poll has its own managed poller, DESIGN-netpoll-managed-poller.md)."
+    },
+    {
+      "name": "Test64BitReturnStdCall",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "syscall: argument 0 is a managed pointer token, not an address",
+      "records": 1,
+      "reason": "runtime-capability (census W1's layout half; ruling 2026-09-28 15:03 (4), assigned to this seat by COORD 2026-09-29): the test passes a TEST-LOCAL reference-bearing struct by address through the GENERIC syscall.Proc.Call -- Test64BitReturnStdCall an OSVersionInfoEx with its inline [128]uint16, TestRegisterClass a Wndclassex with *uint16 fields -- and the native callee reads Go's memory layout at those offsets. Under go2cs the struct is a managed object whose pointer is a managed pointer token, not an address, and the generic door (syscall/windows/dll_windows.cs refuseManagedPointerTokens) REFUSES it BY NAME, correctly: passing it would let native code read or write memory that is not the caller's. Pinned to the refusal's argument-0 words with ONE record, so the argument-3 callback rows (R's func-cookie seat) can never match it, and any other failure here is a defect. Windows only (syscall_windows_test.go). Named retirement plan (the ruling's design question (a)): a golib generic Go-layout marshal at the door -- encode at Go offsets into a pinned native buffer, arrays inline, pointer fields pinned, copy back -- which needs a design and a ruling, not a seat."
+    },
+    {
+      "name": "TestRegisterClass",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "syscall: argument 0 is a managed pointer token, not an address",
+      "records": 1,
+      "reason": "runtime-capability (census W1's layout half; ruling 2026-09-28 15:03 (4), assigned to this seat by COORD 2026-09-29): the test passes a TEST-LOCAL reference-bearing struct by address through the GENERIC syscall.Proc.Call -- Test64BitReturnStdCall an OSVersionInfoEx with its inline [128]uint16, TestRegisterClass a Wndclassex with *uint16 fields -- and the native callee reads Go's memory layout at those offsets. Under go2cs the struct is a managed object whose pointer is a managed pointer token, not an address, and the generic door (syscall/windows/dll_windows.cs refuseManagedPointerTokens) REFUSES it BY NAME, correctly: passing it would let native code read or write memory that is not the caller's. Pinned to the refusal's argument-0 words with ONE record, so the argument-3 callback rows (R's func-cookie seat) can never match it, and any other failure here is a defect. Windows only (syscall_windows_test.go). Named retirement plan (the ruling's design question (a)): a golib generic Go-layout marshal at the door -- encode at Go offsets into a pinned native buffer, arrays inline, pointer fields pinned, copy back -- which needs a design and a ruling, not a seat."
     }
   ]
 }
