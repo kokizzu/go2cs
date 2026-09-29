@@ -1543,6 +1543,12 @@ public static partial class builtin
     /// generic), so its zero stays <c>default</c> here, as it was before this method existed. A census found no
     /// std path that reaches one; GolibTests' GoZeroResidualTests pins the behaviour.
     /// </para>
+    /// <para>
+    /// STATED RESIDUAL, the bare fixed array: when <typeparamref name="T"/> is itself an <see cref="array{T}"/>
+    /// (not a struct holding one), nothing registers a factory, since go2cs-gen registers only structs, so this
+    /// answers <c>default(array&lt;E&gt;)</c>, which has LENGTH 0 where Go's zero <c>[N]E</c> has N elements. The
+    /// template overload above has no such gap, because the array it is handed carries its length.
+    /// </para>
     /// </remarks>
     public static T GoZero<T>() => GoZeroFactory<T>.Create is { } create ? create() : default!;
 

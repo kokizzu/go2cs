@@ -30,10 +30,13 @@
 // managed rendezvous, and widening it is the wrong move twice over: the converted `[GoType] partial
 // struct coro` mirrors Go's field set (which is empty), and a Go zero-size type is a shape golib
 // classifies and treats specially (GoZeroSizeFacts). Keying on the BOX instead leaves the converted
-// type exactly as Go declares it. `new(coro)` mints a fresh StandardBox per call (builtin.@new), and
-// ж<T> boxes compare by IDENTITY — the same property sync's semaphore table relies on for ж<uint32>
-// keys — so one Pull's token can never collide with another's. A ConditionalWeakTable rather than a
-// ConcurrentDictionary because the entry must not outlive the token: a program that creates pull
+// type exactly as Go declares it. `new(coro)` mints a fresh StandardBox per call (builtin.@new), but
+// coro is zero-size, so every such box names the zerobase (ж<T>.NamesZeroBase): its equality and hash
+// are the zerobase's, and ANY two Pull tokens compare Equal, as Go's two zero-size pointers may. The
+// table must therefore stay REFERENCE-keyed. ConditionalWeakTable compares keys by reference and never
+// calls Equals, so one Pull's token still never collides with another's; a table keyed through Equals
+// would put every Pull on one entry. A ConditionalWeakTable rather than a ConcurrentDictionary for
+// that reason and because the entry must not outlive the token: a program that creates pull
 // iterators in a loop would otherwise leak one rendezvous per iteration for the life of the process,
 // which is the bounded leak sync/runtime_impl.cs documents and this has no reason to repeat.
 //

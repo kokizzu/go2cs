@@ -13,7 +13,7 @@
 // (stubs2_impl.cs), the write answered -EBADF and netpollBreak took Go's throw: a fatal error that
 // ended the linux runtime row's test host at TestNetpollBreak (COORD ruling, ledger 80fc879c1c).
 //
-// netpollBreak therefore refuses by name, before the write, as stopTheWorld does (managed_impl.cs).
+// netpollBreak therefore refuses by name, before the write.
 // The row keeps its one loud, locatable failure and the host lives. Linux only: windows reaches
 // stdcall4 -> getg, which still throws, and darwin's netpollBreak goes through wakeNetpoll(kq), not
 // write1 (darwin has no run layer, so that path is unmeasured).
