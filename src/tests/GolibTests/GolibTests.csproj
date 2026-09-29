@@ -319,6 +319,9 @@
          unconditional and only the gate FILE is (the os/user precedent above). -->
     <ProjectReference Include="..\..\core\internal\syscall\unix\internal.syscall.unix.csproj" />
     <ProjectReference Include="..\..\core\crypto\rand\crypto.rand.csproj" />
+    <!-- GoZeroResidualTests: unique.uniqueMap[T] is the converted std's one GENERIC struct that go2cs-gen
+         calls needy, so it is the real subject of the "no registration for a generic struct" arm. -->
+    <ProjectReference Include="..\..\core\unique\unique.csproj" />
   </ItemGroup>
 
 </Project>
