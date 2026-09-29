@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
+using static go.builtin;
 using static go.runtime_package;
 
 namespace GolibTests;
@@ -243,6 +244,64 @@ public class SyncMutexProfileTests
             ContendOnce(new Shared());
             Assert.AreEqual(unlockBefore + 1, TotalAt(mutex: true, "sync.(*Mutex).Unlock"), $"the handoff's mutex event must sit at sync.(*Mutex).Unlock; top frames: {TopFrames(mutex: true)}");
             Assert.AreEqual(lockBefore + 1, TotalAt(mutex: false, "sync.(*Mutex).Lock"), $"the waiter's block event must sit at sync.(*Mutex).Lock; top frames: {TopFrames(mutex: false)}");
+        });
+    }
+
+    // The count of the profile's records whose first two frames are the named functions.
+    private static int64 TotalAt(bool mutex, string top, string caller)
+    {
+        int64 count = 0;
+        foreach (var (_, record) in Records(mutex))
+        {
+            var names = FrameNames(record.StackRecord.Stack());
+            if (names.Count > 1 && names[0] == top && names[1] == caller)
+                count += record.Count;
+        }
+        return count;
+    }
+
+    // R's review question: converted code reaches Lock and Unlock through a *Mutex (the go2cs-gen
+    // pointer-receiver overload) and through a sync.Locker (the generated MutexжLocker adapter), not only
+    // on the field. Neither must leave a frame between the event's top frame and its Go caller, or frame [1]
+    // differs from Go's and pprof splits the stack. Both paths, both events, each pinned to frame [1].
+    [TestMethod]
+    public void TheEventsSecondFrameIsTheGoCallerThroughAPointerOrALocker()
+    {
+        WithRates(1, 1, () =>
+        {
+            foreach (bool waiterViaLocker in new[] { true, false })
+            {
+                heap(new sync_package.Mutex(), out ж<sync_package.Mutex> box);
+                sync_package.Locker locker = new sync_package.MutexжLocker(box);
+                string waiterCaller = waiterViaLocker ? "mutexframeprobe.lockViaLocker" : "mutexframeprobe.lockViaPointer";
+                string unlockerCaller = waiterViaLocker ? "mutexframeprobe.unlockViaPointer" : "mutexframeprobe.unlockViaLocker";
+
+                int64 blockBefore = TotalAt(mutex: false, "sync.(*Mutex).Lock", waiterCaller);
+                int64 mutexBefore = TotalAt(mutex: true, "sync.(*Mutex).Unlock", unlockerCaller);
+
+                using var held = new ManualResetEventSlim();
+                var holder = new Thread(() =>
+                {
+                    mutexframeprobe_package.lockViaPointer(box);
+                    held.Set();
+                    Thread.Sleep(50);
+                    if (waiterViaLocker)
+                        mutexframeprobe_package.unlockViaPointer(box);
+                    else
+                        mutexframeprobe_package.unlockViaLocker(locker);
+                });
+                holder.Start();
+                held.Wait();
+                if (waiterViaLocker)
+                    mutexframeprobe_package.lockViaLocker(locker);
+                else
+                    mutexframeprobe_package.lockViaPointer(box);
+                mutexframeprobe_package.unlockViaPointer(box);
+                holder.Join();
+
+                Assert.AreEqual(blockBefore + 1, TotalAt(mutex: false, "sync.(*Mutex).Lock", waiterCaller), $"block event's frame [1] must be {waiterCaller}; records: {TopFrames(mutex: false)}");
+                Assert.AreEqual(mutexBefore + 1, TotalAt(mutex: true, "sync.(*Mutex).Unlock", unlockerCaller), $"mutex event's frame [1] must be {unlockerCaller}; records: {TopFrames(mutex: true)}");
+            }
         });
     }
 

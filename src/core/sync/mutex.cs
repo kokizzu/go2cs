@@ -204,11 +204,14 @@ private sealed class WaitStamps {
     }
 
     // Go's semrelease1 over dequeue: the dequeued waiter's wait (dt0) plus the tail-average estimate
-    // for the waiters still queued, (dtail + dt0) / 2 each. Then the acquire times restart at now --
-    // go1.24.13 sema.go's dequeue resets the remaining list's head and tail to now (L438-440), and a
-    // waiter that loses the race re-queues inheriting that clock (L311) -- so every release that finds
-    // a stamped waiter is charged from the previous charge, and the charges telescope with no wait
-    // counted twice. The stamp is NOT cleared here: SemaphoreSlim lets the releasing thread take the
+    // for the waiters still queued, (dtail + dt0) / 2 each. Then the acquire times restart at now, so
+    // every release that finds a stamped waiter is charged from the previous charge and the charges
+    // telescope with no wait counted twice. For the waiters still queued that is go1.24.13 sema.go's
+    // dequeue, which resets the remaining list's head and tail to now (L438-440; a waiter queued behind
+    // them inherits that clock, L311). For a sole waiter it is lockSlow's re-call of
+    // runtime_SemacquireMutex on every failed wake (internal/sync/mutex.go:149), a fresh semacquire1
+    // whose own t0 (sema.go:169-173) is about the wake time: `now` approximates that t0, early by the
+    // wake latency (R's review). The stamp is NOT cleared here: SemaphoreSlim lets the releasing thread take the
     // gate straight back, and the woken waiter then stays blocked in the same Wait() with its stamp,
     // exactly the waiter Go re-queues. Only Acquired, when the last stamped waiter leaves, clears it.
     internal bool TryHandoff(out int64 dt) {

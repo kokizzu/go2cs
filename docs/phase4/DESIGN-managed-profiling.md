@@ -207,9 +207,13 @@ it is predicted to move (linux). "Predicted" means read from code, not measured,
 >   in exactly the cases `Wait()` does. The rate-off path is unchanged.
 > - **The handoff cleared the waiter's stamp after one charge.** `SemaphoreSlim` lets the releaser take
 >   the gate straight back, and the woken waiter stays blocked in the same `Wait()` with its stamp gone,
->   so no later Unlock records. Now `TryHandoff` restarts head and tail at `now`, as go1.24.13 sema.go's
->   dequeue does for the remaining list (L438-440), with a losing waiter re-queuing on that clock
->   (L311). Charges telescope; only `Acquired`, when the last stamped waiter leaves, clears the stamps.
+>   so no later Unlock records. Now `TryHandoff` restarts head and tail at `now`. For the waiters still
+>   queued that is go1.24.13 sema.go's dequeue, which resets the remaining list's head and tail to now
+>   (L438-440; a waiter queued behind them inherits that clock, L311); for a sole waiter it is lockSlow's
+>   re-call of `runtime_SemacquireMutex` on every failed wake (internal/sync/mutex.go:149), a fresh
+>   `semacquire1` whose own t0 (sema.go:169-173) `now` approximates, early by the wake latency (R's
+>   review, citation corrected 2026-09-28). Charges telescope; only `Acquired`, when the last stamped
+>   waiter leaves, clears the stamps.
 >
 > Stated deviations from Go's accounting, each accepted as such (the full list also stands at the site,
 > `sync/mutex.cs`):
