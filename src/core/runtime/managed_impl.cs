@@ -2947,10 +2947,13 @@ partial class runtime_package
     // nested interfaces, pointers) needs a walk over fields or an address this host does not have,
     // and is refused by name below instead of hashed to a number that would look real.
     //
-    // ifaceHash stays converted: its signature lifts a dynamic interface (interface{ F() }) whose
-    // GoDynamicTypeLift record the converter publishes only from a converted declaration, and the
-    // -tests conversion of export_test.go resolves IfaceHash's type through that record.
+    // ifaceHash (below) is the same hash over interface{ F() }: Go's interhash reads the itab's type and hashes
+    // the data word by that dynamic type exactly as nilinterhash does, so both share interfaceValueHash. It waited
+    // for the converter to lift a manual declaration's signature (the placeholder now declares the lifted
+    // ifaceHash_i, which this body names as converted code does; it is never declared by hand).
     internal static uintptr efaceHash(any i, uintptr seed) => interfaceValueHash(i, seed);
+
+    internal static uintptr ifaceHash(ifaceHash_i i, uintptr seed) => interfaceValueHash(i, seed);
 
     private sealed class RawBoxData
     {
