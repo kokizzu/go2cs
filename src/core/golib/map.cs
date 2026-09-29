@@ -576,19 +576,24 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     // a tombstone that brings the next growth forward; a split here happens to every table at once, where
     // Go splits each table when its own share fills; a map literal grows from empty, where Go makes it with
     // its length as the hint; and a map built from another (the enumerable constructor) is not charged.
+    // And the model is compiled out of a program that cannot reach runtime/pprof, so such a program that
+    // sets MemProfileRate > 0 itself samples golib's other allocation doors but not a map's growth.
     // AllocationCounter (testing.AllocsPerRun) is untouched: it counts the store object only, by policy.
 
     // Go's per-table limit, maxTableCapacity.
     private const int GoMaxTableCapacity = 1024;
 
-    // The only code a store gains: one compare against the mark and a branch. len(m) is read without the
-    // nil-key slot for a value-type key (a JIT-time constant, so the branch folds away). Everything else,
-    // the rate included, is behind the branch, which a map takes only at the entry counts where Go's grows,
-    // whether or not the profile is on: with it off the model still advances, charging nothing.
+    // The model exists only in a program that can reach runtime/pprof (COORD ruling 2026-09-29 08:43,
+    // option (a)): GoMemProfile.PprofReachable is a static readonly the JIT folds, so without runtime/pprof
+    // a store compiles to exactly what it was before the model, with no mark load and no compare. With it,
+    // the store gains one compare against the mark and a branch. len(m) is read without the nil-key slot for
+    // a value-type key (a JIT-time constant, so that test folds away). Everything else, the rate included,
+    // is behind the branch, which a map takes only at the entry counts where Go's grows, whether or not the
+    // rate is above 0: at rate 0 the model still advances, charging nothing.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void noteStore()
     {
-        if ((typeof(TKey).IsValueType ? m_map.Count : Count) > m_map.GoGrowAt)
+        if (GoMemProfile.PprofReachable && (typeof(TKey).IsValueType ? m_map.Count : Count) > m_map.GoGrowAt)
             growModel(m_map, Count);
     }
 
@@ -685,7 +690,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     // at make. A hint of 8 or less allocates nothing until the first insert.
     private static void growHinted(NilKeyDictionary store, nint hint)
     {
-        if (hint <= GoMapLayout.GroupSlots || hint > int.MaxValue)
+        if (!GoMemProfile.PprofReachable || hint <= GoMapLayout.GroupSlots || hint > int.MaxValue)
             return;
 
         long target = (long)hint * GoMapLayout.GroupSlots / 7;

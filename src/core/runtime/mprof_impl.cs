@@ -232,45 +232,23 @@ public static ref nint MemProfileRate => ref GoMemProfile.Rate;
 // list and is fixed before the first assembly loads, never the assemblies loaded so far, which load lazily
 // and would read "no pprof" at this point in every program. Where the host has no such list (a native AOT
 // or single-file publish), runtime.pprof's package type is looked up by its constant name, which native
-// AOT's compiler resolves against the assemblies it compiled (see memProfileReachable). Where neither
-// answers, Go's default rate stands.
+// AOT's compiler resolves against the assemblies it compiled. Where neither answers, Go's default rate
+// stands. The answer is golib's (GoMemProfile.PprofReachable), the one source, because golib's map store
+// folds the same answer into its growth branch (COORD ruling 2026-09-29 08:43).
 //
 // DEVIATIONS. A program that calls runtime.MemProfile directly without runtime.pprof in its closure reads
 // an empty profile unless it sets MemProfileRate itself, as a Go program whose linker dropped
 // memProfileInternal could not (Go keeps the profile on whenever MemProfile is reachable). And go2cs's
 // hand-owned testing does not reference runtime.pprof, as Go's does, so a converted test package that does
 // not import runtime/pprof itself starts with the rate at 0 where Go's test binary starts at 512 KiB.
+// And a program that sets MemProfileRate > 0 without runtime.pprof in its closure samples golib's other
+// allocation doors but not a map's growth: the growth model is compiled out of the map store at startup
+// when runtime.pprof is unreachable, so no later rate change brings it back.
 [ModuleInitializer]
 internal static void initMemProfileRecorder() {
     GoMemProfile.Recorder = memProfileAlloc;
-    if (!memProfileReachable(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, findPprofPackage)) {
+    if (!GoMemProfile.PprofReachable) {
         GoMemProfile.Rate = 0;
-    }
-}
-
-private const string pprofAssemblyName = "runtime.pprof";
-
-// The fallback's question is asked by type name, not by walking references: under native AOT the
-// compiler resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
-// static closure there, and GetReferencedAssemblies throws PlatformNotSupportedException. The name is a
-// constant AT THE CALL: the compiler does not follow it through a parameter.
-private static Type? findPprofPackage() => Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false);
-
-private static bool memProfileReachable(string? trustedPlatformAssemblies, Func<Type?> findPprof) {
-    if (trustedPlatformAssemblies is not null) {
-        foreach (string path in trustedPlatformAssemblies.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) {
-            if (string.Equals(Path.GetFileNameWithoutExtension(path), pprofAssemblyName, StringComparison.OrdinalIgnoreCase)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    try {
-        return findPprof() is not null;
-    }
-    catch (Exception) {
-        // The closure could not be read: keep Go's default rather than silently switch the profile off.
-        return true;
     }
 }
 
@@ -414,12 +392,6 @@ private sealed class memProfileSentinel {
 
 // ---- the guard's view (RuntimeBlockEventTests): GolibTests is outside runtime's InternalsVisibleTo
 //      grant, so this Go-prefixed public helper exposes the one operation ----
-
-/// <summary>Whether a program whose static assembly closure is <paramref name="trustedPlatformAssemblies"/>
-/// (a path list, as the host's TRUSTED_PLATFORM_ASSEMBLIES; null where the host has none) starts with the
-/// memory profile on, asking <paramref name="findPprof"/> when there is no list.</summary>
-public static bool GoMemProfileReachable(string? trustedPlatformAssemblies, Func<Type?> findPprof) =>
-    memProfileReachable(trustedPlatformAssemblies, findPprof);
 
 /// <summary>Records <paramref name="count"/> block events of <paramref name="cycles"/> each through
 /// <c>runtime.blockevent(cycles, 1)</c> -- the call runtime/pprof's TestBlockProfileBias makes.</summary>

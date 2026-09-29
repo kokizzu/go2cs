@@ -58,6 +58,59 @@ public static class GoMemProfile
     /// </summary>
     public static Action<object, nuint, bool>? Recorder;
 
+    /// <summary>
+    /// Whether the program can reach runtime/pprof: the inverse of Go's <c>disableMemoryProfiling</c>,
+    /// decided once, before any Go code runs. runtime's module initializer starts <see cref="Rate"/> at 0
+    /// when this is false, and a map's growth model runs only when it is true (map.cs, the growth model).
+    /// </summary>
+    /// <remarks>
+    /// A static readonly field, so the JIT folds it into the code that reads it: with runtime/pprof out of
+    /// the program, a map store compiles to what it was before the growth model existed. This class has no
+    /// static constructor, so the runtime initializes it when the JIT compiles its first reader, before
+    /// that reader's code is generated, under tiered compilation and without it.
+    /// </remarks>
+    public static readonly bool PprofReachable = PprofReachableFrom(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, findPprofPackage);
+
+    private const string PprofAssemblyName = "runtime.pprof";
+
+    // The fallback's question is asked by type name, not by walking references: under native AOT the
+    // compiler resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
+    // static closure there, and GetReferencedAssemblies throws PlatformNotSupportedException. The name is a
+    // constant AT THE CALL: the compiler does not follow it through a parameter.
+    private static Type? findPprofPackage() => Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false);
+
+    /// <summary>
+    /// Go's linker question, asked of the program's STATIC assembly closure: whether runtime.pprof is in
+    /// <paramref name="trustedPlatformAssemblies"/> (the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the
+    /// app's deps.json list and is fixed before the first assembly loads), or, where the host has no such
+    /// list (a native AOT or single-file publish), whether <paramref name="findPprof"/> resolves
+    /// runtime.pprof's package type. Never the assemblies loaded so far, which load lazily and would read
+    /// "no pprof" at startup in every program. Where neither answers, Go's default (reachable) stands.
+    /// </summary>
+    public static bool PprofReachableFrom(string? trustedPlatformAssemblies, Func<Type?> findPprof)
+    {
+        if (trustedPlatformAssemblies is not null)
+        {
+            foreach (string path in trustedPlatformAssemblies.Split(System.IO.Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (string.Equals(System.IO.Path.GetFileNameWithoutExtension(path), PprofAssemblyName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        try
+        {
+            return findPprof() is not null;
+        }
+        catch (Exception)
+        {
+            // The closure could not be read: keep Go's default rather than silently switch the profile off.
+            return true;
+        }
+    }
+
     // Bytes left until this thread's next sample: Go's mcache.nextSample. Unseeded until the first
     // allocation this thread charges, as Go seeds it when the mcache is created.
     [ThreadStatic]
