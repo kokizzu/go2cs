@@ -548,8 +548,7 @@ partial class runtime_package
     // flushallmcaches is a no-op without Ps, the debug log is managed memory (debuglog_impl.cs),
     // readMetricsLocked crosses through runtime/metrics (below), StartTrace starts golib's managed
     // tracer inside the pair (<goos>/trace_impl.cs), and the regions with no managed form refuse
-    // BEFORE the world is stopped (goroutineProfileWithLabels' fill path, doAllThreadsSyscall on
-    // linux).
+    // BEFORE the world is stopped (doAllThreadsSyscall on linux).
     //
     // Go's stopTheWorldWithSema stops every P and its startTheWorldWithSema restarts them; both
     // record the pause into sched's four timeHistograms. There are no Ps here (m.p is nil by
@@ -686,34 +685,88 @@ partial class runtime_package
     {
     }
 
-    // goroutineProfileWithLabels (mprof.go), behind runtime.GoroutineProfile (ruling Q3). Go's
-    // concurrent collector takes goroutineProfile.sema and the world, counts, and returns (n, false)
-    // at once when the caller's slice is too short; otherwise it records every goroutine's stack
-    // through sys.GetCallerSP/GetCallerPC, intrinsics that stay throwing by ruling. So the COUNT
-    // path is kept, pair and all, over golib's goroutine registry (gcount), and the FILL path
-    // refuses by name BEFORE any semaphore, a stated limit: runtime/pprof's goroutine profile does
-    // not come through here, it has its own managed body (runtime/pprof/pprof_impl.cs).
+    // goroutineProfileWithLabels (mprof.go), behind runtime.GoroutineProfile (ruling Q3) and, through
+    // the pprof_goroutineProfileWithLabels linkname forwarder, runtime/pprof's goroutine profile (A9).
+    // Go's concurrent collector answers an empty slice with (gcount(), false) without stopping the
+    // world; otherwise it takes goroutineProfile.sema and the world, counts, and returns (n, false)
+    // when the slice is too short, WITHOUT writing to it (runtime.GoroutineProfile's contract).
+    // Otherwise it records every goroutine's stack. Go's saveg walks each traceback through
+    // sys.GetCallerSP/GetCallerPC, which stay throwing by ruling, so the records come from golib's
+    // goroutine registry instead. Design: the 2026-09-04 Q27 section of
+    // BOARD-next-validation-candidates.md.
+    //
+    //   THE POPULATION is Go's. Goroutine.ProfileSnapshot() returns the goroutines gcount() counts
+    //   (user goroutines) plus the finalizer goroutine while it runs a finalizer body, Go's own
+    //   special case (isSystemGoroutine answers false for runfinq while fingRunningFinalizer is set,
+    //   and the collector adds one to n for it).
+    //
+    //   THE STACK is one frame: the goroutine's START FUNCTION, Go's gp.startpc, as a GoSyntheticPC
+    //   token that CallersFrames resolves to an import-path-qualified Go name. The managed runtime
+    //   cannot walk a foreign thread's stack (runtime.Stack(all) states the same limit), but it can
+    //   state the bottom Go frame of the traceback saveg would have recorded. So this is an
+    //   INCOMPLETE stack, not an invented one. A goroutine with no start function (the main
+    //   goroutine, or a thread a host entered directly) reports an EMPTY stack.
+    //
+    //   THE LABELS are the pointers the goroutines set: runtime_setProfLabel writes golib's slot and
+    //   this hands the value straight back. For a reference-bearing labelMap that value is the box's
+    //   registered order TOKEN (Q44), which a collection cannot make stale. Why the labels were once
+    //   withheld, and what re-entering them measured, is in git history at
+    //   runtime/pprof/pprof_impl.cs, the body's home until A9.
+    //
+    // The snapshot is taken inside the stopped world and the records are written after it restarts,
+    // as Go writes all but its own goroutine after startTheWorld. Other goroutines are not suspended
+    // here, so a goroutine created after the snapshot is absent, which is the tolerance Go documents
+    // for its concurrent collection: "New goroutines may not be in this list, but we didn't want to
+    // know about them anyway."
     internal static (nint n, bool ok) goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels)
     {
-        if (gcount() <= len(Δp))
-            throw refuseGoroutineProfileFill();
+        // Go's guard: a labels slice whose length does not match p is dropped.
+        bool writeLabels = labels != nil && len(labels) == len(Δp);
+
+        if (len(Δp) == 0)
+            return ((nint)gcount(), false);
 
         semacquire(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
-        worldStop stw = stopTheWorld(stwGoroutineProfile);
-        nint n = gcount();
-        startTheWorld(stw);
-        semrelease(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
 
-        // A goroutine exited between the unlocked count and this one: the slice now fits, and the
-        // fill path is still the one this host cannot take.
-        if (n <= len(Δp))
-            throw refuseGoroutineProfileFill();
+        try
+        {
+            GoroutineProfileEntry[] snapshot;
+            worldStop stw = stopTheWorld(stwGoroutineProfile);
 
-        return (n, false);
+            try
+            {
+                snapshot = Goroutine.ProfileSnapshot();
+            }
+            finally
+            {
+                startTheWorld(stw);
+            }
+
+            nint n = snapshot.Length;
+
+            if (n > len(Δp))
+                return (n, false);
+
+            for (nint i = 0; i < n; i++)
+            {
+                GoroutineProfileEntry entry = snapshot[(int)i];
+
+                Δp[i] = new profilerecord.StackRecord(
+                    Stack: entry.Function is null
+                        ? default!
+                        : new uintptr[] { (uintptr)GoSyntheticPC.Of(entry.Function) }.slice());
+
+                if (writeLabels)
+                    labels[i] = (entry.Labels as @unsafe.Pointer)!;
+            }
+
+            return (n, true);
+        }
+        finally
+        {
+            semrelease(ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡsema));
+        }
     }
-
-    private static PanicException refuseGoroutineProfileFill() =>
-        new("runtime: goroutineProfileWithLabels: filling the profile records each goroutine's stack through sys.GetCallerSP/GetCallerPC, which do not exist in the managed model; only the count is kept (runtime/pprof's goroutine profile has its own managed body)");
 
     // runtime/debug.WriteHeapDump (heapdump.go), ruling Q4 (a): the pair, and a well-formed MINIMAL
     // dump: the header, the params record and the EOF tag, no objects. Go's dump walks its own heap

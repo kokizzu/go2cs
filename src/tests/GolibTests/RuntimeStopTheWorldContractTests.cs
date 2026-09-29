@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -11,6 +14,7 @@ using debug = go.runtime.debug_package;
 using metrics = go.runtime.metrics_package;
 using @unsafe = go.unsafe_package;
 using Δruntime = go.runtime_package;
+using Goroutine = go.golib.Goroutine;
 
 namespace GolibTests;
 
@@ -24,8 +28,8 @@ namespace GolibTests;
 // stop the runtime row reaches (runtime.GC, GOMAXPROCS, ReadMemStats, Stack, GoroutineProfile,
 // debug.WriteHeapDump, trace.Start): the shape of TestSchedPauseMetrics' subtests, which count the samples each
 // call adds in each class. The leak arms cover worldsema and metricsSema (ruling 2026-09-28 02:10,
-// Q1); the crossing arm is TestReadMetrics' raw []Sample address (Q2); GoroutineProfile's count path
-// and its fill-path refusal are Q3; the minimal heap dump is Q4 (a).
+// Q1); the crossing arm is TestReadMetrics' raw []Sample address (Q2); GoroutineProfile's count path is
+// Q3 and its fill path A9 (the body runtime/pprof's profile now forwards to); the minimal heap dump is Q4 (a).
 [TestClass]
 public class RuntimeStopTheWorldContractTests
 {
@@ -223,8 +227,10 @@ public class RuntimeStopTheWorldContractTests
 
     // ---- the profile, the dump and the metrics crossing ----------------------------------------
 
+    // Go's goroutineProfileWithLabelsConcurrent answers an EMPTY slice with (gcount(), false) and "without
+    // bothering to STW"; every other call stops the world, so a too-short slice records a pause too.
     [TestMethod]
-    public void GoroutineProfileCountsWithoutFillingAndRecordsAnOtherPause()
+    public void AnEmptyGoroutineProfileCountsWithoutStoppingTheWorld()
     {
         var before = GoStwPauseSampleCounts();
         (nint n, bool ok) = Δruntime.GoroutineProfile(new slice<Δruntime.StackRecord>(0));
@@ -232,23 +238,105 @@ public class RuntimeStopTheWorldContractTests
 
         Assert.IsFalse(ok, $"n {n}: a zero-length record slice cannot hold the profile");
         Assert.IsTrue(n >= 1, $"n {n}: the calling goroutine exists");
-        AssertMoved(before, after, gc: false, "runtime.GoroutineProfile");
+        Assert.AreEqual(before, after, "an empty GoroutineProfile slice stopped the world; Go's does not");
     }
 
+    // TestSchedPauseMetrics/runtime.GoroutineProfile's own call: a one-record slice.
     [TestMethod]
-    public void AGoroutineProfileFillRefusesByNameAndLeavesWorldsemaFree()
+    public void AOneRecordGoroutineProfileRecordsAnOtherPause()
     {
-        // A GUARD, green before and after: the fill path needs every goroutine's stack, which only
-        // runtime/pprof's managed body has, so it refuses by name BEFORE any semaphore.
-        slice<Δruntime.StackRecord> records = new(1 << 16);
+        channel<int> c = new(0);
 
-        PanicException refusal = Assert.ThrowsException<PanicException>(() => Δruntime.GoroutineProfile(records));
+        try
+        {
+            using (Goroutine.Enter())
+            {
+                // A second goroutine, so the one record cannot hold the profile whatever else is live.
+                builtin.goǃ(ProfileParked, c);
+                AwaitParked(1);
 
-        StringAssert.StartsWith(refusal.Message, "runtime: goroutineProfileWithLabels:");
-        (string? firstFailure, bool secondCompleted) = GoStopTheWorldTwiceProbe(TimeoutMs);
-        Assert.IsTrue(secondCompleted, $"worldsema was left held; a stop after the refusal: {firstFailure ?? "ok"}");
+                var before = GoStwPauseSampleCounts();
+                (nint n, bool ok) = Δruntime.GoroutineProfile(new slice<Δruntime.StackRecord>(1, () => new()));
+                var after = GoStwPauseSampleCounts();
+
+                Assert.IsFalse(ok, $"n {n}: one record cannot hold two goroutines");
+                Assert.IsTrue(n >= 2, $"n {n}: the caller and its parked child exist");
+                AssertMoved(before, after, gc: false, "runtime.GoroutineProfile");
+            }
+        }
+        finally
+        {
+            c.Close();
+        }
     }
 
+    // The FILL path, over golib's goroutine registry: every user goroutine is one record whose stack
+    // is its start function's synthetic PC (the bottom frame of the traceback Go's saveg records), the
+    // world is stopped once, and worldsema is free afterwards.
+    [TestMethod]
+    public void AGoroutineProfileFillRecordsEveryGoroutineByItsStartFunction()
+    {
+        channel<int> c = new(0);
+
+        try
+        {
+            using (Goroutine.Enter())
+            {
+                for (int i = 0; i < 3; i++)
+                    builtin.goǃ(ProfileParked, c);
+
+                AwaitParked(3);
+
+                slice<Δruntime.StackRecord> records = new(1 << 16, () => new());
+
+                var before = GoStwPauseSampleCounts();
+                (nint n, bool ok) = Δruntime.GoroutineProfile(records);
+                var after = GoStwPauseSampleCounts();
+
+                Assert.IsTrue(ok, $"n {n}: {len(records)} records hold the whole profile");
+                Assert.IsTrue(n >= 4, $"n {n}: the caller and its three parked children exist");
+                AssertMoved(before, after, gc: false, "runtime.GoroutineProfile (fill)");
+
+                uintptr parked = (uintptr)GoSyntheticPC.Of(ProfileParkedMethod);
+                int atParked = 0;
+
+                for (nint i = 0; i < n; i++)
+                {
+                    if (records[i].Stack0[0] == parked)
+                        atParked++;
+                }
+
+                Assert.AreEqual(3, atParked, $"records whose stack is ProfileParked's synthetic PC, of n {n}");
+
+                (string? firstFailure, bool secondCompleted) = GoStopTheWorldTwiceProbe(TimeoutMs);
+                Assert.IsTrue(secondCompleted, $"worldsema was left held; a stop after the fill: {firstFailure ?? "ok"}");
+            }
+        }
+        finally
+        {
+            c.Close();
+        }
+    }
+
+    // NoInlining: this frame IS the start function the fill arm identifies its records by.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ProfileParked(channel<int> c) => c.Receive();
+
+    private static MethodBase ProfileParkedMethod =>
+        typeof(RuntimeStopTheWorldContractTests).GetMethod(nameof(ProfileParked), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    // Waits until golib's registry holds `count` goroutines started at ProfileParked, so the profile
+    // taken next cannot race their registration.
+    private static void AwaitParked(int count)
+    {
+        RuntimeMethodHandle parked = ProfileParkedMethod.MethodHandle;
+        int Live() => Goroutine.ProfileSnapshot().Count(e => e.Function is not null && e.Function.MethodHandle == parked);
+
+        for (int i = 0; i < 600 && Live() < count; i++)
+            Thread.Sleep(5);
+
+        Assert.AreEqual(count, Live(), "goroutines started at ProfileParked");
+    }
     [TestMethod]
     public void WriteHeapDumpWritesAMinimalDumpAndRecordsAnOtherPause()
     {

@@ -711,11 +711,11 @@ public sealed class Goroutine
     /// <remarks>
     /// <para>
     /// The ONE snapshot primitive the profile and the tracer share, rather than a second registry
-    /// walk beside <see cref="Snapshot"/>. It is public because its first consumer —
-    /// <c>runtime/pprof</c>'s <c>pprof_goroutineProfileWithLabels</c> — is a different assembly from
-    /// the hand-owned <c>runtime</c> package that golib's <c>InternalsVisibleTo</c> reaches, and no
-    /// forwarder can exist between them (a <c>runtime → runtime/pprof</c> project reference closes
-    /// the W1 cycle).
+    /// walk beside <see cref="Snapshot"/>. Its consumer is the hand-owned <c>runtime</c> package's
+    /// <c>goroutineProfileWithLabels</c>, which <c>runtime/pprof</c> reaches through its
+    /// <c>pprof_goroutineProfileWithLabels</c> linkname forwarder (A9). It is public because its FIRST
+    /// consumer was <c>runtime/pprof</c>'s own hand-owned body, a different assembly from the
+    /// <c>runtime</c> package that golib's <c>InternalsVisibleTo</c> reaches.
     /// </para>
     /// <para>
     /// It exposes the two facts a profile records and NOTHING ELSE — deliberately no goroutine id,
