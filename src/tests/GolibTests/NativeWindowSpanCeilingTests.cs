@@ -161,4 +161,53 @@ public class NativeWindowSpanCeilingTests
             Marshal.FreeHGlobal((nint)addr);
         }
     }
+
+    // Not run RED: before the refusal, both appends WROTE Array.MaxLength elements past a 16-byte
+    // block, into memory this test does not own. The refusal must come before the write.
+    [TestMethod]
+    public void AnAppendInPlacePastTheSpanCeilingIsRefusedBeforeItWrites()
+    {
+        nuint addr = AllocBlock();
+
+        try
+        {
+            // len == Array.MaxLength (the longest window accepted) over a reservation of 2^32+k.
+            global::go.slice<byte> window = global::go.slice<byte>.OverNativeMemory(addr, Array.MaxLength, (nint)WrappingLength);
+            Assert.AreEqual((nint)Array.MaxLength, window.Length, "the longest window a span can express is accepted");
+
+            AssertNamedRefusal(Capture(() => _ = global::go.slice<byte>.Append(window, (byte)1)), "Append in place", "it was accepted");
+            AssertNamedRefusal(Capture(() => _ = builtin.appendꓸꓸꓸ(window, builtin.makeꓸꓸꓸ<byte>(1))), "AppendZeroed in place", "it was accepted");
+        }
+        finally
+        {
+            Marshal.FreeHGlobal((nint)addr);
+        }
+    }
+
+    [TestMethod]
+    public void GrowthThatFitsClampsItsCapacityToArrayMaxLength()
+    {
+        nuint addr = AllocBlock();
+
+        try
+        {
+            // One short of the ceiling, full: the growth rule's capacity (1.25x) passes Array.MaxLength
+            // while the needed length does not. Only the capacity is computed; nothing is allocated.
+            global::go.slice<byte> nearlyFull = global::go.slice<byte>.OverNativeMemory(addr, Array.MaxLength - 1);
+
+            Assert.AreEqual((nint)Array.MaxLength, global::go.slice<byte>.GrowCapacity(nearlyFull, Array.MaxLength), "a length that fits clamps to the ceiling");
+
+            Exception? thrown = Capture(() => _ = global::go.slice<byte>.GrowCapacity(nearlyFull, (nint)Array.MaxLength + 1));
+            Assert.IsInstanceOfType(thrown, typeof(PanicException));
+            Assert.AreEqual(GrowSliceText, thrown!.Message);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal((nint)addr);
+        }
+
+        // Control: below the ceiling the growth rule is untouched (len 4, cap 4, one more: 8).
+        global::go.slice<byte> small = new(4);
+        Assert.AreEqual((nint)8, global::go.slice<byte>.GrowCapacity(small, 5));
+    }
 }

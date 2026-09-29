@@ -131,8 +131,11 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return (nuint)NativeElementPointer(index);
     }
 
+    // Every native window is cut here: the door, Reslice, and append in place.
     private slice(nuint nativeBase, nint low, nint high, nint max)
     {
+        RefuseNativeWindowBeyondSpan(high - low);
+
         m_array = [];
         m_nativeBase = nativeBase;
         m_low = low;
@@ -174,6 +177,17 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             throw new PanicException($"native-backed slice: capacity {capacity} is smaller than length {length}");
 
         return new slice<T>(baseAddress, 0, length, capacity);
+    }
+
+    // A native window LONGER than any span is refused by name (CENSUS-golib-int32-narrowings S4/S4b):
+    // ToSpan, and every bulk operation through it, would narrow its length, and 2^32 + k would read k
+    // elements, silently. Only the LENGTH is bounded. A short window over a longer reservation (the
+    // header-slice rebase's cap) spans only its length, and growing past its cap is append's own
+    // growslice bound. A zero-size T never spans its storage and keeps Go's unbounded length.
+    private static void RefuseNativeWindowBeyondSpan(nint length)
+    {
+        if (length > Array.MaxLength && !GoZeroSizeFacts<T>.IsZeroSize)
+            throw RuntimeErrorPanic.NativeSliceBeyondManagedSpan(length);
     }
 
     public slice()
@@ -1370,6 +1384,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             // memory is storage like any other (design §2.3).
             if (slice.m_nativeBase != 0)
             {
+                // Refused BEFORE the write, not by the window's constructor after it.
+                RefuseNativeWindowBeyondSpan(slice.m_length + elems.Length);
+
                 unsafe
                 {
                     elems.CopyTo(new Span<T>(slice.NativeElementPointer(slice.m_length), elems.Length));
@@ -1391,7 +1408,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         // native backing this is the design's §2.3 answer verbatim: the new backing is MANAGED,
         // writes through the grown slice stop reaching the mapping, and the original slice still
         // aliases it. The mapping plays the role of "the old array" in Go's own spec.
-        nint newCapacity = CalculateNewCapacity(slice, slice.Length + elems.Length);
+        nint newCapacity = GrowCapacity(slice, slice.Length + elems.Length);
         newArray = AllocationCounter.NewArray<T>(newCapacity);
         GoMemProfile.Charge<T>(newArray, newCapacity);
 
@@ -1449,7 +1466,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
             // A native window past the span ceiling cannot land in any managed backing either —
             // Go's growslice answers the same impossible request with this panic.
-            throw new PanicException("runtime error: growslice: len out of range");
+            throw RuntimeErrorPanic.GrowSliceLenOutOfRange();
         }
 
         // A named-slice wrapper (or any foreign ISlice<T>): its own spread property is the same
@@ -1506,6 +1523,9 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         {
             if (slice.m_nativeBase != 0)
             {
+                // Refused BEFORE the clear, not by the window's constructor after it.
+                RefuseNativeWindowBeyondSpan(slice.m_length + count);
+
                 unsafe
                 {
                     new Span<T>(slice.NativeElementPointer(slice.m_length), (int)count).Clear();
@@ -1519,7 +1539,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
             return new slice<T>(slice.m_array, slice.m_low, slice.High + count, slice.m_low + slice.m_capacity);
         }
 
-        nint newCapacity = CalculateNewCapacity(slice, slice.Length + count);
+        nint newCapacity = GrowCapacity(slice, slice.Length + count);
         newArray = AllocationCounter.NewArray<T>(newCapacity);
         GoMemProfile.Charge<T>(newArray, newCapacity);
 
@@ -1531,6 +1551,19 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
     public static slice<T> Append(in slice<T> slice, params T[] elems)
     {
         return Append(slice, elems.AsSpan());
+    }
+
+    // Go's growslice for an element type with storage (CENSUS-golib-int32-narrowings E1): a grown
+    // length no managed T[] can hold is Go's own recoverable "growslice: len out of range", and one
+    // that fits clamps the growth rule's capacity to that ceiling (Go would over-allocate past it;
+    // here that capacity does not exist), so an append that fits never escapes as the CLR's
+    // OutOfMemoryException.
+    internal static nint GrowCapacity(in slice<T> slice, nint neededLength)
+    {
+        if (neededLength > Array.MaxLength)
+            throw RuntimeErrorPanic.GrowSliceLenOutOfRange();
+
+        return Math.Min(CalculateNewCapacity(slice, neededLength), Array.MaxLength);
     }
 
     private static nint CalculateNewCapacity(in slice<T> slice, nint neededCapacity)
