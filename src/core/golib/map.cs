@@ -12,7 +12,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using go.golib;
 
 namespace go;
@@ -195,8 +194,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         /// </summary>
         public int GoGrowAt;
 
-        /// <summary>Stand-ins whose lifetimes are the modelled tables' and directory's, so a growth frees them.</summary>
-        public object? GoTables, GoDirectory;
+        /// <summary>Whether a sample was ever taken from this map's modelled storage (see setSampled).</summary>
+        public bool GoSampled;
     }
 
     // Go compares interface KEYS by (dynamic type, dynamic value) — the same relation `==` uses — but
@@ -329,8 +328,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
                 setReplacingKey(key, value);
             else if (s_keyNeedsClone || s_keyMayHoldClonable && keyNeedsClone(key))
                 setCopyingKey(key, value);
-            else if (storeReportsOverwrite(key, value))
-                return;
+            else
+                m_map[key] = value;
 
             noteStore();
         }
@@ -412,8 +411,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
             setReplacingKey(key, value);
         else if (s_keyNeedsClone || s_keyMayHoldClonable && keyNeedsClone(key))
             setCopyingKey(key, value);
-        else if (storeReportsOverwrite(key, value))
-            return;
+        else
+            m_map[key] = value;
 
         noteStore();
     }
@@ -570,8 +569,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     //   - past 7/8 load: table.grow, new(table) and the groups of a table twice the size, up to 1024 slots;
     //   - past 1024 slots: table.split, two 1024-slot tables per table, and the directory doubled once.
     // make(map, hint) with hint > 8 charges NewMap's directory and tables at make. The model is state only
-    // (GoGrowAt), advanced only while MemProfileRate > 0: an overwrite pays nothing, and with profiling off a
-    // new key pays a compare and one static read.
+    // (GoGrowAt) plus, for a map a sample was taken from, the stand-ins its storage lives with.
     //
     // Differences, stated rather than modelled: Go keeps a non-escaping map's first group on the stack, and
     // its header too (both uncharged in Go); a delete here always frees its slot, where Go sometimes leaves
@@ -583,23 +581,14 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     // Go's per-table limit, maxTableCapacity.
     private const int GoMaxTableCapacity = 1024;
 
-    // The common store: the key as given, with Go's overwrite. It reports whether the key was already
-    // present, so an overwrite -- which never grows a Go map -- returns before the growth check at no cost
-    // beyond a flag the store computes anyway.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool storeReportsOverwrite(TKey key, TValue value)
-    {
-        CollectionsMarshal.GetValueRefOrAddDefault(m_map, key, out bool exists) = value;
-        return exists;
-    }
-
-    // The mark that a store has taken the map past, while the profile is on: len(m) is read without the
-    // nil-key slot for a value-type key (a JIT-time constant, so the branch folds away), and the rate is
-    // read only past the mark.
+    // The only code a store gains: one compare against the mark and a branch. len(m) is read without the
+    // nil-key slot for a value-type key (a JIT-time constant, so the branch folds away). Everything else,
+    // the rate included, is behind the branch, which a map takes only at the entry counts where Go's grows,
+    // whether or not the profile is on: with it off the model still advances, charging nothing.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void noteStore()
     {
-        if ((typeof(TKey).IsValueType ? m_map.Count : Count) > m_map.GoGrowAt && GoMemProfile.Rate > 0)
+        if ((typeof(TKey).IsValueType ? m_map.Count : Count) > m_map.GoGrowAt)
             growModel(m_map, Count);
     }
 
@@ -608,8 +597,37 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void growModel(NilKeyDictionary store, int count)
     {
+        bool profiling = GoMemProfile.Rate > 0;
+
         while (count > store.GoGrowAt)
-            growStep(store, charge: count == store.GoGrowAt + 1);
+            growStep(store, charge: profiling && count == store.GoGrowAt + 1);
+    }
+
+    // The stand-ins a SAMPLED map's current tables and directory live and die with, kept beside the store
+    // rather than on it so an unsampled map carries nothing: replacing one at a growth frees the old.
+    private sealed class GoSampledStorage
+    {
+        public object? Tables, Directory;
+    }
+
+    private static readonly ConditionalWeakTable<NilKeyDictionary, GoSampledStorage> s_sampledStorage = new();
+
+    // The table is consulted only for a map already sampled (GoSampled): a lookup hashes the store's
+    // identity, which a growth step must not pay for a map nothing was ever sampled from.
+    private static void setSampled(NilKeyDictionary store, object? tables, object? directory, bool replacesDirectory)
+    {
+        if (store.GoSampled && s_sampledStorage.TryGetValue(store, out GoSampledStorage? sampled))
+        {
+            sampled.Tables = tables;
+
+            if (replacesDirectory)
+                sampled.Directory = directory;
+        }
+        else if (tables is not null || directory is not null)
+        {
+            store.GoSampled = true;
+            s_sampledStorage.AddOrUpdate(store, new GoSampledStorage { Tables = tables, Directory = directory });
+        }
     }
 
     private static void growStep(NilKeyDictionary store, bool charge)
@@ -619,7 +637,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (mark == 0)
         {
             // growToSmall: one group.
-            store.GoTables = charge ? chargeTables(1, 0, GoMapLayout.GroupBytes) : null;
+            setSampled(store, charge ? chargeTables(1, 0, GoMapLayout.GroupBytes) : null, null, replacesDirectory: false);
             store.GoGrowAt = GoMapLayout.GroupSlots;
             return;
         }
@@ -627,8 +645,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (mark == GoMapLayout.GroupSlots)
         {
             // growToTable: a 16-slot table, then its one-entry directory.
-            store.GoTables = charge ? chargeTables(1, 2 * GoMapLayout.GroupSlots, 0) : null;
-            store.GoDirectory = charge ? chargeDirectory(1) : null;
+            object? table = charge ? chargeTables(1, 2 * GoMapLayout.GroupSlots, 0) : null;
+            setSampled(store, table, charge ? chargeDirectory(1) : null, replacesDirectory: true);
             store.GoGrowAt = growthLeft(2 * GoMapLayout.GroupSlots);
             return;
         }
@@ -638,14 +656,14 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (2 * capacity <= GoMaxTableCapacity)
         {
             // table.grow: each table replaced by one twice its size.
-            store.GoTables = charge ? chargeTables(tables, 2 * capacity, 0) : null;
+            setSampled(store, charge ? chargeTables(tables, 2 * capacity, 0) : null, null, replacesDirectory: false);
             store.GoGrowAt = tables * growthLeft(2 * capacity);
             return;
         }
 
         // table.split: each full table replaced by two, and the directory doubled once (by the first split;
         // the rest find their local depth already below the new global depth).
-        object? replaced = null;
+        object? replaced = null, directory = null;
 
         for (int i = 0; i < tables; i++)
         {
@@ -655,11 +673,11 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
                 chargeTable(ref replaced, GoMaxTableCapacity);
             }
 
-            if (i == 0)
-                store.GoDirectory = charge ? chargeDirectory(2 * tables) : null;
+            if (i == 0 && charge)
+                directory = chargeDirectory(2 * tables);
         }
 
-        store.GoTables = replaced;
+        setSampled(store, replaced, directory, replacesDirectory: true);
         store.GoGrowAt = 2 * tables * growthLeft(GoMaxTableCapacity);
     }
 
@@ -683,8 +701,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         if (GoMemProfile.Rate <= 0)
             return;
 
-        store.GoDirectory = chargeDirectory((int)directory);
-        store.GoTables = chargeTables((int)directory, capacity, 0);
+        object? charged = chargeDirectory((int)directory);
+        setSampled(store, chargeTables((int)directory, capacity, 0), charged, replacesDirectory: true);
     }
 
     // A mark's table state: a map past 896 entries holds only full-size tables.
