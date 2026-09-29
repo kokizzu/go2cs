@@ -55,7 +55,7 @@ internal static class GoZeroSizeFacts<T>
     /// <typeparamref name="T"/>, so every gate written against it folds at JIT time and no ordinary
     /// element type pays for the branch.
     /// </summary>
-    internal static readonly bool IsZeroSize = Classify(typeof(T));
+    internal static readonly bool IsZeroSize = GoZeroSizeFacts.Classify(typeof(T));
 
     /// <summary>
     /// The ONE element every zero-size value of <typeparamref name="T"/> is — golib's
@@ -64,8 +64,17 @@ internal static class GoZeroSizeFacts<T>
     /// Non-zero-size types get <see cref="Array.Empty{T}"/> and never read it.
     /// </summary>
     internal static readonly T[] Storage = IsZeroSize ? new T[1] : [];
+}
 
-    private static bool Classify(Type type)
+/// <summary>
+/// The zero-size rule itself, asked of a <see cref="Type"/>: the ONE source of the fact. <see cref="GoZeroSizeFacts{T}"/>
+/// caches it per closed type, and <see cref="GoLayoutFacts{T}"/> asks it of each field type
+/// its layout walk meets, which a generic cache cannot answer without closing a generic type per field.
+/// </summary>
+internal static class GoZeroSizeFacts
+{
+    /// <summary>Whether <paramref name="type"/> occupies no storage in Go (see <see cref="GoZeroSizeFacts{T}"/>).</summary>
+    internal static bool Classify(Type type)
     {
         // A reference is a pointer-sized value in Go's terms and in .NET's; a primitive, enum or
         // pointer has a width by definition. Only a struct can be zero-size.
