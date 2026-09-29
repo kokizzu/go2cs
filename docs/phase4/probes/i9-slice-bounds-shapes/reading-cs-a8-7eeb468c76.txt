@@ -1,0 +1,29 @@
+slice [:hi>cap]          runtime error: slice bounds out of range [:11] with capacity 10 | runtime.Error=true || rc=0
+slice [:len<hi<=cap]     <nil> | runtime.Error=false || rc=0
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+slice [4:2]              runtime error: slice bounds out of range [4:2] | runtime.Error=true || rc=0
+slice [4:]               runtime error: slice bounds out of range [4:3] | runtime.Error=true || rc=0
+slice [:big]             <nil> | runtime.Error=false || rc=0
+slice [big:]             runtime error: slice bounds out of range [5:3] | runtime.Error=true || rc=0
+slice [:i64]             <nil> | runtime.Error=false || rc=0
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+slice [:u32]             runtime error: slice bounds out of range [:11] with capacity 10 | runtime.Error=true || rc=0
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+named [4:2]              runtime error: slice bounds out of range [4:2] | runtime.Error=true || rc=0
+array [:5]               runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+array [4:2]              runtime error: slice bounds out of range [4:2] | runtime.Error=true || rc=0
+array [4:]               runtime error: slice bounds out of range [4:3] | runtime.Error=true || rc=0
+ptrarray [:5]            runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+namedarr [:5]            runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+string [:5]              runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+System.ArgumentOutOfRangeException: Non-negative number required. (Parameter 'value') || rc=2
+string [4:2]             runtime error: slice bounds out of range [4:2] | runtime.Error=true || rc=0
+string [4:]              runtime error: slice bounds out of range [4:3] | runtime.Error=true || rc=0
+string [:big]            runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+namedstr [:5]            runtime error: slice bounds out of range [:5] with length 3 | runtime.Error=true || rc=0
+System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. || rc=2
+System.ArgumentOutOfRangeException: Specified argument was out of the range of valid values. || rc=2
