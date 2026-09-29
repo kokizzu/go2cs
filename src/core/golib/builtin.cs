@@ -332,6 +332,10 @@ public static partial class builtin
         if (panic is null || panic.Recovered)
             return null;
 
+        // Go's panicCheck1: a bounds or shift panic raised in package runtime is a fatal error that
+        // recover() never sees. Decided here, from the frames the panic carries, never at the raise.
+        RuntimePanicCheck.FatalIfRaisedInRuntime(panic);
+
         panic.Recovered = true;
 
         // The traceback view (GoFuncRoot.InFlightPanic) falls back to the captured slot, and a
