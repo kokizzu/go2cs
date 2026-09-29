@@ -38,6 +38,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using @unsafe = go.unsafe_package;
 
 [module: go.GoManualConversion]
 
@@ -101,6 +102,22 @@ partial class runtime_package
     {
         return (nuint)parseHugePageSize(text);
     }
+
+    // The linux thread primitives, which Go implements in assembly (sys_linux_amd64.s) and the host filled
+    // with a NotImplementedException stub, recorded by the test host as an infrastructure-error that no
+    // manifest entry can disclose (runtime's TestNewOSProc0 and TestSignalM).
+    //   getpid answers the process id, which is exactly what it is.
+    //   clone starts a function pointer on a new OS thread with a caller-supplied stack; a goroutine here is
+    //   a CLR thread with no M and no g0 stack, so that has no managed meaning and refuses by name.
+    //   tgkill signals ONE thread of the process; an M here has no kernel thread id of its own, so it
+    //   refuses by name too. Each panic names the primitive and why, in the spelling the other refusals use.
+    internal static partial nint getpid() => (nint)Environment.ProcessId;
+
+    internal static partial int32 clone(int32 flags, @unsafe.Pointer stk, @unsafe.Pointer mp, @unsafe.Pointer gp, @unsafe.Pointer fn) =>
+        throw panic("runtime: clone: goroutines are CLR threads, so a raw clone syscall that starts a function pointer on a new OS thread has no managed meaning");
+
+    internal static partial void tgkill(nint tgid, nint tid, nint sig) =>
+        throw panic("runtime: tgkill: an M here is a CLR thread with no kernel thread id of its own, so a signal cannot be sent to one thread of the process");
 
     // Three probes for the GolibTests seam over the linux thread primitives below (GolibTests is outside the
     // InternalsVisibleTo grant). Linux-only by construction, like the file; the test finds them by reflection.
