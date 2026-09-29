@@ -123,12 +123,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using go.golib;
 // The plain namespace using is what brings internal/runtime/atomic's [GoRecv] extension methods
 // (Int64.Load and friends) into scope — an alias alone does not participate in extension lookup.
 using go.@internal.runtime;
+using abi = go.@internal.abi_package;
 using profilerecord = go.@internal.profilerecord_package;
 using @unsafe = go.unsafe_package;
 
@@ -2928,6 +2930,95 @@ partial class runtime_package
             b[i] = fill;
 
         return s;
+    }
+
+    // efaceHash (alg.go) is the hash Go gives an interface value. Go's body hands nilinterhash a pointer
+    // to the interface variable, which reads the eface and hashes its data word by the dynamic type.
+    // Here the variable is a managed reference with no address, so the converted body died in the
+    // arm-2a refusal ("*eface over 0x...") and took runtime's TestSmhasherAvalanche with it. This
+    // hashes the dynamic VALUE instead, on Go's own rules for the part that is expressible: a nil
+    // interface hashes to its seed, an unhashable dynamic type panics naming it (the topmost type, as
+    // Go's comment asks), and the value is hashed as c1 * typehash(t, value, seed ^ c0).
+    //
+    // typehash over a managed value covers the two shapes whose memory is the value itself: a
+    // regular-memory kind (bool, the integers, uintptr) hashed over its own bytes at Go's size (the
+    // memhash32/memhash64/memhash split typehash applies), and a string hashed over its content
+    // (strhash is memhash over the bytes). Every other kind (floats, complex, arrays, structs,
+    // nested interfaces, pointers) needs a walk over fields or an address this host does not have,
+    // and is refused by name below instead of hashed to a number that would look real.
+    //
+    // ifaceHash stays converted: its signature lifts a dynamic interface (interface{ F() }) whose
+    // GoDynamicTypeLift record the converter publishes only from a converted declaration, and the
+    // -tests conversion of export_test.go resolves IfaceHash's type through that record.
+    internal static uintptr efaceHash(any i, uintptr seed) => interfaceValueHash(i, seed);
+
+    private sealed class RawBoxData
+    {
+        public byte Data;
+    }
+
+    private static uintptr interfaceValueHash(object? v, uintptr h)
+    {
+        if (v is null)
+            return h;
+
+        ж<_type> Ꮡt = abi.TypeOf(v);
+
+        if ((~Ꮡt).Equal == default!)
+            throw panic(((errorString)("hash of unhashable type "u8 + toRType(Ꮡt).@string())));
+
+        return c1 * dynamicValueHash(Ꮡt, v, (uintptr)(h ^ c0));
+    }
+
+    private static uintptr dynamicValueHash(ж<_type> Ꮡt, object v, uintptr h)
+    {
+        // The value the descriptor describes: an adapter carrier unwraps to the Go value it stands for,
+        // as abi.TypeOf's own classification did.
+        while (v is IInterfaceAdapter { Value: not null } carrier)
+            v = carrier.Value;
+
+        if (v is IValueAdapter { Value: not null } valueAdapter)
+            v = valueAdapter.Value;
+
+        abi.ΔKind kind = (abi.ΔKind)(Ꮡt.Value.Kind_ & abi.KindMask);
+
+        if (kind >= abi.Bool && kind <= abi.Uintptr)
+        {
+            // Regular memory: the payload of the boxed value type IS the value, at its Go size.
+            int size = (int)Ꮡt.Value.Size_;
+
+            if (!v.GetType().IsValueType || size == 0)
+                throw panic("runtime: efaceHash: a " + kind + " value of dynamic type " + v.GetType().FullName + " is not a boxed value the managed host can hash");
+
+            byte[] bytes = new byte[size];
+            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<RawBoxData>(v).Data, size).CopyTo(bytes);
+            return hashManagedBytes(bytes, h);
+        }
+
+        if (kind == abi.ΔString && v is @string s)
+        {
+            byte[] bytes = new byte[len(s)];
+            s.ToSpan().CopyTo(bytes);
+            return hashManagedBytes(bytes, h);
+        }
+
+        throw panic("runtime: efaceHash: hashing a " + kind + " value is not implemented by the managed host");
+    }
+
+    // hashManagedBytes hashes a byte[] through the retained-box route memhash accepts (hash_impl.cs, rule 2:
+    // a pointer minted from an element of a managed byte[]), with the memhash32/memhash64 split typehash
+    // applies to a 4- or 8-byte regular-memory type. An empty array has no element to point at, so a
+    // one-byte stand-in carries the pointer for the zero-length hash.
+    private static uintptr hashManagedBytes(byte[] bytes, uintptr h)
+    {
+        @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(@unsafe.StringData(new @string(bytes.Length == 0 ? new byte[1] : bytes)));
+
+        return bytes.Length switch
+        {
+            4 => memhash32(p, h),
+            8 => memhash64(p, h),
+            _ => memhash(p, h, (uintptr)(nuint)bytes.Length)
+        };
     }
 
     // GoEfaceHashProbe is the GolibTests seam for efaceHash (GolibTests is outside the

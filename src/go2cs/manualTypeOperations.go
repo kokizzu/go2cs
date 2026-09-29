@@ -545,6 +545,12 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// anonymous nil dereference (a large request took the whole test host down). Every caller,
 		// gostringw and TestStringW included, goes through it.
 		"rawstring": goosAny,
+		// efaceHash hashes the interface's DYNAMIC VALUE (managed_impl.cs): the converted body reads an eface
+		// through a pointer to the interface variable, which here is a managed reference with no address, so it
+		// died in the arm-2a refusal and took runtime's TestSmhasherAvalanche with it. ifaceHash is NOT
+		// registered: displacing it drops the GoDynamicTypeLift record for its interface{ F() } parameter,
+		// and the -tests conversion of export_test.go fails on the unresolved type.
+		"efaceHash": goosAny,
 		// User arenas over managed allocations (arena_impl.cs). Go carves them from its own heap:
 		// newUserArena reached fixalloc before FixAlloc_Init and threw. The arena keeps a strong list
 		// of its allocations, made through reflect's bridge, and arena_heapify tests membership on
