@@ -27,53 +27,53 @@ partial class main_package {
 
 internal static uint64 closureLocal() {
     uint64 record(slice<nint> samples) {
-        hist h = new();
+        ref var h = ref heap(new hist(), out var Ꮡh);
         foreach (var (_, s) in samples) {
-            Ꮡh.counts.at<atomic.Uint64>(s % 4).Add(1);
+            Ꮡh.at(hist.Ꮡcounts, s % 4).Add(1);
         }
-        return Ꮡh.counts.at<atomic.Uint64>(1).Load();
+        return Ꮡh.at(hist.Ꮡcounts, 1).Load();
     }
     return record(new nint[]{1, 5, 2, 9}.slice());
 }
 
 internal static uint64 fieldArrayMethod() {
-    hist h = new();
-    Ꮡh.counts.at<atomic.Uint64>(2).Add(3);
-    Ꮡh.counts.at<atomic.Uint64>(2).Add(4);
-    return Ꮡh.counts.at<atomic.Uint64>(2).Load();
+    ref var h = ref heap(new hist(), out var Ꮡh);
+    Ꮡh.at(hist.Ꮡcounts, 2).Add(3);
+    Ꮡh.at(hist.Ꮡcounts, 2).Add(4);
+    return Ꮡh.at(hist.Ꮡcounts, 2).Load();
 }
 
 internal static uint64 nestedFieldArrayMethod() {
-    wrap w = new();
-    Ꮡw.h.counts.at<atomic.Uint64>(3).Add(5);
-    return Ꮡw.h.counts.at<atomic.Uint64>(3).Load();
+    ref var w = ref heap(new wrap(), out var Ꮡw);
+    Ꮡw.of(wrap.Ꮡh).at(hist.Ꮡcounts, 3).Add(5);
+    return Ꮡw.of(wrap.Ꮡh).at(hist.Ꮡcounts, 3).Load();
 }
 
 internal static uint64 localArrayMethod() {
-    array<atomic.Uint64> a = new(4);
+    ref var a = ref heap(new array<atomic.Uint64>(4), out var Ꮡa);
     Ꮡa.at<atomic.Uint64>(2).Add(6);
     return Ꮡa.at<atomic.Uint64>(2).Load();
 }
 
 internal static nint explicitAddress() {
-    hist h = new();
-    var p = Ꮡh.plain.at<nint>(1);
+    ref var h = ref heap(new hist(), out var Ꮡh);
+    var p = Ꮡh.at(hist.Ꮡplain, 1);
     p.Value = 7;
     p.Value += 1;
     return h.plain[1];
 }
 
-internal static nint paramAddress(hist h) {
-    h = h.ΔClone();
+internal static nint paramAddress(hist hʗp) {
+    ref var h = ref heap(hʗp.ΔClone(), out var Ꮡh);
 
-    var p = Ꮡh.plain.at<nint>(2);
+    var p = Ꮡh.at(hist.Ꮡplain, 2);
     p.Value = 9;
     return h.plain[2];
 }
 
 internal static nint methodValue() {
-    hist h = new();
-    var f = Ꮡh.local.at<counter>(1).inc;
+    ref var h = ref heap(new hist(), out var Ꮡh);
+    var f = Ꮡh.at(hist.Ꮡlocal, 1).inc;
     f();
     f();
     return h.local[1].n;
