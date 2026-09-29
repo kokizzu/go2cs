@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"unsafe"
 )
 
@@ -62,4 +63,63 @@ func main() {
 	// A whole-struct assignment writes every byte, which stays correct under explicit layout.
 	c = Counter{}
 	fmt.Println("cleared:", c.v)
+
+	namedZeroSizeWrites()
+}
+
+// A NAMED zero-size field shares its offset with V, and is readonly in the emission. Go stores
+// nothing for a zero-size value, whichever way the write arrives, so V must keep every byte.
+type Carrier struct {
+	Z nocopy
+	V uint64
+}
+
+type Outer struct {
+	C Carrier
+}
+
+const pattern = 0x0102030405060708
+
+var sideCalls int
+
+func side() nocopy {
+	sideCalls++
+	return nocopy{}
+}
+
+func namedZeroSizeWrites() {
+	var x Carrier
+	x.V = pattern
+	rx := reflect.ValueOf(&x).Elem()
+
+	// Through reflect: Set, and a write through the pointer reflect hands out.
+	rx.Field(0).Set(reflect.ValueOf(nocopy{}))
+	fmt.Printf("after reflect Set: %#x\n", x.V)
+
+	x.V = pattern
+	rp := rx.Field(0).Addr().Interface().(*nocopy)
+	*rp = nocopy{}
+	fmt.Printf("after write through reflect's pointer: %#x\n", x.V)
+
+	// Reflect's address is the field's address.
+	fmt.Println("reflect Addr == &x.Z:", rx.Field(0).Addr().UnsafePointer() == unsafe.Pointer(&x.Z))
+
+	// Assignment through every addressable shape: the right side runs, nothing is stored.
+	x.V = pattern
+	p := &x
+	arr := [2]Carrier{{V: pattern}, {V: pattern}}
+	o := Outer{C: Carrier{V: pattern}}
+	s := []Carrier{{V: pattern}, {V: pattern}}
+
+	x.Z = side()
+	p.Z = side()
+	arr[1].Z = side()
+	o.C.Z = side()
+	s[1].Z = side()
+
+	// A tuple assignment: the zero-size target stores nothing, its neighbour target still stores.
+	var n int
+	x.Z, n = side(), 7
+
+	fmt.Printf("assignments ran %d right sides; n = %d; V: %#x %#x %#x %#x\n", sideCalls, n, x.V, arr[1].V, o.C.V, s[1].V)
 }

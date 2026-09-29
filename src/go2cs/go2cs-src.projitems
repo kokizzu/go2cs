@@ -379,6 +379,7 @@
     <None Include="$(MSBuildThisFileDirectory)wsaSendtoNoCallers_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writtenUnderlyingOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)zeroSizeFieldLayout.go" />
+    <None Include="$(MSBuildThisFileDirectory)zeroSizeFieldStore_test.go" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)csproj-template.xml" />
