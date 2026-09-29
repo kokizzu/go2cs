@@ -2104,9 +2104,13 @@ var linknameForwardTargets = map[string]bool{
 	//
 	// pprof_makeProfStack is the per-GOOS member ({linux,windows,darwin}/proc.cs); runtime.fcntl above
 	// is its exact analogue and already proves the gate composes with a per-GOOS body.
-	// SIX, not seven. pprof_goroutineProfileWithLabels is NOT here: runtime/pprof/pprof_impl.cs is a
-	// hand-owned companion that answers it, and forwarding it would be a REGRESSION, not a completion.
-	// pprof_memProfileInternal WAS left out beside it, answered there by an honest (0, true), until class
+	// ALL SEVEN since A9 (2026-09-29, COORD ruling): pprof_goroutineProfileWithLabels joined last, when
+	// its body moved from the hand-owned runtime/pprof/pprof_impl.cs (now deleted) into runtime's
+	// hand-owned goroutineProfileWithLabels (managed_impl.cs), bracketed by stopTheWorld as Go's is, so
+	// runtime.GoroutineProfile and runtime/pprof's goroutine profile read one body. Until then the text
+	// read "SIX, not seven": runtime/pprof/pprof_impl.cs answered it, and forwarding it would have been
+	// a REGRESSION, because runtime's own body refused its fill path. pprof_memProfileInternal WAS left
+	// out beside it, answered there by an honest (0, true), until class
 	// M gave the runtime real memory-profile records (M1 allocations, M2 frees and cycles); its row was
 	// added below on 2026-09-27 (M2b, COORD ruling), the hand-owned body removed and TestFakeMapping's gate
 	// retired in the same commit. The text that follows is the reasoning as it stood before that.
@@ -2126,12 +2130,13 @@ var linknameForwardTargets = map[string]bool{
 	// so: the forwarder is on the CONSUMER side, across the runtime/pprof -> runtime edge that already
 	// exists, and injecting it reads 0 cycles on all three targets. It is the OTHER direction that
 	// costs 38/36/36. The five below are the ones that belief was wrongly blocking.
-	"runtime.pprof_memProfileInternal":   true,
-	"runtime.pprof_blockProfileInternal": true,
-	"runtime.pprof_mutexProfileInternal": true,
-	"runtime.pprof_threadCreateInternal": true,
-	"runtime.pprof_fpunwindExpand":       true,
-	"runtime.pprof_makeProfStack":        true,
+	"runtime.pprof_goroutineProfileWithLabels": true,
+	"runtime.pprof_memProfileInternal":         true,
+	"runtime.pprof_blockProfileInternal":       true,
+	"runtime.pprof_mutexProfileInternal":       true,
+	"runtime.pprof_threadCreateInternal":       true,
+	"runtime.pprof_fpunwindExpand":             true,
+	"runtime.pprof_makeProfStack":              true,
 	// time's legacy absolute-time API, pulled by time's own external test (linkname_test.go:
 	// `//go:linkname timeAbs time.Time.abs`, `absClock time.absClock`, `absDate time.absDate`). time
 	// keeps the three symbols linkable for compatibility after the functions behind them were

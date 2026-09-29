@@ -8,8 +8,9 @@ using go.golib;
 
 namespace GolibTests;
 
-// The GOROUTINE PROFILE's registry surface -- Goroutine.ProfileSnapshot(), which
-// runtime/pprof's pprof_goroutineProfileWithLabels reports.
+// The GOROUTINE PROFILE's registry surface -- Goroutine.ProfileSnapshot(), which runtime's
+// goroutineProfileWithLabels reports (runtime.GoroutineProfile, and runtime/pprof's goroutine profile
+// through its pprof_goroutineProfileWithLabels linkname forwarder, since A9).
 //
 // WHAT A GOROUTINE PROFILE NEEDS, AND WHY EACH PIECE CAN BREAK SILENTLY
 //   Go's printCountProfile groups samples by (stack, labels), so a profile that cannot tell two

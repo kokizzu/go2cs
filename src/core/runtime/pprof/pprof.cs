@@ -1060,7 +1060,10 @@ internal static error writeProfileInternal(io.Writer w, nint debug, @string name
 }
 
 //go:linkname pprof_goroutineProfileWithLabels runtime.pprof_goroutineProfileWithLabels
-internal static partial (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> p, slice<@unsafe.Pointer> labels);
+[global::System.Diagnostics.StackTraceHidden] internal static (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> p, slice<@unsafe.Pointer> labels) {
+    var (ᴛ1, ᴛ2) = runtime.pprof_goroutineProfileWithLabels(p, labels);
+    return (ᴛ1, ᴛ2);
+}
 
 //go:linkname pprof_cyclesPerSecond runtime/pprof.runtime_cyclesPerSecond
 [global::System.Diagnostics.StackTraceHidden] internal static int64 pprof_cyclesPerSecond() {

@@ -1159,7 +1159,7 @@ public static (nint n, bool ok) pprof_threadCreateInternal(slice<profilerecord.S
 }
 
 //go:linkname pprof_goroutineProfileWithLabels
-internal static (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
+public static (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> Δp, slice<@unsafe.Pointer> labels) {
     return goroutineProfileWithLabels(Δp, labels);
 }
 

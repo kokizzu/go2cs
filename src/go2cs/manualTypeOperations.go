@@ -535,8 +535,8 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// printer so DumpDebugLog captures it, and symbolizes through the caller records
 		// (debuglog_impl.cs); readMetricsLocked
 		// crosses through runtime/metrics; runtime_debug_WriteHeapDump writes a minimal dump inside
-		// the pair; goroutineProfileWithLabels keeps its count path and refuses its fill path before
-		// any semaphore. See managed_impl.cs.
+		// the pair; goroutineProfileWithLabels counts and fills inside the pair over golib's goroutine
+		// registry (A9, the body runtime/pprof's goroutine profile forwards to). See managed_impl.cs.
 		"stopTheWorld":                goosAny,
 		"startTheWorld":               goosAny,
 		"flushallmcaches":             goosAny,
