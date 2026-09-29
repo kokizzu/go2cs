@@ -185,6 +185,17 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         /// since a key it snapshotted can have been replaced underneath it.
         /// </summary>
         public int KeyEpoch;
+
+        /// <summary>
+        /// The memory profile's model of Go's table (see <c>Growth model</c> below): Go's entry count at
+        /// which the modelled table next grows. It encodes the whole table state, since Go's schedule gives
+        /// every state a distinct mark: 0 no group yet, 8 one small group, and otherwise
+        /// <c>tables * capacity * 7/8</c>, where only a 1024-slot table ever shares the map with another.
+        /// </summary>
+        public int GoGrowAt;
+
+        /// <summary>Whether a sample was ever taken from this map's modelled storage (see setSampled).</summary>
+        public bool GoSampled;
     }
 
     // Go compares interface KEYS by (dynamic type, dynamic value) — the same relation `==` uses — but
@@ -238,6 +249,7 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     {
         m_map = new NilKeyDictionary(size < 0 || size > int.MaxValue ? 0 : (int)size);
         AllocationCounter.Count();
+        growHinted(m_map, size);
     }
 
     public map(IEnumerable<KeyValuePair<TKey, TValue>> map)
@@ -318,6 +330,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
                 setCopyingKey(key, value);
             else
                 m_map[key] = value;
+
+            noteStore();
         }
     }
 
@@ -377,6 +391,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
             addNilKey(value);
         else
             m_map.Add(storableKey(key), value);
+
+        noteStore();
     }
 
     // Set writes a key with Go's OVERWRITE semantics (unlike Add, which throws on a duplicate
@@ -397,6 +413,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
             setCopyingKey(key, value);
         else
             m_map[key] = value;
+
+        noteStore();
     }
 
     /// <inheritdoc />
@@ -534,6 +552,269 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         }
 
         return snapshotKey;
+    }
+
+    #endregion
+
+    #region [ Growth model ]
+
+    // The memory profile's MODEL of Go's map growth (COORD ruling 2026-09-26 19:01): Go's map allocates its
+    // storage at fixed entry counts, and runtime/pprof's TestHeapRuntimeFrames reads those samples under the
+    // inserting function, while the Dictionary here grows inside the BCL, where nothing charges it. So each
+    // store that takes the map past the mark charges what go1.24.13's swiss map (internal/runtime/maps)
+    // allocates at that insert, with Go's sizes, through GoMemProfile.ChargeBytes, whose samples walk the
+    // stack to the Go function that stored. The schedule, for an empty map:
+    //   - the 1st insert: growToSmall, one group of 8 slots;
+    //   - the 9th: growToTable, new(table), a 16-slot table's 2 groups, and make([]*table, 1);
+    //   - past 7/8 load: table.grow, new(table) and the groups of a table twice the size, up to 1024 slots;
+    //   - past 1024 slots: table.split, two 1024-slot tables per table, and the directory doubled once.
+    // make(map, hint) with hint > 8 charges NewMap's directory and tables at make. The model is state only
+    // (GoGrowAt) plus, for a map a sample was taken from, the stand-ins its storage lives with.
+    //
+    // Differences, stated rather than modelled: Go keeps a non-escaping map's first group on the stack, and
+    // its header too (both uncharged in Go); a delete here always frees its slot, where Go sometimes leaves
+    // a tombstone that brings the next growth forward; a split here happens to every table at once, where
+    // Go splits each table when its own share fills; a map literal grows from empty, where Go makes it with
+    // its length as the hint; and a map built from another (the enumerable constructor) is not charged.
+    // And the model is compiled out of a program that cannot reach runtime/pprof, so such a program that
+    // sets MemProfileRate > 0 itself samples golib's other allocation doors but not a map's growth.
+    // AllocationCounter (testing.AllocsPerRun) is untouched: it counts the store object only, by policy.
+
+    // Go's per-table limit, maxTableCapacity.
+    private const int GoMaxTableCapacity = 1024;
+
+    // The model exists only in a program that can reach runtime/pprof (COORD ruling 2026-09-29 08:43,
+    // option (a)): GoMemProfile.PprofReachable is a static readonly the JIT folds, so without runtime/pprof
+    // a store compiles to exactly what it was before the model, with no mark load and no compare. With it,
+    // the store gains one compare against the mark and a branch. len(m) is read without the nil-key slot for
+    // a value-type key (a JIT-time constant, so that test folds away). Everything else, the rate included,
+    // is behind the branch, which a map takes only at the entry counts where Go's grows, whether or not the
+    // rate is above 0: at rate 0 the model still advances, charging nothing.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void noteStore()
+    {
+        if (GoMemProfile.PprofReachable && (typeof(TKey).IsValueType ? m_map.Count : Count) > m_map.GoGrowAt)
+            growModel(m_map, Count);
+    }
+
+    // Advances the model to hold count entries. Only the step this very insert takes is charged: a step
+    // the model missed while the profile was off happened in Go unsampled, and its tables are gone now.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void growModel(NilKeyDictionary store, int count)
+    {
+        bool profiling = GoMemProfile.Rate > 0;
+
+        while (count > store.GoGrowAt)
+            growStep(store, charge: profiling && count == store.GoGrowAt + 1);
+    }
+
+    // The stand-ins a SAMPLED map's current tables and directory live and die with, kept beside the store
+    // rather than on it so an unsampled map carries nothing: replacing one at a growth frees the old.
+    private sealed class GoSampledStorage
+    {
+        public object? Tables, Directory;
+    }
+
+    private static readonly ConditionalWeakTable<NilKeyDictionary, GoSampledStorage> s_sampledStorage = new();
+
+    // The table is consulted only for a map already sampled (GoSampled): a lookup hashes the store's
+    // identity, which a growth step must not pay for a map nothing was ever sampled from.
+    private static void setSampled(NilKeyDictionary store, object? tables, object? directory, bool replacesDirectory)
+    {
+        if (store.GoSampled && s_sampledStorage.TryGetValue(store, out GoSampledStorage? sampled))
+        {
+            sampled.Tables = tables;
+
+            if (replacesDirectory)
+                sampled.Directory = directory;
+        }
+        else if (tables is not null || directory is not null)
+        {
+            store.GoSampled = true;
+            s_sampledStorage.AddOrUpdate(store, new GoSampledStorage { Tables = tables, Directory = directory });
+        }
+    }
+
+    private static void growStep(NilKeyDictionary store, bool charge)
+    {
+        int mark = store.GoGrowAt;
+
+        if (mark == 0)
+        {
+            // growToSmall: one group.
+            setSampled(store, charge ? chargeTables(1, 0, GoMapLayout.GroupBytes) : null, null, replacesDirectory: false);
+            store.GoGrowAt = GoMapLayout.GroupSlots;
+            return;
+        }
+
+        if (mark == GoMapLayout.GroupSlots)
+        {
+            // growToTable: a 16-slot table, then its one-entry directory.
+            object? table = charge ? chargeTables(1, 2 * GoMapLayout.GroupSlots, 0) : null;
+            setSampled(store, table, charge ? chargeDirectory(1) : null, replacesDirectory: true);
+            store.GoGrowAt = growthLeft(2 * GoMapLayout.GroupSlots);
+            return;
+        }
+
+        (int tables, int capacity) = decodeMark(mark);
+
+        if (2 * capacity <= GoMaxTableCapacity)
+        {
+            // table.grow: each table replaced by one twice its size.
+            setSampled(store, charge ? chargeTables(tables, 2 * capacity, 0) : null, null, replacesDirectory: false);
+            store.GoGrowAt = tables * growthLeft(2 * capacity);
+            return;
+        }
+
+        // table.split: each full table replaced by two, and the directory doubled once (by the first split;
+        // the rest find their local depth already below the new global depth).
+        object? replaced = null, directory = null;
+
+        for (int i = 0; i < tables; i++)
+        {
+            if (charge && GoMapLayout.Sized)
+            {
+                chargeTable(ref replaced, GoMaxTableCapacity);
+                chargeTable(ref replaced, GoMaxTableCapacity);
+            }
+
+            if (i == 0 && charge)
+                directory = chargeDirectory(2 * tables);
+        }
+
+        setSampled(store, replaced, directory, replacesDirectory: true);
+        store.GoGrowAt = 2 * tables * growthLeft(GoMaxTableCapacity);
+    }
+
+    // make(map, hint): NewMap sizes a directory of tables to hold hint entries at 7/8 load, and allocates it
+    // at make. A hint of 8 or less allocates nothing until the first insert.
+    private static void growHinted(NilKeyDictionary store, nint hint)
+    {
+        if (!GoMemProfile.PprofReachable || hint <= GoMapLayout.GroupSlots || hint > int.MaxValue)
+            return;
+
+        long target = (long)hint * GoMapLayout.GroupSlots / 7;
+        long directory = alignUpPow2((target + GoMaxTableCapacity - 1) / GoMaxTableCapacity);
+
+        if (directory > int.MaxValue / (2 * GoMaxTableCapacity))
+            return;
+
+        int capacity = (int)alignUpPow2(System.Math.Max(GoMapLayout.GroupSlots, target / directory));
+
+        store.GoGrowAt = (int)directory * growthLeft(capacity);
+
+        if (GoMemProfile.Rate <= 0)
+            return;
+
+        object? charged = chargeDirectory((int)directory);
+        setSampled(store, chargeTables((int)directory, capacity, 0), charged, replacesDirectory: true);
+    }
+
+    // A mark's table state: a map past 896 entries holds only full-size tables.
+    private static (int tables, int capacity) decodeMark(int mark)
+    {
+        int full = growthLeft(GoMaxTableCapacity);
+
+        return mark <= full ? (1, mark * GoMapLayout.GroupSlots / 7) : (mark / full, GoMaxTableCapacity);
+    }
+
+    // Go's resetGrowthLeft: a one-group table fills all but one slot, a larger one 7 slots of each 8.
+    private static int growthLeft(int capacity) =>
+        capacity <= GoMapLayout.GroupSlots ? capacity - 1 : capacity * 7 / GoMapLayout.GroupSlots;
+
+    private static long alignUpPow2(long n) =>
+        n <= 1 ? 1 : 1L << (64 - System.Numerics.BitOperations.LeadingZeroCount((ulong)(n - 1)));
+
+    // Charges `tables` tables of `capacity` slots (newTable: new(table), then its groups), or, for the
+    // small map, `groupBytes` alone. Returns the stand-in the allocations live and die with.
+    // The stand-in is made only when a charge is sampled, so an unsampled growth allocates nothing.
+    private static object? chargeTables(int tables, int capacity, long groupBytes)
+    {
+        object? allocation = null;
+
+        if (!GoMapLayout.Sized)
+            return null;
+
+        if (capacity == 0)
+        {
+            GoMemProfile.ChargeBytes(ref allocation, groupBytes, GoMapLayout.GroupNoScan);
+            return allocation;
+        }
+
+        for (int i = 0; i < tables; i++)
+            chargeTable(ref allocation, capacity);
+
+        return allocation;
+    }
+
+    private static void chargeTable(ref object? allocation, int capacity)
+    {
+        GoMemProfile.ChargeBytes(ref allocation, GoMapLayout.TableBytes, noscan: false);
+        GoMemProfile.ChargeBytes(ref allocation, capacity / GoMapLayout.GroupSlots * GoMapLayout.GroupBytes, GoMapLayout.GroupNoScan);
+    }
+
+    // make([]*table, entries).
+    private static object? chargeDirectory(int entries)
+    {
+        object? allocation = null;
+
+        if (!GoMapLayout.Sized)
+            return null;
+
+        GoMemProfile.ChargeBytes(ref allocation, 8L * entries, noscan: false);
+        return allocation;
+    }
+
+    // Go's layout of this map type's storage, read on the first charge only. A group is a control word and
+    // 8 slots; a slot is struct{ key K; elem V }, where a key or elem over 128 bytes is stored indirect, as a
+    // pointer. A table (Go's `table` struct: three uint16, a uint8, an int and a groups reference) is 32
+    // bytes on a 64-bit target and holds a pointer.
+    private static class GoMapLayout
+    {
+        internal const int GroupSlots = 8;
+
+        internal const long TableBytes = 32;
+
+        internal static readonly long GroupBytes;
+
+        internal static readonly bool GroupNoScan;
+
+        // False when a key or elem type has no Go layout to read: the map then charges nothing, since a
+        // store must never fail for the profiler's sake.
+        internal static readonly bool Sized;
+
+        static GoMapLayout()
+        {
+            try
+            {
+                (long keySize, long keyAlign, bool keyPointers) = slotField(typeof(TKey));
+                (long elemSize, long elemAlign, bool elemPointers) = slotField(typeof(TValue));
+
+                long slotAlign = System.Math.Max(1, System.Math.Max(keyAlign, elemAlign));
+                long slotSize = alignUp(alignUp(keySize, elemAlign) + elemSize, slotAlign);
+
+                GroupBytes = alignUp(8 + GroupSlots * slotSize, System.Math.Max(8, slotAlign));
+                GroupNoScan = !keyPointers && !elemPointers;
+                Sized = true;
+            }
+            catch (System.Exception)
+            {
+                Sized = false;
+            }
+        }
+
+        private static (long size, long align, bool pointers) slotField(System.Type type)
+        {
+            long size = GoReflect.GoSizeOf(type);
+
+            // abi.SwissMapMaxKeyBytes and SwissMapMaxElemBytes: a larger key or elem is stored indirect.
+            if (size > 128)
+                return (8, 8, true);
+
+            return (size, System.Math.Max(1, (long)GoReflect.GoAlignOf(type)), GoReflect.GoPtrBytesOf(type) > 0);
+        }
+
+        private static long alignUp(long n, long align) => align <= 1 ? n : (n + align - 1) / align * align;
     }
 
     #endregion

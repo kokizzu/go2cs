@@ -58,6 +58,64 @@ public static class GoMemProfile
     /// </summary>
     public static Action<object, nuint, bool>? Recorder;
 
+    /// <summary>
+    /// Whether the program can reach runtime/pprof: the inverse of Go's <c>disableMemoryProfiling</c>,
+    /// decided once, before any Go code runs. runtime's module initializer starts <see cref="Rate"/> at 0
+    /// when this is false, and a map's growth model runs only when it is true (map.cs, the growth model).
+    /// </summary>
+    /// <remarks>
+    /// A static readonly field, so the JIT folds it into the code that reads it: with runtime/pprof out of
+    /// the program, a map store compiles to what it was before the growth model existed. This class has no
+    /// static constructor, so the runtime initializes it when the JIT compiles its first reader, before
+    /// that reader's code is generated, under tiered compilation and without it.
+    /// </remarks>
+    public static readonly bool PprofReachable = PprofReachableFrom(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string, findPprofPackage);
+
+    private const string PprofAssemblyName = "runtime.pprof";
+
+    // The type question is asked by name, not by walking references: under native AOT the compiler
+    // resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
+    // static closure there, and GetReferencedAssemblies throws PlatformNotSupportedException. The name is a
+    // constant AT THE CALL: the compiler does not follow it through a parameter. The entry assembly is asked
+    // second, for a program that compiles runtime/pprof in rather than referencing its assembly:
+    // runtime/pprof's own test binary compiles the package's files into runtime.pprof.tests.
+    private static Type? findPprofPackage() =>
+        Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false) ??
+        System.Reflection.Assembly.GetEntryAssembly()?.GetType("go.runtime.pprof_package", throwOnError: false);
+
+    /// <summary>
+    /// Go's linker question, asked of the program's STATIC assembly closure: whether runtime.pprof is in
+    /// <paramref name="trustedPlatformAssemblies"/> (the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the
+    /// app's deps.json list and is fixed before the first assembly loads), or else whether
+    /// <paramref name="findPprof"/> resolves runtime.pprof's package type: the only question where the host
+    /// has no such list (a native AOT or single-file publish), and the one that finds runtime/pprof compiled
+    /// into the program's own assembly, which no list names. Never the assemblies loaded so far, which load
+    /// lazily and would read "no pprof" at startup in every program. Where nothing answers, Go's default
+    /// (reachable) stands.
+    /// </summary>
+    public static bool PprofReachableFrom(string? trustedPlatformAssemblies, Func<Type?> findPprof)
+    {
+        if (trustedPlatformAssemblies is not null)
+        {
+            foreach (string path in trustedPlatformAssemblies.Split(System.IO.Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (string.Equals(System.IO.Path.GetFileNameWithoutExtension(path), PprofAssemblyName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        try
+        {
+            return findPprof() is not null;
+        }
+        catch (Exception)
+        {
+            // The type could not be looked up. With a list, the list has answered; without one, keep Go's
+            // default rather than silently switch the profile off.
+            return trustedPlatformAssemblies is null;
+        }
+    }
+
     // Bytes left until this thread's next sample: Go's mcache.nextSample. Unseeded until the first
     // allocation this thread charges, as Go seeds it when the mcache is created.
     [ThreadStatic]
@@ -96,6 +154,33 @@ public static class GoMemProfile
         }
 
         Sample(allocation, size, GoSize<T>.NoScan, rate);
+    }
+
+    /// <summary>
+    /// Charges one Go allocation that has no C# type of its own: <paramref name="size"/> Go bytes, pointer-free
+    /// when <paramref name="noscan"/>. It is the door for the allocations a golib store models rather than
+    /// makes (a map's groups, tables and directory: <c>map</c>'s growth model), and it counts down the same
+    /// countdown as <see cref="Charge{T}"/>.
+    /// </summary>
+    /// <param name="allocation">
+    /// An object whose lifetime is the modelled allocation's: its collection is the free. Made here, only when
+    /// the charge reaches the sampler, when the caller passes none, so an unsampled charge allocates nothing.
+    /// </param>
+    public static void ChargeBytes(ref object? allocation, long size, bool noscan)
+    {
+        nint rate = Rate;
+
+        if (rate <= 0)
+            return;
+
+        if (rate != 1 && t_seeded && size < t_nextSample)
+        {
+            t_nextSample -= size;
+            return;
+        }
+
+        allocation ??= new object();
+        Sample(allocation, size, noscan, rate);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
