@@ -22,7 +22,10 @@
     {
       "name": "TestPanicSystemstack",
       "class": "host-fatal",
-      "platforms": ["linux", "darwin"],
+      "platforms": [
+        "linux",
+        "darwin"
+      ],
       "signature": "",
       "reason": "host-fatal HANG member (the class was widened to admit a deadline-consuming hang beside a crash, coordinator ruling 2026-09-05, recorded at hostFatalClass in testConversion.go; this row RATIFIED as a member by coordinator ruling 2026-09-05 over C1's Q46 reading). The test re-execs the host with the argument testPanicSystemstackInternal; the child's crash_unix_test.go init() starts one goroutine and then calls testPanicSystemstackInternal on the initializing thread, each meant to print \"x\\n\" and then deadlock on a runtime lock inside systemstack so that a SIGQUIT under GOTRACEBACK=crash prints both blocked stacks. MEASURED (solo, Release+TC0, 3 m deadline; Go=pass): the converted child prints ONE x, because the goroutine started inside init() cannot enter testPanicSystemstackInternal until the CLR type-initializer lock is released by the module initializer it was started from -- and that initializer is deadlocking itself by the test's own design (dotnet-stack: main thread = <Module>..cctor -> initΔ3 -> lock2 spinning; goroutine = Goroutine.Run with no body frame, its thread in a futex wait). Go runs init-started goroutines concurrently with init; the CLR serializes every other thread's first touch of an initializing type behind its constructor. The parent therefore never completes io.ReadFull(pr, 4), never sends SIGQUIT, never reaches its deferred Process.Kill, and consumes the package deadline; the deadline's external SIGKILL orphans a child that a hand-sent SIGQUIT kills at once (its SIGQUIT is unblocked and caught, SigPnd empty). NOT a missing feature: the class censused in the pinned GOROOT (a go statement lexically inside func init()) is 2 production + 2 _test.go files and exactly ONE deadlocks, by its own design -- the semantic remedy (a package init that does not hold the type-initializer lock while it runs) is a converter design question recorded on the board with a population of one, not built ahead of a second case. Withdrawn from BOTH sides by the one --skip/-skip regexp and COUNTED IN DISCLOSED. Retires if a second case ever moves the design."
     },
@@ -61,6 +64,33 @@
       "class": "codegen-liveness",
       "signature": "expected arena-referenced object to be finalized",
       "reason": "Same frame-liveness retention as TestUserArenaLiveness/Free, with the arena dropped instead of freed (its handle unreachable after `arena = nil`): the arena and its allocation list are collected, and v, still reported live by the test frame, keeps the finalizer's object alive. Measured in the same A/B as /Free."
+    },
+    {
+      "name": "TestReadMetrics",
+      "class": "deferred",
+      "signature": "live bytes is 0",
+      "reason": "deferred (OQ-4, ruled 2026-09-28): /gc/heap/live:bytes reads gcController.heapMarked, which Go writes at mark termination (gcMarkTermination -> gcController.resetLive); the managed host runs no Go mark phase, so it reads 0. The line is NOT separable from Go's heap accounting: the test bounds live <= MemStats.HeapSys, and ReadMetricsSlow's MemStats come from Go's own readmemstats_m, whose HeapSys = gcController.heapInUse + heapFree + heapReleased, also 0 here, so writing heapMarked alone turns this line into 'live bytes: N > heap sys: 0'. Feeding HeapSys means feeding the heap accounting COHERENTLY: runtime's test binary enables doubleCheckReadMemStats (gc_test.go's init), and readmemstats_m then throws inside the stopped world -- host-fatal -- unless heapInUse, heapReleased, the retained heap, totalAlloc, totalFree and mappedReady all agree with consistentHeapStats.read, whose hand-own returns the zero delta. TestReadMetrics' gogc and gomemlimit lines match Go since M1 (claude/c1-gcpacer-knobs 5dd6bce97b); a failure without this line is a mismatch.",
+      "want": "0 < /gc/heap/live:bytes <= MemStats.HeapSys, the MemStats ReadMetricsSlow reads through readmemstats_m in the same stopped world",
+      "reading": "0 on linux/amd64 at 5dd6bce97b, Release (the go2cs -tests runtime row filtered to TestReadMetrics): gcController.heapMarked = 0 and HeapSys = 0; the test printed only 'live bytes is 0' (at 3d3883d4bb, before M1, it also printed the gogc and gomemlimit lines)",
+      "plan": "the OQ-4 coherent-snapshot wiring seat, docs/phase4/DESIGN-oq4-heap-accounting-snapshot.md (the wiring ruled OWED 2026-09-28, ledger 96edeb700a; scheduled after the objective banks, sooner if ready and green): one CLR heap snapshot per completed gen2 feeds gcController's heap figures, heapMarked and consistentHeapStats.read together, so readmemstats_m's double check holds by construction and heapMarked has a HeapSys to sit under"
+    },
+    {
+      "name": "TestReadMetricsConsistency",
+      "halves": [
+        {
+          "class": "runtime-capability",
+          "signature": "found no time spent on GC work",
+          "reason": "runtime-capability (ruled 2026-09-27 00:35, not reopened 2026-09-28, ledger 96edeb700a): Go's linux-only check wants some GC mark CPU time in /cpu/classes/gc/mark/{assist,dedicated,idle}. The managed host's collections are the CLR's, and a blocking CLR collection marks INSIDE its pause, so Go's own accounting puts that time in /cpu/classes/gc/pause (non-zero here) and the three mark classes stay 0; a background CLR gen2's mark time is not separately measurable, and runtime.GC() is a blocking Collect, so even a background-GC measure would read 0 for this test. Scoped to linux because Go's source makes the check only there (runtime.GOOS == \"linux\"). The rest of the test's CPU identities hold (gc/total = the four gc classes, total = gc + scavenge + user + idle).",
+          "platforms": [
+            "linux"
+          ]
+        },
+        {
+          "class": "structural",
+          "signature": "scannable GC space is empty: 0",
+          "reason": "structural (ruled 2026-09-28, ledger 96edeb700a): /gc/scan/{heap,stack,globals}:bytes read gcController.heapScan, lastStackScan and globalsScan, which Go writes at mark termination from its own pointer bitmaps. The CLR does not separate scannable bytes from pointer-free ones, so no managed measurement means the same quantity, and the honest reading is 0 (DESIGN-readmemstats-surface's rule: a field is answered only when a managed measurement means what the Go field means). Every target: the check is unconditional."
+        }
+      ]
     }
   ]
 }
