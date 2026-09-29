@@ -133,4 +133,14 @@ partial class runtime_package
     public static int GoDebugProfStackDepth => debug.profstackdepth;
 
     public static int GoDebugCgoCheck => debug.cgocheck;
+
+    // Sets the link-time root the module initializer copied from GoDefaultGorootVariable, and returns the
+    // previous value for the caller to restore: a process started with the variable set, without starting
+    // one.
+    public static string GoSetDefaultGoroot(string root)
+    {
+        string previous = defaultGOROOT.ToString();
+        defaultGOROOT = root;
+        return previous;
+    }
 }

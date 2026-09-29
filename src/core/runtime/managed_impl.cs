@@ -1294,7 +1294,7 @@ partial class runtime_package
             else
             {
                 if (stackRootOf(method) is GoStackRootAttribute root)
-                    printed.Add((root.Function, root.File, root.Line));
+                    printed.Add((root.Function, rootFrameFile(root.File), root.Line));
 
                 continue;
             }
@@ -2414,11 +2414,23 @@ partial class runtime_package
     private static GoStackRootAttribute? stackRootOf(System.Reflection.MethodBase method) =>
         s_stackRoots.GetOrAdd(method, static m => (GoStackRootAttribute?)Attribute.GetCustomAttribute(m, typeof(GoStackRootAttribute), inherit: false));
 
+    // A modelled root frame's file (the GoStackRoot frame, the goexit tail) rooted by the rule a
+    // RECORDED Go frame's file is (GoPositionMapRecord.ResolveGoFile): a GOROOT-relative form against
+    // the link-time root, defaultGOROOT, and the recorded form as it stands when there is none. Both
+    // consumers read it -- Callers' Frame.File here and the printed traceback in appendGoFrames -- so
+    // runtime/debug's TestStack, run by the pipeline with GOROOT set, reads tRunner's line as
+    // GOROOT/src/testing/testing.go beside the frames above it.
+    private static string rootFrameFile(string file) =>
+        resolveRecordedGoFile(file, "", defaultGOROOT.ToString());
+
     // Interns a root frame no live call site backs: the record is the Go frame itself, keyed by its
-    // Go function so every walk that reaches the root answers the same PC, as Go's does.
+    // Go function so every walk that reaches the root answers the same PC, as Go's does. The key
+    // carries the rooted file as well: the link-time root is fixed for a real process, and keying on
+    // it keeps a record from answering a root it was not rooted at.
     private static uintptr internRootFrame(string function, string file, int line)
     {
-        string key = $"root:{function}";
+        file = rootFrameFile(file);
+        string key = $"root:{function}:{file}";
 
         lock (s_callerTableLock)
         {
