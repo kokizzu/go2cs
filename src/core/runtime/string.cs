@@ -317,14 +317,7 @@ internal static @string /*s*/ intstring([GoArrayDims(4)] ж<array<byte>> Ꮡbuf,
     return s[..(int)(n)];
 }
 
-// rawstring allocates storage for a new string. The returned
-// string and byte slice both refer to the same storage.
-// The storage is not zeroed. Callers should use
-// b to set the string contents and then drop b.
-internal static (@string s, slice<byte> b) rawstring(nint size) {
-    @unsafe.Pointer Δp = (uintptr)mallocgc((uintptr)size, nil, false);
-    return (@unsafe.String((ж<byte>)(uintptr)(Δp), size), @unsafe.Slice((ж<byte>)(uintptr)(Δp), size));
-}
+// go2cs generated this placeholder — func rawstring is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
 internal static slice<byte> /*b*/ rawbyteslice(nint size) {

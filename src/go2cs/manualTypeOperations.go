@@ -577,6 +577,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// "missing stack in shrinkstack" because a goroutine here is a CLR thread with no Go stack
 		// (stack.lo is 0), which exited the process and lost every later test in the runtime row.
 		"shrinkstack": goosAny,
+		// rawstring allocates the string and its byte slice over ONE managed byte[] (managed_impl.cs):
+		// the converted body called mallocgc, which this host does not run, and died in mallocgcTiny on an
+		// anonymous nil dereference (a large request took the whole test host down). Every caller,
+		// gostringw and TestStringW included, goes through it.
+		"rawstring": goosAny,
+		// efaceHash hashes the interface's DYNAMIC VALUE (managed_impl.cs): the converted body reads an eface
+		// through a pointer to the interface variable, which here is a managed reference with no address, so it
+		// died in the arm-2a refusal and took runtime's TestSmhasherAvalanche with it. ifaceHash is NOT
+		// registered: displacing it drops the GoDynamicTypeLift record for its interface{ F() } parameter,
+		// and the -tests conversion of export_test.go fails on the unresolved type.
+		"efaceHash": goosAny,
+		// spanOf ANSWERS NIL (coordinator ruling 2026-09-28 22:01, the P1 disclosure seat): Go's own
+		// answer for an address that no heap span contains, and true for every address here, since the
+		// managed model has no Go heap arenas. The converted body indexed mheap_.arenas[0], which is nil
+		// (amd64 has no L1 nil check), so every caller died on an anonymous nil dereference. See
+		// managed_impl.cs. Three export_test.go helpers refuse by name at their representational point
+		// instead (export_impl_test.cs): KeepNArenaHints (no arena hints), TracebackSystemstack (no
+		// system stack to switch to) and G0StackOverflow (no g0 stack to overflow).
+		"spanOf":               goosAny,
+		"KeepNArenaHints":      goosAny,
+		"TracebackSystemstack": goosAny,
+		"G0StackOverflow":      goosAny,
 		// User arenas over managed allocations (arena_impl.cs). Go carves them from its own heap:
 		// newUserArena reached fixalloc before FixAlloc_Init and threw. The arena keeps a strong list
 		// of its allocations, made through reflect's bridge, and arena_heapify tests membership on

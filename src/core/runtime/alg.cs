@@ -488,13 +488,7 @@ internal static uintptr int64Hash(uint64 iʗp, uintptr seed) {
     return ᴛ3;
 }
 
-internal static uintptr efaceHash(any iʗp, uintptr seed) {
-    ref var i = ref heap(iʗp, out var Ꮡi);
-
-    var ᴛ4 = nilinterhash((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡi)), seed);
-    System.GC.KeepAlive(Ꮡi);
-    return ᴛ4;
-}
+// go2cs generated this placeholder — func efaceHash is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType("dyn")] internal partial interface ifaceHash_i {
     void F();
@@ -503,9 +497,9 @@ internal static uintptr efaceHash(any iʗp, uintptr seed) {
 internal static uintptr ifaceHash(ifaceHash_i iʗp, uintptr seed) {
     ref var i = ref heap(iʗp, out var Ꮡi);
 
-    var ᴛ5 = interhash((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡi)), seed);
+    var ᴛ4 = interhash((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡi)), seed);
     System.GC.KeepAlive(Ꮡi);
-    return ᴛ5;
+    return ᴛ4;
 }
 
 internal static UntypedInt hashRandomBytes => /* goarch.PtrSize / 4 * 64 */ 128;
