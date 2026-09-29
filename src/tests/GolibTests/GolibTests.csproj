@@ -115,6 +115,9 @@
     <!-- runtime's managed Windows sysAllocOS/sysFreeOS (and their seams) live in runtime's windows/ folder. -->
     <Compile Remove="RuntimeSysAllocWindowsTests.cs" />
 
+    <!-- runtime's windows netpollBreak refusal lives in runtime's windows/ folder (netpoll_windows_impl.cs). -->
+    <Compile Remove="RuntimeNetpollBreakWindowsTests.cs" />
+
     <!-- syscall.Pointer (`type Pointer *struct{}`) is declared only in syscall's windows/ folder. -->
     <Compile Remove="NamedPointerTokenCarrierTests.cs" />
 
