@@ -778,6 +778,32 @@ partial class runtime_package
         }
     }
 
+    // ---- THE GC PACER'S KNOBS: GOGC and GOMEMLIMIT -------------------------------------------
+    //
+    // gcinit's pacer half (mgc.go): Go initializes gcController from the environment in schedinit,
+    // after goenvs, and every reader of GOGC and GOMEMLIMIT -- runtime/debug's SetGCPercent and
+    // SetMemoryLimit, the /gc/gogc:percent and /gc/gomemlimit:bytes metrics, the pacer's heap goal
+    // -- reads gcController.gcPercent and memoryLimit from then on. The managed host never runs
+    // schedinit, so both stayed 0.
+    //
+    // THE ORDER. goenvs_impl.cs's module initializer is schedinit's slot here, and it calls
+    // gcinitController right after it fills envs: Go's own order, since readGOGC and readGOMEMLIMIT
+    // read through gogetenv, which throws "getenv before env init" on a nil environment. It is ONE
+    // initializer, not a second one, because C# leaves the order between two module initializers
+    // unspecified. It is eager, not lazy on first use, because Go's values exist before any Go code
+    // runs: a reader that never touches a knob (a metrics exporter) still reads GOGC. A malformed
+    // GOMEMLIMIT throws there, as Go's gcinit does at startup.
+    internal static void gcinitController() => ᏑgcController.init(readGOGC(), readGOMEMLIMIT());
+
+    // runtime/debug's setGCPercent and setMemoryLimit ARE runtime's (mgcpacer.go pushes them with
+    // //go:linkname): the heap lock, the controller's setter, gcControllerCommit, and for a negative
+    // percent gcWaitOnMark, which returns at once with no mark phase running. The push has no
+    // cross-assembly form, so runtime/debug's hand-owned stubs call these public crossings (the
+    // WriteHeapDumpManaged pattern) and runtime keeps the one value.
+    public static int32 SetGCPercentManaged(int32 @in) => setGCPercent(@in);
+
+    public static int64 SetMemoryLimitManaged(int64 @in) => setMemoryLimit(@in);
+
     // shrinkstack (stack.go) REFUSES BY NAME. Go's body copies a goroutine's stack into a smaller
     // one. A goroutine here is a CLR thread with no Go stack (g.stack.lo is 0), so the converted
     // body's first check threw "missing stack in shrinkstack", and a throw exits the process: the
@@ -3350,6 +3376,45 @@ partial class runtime_package
         finally
         {
             gp.Value.writebuf = default!;
+        }
+    }
+
+    // ---- the guard's view (GolibTests RuntimeGCPacerKnobTests) ----
+
+    /// <summary>
+    /// The GC pacer's two knobs as the runtime holds them (gcController.gcPercent and memoryLimit, what
+    /// /gc/gogc:percent and /gc/gomemlimit:bytes read), beside what readGOGC and readGOMEMLIMIT compute
+    /// from the runtime's environment snapshot now.
+    /// </summary>
+    public static (int32 gcPercent, int64 memoryLimit, int32 fromGOGC, int64 fromGOMEMLIMIT) GoGCPacerKnobsProbe() =>
+        (ᏑgcController.of(gcControllerState.ᏑgcPercent).Load(), ᏑgcController.of(gcControllerState.ᏑmemoryLimit).Load(),
+         readGOGC(), readGOMEMLIMIT());
+
+    /// <summary>
+    /// Runs the pacer's startup step (gcinitController) over a SUBSTITUTED environment snapshot, then
+    /// <paramref name="body"/>. The runtime's environment snapshot and the whole gcController are
+    /// restored afterwards, whatever the body does.
+    /// </summary>
+    public static void GoGCPacerFromEnvironmentProbe(string[] environment, Action body)
+    {
+        slice<@string> savedEnvs = envs;
+        gcControllerState savedController = gcController;
+
+        try
+        {
+            slice<@string> snapshot = new slice<@string>(environment.Length);
+
+            for (int i = 0; i < environment.Length; i++)
+                snapshot[i] = environment[i];
+
+            envs = snapshot;
+            gcinitController();
+            body();
+        }
+        finally
+        {
+            envs = savedEnvs;
+            gcController = savedController;
         }
     }
 
