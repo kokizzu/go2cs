@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -25,7 +26,7 @@ partial class main_package {
     internal partial ref inner inner { get; }
 }
 
-internal static void viaParam(ж<outer> Ꮡo) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void viaParam(ж<outer> Ꮡo) {
     Ꮡo.of(outer.Ꮡinner).bump(100);
 }
 

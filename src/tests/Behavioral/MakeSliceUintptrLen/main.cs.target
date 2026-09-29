@@ -1,10 +1,11 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static void run() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run() {
     uintptr n = 6;
     var a = new slice<byte>((nint)(n / 2));
     var b = new slice<uint64>((nint)(n));

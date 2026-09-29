@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -8,7 +9,7 @@ partial class main_package {
     internal nint n;
 }
 
-internal static void add(ref nint p, nint d) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void add(ref nint p, nint d) {
     p += d;
 }
 
@@ -29,7 +30,7 @@ internal static void bump(this ж<buf> Ꮡb) {
 internal static ж<tracer> Ꮡtr = new StandardBox<tracer>(default(tracer));
 internal static ref tracer tr => ref Ꮡtr.Value;
 
-internal static void keep(ж<tracer> Ꮡt) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void keep(ж<tracer> Ꮡt) {
     _ = Ꮡt;
 }
 

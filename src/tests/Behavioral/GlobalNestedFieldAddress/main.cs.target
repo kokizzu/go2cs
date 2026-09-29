@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -16,7 +17,7 @@ partial class main_package {
 internal static ж<outer> Ꮡg = new StandardBox<outer>(default(outer));
 internal static ref outer g => ref Ꮡg.Value;
 
-internal static void keep(ж<outer> Ꮡp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void keep(ж<outer> Ꮡp) {
     _ = Ꮡp;
 }
 

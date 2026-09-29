@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -9,11 +10,11 @@ partial class main_package {
     internal nint val;
 }
 
-internal static void onstack(Action f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void onstack(Action f) {
     f();
 }
 
-internal static nint run() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint run() {
     var s = Ꮡ(new span(largeType: 5, val: 100));
     nint total = 0;
     var sʗ1 = s;

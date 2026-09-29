@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -10,7 +11,7 @@ partial class main_package {
     internal slice<nint> tail;
 }
 
-internal static ж<holder> makeHolder(@string name) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<holder> makeHolder(@string name) {
     var h = Ꮡ(new holder(
         name: name,
         tail: new slice<nint>(2)

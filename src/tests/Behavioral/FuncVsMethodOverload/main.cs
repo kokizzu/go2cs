@@ -2,10 +2,11 @@ namespace go;
 
 using fmt = fmt_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x) {
     return (@unsafe.Pointer)((uintptr)p + x);
 }
 
@@ -22,7 +23,7 @@ internal static ж<nih> add(this ж<nih> Ꮡp, uintptr bytes) {
     return (ж<nih>)(uintptr)((@unsafe.Pointer)((uintptr)(uintptr)@unsafe.Pointer.FromRef(ref p) + bytes));
 }
 
-internal static uint32 step(ж<uint32> Ꮡv) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uint32 step(ж<uint32> Ꮡv) {
     var q = (ж<uint32>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡv), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
     return q.Value;
 }

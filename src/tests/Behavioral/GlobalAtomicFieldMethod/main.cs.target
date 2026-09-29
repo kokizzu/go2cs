@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using atomic = sync.atomic_package;
+using System.Runtime.CompilerServices;
 using sync;
 
 partial class main_package {
@@ -13,7 +14,7 @@ partial class main_package {
 internal static ж<controller> Ꮡctrl = new StandardBox<controller>(default(controller));
 internal static ref controller ctrl => ref Ꮡctrl.Value;
 
-internal static void keep(ж<controller> Ꮡc) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void keep(ж<controller> Ꮡc) {
     _ = Ꮡc;
 }
 

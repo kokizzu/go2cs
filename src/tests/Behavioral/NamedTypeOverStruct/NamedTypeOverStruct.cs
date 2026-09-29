@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -30,7 +31,7 @@ internal static int64 readBack(ж<box> Ꮡb) {
     return (~c).a + (~c).b;
 }
 
-internal static void bump(ref int64 p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void bump(ref int64 p) {
     p = p + 7;
 }
 
