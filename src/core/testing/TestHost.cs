@@ -416,7 +416,7 @@ public static class TestHost
         {
             TestEvent infrastructureError = new(registry.Package, "", "infrastructure-error", Output: ex.ToString());
             if (options.Json)
-                Console.WriteLine(JsonSerializer.Serialize(infrastructureError, TestReporter.JsonOptions));
+                TestReporter.WriteEventLine(JsonSerializer.Serialize(infrastructureError, TestReporter.JsonOptions));
             else
                 Console.Error.WriteLine(ex);
             return 2;
