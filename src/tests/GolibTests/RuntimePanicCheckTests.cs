@@ -97,8 +97,11 @@ public class RuntimePanicCheckTests
     {
         Assert.AreEqual("index out of range", ThrowText(RuntimeErrorPanic.IndexOutOfRange(5L, 3L)));
         Assert.AreEqual("index out of range", ThrowText(RuntimeErrorPanic.IndexOutOfRange(5UL, 3L)));
+        // Every slice builder, since each reaches the ONE stamped constructor (SliceBoundsError) by its own path.
+        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.SliceBoundsOutOfRange(0, 5, 3)));
         Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.SliceBoundsOutOfRange(0, 5, 5, 3)));
-        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.StringSliceBoundsOutOfRange(0, 5, 3)));
+        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.LengthSliceBoundsOutOfRange(0, 5, 3)));
+        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.LengthSliceBoundsOutOfRange(0, 5, 5, 3)));
         Assert.AreEqual("slice length too short to convert to array or pointer to array", ThrowText(RuntimeErrorPanic.ArrayConversionLength(1, 2)));
         Assert.AreEqual("negative shift amount", ThrowText(RuntimeErrorPanic.NegativeShiftAmount()));
 
