@@ -130,6 +130,20 @@ public class ConsoleEventLineAtomicityTests
         Assert.AreEqual(Events, IntactPassEvents(pipe.Text()), "an event line longer than the console writer's buffer was torn by a concurrent raw writer");
     }
 
+    // The redirect test reads a PRIVATE runtime field. Its fallback (read as redirected) keeps captures
+    // safe but silently puts the real console back on the tearing path, so a runtime that renames or
+    // retypes the field must turn this red, naming it, rather than revert quietly.
+    [TestMethod]
+    public void TheConsoleRedirectFlagResolvesOnThisRuntime()
+    {
+        string name = TestReporter.ConsoleRedirectFlagName;
+        System.Reflection.FieldInfo field = TestReporter.ConsoleRedirectFlagForGuard;
+
+        Assert.IsNotNull(field, $"System.Console.{name} does not resolve on .NET {Environment.Version}: the host's event lines are back on the tearing path (TestReporter.WriteEventLine)");
+        Assert.AreEqual(typeof(bool), field.FieldType, $"System.Console.{name} is no longer a bool on .NET {Environment.Version}: TestReporter.WriteEventLine's redirect test reads it as one");
+        Assert.IsTrue(field.IsStatic, $"System.Console.{name} is no longer static on .NET {Environment.Version}");
+    }
+
     // The other branch: a host whose Console.Out was replaced (an in-process capture) gets the line there.
     [TestMethod]
     public void ARedirectedConsoleOutStillReceivesTheLine()

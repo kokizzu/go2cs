@@ -129,8 +129,14 @@ internal sealed class TestReporter(string package, bool json, bool verbose)
     // Console.SetOut sets this private flag, and it stays set after a restore, so a host that has ever
     // redirected its output keeps writing through Console.Out. A runtime without the field reads as
     // redirected too: the fallback is the behaviour this helper replaced, never a lost capture.
+    internal const string ConsoleRedirectFlagName = "s_isOutTextWriterRedirected";
+
     private static readonly FieldInfo? s_outRedirectedFlag =
-        typeof(Console).GetField("s_isOutTextWriterRedirected", BindingFlags.NonPublic | BindingFlags.Static);
+        typeof(Console).GetField(ConsoleRedirectFlagName, BindingFlags.NonPublic | BindingFlags.Static);
+
+    // The resolved flag, for the guard that fails LOUDLY when a runtime renames or retypes it: the
+    // fallback above is safe for captures but silently re-opens the tear on the real console.
+    internal static FieldInfo? ConsoleRedirectFlagForGuard => s_outRedirectedFlag;
 
     private static bool ConsoleOutIsTheProcessConsole() => s_outRedirectedFlag?.GetValue(null) is false;
 
