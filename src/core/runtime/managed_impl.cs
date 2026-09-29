@@ -1157,6 +1157,12 @@ partial class runtime_package
         // A generic FUNCTION prints as `fn[...]` (funcNameForPrint). A method's C# type parameters are
         // its receiver type's, which the receiver's own `T[...]` already spells, and a function literal
         // keeps the name its enclosing function gave it.
+        //
+        // Named residual (census of the committed corpus, 2026-09-29): a C# generic method whose Go function
+        // is NOT generic prints a [...] Go does not. The only ones are hand-owned helpers typed generically
+        // for the host: unsafe's Add, Sizeof, Slice, SliceData and String (compiler builtins in Go, never a
+        // frame) and sync/atomic's LoadPointer and StorePointer. Every converted Go generic function (145)
+        // emits as a C# generic method, and no converted non-generic one does.
         else if (method.IsGenericMethod && method.Name[0] != '<')
             name = $"{name}[...]";
 
