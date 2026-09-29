@@ -204,7 +204,7 @@ internal static void nestedCall(ж<testing.T> Ꮡt, Action fʗp) {
         var dʗ1 = d;
         defer(() => dʗ1.Value.ΔDLL.Value.Release(), ref ᒐ);
         uintptr LOCALE_NAME_USER_DEFAULT = 0;
-        d.Proc(enumTimeFormatsExˢ).Call(c, LOCALE_NAME_USER_DEFAULT, 0, (uintptr)(~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡf))));
+        d.Proc(enumTimeFormatsExˢ).Call(c, LOCALE_NAME_USER_DEFAULT, 0, (uintptr)(~Ꮡ(@unsafe.Pointer.OfFunc(f))));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
