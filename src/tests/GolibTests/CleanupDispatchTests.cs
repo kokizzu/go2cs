@@ -228,4 +228,163 @@ public sealed class CleanupDispatchTests
         StringAssert.Contains(panic.ToString(), "ptr is nil",
             "ARM 5: refused, but not with Go's message.");
     }
+
+    // ------------------------------------------------------------------------------------------
+    // ARMS 6-9 -- ORDER AGAINST A FINALIZER (A11). Go: "If ptr has both a cleanup and a finalizer,
+    // the cleanup will only run once it has been finalized and becomes unreachable without an
+    // associated finalizer." runtime's TestCleanupAfterFinalizer reads it as: the first GC runs the
+    // finalizer only, the second runs the cleanup.
+    //
+    // The finalizer RESURRECTS the object into a holder the arm controls, so "unreachable again" is
+    // the arm's decision rather than whichever collection happens next. That makes the reading
+    // deterministic in both directions: while the holder is set, no collection may run the cleanup.
+    // ------------------------------------------------------------------------------------------
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Action<ж<ж<nint>>> ResurrectingFinalizer(List<string> seen, StrongBox<object?> holder) =>
+        x =>
+        {
+            lock (seen) seen.Add("finalizer");
+            holder.Value = x;
+        };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void MintCleanupAndFinalizer(List<string> seen, StrongBox<object?> holder, bool finalizerFirst, bool clearFinalizer, List<Δruntime.Cleanup> handles)
+    {
+        ж<ж<nint>> garbage = @new<ж<nint>>();
+        Action<ж<ж<nint>>> finalizer = ResurrectingFinalizer(seen, holder);
+
+        if (finalizerFirst)
+            Δruntime.SetFinalizer(garbage.OrTypedNil(), finalizer);
+
+        handles.Add(Δruntime.AddCleanup(garbage, RecordingCleanup(seen), "cleanup"));
+
+        if (!finalizerFirst)
+            Δruntime.SetFinalizer(garbage.OrTypedNil(), finalizer);
+
+        if (clearFinalizer)
+            Δruntime.SetFinalizer(garbage.OrTypedNil(), default(object)!);
+
+        garbage = default!;
+    }
+
+    private static void MintBothOnDedicatedThread(List<string> seen, StrongBox<object?> holder, bool finalizerFirst, bool clearFinalizer, List<Δruntime.Cleanup> handles)
+    {
+        Thread minter = new(() => MintCleanupAndFinalizer(seen, holder, finalizerFirst, clearFinalizer, handles))
+        {
+            IsBackground = true,
+            Name = "cleanup-finalizer-minter"
+        };
+        minter.Start();
+        Assert.IsTrue(minter.Join(JoinWaitMs), "the minting thread did not finish");
+    }
+
+    private static List<string> Snapshot(List<string> seen)
+    {
+        lock (seen)
+            return new List<string>(seen);
+    }
+
+    // The first collection: the finalizer runs and resurrects the object; the cleanup must not run.
+    private static void FirstDeathRunsOnlyTheFinalizer(List<string> seen, StrongBox<object?> holder, string arm)
+    {
+        List<string> ran = CollectAndDrain(seen, expected: 1);
+
+        // Give a cleanup queued at the same death every chance to show itself before concluding.
+        Thread.Sleep(250);
+        ran = Snapshot(seen);
+
+        Console.WriteLine($"[cleanup:{arm}] first death: resurrected={holder.Value is not null} ran=[{string.Join(",", ran)}]");
+
+        Assert.IsNotNull(holder.Value, $"{arm}: the finalizer never ran, so the arm measured nothing");
+        CollectionAssert.AreEqual(new[] { "finalizer" }, ran,
+            $"{arm}: the cleanup ran at the SAME death as the finalizer. Go runs it only once the object " +
+            "has been finalized AND becomes unreachable again; here the object is still reachable (the " +
+            "finalizer resurrected it), so the cleanup ran on a live object.");
+    }
+
+    [TestMethod]
+    public void Arm6_ACleanupWaitsForTheFinalizerAndTheNextDeath()
+    {
+        List<string> seen = new();
+        StrongBox<object?> holder = new();
+        List<Δruntime.Cleanup> handles = new();
+
+        // runtime's TestCleanupAfterFinalizer order: AddCleanup, then SetFinalizer.
+        MintBothOnDedicatedThread(seen, holder, finalizerFirst: false, clearFinalizer: false, handles);
+        FirstDeathRunsOnlyTheFinalizer(seen, holder, "arm6");
+
+        holder.Value = null;
+        List<string> ran = CollectAndDrain(seen, expected: 2);
+
+        Console.WriteLine($"[cleanup:arm6] second death: ran=[{string.Join(",", ran)}]");
+
+        CollectionAssert.AreEqual(new[] { "finalizer", "cleanup" }, ran,
+            "ARM 6: once the resurrected object became unreachable again, its cleanup did not run -- " +
+            "holding it for the finalizer must defer it, never drop it.");
+    }
+
+    [TestMethod]
+    public void Arm7_TheOrderHoldsWhenTheFinalizerIsRegisteredFirst()
+    {
+        List<string> seen = new();
+        StrongBox<object?> holder = new();
+        List<Δruntime.Cleanup> handles = new();
+
+        MintBothOnDedicatedThread(seen, holder, finalizerFirst: true, clearFinalizer: false, handles);
+        FirstDeathRunsOnlyTheFinalizer(seen, holder, "arm7");
+
+        holder.Value = null;
+        List<string> ran = CollectAndDrain(seen, expected: 2);
+
+        Console.WriteLine($"[cleanup:arm7] second death: ran=[{string.Join(",", ran)}]");
+
+        CollectionAssert.AreEqual(new[] { "finalizer", "cleanup" }, ran,
+            "ARM 7: with SetFinalizer before AddCleanup the cleanup did not wait for the finalizer, or was lost.");
+    }
+
+    [TestMethod]
+    public void Arm8_StopBetweenTheFinalizerAndTheNextDeathCancelsTheCleanup()
+    {
+        List<string> seen = new();
+        StrongBox<object?> holder = new();
+        List<Δruntime.Cleanup> handles = new();
+
+        MintBothOnDedicatedThread(seen, holder, finalizerFirst: false, clearFinalizer: false, handles);
+        FirstDeathRunsOnlyTheFinalizer(seen, holder, "arm8");
+
+        // The cleanup is not queued yet -- the object is reachable again -- so Go's Stop removes it,
+        // and the pointer IS reachable across the call, which is the condition Go's doc sets.
+        handles[0].Stop();
+        holder.Value = null;
+
+        Δruntime.GC();
+        Δruntime.GC();
+        Thread.Sleep(250);
+        List<string> ran = CollectAndDrain(seen, expected: 2);
+
+        Console.WriteLine($"[cleanup:arm8] after Stop and the second death: ran=[{string.Join(",", ran)}]");
+
+        CollectionAssert.AreEqual(new[] { "finalizer" }, ran,
+            "ARM 8: Stop on a cleanup held across its object's finalizer did not cancel it -- the deferred " +
+            "cleanup lost its handle when it was re-attached.");
+    }
+
+    [TestMethod]
+    public void Arm9_AClearedFinalizerReleasesTheCleanupAtTheFirstDeath()
+    {
+        List<string> seen = new();
+        StrongBox<object?> holder = new();
+        List<Δruntime.Cleanup> handles = new();
+
+        // A GUARD, green before and after: SetFinalizer(obj, nil) leaves no finalizer to wait for.
+        MintBothOnDedicatedThread(seen, holder, finalizerFirst: false, clearFinalizer: true, handles);
+        List<string> ran = CollectAndDrain(seen, expected: 1);
+
+        Console.WriteLine($"[cleanup:arm9] ran=[{string.Join(",", ran)}]");
+
+        Assert.IsNull(holder.Value, "ARM 9: a cleared finalizer ran.");
+        CollectionAssert.AreEqual(new[] { "cleanup" }, ran,
+            "ARM 9: with the finalizer cleared, the cleanup must run at the object's first death.");
+    }
 }
