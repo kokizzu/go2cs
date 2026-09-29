@@ -41,6 +41,12 @@
       ]
     },
     {
+      "name": "TestGenericsInlineLocations",
+      "class": "runtime-capability",
+      "signature": "runtime/pprof.TestGenericsInlineLocations;runtime/pprof.nonRecursiveGenericAllocFunction;runtime/pprof.nonRecursiveGenericAllocFunction;runtime/pprof.storeAlloc [1 16 1 16]",
+      "reason": "SHAPE NAMES ONLY. Go names each inlined generic frame with its GC shape (nonRecursiveGenericAllocFunction[go.shape.struct {},go.shape.struct { runtime/pprof.buf [128]uint8 }] and its swap); the CLR's StackFrame.GetMethod() returns the generic method DEFINITION (measured), so both managed frames read nonRecursiveGenericAllocFunction and the expected sample and location cannot match. The pin is the managed stack WITH both generic frames present: until the generic-caller NoInlining rule (claude/g-inline-locations) the JIT inlined them under TieredCompilation=0 and the stack read TestGenericsInlineLocations;storeAlloc, a fixable defect this entry must not absorb -- if either frame vanishes again the pin fails. Retires only if frame resolution can recover an instantiation's shape."
+    },
+    {
       "name": "TestLabelSystemstack",
       "class": "runtime-capability",
       "signature": "runtime.systemstack;key=value has 0 samples out of 0",
