@@ -131,6 +131,10 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return (nuint)NativeElementPointer(index);
     }
 
+    // The same address WITHOUT the length check, for builtin.ElementAddressUnchecked alone: Go's
+    // unsafe.SliceData is `&s[:1][0]`, the window's first element even when len(s) is 0 and cap(s) is not.
+    internal unsafe nuint NativeElementAddressUnchecked(nint index) => (nuint)NativeElementPointer(index);
+
     private slice(nuint nativeBase, nint low, nint high, nint max)
     {
         m_array = [];

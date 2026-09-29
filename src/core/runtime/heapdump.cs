@@ -148,7 +148,7 @@ internal static void dumptype(ж<_type> Ꮡt) {
     }
     // If we've definitely serialized the type before,
     // no need to do it again.
-    var b = Ꮡtypecache.at<typeCacheBucket>((nint)((uint32)(t.Hash & (uint32)((typeCacheBuckets - 1)))));
+    var b = Ꮡtypecache.at<typeCacheBucket>((ulong)((uint32)(t.Hash & (uint32)((typeCacheBuckets - 1)))));
     if (Ꮡt == (~b).t[0]) {
         return;
     }

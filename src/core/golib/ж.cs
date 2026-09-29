@@ -420,6 +420,49 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         return new ElemRefBox<Telem>(array, (int)index);
     }
 
+    /// <summary>
+    /// <see cref="at{Telem}(nint)"/> for an UNSIGNED index, checked at its full value before any narrowing
+    /// (goPanicIndexU): the converter emits a uint/uint32/uint64/uintptr index bare onto this overload,
+    /// where a <c>(nint)</c> cast read an index at or above 2^63 as negative.
+    /// </summary>
+    // The int form completes Ꮡ(x, i)'s int/nint/ulong set, so a literal or a small-integer index keeps binding
+    // exactly with the ulong overload beside it.
+    public ж<Telem> at<Telem>(int index) => at<Telem>((nint)index);
+
+    public ж<Telem> at<Telem>(ulong index)
+    {
+        IArray<Telem> array = arrayView<Telem>();
+
+        if (index >= (ulong)array.Length)
+            throw RuntimeErrorPanic.IndexOutOfRange(index, array.Length);
+
+        return new ElemRefBox<Telem>(array, (int)index);
+    }
+
+    public ж<TElem> at<TElem>(FieldRefFunc<T, array<TElem>> fieldRefFunc, int index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<array<TElem>> fieldRefFunc, int index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<T, slice<TElem>> fieldRefFunc, int index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<slice<TElem>> fieldRefFunc, int index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, array<TElem>> fieldPtrFunc, int index) => of(fieldPtrFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, slice<TElem>> fieldPtrFunc, int index) => of(fieldPtrFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<T, array<TElem>> fieldRefFunc, ulong index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<array<TElem>> fieldRefFunc, ulong index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<T, slice<TElem>> fieldRefFunc, ulong index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldRefFunc<slice<TElem>> fieldRefFunc, ulong index) => of(fieldRefFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, array<TElem>> fieldPtrFunc, ulong index) => of(fieldPtrFunc).at<TElem>(index);
+
+    public ж<TElem> at<TElem>(FieldPtrFunc<T, slice<TElem>> fieldPtrFunc, ulong index) => of(fieldPtrFunc).at<TElem>(index);
+
     public ж<TElem> at<TElem>(FieldRefFunc<T, array<TElem>> fieldRefFunc, nint index) => of(fieldRefFunc).at<TElem>(index);
 
     public ж<TElem> at<TElem>(FieldRefFunc<array<TElem>> fieldRefFunc, nint index) => of(fieldRefFunc).at<TElem>(index);

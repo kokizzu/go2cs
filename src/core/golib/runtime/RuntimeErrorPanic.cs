@@ -257,16 +257,34 @@ public static class RuntimeErrorPanic
         return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
     }
 
+    // runtime's boundsErrorCodes for a 2-index slice of a string (runtime/error.go): `s[?:x], 0 <= x <= len(s)`
+    // failed, and `s[x:y], 0 <= x <= y` failed.
+    private const byte BoundsSliceAlen = 1;
+    private const byte BoundsSliceB = 3;
+
     /// <summary>
-    /// Go's panic for a STRING slice expression <c>s[low:high]</c> out of range, in the Go runtime's
-    /// string shapes: <c>[:5] with length 3</c> when high passes the length, <c>[4:3]</c> when low
-    /// passes high. A string has a length, not a capacity, which is the only difference from
+    /// Go's panic for a STRING slice expression <c>s[low:high]</c> out of range:
+    /// <c>runtime.boundsError</c> with goPanicSliceAlen's code when high passes the length
+    /// (<c>[:5] with length 3</c>) and goPanicSliceB's when low passes high (<c>[4:3]</c>), checked in
+    /// that order, as Go does. A string has a length, not a capacity, which is the only difference from
     /// <see cref="SliceBoundsOutOfRange"/>.
     /// </summary>
+    /// <remarks>
+    /// The value comes from <see cref="BoundsErrorValue"/>, so it recovers as a <c>runtime.Error</c> whose
+    /// <c>Error()</c> is Go's own formatting, a negative bound printing without its partner
+    /// (<c>[:-1]</c>, <c>[-1:]</c>). Unregistered, the fallback string carries the same text.
+    /// </remarks>
     public static PanicException StringSliceBoundsOutOfRange(int64 low, int64 high, int64 length)
     {
-        string bounds = high > length ? $"[:{high}] with length {length}" : low < 0 ? $"[{low}:]" : $"[{low}:{high}]";
-        return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
+        // Both of Go's checks compare unsigned, so a negative bound fails the first check it reaches.
+        if ((uint64)high > (uint64)length)
+        {
+            return new PanicException(BoundsErrorValue?.Invoke(high, length, true, BoundsSliceAlen) ??
+                                      SliceBoundsOutOfRangeMessage + (high < 0 ? $"[:{high}]" : $"[:{high}] with length {length}"));
+        }
+
+        return new PanicException(BoundsErrorValue?.Invoke(low, high, true, BoundsSliceB) ??
+                                  SliceBoundsOutOfRangeMessage + (low < 0 ? $"[{low}:]" : $"[{low}:{high}]"));
     }
 
     private const string ArrayConversionLengthMessage = $"{RuntimeErrorMessage}cannot convert slice with length {{0}} to array or pointer to array with length {{1}}";
