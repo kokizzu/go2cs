@@ -56,13 +56,11 @@ using static global::go.reflect_test_package;
 [assembly: GoDynamicTypeLift("696e746572666163657b5928293b207928293b207265666c6563745f746573742e497d", "TestMethodPkgPath_i")]
 [assembly: GoDynamicTypeLift("696e746572666163657b5928293b207928297d", "TestCallPanic_T1")]
 [assembly: GoDynamicTypeLift("696e746572666163657b612866756e632866756e6328696e742920696e74292066756e632866756e6328696e74292920696e74293b206228297d", "typeᴛ33_x")]
-[assembly: GoDynamicTypeLift("696e746572666163657b7d", "TestTypeFor_myiface")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e49", "TestMethodPkgPath_I")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e4966616365", "TestStructOfWithInterface_Iface")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e4966616365536574", "TestStructOfWithInterface_IfaceSet")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e4e616d6564", "TestStructOfEmbeddedIfaceMethodCall_Named")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e5431", "TestCallPanic_T1")]
-[assembly: GoDynamicTypeLift("7265666c6563745f746573742e6d796966616365", "TestTypeFor_myiface")]
 [assembly: GoDynamicTypeLift("7265666c6563745f746573742e7430", "TestCallPanic_t0")]
 [assembly: GoDynamicTypeLift("7374727563747b2a7265666c6563745f746573742e53467d", "Δtypeᴛ43")]
 [assembly: GoDynamicTypeLift("7374727563747b4120696e743b204220737472696e673b204320626f6f6c7d", "Δtypeᴛ37")]
@@ -204,7 +202,7 @@ using static global::go.reflect_test_package;
 [assembly: global::go.GoPositionMap("reflect/map_swiss_test.go", "map_swiss_test.cs", "AAwcrMKCuoI=")]
 [assembly: global::go.GoPositionMap("reflect/set_test.go", "set_test.cs", "ABUktJSCgoKCgpSAgraUgoKCgoKUgIK2lIKCgoKClICCtpSCgoKCgpSAgraUgoKCgoKCgpSAgraUgoKCgoKCgpSAgraEhIKCgoKCgpSAgtyGooKCgoK4goKCgoCCyJSCgoKCuJSSgoKCggAYLICigKIACBCigoKCgIIAFS6igoKCgII=")]
 [assembly: global::go.GoPositionMap("reflect/tostring_test.go", "tostring_test.cs", "ABQkooKClIKUpKSkgqSkgpS2goKClJSCpIKCgoKClJSCpIKCgoKCpIKkgoKCgoKClJSCpKSCpA==")]
-[assembly: global::go.GoPositionMap("reflect/type_test.go", "type_test.cs", "ABUYggAHIIKCggALCoIABhiCmIKSAC0IogAQSLKSgIIACBCigriiggAJCIIADB6ykoCCAAwMggAMHrKSgII=", "56-58:1;99-103:1;127-127:1;128-128:2;138-142:3;152-152:1;153-153:2;163-167:3")]
+[assembly: global::go.GoPositionMap("reflect/type_test.go", "type_test.cs", "ABQYggAHIIKCggALCoIABhiCmIKSAC0IogAQSLKSgIIACBCigriiggAJCIIADB6ykoCCAAwMggAMHrKSgII=", "56-58:1;99-103:1;127-127:1;128-128:2;138-142:3;152-152:1;153-153:2;163-167:3")]
 [assembly: global::go.GoPositionMap("reflect/visiblefields_test.go", "visiblefields_test.cs", "AMUCygSCgpKSgoKAkqaCgoLKgpSCgrqCgpSCABIQko6CgpSC", "296-329:1")]
 // </GoSourcePositionMaps>
 
@@ -239,7 +237,6 @@ public static partial class reflect_test_package
     [GoLocalName("Named")] internal partial interface TestStructOfEmbeddedIfaceMethodCall_Named {}
     [GoLocalName("Iface")] internal partial interface TestStructOfWithInterface_Iface {}
     [GoLocalName("IfaceSet")] internal partial interface TestStructOfWithInterface_IfaceSet {}
-    [GoLocalName("myiface")] internal partial interface TestTypeFor_myiface {}
     internal partial interface notASTExpr {}
     internal partial interface tinter {}
     internal partial interface typeᴛ33_x {}

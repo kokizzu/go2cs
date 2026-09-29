@@ -1,6 +1,8 @@
 // Copyright 2023 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+global using TestTypeFor_myiface = object;
+
 namespace go;
 
 using Δreflect = reflect_package;
@@ -10,9 +12,6 @@ using static global::go.reflect_internal_test_package;
 partial class reflect_test_package {
 
 [GoLocalName("mystring")] [GoType("@string")] internal partial struct TestTypeFor_mystring;
-
-[GoType("dyn")] internal partial interface TestTypeFor_myiface {
-}
 
 [GoType("dyn")] internal partial struct TestTypeFor_testcases {
     internal any wantFrom;

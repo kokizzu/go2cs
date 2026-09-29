@@ -7001,7 +7001,7 @@ public static void TestStructOfGC(ж<Δtesting.T> Ꮡt) {
         for (nint j = 0; j < v.NumField(); j++) {
             var k = v.Field(j).Elem().Interface();
             if (!AreEqual(k, (uintptr)(i * n + j))) {
-                Ꮡt.Errorf("lost x[%d].%c = %d, want %d"u8, i, "XY"u8[(int)(j)], k, i * n + j);
+                Ꮡt.Errorf("lost x[%d].%c = %d, want %d"u8, i, LiteralByteAt("XY"u8, j), k, i * n + j);
             }
         }
     }
@@ -8109,7 +8109,7 @@ public static void TestAllocsInterfaceSmall(ж<Δtesting.T> Ꮡt) {
     if ((~c).max != max) {
         throw panic("inconsistent use of exhaustive tester");
     }
-    return ((~c).n + (~c).off) % max;
+    return rem(((~c).n + (~c).off), max);
 }
 
 [GoRecv] internal static bool Maybe(this ref exhaustive x) {

@@ -6,7 +6,7 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/cpu` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-28 · converter `9a21c0848`*
 
 **8 matched · 0 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/internal/cpu`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/cpu).
@@ -14,8 +14,6 @@ comparison — it is the evidence behind the `internal/cpu` row in
 Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
 
 Both runtimes skip 4 of the matched tests identically.
-
-> Linux only: on Windows Go itself skips these two through the same MustHaveDebugOptionsSupport guard, so both runtimes skip identically there and the Windows row stays 8 matched / 0 disclosed; this entry fires only where Go's side runs them.
 
 ## Verdicts
 
