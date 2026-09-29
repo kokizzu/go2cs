@@ -144,6 +144,20 @@ public static class PointerExtensions
         if (box.IsNative)
             return new NativeBox<TDst>(box.NativeAddress);
 
+        // A FUNC read back out of a machine word -- `*(*func())(unsafe.Pointer(&lparam))`, the inbound
+        // half of Go's closure-through-an-lParam idiom (runtime's `callback`). The word was minted by
+        // GoFuncCookie when the func was read AS a word, so it resolves to that delegate; a zero word is
+        // Go's nil func. Any other word is not something this runtime minted for a func, and keeps the
+        // route below unchanged. The box is a READ view: a store through it does not re-encode the
+        // word into the slot (no Go caller of the idiom writes through it).
+        if (FuncCookieReinterpret<T, TDst>.Applies &&
+            Unsafe.As<T, nuint>(ref box.ValueSlot) is var word &&
+            (word == 0 || GoFuncCookie.IsCookie(word)))
+        {
+            TDst fn = FuncCookieReinterpret<T, TDst>.Resolve(word);
+            return new StandardBox<TDst>(fn);
+        }
+
         if (ReinterpretAliasesStorage<T, TDst>.Value)
         {
             // Alias the SAME managed storage. Routing through ValueSlot (rather than a cached ref)
@@ -241,6 +255,43 @@ public static class PointerExtensions
     /// together are the boundary idiom this exists for, and they exclude the prefix-downcast
     /// idiom — see the call site.
     /// </remarks>
+    internal static class FuncCookieReinterpret<T, TDst>
+    {
+        /// <summary>A uintptr source slot read as a func -- the only pair a cookie can answer.</summary>
+        internal static readonly bool Applies =
+            typeof(T) == typeof(nuint) && typeof(Delegate).IsAssignableFrom(typeof(TDst));
+
+        /// <summary>
+        /// The func a cookie word names, as <typeparamref name="TDst"/>; Go's nil func for word 0.
+        /// </summary>
+        /// <remarks>
+        /// The delegate was minted under whatever converted delegate type held the func when it was
+        /// read as a word; the reading side may name the same Go signature through another delegate
+        /// type (a named func type, or <c>Action</c> against a <c>Func</c> twin), so a mismatch is
+        /// rebound over the same target and method -- never a DynamicInvoke, which would silently
+        /// narrow the contract. A cookie whose func is no longer alive, or whose signature cannot be
+        /// bound, is refused by name: both are a use of a word nothing live stands behind.
+        /// </remarks>
+        internal static TDst Resolve(nuint word)
+        {
+            if (word == 0)
+                return default!;
+
+            Delegate? fn = GoFuncCookie.Resolve(word);
+
+            if (fn is null)
+                throw new PanicException("go2cs: func cookie 0x" + word.ToString("x") + " names no live func -- the func value it was read from is no longer referenced");
+
+            if (fn is TDst typed)
+                return typed;
+
+            if (Delegate.CreateDelegate(typeof(TDst), fn.Target, fn.Method, throwOnBindFailure: false) is TDst rebound)
+                return rebound;
+
+            throw new PanicException("go2cs: func cookie 0x" + word.ToString("x") + " holds a " + fn.GetType().Name + ", which cannot be read as " + typeof(TDst).Name);
+        }
+    }
+
     internal static class RemembersReinterpretSource<T, TDst>
     {
         internal static readonly bool Value =

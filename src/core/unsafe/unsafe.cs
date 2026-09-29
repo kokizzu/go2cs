@@ -519,6 +519,17 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
         return new Pointer((uintptr)box, box);
     }
 
+    // The word a Go FUNC value answers when it is read AS a word -- `*(*unsafe.Pointer)(unsafe.Pointer(&f))`,
+    // emitted for a func-typed f. Go's func value is one pointer (to a funcval); a managed one is a
+    // delegate with no address, so the word is its GoFuncCookie: carried by native code as an lParam and
+    // resolved back to the same delegate by the `*(*func())(unsafe.Pointer(&word))` read (golib's
+    // Reinterpret). A nil func is Go's zero word. It carries no retained source on purpose: a cookie is a
+    // NUMBER in Go's sense, and like a uintptr it does not keep the func alive.
+    public static Pointer OfFunc(Delegate? fn)
+    {
+        return fn is null ? Nil : new Pointer(GoFuncCookie.Of(fn));
+    }
+
     // ---- the bare-unsafe.Pointer primitives' recovery and through-ops (I5) ----
 
     // The referent this pointer can store/load through: the retained box first; else whatever the
