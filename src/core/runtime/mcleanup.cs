@@ -28,12 +28,16 @@
 //     already tells a cleanup that must run for a long time to start a goroutine, so no correct Go
 //     program depends on the concurrency; what a blocking cleanup costs HERE is the finalizer
 //     queue as well, bounded by GoFinalizerQueue.DrainBudgetMs exactly as a parked finalizer is.
-//  2. ORDER AGAINST A FINALIZER. Go: "If ptr has both a cleanup and a finalizer, the cleanup will
-//     only run once it has been finalized and becomes unreachable without an associated
-//     finalizer." We cannot order two .NET finalizers against each other, so the two sentinels for
-//     one object are collected in an unspecified order and their bodies queue in that order. Go
-//     specifies no order among cleanups either; this is the one ordering Go DOES specify and we do
-//     not honour it.
+//  2. ORDER AGAINST A FINALIZER -- HONOURED SINCE A11, with one residual difference. Go: "If ptr
+//     has both a cleanup and a finalizer, the cleanup will only run once it has been finalized and
+//     becomes unreachable without an associated finalizer." .NET finalizes the two sentinels in no
+//     specified order, so the order is imposed at DISPATCH by a gate the two registrations share
+//     (GoFinalizerGate, mfinal.cs): a cleanup whose object dies while its finalizer is pending is
+//     HELD, and re-attached to the resurrected object once the finalizer has run, so it runs at the
+//     object's next death. THE RESIDUAL: runtime.GC() collects again after the finalizers drain
+//     (managed_impl.cs), so when nothing keeps the finalized object alive its cleanup can come due
+//     inside the SAME runtime.GC() call, where Go needs a second cycle. It still runs after the
+//     finalizer, never before; runtime's TestCleanupAfterFinalizer reads the order, not the cycle.
 //  3. THE ptr == arg GUARD IS WIDER THAN GO'S. Go compares the two pointer VALUES. We compare
 //     referents, so we also panic when arg is a pointer to a DIFFERENT field of the same
 //     allocation. That direction is safe: such an arg keeps the allocation alive, so the cleanup
@@ -161,7 +165,18 @@ public static Cleanup AddCleanup<T, S>(ж<T> Ꮡptr, Action<S> cleanup, S argʗp
     // work here today by accident -- a class with no declared constructor gets a public implicit one
     // -- and would start throwing the day someone gives GoCleanupSet a constructor, from a call site
     // that names neither the type nor the reason.
-    s_cleanupRegistry.GetValue(referent, static _ => new GoCleanupSet()).Add(sentinel);
+    //
+    // Under the lock SetFinalizer links from the other side: a set on an object that already has a
+    // Go finalizer waits on that finalizer's gate (A11, divergence 2).
+    lock (s_cleanupFinalizerLink) {
+        GoCleanupSet set = s_cleanupRegistry.GetValue(referent, static _ => new GoCleanupSet());
+
+        set.Gate = s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? finalizer) && finalizer.Gate.IsPending
+            ? finalizer.Gate
+            : null;
+
+        set.Add(sentinel);
+    }
     uint64 id = GoCleanupSentinel.Register(sentinel);
     return new Cleanup(
         id: id,
@@ -203,6 +218,34 @@ public static void Stop(this Cleanup c) {
 // every sentinel in it become collectible together -- which is exactly when the cleanups are due.
 private static readonly global::System.Runtime.CompilerServices.ConditionalWeakTable<object, GoCleanupSet> s_cleanupRegistry = new();
 
+// Orders the two sides of the finalizer/cleanup link (SetFinalizer and AddCleanup, and a re-attach),
+// so a set and a finalizer registered concurrently on one object cannot miss each other.
+private static readonly object s_cleanupFinalizerLink = new();
+
+// A11: puts cleanups HELD across their object's finalizer back on the object the finalizer
+// resurrected. The registry entry survives the resurrection (see GoFinalizerGate.IsPending), so
+// this usually finds the same set, now waiting on no finalizer unless the finalizer body registered
+// a new one; the sentinels' `~` are re-armed so they run at the object's next death. Each keeps its
+// sentinel and so its id: a Stop before the object's next death still cancels it, as Go's does,
+// because in Go the cleanup is not queued until then either. If the finalizer registered a new
+// finalizer on the object, the new set waits on that one too.
+private static void ReattachCleanups(object target, global::System.Collections.Generic.IEnumerable<GoCleanupSentinel> held)
+{
+    object referent = ReferentOf(target);
+
+    lock (s_cleanupFinalizerLink) {
+        GoCleanupSet set = s_cleanupRegistry.GetValue(referent, static _ => new GoCleanupSet());
+
+        set.Gate = s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? finalizer) && finalizer.Gate.IsPending
+            ? finalizer.Gate
+            : null;
+
+        foreach (GoCleanupSentinel sentinel in held) {
+            sentinel.Reattach(set);
+        }
+    }
+}
+
 private sealed class GoCleanupSet
 {
     // ⚠ A LIFETIME ANCHOR, WRITTEN AND NEVER READ, AND THAT IS THE ENTIRE JOB. This list is the only
@@ -213,10 +256,15 @@ private sealed class GoCleanupSet
     // compile error and no test that obviously names it. Do not remove it.
     private readonly global::System.Collections.Generic.List<GoCleanupSentinel> m_sentinels = new();
 
+    // The finalizer this object's cleanups wait on, when the object has one (A11); null otherwise.
+    internal volatile GoFinalizerGate? Gate;
+
     internal void Add(GoCleanupSentinel sentinel)
     {
         lock (m_sentinels)
             m_sentinels.Add(sentinel);
+
+        sentinel.Set = this;
     }
 }
 
@@ -231,8 +279,13 @@ private sealed class GoCleanupSentinel
     // that contract. The sentinel shell left behind is two words and dies with the object.
     private global::System.Action? m_body;
     private volatile bool m_cancelled;
+    private ulong m_id;
 
     internal GoCleanupSentinel(global::System.Action body) => m_body = body;
+
+    // The set this sentinel is registered in, read for its finalizer gate when the object dies. A
+    // back reference inside one dying group, so it keeps nothing alive that was not already.
+    internal volatile GoCleanupSet? Set;
 
     ~GoCleanupSentinel()
     {
@@ -243,6 +296,16 @@ private sealed class GoCleanupSentinel
 
         if (m_cancelled || body is null)
             return;
+
+        // A11: the object also has a Go finalizer that has not released it -- the gate holds this
+        // cleanup for the object's next death instead of queueing it now. The sentinel is reachable
+        // again through the gate, so its id entry is renewed at once and a Stop in between still
+        // finds it (the old weak entry was cleared when the object died).
+        if (Set?.Gate is { } gate && gate.Hold(this))
+        {
+            s_byID[m_id] = new global::System.WeakReference<GoCleanupSentinel>(this, trackResurrection: false);
+            return;
+        }
 
         // HAND OFF, never invoke here -- running a Go body on the CLR finalizer thread is the
         // deadlock GoFinalizerQueue exists to avoid, and it is no less a deadlock for a cleanup.
@@ -269,6 +332,7 @@ private sealed class GoCleanupSentinel
     {
         // Never 0: Go reserves id 0 for the noop cleanup and Stop returns early on it.
         ulong id = global::System.Threading.Interlocked.Increment(ref s_nextID);
+        sentinel.m_id = id;
 
         s_byID[id] = new global::System.WeakReference<GoCleanupSentinel>(sentinel, trackResurrection: false);
 
@@ -279,6 +343,21 @@ private sealed class GoCleanupSentinel
         }
 
         return id;
+    }
+
+    // A11: registers a held sentinel in the set its resurrected object now has, and makes its `~`
+    // run again at that object's next death. False when a Stop cancelled it while it was held.
+    internal bool Reattach(GoCleanupSet set)
+    {
+        if (m_cancelled || m_body is null)
+            return false;
+
+        // The surviving set still lists this sentinel; a set the finalizer body replaced does not.
+        if (!ReferenceEquals(Set, set))
+            set.Add(this);
+
+        global::System.GC.ReRegisterForFinalize(this); // qualified: bare `GC` binds Go's runtime.GC()
+        return true;
     }
 
     internal static void Cancel(uint64 id)
