@@ -240,51 +240,91 @@ public static class RuntimeErrorPanic
     }
 
     private const string SliceBoundsOutOfRangeMessage = $"{RuntimeErrorMessage}slice bounds out of range ";
-    public static PanicException SliceBoundsOutOfRange(int64 low, int64 high, int64 max, int64 capacity)
+
+    // runtime's boundsErrorCodes for slice expressions (runtime/error.go). An A code is the high bound of a 2-index
+    // expression, or the max bound of a 3-index one, past the length or the capacity; B and C are a lower pair out
+    // of order.
+    private const byte BoundsSliceAlen = 1;
+    private const byte BoundsSliceAcap = 2;
+    private const byte BoundsSliceB = 3;
+    private const byte BoundsSlice3Alen = 4;
+    private const byte BoundsSlice3Acap = 5;
+    private const byte BoundsSlice3B = 6;
+    private const byte BoundsSlice3C = 7;
+
+    // A slice-bounds panic whose value is runtime.boundsError{x, y, signed: true, code}, formatted by Go's own
+    // Error(). Unregistered (see BoundsErrorValue), the fallback string is the same text: Go's boundsErrorFmts, or
+    // boundsNegErrorFmts when x is negative (a negative bound prints without its partner).
+    private static PanicException SliceBoundsError(int64 x, int64 y, byte code)
     {
-        // Mirrors the Go runtime's message shapes for a slice expression s[low:high:max]
-        string bounds;
-
-        if (max > capacity)
-            bounds = $"[::{max}] with capacity {capacity}";
-        else if (high > max)
-            bounds = max == capacity ? $"[:{high}] with capacity {capacity}" : $"[:{high}:{max}]";
-        else if (low < 0)
-            bounds = $"[{low}:]";
-        else
-            bounds = $"[{low}:{high}]";
-
-        return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
+        return new PanicException(BoundsErrorValue?.Invoke(x, y, true, code) ?? SliceBoundsOutOfRangeMessage + code switch
+        {
+            BoundsSliceAlen => x < 0 ? $"[:{x}]" : $"[:{x}] with length {y}",
+            BoundsSliceAcap => x < 0 ? $"[:{x}]" : $"[:{x}] with capacity {y}",
+            BoundsSliceB => x < 0 ? $"[{x}:]" : $"[{x}:{y}]",
+            BoundsSlice3Alen => x < 0 ? $"[::{x}]" : $"[::{x}] with length {y}",
+            BoundsSlice3Acap => x < 0 ? $"[::{x}]" : $"[::{x}] with capacity {y}",
+            BoundsSlice3B => x < 0 ? $"[:{x}:]" : $"[:{x}:{y}]",
+            _ => x < 0 ? $"[{x}::]" : $"[{x}:{y}:]"
+        });
     }
 
-    // runtime's boundsErrorCodes for a 2-index slice of a string (runtime/error.go): `s[?:x], 0 <= x <= len(s)`
-    // failed, and `s[x:y], 0 <= x <= y` failed.
-    private const byte BoundsSliceAlen = 1;
-    private const byte BoundsSliceB = 3;
+    // Go's check ORDER (cmd/compile's ssagen slice): the highest bound against the length or capacity first, then
+    // each lower pair, high to low. Every check compares UNSIGNED, so a negative bound fails the first check that
+    // reads it. The caller has established that a check failed; these name which one.
+    private static PanicException SliceBounds2(int64 low, int64 high, int64 bound, byte codeA)
+    {
+        return (uint64)high > (uint64)bound ? SliceBoundsError(high, bound, codeA) : SliceBoundsError(low, high, BoundsSliceB);
+    }
+
+    private static PanicException SliceBounds3(int64 low, int64 high, int64 max, int64 bound, byte codeA)
+    {
+        if ((uint64)max > (uint64)bound)
+            return SliceBoundsError(max, bound, codeA);
+
+        return (uint64)high > (uint64)max ? SliceBoundsError(high, max, BoundsSlice3B) : SliceBoundsError(low, high, BoundsSlice3C);
+    }
 
     /// <summary>
-    /// Go's panic for a STRING slice expression <c>s[low:high]</c> out of range:
-    /// <c>runtime.boundsError</c> with goPanicSliceAlen's code when high passes the length
-    /// (<c>[:5] with length 3</c>) and goPanicSliceB's when low passes high (<c>[4:3]</c>), checked in
-    /// that order, as Go does. A string has a length, not a capacity, which is the only difference from
-    /// <see cref="SliceBoundsOutOfRange"/>.
+    /// Go's panic for a 2-index slice expression <c>s[low:high]</c> over a SLICE, whose high bound is checked
+    /// against the capacity: <c>[:11] with capacity 10</c> (goPanicSliceAcap), then <c>[4:2]</c> (goPanicSliceB).
     /// </summary>
     /// <remarks>
-    /// The value comes from <see cref="BoundsErrorValue"/>, so it recovers as a <c>runtime.Error</c> whose
-    /// <c>Error()</c> is Go's own formatting, a negative bound printing without its partner
-    /// (<c>[:-1]</c>, <c>[-1:]</c>). Unregistered, the fallback string carries the same text.
+    /// Every slice-bounds builder raises <c>runtime.boundsError</c> through <see cref="BoundsErrorValue"/>, so the
+    /// panic recovers as a <c>runtime.Error</c> whose <c>Error()</c> is Go's formatting. Unregistered, the fallback
+    /// string carries the same text.
     /// </remarks>
-    public static PanicException StringSliceBoundsOutOfRange(int64 low, int64 high, int64 length)
+    public static PanicException SliceBoundsOutOfRange(int64 low, int64 high, int64 capacity)
     {
-        // Both of Go's checks compare unsigned, so a negative bound fails the first check it reaches.
-        if ((uint64)high > (uint64)length)
-        {
-            return new PanicException(BoundsErrorValue?.Invoke(high, length, true, BoundsSliceAlen) ??
-                                      SliceBoundsOutOfRangeMessage + (high < 0 ? $"[:{high}]" : $"[:{high}] with length {length}"));
-        }
+        return SliceBounds2(low, high, capacity, BoundsSliceAcap);
+    }
 
-        return new PanicException(BoundsErrorValue?.Invoke(low, high, true, BoundsSliceB) ??
-                                  SliceBoundsOutOfRangeMessage + (low < 0 ? $"[{low}:]" : $"[{low}:{high}]"));
+    /// <summary>
+    /// Go's panic for a 3-index slice expression <c>s[low:high:max]</c> over a SLICE: <c>[::11] with capacity 10</c>
+    /// (goPanicSlice3Acap), then <c>[:11:10]</c> (goPanicSlice3B), then <c>[4:2:]</c> (goPanicSlice3C).
+    /// </summary>
+    public static PanicException SliceBoundsOutOfRange(int64 low, int64 high, int64 max, int64 capacity)
+    {
+        return SliceBounds3(low, high, max, capacity, BoundsSlice3Acap);
+    }
+
+    /// <summary>
+    /// Go's panic for a 2-index slice expression <c>s[low:high]</c> over a value with a LENGTH and no capacity of
+    /// its own, an array or a string: <c>[:5] with length 3</c> (goPanicSliceAlen), then <c>[4:3]</c>
+    /// (goPanicSliceB).
+    /// </summary>
+    public static PanicException LengthSliceBoundsOutOfRange(int64 low, int64 high, int64 length)
+    {
+        return SliceBounds2(low, high, length, BoundsSliceAlen);
+    }
+
+    /// <summary>
+    /// Go's panic for a 3-index slice expression <c>a[low:high:max]</c> over an ARRAY: <c>[::4] with length 3</c>
+    /// (goPanicSlice3Alen), then the same B and C shapes as a slice's.
+    /// </summary>
+    public static PanicException LengthSliceBoundsOutOfRange(int64 low, int64 high, int64 max, int64 length)
+    {
+        return SliceBounds3(low, high, max, length, BoundsSlice3Alen);
     }
 
     private const string ArrayConversionLengthMessage = $"{RuntimeErrorMessage}cannot convert slice with length {{0}} to array or pointer to array with length {{1}}";

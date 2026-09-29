@@ -271,26 +271,34 @@ public readonly struct @string :
     // The result WINDOWS the same backing array — no allocation, no copy, exactly as in Go. An
     // out-of-range bound is Go's runtime panic, measured against the receiver's window: CLR
     // ArgumentExceptions here escaped recover(). (A NEGATIVE bound cannot arrive: System.Index
-    // refuses it in the caller's conversion, before this runs; that is the slice-bounds sizing's R1.)
-    public @string this[Range range]
+    // refuses it in the caller's conversion, before this runs. A bound that can be negative or past
+    // int32 takes slice(low, high) below instead: S-c R1-A.)
+    public @string this[Range range] => slice(range.Start.GetOffset(m_length), range.End.GetOffset(m_length));
+
+    // Go's 2-index s[low:] and s[low:high] (`s[:high]` is `slice(0, high)`) with NO sentinel: high is checked
+    // against the length, then low against high, both unsigned, so a negative bound fails the first check
+    // that reads it (goPanicSliceAlen, goPanicSliceB), and a bound past int32 is checked at its full value
+    // (S-c R1-A, docs/phase4/DESIGN-slice-bounds-r1a.md). An instance member, so it binds ahead of the
+    // `builtin.slice(this @string, …)` extension, which stays golib's sentinel form over the raw bytes.
+    public @string slice(nint low)
     {
-        get
-        {
-            int low = range.Start.GetOffset(m_length);
-            int high = range.End.GetOffset(m_length);
+        return slice(low, m_length);
+    }
 
-            if (low < 0 || high < low || high > m_length)
-                throw RuntimeErrorPanic.StringSliceBoundsOutOfRange(low, high, m_length);
+    public @string slice(nint low, nint high)
+    {
+        if ((nuint)high > (nuint)m_length || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, m_length);
 
-            return new @string(m_value ?? [], m_offset + low, high - low);
-        }
+        return new @string(m_value ?? [], m_offset + (int)low, (int)(high - low));
     }
 
     // IByteSeq<@string, byte> — models Go's `string | []byte` union constraint. The byte indexer
     // (this[nint]) implicitly implements IByteSeq<byte>.this[nint], and the @string range indexer
     // above implicitly implements IByteSeq<@string, byte>.this[Range] — self-referential, so a
-    // generic body's sub-slice stays an @string instead of boxing into the interface. Only Length
-    // needs an explicit form, to widen @string's int Length to the interface's nint.
+    // generic body's sub-slice stays an @string instead of boxing into the interface; the slice pair
+    // above implements its sentinel-free sub-slice the same way. Only Length needs an explicit form,
+    // to widen @string's int Length to the interface's nint.
     nint IByteSeq.Length => m_length;
 
     public ReadOnlySpan<byte> Slice(int start, int length)
@@ -324,7 +332,7 @@ public readonly struct @string :
         nint bound = max == -1 ? m_length : max;
 
         if (start < 0 || end < start || bound < end || bound > m_length)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(start, end, bound, m_length);
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(start, end, bound, m_length);
 
         return Bytes.Slice((int)start, (int)(end - start));
     }

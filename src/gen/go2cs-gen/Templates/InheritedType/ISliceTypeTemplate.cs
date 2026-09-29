@@ -56,6 +56,13 @@ internal static class ISliceTypeTemplate
                 // same backing window.
                 public {{structName}} this[global::System.Range range] => new {{structName}}(m_value[range]);
 
+                // The same sub-slice when a bound is not a constant that fits int32 (a C# Range cannot
+                // carry a negative bound or one past int32): golib's sentinel-free pair, which panics as Go
+                // does, still keeping the named type (S-c R1-A).
+                public {{structName}} slice(nint low) => new {{structName}}(m_value.slice(low));
+
+                public {{structName}} slice(nint low, nint high) => new {{structName}}(m_value.slice(low, high));
+
                 ISlice<{{targetTypeName}}> ISlice<{{targetTypeName}}>.this[global::System.Range range] => m_value[range];
                 
                 public {{structName}} Slice(int start, int length) => new {{structName}}(m_value.Slice(start, length));
