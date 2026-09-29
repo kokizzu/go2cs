@@ -551,6 +551,14 @@ partial class runtime_package
     internal static void shrinkstack(ж<g> Ꮡgp) =>
         throw new PanicException("runtime: shrinkstack: goroutines are CLR threads with no Go stack to shrink");
 
+    // spanOf (mheap.go) ANSWERS NIL, which is Go's own answer for an address no heap span contains.
+    // Here that is every address: the managed model allocates on the CLR heap and never creates a Go
+    // heap arena, so mheap_.arenas[0] is nil and the converted body died indexing it (amd64 folds the
+    // L1 nil check away). Its callers already treat nil as "not a Go heap object": findObject returns
+    // 0, the bulk write barriers fall back to the module bitmaps, and the arena checks answer "not in a
+    // user arena chunk". Coordinator ruling 2026-09-28 22:01.
+    internal static ж<mspan> spanOf(uintptr Δp) => default!;
+
     // GoSpanOfProbe is the GolibTests seam for spanOf (GolibTests is outside the InternalsVisibleTo
     // grant): true when spanOf answers nil for p.
     public static bool GoSpanOfProbe(uintptr p) => spanOf(p) == nil;

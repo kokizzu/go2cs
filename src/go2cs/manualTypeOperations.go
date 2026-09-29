@@ -540,6 +540,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// "missing stack in shrinkstack" because a goroutine here is a CLR thread with no Go stack
 		// (stack.lo is 0), which exited the process and lost every later test in the runtime row.
 		"shrinkstack": goosAny,
+		// spanOf ANSWERS NIL (coordinator ruling 2026-09-28 22:01, the P1 disclosure seat): Go's own
+		// answer for an address that no heap span contains, and true for every address here, since the
+		// managed model has no Go heap arenas. The converted body indexed mheap_.arenas[0], which is nil
+		// (amd64 has no L1 nil check), so every caller died on an anonymous nil dereference. See
+		// managed_impl.cs. Three export_test.go helpers refuse by name at their representational point
+		// instead (export_impl_test.cs): KeepNArenaHints (no arena hints), TracebackSystemstack (no
+		// system stack to switch to) and G0StackOverflow (no g0 stack to overflow).
+		"spanOf":               goosAny,
+		"KeepNArenaHints":      goosAny,
+		"TracebackSystemstack": goosAny,
+		"G0StackOverflow":      goosAny,
 		// User arenas over managed allocations (arena_impl.cs). Go carves them from its own heap:
 		// newUserArena reached fixalloc before FixAlloc_Init and threw. The arena keeps a strong list
 		// of its allocations, made through reflect's bridge, and arena_heapify tests membership on
