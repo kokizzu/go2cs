@@ -234,3 +234,35 @@ attrs3_disabled 9 -> 8; attrs6 21 -> 19; attrs9 28 -> 25; TestAttrNoAlloc 14 -> 
 **Gate:** the classification is controlled both ways (a type with one dereferencing reader must be
 refused), then log/slog's row reads before and after at Release with tiering off; slog's
 TestValueString and TestValueEqual are the behaviour gates.
+
+
+## 9. Dated amendment, 2026-09-29 (P1, coordinator ruling 2026-09-29 02:57) -- two stages for runtime's string rows
+
+Written so runtime's TestIntStringAllocs and TestConcatTempString cite a stage that removes their counted
+allocation, under the 2026-09-05 deferred-class ruling. Read on LINUX at the runtime disclosure seat's full
+row (`7c27acb6c5`, Release, tiering off). **Owner of the record: C1, who reviews this block later; the
+stages are unowned seats until routed.** Nothing above this block is rewritten. Feasibility and cost are
+UNMEASURED.
+
+**Stage 4, widened -- the rune arm's consumer.** §7 stage 4 covers a `string(r)` handed to a non-retaining
+callee. TestIntStringAllocs' two conversions (`s1 := string(r)`, `s2 := string(r+1)`) are consumed only inside
+one comparison (`s1 == s2`) and never retained, so the predicate gains a second consumer: a rune conversion
+whose result is read only by comparisons within its own block. Removes: two counted objects per run (64 B),
+the row's whole reading (want 0). Preconditions: the same non-retention proof stage 4 already carries,
+extended to comparison operands; the transient is a one-rune `@string` over a 4-byte frame buffer, as stage 4
+states. Refusal: a result stored, returned, captured or passed to a callee not classified non-retaining.
+
+**Stage 6, new -- an N-ary concatenation consumed by a comparison.** TestConcatTempString evaluates
+`"prefix " + string(b) + " suffix" != "prefix bytes suffix"`. The concatenation allocates an intermediate
+`@string` and the result (two counted objects per run, 88 B); Go builds the 19-byte result in a 32-byte stack
+`tmpBuf` and allocates nothing. Stage: lower an N-ary `+` chain whose result is consumed entirely by a
+comparison to one concatenation into a transient buffer of the operands' total length (a frame buffer up to
+32 bytes, matching Go's `tmpBuf`; above it the result may allocate, as Go's does), read only by the
+comparison. Removes: both counted objects on this row. Preconditions: the operands are read once, in order;
+a `sstring` operand (`string(b)` over a non-escaping `[]byte`) contributes its bytes without a copy.
+Refusals: a result stored, returned, captured or passed on; a chain whose operands are not all side-effect
+free to evaluate once.
+
+**Gate:** each stage is controlled against a retained result (it must keep the copy), then TestIntStringAllocs
+and TestConcatTempString are read before and after at Release with tiering off; each entry leaves the manifest
+only when its reading reaches zero bytes.
