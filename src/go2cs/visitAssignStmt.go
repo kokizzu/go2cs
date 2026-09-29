@@ -567,6 +567,9 @@ func (v *Visitor) nativeBackedArrayPointerStore(lhs ast.Expr, rhs ast.Expr) (str
 func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingContext) {
 	result := &strings.Builder{}
 
+	// A store to a readonly zero-size layout field is lowered through its accessor (A17).
+	v.markZeroSizeFieldStores(assignStmt)
+
 	// A func literal on the RHS (or inside a composite-literal element of it) emits its captured-
 	// variable snapshot declarations inline at the literal's position — invalid C# in an expression
 	// slot. For a standalone statement, collect them in a buffer and write them before the statement.

@@ -98,13 +98,13 @@ internal static void namedZeroSizeWrites() {
     var arr = new Carrier[]{new(V: pattern), new(V: pattern)}.array();
     var o = new Outer(C: new Carrier(V: pattern));
     var s = new Carrier[]{new(V: pattern), new(V: pattern)}.slice();
-    x.Z = side();
-    p.Value.Z = side();
-    arr[1].Z = side();
-    o.C.Z = side();
-    s[1].Z = side();
+    Carrier.ᏑZ(ref x) = side();
+    Carrier.ᏑZ(ref p.Value) = side();
+    Carrier.ᏑZ(ref arr[1]) = side();
+    Carrier.ᏑZ(ref o.C) = side();
+    Carrier.ᏑZ(ref s[1]) = side();
     nint n = default!;
-    (x.Z, n) = (side(), 7);
+    (Carrier.ᏑZ(ref x), n) = (side(), 7);
     fmt.Printf("assignments ran %d right sides; n = %d; V: %#x %#x %#x %#x\n"u8, sideCalls, n, x.V, arr[1].V, o.C.V, s[1].V);
 }
 

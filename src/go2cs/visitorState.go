@@ -495,7 +495,12 @@ type Visitor struct {
 	// operands untyped (see markUntypedConstContexts). convBasicLit consults it for the F/D
 	// float-literal suffix and the postfix `.i()` complex64/complex128 overload choice.
 	untypedConstContexts map[ast.Expr]types.Type
-	funcLevelDecls       map[string]*types.Var // Function-level local declarations of the current function (for global-shadow qualification)
+
+	// zeroSizeFieldStores maps an assignment TARGET that selects a readonly zero-size layout field to
+	// the generated accessor its store is lowered through (see markZeroSizeFieldStores).
+	// convSelectorExpr consults it.
+	zeroSizeFieldStores map[*ast.SelectorExpr]string
+	funcLevelDecls      map[string]*types.Var // Function-level local declarations of the current function (for global-shadow qualification)
 	// funcScopeVarNames holds the Go name of every variable declared ANYWHERE in the current
 	// function — receiver, parameters, results and locals at every nesting depth, including inside
 	// func literals. A bare type name spelled by the EMITTER (the `Type.Ꮡfield` box accessor) binds
