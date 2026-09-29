@@ -244,7 +244,7 @@ internal static void debugCallWrap2(uintptr dispatch) {
         ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
         ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
         dispatchFV = new funcval(dispatch);
-        (Ꮡ(new @unsafe.Pointer((uintptr)ᏑdispatchF))).Value = (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(ᏑdispatchFV));
+        (Ꮡ(@unsafe.Pointer.OfFunc(dispatchF))).Value = (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(ᏑdispatchFV));
         bool ok = default!;
         defer(() => {
             if (!ok) {

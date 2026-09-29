@@ -4929,13 +4929,57 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 	// the address route's deref is a nil dereference. reflect's TestValuePointerAndUnsafePointer builds
 	// its case table EAGERLY, so that one element killed the whole test before any subtest ran: seven
 	// empty verdicts from one throw.
+	//
+	// THE WORD, READ FROM THE STORAGE, for the three source kinds whose word the managed model CAN
+	// state (ruling 2026-09-28 15:03 (1), folded into the func cookie seat at 23:1x). The box token
+	// above is one level off for them: it is `&x`, where Go reads x's own stored bits. So at ONE level:
+	//   - a Go POINTER source's word is that pointer: `unsafe.Pointer(p)`'s own emission,
+	//     FromPinnedBox over the stored box;
+	//   - an unsafe.Pointer source's word is the stored Pointer itself;
+	//   - a FUNC source's word is its GoFuncCookie (unsafe.Pointer.OfFunc) -- the number an OS can
+	//     carry through an lParam and golib's Reinterpret resolves back to the same delegate
+	//     (runtime's nestedCall/callback pair).
+	// A channel, a map and plain-byte storage keep the box token: their consumers are the disclosed
+	// reflect pointer rows and code no live path reaches, and UnsafePointerWordRead pins the channel
+	// arm's contract (non-nil, stable). A STORE through this form still lands in the fresh Ꮡ(…) box --
+	// a box cannot observe a write through a ref it has handed out, so a store owes a statement-level
+	// emission of its own, named as a follow-up rather than approximated here.
 	if levels, ok := unsafePointerTargetLevels(v.info.TypeOf(callExpr)); ok {
 		boxExpr := v.convExpr(src, []ExprContext{identContext})
 		carried := fmt.Sprintf("new @unsafe.Pointer((uintptr)%s)", boxExpr)
 
 		if srcPtr, isPtr := types.Unalias(v.info.TypeOf(src)).(*types.Pointer); isPtr {
-			if srcBasic, srcIsBasic := types.Unalias(srcPtr.Elem()).(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
+			srcElem := types.Unalias(srcPtr.Elem())
+
+			if srcBasic, srcIsBasic := srcElem.(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
 				carried = fmt.Sprintf("new @unsafe.Pointer(~%s)", boxExpr)
+			} else if levels == 1 {
+				// The STORED value of x. For the literal `&x` shape it is x itself, converted in the
+				// context its kind is read in -- a pointer in the pointer context, which renders a
+				// deref-aliased pointer PARAMETER as its box (`Ꮡp`) rather than as its pointee, where a
+				// blanket `~Ꮡ(p)` would read the int behind it. Any other source shape reads its box.
+				storedValue := func(pointerContext bool) string {
+					if unary, isAddr := ast.Unparen(src).(*ast.UnaryExpr); isAddr && unary.Op == token.AND {
+						if pointerContext {
+							return v.convExpr(unary.X, []ExprContext{identContext})
+						}
+
+						return v.convExpr(unary.X, nil)
+					}
+
+					return fmt.Sprintf("~%s", boxExpr)
+				}
+
+				switch srcUnder := srcElem.Underlying().(type) {
+				case *types.Signature:
+					carried = fmt.Sprintf("@unsafe.Pointer.OfFunc(%s)", storedValue(false))
+				case *types.Pointer:
+					carried = fmt.Sprintf("@unsafe.Pointer.FromPinnedBox(%s)", storedValue(true))
+				case *types.Basic:
+					if srcUnder.Kind() == types.UnsafePointer {
+						carried = storedValue(false)
+					}
+				}
 			}
 		}
 
