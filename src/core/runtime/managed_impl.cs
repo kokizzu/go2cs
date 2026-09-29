@@ -2613,13 +2613,14 @@ partial class runtime_package
     // for a token outside every span, such as a function value's). Go's Entry() names "the entry
     // address of the function"; this host has no addresses, only opaque per-call-site tokens
     // (the file header's standing doctrine), and a token already IS this host's answer to which
-    // function a *Func names — the same identity Name() reads out of the same record. A Func
-    // this host did not mint (Ꮡf == nil, or a box with no record — there should be none minted
-    // any other way) answers 0, matching Go's zero-entry case for an unresolved Func.
+    // function a *Func names — the same identity Name() reads out of the same record. A box with
+    // no record (there should be none minted any other way) answers 0. A nil *Func FAULTS, as Go's
+    // Entry does: it dereferences f.raw() with no nil check (only Name() checks), so the program
+    // dies naming runtime.(*Func).Entry (TestTracebackRuntimeMethod).
     public static uintptr Entry(this ж<Func> Ꮡf)
     {
         if (Ꮡf == nil)
-            return 0;
+            throw RuntimeErrorPanic.NilPointerDereference();
 
         return s_funcRecords.TryGetValue(Ꮡf, out FuncRecord? record) ? record.Pc : 0;
     }
@@ -2631,13 +2632,14 @@ partial class runtime_package
     // ("anyone can call this function, and they might just be wrong about targetpc belonging to
     // f"), so this reads pc alone; the common case is a caller passing Ꮡf.Entry() straight back in,
     // which resolves because Entry() returns the start of the span FuncForPC minted Ꮡf from. No record
-    // for pc answers Go's own no-position case: ("", 0).
+    // for pc answers Go's own no-position case: ("", 0). A nil *Func FAULTS, as Go's FileLine does
+    // (it reads f.raw() with no nil check).
     public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc)
     {
         @string @file = default!;
 
         if (Ꮡf == nil)
-            return (@file, 0);
+            throw RuntimeErrorPanic.NilPointerDereference();
 
         CallerFrameRecord? record = callerFrameRecord(pc);
 
