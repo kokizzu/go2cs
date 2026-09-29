@@ -98,6 +98,33 @@ public static class GoMemProfile
         Sample(allocation, size, GoSize<T>.NoScan, rate);
     }
 
+    /// <summary>
+    /// Charges one Go allocation that has no C# type of its own: <paramref name="size"/> Go bytes, pointer-free
+    /// when <paramref name="noscan"/>. It is the door for the allocations a golib store models rather than
+    /// makes (a map's groups, tables and directory: <c>map</c>'s growth model), and it counts down the same
+    /// countdown as <see cref="Charge{T}"/>.
+    /// </summary>
+    /// <param name="allocation">
+    /// An object whose lifetime is the modelled allocation's: its collection is the free. Made here, only when
+    /// the charge reaches the sampler, when the caller passes none, so an unsampled charge allocates nothing.
+    /// </param>
+    public static void ChargeBytes(ref object? allocation, long size, bool noscan)
+    {
+        nint rate = Rate;
+
+        if (rate <= 0)
+            return;
+
+        if (rate != 1 && t_seeded && size < t_nextSample)
+        {
+            t_nextSample -= size;
+            return;
+        }
+
+        allocation ??= new object();
+        Sample(allocation, size, noscan, rate);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Sample(object allocation, long size, bool noscan, nint rate)
     {

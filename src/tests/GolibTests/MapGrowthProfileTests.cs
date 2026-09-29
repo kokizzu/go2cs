@@ -23,7 +23,7 @@ public class MapGrowthProfileTests
     private static List<(long size, bool noscan)> ChargesOf(Action probe, nint rate = 1)
     {
         List<(long, bool)> charges = [];
-        Action<object, nuint, bool>? recorder = GoMemProfile.Recorder;
+        Action<object, nuint, bool> recorder = GoMemProfile.Recorder;
         nint previous = GoMemProfile.Rate;
 
         GoMemProfile.Recorder = (_, size, noscan) => charges.Add(((long)size, noscan));
