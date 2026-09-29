@@ -14,6 +14,7 @@ using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.CompilerServices;
 
 partial class reflect_package {
 
@@ -67,7 +68,7 @@ internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 // Equivalent to runtime.mapIterStart.
 //
 //go:noinline
-internal static void mapIterStart(ж<abi.SwissMapType> Ꮡt, ж<mapsꓸMap> Ꮡm, ж<maps.Iter> Ꮡit) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void mapIterStart(ж<abi.SwissMapType> Ꮡt, ж<mapsꓸMap> Ꮡm, ж<maps.Iter> Ꮡit) {
     ref var it = ref Ꮡit.DerefOrNull();
 
     if (race.Enabled && Ꮡm != nil) {
@@ -81,7 +82,7 @@ internal static void mapIterStart(ж<abi.SwissMapType> Ꮡt, ж<mapsꓸMap> Ꮡm
 // Equivalent to runtime.mapIterNext.
 //
 //go:noinline
-internal static void mapIterNext(ж<maps.Iter> Ꮡit) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void mapIterNext(ж<maps.Iter> Ꮡit) {
     ref var it = ref Ꮡit.DerefOrNull();
 
     if (race.Enabled) {
@@ -121,7 +122,7 @@ internal static void mapIterNext(ж<maps.Iter> Ꮡit) {
 // TODO: undo when the inliner is no longer bottom-up only.
 //
 //go:noinline
-internal static void panicNotMap(this flag f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void panicNotMap(this flag f) {
     f.mustBe(Map);
 }
 

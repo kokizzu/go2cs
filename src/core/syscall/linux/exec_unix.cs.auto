@@ -13,7 +13,7 @@ namespace go;
 
 using errorspkg = errors_package;
 using bytealg = @internal.bytealg_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using @unsafe = unsafe_package;
 using @internal;
@@ -182,7 +182,7 @@ internal static (nint pid, error err) forkExec(@string argv0, slice<@string> arg
     if (err != default!) {
         return (0, err);
     }
-    if ((Δruntime.GOOS == "freebsd"u8 || Δruntime.GOOS == "dragonfly"u8) && len(argv) > 0 && len(argv[0]) > len(argv0)) {
+    if ((runtime.GOOS == "freebsd"u8 || runtime.GOOS == "dragonfly"u8) && len(argv) > 0 && len(argv[0]) > len(argv0)) {
         argvp[0] = argv0p;
     }
     ж<byte> chroot = default!;
@@ -303,18 +303,18 @@ public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@stri
         Setrlimit(RLIMIT_NOFILE, rlim);
     }
     error err1 = default!;
-    if (Δruntime.GOOS == "solaris"u8 || Δruntime.GOOS == "illumos"u8 || Δruntime.GOOS == "aix"u8){
+    if (runtime.GOOS == "solaris"u8 || runtime.GOOS == "illumos"u8 || runtime.GOOS == "aix"u8){
         // RawSyscall should never be used on Solaris, illumos, or AIX.
         err1 = execveLibc(
             (uintptr)argv0p,
             (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argvp, 0)),
             (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envvp, 0)));
     } else 
-    if (Δruntime.GOOS == "darwin"u8 || Δruntime.GOOS == "ios"u8){
+    if (runtime.GOOS == "darwin"u8 || runtime.GOOS == "ios"u8){
         // Similarly on Darwin.
         err1 = execveDarwin(argv0p, Ꮡ(argvp, 0), Ꮡ(envvp, 0));
     } else 
-    if (Δruntime.GOOS == "openbsd"u8 && Δruntime.GOARCH != "mips64"u8){
+    if (runtime.GOOS == "openbsd"u8 && runtime.GOARCH != "mips64"u8){
         // Similarly on OpenBSD.
         err1 = execveOpenBSD(argv0p, Ꮡ(argvp, 0), Ꮡ(envvp, 0));
     } else {

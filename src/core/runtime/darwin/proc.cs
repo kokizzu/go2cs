@@ -1773,7 +1773,7 @@ internal static readonly @string badRuntimeMstartˢ = "bad runtime·mstart"u8;
 // so that we can set up g0.sched to return to the call of mstart1 above.
 //
 //go:noinline
-internal static void mstart1() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void mstart1() {
     var gp = getg();
     if (gp != (~(~gp).m).g0) {
         @throw(badRuntimeMstartˢ);

@@ -81,7 +81,7 @@ internal static void archInitCastagnoli() {
 internal static uint32 castagnoliShift(ж<sse42Table> Ꮡtable, uint32 crc) {
     ref var table = ref Ꮡtable.DerefOrNull();
 
-    return (uint32)((uint32)((uint32)(table[3][(nint)((crc >> (int)(24)))] ^ table[2][(nint)((uint32)(((crc >> (int)(16))) & 0xFF))]) ^ table[1][(nint)((uint32)(((crc >> (int)(8))) & 0xFF))]) ^ table[0][(nint)((uint32)(crc & 0xFF))]);
+    return (uint32)((uint32)((uint32)(table[3][(crc >> (int)(24))] ^ table[2][(uint32)(((crc >> (int)(16))) & 0xFF)]) ^ table[1][(uint32)(((crc >> (int)(8))) & 0xFF)]) ^ table[0][(uint32)(crc & 0xFF)]);
 }
 
 internal static uint32 archUpdateCastagnoli(uint32 crc, slice<byte> p) {

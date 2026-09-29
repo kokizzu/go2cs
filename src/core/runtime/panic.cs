@@ -11,6 +11,7 @@ using stringslite = @internal.stringslite_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using System.Runtime.CompilerServices;
 
 partial class runtime_package {
 
@@ -340,7 +341,7 @@ internal static error rangeMissingPanicError = ((error)((errorString)(@string)"r
 internal static readonly @string unexpectedStatePassedToˢ = "unexpected state passed to panicrangestate"u8;
 
 //go:noinline
-internal static void panicrangestate(nint state) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void panicrangestate(nint state) {
     var exprᴛ1 = ((abi.RF_State)state);
     if (exprᴛ1 == abi.RF_DONE) {
         throw panic(rangeDoneError);

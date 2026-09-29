@@ -12,6 +12,7 @@ using Δmath = math_package;
 using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
+using System.Runtime.CompilerServices;
 using Δsync = sync_package;
 
 partial class reflect_package {
@@ -1550,7 +1551,7 @@ public static bool TrySend(this ΔValue v, ΔValue x) {
 // go2cs generated this placeholder — func Type is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:noinline
-internal static ΔType typeSlow(this ΔValue v) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ΔType typeSlow(this ΔValue v) {
     return new rtypeжΔType(toRType(v.abiTypeSlow()));
 }
 

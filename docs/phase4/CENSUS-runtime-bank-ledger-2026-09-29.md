@@ -223,9 +223,10 @@ registration; TestGroupSizeZero and TestStringW need only `bdfbd2244f`.
 - **Emission.**
   - Setup: a root seeded from master `2ff42f7a16` (`src/core` plus `version.props`, 4,211 `.cs`), and master's
     converter built fresh from `src/go2cs` at `2ff42f7a16`.
-  - Runs: `go2cs -tests -test-action convert -platforms windows/amd64 -go2cspath <root>/src <GOROOT>/src/<pkg>
-    <root>/src/core/<pkg>`, once for `internal/syscall/windows` and once for `internal/syscall/windows/registry`, in
-    sequence into the one root. Both rc 0; 36 and 18 files written.
+  - Runs, once for `internal/syscall/windows` and once for `internal/syscall/windows/registry`, in sequence into
+    the one root:
+    `go2cs -tests -test-action convert -platforms windows/amd64 -go2cspath <root>/src <GOROOT>/src/<pkg> <root>/src/core/<pkg>`.
+    Both rc 0; 36 and 18 files written.
   - This is the windows TARGET, emitted on a linux host; no windows host was reached.
 - **Both siblings are WRITTEN and EQUAL** to the committed file (CR-stripped):
   - `internal/syscall/windows/exec_windows_test.cs.auto`

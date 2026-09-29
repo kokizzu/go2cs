@@ -5,6 +5,7 @@ namespace go.crypto;
 
 using sys = go.@internal.runtime.sys_package;
 using runtime = runtime_package;
+using System.Runtime.CompilerServices;
 using go.@internal.runtime;
 
 partial class subtle_package {
@@ -27,7 +28,7 @@ partial class subtle_package {
 // with no other side-effects.
 //
 //go:noinline
-public static void WithDataIndependentTiming(Action f) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void WithDataIndependentTiming(Action f) {
     GoFrame ᒐ = default;
     try {
         if (!sys.DITSupported) {

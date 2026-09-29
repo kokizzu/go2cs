@@ -6,6 +6,7 @@ namespace go.crypto.@internal.fips140;
 using fips140 = go.crypto.@internal.fips140_package;
 using alias = go.crypto.@internal.fips140.alias_package;
 using strconv = strconv_package;
+using System.Runtime.CompilerServices;
 using go.crypto.@internal;
 using go.crypto.@internal.fips140;
 
@@ -65,7 +66,7 @@ public static (ж<Block>, error) New(slice<byte> key) {
 // too complex to inline itself.
 //
 //go:noinline
-internal static (ж<Block>, error) newOutlined(ж<Block> Ꮡb, slice<byte> key) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<Block>, error) newOutlined(ж<Block> Ꮡb, slice<byte> key) {
     var exprᴛ1 = len(key);
     if (exprᴛ1 == aes128KeySize || exprᴛ1 == aes192KeySize || exprᴛ1 == aes256KeySize) {
     }

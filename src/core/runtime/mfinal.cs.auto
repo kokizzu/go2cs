@@ -144,7 +144,7 @@ internal static void queuefinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡfn, uint
         block.Value.next = finq;
         finq = block;
     }
-    var f = finq.at(finblock.Ꮡfin, (nint)((~finq).cnt));
+    var f = finq.at(finblock.Ꮡfin, (ulong)((~finq).cnt));
     atomic.Xadd(finq.of(finblock.Ꮡcnt), +1); // Sync with markroots
     f.Value.fn = Ꮡfn;
     f.Value.nret = nret;
@@ -159,7 +159,7 @@ internal static void queuefinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡfn, uint
 internal static void iterate_finq(Action<ж<funcval>, @unsafe.Pointer, uintptr, ж<_type>, ж<ptrtype>> callback) {
     for (var fb = allfin; fb != nil; fb = fb.Value.alllink) {
         for (var i = (uint32)0; i < (~fb).cnt; i++) {
-            var f = fb.at(finblock.Ꮡfin, (nint)(i));
+            var f = fb.at(finblock.Ꮡfin, (ulong)(i));
             callback((~f).fn, (~f).arg, (~f).nret, (~f).fint, (~f).ot);
         }
     }
@@ -213,7 +213,7 @@ internal static void runfinq() {
         }
         while (fb != nil) {
             for (var i = fb.Value.cnt; i > 0; i--) {
-                var f = fb.at(finblock.Ꮡfin, (nint)(i - 1));
+                var f = fb.at(finblock.Ꮡfin, (ulong)(i - 1));
                 // arg will only be nil when a cleanup has been queued.
                 if ((~f).arg == nil) {
                     Action cleanup = default!;

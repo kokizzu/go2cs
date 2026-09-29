@@ -840,7 +840,7 @@ public static (nint n, bool ok) MemProfile(slice<MemProfileRecord> Δp, bool inu
 // See also disableMemoryProfiling above and cmd/link/internal/ld/lib.go:linksetup.
 //
 //go:noinline
-internal static (nint n, bool ok) memProfileInternal(nint size, bool inuseZero, Action<profilerecord.MemProfileRecord> copyFn) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint n, bool ok) memProfileInternal(nint size, bool inuseZero, Action<profilerecord.MemProfileRecord> copyFn) {
     nint n = default!;
     bool ok = default!;
 

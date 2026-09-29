@@ -9,6 +9,7 @@ using itoa = @internal.itoa_package;
 using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
+using System.Runtime.CompilerServices;
 using go.sync;
 
 partial class syscall_package {
@@ -249,7 +250,7 @@ internal static uint32 capToMask(uintptr cap) {
 //go:noinline
 //go:norace
 //go:nocheckptr
-internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool locked) forkAndExecInChild1(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ref ProcAttr attr, ref SysProcAttr sys, nint pipe) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool locked) forkAndExecInChild1(ж<byte> Ꮡargv0, slice<ж<byte>> argv, slice<ж<byte>> envv, ж<byte> Ꮡchroot, ж<byte> Ꮡdir, ref ProcAttr attr, ref SysProcAttr sys, nint pipe) {
     uintptr pid = default!;
     ref var pidfd = ref heap(new int32(), out var Ꮡpidfd);
     ref var err1 = ref heap(new Errno(), out var Ꮡerr1);
@@ -908,7 +909,7 @@ internal static error os_checkClonePidfd() {
 // and os_checkClonePidfd separate.
 //
 //go:noinline
-internal static (uintptr pid, Errno errno) doCheckClonePidfd(ж<int32> Ꮡpidfd) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (uintptr pid, Errno errno) doCheckClonePidfd(ж<int32> Ꮡpidfd) {
     uintptr pid = default!;
     Errno errno = default!;
 

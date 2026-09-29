@@ -7,6 +7,7 @@ using fips140 = go.crypto.@internal.fips140_package;
 using aes = go.crypto.@internal.fips140.aes_package;
 using alias = go.crypto.@internal.fips140.alias_package;
 using errors = errors_package;
+using System.Runtime.CompilerServices;
 using go.crypto.@internal;
 using go.crypto.@internal.fips140;
 
@@ -34,7 +35,7 @@ private static readonly @string cipherNewGCMRequires128ˢ = "cipher: NewGCM requ
 // too complex to inline itself.
 //
 //go:noinline
-internal static (ж<GCM>, error) newGCM(ж<GCM> Ꮡg, ж<aes.Block> Ꮡcipher, nint nonceSize, nint tagSize) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<GCM>, error) newGCM(ж<GCM> Ꮡg, ж<aes.Block> Ꮡcipher, nint nonceSize, nint tagSize) {
     ref var g = ref Ꮡg.DerefOrNull();
     ref var cipher = ref Ꮡcipher.DerefOrNull();
 

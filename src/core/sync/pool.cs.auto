@@ -98,7 +98,7 @@ internal static @unsafe.Pointer poolRaceAddr(any xʗp) {
 
     var ptr = (uintptr)((ж<array<@unsafe.Pointer>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡx))).Value[1];
     var h = (uint32)((((uint64)(uint32)ptr * 0x85ebca6bU) >> (int)(16)));
-    return @unsafe.Pointer.FromPinnedBox(ᏑpoolRaceHash.at<uint64>((nint)(h % (uint32)len(poolRaceHash))));
+    return @unsafe.Pointer.FromPinnedBox(ᏑpoolRaceHash.at<uint64>((ulong)(h % (uint32)len(poolRaceHash))));
 }
 
 // Put adds x to the pool.
@@ -173,7 +173,7 @@ internal static any getSlow(this ж<Pool> Ꮡp, nint pid) {
     @unsafe.Pointer locals = p.local; // load-consume
     // Try to steal one element from other procs.
     for (nint i = 0; i < (nint)size; i++) {
-        var lΔ1 = indexLocal(locals, (pid + i + 1) % (nint)size);
+        var lΔ1 = indexLocal(locals, rem((pid + i + 1), (nint)size));
         {
             var (x, _) = lΔ1.of(poolLocal.Ꮡshared).popTail(); if (x != default!) {
                 return x;
@@ -196,7 +196,7 @@ internal static any getSlow(this ж<Pool> Ꮡp, nint pid) {
         }
     }
     for (nint i = 0; i < (nint)size; i++) {
-        var lΔ2 = indexLocal(locals, (pid + i) % (nint)size);
+        var lΔ2 = indexLocal(locals, rem((pid + i), (nint)size));
         {
             var (x, _) = lΔ2.of(poolLocal.Ꮡshared).popTail(); if (x != default!) {
                 return x;

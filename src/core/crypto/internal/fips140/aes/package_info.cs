@@ -51,7 +51,7 @@ using static go.crypto.@internal.fips140.aes_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/fips140/aes/aes.go", "aes.cs", "ACxmksqCrMSuwrakpqKUpKSkpoCklIKClIKUgpSmlIKClIKUgpSssg==")]
+[assembly: go.GoPositionMap("crypto/internal/fips140/aes/aes.go", "aes.cs", "AC1mksqCrMSuwrakpqKUpKSkpoCklIKClIKUgpSmlIKClIKUgpSssg==")]
 [assembly: go.GoPositionMap("crypto/internal/fips140/aes/aes_generic.go", "aes_generic.cs", "AClUkoKEgoKCgpaCgoKWgrKCgoKCgoKogoKChIKCgoSCgoKCqJKChIKCgoKWgoKCloKygoKCgoKCqIKCgoSCgoKEgoKCgqiSrpCowoaSgoKUgoKCpJTMgoKCgoKClA==")]
 [assembly: go.GoPositionMap("crypto/internal/fips140/aes/aes_noasm.go", "aes_noasm.cs", "AAwagoKmgqaCpg==")]
 [assembly: go.GoPositionMap("crypto/internal/fips140/aes/cast.go", "cast.cs", "AA0cgoK4uLi4goKUgoKClIKClA==", "15-46:1")]
