@@ -311,6 +311,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// flavour's mmap precedent). The other sys*OS bodies are displaced only when a row reaches them.
 		"sysAllocOS": goosWindows,
 		"sysFreeOS":  goosWindows,
+		// sysReserveOS / sysUsedOS / sysUnusedOS on WINDOWS (W1, COORD ruling 2026-09-28): the page
+		// allocator's reserve / commit / decommit, reached once the page-allocator rows got past sysAlloc.
+		// Same stdcall4 -> asmcgocall wall; mem_windows_impl.cs makes Go's kernel calls directly, with Go's
+		// halving retry and messages. sysReserveOS's converted body also wrote through its own unsafe.Pointer
+		// parameter (a converter defect, routed to its own seat).
+		"sysReserveOS": goosWindows,
+		"sysUsedOS":    goosWindows,
+		"sysUnusedOS":  goosWindows,
 		// addrRanges.init / add / cloneInto (increment 7 of the runtime row, W2a, 2026-09-05): the three
 		// writers that build a notInHeapSlice header FIELD BY FIELD over the managed a.ranges --
 		// `ranges := (*notInHeapSlice)(unsafe.Pointer(&a.ranges)); ranges.len = …; ranges.cap = …;
