@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,36 +11,42 @@ namespace GolibTests;
 
 // Guards golib's panicCheck1 (golib/runtime/RuntimePanicCheck.cs): a bounds or shift panic raised by
 // code IN package runtime is Go's fatal error, while the same panic raised anywhere else stays an
-// ordinary, recoverable panic.
+// ordinary, recoverable panic. It is decided where the panic is RECOVERED or REPORTED, from the frames
+// the panic carries, so the factories that raise it walk nothing.
 //
 // WHAT THIS FILE CAN AND CANNOT ASSERT. A HIT ends in FatalReport.Fatal, which exits the process, so
 // the HIT's CONSEQUENCE is runtime's own TestRuntimePanic child (crash_test.go), never an arm here.
-// What is here is the PREDICATE, driven through a real frame on each marker class (a HIT, the nested
-// HIT and the excluded package runtime_test), and the MISS path end to end: every routed factory,
-// called from a non-runtime frame, still hands back its panic and returns.
+// What is here is the TAG (the six panicCheck1 factories carry Go's throw text, and the divide and
+// nil-dereference panics, panicCheck2's, carry none) and the PREDICATE, read from the trace of a panic
+// really thrown from each marker class: a HIT, the nested HIT, and the excluded package runtime_test.
 //
-// The marker classes are declared in RuntimePanicCheckFixtures.cs, in THIS assembly: the predicate is structural (a type's full
-// name, walked outward through DeclaringType), so a fixture named exactly like the converter's class
-// exercises the same test without loading a -tests build.
+// The marker classes are declared in RuntimePanicCheckFixtures.cs, in THIS assembly: the predicate is
+// structural (a type's full name, walked outward through DeclaringType), so a fixture named exactly
+// like the converter's class exercises the same test without loading a -tests build.
 //
 // A8b rides here too: a nil *Func's Entry and FileLine fault as Go's do, and Name() still answers "".
 [TestClass]
 public class RuntimePanicCheckTests
 {
-    internal delegate bool RaisedProbe(out string frameName);
+    private static readonly Type s_check = typeof(FatalReport).Assembly.GetType("go.golib.RuntimePanicCheck", throwOnError: true)!;
 
-    // The predicate is internal to golib, and a reflection Invoke would put CoreLib's invoker frames
-    // between it and the caller. A delegate bound to the method adds no reported frame, so the first
-    // non-golib frame the walk sees is the fixture method that calls it.
-    internal static readonly RaisedProbe s_raised = (RaisedProbe)Delegate.CreateDelegate(typeof(RaisedProbe),
-        typeof(FatalReport).Assembly.GetType("go.golib.RuntimePanicCheck", throwOnError: true)!
-            .GetMethod("RaisedInRuntimePackage", BindingFlags.Static | BindingFlags.NonPublic)!);
+    private static readonly PropertyInfo s_throwText =
+        typeof(PanicException).GetProperty("RuntimeThrowText", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-    private static readonly MethodInfo s_isRuntimePackageType =
-        typeof(FatalReport).Assembly.GetType("go.golib.RuntimePanicCheck", throwOnError: true)!
-            .GetMethod("IsRuntimePackageType", BindingFlags.Static | BindingFlags.NonPublic)!;
+    private static bool IsRuntimePackageType(Type type) =>
+        (bool)s_check.GetMethod("IsRuntimePackageType", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [type])!;
 
-    private static bool IsRuntimePackageType(Type type) => (bool)s_isRuntimePackageType.Invoke(null, [type])!;
+    // The predicate over a thrown panic's trace. The trace is the exception's own, so reflection adds no
+    // frame to it: what the walk reads is exactly the frames from the throw site to the catch.
+    private static bool RaisedInRuntimePackage(Exception thrown, out string frameName)
+    {
+        object[] args = [new StackTrace(thrown, false), null];
+        bool raised = (bool)s_check.GetMethod("RaisedInRuntimePackage", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, args)!;
+        frameName = (string)args[1]!;
+        return raised;
+    }
+
+    private static string ThrowText(PanicException panic) => (string)s_throwText.GetValue(panic);
 
     [TestMethod]
     public void TheMarkerIsPackageRuntimeItsInternalTestBridgeOrANestedType()
@@ -54,41 +61,49 @@ public class RuntimePanicCheckTests
     }
 
     [TestMethod]
-    public void TheWalkNamesTheFirstFrameOutsideGolib()
+    public void TheTraceNamesTheFirstFrameOutsideGolib()
     {
-        Assert.IsTrue(runtime_internal_test_package.Raise(out string frame), "a frame on the internal-test bridge must HIT");
+        Assert.IsTrue(RaisedInRuntimePackage(runtime_internal_test_package.Raise(), out string frame), "a panic raised on the internal-test bridge must HIT");
         Assert.AreEqual("go.runtime_internal_test_package.Raise", frame);
 
-        Assert.IsTrue(runtime_internal_test_package.Nested.Raise(out frame), "a frame on a nested type must HIT");
+        Assert.IsTrue(RaisedInRuntimePackage(runtime_internal_test_package.Nested.Raise(), out frame), "a panic raised on a nested type must HIT");
         Assert.AreEqual("go.runtime_internal_test_package+Nested.Raise", frame);
 
-        Assert.IsFalse(runtime_test_package.Raise(out frame), "a frame on package runtime_test must MISS");
+        Assert.IsFalse(RaisedInRuntimePackage(runtime_test_package.Raise(), out frame), "a panic raised in package runtime_test must MISS");
         Assert.AreEqual("go.runtime_test_package.Raise", frame);
 
-        Assert.IsFalse(RaiseHere(out frame), "a frame outside package runtime must MISS");
-        Assert.AreEqual($"{typeof(RuntimePanicCheckTests).FullName}.{nameof(RaiseHere)}", frame);
+        Assert.IsFalse(RaisedInRuntimePackage(ThrowHere(runtime_internal_test_package.Build()), out frame),
+            "a panic built in package runtime but thrown outside it carries no runtime frame");
+        Assert.AreEqual($"{typeof(RuntimePanicCheckTests).FullName}.{nameof(ThrowHere)}", frame);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool RaiseHere(out string frameName) => s_raised(out frameName);
-
-    // THE MISS PATH. Every routed factory, called from a non-runtime frame, must hand its panic back
-    // and return: a factory whose check fired here would have exited the test host instead.
-    [TestMethod]
-    public void EveryRoutedFactoryStaysAPanicOutsidePackageRuntime()
+    private static Exception ThrowHere(PanicException panic)
     {
-        PanicException[] raised =
-        [
-            RuntimeErrorPanic.IndexOutOfRange(5L, 3L),
-            RuntimeErrorPanic.IndexOutOfRange(5UL, 3L),
-            RuntimeErrorPanic.SliceBoundsOutOfRange(0, 5, 5, 3),
-            RuntimeErrorPanic.StringSliceBoundsOutOfRange(0, 5, 3),
-            RuntimeErrorPanic.ArrayConversionLength(1, 2),
-            RuntimeErrorPanic.NegativeShiftAmount()
-        ];
+        try
+        {
+            throw panic;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
+    }
 
-        foreach (PanicException panic in raised)
-            Assert.IsNotNull(panic, "a factory must return its panic outside package runtime");
+    // THE TAG. Every panicCheck1 factory carries Go's throw text, and panicCheck2's panics carry none:
+    // a divide or nil dereference in package runtime stays recoverable, as in Go.
+    [TestMethod]
+    public void OnlyPanicCheck1sFactoriesCarryGosThrowText()
+    {
+        Assert.AreEqual("index out of range", ThrowText(RuntimeErrorPanic.IndexOutOfRange(5L, 3L)));
+        Assert.AreEqual("index out of range", ThrowText(RuntimeErrorPanic.IndexOutOfRange(5UL, 3L)));
+        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.SliceBoundsOutOfRange(0, 5, 5, 3)));
+        Assert.AreEqual("slice bounds out of range", ThrowText(RuntimeErrorPanic.StringSliceBoundsOutOfRange(0, 5, 3)));
+        Assert.AreEqual("slice length too short to convert to array or pointer to array", ThrowText(RuntimeErrorPanic.ArrayConversionLength(1, 2)));
+        Assert.AreEqual("negative shift amount", ThrowText(RuntimeErrorPanic.NegativeShiftAmount()));
+
+        Assert.IsNull(ThrowText(RuntimeErrorPanic.IntegerDivideByZero()), "a divide is panicCheck2's: recoverable in package runtime");
+        Assert.IsNull(ThrowText(RuntimeErrorPanic.NilPointerDereference()), "a nil dereference is panicCheck2's: recoverable in package runtime");
     }
 
     // A8b. Go's (*Func).Entry and FileLine read f.raw() with no nil check, so a nil *Func faults and the

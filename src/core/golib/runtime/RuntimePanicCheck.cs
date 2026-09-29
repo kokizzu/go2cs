@@ -20,7 +20,22 @@ namespace go.golib;
 /// <c>panicCheck1(callerpc, msg)</c>, which throws when the faulting function's name has the
 /// <c>"runtime."</c> prefix: the runtime faulting on its own data is a runtime bug, never a value a
 /// program should catch. The divide and nil-dereference checks are <c>panicCheck2</c>, which throws only
-/// while mallocing, so they stay recoverable here and are not routed through this class.
+/// while mallocing, so they stay recoverable here and are never tagged.
+/// </para>
+/// <para>
+/// DECIDED WHERE THE PANIC IS RECOVERED OR REPORTED, NOT WHERE IT IS RAISED. <see cref="RuntimeErrorPanic"/>'s
+/// factories for those checks only tag the panic with Go's throw text
+/// (<see cref="PanicException.RuntimeThrowText"/>). <c>recover()</c> and the unrecovered-panic report
+/// then read the frames the panic already carries (<see cref="PanicException.SiteTrace"/>, the throw
+/// site's trace snapshotted once at its first catch), so no stack is walked on any path. A walk at the
+/// raise cost about 8 to 25 µs per bounds panic and, under tiered compilation with on-stack replacement,
+/// made a .NET runtime fault in its stack walker about ten times as likely (measured, A8, 2026-09-29).
+/// </para>
+/// <para>
+/// RESIDUAL, accepted: Go throws at the raise, so no deferred call runs. Here the deferred calls in the
+/// frames between the raise and the recover (or the root) run first, and only then does the process end.
+/// And a panic the test host contains (its per-test catch, which reads no recover()) fails that one
+/// test as every contained panic does, where Go's test binary would end.
 /// </para>
 /// <para>
 /// The marker is STRUCTURAL. The converter declares every member of package <c>runtime</c> on
@@ -31,43 +46,39 @@ namespace go.golib;
 /// exactly. No message text is read and no assembly name is guessed.
 /// </para>
 /// <para>
-/// The raising frame must still EXIST for the check to see it. A method the JIT inlines into a
-/// non-runtime caller hides, and the panic then stays recoverable, which is the behavior before this
-/// check and never a false fatal. Go's <c>//go:noinline</c> is not carried to the emission as
-/// <c>NoInlining</c>, so under full optimization a tiny runtime helper can inline away.
-/// </para>
-/// <para>
-/// COST: one <see cref="StackTrace"/> capture per bounds or shift panic, and nothing on the non-panic
-/// path. The capture is of the WHOLE stack, so the cost grows with depth: measured on linux Release,
-/// about 8 µs at 5 frames and 22 to 25 µs at 50, against about 3 µs for the throw and catch alone.
+/// The raising frame must still EXIST in the trace. A method the JIT inlines into a non-runtime caller
+/// hides, and the panic then stays recoverable, which is never a false fatal. Go's <c>//go:noinline</c>
+/// is emitted as <c>NoInlining</c>, which keeps the frames Go's own tests rely on.
 /// </para>
 /// </remarks>
 internal static class RuntimePanicCheck
 {
     /// <summary>
-    /// Terminates the process with Go's fatal report when the bounds or shift panic being raised
-    /// comes from package <c>runtime</c>, and returns otherwise.
+    /// Terminates the process with Go's fatal report when <paramref name="panic"/> is one of
+    /// <c>panicCheck1</c>'s and was raised in package <c>runtime</c>, and returns otherwise.
     /// </summary>
-    /// <param name="throwText">Go's throw text for the check, such as <c>"index out of range"</c>.</param>
-    internal static void Check(string throwText)
+    internal static void FatalIfRaisedInRuntime(PanicException panic)
     {
-        if (RaisedInRuntimePackage(out _))
+        if (panic.RuntimeThrowText is { } throwText && RaisedInRuntimePackage(panic.SiteTrace, out _))
             FatalReport.Fatal(throwText, userFault: false);
     }
 
     /// <summary>
-    /// Reports whether the first frame outside golib is declared on package <c>runtime</c>'s class,
-    /// its internal-test bridge, or a type nested in either, and names that frame.
+    /// Reports whether the first frame of <paramref name="site"/> outside golib is declared on package
+    /// <c>runtime</c>'s class, its internal-test bridge, or a type nested in either, and names that frame.
     /// </summary>
-    internal static bool RaisedInRuntimePackage(out string frameName)
+    internal static bool RaisedInRuntimePackage(StackTrace? site, out string frameName)
     {
         frameName = "";
-        StackTrace trace = new(1, false);
+
+        if (site is null)
+            return false;
+
         Assembly golib = typeof(RuntimePanicCheck).Assembly;
 
-        for (int i = 0; i < trace.FrameCount; i++)
+        for (int i = 0; i < site.FrameCount; i++)
         {
-            MethodBase? method = trace.GetFrame(i)?.GetMethod();
+            MethodBase? method = site.GetFrame(i)?.GetMethod();
             Type? type = method?.DeclaringType;
 
             if (type is null || type.Assembly == golib)

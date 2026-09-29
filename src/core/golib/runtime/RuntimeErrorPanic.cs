@@ -152,9 +152,8 @@ public static class RuntimeErrorPanic
     /// </remarks>
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {
-        RuntimePanicCheck.Check("index out of range");
         return new PanicException(BoundsErrorValue?.Invoke(index, length, true, BoundsIndex) ??
-                                  string.Format(index < 0 ? IndexNegativeMessage : IndexOutOfRangeMessage, index, length));
+                                  string.Format(index < 0 ? IndexNegativeMessage : IndexOutOfRangeMessage, index, length)) { RuntimeThrowText = "index out of range" };
     }
 
     /// <summary>
@@ -165,9 +164,8 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException IndexOutOfRange(uint64 index, int64 length)
     {
-        RuntimePanicCheck.Check("index out of range");
         return new PanicException(BoundsErrorValue?.Invoke(unchecked((int64)index), length, false, BoundsIndex) ??
-                                  string.Format(IndexOutOfRangeMessage, index, length));
+                                  string.Format(IndexOutOfRangeMessage, index, length)) { RuntimeThrowText = "index out of range" };
     }
 
     /// <summary>
@@ -244,7 +242,6 @@ public static class RuntimeErrorPanic
     private const string SliceBoundsOutOfRangeMessage = $"{RuntimeErrorMessage}slice bounds out of range ";
     public static PanicException SliceBoundsOutOfRange(int64 low, int64 high, int64 max, int64 capacity)
     {
-        RuntimePanicCheck.Check("slice bounds out of range");
         // Mirrors the Go runtime's message shapes for a slice expression s[low:high:max]
         string bounds;
 
@@ -257,7 +254,7 @@ public static class RuntimeErrorPanic
         else
             bounds = $"[{low}:{high}]";
 
-        return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
+        return new PanicException(SliceBoundsOutOfRangeMessage + bounds) { RuntimeThrowText = "slice bounds out of range" };
     }
 
     /// <summary>
@@ -268,9 +265,8 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException StringSliceBoundsOutOfRange(int64 low, int64 high, int64 length)
     {
-        RuntimePanicCheck.Check("slice bounds out of range");
         string bounds = high > length ? $"[:{high}] with length {length}" : low < 0 ? $"[{low}:]" : $"[{low}:{high}]";
-        return new PanicException(SliceBoundsOutOfRangeMessage + bounds);
+        return new PanicException(SliceBoundsOutOfRangeMessage + bounds) { RuntimeThrowText = "slice bounds out of range" };
     }
 
     private const string ArrayConversionLengthMessage = $"{RuntimeErrorMessage}cannot convert slice with length {{0}} to array or pointer to array with length {{1}}";
@@ -281,8 +277,10 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException ArrayConversionLength(int64 sourceLength, int64 length)
     {
-        RuntimePanicCheck.Check("slice length too short to convert to array or pointer to array");
-        return new PanicException(string.Format(ArrayConversionLengthMessage, sourceLength, length));
+        return new PanicException(string.Format(ArrayConversionLengthMessage, sourceLength, length))
+        {
+            RuntimeThrowText = "slice length too short to convert to array or pointer to array"
+        };
     }
 
     private const string IntegerDivideByZeroMessage = $"{RuntimeErrorMessage}integer divide by zero";
@@ -334,8 +332,7 @@ public static class RuntimeErrorPanic
     /// </summary>
     public static PanicException NegativeShiftAmount()
     {
-        RuntimePanicCheck.Check("negative shift amount");
-        return new PanicException(ShiftErrorValue?.Invoke() ?? NegativeShiftAmountMessage);
+        return new PanicException(ShiftErrorValue?.Invoke() ?? NegativeShiftAmountMessage) { RuntimeThrowText = "negative shift amount" };
     }
 
     private const string ComparingUncomparableTypeMessage = $"{RuntimeErrorMessage}comparing uncomparable type {{0}}";
