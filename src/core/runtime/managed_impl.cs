@@ -948,8 +948,15 @@ partial class runtime_package
     private static void appendGoFrames(StringBuilder trace, StackTrace stack) =>
         appendGoFrames(trace, stack.GetFrames());
 
+    // The frames printed are the frames runtime.Callers counts (captureCallers' rule): Go frames, and
+    // a GoStackRoot host method as the Go frame it stands in for. Everything else on the CLR stack —
+    // golib, the BCL, the test host's own frames — has no Go frame, and printing it broke Go's own
+    // traceback readers: runtime's parseTraceback requires a tab-indented source line under every
+    // function line, and `System.Threading.ExecutionContext.RunInternal()` has none. runtime.goexit
+    // is not printed: Go's showframe hides runtime frames, and the walk's goexit tail is Callers-only.
     private static void appendGoFrames(StringBuilder trace, IEnumerable<StackFrame> frames)
     {
+        List<(string name, string file, int line)> printed = [];
         bool calledGo = false;
 
         foreach (StackFrame frame in frames)
@@ -974,10 +981,34 @@ partial class runtime_package
             {
                 calledGo = true;
             }
+            else
+            {
+                if (stackRootOf(method) is GoStackRootAttribute root)
+                    printed.Add((root.Function, root.File, root.Line));
 
-            trace.Append(goFrameName(method, frame)).Append("()\n");
+                continue;
+            }
 
             (string file, int line) = goFramePosition(method, frame);
+            printed.Add((goFrameName(method, frame), file, line));
+        }
+
+        // Go's elision (traceback1): a stack deeper than tracebackInnerFrames + tracebackOuterFrames
+        // prints its innermost and outermost frames and one line counting the ones between.
+        int inner = (int)tracebackInnerFrames, outer = (int)tracebackOuterFrames;
+        int elided = printed.Count - inner - outer;
+
+        for (int i = 0; i < printed.Count; i++)
+        {
+            if (elided > 0 && i == inner)
+            {
+                trace.Append("...").Append(elided).Append(" frames elided...\n");
+                i += elided - 1;
+                continue;
+            }
+
+            (string name, string file, int line) = printed[i];
+            trace.Append(name).Append("()\n");
 
             if (!string.IsNullOrEmpty(file))
                 trace.Append('\t').Append(file).Append(':').Append(line).Append('\n');
