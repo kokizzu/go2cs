@@ -422,8 +422,32 @@ partial class runtime_package
 
     public static void syscallRuntimeUnsetenv(@string key) => syscall_runtimeUnsetenv(key);
 
+    // TEST SEAM (A15): Go's export_test.go `var ForceGCPeriod = &forcegcperiod`, which
+    // runtime's TestPeriodicGC writes. GolibTests is outside runtime's InternalsVisibleTo grant.
+    public static ref int64 GoForceGCPeriod => ref forcegcperiod;
+
     // GC runs a garbage collection and blocks the caller until the garbage collection is complete.
     public static void GC()
+    {
+        gcCycle(forced: true);
+    }
+
+    // ONE CYCLE AT A TIME (A15). Go's gcStart takes work.startSema, so two cycles never overlap; the
+    // periodic tick below is a second source of cycles, and poolcleanup and the pause pair must not
+    // run twice at once. The application's runtime.GC() waits its turn, as Go's does; the tick never
+    // waits (Sysmon.Tick). A finalizer that calls runtime.GC() while another cycle waits for the
+    // finalizer queue waits at most that cycle's drain budget, since the wait is bounded.
+    private static readonly object s_gcCycleLock = new();
+
+    private static void gcCycle(bool forced)
+    {
+        lock (s_gcCycleLock)
+            gcCycleLocked(forced);
+    }
+
+    // runtime.GC()'s body, shared with the periodic GC. `forced` is Go's distinction between a cycle
+    // the application asked for and one the runtime started: only the first counts in NumForcedGC.
+    private static void gcCycleLocked(bool forced)
     {
         // Go's gcStart runs clearpools() at the START of every cycle, and that is what ages
         // sync.Pool's victim cache — without it a Pool never releases what it cached. All three of
@@ -503,10 +527,129 @@ partial class runtime_package
         // application calling the GC function" — which is a fact about the PROGRAM, so it is counted
         // whether or not the recorder is armed.
         GcPauseRecorder.Drain();
-        GcPauseRecorder.NoteForcedGC();
+
+        if (forced)
+            GcPauseRecorder.NoteForcedGC();
 
         // Go's cycle ends in gcMarkTermination, which is where work.cpuStats is written.
         catchUpCPUStats();
+
+        // And where memstats.last_gc_nanotime is written: the time the periodic GC measures from.
+        noteGCEnd();
+
+        // A sysmon whose start failed at load is retried here (Sysmon.EnsureStarted).
+        Sysmon.EnsureStarted();
+    }
+
+    // THE PERIODIC GC (A15, owner ruling 2026-09-29): sysmon's forced-GC arm. Go's sysmon checks
+    // gcTrigger{kind: gcTriggerTime, now: now}.test() on every loop and, when it holds, wakes
+    // forcegchelper, which starts a gcTriggerTime cycle. test() holds when GOGC is not off, a GC has
+    // run at least once, and more than forcegcperiod (2 minutes) has passed since the last one. So
+    // every Go program collects at least every 2 minutes, and runtime's TestPeriodicGC sets
+    // forcegcperiod to 0 to watch it happen.
+    //
+    // Here a managed timer plays sysmon: every tick it asks the CONVERTED test() -- Go's rule
+    // verbatim, including the gcPercent < 0 arm -- and runs runtime.GC()'s body with forced: false.
+    // Its inputs are kept as Go keeps them: memstats.enablegc is set by the first tick (Go's
+    // gcenable, "now that runtime is initialized, GC is okay"), and memstats.last_gc_nanotime is
+    // written at the end of every cycle and whenever the CLR has run a gen2 collection of its own
+    // since the last tick, so a collection the CLR started also resets the 2 minutes, as any Go GC
+    // cycle does.
+    //
+    // COST: the tick is 100 ms, so 10 wakeups a second of one background thread, each a gen2 count
+    // read, a nanotime and test(); at the default forcegcperiod the only GC it starts is one every 2
+    // minutes of GC silence. Go's sysmon wakes every 20 us to 10 ms. Measured on linux (A15, a 4-vCPU
+    // cloud VM): the tick body averages 36 us cold on its own thread, 0.36 ms of CPU a second, and a
+    // bare 100 ms sleeper's wakeups cost that VM about 0.75 ms a second, so about 1.1 ms of CPU a
+    // second in all; a whole-process idle comparison (3 runs an arm, 20 s windows) read a noisier
+    // +3.7 ms a second. The tick stops at process exit: no cycle starts once ProcessExit has run, and
+    // the loop ends at its next wakeup.
+    [ModuleInitializer]
+    internal static void ᴛStartSysmonTick() => Sysmon.Start();
+
+    // The tick's own state, in its own class so that starting it at module load touches none of the
+    // runtime package's statics; the first tick does that, on the sysmon thread.
+    private static class Sysmon
+    {
+        private const int TickMs = 100;
+
+        private static volatile bool s_stopped;
+        private static int s_started;
+        internal static int LastGen2Count;
+
+        // A DEDICATED THREAD, as Go's sysmon is its own M, and not a thread-pool timer: measured on
+        // linux, a 100 ms System.Threading.Timer cost about 0.5 ms of process CPU per tick (the pool
+        // worker spins before it sleeps again), where the tick's own body is under 1 us.
+        internal static void Start()
+        {
+            AppDomain.CurrentDomain.ProcessExit += static (_, _) => s_stopped = true;
+
+            EnsureStarted();
+        }
+
+        // A thread start can FAIL -- under a low RLIMIT_NOFILE the CLR's thread start needs a
+        // descriptor and throws OutOfMemoryException (GolibTests' LinuxDescriptorLimitTests) -- and a
+        // throw from a module initializer would make the runtime assembly unloadable. So a failed
+        // start leaves the tick unstarted, and the next GC cycle tries again.
+        internal static void EnsureStarted()
+        {
+            if (Volatile.Read(ref s_started) != 0 || Interlocked.Exchange(ref s_started, 1) != 0)
+                return;
+
+            try
+            {
+                new Thread(Loop) { IsBackground = true, Name = "go2cs sysmon" }.Start();
+            }
+            catch (Exception ex) when (ex is OutOfMemoryException or ThreadStartException)
+            {
+                Volatile.Write(ref s_started, 0);
+            }
+        }
+
+        private static void Loop()
+        {
+            Thread.Sleep(TickMs);
+
+            // Go's gcenable, reached once the runtime is up; here the first tick.
+            memstats.enablegc = true;
+
+            while (!s_stopped)
+            {
+                Tick();
+                Thread.Sleep(TickMs);
+            }
+        }
+
+        private static void Tick()
+        {
+            if (System.GC.CollectionCount(2) != Volatile.Read(ref LastGen2Count))
+                noteGCEnd();
+
+            if (!new gcTrigger(kind: gcTriggerTime, now: nanotime()).test())
+                return;
+
+            // Never wait for a cycle the application is running: that cycle resets the clock.
+            if (!Monitor.TryEnter(s_gcCycleLock))
+                return;
+
+            try
+            {
+                if (!s_stopped)
+                    gcCycleLocked(forced: false);
+            }
+            finally
+            {
+                Monitor.Exit(s_gcCycleLock);
+            }
+        }
+    }
+
+    // Go's mark termination writes memstats.last_gc_nanotime; here the end of every cycle does, and
+    // so does the tick when the CLR has run a gen2 collection since the last one it saw.
+    private static void noteGCEnd()
+    {
+        Volatile.Write(ref Sysmon.LastGen2Count, System.GC.CollectionCount(2));
+        Interlocked.Exchange(ref memstats.last_gc_nanotime, (uint64)nanotime());
     }
 
     // metricsLock/metricsUnlock protect the runtime metrics table (initMetrics' map and the agg
