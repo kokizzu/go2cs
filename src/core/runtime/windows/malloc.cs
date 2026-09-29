@@ -645,7 +645,7 @@ mapped:
         // new heap arena becomes visible before the heap lock
         // is released (which shouldn't happen, but there's
         // little downside to this).
-        atomic.StorepNoWB(@unsafe.Pointer.FromBox(l2.at<ж<heapArena>>((nint)(ri.l2()))), @unsafe.Pointer.FromPinnedBox(r));
+        atomic.StorepNoWB(@unsafe.Pointer.FromBox(l2.at<ж<heapArena>>((ulong)(ri.l2()))), @unsafe.Pointer.FromPinnedBox(r));
 continue_mapped:;
     }
 break_mapped:;

@@ -1358,6 +1358,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckPointerCoreConstraints() => CheckTarget("PointerCoreConstraints");
 
     [TestMethod]
+    public void CheckPointerElementAtUnsignedIndex() => CheckTarget("PointerElementAtUnsignedIndex");
+
+    [TestMethod]
     public void CheckPointerEmbedBoxReceiver() => CheckTarget("PointerEmbedBoxReceiver");
 
     [TestMethod]
