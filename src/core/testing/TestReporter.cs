@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -99,7 +100,7 @@ internal sealed class TestReporter(string package, bool json, bool verbose)
 
             if (json)
             {
-                Console.WriteLine(JsonSerializer.Serialize(testEvent, JsonOptions));
+                WriteEventLine(JsonSerializer.Serialize(testEvent, JsonOptions));
                 return;
             }
 
@@ -111,9 +112,71 @@ internal sealed class TestReporter(string package, bool json, bool verbose)
             // A package-level event with nothing to say prints as Go's binary prints its summary: the bare
             // word, no column padding. A parent that re-executes this binary reads it back, and runtime's
             // TestFinalizerRegisterABI requires "PASS\n" in its -test.v child's output.
-            Console.WriteLine(string.IsNullOrEmpty(testEvent.Test) && output.Length == 0
+            WriteEventLine(string.IsNullOrEmpty(testEvent.Test) && output.Length == 0
                 ? testEvent.Action.ToUpperInvariant()
                 : $"{testEvent.Action.ToUpperInvariant(),-20} {testEvent.Test}{output}");
+        }
+    }
+
+    // Serializes every event line this process writes, across reporters and the host's own
+    // infrastructure-error line.
+    private static readonly object s_eventLineLock = new();
+
+    // The process's real stdout, opened once. Only written while Console.Out is still the console's own
+    // writer (ConsoleOutIsTheProcessConsole).
+    private static readonly Lazy<Stream> s_stdout = new(Console.OpenStandardOutput);
+
+    // Console.SetOut sets this private flag, and it stays set after a restore, so a host that has ever
+    // redirected its output keeps writing through Console.Out. A runtime without the field reads as
+    // redirected too: the fallback is the behaviour this helper replaced, never a lost capture.
+    private static readonly FieldInfo? s_outRedirectedFlag =
+        typeof(Console).GetField("s_isOutTextWriterRedirected", BindingFlags.NonPublic | BindingFlags.Static);
+
+    private static bool ConsoleOutIsTheProcessConsole() => s_outRedirectedFlag?.GetValue(null) is false;
+
+    // GUARD SEAMS (GolibTests' ConsoleEventLineAtomicityTests). MSTest replaces Console.Out itself, so a
+    // guard cannot reach the process-console branch without them: one forces the branch, and one supplies
+    // the stream the process's stdout would be. Null in every real run.
+    internal static bool? ProcessConsoleForGuard { get; set; }
+    internal static Stream? StdoutForGuard { get; set; }
+
+    /// <summary>
+    /// Writes one event line, with its newline, as ONE write to the process's stdout.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The comparer reads the C# side's events from stdout and stderr merged onto one pipe. Console's own
+    /// writer hands a line to the pipe in pieces of its 256-character buffer, so a line longer than that
+    /// is several writes, and another writer on the same pipe can land between them: a raw-handle writer
+    /// (converted Go code's os.Stdout and os.Stderr) on every OS, and Console.Error on windows, whose
+    /// console writes take no shared lock. The line is torn and its event is lost. Measured (linux, a
+    /// raw-handle writer beside 200 parallel tests whose JSON lines run past 300 characters): 53 to 146
+    /// of 200 pass events arrived whole; the i9 measured 15% to 65% lost on windows.
+    /// </para>
+    /// <para>
+    /// One write of the whole line is atomic on a pipe up to PIPE_BUF (4096 bytes on linux), so a longer
+    /// line can still interleave with a raw writer; nothing in-process can lock a writer it does not own.
+    /// When Console.Out has been replaced (Console.SetOut, as an in-process host capture does), the line
+    /// goes to that writer instead, in one call, because that is where the caller asked output to go.
+    /// </para>
+    /// </remarks>
+    internal static void WriteEventLine(string line)
+    {
+        lock (s_eventLineLock)
+        {
+            if (!(ProcessConsoleForGuard ?? ConsoleOutIsTheProcessConsole()))
+            {
+                Console.Out.WriteLine(line);
+                return;
+            }
+
+            byte[] bytes = Console.OutputEncoding.GetBytes(line + Console.Out.NewLine);
+            Stream stdout = StdoutForGuard ?? s_stdout.Value;
+
+            // Anything already written through Console.Out stays ahead of this line.
+            Console.Out.Flush();
+            stdout.Write(bytes, 0, bytes.Length);
+            stdout.Flush();
         }
     }
 
