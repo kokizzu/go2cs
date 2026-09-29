@@ -374,6 +374,17 @@ public static class RuntimeErrorPanic
     }
 
     /// <summary>
+    /// Invoked on the throwing goroutine each time a Go frame's panic filter examines an exception
+    /// (<see cref="TryAsPanic"/>), during the filter pass and so BEFORE the frames between the throw
+    /// and the handler unwind. The runtime registers the release of its stop-the-world locks here
+    /// (runtime managed_impl.cs, stopTheWorld): a region that throws while holding worldsema or
+    /// metricsSema would otherwise leave it held for every later caller, where Go fatals ("panic
+    /// during preemptoff"). The handler must be cheap and idempotent; filters run once per
+    /// enclosing Go frame. Unregistered, nothing runs (golib sits under runtime and cannot name it).
+    /// </summary>
+    public static Action? PanicObserved { get; set; }
+
+    /// <summary>
     /// Converts a .NET exception that corresponds to a Go runtime panic into a <see cref="PanicException"/>,
     /// so it can be recovered with <c>recover()</c> and reported like a Go panic. Returns <c>false</c>
     /// (leaving the exception to propagate unchanged) for exceptions that are not Go runtime panics.
@@ -393,6 +404,8 @@ public static class RuntimeErrorPanic
     /// </remarks>
     public static bool TryAsPanic(Exception ex, [NotNullWhen(true)] out PanicException? panic)
     {
+        PanicObserved?.Invoke();
+
         switch (ex)
         {
             case PanicException panicException:

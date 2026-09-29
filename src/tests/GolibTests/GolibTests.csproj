@@ -59,6 +59,8 @@
     <Compile Remove="RuntimeBootstrapConstantsTests.cs" />
     <!-- GoBadOpenProbe/GoPipe2RoundTripProbe/GoMincoreErrorSignProbe (runtime/linux/stubs2_impl.cs). -->
     <Compile Remove="RuntimeFdSyscallTests.cs" />
+    <!-- GoAllThreadsSyscallProbe (runtime/linux/os_linux_impl.cs). -->
+    <Compile Remove="LinuxAllThreadsSyscallRefusalTests.cs" />
 
     <!-- RLIMIT_NOFILE is 7 and /proc/self/fd exists only on linux; the host restore it guards is
          exercised by syscall's linux-only TestPrlimitFileLimit. -->
