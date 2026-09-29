@@ -134,20 +134,7 @@ internal static void netpollarm(ref pollDesc pd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string runtimeNetpollˢ = "runtime: netpoll: PostQueuedCompletionStatus failed"u8;
-
-internal static void netpollBreak() {
-    // Failing to cas indicates there is an in-flight wakeup, so we're done here.
-    if (!ᏑnetpollWakeSig.CompareAndSwap(0, 1)) {
-        return;
-    }
-    var key = packNetpollKey(netpollSourceBreak, nil);
-    if (stdcall4(_PostQueuedCompletionStatus, iocphandle, 0, key, 0) == 0) {
-        println((@string)"runtime: netpoll: PostQueuedCompletionStatus failed (errno="u8, getlasterror(), (@string)")"u8);
-        @throw(runtimeNetpollˢ);
-    }
-}
+// go2cs generated this placeholder — func netpollBreak is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
