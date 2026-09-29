@@ -2929,4 +2929,8 @@ partial class runtime_package
 
         return s;
     }
+
+    // GoEfaceHashProbe is the GolibTests seam for efaceHash (GolibTests is outside the
+    // InternalsVisibleTo grant): the hash Go gives an interface value, as export_test.go's EfaceHash does.
+    public static uintptr GoEfaceHashProbe(any i, uintptr seed) => efaceHash(i, seed);
 }
