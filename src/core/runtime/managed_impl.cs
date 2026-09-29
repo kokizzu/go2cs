@@ -821,6 +821,11 @@ partial class runtime_package
             appendGoFrames(trace, panicSite);
         }
 
+        // Go ends the calling goroutine's block, like every other, with the `go` statement that started
+        // it (traceback1's printcreatedby): the line a child reads to name its parent.
+        if (current is not null)
+            appendCreatedBy(trace, current);
+
         if (all)
         {
             // Every OTHER live goroutine, in goid order, as Go dumps them: one blank-line-separated
@@ -1154,6 +1159,11 @@ partial class runtime_package
         // method, which the flat `<pkg>.<name>` form drops.
         if (goReceiverName(method) is string receiver)
             name = $"{receiver}.{name}";
+        // A generic FUNCTION prints as `fn[...]` (funcNameForPrint). A method's C# type parameters are
+        // its receiver type's, which the receiver's own `T[...]` already spells, and a function literal
+        // keeps the name its enclosing function gave it.
+        else if (method.IsGenericMethod && method.Name[0] != '<')
+            name = $"{name}[...]";
 
         return $"{importPath}.{name}";
     }
