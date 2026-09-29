@@ -869,6 +869,12 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
 
     [TestMethod]
+    public void CheckLineMarkerDeferEndTC0() => CheckTarget("LineMarkerDeferEndTC0");
+
+    [TestMethod]
+    public void CheckLineMarkerPackageVars() => CheckTarget("LineMarkerPackageVars");
+
+    [TestMethod]
     public void CheckLinknameVarPull() => CheckTarget("LinknameVarPull");
 
     [TestMethod]
