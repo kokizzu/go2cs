@@ -540,6 +540,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// "missing stack in shrinkstack" because a goroutine here is a CLR thread with no Go stack
 		// (stack.lo is 0), which exited the process and lost every later test in the runtime row.
 		"shrinkstack": goosAny,
+		// rawstring allocates the string and its byte slice over ONE managed byte[] (managed_impl.cs):
+		// the converted body called mallocgc, which this host does not run, and died in mallocgcTiny on an
+		// anonymous nil dereference (a large request took the whole test host down). Every caller,
+		// gostringw and TestStringW included, goes through it.
+		"rawstring": goosAny,
 		// User arenas over managed allocations (arena_impl.cs). Go carves them from its own heap:
 		// newUserArena reached fixalloc before FixAlloc_Init and threw. The arena keeps a strong list
 		// of its allocations, made through reflect's bridge, and arena_heapify tests membership on

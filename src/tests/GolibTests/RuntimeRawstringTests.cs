@@ -17,4 +17,10 @@ public class RuntimeRawstringTests
         Assert.AreEqual("xxxxx", (string)GoRawstringProbe(5, (byte)'x'));
         Assert.AreEqual("", (string)GoRawstringProbe(0, (byte)'x'));
     }
+
+    [TestMethod]
+    public void ALargeStringIsTheRequestedLength()
+    {
+        Assert.AreEqual(1 << 20, (int)len(GoRawstringProbe(1 << 20, (byte)'y')));
+    }
 }

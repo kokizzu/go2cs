@@ -2904,6 +2904,19 @@ partial class runtime_package
         return reading.ToString();
     }
 
+    // rawstring (string.go) allocates storage for a new string; the returned string and byte slice both
+    // refer to the same storage, which the caller fills through the slice and then drops. Go takes it
+    // from mallocgc, which this host does not run (there is no Go heap), so the converted body died in
+    // mallocgcTiny on an anonymous nil dereference. One managed byte[] backs both views: @string(byte[])
+    // wraps its argument without copying, and no @string hands out a writable view of its bytes, so
+    // the slice is the only writer. The storage is zeroed, which Go permits ("not zeroed" is what
+    // callers may not rely on).
+    internal static (@string s, slice<byte> b) rawstring(nint size)
+    {
+        byte[] backing = AllocationCounter.NewArray<byte>(size);
+        return (new @string(backing), new slice<byte>(backing));
+    }
+
     // GoRawstringProbe is the GolibTests seam for rawstring (GolibTests is outside the
     // InternalsVisibleTo grant). It fills the returned byte slice and reads the string back, which is
     // rawstring's contract: the string and the slice refer to the same storage.
