@@ -75,6 +75,26 @@ public class ZeroSizeFieldIdentityTests
     }
 
     [TestMethod]
+    public void AByteElementViewedAsAZeroSizeTypeKeepsItsAddress()
+    {
+        // `(*SID)(unsafe.Pointer(&b[0]))` -- Windows' variable-length SID over a byte buffer, Go's opaque
+        // zero-size struct. The REINTERPRET is an aliasing view of b[0]'s real storage, not a zero-size
+        // FIELD, so its target is the buffer and its uintptr is b[0]'s address: the syscall door must pass
+        // it. A17's token rule (a zero-size field's target is the shared slot) turned it into an order
+        // token and the door refused CopySid at argument 1 -- os/user's TestLookupGroup family and
+        // internal/syscall/windows' TestRunAtLowIntegrity at the TRAIN I union.
+        slice<byte> b = new byte[16].slice();
+        ж<byte> first = Ꮡ(b, 0);
+
+        ж<noCopy> sid = first.Reinterpret<byte, noCopy>();
+        uintptr address = (uintptr)sid;
+
+        Assert.IsFalse(ManagedPointerTokens.IsTaggedToken(address), "a view over real storage is an ADDRESS, never an order token");
+        Assert.AreEqual(((uintptr)first).Value, address.Value, "the view's address is the element's own");
+        Assert.IsFalse(Unsafe.AreSame(ref sid.Value, ref GoZeroSizeSlot<noCopy>.Ref), "its target is the buffer, not the shared zero-size slot");
+    }
+
+    [TestMethod]
     public void OneFieldTakenTwiceIsOnePointer()
     {
         ж<Carrier> x = Ꮡ(new Carrier());
