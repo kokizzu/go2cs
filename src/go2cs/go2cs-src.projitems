@@ -196,6 +196,7 @@
     <None Include="$(MSBuildThisFileDirectory)main.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionDestination_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionVars_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)manualSignatureLift_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualConversionScope_test.go" />
     <None Include="$(MSBuildThisFileDirectory)manualTypeOperations.go" />
