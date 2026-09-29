@@ -107,7 +107,13 @@ internal sealed class TestReporter(string package, bool json, bool verbose)
                 return;
 
             string output = string.IsNullOrWhiteSpace(testEvent.Output) ? "" : $" — {testEvent.Output}";
-            Console.WriteLine($"{testEvent.Action.ToUpperInvariant(),-20} {testEvent.Test}{output}");
+
+            // A package-level event with nothing to say prints as Go's binary prints its summary: the bare
+            // word, no column padding. A parent that re-executes this binary reads it back, and runtime's
+            // TestFinalizerRegisterABI requires "PASS\n" in its -test.v child's output.
+            Console.WriteLine(string.IsNullOrEmpty(testEvent.Test) && output.Length == 0
+                ? testEvent.Action.ToUpperInvariant()
+                : $"{testEvent.Action.ToUpperInvariant(),-20} {testEvent.Test}{output}");
         }
     }
 
