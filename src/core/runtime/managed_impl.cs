@@ -746,18 +746,30 @@ partial class runtime_package
         uvarint((uint64)ncpu);
         uvarint((uint64)tagEOF);
 
-        slice<byte> bytes = new(dump.ToArray());
-        nint written = 0;
-
-        // dwrite's contract: a write error is not reported, so a short or failed write ends the dump.
-        while (written < len(bytes))
+        // THE WRITE IS MANAGED, on every target. It used to go through runtime.write, which is a
+        // working syscall on linux and darwin but, on the windows flavor, write1 -> stdcall ->
+        // asmcgocall: an assembly door with no body, so every windows WriteHeapDump threw
+        // NotImplementedException (GolibTests' WriteHeapDump arm, TRAIN I battery). A non-owning
+        // SafeFileHandle over the caller's fd -- a Windows HANDLE there, a descriptor elsewhere --
+        // written through an unbuffered FileStream serves a file and a pipe alike, and closes
+        // nothing: the fd stays the caller's.
+        //
+        // ONE STATED DIVERGENCE, unix only: for a SEEKABLE descriptor .NET writes positionally
+        // (pwrite) from the descriptor's current offset and does not move that offset, where Go's
+        // write(2) advances it. The dump lands where Go's would; only a later write through the same
+        // descriptor would start at the old offset. Go's own callers stat or close the file after the
+        // dump and never write again (runtime/debug's heapdump tests, TestSchedPauseMetrics).
+        //
+        // dwrite's contract: a write error is not reported, so a failed write ends the dump silently.
+        try
         {
-            int32 n = write(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(bytes, written)), (int32)(len(bytes) - written));
+            using global::Microsoft.Win32.SafeHandles.SafeFileHandle handle = new((nint)fd, ownsHandle: false);
+            using global::System.IO.FileStream stream = new(handle, global::System.IO.FileAccess.Write, bufferSize: 0);
 
-            if (n <= 0)
-                break;
-
-            written += n;
+            stream.Write(global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dump));
+        }
+        catch (Exception ex) when (ex is global::System.IO.IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or ObjectDisposedException)
+        {
         }
 
         // dumpint: Go's uvarint encoding.
