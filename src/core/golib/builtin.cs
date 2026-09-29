@@ -2496,6 +2496,13 @@ public static partial class builtin
             }
         }
 
+        // A ZERO-CAPACITY slice has no underlying element to name: Go's SliceData answers "a non-nil
+        // pointer to an unspecified memory address" there (zerobase, for a make), and an element box
+        // at the slice's low index would name a slot past the end of its backing, faulting on the
+        // first read or conversion. The shared per-type element is that non-nil address.
+        if (target.Capacity == 0)
+            return GoZeroCapacityElement<T>.Element;
+
         // ONE object: the box (charged in its ctor). No header temp exists to charge.
         return new ElemRefBox<T>(target, index);
     }
