@@ -192,6 +192,9 @@ public sealed class ElemRefBox<T> : ж<T>
     {
         get
         {
+            if (NamesZeroBase)
+                return GoZeroBase.Token;
+
             if (nativeElementIdentity() is var addr and not 0)
                 return addr;
 
@@ -208,6 +211,10 @@ public sealed class ElemRefBox<T> : ж<T>
 
         if (ReferenceEquals(this, other))
             return true;
+
+        // Every zerobase pointer is one pointer, whichever kind names it.
+        if (NamesZeroBase || other.NamesZeroBase)
+            return NamesZeroBase && other.NamesZeroBase;
 
         if (other is not ElemRefBox<T> er)
             return false;
@@ -230,6 +237,9 @@ public sealed class ElemRefBox<T> : ж<T>
     /// <inheritdoc/>
     public override int GetHashCode()
     {
+        if (NamesZeroBase)
+            return GoZeroBase.HashCode;
+
         if (nativeElementIdentity() is var addr and not 0)
             return addr.GetHashCode();
 
@@ -265,7 +275,17 @@ public sealed class ElemRefBox<T> : ж<T>
     /// <inheritdoc/>
     // The referent is the canonical backing storage (so `Ꮡ(buf, 0)`'s throwaway box resolves to
     // buf's own array).
-    public override object ReferentObject => CanonicalPair().storage;
+    public override object ReferentObject => NamesZeroBase ? GoZeroBase.Box : CanonicalPair().storage;
+
+    /// <inheritdoc/>
+    // An element of the shared zero-size slot is Go's data + i*0 over zerobase, and the zero-capacity
+    // slot is make([]T, 0)'s data word, which Go answers with zerobase too. Any other backing is an
+    // allocation of its own. The zero-size test comes first: for an ordinary T the shared slot is the
+    // empty array every zero-length backing shares, and an element box over THAT is not the zerobase.
+    internal override bool NamesZeroBase =>
+        m_backing is not null &&
+        ((GoZeroSizeFacts<T>.IsZeroSize && ReferenceEquals(m_backing, GoZeroSizeFacts<T>.Storage)) ||
+         ReferenceEquals(m_backing, GoZeroCapacitySlot<T>.Backing));
 
     /// <inheritdoc/>
     // The fast arm collapsed its source to (backing, absolute index), so it re-mints a whole-array

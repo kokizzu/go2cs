@@ -505,6 +505,14 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
     /// </remarks>
     public virtual object ReferentObject => this;
 
+    /// <summary>
+    /// Whether this pointer is <see cref="GoZeroBase"/>, the one address Go answers for every zero-byte
+    /// allocation. Only a heap box of a zero-size type and an element reference over the shared
+    /// zero-size or zero-capacity slot say yes; every other kind names its own storage. When it is true
+    /// the pointer's equality, hash, order token, referent and address are all the zerobase's.
+    /// </summary>
+    internal virtual bool NamesZeroBase => false;
+
     // The address this box converts to, minted by the same operator every `uintptr(p)` uses (nil -> 0,
     // native -> its address, fixed array -> its pinned data, value slot -> its stable address, all
     // registered) -- exposed non-generically so unsafe.Pointer's box-retaining constructor can hold
@@ -769,6 +777,12 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
             return aliased;
         }
 
+        // The zerobase's address, read back as a pointer to a zero-size type: a zerobase pointer of
+        // that type, exactly what converting one to a number and back is in Go. The box answers the
+        // zerobase's identity (GoZeroBase), and a zero-size value has nothing to read or write.
+        if (GoZeroSizeFacts<T>.IsZeroSize && GoZeroBase.Is(resolved))
+            return new StandardBox<T>(default(T)!);
+
         // ARM 2 (§10.3): the token named a LIVE box whose pointee type is not T. COUNTED FIRST and
         // unconditionally, so the census still reports every arrival at this arm -- including the 2a
         // subset the line below now diverts. An instrument that stops counting the cases a fix
@@ -975,6 +989,11 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         if (value is null || value.IsNull)
             return default;
 
+        // Every zerobase pointer is ONE address, the zerobase's own (GoZeroBase): Go's
+        // uintptr(unsafe.Pointer(new(struct{}))) is &zerobase for every such allocation.
+        if (value.NamesZeroBase)
+            return GoZeroBase.Address;
+
         // A pointer to a Go fixed array (`unsafe.Pointer(&arr)`): the native address must reference the
         // array's DATA (element 0), pinned so a syscall can fill it in and the managed reads afterward
         // observe the result — not the transient address of the `array<T>` struct wrapper. Slices keep
@@ -1050,6 +1069,10 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
 
         if (value is null || value.IsNull)
             return null;
+
+        // The zerobase's one address, as in the uintptr operator above.
+        if (value.NamesZeroBase)
+            return (void*)GoZeroBase.Address;
 
         // A pointer to a Go fixed array resolves to the pinned address of the array data — see the
         // uintptr operator above for the full rationale, including why the address is REGISTERED

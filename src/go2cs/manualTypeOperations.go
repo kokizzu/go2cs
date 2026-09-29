@@ -126,10 +126,14 @@ func (scope goosScope) includes(goos string) bool {
 // on every allocation, and allocation here is a golib constructor that cannot reach runtime, so the
 // storage is golib's GoMemProfile.Rate and runtime declares `public static ref nint MemProfileRate`
 // over it (class M, piece M1, COORD ruling 2026-09-27). A ref property has no address of its own, so a
-// registered var must never be address-taken; TestManualConversionVarsAreDisplacedAndDeclared checks it.
+// registered var that Go takes the address of must have its impl declare the heap box too: the `Ꮡname`
+// member every `&name` emits. runtime's zerobase is that case: its storage is golib's GoZeroBase, the one
+// address every zero-size allocation shares, so `Ꮡzerobase` IS that box (Z, COORD ruling 2026-09-28).
+// TestManualConversionVarsAreDisplacedAndDeclared checks both members.
 var manualConversionVars = map[string]map[string]goosScope{
 	"runtime": {
 		"MemProfileRate": goosAny,
+		"zerobase":       goosAny,
 	},
 }
 

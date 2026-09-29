@@ -2585,8 +2585,19 @@ partial class runtime_package
 
     private static readonly ConditionalWeakTable<object, FuncRecord> s_funcRecords = new();
 
+    // One *Func per ENTRY. Go's *Func points into the pclntab at its function, so FuncForPC answers
+    // the same pointer for every pc in it, and symtab_test.go walks `for FuncForPC(pc) == f { pc++ }`
+    // to the function's end; a fresh box per call made that loop exit at once. This host's entry is a
+    // call site's span (frameEntry), the unit Entry() already reports, so a *Func is equal to another
+    // exactly when their Entry() is. Strong: the entries are the finite set of call sites and function
+    // tokens this process has named.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<uintptr, ж<Func>> s_funcHandles = new();
+
     // FuncForPC returns a *Func describing the function the token names, or nil when the token
     // names nothing this host can resolve — which is Go's own answer for a pc in no function.
+    //
+    // The box is a HandleBox: Func is zero-size, and a plain box of it would be the zerobase, which
+    // every zero-size allocation shares (golib's GoZeroBase), making every *Func equal to every other.
     public static ж<Func> FuncForPC(uintptr pc)
     {
         string? name = managedFuncName(pc);
@@ -2594,9 +2605,12 @@ partial class runtime_package
         if (string.IsNullOrEmpty(name))
             return default!;
 
-        ж<Func> box = Ꮡ(new Func());
-        s_funcRecords.Add(box, new FuncRecord { Name = name!, Pc = frameEntry(pc) });
-        return box;
+        return s_funcHandles.GetOrAdd(frameEntry(pc), static (entry, funcName) =>
+        {
+            ж<Func> box = new HandleBox<Func>(new Func());
+            s_funcRecords.Add(box, new FuncRecord { Name = funcName, Pc = entry });
+            return box;
+        }, name!);
     }
 
     // Name returns the Go spelling recorded when the *Func was minted. A Func this host did not
