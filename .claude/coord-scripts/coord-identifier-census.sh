@@ -829,9 +829,15 @@ function wordAfter(lo, e,   i, b, e2, L) {
     e2 = b; while (e2 < L && substr(lo, e2 + 1, 1) !~ /[ \t]/) e2++
     return substr(lo, b, e2 - b + 1)
 }
-function ipv4Extent(lo, rstart,   s) {
+#
+# The back-scan stops at FLOOR + 1, where FLOOR is the end of the span this line already decided. A quad
+# glued to the one before it by a dot (`<decided quad>.<next quad>`) otherwise scans back over the dot
+# into the decided quad, parses IT first, and hands back its span, which scanIpv4 skips as already
+# decided; the trailing quad was then never examined and read CLEAN in STRICT, whatever it was, after
+# a loopback, broadcast, unspecified or release-literal quad (COORD 2026-09-29, found as pre-existing).
+function ipv4Extent(lo, rstart, floor,   s) {
     s = rstart
-    while (s > 1 && substr(lo, s - 1, 1) ~ /[0-9.]/) s--
+    while (s > floor + 1 && substr(lo, s - 1, 1) ~ /[0-9.]/) s--
     while (s <= rstart) {
         if (substr(lo, s, 1) ~ /[0-9]/ && ipv4ParseAt(lo, s)) { IPV4S = s; return 1 }
         s++
@@ -906,7 +912,7 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
         # is a strictly harder version of what a short match does, so the extent derivation is proven
         # on gawk too and cannot regress silently back onto RLENGTH.
         if (SHORT > 0 && rstart + SHORT <= length(lo)) rstart = rstart + SHORT
-        if (ipv4Extent(lo, rstart) == 0) { pos = rstart; continue }
+        if (ipv4Extent(lo, rstart, lastEnd) == 0) { pos = rstart; continue }
         s = IPV4S; e = IPV4E
         pos = (e > rstart) ? e : rstart     # rstart > old pos, so this always advances
         if (e <= lastEnd) continue          # the back-scan re-found a span already decided
@@ -1913,6 +1919,17 @@ idc_mode_selftest() {
     printf 'the box answered on %d.%d.%d.%d last night\n' 192 168 1 20     > "$d/q05"; idc_st_case "a private-range quad is not the release shape" "ipv4" "$d/q05" 1
     printf 'the build stamped %d.%d.%d.%d into the assembly\n' 1 3 4 5     > "$d/q06"; idc_st_case "second component off the shape still refuses" "ipv4" "$d/q06" 1
     printf 'the build stamped %d.%d.%d.%d into the assembly\n' 2 24 13 3   > "$d/q07"; idc_st_case "first component off the shape still refuses"  "ipv4" "$d/q07" 1
+    # GLUED BY A DOT to an admitted quad. The back-scan used to cross the dot into the quad before it,
+    # re-find that span and skip it as decided, so the trailing quad read CLEAN in STRICT whatever it
+    # was (COORD 2026-09-29, pre-existing). One plant per admitted shape, since each admit disposes of
+    # the first quad by a different rule, and one control that a glued pair of ADMITTED quads stays
+    # admitted, so the floor cannot be satisfied by refusing everything after a dot.
+    printf 'the box answered on %d.%d.%d.%d.%d.%d.%d.%d last night\n' 127 0 0 1 192 168 1 20 > "$d/q09"; idc_st_case "a quad glued after a loopback still refuses"    "ipv4" "$d/q09" 1
+    printf 'the box answered on %d.%d.%d.%d.%d.%d.%d.%d last night\n' 255 255 255 255 10 0 0 1 > "$d/q10"; idc_st_case "a quad glued after a broadcast still refuses"   "ipv4" "$d/q10" 1
+    printf 'the box answered on %d.%d.%d.%d.%d.%d.%d.%d last night\n' 0 0 0 0 172 16 0 9 > "$d/q11"; idc_st_case "a quad glued after an unspecified still refuses" "ipv4" "$d/q11" 1
+    printf 'the hop landed go%d.%d.%d.%d.%d.%d.%d.%d on every lane\n' 1 24 13 3 192 168 1 20 > "$d/q12"; idc_st_case "a quad glued after a release literal still refuses" "ipv4" "$d/q12" 1
+    printf 'the loopback %d.%d.%d.%d.%d.%d.%d.%d is linked from the roster\n' 127 0 0 1 1 24 13 3 > "$d/q13"; idc_st_case "a release literal glued after a loopback is admitted" "" "$d/q13" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
     # AND IN DELTA MODE TOO, by the release admit and not by rules 1-4: this quad carries no prefix,
     # its token run IS the quad, it is no doc constant, and neither neighbouring word is a context
     # word -- so under rules 1-4 alone it was a hit, and the reason printed is the discriminator.
