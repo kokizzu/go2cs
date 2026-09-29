@@ -257,9 +257,12 @@ public static class PointerExtensions
     /// </remarks>
     internal static class FuncCookieReinterpret<T, TDst>
     {
-        /// <summary>A uintptr source slot read as a func -- the only pair a cookie can answer.</summary>
+        /// <summary>
+        /// A uintptr source slot read as a func -- the only pair a cookie can answer. The emission's
+        /// slot is Go's <see cref="uintptr"/> (a one-<c>nuint</c> struct), golib's own is <c>nuint</c>.
+        /// </summary>
         internal static readonly bool Applies =
-            typeof(T) == typeof(nuint) && typeof(Delegate).IsAssignableFrom(typeof(TDst));
+            (typeof(T) == typeof(uintptr) || typeof(T) == typeof(nuint)) && typeof(Delegate).IsAssignableFrom(typeof(TDst));
 
         /// <summary>
         /// The func a cookie word names, as <typeparamref name="TDst"/>; Go's nil func for word 0.

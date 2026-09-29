@@ -68,6 +68,23 @@ public class GoFuncCookieTests
     }
 
     [TestMethod]
+    public void AGoUintptrSlotHoldingACookieReadsBackAsTheSameFunc()
+    {
+        // The EMISSION's slot type: runtime's callback heaps its lparam as go.uintptr, never nuint
+        // (`Ꮡlparam.Reinterpret<uintptr, Action>()`). ReferenceEquals, not AreSame: a miss must fail
+        // the assert, never format -- i.e. dereference -- the word read as a reference.
+        int calls = 0;
+        Action fn = () => calls++;
+        ж<uintptr> lparam = new StandardBox<uintptr>((uintptr)GoFuncCookie.Of(fn));
+
+        ж<Action> asFunc = lparam.Reinterpret<uintptr, Action>();
+
+        Assert.IsTrue(ReferenceEquals(fn, asFunc.ValueSlot), "a go.uintptr slot holding a cookie resolves to its func");
+        asFunc.ValueSlot();
+        Assert.AreEqual(1, calls);
+    }
+
+    [TestMethod]
     public void AFuncReadThroughAnotherDelegateShapeIsReboundNotLost()
     {
         int calls = 0;

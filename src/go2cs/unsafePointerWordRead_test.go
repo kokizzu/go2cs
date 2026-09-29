@@ -53,6 +53,17 @@ func onUintptr(x uintptr) unsafe.Pointer       { return *(*unsafe.Pointer)(unsaf
 func onChan(c chan int) unsafe.Pointer         { return *(*unsafe.Pointer)(unsafe.Pointer(&c)) }
 func onDoubleFunc(fn func()) unsafe.Pointer    { return **(**unsafe.Pointer)(unsafe.Pointer(&fn)) }
 
+// POSITIVES in runtime's nestedCall shape: a variadic argument, a deferring function, a statement call.
+func sink(a ...uintptr) uintptr { return a[len(a)-1] }
+func probeVariadic(f func()) uintptr { return sink(0, 0, uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f)))) }
+func probeDefer(f func()) uintptr {
+	defer fmt.Print("")
+	return uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f)))
+}
+func probeStmt(f func()) {
+	sink(0, uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f))))
+}
+
 func main() {
 	n := 1
 	fmt.Println(onFunc(func() {}) != 0, onPointer(&n) != nil, onPointerLocal(2) != nil, onUnsafe(unsafe.Pointer(&n)) != nil)
@@ -113,6 +124,9 @@ func main() {
 		{"onPointer", regexp.MustCompile(`@unsafe\.Pointer\.FromPinnedBox\(Ꮡp\)`), false},
 		{"onPointerLocal", regexp.MustCompile(`@unsafe\.Pointer\.FromPinnedBox\(q\)`), false},
 		// Ꮡ(u) is folded to Ꮡu by the emitter, so the read is the stored Pointer itself.
+		{"probeVariadic", regexp.MustCompile(`sink\(0, 0, \(uintptr\)\(~Ꮡ\(@unsafe\.Pointer\.OfFunc\(f\)\)\)\)`), false},
+		{"probeDefer", regexp.MustCompile(`@unsafe\.Pointer\.OfFunc\(f\)`), false},
+		{"probeStmt", regexp.MustCompile(`@unsafe\.Pointer\.OfFunc\(f\)`), false},
 		{"onUnsafe", regexp.MustCompile(`~Ꮡu\b`), false},
 		{"onUintptr", regexp.MustCompile(`new @unsafe\.Pointer\(~Ꮡx\)`), false},
 		{"onChan", boxToken, true},
