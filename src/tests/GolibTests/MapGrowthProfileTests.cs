@@ -22,6 +22,9 @@ public class MapGrowthProfileTests
     // Runs the probe at MemProfileRate = 1 with the recorder replaced, and returns every charge it made.
     private static List<(long size, bool noscan)> ChargesOf(Action probe, nint rate = 1)
     {
+        // The model runs only where runtime/pprof is reachable (the startup toggle); this host's closure holds it.
+        Assert.IsTrue(GoMemProfile.PprofReachable, "the map-growth model is the toggle-on arm");
+
         List<(long, bool)> charges = [];
         Action<object, nuint, bool> recorder = GoMemProfile.Recorder;
         nint previous = GoMemProfile.Rate;
