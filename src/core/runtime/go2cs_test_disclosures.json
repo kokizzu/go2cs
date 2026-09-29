@@ -61,6 +61,24 @@
       "class": "codegen-liveness",
       "signature": "expected arena-referenced object to be finalized",
       "reason": "Same frame-liveness retention as TestUserArenaLiveness/Free, with the arena dropped instead of freed (its handle unreachable after `arena = nil`): the arena and its allocation list are collected, and v, still reported live by the test frame, keeps the finalizer's object alive. Measured in the same A/B as /Free."
+    },
+    {
+      "name": "TestStartLine/inline",
+      "class": "runtime-capability",
+      "signature": "caller runtime_test.inlineFunc1 inlined got false want true",
+      "reason": "runtime-capability (census A2, COORD ruling 2026-09-28, B2's class): the subtest asserts that Go's COMPILER inlined inlineFunc1 into inlineFunc, reading it as runtime.Frame.Func == nil (Go leaves Func nil only for an inlined frame), before it reads the start line. go2cs keeps Go's function boundaries one-for-one, the project's chosen design, so no function is ever inlined and every Go frame carries its function's interned *Func (runtime Frames.Next, D3). The frame is therefore reported NOT inlined, which is true of this host, and the subtest panics at its own inlining check. Faking a nil Func for functions Go would have inlined would report a compiler decision this host never made. Pinned to that panic text alone: the same subtest's start-line half is measured by its non-inlined siblings (normal, multiline-declaration, blank-lines, normal-closure), which pass, so any other failure here is a real defect, not this disclosure. Retires only if go2cs ever inlines a Go function."
+    },
+    {
+      "name": "TestStartLine/inline-closure",
+      "class": "runtime-capability",
+      "signature": "caller runtime_test.inlineClosure.func1 inlined got false want true",
+      "reason": "runtime-capability (census A2, COORD ruling 2026-09-28, B2's class): the same assertion as TestStartLine/inline, for a function literal Go's compiler inlines into inlineClosure. go2cs emits every literal as its own method and never inlines one, so its frame carries a non-nil *Func and the subtest panics at its own inlining check. Pinned to that panic text alone; the literal's start-line half is measured by TestStartLine/normal-closure, which passes. The parent TestStartLine rides the disclosed-parent aggregation (its only failing descendants are these two). Retires only if go2cs ever inlines a Go function."
+    },
+    {
+      "name": "TestLineNumber",
+      "class": "structural",
+      "signature": "compLit[0].lineA on firstLine+5 want firstLine+9",
+      "reason": "structural (census A2 D1b, OWNER RULING 2026-09-28 via COORD: disclose, no emission change). The test reads runtime.Caller's line for calls placed on DIFFERENT lines of ONE statement or one package var spec: composite-literal elements (compLit, arrayLit, sliceLit), map keys and values (mapLit), the operands of a multi-line sum (intLit) and the arguments of a multi-line call (l39, l40). The proof, for the C# the converter emits: .NET line data is a SEQUENCE POINT per statement or field initializer, and a frame's line is the sequence point at or before its IL offset, so every call inside one statement reports that statement's first line; no marker the converter writes can put two lines inside one sequence point. The single-line half (firstLine, lineVar1, lineVar2a, lineVar2b, arrayLit[0], sliceLit[0], l38) is D1a's and passes where D1a's package-var position markers are present (claude/i9-line-markers 6d69f68782); this entry is PINNED TO THAT POST-D1a TEXT, whose first failing line is compLit[0].lineA at firstLine+5 (the spec's own line), so it admits the row only where D1a holds and a D1a regression reads as a mismatch, never as this disclosure. Named, unscheduled retirement plan (the owner's): extra PDB sequence points written in the BUILD at each such call, never in the emitted C#."
     }
   ]
 }

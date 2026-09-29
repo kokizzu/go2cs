@@ -102,8 +102,9 @@
 //     converted `.cs` position where it recorded none (goFramePosition). FuncForPC
 //     and Frame.Func stayed unimplemented/nil while a *Func had no managed referent; that
 //     premise EXPIRED when ManagedPointerTokens landed, and FuncForPC/Func.Name are managed
-//     below as of 2026-08-29, joined by Func.Entry/Func.FileLine as of 2026-09-02 (Frame.Func is
-//     still nil -- not a token this host mints). getcallersp
+//     below as of 2026-08-29, joined by Func.Entry/Func.FileLine as of 2026-09-02. Frame.Func stayed
+//     nil until 2026-09-28 (census A2, D3): Frames.Next now sets it for every Go frame, interned per
+//     function, with Frame.startLine beside it (see Frames.Next). getcallersp
 //     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
 //     chain is severed HERE, at the API boundary that does (the methodName precedent).
 //     runtime.Caller stays AUTO-converted and works through the same walk, because the funnel it
@@ -1615,6 +1616,22 @@ partial class runtime_package
         // with the smaller end winning a shared start; a full tie keeps the first recorded entry.
         public string? FuncLiteralFor(int goLine)
         {
+            int best = innermostFuncLiteral(goLine);
+
+            return best < 0 ? null : m_litSuffixes![best];
+        }
+
+        // FuncLiteralStartFor answers the Go line of the `func` keyword of the innermost recorded
+        // function literal containing goLine (a literal's span starts at lit.Pos()), or 0.
+        public int FuncLiteralStartFor(int goLine)
+        {
+            int best = innermostFuncLiteral(goLine);
+
+            return best < 0 ? 0 : m_litStarts![best];
+        }
+
+        private int innermostFuncLiteral(int goLine)
+        {
             decodeFuncLits();
 
             int[] starts = m_litStarts!;
@@ -1630,7 +1647,42 @@ partial class runtime_package
                     best = i;
             }
 
-            return best < 0 ? null : m_litSuffixes![best];
+            return best;
+        }
+
+        // FunctionStartFor answers the Go line of the `func` keyword of the named function whose FIRST
+        // sequence point is at csLine: the converter marks every function declaration's signature line
+        // with the declaration's position (visitFuncDecl's sentinel at funcDecl.Pos(), which is the
+        // `func` keyword, so a multi-line parameter list still answers the keyword's line), and nothing
+        // it emits between the signature and the first statement carries a marker. So the entry at or
+        // before csLine is that declaration's, unless csLine is a statement that carries its OWN entry,
+        // in which case the declaration's is the one before it. 0 when the record has no such entry.
+        public int FunctionStartFor(int csLine)
+        {
+            decode();
+
+            int[] csLines = m_csLines!;
+
+            if (csLines.Length == 0 || csLine < csLines[0])
+                return 0;
+
+            int low = 0;
+            int high = csLines.Length - 1;
+
+            while (low < high)
+            {
+                int middle = (low + high + 1) / 2;
+
+                if (csLines[middle] <= csLine)
+                    low = middle;
+                else
+                    high = middle - 1;
+            }
+
+            if (csLines[low] == csLine)
+                return low > 0 ? m_goLines![low - 1] : 0;
+
+            return m_goLines![low];
         }
 
         // decodeFuncLits parses the funcLits map — `<startLine>-<endLine>:<suffix>` entries,
@@ -1847,6 +1899,10 @@ partial class runtime_package
         public string Function = string.Empty;
         public string File = string.Empty;
         public nint Line;
+
+        // The Go line of the function's `func` keyword (Go's _func.startLine / Frame.startLine), 0 where
+        // no source position is known. See goFunctionStartLine.
+        public nint StartLine;
     }
 
     private static readonly object s_callerTableLock = new();
@@ -2247,10 +2303,15 @@ partial class runtime_package
     // Frames.Next expands the next recorded PC into a Frame. The auto body resolves PCs through
     // findfunc's linker-built funcInfo tables, which have no managed form; the records minted by
     // Callers carry the same answers (Function in Go's spelling, File, Line). A PC this runtime
-    // never minted resolves like Go's !funcInfo.valid() — skipped, not fatal. Frame.Func stays
-    // nil (allowed by contract: "may be nil for non-Go code"). Entry is the start of the call
-    // site's span: entry points are not distinct from call SITES in the token model, so two sites
-    // in one function report two entries where Go reports one (named, not modeled).
+    // never minted resolves like Go's !funcInfo.valid() — skipped, not fatal. Entry is the start of
+    // the call site's span: entry points are not distinct from call SITES in the token model, so two
+    // sites in one function report two entries where Go reports one (named, not modeled).
+    //
+    // Frame.Func and Frame.startLine (census A2, D3; COORD 2026-09-28, reopening the semantic bill's
+    // "Frame.Func unchanged"): Go leaves Func nil ONLY for an inlined frame, and go2cs keeps Go's function
+    // boundaries one-for-one, so no frame is inlined and every Go frame carries its function's interned
+    // *Func (frameFunc). startLine is the function's `func` keyword line (goFunctionStartLine), or a root
+    // frame's go1.24.13 declaration line (rootFunctionStartLine).
     [GoRecv] public static (Frame frame, bool more) Next(this ref Frames ci)
     {
         while (len(ci.callers) > 0)
@@ -2272,9 +2333,11 @@ partial class runtime_package
             Frame frame = new()
             {
                 PC = callPC,
+                Func = frameFunc(record.Function, entry),
                 Function = record.Function,
                 File = record.File,
                 Line = record.Line,
+                startLine = record.StartLine != 0 ? record.StartLine : rootFunctionStartLine(record.Function),
                 Entry = entry
             };
 
@@ -2375,7 +2438,8 @@ partial class runtime_package
             {
                 Function = goFrameName(method, frame),
                 File = file,
-                Line = line
+                Line = line,
+                StartLine = goFunctionStartLine(method)
             };
 
             s_callerRecords.Add(record);
@@ -2473,7 +2537,7 @@ partial class runtime_package
     private static CallerFrameRecord newMethodFrameRecord(System.Reflection.MethodBase method)
     {
         if (method.IsDefined(typeof(GoWrapperAttribute), inherit: false))
-            return new CallerFrameRecord { Function = goFrameName(method, null), File = "<autogenerated>", Line = 1 };
+            return new CallerFrameRecord { Function = goFrameName(method, null), File = "<autogenerated>", Line = 1, StartLine = 1 };
 
         (string file, int line) = method is System.Reflection.Emit.DynamicMethod ? (string.Empty, 0) : syntheticFramePosition(method);
 
@@ -2481,7 +2545,8 @@ partial class runtime_package
         {
             Function = isGoSourceFrame(method) ? goFrameName(method, null) : GoSyntheticPC.GoNameOf(method),
             File = file,
-            Line = line
+            Line = line,
+            StartLine = method is System.Reflection.Emit.DynamicMethod ? 0 : goFunctionStartLine(method)
         };
     }
 
@@ -2526,6 +2591,99 @@ partial class runtime_package
 
             s_syntheticFrames[handle] = record;
             return record;
+        }
+    }
+
+    private static readonly Dictionary<System.Reflection.MethodBase, int> s_functionStartLines = new();
+
+    // The Go line of a function's `func` keyword, Go's _func.startLine: what runtime.FrameStartLine and
+    // runtime/pprof's Function.start_line report (census A2, D3). It is read from the SAME record every
+    // frame position comes from, at the method's first sequence point:
+    //   - a function LITERAL (a compiler-generated lambda or local function, `<Outer>b__…`) answers the
+    //     start of the innermost recorded funcLits span containing that point, which the converter records
+    //     from lit.Pos(), the literal's `func` keyword;
+    //   - a named function answers its declaration's entry (GoPositionMapRecord.FunctionStartFor).
+    // A method-expression wrapper is Go's autogenerated function and answers 1 (<autogenerated>:1). 0 where
+    // no PDB or no record names a position, the answer every frame gave before. Cached per method: every
+    // call site of one function reads the same line.
+    private static int goFunctionStartLine(System.Reflection.MethodBase method)
+    {
+        lock (s_functionStartLines)
+        {
+            if (s_functionStartLines.TryGetValue(method, out int cached))
+                return cached;
+        }
+
+        int startLine = 0;
+
+        if (method.IsDefined(typeof(GoWrapperAttribute), inherit: false))
+        {
+            startLine = 1;
+        }
+        else
+        {
+            (string? csFile, int csLine) = methodSourcePosition(method);
+
+            if (csFile is not null && csLine > 0 && goPositionMapRecord(method, goSourcePath(csFile)) is { } record)
+            {
+                if (method.Name.Length > 0 && method.Name[0] == '<')
+                {
+                    int goLine = record.GoLineFor(csLine);
+                    startLine = goLine <= 0 ? 0 : record.FuncLiteralStartFor(goLine);
+                }
+                else
+                {
+                    startLine = record.FunctionStartFor(csLine);
+                }
+            }
+        }
+
+        lock (s_functionStartLines)
+        {
+            s_functionStartLines[method] = startLine;
+        }
+
+        return startLine;
+    }
+
+    // The start lines of the ROOT frames no live method backs (internRootFrame's records: the goroutine
+    // root, the test-host root, and the panic machinery splicePanic splices), as go1.24.13 declares them,
+    // the same release the frames' own lines are pinned to. Keyed by the Go function name the root is
+    // interned under; sigpanic is declared per OS, as splicePanic names its file.
+    private static nint rootFunctionStartLine(string function) => function switch
+    {
+        "runtime.goexit" => 1699,       // runtime/asm_amd64.s: TEXT runtime·goexit
+        "runtime.gopanic" => 742,       // runtime/panic.go
+        "runtime.panicmem" => 260,      // runtime/panic.go
+        "runtime.panicdivide" => 239,   // runtime/panic.go
+        "runtime.panicwrap" => 332,     // runtime/error.go
+        "runtime.sigpanic" => GOOS == "windows"u8 ? 392 : 906, // runtime/signal_windows.go : signal_unix.go
+        "testing.tRunner" => 1642,      // testing/testing.go
+        _ => 0
+    };
+
+    private static readonly Dictionary<string, ж<Func>> s_frameFuncs = new(StringComparer.Ordinal);
+
+    // The *Func a Go frame carries (Frame.Func), INTERNED per Go function name: Go's Func is a pointer
+    // into the one pclntab entry of its function, so every frame of one function carries the same *Func.
+    // Minted like FuncForPC's (a FuncRecord in s_funcRecords, so Name/Entry/FileLine answer the same way),
+    // with the entry of the first frame that reached it. Every frame here is a Go frame (captureCallers
+    // keeps no other), and nothing is ever inlined, so every frame with a name carries one; an unnamed
+    // record keeps Go's nil.
+    private static ж<Func> frameFunc(string function, uintptr entry)
+    {
+        if (function.Length == 0)
+            return default!;
+
+        lock (s_frameFuncs)
+        {
+            if (s_frameFuncs.TryGetValue(function, out ж<Func>? box))
+                return box;
+
+            box = Ꮡ(new Func());
+            s_funcRecords.Add(box, new FuncRecord { Name = function, Pc = entry });
+            s_frameFuncs[function] = box;
+            return box;
         }
     }
 
@@ -2577,6 +2735,12 @@ partial class runtime_package
     // addresses; see the file header) — and FileLine(pc) resolves the SAME Go-position data
     // Callers()/Frames.Next() already serve, through callerFrameRecord. firstmoduledata and
     // Frame.Func are deliberately UNCHANGED by this arc: see docs/phase4/CENSUS-runtime-semantic-bill.md.
+    // AMENDED 2026-09-28 (census A2, D3; COORD reopened the Frame.Func half): Frames.Next now sets
+    // Frame.Func, one *Func interned per Go function (frameFunc, a record in this same table), because
+    // Go leaves Func nil only for an inlined frame and no frame here is inlined. A FuncForPC box is
+    // still minted per call, so FuncForPC(pc) and a frame's Func are NOT the same pointer, where Go's are;
+    // stated, not modeled (the one reader, TestFunctionAlignmentTraceback, is disclosed on its code-byte
+    // read before it gets there). firstmoduledata stays unchanged.
     private sealed class FuncRecord
     {
         public string Name = string.Empty;
