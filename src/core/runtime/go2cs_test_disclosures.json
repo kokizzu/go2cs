@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "disclosures": [
     {
+      "name": "TestMemmoveOverflow",
+      "class": "structural",
+      "signature": "unsafe.Slice: length 3221225472 exceeds the maximum slice length of this runtime",
+      "platforms": [
+        "linux"
+      ],
+      "records": 1,
+      "reason": "structural: the test maps 3 GiB of address space at a fixed address (a temporary file mapped over it 64 KiB at a time), builds `unsafe.Slice((*byte)(base), 3<<30)` over it, and copies the slice over itself shifted by one byte in each direction, requiring memmove to move 3 GiB minus one byte both ways. The slice is 3 GiB long. golib's slice<T> and @string are built over CLR arrays and spans, whose length is Int32 (the native-backed slice constructor takes an int, and no CLR array holds 3 GiB), so a slice of that length has no representation here. READING: unsafe.Slice used to reduce the length with int.CreateTruncating, so 3 GiB WRAPPED negative and the test died on `len is negative` (a length of 4 GiB + 5 would have silently become a 5-element slice, which is a real bug and is fixed by the same seat). It now REFUSES BY NAME past the Int32 span length (unsafe.cs SpanLength, coordinator ruling 2026-09-29 11:33): `unsafe.Slice: length 3221225472 exceeds the maximum slice length of this runtime`. The pin is that refusal text; 3221225472 is the test's own constant (3<<30), so it is fixed. One record. PROOF that no managed implementation of the current slice can meet the assertion: the assertion needs an addressable 3 GiB slice, and the representation caps a slice at the Int32 span length. RETIREMENT CANDIDATE, named and NOT planned: an Int64-length slice representation (native-backed slices over a raw address range with a 64-bit length, decoupled from Span<T>); its footprint is every slice consumer and is UNMEASURED, and no seat owns it. MEASURED on linux (P1, claude/p1-unsafe-slice-length on claude/p1-runtime-ifacehash, Release with tiering off, .NET 10.0.12, go1.24.13, the row read by name). Windows and darwin are NOT read by P1; the test is a linux-only source file (memmove_linux_amd64_test.go). RETIRES if a slice can be longer than Int32 elements."
+    },
+    {
       "name": "TestLFStack",
       "class": "structural",
       "signature": "no lifo",
