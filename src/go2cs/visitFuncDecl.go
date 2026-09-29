@@ -341,6 +341,91 @@ func (v *Visitor) litNoInliningPrefix(funcLit *ast.FuncLit) string {
 	return ""
 }
 
+// liftSignatureDynamicTypes lifts every anonymous struct or interface type a declaration's results
+// and parameters carry, as its own named type in the file, and registers each for the package's
+// GoDynamicTypeLift records. The lifted declarations go to v.currentFuncPrefix, which the caller
+// places ahead of the function.
+func (v *Visitor) liftSignatureDynamicTypes(funcDecl *ast.FuncDecl) {
+	// A parameter/result's own anonymous-struct or -interface type is externally significant
+	// across function scopes (see liftAtCallBoundary's doc comment) — set for both loops below.
+	v.liftAtCallBoundary = true
+
+	// Loop through function results to check if any are structs
+	if funcDecl.Type.Results != nil {
+		for index, field := range funcDecl.Type.Results.List {
+			var fieldName string
+
+			if field.Names == nil {
+				fieldName = fmt.Sprintf("R%d", index)
+			} else {
+				fieldName = field.Names[0].Name
+			}
+
+			// Check if the return type is a struct or pointer to a struct
+			if structType, exprType := v.extractStructType(field.Type); structType != nil && !v.liftedTypeExists(structType) {
+				v.indentLevel++
+				v.visitStructType(structType, exprType, fieldName, field.Comment, true, nil)
+				v.indentLevel--
+			}
+
+			// Check if the return type is an anonymous interface
+			if interfaceType, exprType := v.extractInterfaceType(field.Type); interfaceType != nil && !v.liftedTypeExists(interfaceType) {
+				v.indentLevel++
+				v.visitInterfaceType(interfaceType, exprType, fieldName, field.Comment, true, nil)
+				v.indentLevel--
+			}
+		}
+	}
+
+	// Loop through function parameters to check if any are structs
+	if funcDecl.Type.Params != nil {
+		for _, field := range funcDecl.Type.Params.List {
+			for _, name := range field.Names {
+				// Check if the parameter type is a struct or pointer to a struct
+				if structType, exprType := v.extractStructType(field.Type); structType != nil && !v.liftedTypeExists(structType) {
+					v.indentLevel++
+					v.visitStructType(structType, exprType, name.Name, field.Comment, true, nil)
+					v.indentLevel--
+				}
+
+				// Check if the parameter type is an anonymous interface
+				if interfaceType, exprType := v.extractInterfaceType(field.Type); interfaceType != nil && !v.liftedTypeExists(interfaceType) {
+					v.indentLevel++
+					v.visitInterfaceType(interfaceType, exprType, name.Name, field.Comment, true, nil)
+					v.indentLevel--
+				}
+			}
+		}
+	}
+
+	v.liftAtCallBoundary = false
+}
+
+// manualSignatureLiftPrefix answers the lifted-type declarations a MANUAL declaration's signature
+// needs, ready to write ahead of its placeholder. A hand-owned body still has Go's signature, and
+// the hand-own names an anonymous parameter or result type by the name the converted declaration
+// would have lifted it under (`ifaceHash(i interface{ F() })` -> ifaceHash_i). The lift and its
+// GoDynamicTypeLift record are what other files and a -tests conversion resolve the type through,
+// so returning before them left an unresolved dynamic type wherever the signature was named. The
+// function context is set exactly as visitFuncDecl sets it for a converted declaration, so the
+// names are the same ones.
+func (v *Visitor) manualSignatureLiftPrefix(funcDecl *ast.FuncDecl) string {
+	v.inFunction = true
+	v.currentFuncDecl = funcDecl
+	v.currentFuncName = getSanitizedFunctionName(funcDecl.Name.Name)
+	v.currentFuncPrefix = &strings.Builder{}
+
+	v.liftSignatureDynamicTypes(funcDecl)
+
+	v.inFunction = false
+
+	if v.currentFuncPrefix.Len() == 0 {
+		return ""
+	}
+
+	return v.currentFuncPrefix.String() + v.newline
+}
+
 // funcPlaceholderFormat is the ONE definition of the line the converter writes where a
 // manualConversionFuncs registration displaces a func body. It is a WITNESS two other places read,
 // which is why it lives here beside its emission rather than being spelled three times: the
@@ -374,6 +459,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 
 		v.outputBuilder.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.manualSignatureLiftPrefix(funcDecl))
 		v.writeDoc(nil, funcDecl.Pos())
 		v.writeOutput(funcPlaceholderFormat, funcDecl.Name.Name)
 		v.outputBuilder.WriteString(v.newline)
@@ -540,59 +626,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 	}
 
-	// A parameter/result's own anonymous-struct or -interface type is externally significant
-	// across function scopes (see liftAtCallBoundary's doc comment) — set for both loops below.
-	v.liftAtCallBoundary = true
-
-	// Loop through function results to check if any are structs
-	if funcDecl.Type.Results != nil {
-		for index, field := range funcDecl.Type.Results.List {
-			var fieldName string
-
-			if field.Names == nil {
-				fieldName = fmt.Sprintf("R%d", index)
-			} else {
-				fieldName = field.Names[0].Name
-			}
-
-			// Check if the return type is a struct or pointer to a struct
-			if structType, exprType := v.extractStructType(field.Type); structType != nil && !v.liftedTypeExists(structType) {
-				v.indentLevel++
-				v.visitStructType(structType, exprType, fieldName, field.Comment, true, nil)
-				v.indentLevel--
-			}
-
-			// Check if the return type is an anonymous interface
-			if interfaceType, exprType := v.extractInterfaceType(field.Type); interfaceType != nil && !v.liftedTypeExists(interfaceType) {
-				v.indentLevel++
-				v.visitInterfaceType(interfaceType, exprType, fieldName, field.Comment, true, nil)
-				v.indentLevel--
-			}
-		}
-	}
-
-	// Loop through function parameters to check if any are structs
-	if funcDecl.Type.Params != nil {
-		for _, field := range funcDecl.Type.Params.List {
-			for _, name := range field.Names {
-				// Check if the parameter type is a struct or pointer to a struct
-				if structType, exprType := v.extractStructType(field.Type); structType != nil && !v.liftedTypeExists(structType) {
-					v.indentLevel++
-					v.visitStructType(structType, exprType, name.Name, field.Comment, true, nil)
-					v.indentLevel--
-				}
-
-				// Check if the parameter type is an anonymous interface
-				if interfaceType, exprType := v.extractInterfaceType(field.Type); interfaceType != nil && !v.liftedTypeExists(interfaceType) {
-					v.indentLevel++
-					v.visitInterfaceType(interfaceType, exprType, name.Name, field.Comment, true, nil)
-					v.indentLevel--
-				}
-			}
-		}
-	}
-
-	v.liftAtCallBoundary = false
+	v.liftSignatureDynamicTypes(funcDecl)
 
 	functionPrefixMarker := fmt.Sprintf(FunctionPrefixMarker, goFunctionName)
 	functionAccessMarker := fmt.Sprintf(FunctionAccessMarker, goFunctionName)
