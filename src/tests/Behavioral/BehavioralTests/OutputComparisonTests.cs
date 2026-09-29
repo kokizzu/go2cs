@@ -557,6 +557,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFormatTypeAdapters() => CheckTarget("FormatTypeAdapters");
 
     [TestMethod]
+    public void CheckFrameFuncIdentity() => CheckTarget("FrameFuncIdentity");
+
+    [TestMethod]
     public void CheckFuncFieldNestedTupleParam() => CheckTarget("FuncFieldNestedTupleParam");
 
     [TestMethod]

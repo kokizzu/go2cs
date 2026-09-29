@@ -454,6 +454,7 @@
     <Project Path="tests/Behavioral/ForLoopPerIterationVars/ForLoopPerIterationVars.csproj" />
     <Project Path="tests/Behavioral/ForMethodInitPost/ForMethodInitPost.csproj" />
     <Project Path="tests/Behavioral/ForVarMasksBlockLevel/ForVarMasksBlockLevel.csproj" />
+    <Project Path="tests/Behavioral/FrameFuncIdentity/FrameFuncIdentity.csproj" />
     <Project Path="tests/Behavioral/ForVarMasksFuncLevel/ForVarMasksFuncLevel.csproj" />
     <Project Path="tests/Behavioral/ForVariants/ForVariants.csproj" />
     <Project Path="tests/Behavioral/FormatTypeAdapters/FormatTypeAdapters.csproj" />
