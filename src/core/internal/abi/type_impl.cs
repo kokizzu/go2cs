@@ -669,12 +669,20 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
 // TestHashTrieMapBadHash already proves the map satisfies (34/34 with `return 0`). What :122 refuses
 // is a hook that DEREFERENCES the address; this is not one.
 //
-// Group, GroupSize, SlotSize, ElemOff and Flags stay ZERO, deliberately and for the same reason the
-// descriptor's own TFlag bits do: each describes Go's swiss-table memory layout -- a slot group's
-// size, an element's offset within a key/elem slot -- and the managed store has no such layout to
-// report. A fabricated offset would be read as a real one. The four predicates that sit on Flags
-// (NeedKeyUpdate, HashMightPanic, IndirectKey, IndirectElem) therefore answer false, the same
-// honest zero.
+// Group and GroupSize are Go's layout, DERIVED and not invented: the compiler lays a slot group out as
+// struct { ctrl uint64; slots [8]struct { key; elem } } (cmd/compile reflectdata/map_swiss.go, and
+// reflect.groupAndSlotOf, which builds the same struct through StructOf), a key or elem wider than
+// 128 bytes is held by pointer, and a struct that ends in a zero-size field grows a pad byte. That
+// is a pure function of the key and elem descriptors' stamped size, alignment and pointer prefix, so
+// synthesizeGroup computes it from them and answers no group at all where either size is not
+// stamped (an array whose dimensions the descriptor does not carry): an unknown layout is nil, not
+// a guess. runtime's TestGroupSizeZero reads it, and reflect's twin passes on the same numbers.
+// SlotSize, ElemOff and Flags stay ZERO, deliberately and for the same reason the descriptor's own
+// TFlag bits do: they describe where a slot's fields sit in the swiss-table memory, and no
+// consumer here reads that memory, so a value would only be read as a real offset. The four
+// predicates that sit on Flags (NeedKeyUpdate, HashMightPanic, IndirectKey, IndirectElem)
+// therefore answer false, the same honest zero -- including IndirectKey/IndirectElem, which the
+// group's layout above already applied to its slot size.
 public static ж<mapType> MapType(this ж<Type> Ꮡt) {
     if (Ꮡt == nil || Ꮡt.Value.Kind() != Map || Ꮡt.Value.sysType is null) {
         return default!;
@@ -692,17 +700,74 @@ internal static void registerMapTypeProjection() {
 }
 
 private static ж<mapType> synthesizeMapType(ж<Type> Ꮡt) {
+    var key = Ꮡt.Key();
+    var elem = Ꮡt.Elem();
+    var group = synthesizeGroup(key, elem);
     return new StandardBox<mapType>(new mapType(
         Type: Ꮡt.Value,
-        Key: Ꮡt.Key(),
-        Elem: Ꮡt.Elem(),
-        Group: default!,
+        Key: key,
+        Elem: elem,
+        Group: group,
         Hasher: static (_, seed) => seed,
-        GroupSize: 0,
+        GroupSize: group == nil ? 0 : group.Value.Size_,
         SlotSize: 0,
         ElemOff: 0,
         Flags: 0
     ));
+}
+
+// synthesizeGroup derives the slot group's descriptor (see MapType for the rule and for what it does
+// not answer). A field's size, alignment and pointer prefix come off its stamped descriptor, and a
+// field wider than its swiss limit is replaced by a pointer exactly as the compiler does.
+private static ж<Type> synthesizeGroup(ж<Type> Ꮡkey, ж<Type> Ꮡelem) {
+    if (!groupField(Ꮡkey, (nuint)SwissMapMaxKeyBytes, out nuint keySize, out nuint keyAlign, out nuint keyPtrBytes) ||
+        !groupField(Ꮡelem, (nuint)SwissMapMaxElemBytes, out nuint elemSize, out nuint elemAlign, out nuint elemPtrBytes)) {
+        return default!;
+    }
+    // slot = struct { key; elem }
+    nuint elemOff = alignUp(keySize, elemAlign);
+    nuint slotAlign = keyAlign > elemAlign ? keyAlign : elemAlign;
+    nuint slotSize = structSize(elemOff + elemSize, elemSize == 0, slotAlign);
+    nuint slotPtrBytes = elemPtrBytes > 0 ? elemOff + elemPtrBytes : keyPtrBytes;
+    // group = struct { ctrl uint64; slots [SwissMapGroupSlots]slot }
+    nuint slots = (nuint)SwissMapGroupSlots;
+    nuint slotsSize = slots * slotSize;
+    nuint groupAlign = slotAlign > 8 ? slotAlign : 8;
+    ref var t = ref heap<Type>(out var Ꮡt);
+    t.Kind_ = Struct;
+    t.Size_ = (uintptr)structSize(8 + slotsSize, slotsSize == 0, groupAlign);
+    t.PtrBytes = slotPtrBytes > 0 ? (uintptr)(8 + (slots - 1) * slotSize + slotPtrBytes) : 0;
+    t.Align_ = (uint8)groupAlign;
+    t.FieldAlign_ = (uint8)groupAlign;
+    return Ꮡt;
+}
+
+// groupField reads one key or elem's layout, false where its size is not stamped (a descriptor with no
+// derivable Go size leaves Size_ zero, which cannot be told from a real zero-size type without asking).
+private static bool groupField(ж<Type> Ꮡf, nuint maxBytes, out nuint size, out nuint align, out nuint ptrBytes) {
+    size = align = ptrBytes = 0;
+    if (Ꮡf == nil || Ꮡf.Value.sysType is null || !GoReflect.TryGoSizeOf(Ꮡf.Value.sysType, Ꮡf.Value.arrayDims, out size)) {
+        return false;
+    }
+    if (size > maxBytes) {
+        // Held by pointer: one word, all of it a pointer.
+        size = align = ptrBytes = 8;
+        return true;
+    }
+    align = Ꮡf.Value.Align_ == 0 ? (nuint)1 : (nuint)Ꮡf.Value.Align_;
+    ptrBytes = (nuint)Ꮡf.Value.PtrBytes;
+    return true;
+}
+
+private static nuint alignUp(nuint n, nuint align) => (n + align - 1) / align * align;
+
+// structSize is Go's struct size rule: a struct with a nonzero size that ends in a zero-size field
+// grows one pad byte (so a pointer to that field stays inside the object), then rounds up to its alignment.
+private static nuint structSize(nuint end, bool endsInZeroSizeField, nuint align) {
+    if (end > 0 && endsInZeroSizeField) {
+        end++;
+    }
+    return alignUp(end, align);
 }
 
 public static ж<Type> Key(this ж<Type> Ꮡt) {
