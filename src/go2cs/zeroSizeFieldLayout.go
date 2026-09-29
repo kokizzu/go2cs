@@ -10,6 +10,8 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/token"
 	"go/types"
 	"strings"
 )
@@ -42,6 +44,11 @@ import (
 //     `readonly` makes that one unfaithful operation unexpressible rather than merely unlikely,
 //     while the field stays DECLARED so reflect's field walk, NumField() and StructField.Offset
 //     still agree with Go. A whole-struct assignment writes all Size bytes and stays correct.
+//     A Go STORE to a named zero-size field (`x.Z = v`) is legal Go, so it cannot be left as a C#
+//     store onto the readonly field (CS0191): it is lowered through the generated accessor,
+//     `T.ᏑZ(ref <base>) = v`, which answers the shared zero-size slot. The base is still evaluated
+//     (a nil pointer or an out-of-range index still panics), the right side still runs, and no byte
+//     of the struct is written (see markZeroSizeFieldStores).
 //
 // go2cs-gen's TypeGenerator skips the `Ꮡ<field>` accessor for the whole all-underscores blank family
 // (see IsGoBlankMemberName), which is what keeps a readonly blank field from needing a writable ref. A
@@ -209,4 +216,67 @@ func (l structZeroSizeLayout) fieldOffsetAttribute(index int) string {
 // emitted readonly so it cannot write over the field it shares an offset with.
 func (l structZeroSizeLayout) fieldIsZeroSize(index int) bool {
 	return index >= 0 && index < len(l.zeroSize) && l.zeroSize[index]
+}
+
+// zeroSizeFieldStoreAccessor answers the generated accessor (`T.ᏑZ`) for a selector that names a
+// field emitted READONLY by this arc: a DIRECT field (not promoted through an embed, which the arc
+// excludes anyway) whose owning struct takes explicit layout and whose type is zero-size. It is the
+// same decision visitStructType makes when it writes `readonly`, asked of the use site.
+func (v *Visitor) zeroSizeFieldStoreAccessor(sel *ast.SelectorExpr) (string, bool) {
+	selection, ok := v.info.Selections[sel]
+
+	if !ok || selection.Kind() != types.FieldVal || len(selection.Index()) != 1 {
+		return "", false
+	}
+
+	owner := types.Unalias(selection.Recv())
+
+	if pointer, isPointer := owner.(*types.Pointer); isPointer {
+		owner = types.Unalias(pointer.Elem())
+	}
+
+	layout, hasLayout := v.structZeroSizeLayout(v.underlyingStruct(owner), owner)
+
+	if !hasLayout || !layout.fieldIsZeroSize(selection.Index()[0]) {
+		return "", false
+	}
+
+	typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(owner, false))
+	return fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, "", owner), AddressPrefix, v.structFieldBoxName(sel.Sel, sel.X)), true
+}
+
+// markZeroSizeFieldStores records each assignment target that stores to a readonly zero-size layout
+// field, so that however the assignment is emitted (single, tuple, declaration-mixed), the one place a
+// target selector is converted, convSelectorExpr, lowers it through the accessor.
+func (v *Visitor) markZeroSizeFieldStores(assignStmt *ast.AssignStmt) {
+	if assignStmt.Tok != token.ASSIGN {
+		return
+	}
+
+	for _, lhs := range assignStmt.Lhs {
+		sel, isSelector := ast.Unparen(lhs).(*ast.SelectorExpr)
+
+		if !isSelector {
+			continue
+		}
+
+		if accessor, ok := v.zeroSizeFieldStoreAccessor(sel); ok {
+			if v.zeroSizeFieldStores == nil {
+				v.zeroSizeFieldStores = map[*ast.SelectorExpr]string{}
+			}
+
+			v.zeroSizeFieldStores[sel] = accessor
+		}
+	}
+}
+
+// zeroSizeFieldStoreTarget rewrites a marked target's plain emission `<base>.Z` to
+// `T.ᏑZ(ref <base>)`. A plain emission that does not end in the field's own name is left untouched:
+// the store then stays a compile error rather than becoming a silent wrong write.
+func (v *Visitor) zeroSizeFieldStoreTarget(sel *ast.SelectorExpr, accessor, plain string) string {
+	if base, found := strings.CutSuffix(plain, "."+v.structFieldBoxName(sel.Sel, sel.X)); found && base != "" {
+		return fmt.Sprintf("%s(ref %s)", accessor, base)
+	}
+
+	return plain
 }

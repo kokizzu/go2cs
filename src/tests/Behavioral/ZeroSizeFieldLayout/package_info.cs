@@ -10,6 +10,11 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
@@ -49,7 +54,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ACpOhIKCipKChIKGgoKCgoaC")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ACtQhIKCipKChIKGgoKCgoaChAAPJIKC1oKCgoaChIKCgoaGgoKCgoSCgoKChoKE")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -65,11 +70,13 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct nocopy {}
+    public partial struct Carrier {}
     public partial struct Counter {}
     public partial struct Managed {}
+    public partial struct Outer {}
     public partial struct Plain {}
     public partial struct Wide {}
+    public partial struct nocopy {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -80,5 +87,6 @@ public static partial class main_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
     // </ImportInitializers>
 }

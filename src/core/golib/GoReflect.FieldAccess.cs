@@ -598,6 +598,17 @@ public static partial class GoReflect
 
     // DynamicMethod: (object box) => ref ((ж<S>)box).ValueSlot.path... — each plain step is an
     // ldflda; a box-hop step loads the ж<E> reference and re-enters through ITS ValueSlot.
+    //
+    // A plain step onto a READONLY ZERO-SIZE field answers golib's shared GoZeroSizeSlot instead, exactly
+    // as go2cs-gen's generated accessor does (A17): under Go's explicit layout that field shares its offset
+    // with the field Go puts there, so an ldflda would hand out a ref whose write lands C#'s one byte for the
+    // empty struct on that neighbour, where Go stores nothing. The parent ref is still evaluated first (a
+    // nil base still faults) and then dropped.
+    private static bool isReadonlyZeroSizeField(FieldInfo field) =>
+        field.IsInitOnly &&
+        (bool)typeof(GoZeroSizeFacts<>).MakeGenericType(field.FieldType)
+            .GetField(nameof(GoZeroSizeFacts<int>.IsZeroSize), BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+
     private static Delegate buildFieldAccessor(Type boxType, GoFieldInfo field)
     {
         DynamicMethod method = new(
@@ -617,6 +628,13 @@ public static partial class GoReflect
         {
             if (!field.BoxHop[i])
             {
+                if (isReadonlyZeroSizeField(field.Path[i]))
+                {
+                    il.Emit(OpCodes.Pop);
+                    il.Emit(OpCodes.Call, typeof(GoZeroSizeSlot<>).MakeGenericType(field.Path[i].FieldType).GetProperty(nameof(GoZeroSizeSlot<int>.Ref))!.GetGetMethod()!);
+                    continue;
+                }
+
                 il.Emit(OpCodes.Ldflda, field.Path[i]);
                 continue;
             }

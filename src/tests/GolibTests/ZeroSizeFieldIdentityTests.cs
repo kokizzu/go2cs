@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -116,6 +117,34 @@ public class ZeroSizeFieldIdentityTests
         x.of(Carrier.Ꮡmarker).Value = default;
 
         Assert.AreEqual(0x0102030405060708UL, x.Value.value, "the value sharing the zero-size field's offset is untouched");
+    }
+
+    [TestMethod]
+    public void AWriteThroughReflectsZeroSizeFieldAliasNeverReachesItsNeighbour()
+    {
+        // reflect's Field(i).Addr() and Field(i).Set reach a field through GoReflect.FieldAliasBox,
+        // not through the generated accessor. For the readonly zero-size field that alias must land on
+        // the same shared slot the accessor answers, never on the field's real storage -- which the
+        // explicit layout overlays on `value`, so C#'s one byte for the empty struct would land there.
+        ж<Carrier> x = Ꮡ(new Carrier());
+        x.of(Carrier.Ꮡvalue).Value = 0x0102030405060708UL;
+
+        GoReflect.GoFieldInfo marker = Array.Find(GoReflect.GoFields(typeof(Carrier)), field => field.Name == "marker");
+        ж<noCopy> alias = (ж<noCopy>)GoReflect.FieldAliasBox(x, marker);
+
+        alias.Value = default;
+
+        Assert.AreEqual(0x0102030405060708UL, x.Value.value, "a zero-size write through reflect stores nothing");
+        Assert.IsTrue(Unsafe.AreSame(ref alias.Value, ref GoZeroSizeSlot<noCopy>.Ref), "reflect's alias targets the shared slot");
+
+        // CONTROL: a zero-size field that is NOT readonly (no explicit layout, so it owns its own byte)
+        // keeps reflect's plain field ref -- the shared slot is for the readonly layout member only.
+        ж<Diverging> d = Ꮡ(new Diverging());
+        GoReflect.GoFieldInfo own = Array.Find(GoReflect.GoFields(typeof(Diverging)), field => field.Name == "marker");
+        ж<noCopy> ownAlias = (ж<noCopy>)GoReflect.FieldAliasBox(d, own);
+
+        Assert.IsFalse(Unsafe.AreSame(ref ownAlias.Value, ref GoZeroSizeSlot<noCopy>.Ref), "a writable zero-size field keeps its own storage");
+        Assert.IsTrue(Unsafe.AreSame(ref ownAlias.Value, ref d.Value.marker), "reflect's alias is the field itself");
     }
 
     [TestMethod]

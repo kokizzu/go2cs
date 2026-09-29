@@ -806,6 +806,16 @@ func (v *Visitor) selectorBasePackageObj(selectorExpr *ast.SelectorExpr) *types.
 }
 
 func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context LambdaContext) string {
+	// A store TARGET on a readonly zero-size layout field (see markZeroSizeFieldStores): emit the plain
+	// selector, then route it through the generated accessor so the store lands on the shared slot.
+	if accessor, ok := v.zeroSizeFieldStores[selectorExpr]; ok {
+		delete(v.zeroSizeFieldStores, selectorExpr)
+		plain := v.convSelectorExpr(selectorExpr, context)
+		v.zeroSizeFieldStores[selectorExpr] = accessor
+
+		return v.zeroSizeFieldStoreTarget(selectorExpr, accessor, plain)
+	}
+
 	if base, ok := selectorExpr.X.(*ast.Ident); ok {
 		if _, isPackage := v.info.ObjectOf(base).(*types.PkgName); isPackage && v.whiteboxBridgeUse(selectorExpr.Sel) {
 			return v.whiteboxBridgeMember(selectorExpr.Sel)

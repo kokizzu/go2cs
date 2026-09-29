@@ -1,12 +1,13 @@
 namespace go;
 
 using fmt = fmt_package;
+using reflect = reflect_package;
 using @unsafe = unsafe_package;
 using System.Runtime.InteropServices;
 
 partial class main_package {
 
-[GoType] partial struct nocopy {
+[GoType] public partial struct nocopy {
 }
 
 [GoType] [StructLayout(LayoutKind.Explicit, Size = 4)] partial struct Counter {
@@ -57,6 +58,54 @@ internal static void Main() {
     fmt.Println(c.v, w.v, p.a, p.b, m.s);
     c = new Counter(nil);
     fmt.Println(clearedˢ, c.v);
+    namedZeroSizeWrites();
+}
+
+[GoType] [StructLayout(LayoutKind.Explicit, Size = 8)] partial struct Carrier {
+    [FieldOffset(0)] public readonly nocopy Z;
+    [FieldOffset(0)] public uint64 V;
+}
+
+[GoType] partial struct Outer {
+    public Carrier C;
+}
+
+internal static UntypedInt pattern => 0x0102030405060708;
+
+internal static nint sideCalls;
+
+internal static nocopy side() {
+    sideCalls++;
+    return new nocopy(nil);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object reflectAddrXZˢ = (@string)"reflect Addr == &x.Z:"u8;
+
+internal static void namedZeroSizeWrites() {
+    ref var x = ref heap(new Carrier(), out var Ꮡx);
+    x.V = pattern;
+    var rx = reflect.ValueOf(Ꮡx).Elem();
+    rx.Field(0).Set(reflect.ValueOf(new nocopy(nil)));
+    fmt.Printf("after reflect Set: %#x\n"u8, x.V);
+    x.V = pattern;
+    var rp = rx.Field(0).Addr().Interface()._<ж<nocopy>>();
+    rp.Value = new nocopy(nil);
+    fmt.Printf("after write through reflect's pointer: %#x\n"u8, x.V);
+    fmt.Println(reflectAddrXZˢ, (uintptr)rx.Field(0).Addr().UnsafePointer() == @unsafe.Pointer.FromPinnedBox(Ꮡx.of(Carrier.ᏑZ)));
+    x.V = pattern;
+    var p = Ꮡx;
+    var arr = new Carrier[]{new(V: pattern), new(V: pattern)}.array();
+    var o = new Outer(C: new Carrier(V: pattern));
+    var s = new Carrier[]{new(V: pattern), new(V: pattern)}.slice();
+    Carrier.ᏑZ(ref x) = side();
+    Carrier.ᏑZ(ref p.Value) = side();
+    Carrier.ᏑZ(ref arr[1]) = side();
+    Carrier.ᏑZ(ref o.C) = side();
+    Carrier.ᏑZ(ref s[1]) = side();
+    nint n = default!;
+    (Carrier.ᏑZ(ref x), n) = (side(), 7);
+    fmt.Printf("assignments ran %d right sides; n = %d; V: %#x %#x %#x %#x\n"u8, sideCalls, n, x.V, arr[1].V, o.C.V, s[1].V);
 }
 
 } // end main_package
