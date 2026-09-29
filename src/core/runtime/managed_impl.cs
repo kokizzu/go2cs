@@ -2903,4 +2903,17 @@ partial class runtime_package
 
         return reading.ToString();
     }
+
+    // GoRawstringProbe is the GolibTests seam for rawstring (GolibTests is outside the
+    // InternalsVisibleTo grant). It fills the returned byte slice and reads the string back, which is
+    // rawstring's contract: the string and the slice refer to the same storage.
+    public static @string GoRawstringProbe(nint size, byte fill)
+    {
+        var (s, b) = rawstring(size);
+
+        for (nint i = 0; i < size; i++)
+            b[i] = fill;
+
+        return s;
+    }
 }
