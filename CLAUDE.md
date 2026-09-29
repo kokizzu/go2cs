@@ -199,7 +199,8 @@ conditions the guard exists for.
 [`docs/ConversionStrategies.md`](docs/ConversionStrategies.md) → its
 [reference](docs/ConversionStrategies-Reference/README.md) (how each Go construct maps) ·
 [`docs/Glossary.md`](docs/Glossary.md) (CNR, census, chip, guard, golden, banked…) ·
-[`docs/Roadmap.md`](docs/Roadmap.md) (phases and git anchors) ·
+[`docs/Roadmap.md`](docs/Roadmap.md) (what is planned next) ·
+[`docs/RoadmapHistory.md`](docs/RoadmapHistory.md) (completed phases and git anchors) ·
 [`docs/coding-style.md`](docs/coding-style.md).
 
 **The journal**: [`docs/doctrine/JOURNAL-2026-09-12.md`](docs/doctrine/JOURNAL-2026-09-12.md) is the

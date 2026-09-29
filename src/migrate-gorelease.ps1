@@ -481,12 +481,18 @@ $historyAnchors = @(
        Note = 'milestone table row, tag-anchored' }
     @{ File = 'docs/README.md'; Find = "Go {OLD}'s terminal validation marker"
        Note = 'milestone table row, tag-anchored' }
+    # RETIRED 2026-09-29, all three: the roadmap rewrite moved the completed phases, these three
+    # sentences among them, VERBATIM out of docs/Roadmap.md into docs/RoadmapHistory.md, which the
+    # sweep below classifies MUST-NOT-CHANGE. Like the CLAUDE.md rows above they are spelled at Go
+    # 1.23.1, so they were already dark at 1.24.13; re-anchoring them at the history page would be the
+    # same category error. The retiring commit cannot name its own SHA, so Retired names it by the one
+    # thing it does that no other commit does: `git log --diff-filter=A -- docs/RoadmapHistory.md`.
     @{ File = 'docs/Roadmap.md'; Find = 'the auto-conversion \(Go {OLD}\) build clean'
-       Note = 'dated Phase-3 status block, commit-anchored' }
+       Retired = 'the commit adding docs/RoadmapHistory.md'; Note = 'dated Phase-3 status block, commit-anchored -- moved verbatim to docs/RoadmapHistory.md (MUST-NOT-CHANGE)' }
     @{ File = 'docs/Roadmap.md'; Find = 'the full Go {OLD} standard-library'
-       Note = 'Phase-3 outcome over the retired src/go-src-converted tree' }
+       Retired = 'the commit adding docs/RoadmapHistory.md'; Note = 'Phase-3 outcome over the retired src/go-src-converted tree -- moved verbatim to docs/RoadmapHistory.md (MUST-NOT-CHANGE)' }
     @{ File = 'docs/Roadmap.md'; Find = 'Releases since \*\*{OLD}\.5\*\*'
-       Note = 'the release Linux converter support FIRST shipped in' }
+       Retired = 'the commit adding docs/RoadmapHistory.md'; Note = 'the release Linux converter support FIRST shipped in -- moved verbatim to docs/RoadmapHistory.md (MUST-NOT-CHANGE)' }
 )
 
 # Path rules for the discovery sweep. FIRST match wins, so order is meaningful: the specific
@@ -565,6 +571,7 @@ $pathClasses = @(
     @{ Match = '^docs/CIMatrix\.md$';                     Class = 'MUST-NOT-CHANGE'; Note = 'describes the derive-never-write rule; names no release of its own' }
     @{ Match = '^docs/Performance\.md$';                  Class = 'MUST-NOT-CHANGE'; Note = 'measurement environment stamp: the toolchain a number was measured on' }
     @{ Match = '^docs/StdLibCompileMilestone\.md$';       Class = 'MUST-NOT-CHANGE'; Note = 'milestone record' }
+    @{ Match = '^docs/RoadmapHistory\.md$';               Class = 'MUST-NOT-CHANGE'; Note = "the roadmap's completed phases, moved verbatim: dated, commit-anchored history" }
     @{ Match = '^docs/ConversionStrategies-Reference(\.md|/.+\.md)$'; Class = 'MUST-NOT-CHANGE'; Note = 'the reference pages and the old single-page stub: census records ("across the whole Go X stdlib, N sites") and illustrative doc-link examples' }
     @{ Match = '^docs/GoCorpusMigration\.md$';            Class = 'MUST-NOT-CHANGE'; Note = 'this runbook is version-agnostic by design' }
     @{ Match = '^docs/doctrine/JOURNAL-';                 Class = 'MUST-NOT-CHANGE'; Note = "the frozen pre-diet CLAUDE.md; TestContextBudget's repoguard asserts its BLOB IDENTITY, so any edit at all fails the converter suite" }

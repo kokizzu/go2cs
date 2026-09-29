@@ -798,7 +798,7 @@ makes a healthy run look hung.
 
 - `CLAUDE.md` — the measured budget table; the false-green route catalogue; the `GoTargetOS` /
   incremental-build hazard; the golib-API-change rule for `go2cs.slnx`
-- [`Roadmap.md`](Roadmap.md) — *"Phase 4 — declared host limits and their retirement path"*, the
+- [`Roadmap.md`](Roadmap.md) — *"Declared host limits and their retirement path"*, the
   standing answer §9 generalizes
 - [`ValidatedTestPackages.md`](ValidatedTestPackages.md) — the disclosure classes, their
   signature-pinning rule, and the self-retiring text §9.1 relies on

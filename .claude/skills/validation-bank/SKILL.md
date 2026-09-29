@@ -263,7 +263,7 @@ description: Bank a validated package row, mint or judge a disclosure, or read t
 
 ## Standing facts
 - **Compiling is the milestone, NOT operational**: Phase 3 (stdlib compiles clean) is a different claim from Phase
-  4 (Go's own tests run and agree). [`docs/Roadmap.md`](docs/Roadmap.md), [`docs/README.md`](docs/README.md),
+  4 (Go's own tests run and agree). [`docs/RoadmapHistory.md`](docs/RoadmapHistory.md), [`docs/README.md`](docs/README.md),
   [`docs/TestingInfrastructureRequirements.md`](docs/TestingInfrastructureRequirements.md). <!--
   Phase 3 complete 2026-07-10, commit 51ba5d9cf, tag stdlib-green-2026-07-10: all 302 packages of the full
   conversion (Go 1.23.1) compile clean -- zero errors, zero exclusions (runtime, reflect, net/http, go/types,

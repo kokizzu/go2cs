@@ -334,7 +334,7 @@ internal static void Main() {
 > Windows. In an interactive terminal on Linux the colors do not show yet, because the terminal query
 > cannot yet hand its struct to the kernel, so the output stays plain there. Other platforms and
 > architectures are tracked in the Roadmap's
-> [Platforms section](Roadmap.md#platforms--linux-and-the-multi-target-corpus-in-progress), with the
+> [Platforms section](Roadmap.md#platforms), with the
 > operational detail in [PLAN-linux-operation.md](PLAN-linux-operation.md)._
 
 **3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
@@ -358,7 +358,7 @@ _Expected output:_
 
 ![colorapp-output](images/colorapp-output.png)
 
-> **NOTE:** this `fatih/color` example **compiles clean** — app plus all four dependency projects — **and runs**. Bigger programs are a deeper milestone: the referenced standard library compiles in full, and making it **operational** package by package is the [Phase-4](Roadmap.md#phase-4--convert-and-run-go-package-tests) work that [Validated Test Packages](ValidatedTestPackages.md) tracks.
+> **NOTE:** this `fatih/color` example **compiles clean** — app plus all four dependency projects — **and runs**. Bigger programs are a deeper milestone: the referenced standard library compiles in full, and making it **operational** package by package is the [Phase-4](RoadmapHistory.md#phase-4--convert-and-run-go-package-tests) work that [Validated Test Packages](ValidatedTestPackages.md) tracks.
 
 #### Optional: convert the module only, and deal with its dependencies later
 
@@ -457,7 +457,7 @@ functions are the faithful target (`-stdlib` and `-tests` apply the tag by defau
 [Conversion Strategies](ConversionStrategies.md#the-standard-library-reproduces-go--tags-purego)).
 
 Compiling is not runtime parity. Making the library **operational** is the ongoing
-[Phase 4](Roadmap.md#phase-4--convert-and-run-go-package-tests) work: each package's own `_test.go` suite
+[Phase 4](RoadmapHistory.md#phase-4--convert-and-run-go-package-tests) work: each package's own `_test.go` suite
 is converted to C#, built against the converted standard library, run under a Go-semantics test host, and
 compared verdict-for-verdict against a clean `go test -json` baseline.
 [Validated Test Packages](ValidatedTestPackages.md) tracks the set — reproducible via
