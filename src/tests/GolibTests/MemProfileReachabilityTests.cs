@@ -13,7 +13,9 @@ namespace GolibTests;
 /// against the first M1 cut, which kept the rate on in every program.
 /// The predicate is golib's (COORD ruling 2026-09-29 08:43, map-growth option (a)): one answer, read by
 /// runtime's module initializer for the rate and folded by the JIT into the map store's growth branch.
-/// Red against cb33faec95, where the predicate was runtime's and golib had no answer to fold.
+/// Red against cb33faec95, where the predicate was runtime's and golib had no answer to fold; the
+/// compiled-in arm is red against 868157de98, where a list without runtime.pprof answered "unreachable"
+/// for runtime/pprof's own test binary.
 /// </summary>
 [TestClass]
 public class MemProfileReachabilityTests
@@ -40,6 +42,12 @@ public class MemProfileReachabilityTests
         // One that imports it, directly or through net/http/pprof.
         Assert.IsTrue(GoMemProfile.PprofReachableFrom(Closure("golib.dll", "runtime.dll", "runtime.pprof.dll", "main.dll"), Absent),
             "a closure with runtime.pprof keeps Go's default MemProfileRate");
+
+        // A program whose own assembly compiles runtime/pprof in, as runtime/pprof's own test binary does
+        // (its production files are compile items of runtime.pprof.tests): the list does not name it, and
+        // the package type, found in the program, decides.
+        Assert.IsTrue(GoMemProfile.PprofReachableFrom(Closure("golib.dll", "runtime.dll", "runtime.pprof.tests.dll"), Present),
+            "runtime/pprof compiled into the program itself is reachable");
 
         // A name that only contains it is not it.
         Assert.IsFalse(GoMemProfile.PprofReachableFrom(Closure("runtime.dll", "runtime.pprof.extra.dll"), Absent),
