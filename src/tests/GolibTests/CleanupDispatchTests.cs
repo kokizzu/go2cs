@@ -387,4 +387,46 @@ public sealed class CleanupDispatchTests
         CollectionAssert.AreEqual(new[] { "cleanup" }, ran,
             "ARM 9: with the finalizer cleared, the cleanup must run at the object's first death.");
     }
+
+    // ------------------------------------------------------------------------------------------
+    // ARM 10 -- the object's OWN second death, which no earlier arm's leftover can mask.
+    //
+    // Arms 6 and 7 read only whether the cleanup ran, and that depends on the finalizer runner
+    // releasing the resurrected object. On windows the runner's frame kept the LAST item it
+    // dispatched (the finalizer's, whose target is this object) reachable until another item
+    // passed through: arm 6 read RED, and arm 7 passed only because arm 6's stranded cleanup came
+    // due during arm 7's collections and flushed the runner. This arm is arm 7's order read on the
+    // object itself: after the holder drops it, the next collections must see it dead, with no
+    // other item through the runner in between.
+    // ------------------------------------------------------------------------------------------
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference TakeWeakAndDrop(StrongBox<object?> holder)
+    {
+        WeakReference weak = new(holder.Value, trackResurrection: false);
+        holder.Value = null;
+        return weak;
+    }
+
+    [TestMethod]
+    public void Arm10_TheResurrectedObjectDiesAtItsNextCollection()
+    {
+        List<string> seen = new();
+        StrongBox<object?> holder = new();
+        List<Δruntime.Cleanup> handles = new();
+
+        MintBothOnDedicatedThread(seen, holder, finalizerFirst: true, clearFinalizer: false, handles);
+        FirstDeathRunsOnlyTheFinalizer(seen, holder, "arm10");
+
+        WeakReference weak = TakeWeakAndDrop(holder);
+        List<string> ran = CollectAndDrain(seen, expected: 2);
+
+        Console.WriteLine($"[cleanup:arm10] second death: objectAlive={weak.IsAlive} ran=[{string.Join(",", ran)}]");
+
+        Assert.IsFalse(weak.IsAlive,
+            "ARM 10: the resurrected object is still alive after the holder dropped it and two collections " +
+            "ran. Something the finalizer runner kept from the last item it dispatched is rooting it.");
+        CollectionAssert.AreEqual(new[] { "finalizer", "cleanup" }, ran,
+            "ARM 10: the object died, but its cleanup did not run.");
+    }
 }
