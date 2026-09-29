@@ -551,6 +551,10 @@ partial class runtime_package
     internal static void shrinkstack(ж<g> Ꮡgp) =>
         throw new PanicException("runtime: shrinkstack: goroutines are CLR threads with no Go stack to shrink");
 
+    // GoSpanOfProbe is the GolibTests seam for spanOf (GolibTests is outside the InternalsVisibleTo
+    // grant): true when spanOf answers nil for p.
+    public static bool GoSpanOfProbe(uintptr p) => spanOf(p) == nil;
+
     // NumCgoCall returns the number of cgo calls made by the current process. Go's body walks the
     // scheduler's `allm` thread list summing per-m counters — a list the managed model never
     // populates (the walk nil-derefs where Go always has at least m0). The managed model makes no
