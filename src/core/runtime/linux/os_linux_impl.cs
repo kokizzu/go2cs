@@ -101,4 +101,12 @@ partial class runtime_package
     {
         return (nuint)parseHugePageSize(text);
     }
+
+    // Three probes for the GolibTests seam over the linux thread primitives below (GolibTests is outside the
+    // InternalsVisibleTo grant). Linux-only by construction, like the file; the test finds them by reflection.
+    public static int32 GoCloneProbe() => clone(0, nil, nil, nil, nil);
+
+    public static nint GoGetpidProbe() => getpid();
+
+    public static void GoTgkillProbe() => tgkill(0, 0, 0);
 }
