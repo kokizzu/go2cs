@@ -48,7 +48,7 @@ internal static class GoLayoutFacts<T>
         FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         // A wholly zero-size struct: Go's stride is 0, C#'s is at least 1.
-        if (IsZeroSize(type))
+        if (GoZeroSizeFacts.Classify(type))
             return true;
 
         bool explicitLayout = type.StructLayoutAttribute?.Value == LayoutKind.Explicit;
@@ -56,7 +56,7 @@ internal static class GoLayoutFacts<T>
         foreach (FieldInfo field in fields)
         {
             // A zero-size field under the arc's explicit layout takes no Go bytes; without it, it takes one.
-            if (IsZeroSize(field.FieldType))
+            if (GoZeroSizeFacts.Classify(field.FieldType))
             {
                 if (!explicitLayout)
                     return true;
@@ -69,21 +69,5 @@ internal static class GoLayoutFacts<T>
         }
 
         return false;
-    }
-
-    // Go's zero-size shape as the conversion preserves it: a struct whose every field is zero-size (see
-    // GoZeroSizeFacts, the same rule).
-    private static bool IsZeroSize(Type type)
-    {
-        if (!type.IsValueType || type.IsPrimitive || type.IsEnum || type.IsPointer)
-            return false;
-
-        foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-        {
-            if (!IsZeroSize(field.FieldType))
-                return false;
-        }
-
-        return true;
     }
 }
