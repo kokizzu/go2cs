@@ -104,3 +104,43 @@ So the door refusal should land with commit 2, or before it.
 - **E1:** `append` refuses past `Array.MaxLength` with a named panic, as `make` does. E2 and E3 are platform bounds
   that could take the same named form. None is silent today.
 - **S5:** name it and leave it (remote).
+
+## Amendment 2026-09-29 (COORD's ruling on S4, S4b, E1, E2 and S5)
+
+**E2, string concatenation past Int32, STAYS.** It is a platform bound, not Go's behavior. §2's row stays
+correct: the sum can only wrap NEGATIVE, so the allocation throws and no short string is ever produced. What
+the row did not say is what Go does there:
+- Go's `concatstrings` (runtime/string.go:36 and :84 at go1.24.13) raises
+  `throw("string concatenation too long")` only when the `int` sum OVERFLOWS, which on 64-bit means past 2^63.
+  That is a fatal throw, not a panic.
+- Between Int32 and Go's allocation limit, the concatenation SUCCEEDS in Go (`rawstring`, given the memory).
+
+Here `@string` carries an `int` length. `sa.Length + sb.Length` is int arithmetic, and it gives:
+- a sum above `Array.MaxLength`: `OutOfMemoryException`;
+- a sum that wraps negative: `OverflowException`.
+
+Neither is recoverable. So E2 is a CLR-ESCAPE where Go succeeds. It is not the equivalent of Go's fatal. It
+stays, by ruling: widening `@string` past Int32 is not on the table, and no seat is cut for it.
+
+**S4, S4b and E1: cut** on `claude/i9-native-window-door`, a new ref at master `2ff42f7a16` for TRAIN J.
+The red is `2a7cdce672` and the fix `517de66688`.
+- slice<T>'s private native constructor cuts every native window: the `OverNativeMemory` door, Reslice's native
+  arm, and append in place. It refuses a LENGTH above `Array.MaxLength` by name, as a platform bound
+  (`NativeSliceBeyondManagedSpan`).
+  - Append's and AppendZeroed's in-place arms check before they write.
+  - A capacity past the ceiling is still accepted: a short window over a long reservation spans only its length.
+- Append growth (the span core and AppendZeroed) raises Go's own recoverable
+  `runtime error: growslice: len out of range` past `Array.MaxLength`. A length that fits clamps its capacity
+  to the ceiling.
+- The 8 `copy` inheritors and `AliasOf`'s native arm are closed through the door: no window reaching them can
+  be longer than a span.
+- No producer reaches the bound:
+  - the largest GOROOT pointer-to-array idiom at go1.24.13 is `(*[1 << 30]T)`;
+  - the `maxAlloc/2` views in runtime/string.go go through `array<T>.AliasPointer`, which over native memory
+    already refuses by name (`NativeArrayViewWithoutElementStorage`).
+
+**S5 (`toIntDims`): stays queued.** The refusal itself would be one line, but reaching it needs a
+`reflect.StructOf` map field whose key is an array of 2^31 elements or more. That shape has no cheap red in
+GolibTests, and a refusal folded in without its red would be unmeasured.
+
+**S3 (`unsafe.Add` over `ж<T>`): routed to P1**, beside S1 and S2.
