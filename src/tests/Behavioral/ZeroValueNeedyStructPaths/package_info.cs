@@ -10,6 +10,9 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using timeꓸLocation = go.time_package.ΔLocation;
+global using timeꓸMonth = go.time_package.ΔMonth;
+global using timeꓸWeekday = go.time_package.ΔWeekday;
 // </ImportedTypeAliases>
 
 using go;
@@ -49,7 +52,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAscgoKmoqaCqoKCkqaCgoLWooKAgraiAAwEgoKCgpSCgpSCgpSCgpSCgpSCgpSCgoKClIKCgg==", "31-31:1;42-46:1;51-55:1;56-59:2;60-63:3;64-67:4;68-71:5;72-75:6;76-81:7;82-86:8")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAwmgoKmoqaCqoKCkqaCgoLWooKAgraiAA4EgoKCgpSCgpSCgpSCgpSCgpSCgpSCgoKClIKCkoKUgpSCgpKClIKUgoKC", "36-36:1;47-51:1;56-60:1;61-64:2;65-68:3;69-72:4;73-76:5;77-80:6;81-86:7;87-95:8;89-92:8.1;96-104:9;98-101:9.1;105-109:10")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -76,5 +79,6 @@ public static partial class main_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
     // </ImportInitializers>
 }

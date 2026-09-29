@@ -614,7 +614,10 @@ internal sealed class ChanCore<T> : ChanCore
             parked.Park.Wait();
         }
 
-        value = parked.Elem is null ? default! : (T)parked.Elem;
+        // Woken by a send, Elem is the value; woken by close, it is null and the receive yields the element type's
+        // Go ZERO value, which for a needy struct must be constructed (builtin.GoZero), exactly as the arm above for
+        // a channel that was already closed. The zero must not depend on whether this receive parked first.
+        value = parked.Elem is null ? builtin.GoZero<T>() : (T)parked.Elem;
         ok = parked.Ok;
         return true;
     }

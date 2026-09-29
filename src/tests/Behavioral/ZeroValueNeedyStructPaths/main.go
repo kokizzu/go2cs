@@ -1,10 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Every Go path that yields a ZERO VALUE of a struct holding a fixed array must yield one whose array has its full
 // length: a map's missing key, a generic function's `var z T` and named result, `*new(T)`, a closed channel's
 // receive, and a failed comma-ok type assertion. `*new(T)` already constructed before GoZero and is the control.
+// A receive that PARKS on a channel another goroutine then closes takes a different wake path from a receive on
+// an already-closed channel; both must yield the same zero.
 
 type counts struct {
 	vals [4]int
@@ -78,6 +83,24 @@ func main() {
 		close(ch)
 		v, ok := <-ch
 		fmt.Println("closed channel:", len(v.vals), v.vals[3], ok)
+	})
+	arm("parked receive:", func() {
+		ch := make(chan counts)
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			close(ch)
+		}()
+		v, ok := <-ch
+		fmt.Println("parked receive:", len(v.vals), v.vals[3], ok)
+	})
+	arm("parked bare receive:", func() {
+		ch := make(chan counts)
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			close(ch)
+		}()
+		v := <-ch
+		fmt.Println("parked bare receive:", len(v.vals), v.vals[3])
 	})
 	arm("failed assertion:", func() {
 		var x any = 7

@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using time = time_package;
 
 partial class main_package {
 
@@ -64,6 +65,8 @@ private static readonly @string genericNewˢ = "generic new:"u8;
 private static readonly @string genericCapturedVarˢ = "generic captured var:"u8;
 private static readonly @string genericAddressedVarˢ = "generic addressed var:"u8;
 private static readonly @string closedChannelˢ = "closed channel:"u8;
+private static readonly @string parkedReceiveˢ = "parked receive:"u8;
+private static readonly @string parkedBareReceiveˢ = "parked bare receive:"u8;
 private static readonly @string failedAssertionˢ = "failed assertion:"u8;
 
 internal static void Main() {
@@ -97,6 +100,26 @@ internal static void Main() {
         close(ch);
         var (v, ok) = ᐸꟷ(ch, ꟷ);
         fmt.Println(closedChannelˢ, len(v.vals), v.vals[3], ok);
+    });
+    arm(parkedReceiveˢ, () => {
+        var ch = new channel<counts>(0);
+        var chʗ1 = ch;
+        goǃ(() => {
+            time.Sleep(100 * time.Millisecond);
+            close(chʗ1);
+        });
+        var (v, ok) = ᐸꟷ(ch, ꟷ);
+        fmt.Println(parkedReceiveˢ, len(v.vals), v.vals[3], ok);
+    });
+    arm(parkedBareReceiveˢ, () => {
+        var ch = new channel<counts>(0);
+        var chʗ2 = ch;
+        goǃ(() => {
+            time.Sleep(100 * time.Millisecond);
+            close(chʗ2);
+        });
+        var v = ᐸꟷ(ch);
+        fmt.Println(parkedBareReceiveˢ, len(v.vals), v.vals[3]);
     });
     arm(failedAssertionˢ, () => {
         any x = (nint)(7);
