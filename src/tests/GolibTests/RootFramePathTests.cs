@@ -72,6 +72,20 @@ public class RootFramePathTests
         StringAssert.Contains(traceback, "testing.tRunner()\n\t" + Root + "/src/testing/testing.go:1792\n");
     }
 
+    // R's spliced panicking frames (runtime.gopanic and the fault frames) are interned root frames too:
+    // one Callers result must not mix the rooted recorded frames with relative spliced ones.
+    [TestMethod]
+    public void TheSplicedPanicFramesAreRootedToo()
+    {
+        List<(string function, string file)> rooted = WithDefaultGoroot(Root, panicframesprobe_package.plainPanicFiles);
+        List<(string function, string file)> recorded = WithDefaultGoroot("", panicframesprobe_package.plainPanicFiles);
+
+        int at = rooted.FindIndex(frame => frame.function == "runtime.gopanic");
+        Assert.IsTrue(at >= 0, $"no runtime.gopanic: {string.Join(" | ", rooted)}");
+        Assert.AreEqual(Root + "/src/runtime/panic.go", rooted[at].file, "the spliced gopanic's file under a link-time root");
+        Assert.AreEqual("runtime/panic.go", recorded[recorded.FindIndex(frame => frame.function == "runtime.gopanic")].file, "and its recorded form with none");
+    }
+
     [TestMethod]
     public void WithNoLinkTimeRootTheRecordedFormStands()
     {
