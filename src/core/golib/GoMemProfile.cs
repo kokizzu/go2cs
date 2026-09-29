@@ -73,19 +73,25 @@ public static class GoMemProfile
 
     private const string PprofAssemblyName = "runtime.pprof";
 
-    // The fallback's question is asked by type name, not by walking references: under native AOT the
-    // compiler resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
+    // The type question is asked by name, not by walking references: under native AOT the compiler
+    // resolves a constant Type.GetType name against the assemblies it was given, so the answer is the
     // static closure there, and GetReferencedAssemblies throws PlatformNotSupportedException. The name is a
-    // constant AT THE CALL: the compiler does not follow it through a parameter.
-    private static Type? findPprofPackage() => Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false);
+    // constant AT THE CALL: the compiler does not follow it through a parameter. The entry assembly is asked
+    // second, for a program that compiles runtime/pprof in rather than referencing its assembly:
+    // runtime/pprof's own test binary compiles the package's files into runtime.pprof.tests.
+    private static Type? findPprofPackage() =>
+        Type.GetType("go.runtime.pprof_package, runtime.pprof", throwOnError: false) ??
+        System.Reflection.Assembly.GetEntryAssembly()?.GetType("go.runtime.pprof_package", throwOnError: false);
 
     /// <summary>
     /// Go's linker question, asked of the program's STATIC assembly closure: whether runtime.pprof is in
     /// <paramref name="trustedPlatformAssemblies"/> (the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the
-    /// app's deps.json list and is fixed before the first assembly loads), or, where the host has no such
-    /// list (a native AOT or single-file publish), whether <paramref name="findPprof"/> resolves
-    /// runtime.pprof's package type. Never the assemblies loaded so far, which load lazily and would read
-    /// "no pprof" at startup in every program. Where neither answers, Go's default (reachable) stands.
+    /// app's deps.json list and is fixed before the first assembly loads), or else whether
+    /// <paramref name="findPprof"/> resolves runtime.pprof's package type: the only question where the host
+    /// has no such list (a native AOT or single-file publish), and the one that finds runtime/pprof compiled
+    /// into the program's own assembly, which no list names. Never the assemblies loaded so far, which load
+    /// lazily and would read "no pprof" at startup in every program. Where nothing answers, Go's default
+    /// (reachable) stands.
     /// </summary>
     public static bool PprofReachableFrom(string? trustedPlatformAssemblies, Func<Type?> findPprof)
     {
@@ -96,8 +102,6 @@ public static class GoMemProfile
                 if (string.Equals(System.IO.Path.GetFileNameWithoutExtension(path), PprofAssemblyName, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
-
-            return false;
         }
 
         try
@@ -106,8 +110,9 @@ public static class GoMemProfile
         }
         catch (Exception)
         {
-            // The closure could not be read: keep Go's default rather than silently switch the profile off.
-            return true;
+            // The type could not be looked up. With a list, the list has answered; without one, keep Go's
+            // default rather than silently switch the profile off.
+            return trustedPlatformAssemblies is null;
         }
     }
 

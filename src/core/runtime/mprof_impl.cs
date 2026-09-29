@@ -230,10 +230,11 @@ public static ref nint MemProfileRate => ref GoMemProfile.Rate;
 // then starts with MemProfileRate 0 (proc.go). Here the question is whether runtime.pprof is in the
 // program's STATIC assembly closure: the host's TRUSTED_PLATFORM_ASSEMBLIES, which is the app's deps.json
 // list and is fixed before the first assembly loads, never the assemblies loaded so far, which load lazily
-// and would read "no pprof" at this point in every program. Where the host has no such list (a native AOT
-// or single-file publish), runtime.pprof's package type is looked up by its constant name, which native
-// AOT's compiler resolves against the assemblies it compiled. Where neither answers, Go's default rate
-// stands. The answer is golib's (GoMemProfile.PprofReachable), the one source, because golib's map store
+// and would read "no pprof" at this point in every program. Where the list does not name it, or the host
+// has none (a native AOT or single-file publish), runtime.pprof's package type is looked up by its constant
+// name, which native AOT's compiler resolves against the assemblies it compiled, and then in the program's
+// own assembly, which is where runtime/pprof's own test binary compiles the package. Where nothing
+// answers, Go's default rate stands. The answer is golib's (GoMemProfile.PprofReachable), the one source, because golib's map store
 // folds the same answer into its growth branch (COORD ruling 2026-09-29 08:43).
 //
 // DEVIATIONS. A program that calls runtime.MemProfile directly without runtime.pprof in its closure reads
