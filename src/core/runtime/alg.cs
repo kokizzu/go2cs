@@ -494,13 +494,7 @@ internal static uintptr int64Hash(uint64 iʗp, uintptr seed) {
     void F();
 }
 
-internal static uintptr ifaceHash(ifaceHash_i iʗp, uintptr seed) {
-    ref var i = ref heap(iʗp, out var Ꮡi);
-
-    var ᴛ4 = interhash((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡi)), seed);
-    System.GC.KeepAlive(Ꮡi);
-    return ᴛ4;
-}
+// go2cs generated this placeholder — func ifaceHash is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static UntypedInt hashRandomBytes => /* goarch.PtrSize / 4 * 64 */ 128;
 
