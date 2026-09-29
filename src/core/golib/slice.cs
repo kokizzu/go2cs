@@ -369,22 +369,20 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (array is null)
         {
             if (low != 0 || high > 0)
-                throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, 0, 0);
+                throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high == -1 ? 0 : high, 0);
 
             this = default;
             return;
         }
 
-        if (low < 0)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, array.Length, array.Length);
-
         if (high == -1)
             high = array.Length;
 
-        nint length = high - low;
+        // A C# array stands for a Go ARRAY, whose bound is its length (goPanicSliceAlen, then goPanicSliceB).
+        if ((nuint)high > (nuint)array.Length || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, array.Length);
 
-        if (array.Length - low < length)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, array.Length, array.Length);
+        nint length = high - low;
 
         m_array = array;
         m_low = low;
@@ -409,7 +407,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         }
 
         if (low < 0)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, max, array.Length);
 
         // A ZERO-SIZE element type has no backing to bound against — its array is the shared
         // zerobase placeholder (GoZeroSizeFacts) whose length says nothing about the slice — so the
@@ -417,7 +415,7 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         // is enforced by the caller that HAS a capacity: Reslice checks it against m_capacity, and
         // the array/@string slice extensions check it against their own window before reaching here.
         if (high < low || max < high || (max > array.Length && !GoZeroSizeFacts<T>.IsZeroSize))
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, max, array.Length);
 
         m_array = array;
         m_low = low;
@@ -627,18 +625,30 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         {
             nint low = range.Start.IsFromEnd ? m_length - range.Start.Value : range.Start.Value;
             nint high = range.End.IsFromEnd ? m_length - range.End.Value : range.End.Value;
-            return Reslice(low, high, m_capacity);
+            return Reslice(low, high);
         }
     }
 
     public slice<T> Slice(int start, int length)
     {
-        return Reslice(start, start + length, m_capacity);
+        return Reslice(start, start + length);
     }
 
     public slice<T> Slice(nint start, nint length)
     {
-        return Reslice(start, start + length, m_capacity);
+        return Reslice(start, start + length);
+    }
+
+    // Go's 2-index s[low:high] (and s[low:], with high = len(s)): high is checked against the CAPACITY, then low
+    // against high, both unsigned, so a negative bound fails the first check that reads it (goPanicSliceAcap,
+    // goPanicSliceB). The capacity is kept. Every 2-index form reaches here: the Range indexer and the
+    // sentinel-free .slice(low) / .slice(low, high) (S-c R1-A).
+    internal slice<T> Reslice(nint low, nint high)
+    {
+        if ((nuint)high > (nuint)m_capacity || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, m_capacity);
+
+        return Window(low, high, m_capacity);
     }
 
     // Core of every Go slice expression over a slice: bounds are RELATIVE to this slice and checked
@@ -653,6 +663,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         if (low < 0 || high < low || max < high || max > m_capacity)
             throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, m_capacity);
 
+        return Window(low, high, max);
+    }
+
+    // The window [low:high:max] of this slice, relative to it, once a caller above has made Go's checks.
+    private slice<T> Window(nint low, nint high, nint max)
+    {
         // Zero-size backing: the Go bound check above is the WHOLE check — there is no storage whose
         // extent could disagree with it — so the window is rebuilt directly. Going through the
         // array-taking constructor would have measured the shared zerobase placeholder's length
@@ -1133,6 +1149,12 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     ReadOnlySpan<T> IByteSeq<T>.ꓸꓸꓸ => ToSpan();
 
+    // The sentinel-free sub-slice of a `string | []byte` body (IByteSeq<TSelf, T>.slice). Explicit: C# forbids a
+    // member named like its enclosing type, so slice<T>'s own `.slice(…)` is the SliceExtensions pair.
+    slice<T> IByteSeq<slice<T>, T>.slice(nint low) => Reslice(low, m_length);
+
+    slice<T> IByteSeq<slice<T>, T>.slice(nint low, nint high) => Reslice(low, high);
+
     ISlice<T> ISlice<T>.Slice(int start, int length) => Slice(start, length);
 
     ISlice<T> ISlice<T>.Slice(nint start, nint length) => Slice(start, length);
@@ -1590,6 +1612,20 @@ public static class SliceExtensions
         return slice.Reslice(low == -1 ? 0 : low, high == -1 ? slice.Length : high, max == -1 ? slice.Capacity : max);
     }
 
+    // Go's 2-index s[low:] and s[low:high] (`s[:high]` is `s.slice(0, high)`) with NO sentinel: every nint value is a
+    // bound, so a negative one panics as Go's does instead of reading as "omitted", and a bound past int32 is checked
+    // at its full value (S-c R1-A, docs/phase4/DESIGN-slice-bounds-r1a.md). An exact-arity call binds these ahead
+    // of the optional-parameter overload above, whose default arguments C# ranks lower.
+    public static slice<T> slice<T>(this in slice<T> slice, nint low)
+    {
+        return slice.Reslice(low, slice.Length);
+    }
+
+    public static slice<T> slice<T>(this in slice<T> slice, nint low, nint high)
+    {
+        return slice.Reslice(low, high);
+    }
+
     // slice of a C# array helper function — Go slicing always produces a SHARED view over the array
     // (never a copy); max (the full-slice-expression bound) restricts capacity below the array's end
     public static slice<T> slice<T>(this T[] array, nint low = -1, nint high = -1, nint max = -1)
@@ -1604,7 +1640,7 @@ public static class SliceExtensions
             max = array.Length;
 
         if (low < 0 || high < low || max < high || max > array.Length)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(low, high, max, array.Length);
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, max, array.Length);
 
         return new slice<T>(array, low, high, max);
     }
@@ -1676,9 +1712,37 @@ public static class SliceExtensions
         nint bound = max == -1 ? array.Length : max;
 
         if (start < 0 || end < start || bound < end || bound > array.Length)
-            throw RuntimeErrorPanic.SliceBoundsOutOfRange(start, end, bound, array.Length);
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(start, end, bound, array.Length);
 
         return new slice<T>(array.m_array, offset + start, offset + end, offset + bound);
+    }
+
+    // Go's 2-index a[low:] and a[low:high] over an array (a pointer-to-array dereferences to this) with NO sentinel,
+    // checked against the array's LENGTH (goPanicSliceAlen, then goPanicSliceB); see the slice<T> pair above.
+    public static slice<T> slice<T>(this array<T> array, nint low)
+    {
+        return array.Slice2(low, array.Length);
+    }
+
+    public static slice<T> slice<T>(this array<T> array, nint low, nint high)
+    {
+        return array.Slice2(low, high);
+    }
+
+    // Go's 2-index slice of a string LITERAL, which converted code holds as a `"..."u8` span: s[low:] and
+    // s[low:high], checked against the literal's length, so an out-of-range bound is Go's panic rather than the
+    // span's ArgumentOutOfRangeException.
+    public static ReadOnlySpan<byte> slice(this ReadOnlySpan<byte> source, nint low)
+    {
+        return source.slice(low, source.Length);
+    }
+
+    public static ReadOnlySpan<byte> slice(this ReadOnlySpan<byte> source, nint low, nint high)
+    {
+        if ((nuint)high > (nuint)source.Length || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, source.Length);
+
+        return source.Slice((int)low, (int)(high - low));
     }
 
     // slice of a Go string helper function — bounds are relative to the string's own WINDOW, for the

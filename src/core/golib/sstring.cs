@@ -124,7 +124,22 @@ public readonly ref struct sstring
     // Slicing a Go string yields a string, so the range indexer returns an sstring — a zero-copy
     // sub-view over the same backing span (mirrors @string.this[Range] returning @string, but without
     // the copy, since a stack string never outlives its source).
-    public sstring this[Range range] => new(m_value[range]);
+    public sstring this[Range range] => slice(range.Start.GetOffset(m_value.Length), range.End.GetOffset(m_value.Length));
+
+    // Go's 2-index s[low:] and s[low:high] over a stack string, with @string.slice's checks and panics: the span's
+    // own Range threw an ArgumentOutOfRangeException past the end, which recover() never sees (S-c R1-A).
+    public sstring slice(nint low)
+    {
+        return slice(low, m_value.Length);
+    }
+
+    public sstring slice(nint low, nint high)
+    {
+        if ((nuint)high > (nuint)m_value.Length || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, m_value.Length);
+
+        return new(m_value.Slice((int)low, (int)(high - low)));
+    }
 
     // `[]byte(s[a:b])`: converting a string to a byte slice copies in Go, so materialize a detached
     // slice<byte> over a fresh array rather than aliasing the view.

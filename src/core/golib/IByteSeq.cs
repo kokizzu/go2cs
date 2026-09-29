@@ -69,6 +69,13 @@ public interface IByteSeq<TSelf, T> : IByteSeq<T> where TSelf : IByteSeq<TSelf, 
     // For @string this is an @string, for slice<T> a slice<T> — both already return exactly
     // that from their public Range indexer, so this is satisfied implicitly.
     TSelf this[Range range] { get; }
+
+    // Sub-slice with bounds that are not constants that fit int32 (Go's s[lo:] and s[lo:hi]; `s[:hi]` is
+    // `slice(0, hi)`). A C# Range cannot carry a negative bound or one past int32, so these take the bounds as nint
+    // and panic as Go does (S-c R1-A). @string implements them publicly; slice<T> explicitly.
+    TSelf slice(nint low);
+
+    TSelf slice(nint low, nint high);
 }
 
 // The `[]byte(s)` and `string(s)` CONVERSIONS of a union-constrained value, which the converter

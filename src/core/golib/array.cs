@@ -316,7 +316,19 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         }
     }
 
-    public slice<T> this[Range range] => Slice(range.Start.GetOffset(m_length), range.End.GetOffset(m_length) - range.Start.GetOffset(m_length));
+    public slice<T> this[Range range] => Slice2(range.Start.GetOffset(m_length), range.End.GetOffset(m_length));
+
+    // Go's 2-index a[low:high] over an array: high is checked against the array's LENGTH, then low against high,
+    // both unsigned, so a negative bound fails the first check that reads it (goPanicSliceAlen, goPanicSliceB).
+    // An array has no capacity beyond its length, which is why Go says "with length 3" where a slice says
+    // "with capacity". The Range indexer and the sentinel-free .slice(low) / .slice(low, high) reach here.
+    internal slice<T> Slice2(nint low, nint high)
+    {
+        if ((nuint)high > (nuint)m_length || (nuint)low > (nuint)high)
+            throw RuntimeErrorPanic.LengthSliceBoundsOutOfRange(low, high, m_length);
+
+        return Slice((int)low, (int)(high - low));
+    }
 
     public slice<T> Slice(int start, int length)
     {
