@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -15,11 +16,11 @@ partial class main_package {
     internal nint n;
 }
 
-internal static ж<view> viewOf(ж<header> Ꮡhp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<view> viewOf(ж<header> Ꮡhp) {
     return Ꮡhp.Reinterpret<header, view>();
 }
 
-internal static nint readN(ж<view> Ꮡp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint readN(ж<view> Ꮡp) {
     return (~viewOf(Ꮡp.Reinterpret<view, header>())).n;
 }
 

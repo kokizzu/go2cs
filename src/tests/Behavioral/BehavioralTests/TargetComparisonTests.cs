@@ -1351,6 +1351,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
 
     [TestMethod]
+    public void CheckNoinlineDirectiveFrame() => CheckTarget("NoinlineDirectiveFrame");
+
+    [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]

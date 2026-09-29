@@ -2,12 +2,13 @@ namespace go;
 
 using fmt = fmt_package;
 using @unsafe = unsafe_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
 [GoType("num:uintptr")] partial struct utp;
 
-internal static uintptr readViaParam(ж<uintptr> Ꮡp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static uintptr readViaParam(ж<uintptr> Ꮡp) {
     var q = Ꮡp;
     return q.Value;
 }
@@ -31,18 +32,18 @@ internal static uintptr tricky(this ж<utp> Ꮡr) {
     internal uintptr v;
 }
 
-internal static @unsafe.Pointer pick(bool cond, @unsafe.Pointer a, @unsafe.Pointer zero) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @unsafe.Pointer pick(bool cond, @unsafe.Pointer a, @unsafe.Pointer zero) {
     if (cond) {
         return a;
     }
     return zero;
 }
 
-internal static (uint32, @unsafe.Pointer) advance(@unsafe.Pointer fd, uint32 n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (uint32, @unsafe.Pointer) advance(@unsafe.Pointer fd, uint32 n) {
     return (n + 1, fd);
 }
 
-internal static ж<uintptr> same(ж<uintptr> Ꮡp) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<uintptr> same(ж<uintptr> Ꮡp) {
     return Ꮡp;
 }
 

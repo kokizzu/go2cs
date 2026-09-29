@@ -1295,6 +1295,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
 
     [TestMethod]
+    public void CheckNoinlineDirectiveFrame() => CheckTarget("NoinlineDirectiveFrame");
+
+    [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]

@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -13,7 +14,7 @@ partial class main_package {
     internal uintptr guard;
 }
 
-internal static ж<outer> get(ж<outer> Ꮡo) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<outer> get(ж<outer> Ꮡo) {
     return Ꮡo;
 }
 

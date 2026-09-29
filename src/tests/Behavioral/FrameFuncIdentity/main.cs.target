@@ -13,7 +13,7 @@ partial class main_package {
     return frame;
 }
 
-internal static (runtime.Frame, runtime.Frame) twoSites() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (runtime.Frame, runtime.Frame) twoSites() {
     var first = capture();
     var second = capture();
     return (first, second);

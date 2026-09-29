@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -24,7 +25,7 @@ partial class main_package {
     internal slot s;
 }
 
-internal static ж<holder> get(ж<holder> Ꮡh) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<holder> get(ж<holder> Ꮡh) {
     return Ꮡh;
 }
 

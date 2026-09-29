@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -21,11 +22,11 @@ partial class main_package {
     internal nint pad;
 }
 
-internal static void run(Action f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run(Action f) {
     f();
 }
 
-internal static ж<cachelike> alloc() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<cachelike> alloc() {
     return Ꮡ(new cachelike(nil));
 }
 
@@ -44,7 +45,7 @@ internal static (nint, nint) allocShape() {
     internal counter v;
 }
 
-internal static ж<gauge> newGauge() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<gauge> newGauge() {
     return Ꮡ(new gauge(nil));
 }
 

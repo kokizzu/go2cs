@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -18,7 +19,7 @@ internal static nint trace(this acquirer _) {
     return 1;
 }
 
-internal static nint collisionGlobalShadow() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint collisionGlobalShadow() {
     nint a = main_package.Δtrace.addr;
     nint traceΔ1 = 7;
     return a + traceΔ1;
@@ -26,17 +27,17 @@ internal static nint collisionGlobalShadow() {
 
 internal static nint plainCounter = 100;
 
-internal static nint plainGlobalShadow() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint plainGlobalShadow() {
     nint x = main_package.plainCounter * 2;
     nint plainCounterΔ1 = 5;
     return x + plainCounterΔ1;
 }
 
-internal static nint acquire(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint acquire(nint n) {
     return n * 10;
 }
 
-internal static nint nestedBlockShadow(nint kind) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint nestedBlockShadow(nint kind) {
     nint total = 0;
     nint Δtrace = acquire(1);
     total += Δtrace;
@@ -56,7 +57,7 @@ internal static nint nestedBlockShadow(nint kind) {
 
 internal static map<@string, slice<@string>> hosts = new map<@string, slice<@string>>{["a"u8] = new @string[]{"x"u8, "y"u8}.slice()};
 
-internal static nint tupleInitShadow(@string key) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint tupleInitShadow(@string key) {
     {
         var (hostsΔ1, ok) = hosts[key, ꟷ]; if (ok) {
             return len(hostsΔ1);
@@ -67,12 +68,12 @@ internal static nint tupleInitShadow(@string key) {
 
 internal static UntypedInt mlkemQ => 3329;
 
-internal static nint constSelfInitShadow() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint constSelfInitShadow() {
     nint mlkemQ = main_package.mlkemQ * 2;
     return mlkemQ + 1;
 }
 
-internal static nint constNestedInitShadow() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint constNestedInitShadow() {
     {
         nint mlkemQ = main_package.mlkemQ / 1000; if (mlkemQ > 2) {
             return mlkemQ;
@@ -85,16 +86,16 @@ internal static nint constNestedInitShadow() {
     internal nint v;
 }
 
-internal static ж<qbox> newQbox(nint n) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<qbox> newQbox(nint n) {
     return Ꮡ(new qbox(v: n));
 }
 
-internal static nint constVarInitShadow() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint constVarInitShadow() {
     var mlkemQ = newQbox(main_package.mlkemQ);
     return (~mlkemQ).v;
 }
 
-internal static nint constUnshadowedElsewhere() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint constUnshadowedElsewhere() {
     return mlkemQ;
 }
 

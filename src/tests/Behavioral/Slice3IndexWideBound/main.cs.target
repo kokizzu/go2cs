@@ -1,10 +1,11 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-internal static void run() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run() {
     var arr = new nint[]{10, 11, 12, 13, 14, 15, 16, 17}.array();
     var sl = new nint[]{20, 21, 22, 23, 24, 25}.slice();
     uintptr n = 5;

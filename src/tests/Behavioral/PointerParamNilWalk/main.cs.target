@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using System.Runtime.CompilerServices;
 using ꓸꓸꓸnint = Span<nint>;
 
 partial class main_package {
@@ -40,7 +41,7 @@ internal static ж<node> build(params ꓸꓸꓸnint valsʗp) {
     return head;
 }
 
-internal static (ж<node>, nint) advance(ref node p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<node>, nint) advance(ref node p) {
     return (p.next, p.val);
 }
 
@@ -72,7 +73,7 @@ internal static void bumpFirstViaTuple(ж<node> Ꮡp) {
     }
 }
 
-internal static ж<node> dropIfShort(ж<node> Ꮡp, nint min) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static ж<node> dropIfShort(ж<node> Ꮡp, nint min) {
     ref var p = ref Ꮡp.DerefOrNull();
 
     if (sumList(Ꮡp) < min) {
