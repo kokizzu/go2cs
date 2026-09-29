@@ -434,6 +434,30 @@ public static class RuntimeErrorPanic
         return new PanicException(MakeSliceCapOutOfRangeMessage);
     }
 
+    private const string GrowSliceLenOutOfRangeMessage = $"{RuntimeErrorMessage}growslice: len out of range";
+
+    /// <summary>
+    /// Go's panic for an <c>append</c> whose grown length Go cannot allocate (runtime/slice.go's
+    /// growslice: <c>errorString("growslice: len out of range")</c>). Here the bound is
+    /// <see cref="Array.MaxLength"/>, the longest managed <c>T[]</c>: the CLR raised an
+    /// OutOfMemoryException or an OverflowException there, and recover() sees neither.
+    /// </summary>
+    public static PanicException GrowSliceLenOutOfRange()
+    {
+        return new PanicException(GrowSliceLenOutOfRangeMessage);
+    }
+
+    /// <summary>
+    /// A NAMED platform bound, not a Go panic: a window over native memory longer than
+    /// <see cref="Array.MaxLength"/> elements, which Go allows. A span cannot express it, so every bulk
+    /// operation over it would have narrowed the length (2^32 + k read k elements, silently).
+    /// Recoverable and named, as <see cref="MakeChanSizeBeyondManagedBuffer"/> is for a channel.
+    /// </summary>
+    public static PanicException NativeSliceBeyondManagedSpan(nint length)
+    {
+        return new PanicException($"native-backed slice: length {length} exceeds the {Array.MaxLength}-element window a managed span can address (Go allows it; a platform bound of go2cs)");
+    }
+
     /// <summary>
     /// Invoked on the throwing goroutine each time a Go frame's panic filter examines an exception
     /// (<see cref="TryAsPanic"/>), during the filter pass and so BEFORE the frames between the throw
