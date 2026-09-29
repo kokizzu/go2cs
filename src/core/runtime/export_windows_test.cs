@@ -18,11 +18,7 @@ internal static void initᴛOsYield() { OsYield = osyield; }
 public static ж<uint32> TimeBeginPeriodRetValue;
 internal static void initᴛTimeBeginPeriodRetValue() { TimeBeginPeriodRetValue = ᏑtimeBeginPeriodRetValue; }
 
-public static int32 NumberOfProcessors() {
-    ref var info = ref heap(new global::go.runtime_package.systeminfo(), out var Ꮡinfo);
-    stdcall1(_GetSystemInfo, (uintptr)Ꮡinfo);
-    return (int32)info.dwnumberofprocessors;
-}
+// go2cs generated this placeholder — func NumberOfProcessors is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType] public partial struct ContextStub {
     internal partial ref global::go.runtime_package.context context { get; }
@@ -32,12 +28,6 @@ public static uintptr GetPC(this ContextStub c) {
     return c.context.ip();
 }
 
-public static ж<ContextStub> NewContextStub() {
-    ref var ctx = ref heap(new global::go.runtime_package.context(), out var Ꮡctx);
-    ctx.set_ip(sys.GetCallerPC());
-    ctx.set_sp(sys.GetCallerSP());
-    ctx.set_fp(getcallerfp());
-    return Ꮡ(new ContextStub(ctx.ΔClone()));
-}
+// go2cs generated this placeholder — func NewContextStub is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 } // end runtime_internal_test_package

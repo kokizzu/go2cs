@@ -61,6 +61,54 @@
       "class": "codegen-liveness",
       "signature": "expected arena-referenced object to be finalized",
       "reason": "Same frame-liveness retention as TestUserArenaLiveness/Free, with the arena dropped instead of freed (its handle unreachable after `arena = nil`): the arena and its allocation list are collected, and v, still reported live by the test frame, keeps the finalizer's object alive. Measured in the same A/B as /Free."
+    },
+    {
+      "name": "TestSehLookupFunctionEntry",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "runtime: NewContextStub: go2cs emits no Go machine code",
+      "records": 1,
+      "reason": "runtime-capability (census W2, COORD routing 2026-09-29): runtime-seh_windows_test.go walks GO frames through Windows structured exception handling. runtime.NewContextStub (export_windows_test.go) fills a machine CONTEXT with its caller's PC, SP and frame pointer, and the tests hand it to RtlLookupFunctionEntry and RtlVirtualUnwind, which read the .pdata function table the Go linker emits for Go machine code. go2cs emits no Go machine code: there is no Go PC, SP or frame to put in a context and no function table that describes one, so the question the test asks has no subject here. The export REFUSES BY NAME at that point (runtime/export_windows_impl_test.cs); before it, the auto body reached sys.GetCallerPC's throwing stub, an infrastructure error. Pinned to the refusal's leading words with ONE record, so any other failure in this test is a defect, not this disclosure. Windows only (the test file is). Retires if go2cs ever emits machine code with SEH unwind data (never, by design)."
+    },
+    {
+      "name": "TestSehUnwind",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "runtime: NewContextStub: go2cs emits no Go machine code",
+      "records": 1,
+      "reason": "runtime-capability (census W2, COORD routing 2026-09-29): runtime-seh_windows_test.go walks GO frames through Windows structured exception handling. runtime.NewContextStub (export_windows_test.go) fills a machine CONTEXT with its caller's PC, SP and frame pointer, and the tests hand it to RtlLookupFunctionEntry and RtlVirtualUnwind, which read the .pdata function table the Go linker emits for Go machine code. go2cs emits no Go machine code: there is no Go PC, SP or frame to put in a context and no function table that describes one, so the question the test asks has no subject here. The export REFUSES BY NAME at that point (runtime/export_windows_impl_test.cs); before it, the auto body reached sys.GetCallerPC's throwing stub, an infrastructure error. Pinned to the refusal's leading words with ONE record, so any other failure in this test is a defect, not this disclosure. Windows only (the test file is). Retires if go2cs ever emits machine code with SEH unwind data (never, by design)."
+    },
+    {
+      "name": "TestSehUnwindDoublePanic",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "runtime: NewContextStub: go2cs emits no Go machine code",
+      "records": 1,
+      "reason": "runtime-capability (census W2, COORD routing 2026-09-29): runtime-seh_windows_test.go walks GO frames through Windows structured exception handling. runtime.NewContextStub (export_windows_test.go) fills a machine CONTEXT with its caller's PC, SP and frame pointer, and the tests hand it to RtlLookupFunctionEntry and RtlVirtualUnwind, which read the .pdata function table the Go linker emits for Go machine code. go2cs emits no Go machine code: there is no Go PC, SP or frame to put in a context and no function table that describes one, so the question the test asks has no subject here. The export REFUSES BY NAME at that point (runtime/export_windows_impl_test.cs); before it, the auto body reached sys.GetCallerPC's throwing stub, an infrastructure error. Pinned to the refusal's leading words with ONE record, so any other failure in this test is a defect, not this disclosure. Windows only (the test file is). Retires if go2cs ever emits machine code with SEH unwind data (never, by design)."
+    },
+    {
+      "name": "TestSehUnwindNilPointerPanic",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "runtime: NewContextStub: go2cs emits no Go machine code",
+      "records": 1,
+      "reason": "runtime-capability (census W2, COORD routing 2026-09-29): runtime-seh_windows_test.go walks GO frames through Windows structured exception handling. runtime.NewContextStub (export_windows_test.go) fills a machine CONTEXT with its caller's PC, SP and frame pointer, and the tests hand it to RtlLookupFunctionEntry and RtlVirtualUnwind, which read the .pdata function table the Go linker emits for Go machine code. go2cs emits no Go machine code: there is no Go PC, SP or frame to put in a context and no function table that describes one, so the question the test asks has no subject here. The export REFUSES BY NAME at that point (runtime/export_windows_impl_test.cs); before it, the auto body reached sys.GetCallerPC's throwing stub, an infrastructure error. Pinned to the refusal's leading words with ONE record, so any other failure in this test is a defect, not this disclosure. Windows only (the test file is). Retires if go2cs ever emits machine code with SEH unwind data (never, by design)."
+    },
+    {
+      "name": "TestSehUnwindPanic",
+      "class": "runtime-capability",
+      "platforms": ["windows"],
+      "signature": "runtime: NewContextStub: go2cs emits no Go machine code",
+      "records": 1,
+      "reason": "runtime-capability (census W2, COORD routing 2026-09-29): runtime-seh_windows_test.go walks GO frames through Windows structured exception handling. runtime.NewContextStub (export_windows_test.go) fills a machine CONTEXT with its caller's PC, SP and frame pointer, and the tests hand it to RtlLookupFunctionEntry and RtlVirtualUnwind, which read the .pdata function table the Go linker emits for Go machine code. go2cs emits no Go machine code: there is no Go PC, SP or frame to put in a context and no function table that describes one, so the question the test asks has no subject here. The export REFUSES BY NAME at that point (runtime/export_windows_impl_test.cs); before it, the auto body reached sys.GetCallerPC's throwing stub, an infrastructure error. Pinned to the refusal's leading words with ONE record, so any other failure in this test is a defect, not this disclosure. Windows only (the test file is). Retires if go2cs ever emits machine code with SEH unwind data (never, by design)."
+    },
+    {
+      "name": "TestNetpollBreak",
+      "class": "runtime-capability",
+      "platforms": ["linux", "windows"],
+      "signature": "runtime: netpollBreak: the managed host has no runtime poller to break",
+      "records": 1,
+      "reason": "runtime-capability (census B6, COORD routing 2026-09-29; the linux row is P1's sizing bucket D): the test starts a runtime.Netpoll wait on a goroutine and breaks it with runtime.NetpollBreak. The managed host has no runtime poller: netpollGenericInit is a no-op (runtime/netpoll_impl.cs), because Go's poller is drained by the Go scheduler itself (findRunnable, sysmon), which the host does not run. With no eventfd (linux) or I/O completion port (windows) there is nothing for a break to interrupt, so netpollBreak REFUSES BY NAME before any write or post (runtime/linux/netpoll_epoll_impl.cs, runtime/windows/netpoll_windows_impl.cs), with the same leading words on both targets. Before it, linux's write to the absent eventfd took Go's fatal throw and windows' post reached asmcgocall's stub, an infrastructure error. ONE entry covers both targets because the loader admits one entry per test name; the signature is the prefix both refusals share, with ONE record. darwin is unmeasured (wakeNetpoll over kq) and out of scope. Retires if the host ever runs Go's poller (never, by design: internal/poll has its own managed poller, DESIGN-netpoll-managed-poller.md)."
     }
   ]
 }
