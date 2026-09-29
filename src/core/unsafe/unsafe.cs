@@ -870,10 +870,21 @@ public static Pointer Add<TLen>(Pointer ptr, TLen len) where TLen : System.Numer
     return new Pointer(ptr.Value + (uintptr)(nuint)nint.CreateTruncating(len));
 }
 
+// A typed element box addresses its target through an Int32 element index, so an offset outside
+// Int32 cannot be represented. Truncating it would step a wrong number of elements silently (a
+// 4 GiB + 8 offset landing 8 on), so it is refused by name, like Slice and String's length.
+// Negative offsets stay legal: Go's Add accepts them.
+private static int PointerOffset<TLen>(TLen len) where TLen : System.Numerics.IBinaryInteger<TLen> {
+    if (len > TLen.CreateSaturating(int.MaxValue) || (TLen.IsNegative(len) && len < TLen.CreateSaturating(int.MinValue)))
+        throw RuntimeErrorPanic.RuntimeRaised($"unsafe.Add: offset {len} exceeds what this runtime can address through a typed element box");
+
+    return int.CreateTruncating(len);
+}
+
 public static ж<T> Add<T, TLen>(ж<T> ptr, TLen len) where TLen : System.Numerics.IBinaryInteger<TLen> {
     // Go's len is of any integer type (the `IntegerType` constraint); reduce it to the pointer
     // offset type. A signed/unsigned/native-width argument (e.g. a `uintptr`) thus all bind here.
-    int n = int.CreateTruncating(len);
+    int n = PointerOffset(len);
 
     if (ptr == nil)
         return new StandardBox<T>(nil);
