@@ -544,6 +544,7 @@
     <Project Path="tests/Behavioral/ImportSegmentTypeShadow/ImportSegmentTypeShadow.csproj" />
     <Project Path="tests/Behavioral/IfaceFieldEmbedAdapter/IfaceFieldEmbedAdapter.csproj" />
     <Project Path="tests/Behavioral/IfaceFieldMethodValueBind/IfaceFieldMethodValueBind.csproj" />
+    <Project Path="tests/Behavioral/IndexChainAddressBox/IndexChainAddressBox.csproj" />
     <Project Path="tests/Behavioral/IndexExprCaseLabel/IndexExprCaseLabel.csproj" />
     <Project Path="tests/Behavioral/InferredForeignTypeNoImport/InferredForeignTypeNoImport.csproj" />
     <Project Path="tests/Behavioral/InitOrderTupleSpecs/InitOrderTupleSpecs.csproj" />

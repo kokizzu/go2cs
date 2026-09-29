@@ -814,6 +814,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
+    public void CheckIndexChainAddressBox() => CheckTarget("IndexChainAddressBox");
+
+    [TestMethod]
     public void CheckIndexExprCaseLabel() => CheckTarget("IndexExprCaseLabel");
 
     [TestMethod]
