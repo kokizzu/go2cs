@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using @unsafe = go.unsafe_package;
@@ -83,5 +84,57 @@ public unsafe class UnsafeLengthLimitTests
 
         Assert.AreEqual(4, len(@unsafe.Slice(Ꮡ(source, 0), 4L)));
         Assert.AreEqual(4, len(@unsafe.String(Ꮡ(source, 0), 4L)));
+    }
+
+    // unsafe.Add over a typed box reduced its offset with int.CreateTruncating as well, so an offset of
+    // 2^32 + 8 added 8 to a native pointer (the i9's golib Int32 census, S3). The Pointer overload goes
+    // through nint and wraps like Go's uintptr, which is faithful and is left alone.
+    [TestMethod]
+    public void AddRefusesAnOffsetPastInt32OnANativePointer()
+    {
+        IntPtr buffer = Marshal.AllocHGlobal(16);
+
+        try
+        {
+            ж<byte> pointer = (void*)buffer;
+            long offset = (1L << 32) + 8;
+
+            PanicException ex = Assert.ThrowsException<PanicException>(() => @unsafe.Add(pointer, offset), "an offset past Int32 must be refused, not wrapped to 8");
+            StringAssert.Contains(ex.Message, $"unsafe.Add: offset {offset} exceeds what this runtime can address through a typed element box");
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    [TestMethod]
+    public void AddRefusesAnOffsetPastInt32OnAnElementBox()
+    {
+        slice<byte> source = Source();
+        long offset = (1L << 32) + 1;
+
+        PanicException ex = Assert.ThrowsException<PanicException>(() => @unsafe.Add(Ꮡ(source, 0), offset));
+        StringAssert.Contains(ex.Message, $"unsafe.Add: offset {offset} exceeds what this runtime can address through a typed element box");
+    }
+
+    [TestMethod]
+    public void AddStillStepsForwardAndBackWithinInt32()
+    {
+        IntPtr buffer = Marshal.AllocHGlobal(16);
+
+        try
+        {
+            ж<byte> pointer = (void*)buffer;
+            ж<byte> ahead = @unsafe.Add(pointer, 4L);
+            ж<byte> back = @unsafe.Add(ahead, -4L);
+
+            Assert.AreEqual((nuint)buffer + 4, ahead.NativeAddress);
+            Assert.AreEqual((nuint)buffer, back.NativeAddress);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
     }
 }
