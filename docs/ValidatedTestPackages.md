@@ -22,7 +22,15 @@ gap rather than a structural impossibility. (The count has moved in both directi
 this prose — have always been the authority: it read "four" while five were in use, because
 `alloc-count-semantics` predates the newer classes and had lost its spot, restored 2026-08-20; then
 "five" for the rest of that day, until `chan-direction` retired that same evening; then "four"
-again, until `runtime-capability` joined with `runtime/debug`'s bank.)
+again, until `runtime-capability` joined on 2026-08-22.)
+
+<!-- Provenance, TRAIN J 2026-09-30: until this date the parenthetical above ended "until
+     `runtime-capability` joined with `runtime/debug`'s bank." The class was minted 2026-08-22
+     (3afd0e7c3a) with runtime/debug's three WriteHeapDump pins as its founding entries. Ruling Q4 (a)
+     (ledger 2026-09-28 02:10) implemented runtime/debug.WriteHeapDump as a well-formed, truthful,
+     EMPTY Go heap dump (writeMinimalHeapDump in src/core/runtime/managed_impl.cs), the three tests
+     pass on it on windows and linux, and their pins retired as orphans at TRAIN J (coordinator
+     ruling 2026-09-30). The class keeps its other entries, so the count of classes does not move. -->
 
 A class that RETIRED itself, `chan-direction`, named the one thing the managed *representation*
 could not *distinguish*: a Go channel emitted as golib's `channel<T>` whatever its direction, so
@@ -90,12 +98,26 @@ once its remedy lands, because the arithmetic below moves when it goes.
   *defined over the replaced runtime's own internals*: Go's type descriptors, its heap layout, its
   GC bookkeeping. Any managed rendering would be fabrication rather than implementation. The
   admission test is one question — *does a truthful managed implementation of the asserted behavior
-  exist at any cost?* — and a yes makes the row an arc with a price, never a disclosure, which is
-  why this class admits `runtime/debug`'s three `WriteHeapDump` tests and refuses the rest of what
-  that package measures. It carries a binding **anti-laundering clause**: an entry pins its rows AS
-  FAILING. The three it names assert only that a heap dump is non-empty and never parse it, so
-  writing a single byte would pass them while proving nothing — and this class's own text forbids
-  writing it.
+  exist at any cost?* — and a yes makes the row an arc with a price, never a disclosure. `reflect`'s
+  `TestGCBits` is one such row: it asks for a heap allocation's GC bitmap repeated by the
+  allocation's size class, and the managed heap has no Go size class to repeat by. It carries a
+  binding **anti-laundering clause**: an entry pins its rows AS FAILING, and a disclosure is never
+  satisfied by output written to pass it — a single byte would pass a test that checks only that a
+  file is non-empty while proving nothing, and this class's own text forbids writing it. That line
+  is why `runtime/debug`'s three `WriteHeapDump` tests are validated verdicts rather than entries
+  here: the managed runtime writes a well-formed, truthful Go heap dump that is empty — the header,
+  the parameters record and the end-of-dump tag, with no objects, because the CLR owns the heap —
+  and all three pass on it.
+  <!-- Provenance: ruling Q4 (a) (ledger 2026-09-28 02:10) implemented runtime/debug.WriteHeapDump as
+       that minimal dump (writeMinimalHeapDump in src/core/runtime/managed_impl.cs), which answers
+       this class's admission test YES for the three tests; their pins retired as orphans at TRAIN J
+       (coordinator ruling 2026-09-30), and reflect's TestGCBits (src/core/reflect's manifest) became
+       the example named above. Until TRAIN J the bullet's second half read: "...never a disclosure,
+       which is why this class admits `runtime/debug`'s three `WriteHeapDump` tests and refuses the
+       rest of what that package measures. It carries a binding anti-laundering clause: an entry pins
+       its rows AS FAILING. The three it names assert only that a heap dump is non-empty and never
+       parse it, so writing a single byte would pass them while proving nothing -- and this class's
+       own text forbids writing it." -->
 - **`platform-skip`** — a test whose converted side takes a skip **the upstream Go source itself
   writes**, because the property that skip describes is one the converted corpus genuinely and
   permanently holds. The divergence is between two *platforms'* verdicts on one test, not between Go
@@ -132,9 +154,9 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **222 / 230 testable packages validated — 96.5%**
+> ### Phase 4 progress: **223 / 230 testable packages validated — 97.0%**
 >
-> **58,804 matching test verdicts · 294 disclosed** *(updated 2026-09-28 — maintained as part of the
+> **58,812 matching test verdicts · 295 disclosed** *(updated 2026-09-30 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 230 of the 346
 > packages `go list std` reports at go1.24.13 whose test files surviving the corpus axis —
 > windows/amd64, `-tags purego,math_big_pure_go` — declare a `Test` function. The 230 are enumerated,
@@ -149,7 +171,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > two disagree — and the one figure the table cannot know, the denominator, is checked against the
 > enumerated population file instead, along with every banked and excluded row's membership in it.
 >
-> **Against the implementable set (230 − 5 excluded = 225): 222 / 225 — 98.7%.** Both numbers are
+> **Against the implementable set (230 − 5 excluded = 225): 223 / 225 — 99.1%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > five, each with its class, mechanism and evidence, are in
@@ -162,7 +184,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > record kept in [The 215, derived](#the-215-derived--and-the-thirteen-rows-that-are-not-yet-banked)
 > beneath it.
 >
-> **Linux: 220 of 220 applicable rows validated at their Linux counts** — 58,652 matching verdicts · 311 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 221 of 221 applicable rows validated at their Linux counts** — 58,660 matching verdicts · 312 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 <!-- Superseded 2026-09-24 (H12 C5; the 1.24.13.1 announcement's Piece 5(a), owner-accepted r3 at
      claude/coord-handover 77f85249fe). From 2026-09-22 until the H10 close re-banked every row at its
@@ -431,6 +453,7 @@ leveling re-sweep re-annotated the rows it moved.
 | [`reflect`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/reflect) | 396 | 22 | Go's run-time reflection, the reflection bridge's own suite: `TypeOf`/`ValueOf` over every kind, `Kind` and `String` for named, generic and function-local types, struct fields with tags, embedding and `VisibleFields`, method sets and `Method`/`MethodByName` calls, `Call` and `MakeFunc`, `Set`/`Addr`/`CanSet` and the settability rules, `Convert`/`CanConvert`, `DeepEqual`, `IsZero` and `Comparable`, maps with `MapIndex`, `SetMapIndex` and `MapIter`, channels with `Select`, `Copy` and `Swapper`, the `Seq`/`Seq2` iterators, and the types built at run time by `PointerTo`, `SliceOf`, `ArrayOf`, `MapOf`, `ChanOf`, `FuncOf` and `StructOf`. The 23 disclosures are runtime capabilities the managed runtime does not have (a pointer compared as a number, GC bitmaps, address arithmetic, write-protected memory, an assembly trampoline), stack-allocation counts, and one frame-liveness assert. · linux: 396 + 22 · [proof](validation/current/reflect.md) |
 | [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. · linux: 45 · [proof](validation/current/regexp.md) |
 | [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. · linux: 12 · [proof](validation/current/regexp.syntax.md) |
+| [`runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug) | 8 | 1 | The runtime's own debugging surface — `ReadGCStats`' packed pause history (`n` pauses, `n` end times, `lastGC`, `numGC`, `totalPause`, most-recent-first) cross-checked against `ReadMemStats` in nine assertions that hold because both read one shared recorder; `SetMaxThreads` given a count past `int32` without overflowing the thread limit; `Stack()` read back frame by frame — `debug.Stack`, a pointer method, a value method and the test function, each with its GOROOT source path, down to the test host's root frame, which prints as `testing.tRunner` in `testing/testing.go`; `WriteHeapDump` with two finalizers queued and generic instantiations live, writing a well-formed, truthful Go heap dump that is empty (the header, the parameters record and the end-of-dump tag, no objects, because the CLR owns the heap); and `SetCrashOutput`, which re-executes the test binary, panics inside `TestMain`, and reads Go's crash report back from BOTH the child's stderr and the crash file — the row that made every converted program print `panic: <value>`, a blank line, `goroutine N [running]:` and a Go-spelled traceback where a .NET exception dump used to go. `TestSetGCPercent` skips on both sides at Go's own flaky-test gate. The one disclosure is `TestFreeOSMemory` (codegen-liveness): the 32 MB it expects released is still rooted in the test's own running frame. On linux `TestPanicOnFault` is withdrawn from both sides by name as `host-fatal`, because the CLR cannot recover a hardware fault as a panic. · linux: 8 + 1 · [proof](validation/current/runtime.debug.md) |
 | [`runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) | 2 |  | The runtime metrics table end to end — `All()`'s sorted-name/regexp contract against `doc.go`, and a full `metrics.Read` round trip computing a kind for every published metric through the first linkname push into a `_test` package, the managed `metricsLock`, and every stat-aggregate compute closure. · linux: 2 · [proof](validation/current/runtime.metrics.md) |
 | [`runtime/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/trace) | 2 | | The execution tracer, working in the managed runtime: go2cs's managed execution tracer writes Go's v2 trace of the goroutine facts, and Go's own trace parser accepts it — `TestTraceStartStop` and `TestTraceDoubleStart` pass on windows and linux. · linux: 2 · [proof](validation/current/runtime.trace.md) |
 | [`slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices) | 121 | 2 | The generic slice algorithms over `S ~[]E` end to end — sort/stable-sort with cmp variants, binary search, Insert/Delete/Replace/Compact/Reverse/Rotate at every boundary, the iterator surface (`All`/`Values`/`Backward`/`Collect`/`Sorted*`), and `TestConcat_too_large`'s overflow matrix, whose `make([]struct{}, math.MaxInt)` fakes flow through Concat's Grow chain allocation-free — the slice-shaped-spread arc's own target, the row this arc was priced to unlock (`append(s, t...)` travels as the slice it is; the Span int32 ceiling left the call boundary). The three disclosures are the pre-ruled classes: `TestConcat` asserts allocation counts the managed regime cannot denominate in Go mallocs (alloc-count-semantics), and `TestInsert`'s rotation budget meets the model's structural heap boxes (alloc-profile, 242 golib objects against a want-below-25). `TestConcat`'s byte-derived reading is 112 (it was 168 before `len`/`cap` of a named slice type stopped boxing; the verdict is unchanged). `TestGrow` PASSES since 2026-09-26: `slices.Grow` is `append(s[:cap(s)], make([]E, n)...)`, and the converter now lowers that shape to grow in place without materializing the `make`, so the allocation its assert counts is gone. Its manifest entry stays, unfiring, until the Linux reading is re-taken. · linux: 120 + 3 · [proof](validation/current/slices.md) |
@@ -951,7 +974,12 @@ It re-banks when TRAIN H's class F (iii) and G's printer seat land, with `TestSt
 `runtime/pprof` — none of them excluded and every one inside the implementable 225, which
 `runtime/trace` grew the same day by leaving the exclusion ledger. Later on 2026-09-28 `net/http/pprof` banked at 15 of 15
 with class F, the hand-owned `sync.Mutex`'s profile events, which leaves three candidates —
-`runtime`, `runtime/debug` and `runtime/pprof`. This block's identities and its candidates table read as they stood at
+`runtime`, `runtime/debug` and `runtime/pprof`. On 2026-09-30, at TRAIN J's landing, `runtime/debug`
+re-banked at 8 of 9 with 1 disclosed on windows, and 8 with 1 disclosed on linux: `TestStack` is a
+plain pass on the printer's modelled `testing.tRunner` root, and the three `WriteHeapDump` tests
+pass on a well-formed, truthful, empty heap dump (ruling Q4 (a), ledger 2026-09-28 02:10), which
+retired their `runtime-capability` pins as orphans. That leaves two candidates — `runtime` and
+`runtime/pprof`. This block's identities and its candidates table read as they stood at
 the close.
 
 **The 6 candidates**, each a population member with no banked row:
