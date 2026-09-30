@@ -16,6 +16,7 @@ using static go.runtime.debug_package;
 using strings = strings_package;
 using testing = testing_package;
 using @internal;
+using System.Runtime.CompilerServices;
 using go.os;
 using go.runtime;
 using io = io_package;
@@ -53,11 +54,11 @@ public static void TestMain(ж<testing.M> Ꮡm) {
 
 [GoType("num:nint")] partial struct T;
 
-[GoRecv] internal static slice<byte> ptrmethod(this ref T t) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static slice<byte> ptrmethod(this ref T t) {
     return Stack();
 }
 
-internal static slice<byte> method(this T t) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static slice<byte> method(this T t) {
     return t.ptrmethod();
 }
 

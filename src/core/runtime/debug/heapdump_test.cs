@@ -7,6 +7,7 @@ using os = os_package;
 using runtime = runtime_package;
 using static go.runtime.debug_package;
 using testing = testing_package;
+using System.Runtime.CompilerServices;
 using fs = go.io.fs_package;
 using go.io;
 
@@ -93,7 +94,7 @@ public static void TestWriteHeapDumpFinalizers(ж<testing.T> Ꮡt) {
 }
 
 //go:noinline
-public static void M<T>(this G<T> g) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void M<T>(this G<T> g) {
 }
 
 internal static I dummy = new G<nint>(nil);

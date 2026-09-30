@@ -180,7 +180,7 @@ public static void TestSetGCPercent(ж<testing.T> Ꮡt) {
             }
         }
         // Create some garbage, but not enough to trigger another GC.
-        for (nint i = 0; i < (nint)(1.2D * baseline); i += (1 << (int)(10))) {
+        for (nint i = 0; i < (nint)((nint)(/* 1.2 * baseline */ 125829120L)); i += (1 << (int)(10))) {
             setGCPercentSink = new slice<byte>((1 << (int)(10)));
         }
         setGCPercentSink = default!;
@@ -188,7 +188,7 @@ public static void TestSetGCPercent(ж<testing.T> Ꮡt) {
         SetGCPercent(50);
         runtime.ReadMemStats(Ꮡms);
         {
-            var want = (int64)(1.5D * baseline); if (abs64(want - (int64)ms.NextGC) > thresh) {
+            var want = (int64)(/* 1.5 * baseline */ 157286400L); if (abs64(want - (int64)ms.NextGC) > thresh) {
                 Ꮡt.Errorf("NextGC = %d MB, want %d±%d MB"u8, (ms.NextGC >> (int)(20)), (want >> (int)(20)), (nint)((thresh >> (int)(20))));
             }
         }
@@ -196,7 +196,7 @@ public static void TestSetGCPercent(ж<testing.T> Ꮡt) {
         SetGCPercent(100);
         runtime.GC();
         // Raise live to 120 MB.
-        setGCPercentSink = new slice<byte>((nint)(0.2D * baseline));
+        setGCPercentSink = new slice<byte>((nint)((nint)(/* 0.2 * baseline */ 20971520L)));
         // Lower GOGC to 10. This must force a GC.
         runtime.ReadMemStats(Ꮡms);
         var ngc1 = ms.NumGC;

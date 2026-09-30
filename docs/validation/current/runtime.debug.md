@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `runtime/debug` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-22 · converter `c6fdbe73c`*
+*Validated 2026-09-30 · converter `d616cc686`*
 
-**4 matched · 5 disclosed** — Go 1.24.13, `windows/amd64`, converted package
+**8 matched · 1 disclosed** — Go 1.24.13, `windows/amd64`, converted package
 [`src/core/runtime/debug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/debug).
 
 Measured at `Release` (tiered JIT off), oracle `go version go1.24.13 windows/amd64`.
@@ -24,10 +24,10 @@ Both runtimes skip 1 of the matched tests identically.
 | `TestSetCrashOutput` | pass | pass |
 | `TestSetGCPercent` | skip | skip |
 | `TestSetMaxThreadsOvf` | pass | pass |
-| `TestStack` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestWriteHeapDumpFinalizers` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestWriteHeapDumpNonempty` | pass | fail ([disclosed](#disclosed-divergences)) |
-| `TestWriteHeapDumpTypeName` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestStack` | pass | pass |
+| `TestWriteHeapDumpFinalizers` | pass | pass |
+| `TestWriteHeapDumpNonempty` | pass | pass |
+| `TestWriteHeapDumpTypeName` | pass | pass |
 
 ## Disclosed divergences
 
@@ -39,10 +39,6 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 | Test | Class | Pinned reason |
 |:--|:--|:--|
 | `TestFreeOSMemory` | `codegen-liveness` | the test allocates 32 MB inline in its own frame, clears the only named reference, and then asserts — from inside that same still-running frame — that FreeOSMemory has returned the memory to the OS. Go's per-safepoint liveness maps drop the allocation at its last use; the CLR reports a frame's slots live for the frame's whole lifetime, so the 32 MB is still rooted while the test is looking. Measured by the routing probe as a three-way control: the identical allocation behind a RETURNED call releases 33,689,600 B to the byte, and the inline form does not, invariant under Release and under untiered JIT. The first assert (HeapReleased must increase at all) PASSES on the S2/S3 high-water surface — 3,031,040 B of unrelated memory really is released — which is why the pin is the second assert's prefix and stops before its run-varying byte counts |
-| `TestStack` | `host-identity` | the fifth frame() assert requires the testing framework's own frame to name GOROOT/src/testing/testing.go — an assert satisfiable only by the test-hosting machinery claiming Go's testing-package identity, this class's exact bar. The converted deployment's testing package is the hand-owned host (src/core/testing) — the ONE-testing-package ruling's design, not an unimplemented conversion — so no conversion recorded a position for it and it honestly reports its own .cs position, exactly as golib and the BCL do; the position-map ruling forbids the fabrication passing would require. Permanent by design like the class's founding entry (log/slog's TestRecordSource, the tRunner frame): it retires only if the test host itself becomes a conversion of Go's testing package, which the ONE-testing-package ruling deliberately forecloses |
-| `TestWriteHeapDumpFinalizers` | `runtime-capability` | Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text |
-| `TestWriteHeapDumpNonempty` | `runtime-capability` | Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty (size >= 1) and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text |
-| `TestWriteHeapDumpTypeName` | `runtime-capability` | Go's heap-dump format is a serialization of the Go heap through Go's own type descriptors; the heap a managed build would describe is not a Go heap and has no such descriptors, so any managed rendering would be fabrication rather than implementation and no truthful form exists at any cost. Pinned AS FAILING under the class's binding anti-laundering clause: this test checks only that the dump is non-empty and never parses it, so a one-byte write would pass it while proving nothing — writing that byte is forbidden by this class's own text |
 
 ## Excluded declarations
 
