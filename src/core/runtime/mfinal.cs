@@ -900,23 +900,34 @@ private static class GoFinalizerQueue
             s_pending.Wait();
             ᏑfingStatus.And(~(uint32)(fingWait | fingWake));
 
-            if (!s_queue.TryDequeue(out (Delegate Fn, object? Target, bool IsCleanup, GoFinalizerGate? Gate) item))
-                continue;
-
-            Dispatch(item);
-
-            // Nothing of the item outlives its dispatch: `item` is an out-local, reported live for the
-            // whole loop, so it is cleared before the next park (A11, see Dispatch).
-            item = default;
+            DispatchNext();
         }
     }
 
-    // ONE ITEM, IN ITS OWN FRAME. Run() never returns and its loop body sat inside try/catch/finally,
-    // so the JIT could report the item's references (the object, the bound argument, DynamicInvoke's
-    // argument array) as live for the life of the thread: an object a finalizer resurrected could
-    // never die again, so its held cleanups (A11) could never come due. Measured: GolibTests'
-    // CleanupDispatchTests arm 7 read the resurrected object alive at its second death with the loop
-    // locals cleared, and green once this frame split. Returning from it ends every one of them.
+    // THE ITEM NEVER TOUCHES Run()'S FRAME. Run() never returns, so anything its frame reports live is
+    // live for the life of the thread, and an object a finalizer resurrected could never die again:
+    // its held cleanups (A11) would never come due. The item is dequeued HERE, in a frame that returns.
+    //
+    // ⚠ IT USED TO BE DEQUEUED IN Run() AND PASSED TO Dispatch BY VALUE, WITH THE LOCAL CLEARED AFTER,
+    // and that was green on linux and RED on windows. The item is a 32-byte struct. The windows x64
+    // ABI passes a struct that size by reference to a hidden COPY the caller makes in its own frame,
+    // and `item = default` clears the named local, never that copy. So the last finalizer item
+    // dispatched (its target is the resurrected object) stayed reachable from Run()'s frame until the
+    // next item overwrote it. Measured on windows Release: after the finalizer resurrected the object
+    // and the holder dropped it, a WeakReference read it ALIVE through two collections; one no-op
+    // cleanup through the runner freed it at once. SysV passes the struct in the outgoing argument
+    // area, which is not reported after the call, hence linux green. CleanupDispatchTests arm 6 is the
+    // red; arm 10 reads the object's own death, which no earlier arm's leftover item can mask.
+    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void DispatchNext()
+    {
+        if (s_queue.TryDequeue(out (Delegate Fn, object? Target, bool IsCleanup, GoFinalizerGate? Gate) item))
+            Dispatch(item);
+    }
+
+    // ONE ITEM, IN ITS OWN FRAME. Returning from it ends every reference its body held: the object,
+    // the bound argument, DynamicInvoke's argument array (A11; DispatchNext above keeps the item out of
+    // Run()'s frame as well).
     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static void Dispatch((Delegate Fn, object? Target, bool IsCleanup, GoFinalizerGate? Gate) item)
     {
